@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import {
     getSignerFor,
-    isQuantumAccount,
     useAllAccounts,
+    usesNonPrimaryScheme,
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
@@ -46,13 +47,17 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
             if (getPreference(UserPreferences.quantumDappWarningAcknowledged))
                 return 'continue'
 
-            // Match the fee resolver: the 3x fee and Falcon signature follow the
-            // effective signer, so a rekey to a quantum auth counts too.
-            const hasQuantumAccount = addresses.some(address => {
-                const signer = getSignerFor(address, accounts)
-                return signer !== null && isQuantumAccount(signer)
+            // The same predicate as the fee resolver: the scheme premium and the
+            // non-primary signature follow the effective signer, so a rekey to a
+            // quantum auth counts too.
+            const hasNonPrimarySigner = addresses.some(address => {
+                const signer = getSignerFor(address, accounts, LEGACY_CHAIN_ID)
+                return (
+                    signer !== null &&
+                    usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
+                )
             })
-            if (!hasQuantumAccount) return 'continue'
+            if (!hasNonPrimarySigner) return 'continue'
 
             const result = await request<QuantumDappWarningDecision>({
                 contents: <QuantumDappWarningSheet />,

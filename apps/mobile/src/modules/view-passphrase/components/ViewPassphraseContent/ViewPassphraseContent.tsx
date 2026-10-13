@@ -119,6 +119,7 @@ export const ViewPassphraseContent = ({
                                                     </PWText>
                                                     <PWText
                                                         style={styles.wordText}
+                                                        testID={`${testID}_word_${number}`}
                                                     >
                                                         {mnemonicIndexToWord(
                                                             wordIndex,

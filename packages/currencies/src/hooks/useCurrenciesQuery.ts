@@ -12,15 +12,20 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { fetchCurrenciesList } from '../api/currencies'
 import { getCurrenciesQueryKey } from './querykeys'
 
 export const useCurrenciesQuery = () => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
     const results = useQuery({
-        queryKey: getCurrenciesQueryKey(network),
+        queryKey: getCurrenciesQueryKey(scope),
         queryFn: ({ signal }) => fetchCurrenciesList({ network, signal }),
     })
 

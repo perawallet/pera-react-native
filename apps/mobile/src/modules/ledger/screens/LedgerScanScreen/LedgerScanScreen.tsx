@@ -48,6 +48,8 @@ export const LedgerScanScreen = () => {
         isLocationServicesDisabled,
         isScanTimeout,
         isUsbOnly,
+        isBleUnsupported,
+        isBraveBluetoothScanError,
         needsManualStart,
         isPopupSurface,
         handleDevicePress,
@@ -56,6 +58,7 @@ export const LedgerScanScreen = () => {
         handleRequestPermissions,
         handleOpenLocationSettings,
         handleTroubleshoot,
+        handleUseUsb,
         t,
     } = useLedgerScanScreen()
 
@@ -124,7 +127,11 @@ export const LedgerScanScreen = () => {
             <EmptyView
                 icon='warning'
                 body={t(
-                    isUsbOnly ? 'ledger.scan.usb_error' : 'ledger.scan.error',
+                    isUsbOnly
+                        ? 'ledger.scan.usb_error'
+                        : isBraveBluetoothScanError
+                          ? 'ledger.scan.web_ble_brave_error'
+                          : 'ledger.scan.error',
                 )}
                 button={
                     <PWButton
@@ -151,7 +158,7 @@ export const LedgerScanScreen = () => {
                     scan can still produce devices. Also withheld on web before
                     the user has tapped "Search for Ledger" — nothing is
                     scanning yet. */}
-                {!error && !needsManualStart && (
+                {!error && !needsManualStart && !isBleUnsupported && (
                     <PWLottie
                         autoPlay
                         loop
@@ -165,7 +172,21 @@ export const LedgerScanScreen = () => {
                     description={t('ledger.scan.description')}
                 />
 
-                {needsManualStart ? (
+                {isBleUnsupported ? (
+                    <EmptyView
+                        icon='warning'
+                        title={t('ledger.scan.web_ble_unsupported_title')}
+                        body={t('ledger.scan.web_ble_unsupported_body')}
+                        button={
+                            <PWButton
+                                testID='ledger_scan_use_usb_button'
+                                title={t('ledger.scan.use_usb')}
+                                onPress={handleUseUsb}
+                                variant='primary'
+                            />
+                        }
+                    />
+                ) : needsManualStart ? (
                     <EmptyView
                         icon='ledger'
                         title={t(

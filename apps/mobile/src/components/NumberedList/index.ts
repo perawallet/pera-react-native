@@ -11,4 +11,4 @@
  */
 
 export { NumberedList } from './NumberedList'
-export type { NumberedListProps } from './NumberedList'
+export type { NumberedListItem, NumberedListProps } from './NumberedList'

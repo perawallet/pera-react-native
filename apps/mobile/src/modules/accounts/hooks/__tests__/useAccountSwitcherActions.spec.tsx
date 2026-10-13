@@ -12,6 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 import { useAccountSwitcherActions } from '../useAccountSwitcherActions'
 
@@ -47,9 +49,19 @@ vi.mock('@modules/accounts/components/AccountSortContent', () => ({
 describe('useAccountSwitcherActions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         mocks.hasCardSession.mockReturnValue(true)
         mocks.cardState.escrowCardAddress = 'ESCROW'
         mocks.cardState.escrowCardApproved = true
+    })
+
+    it('offers search only while the assetSearch capability is on', () => {
+        const { result } = renderHook(() => useAccountSwitcherActions())
+        expect(result.current.canSearch).toBe(true)
+
+        act(() => setCapabilityOverrides({ assetSearch: false }))
+
+        expect(result.current.canSearch).toBe(false)
     })
 
     it('routes add-account into the onboarding stack', () => {

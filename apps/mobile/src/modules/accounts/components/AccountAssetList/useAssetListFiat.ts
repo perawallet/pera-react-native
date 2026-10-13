@@ -16,12 +16,11 @@ import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
 } from '@perawallet/wallet-core-currencies'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import {
-    isAlgoAssetId,
-    type Maybe,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+    useIsNativeAssetId,
+    useNativeAsset,
+} from '@perawallet/wallet-core-assets'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetFiatValue = {
     displayCurrency: string
@@ -44,9 +43,11 @@ export type AssetFiatConverter = (
  * identical to the shared display component.
  */
 export const useAssetListFiatConverter = (): AssetFiatConverter => {
+    const nativeAsset = useNativeAsset()
+    const isNativeAssetId = useIsNativeAssetId()
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency()
-    const isPreferredAlgo = preferredCurrency === ALGO_ASSET.unitName
+    const isPreferredAlgo = preferredCurrency === nativeAsset.unitName
 
     // ALGO-denominated holdings can't price in ALGO, so they fall back to the
     // fiat currency — only fetch that rate when the preferred currency is ALGO.
@@ -61,7 +62,7 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
                 return { displayCurrency: preferredCurrency, value: null }
             }
 
-            const isSourceAlgo = isAlgoAssetId(assetId)
+            const isSourceAlgo = isNativeAssetId(assetId)
             const needsFallback = isPreferredAlgo && isSourceAlgo
             const usdValue = amountDisplayUnits.mul(usdPrice)
             // An unresolved fallback rate yields no value, not a zero one —
@@ -79,6 +80,7 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
             }
         },
         [
+            isNativeAssetId,
             preferredCurrency,
             fallbackCurrency,
             usdToPreferred,

@@ -12,6 +12,12 @@
 
 import { z } from 'zod'
 import {
+    CHAIN_CAPABILITIES,
+    CHAIN_IDS,
+    type ChainId,
+    type ChainSetupConfig,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     ONE_DAY,
     ONE_HOUR,
     ONE_MINUTE,
@@ -21,6 +27,38 @@ import {
 } from './constants'
 
 import { generatedEnv } from './generated-env'
+import type { PeraService } from './network-config'
+
+const csv = (value: string): string[] =>
+    value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+
+/** The Pera services an Ethereum scope can list; the rest are Algorand-only. */
+export const ETHEREUM_PERA_SERVICES = [
+    'prices',
+    'assets',
+    'history',
+    'blockFollowing',
+] as const satisfies readonly PeraService[]
+
+// The build bakes the list as one flat string; a missing or empty list means
+// the backend serves nothing for that scope.
+const ethereumPeraServicesSchema = z.preprocess(
+    value => (typeof value === 'string' ? csv(value) : value),
+    z.array(z.enum(ETHEREUM_PERA_SERVICES)),
+)
+
+const optionalUrlSchema = z.url().or(z.literal(''))
+
+const chainSetupSchema = z.object({
+    enabled: z.array(z.enum(CHAIN_IDS)).min(1),
+    capabilities: z.partialRecord(
+        z.enum(CHAIN_IDS),
+        z.array(z.enum(CHAIN_CAPABILITIES)),
+    ),
+}) satisfies z.ZodType<ChainSetupConfig>
 
 /**
  * First-party hosts only. Third-party sandboxes legitimately keep a staging
@@ -30,8 +68,8 @@ import { generatedEnv } from './generated-env'
 const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
 /**
- * Excludes `discoverBaseUrl`: getConfig derives it from appEnvironment
- * structurally, so there is nothing to override.
+ * Excludes `discoverBaseUrl` and `integrityCheckOrigin`: getConfig derives
+ * both from appEnvironment structurally, so there is nothing to override.
  */
 const hasEnvOverride = (field: string): boolean =>
     field in overrideEnvironmentMap
@@ -65,6 +103,11 @@ export const configSchema = z
         appStoreAppID: z.string(),
         playIntegrityCloudProjectNumber: z.string(),
 
+        // Google OAuth client ids for the Drive credential store. Public
+        // identifiers; empty means the Drive button reports it isn't set up.
+        googleIosClientId: z.string(),
+        googleWebClientId: z.string(),
+
         // Firebase Web SDK config (browser extension Remote Config). Not secret —
         // a Firebase web apiKey only identifies the project; access is governed
         // by Firebase Security Rules, not this value. Still build-time-injected
@@ -93,6 +136,19 @@ export const configSchema = z
         // until set.
         sentryDsn: z.string(),
 
+        // The WalletConnect v2 relay rejects clients with no Reown Cloud
+        // project id. Empty in open-source builds, where v2 is unavailable;
+        // a production build without one fails in tools/dev/generate-config.sh.
+        reownProjectId: z.string(),
+
+        // Public JSON-RPC endpoints, no third-party API key. Empty in builds
+        // that don't ship Ethereum; generate-config.sh refuses a build whose
+        // CHAINS lists ethereum without both.
+        ethereumMainnetRpcUrl: optionalUrlSchema,
+        ethereumSepoliaRpcUrl: optionalUrlSchema,
+        ethereumMainnetPeraServices: ethereumPeraServicesSchema,
+        ethereumSepoliaPeraServices: ethereumPeraServicesSchema,
+
         notificationRefreshTime: z.number().int(),
         remoteConfigRefreshTime: z.number().int(),
 
@@ -112,6 +168,7 @@ export const configSchema = z
         reactQueryPersistenceAge: z.number().int(),
 
         discoverBaseUrl: z.url(),
+        integrityCheckOrigin: z.url(),
         /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
         onrampSupportEmail: z.email(),
         /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
@@ -141,6 +198,9 @@ export const configSchema = z
         peraCardLearnMoreUrl: z.url(),
 
         debugEnabled: z.boolean(),
+        webIntegrityMintEnabled: z.boolean(),
+        webIntegrityBearerEnabled: z.boolean(),
+        webIntegrityEnrolEnabled: z.boolean(),
         profilingEnabled: z.boolean(),
         pollingEnabled: z.boolean(),
 
@@ -165,24 +225,26 @@ export const configSchema = z
         mainnetBaanxTenantId: z.string(),
         testnetBaanxTenantId: z.string(),
 
-        // AppliedBlockchain hosts card creation and the `/lsig` endpoint on
-        // testnet until Baanx wraps them. The auth token is a static secret sent
-        // as a RAW `Authorization` header, no Bearer. `z.string()` not
-        // `z.url()`, so the empty default validates before values arrive.
-        mainnetCardEscrowBaseUrl: z.string(),
-        testnetCardEscrowBaseUrl: z.string(),
-        mainnetCardEscrowAuthToken: z.string(),
-        testnetCardEscrowAuthToken: z.string(),
+        // On-chain ids the AutoDraw LogicSig template is rendered against.
+        // `z.string()` not `z.url()`/numeric, so the empty defaults validate
+        // before values arrive.
         mainnetCardW3CardAppId: z.string(),
         testnetCardW3CardAppId: z.string(),
         mainnetCardKillswitchAppId: z.string(),
         testnetCardKillswitchAppId: z.string(),
-        // Base64 of the compiled AutoDraw program, pinned per network beside the
-        // app ids it is derived from. Build-time only — never remote config.
+        // Lowercase hex SHA-256 of the compiled AutoDraw program, pinned per
+        // network beside the app ids it is derived from. Build-time only —
+        // never remote config.
         mainnetCardAutoDrawProgramHash: z.string(),
         testnetCardAutoDrawProgramHash: z.string(),
+        // Lowercase hex SHA-256 of the AutoDraw TEAL template's UTF-8 bytes. One
+        // value for every network: the template is hashed before app ids are
+        // rendered in. Build-time only, never remote config.
+        cardAutoDrawTemplateHash: z.string(),
         mainnetCardUsdcAssetId: z.string(),
         testnetCardUsdcAssetId: z.string(),
+
+        chains: chainSetupSchema,
 
         arc59: z.object({
             testnet: z.object({
@@ -242,7 +304,19 @@ export const configSchema = z
 
 export type Config = z.infer<typeof configSchema>
 
-type ConfigOverrides = Partial<Omit<Config, 'discoverBaseUrl'>>
+type PeraServicesListField =
+    | 'ethereumMainnetPeraServices'
+    | 'ethereumSepoliaPeraServices'
+
+// generate-config.sh bakes the list fields as flat strings the schema splits.
+type ConfigOverrides = Partial<
+    Omit<
+        Config,
+        'discoverBaseUrl' | 'integrityCheckOrigin' | PeraServicesListField
+    > & {
+        [Field in PeraServicesListField]: Config[Field] | string
+    }
+>
 
 const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
     development: 'https://discover-mobile-staging.perawallet.app/',
@@ -250,10 +324,23 @@ const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
     production: 'https://discover-mobile.perawallet.app/',
 }
 
+// The backend of each environment only accepts solves from its own check page.
+const integrityCheckOriginByEnvironment: Record<
+    Config['appEnvironment'],
+    string
+> = {
+    development: 'https://integrity-staging.perawallet.app',
+    staging: 'https://integrity-staging.perawallet.app',
+    production: 'https://integrity.perawallet.app',
+}
+
 /**
  * Production configuration with safe defaults for open source builds.
  */
-const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
+const productionConfig: Omit<
+    Config,
+    'discoverBaseUrl' | 'integrityCheckOrigin'
+> = {
     mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
     mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
@@ -263,7 +350,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
     // Injected at build time from the BACKEND_API_KEY env var via
-    // tools/generate-config.sh (bitrise secrets in CI, .env locally). Empty
+    // tools/dev/generate-config.sh (bitrise secrets in CI, .env locally). Empty
     // here so no key literal ships in the open-source source tree.
     backendAPIKey: '',
     algodApiKey: '',
@@ -271,6 +358,9 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
 
     appStoreAppID: '',
     playIntegrityCloudProjectNumber: '',
+
+    googleIosClientId: '',
+    googleWebClientId: '',
 
     // Defaults to a distinct non-sensitive Firebase project, safe to ship in
     // source; the real one is injected at build time via FIREBASE_* env. A web
@@ -295,6 +385,11 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     gaMeasurementApiSecret: '',
     firebaseVapidKey: '',
     sentryDsn: '',
+    reownProjectId: '',
+    ethereumMainnetRpcUrl: '',
+    ethereumSepoliaRpcUrl: '',
+    ethereumMainnetPeraServices: [],
+    ethereumSepoliaPeraServices: [],
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
@@ -362,6 +457,12 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     reactQueryPersistenceAge: 60 * ONE_DAY,
 
     debugEnabled: false,
+    // Web app-integrity rollout: every flag defaults off so a build is
+    // unaffected until an env var opts in. See docs/BROWSER_ARCHITECTURE.md,
+    // section 3.4.
+    webIntegrityMintEnabled: false,
+    webIntegrityBearerEnabled: false,
+    webIntegrityEnrolEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
     disableScreenCapturePrevention: false,
@@ -374,7 +475,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetBaanxBaseUrl: 'https://api.baanx.com',
     testnetBaanxBaseUrl: 'https://dev.api.baanx.com',
     // PUBLIC client keys (x-client-key) are injected at build time from env
-    // vars (bitrise secrets in CI, .env locally) via tools/generate-config.sh.
+    // vars (bitrise secrets in CI, .env locally) via tools/dev/generate-config.sh.
     mainnetBaanxClientKey: '',
     testnetBaanxClientKey: '',
     // TODO(card): set the real Baanx tenant id for production via the
@@ -382,13 +483,9 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetBaanxTenantId: '',
     testnetBaanxTenantId: 'perawallet',
 
-    // AB escrow card service, injected at build time from env. Empty defaults
-    // keep the flow dev-mockable until AB provides testnet values. USDC ids
-    // default to the public network assets; AB may override with a test asset.
-    mainnetCardEscrowBaseUrl: '',
-    testnetCardEscrowBaseUrl: '',
-    mainnetCardEscrowAuthToken: '',
-    testnetCardEscrowAuthToken: '',
+    // Card chain ids, injected at build time from env. Empty defaults fail
+    // closed: AutoDraw refuses to compile until every id is present. USDC ids
+    // default to the public network assets.
     mainnetCardW3CardAppId: '',
     testnetCardW3CardAppId: '',
     mainnetCardKillswitchAppId: '',
@@ -396,8 +493,11 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     // Empty until the program is pinned per network; an empty pin fails closed.
     mainnetCardAutoDrawProgramHash: '',
     testnetCardAutoDrawProgramHash: '',
+    cardAutoDrawTemplateHash: '',
     mainnetCardUsdcAssetId: '31566704',
     testnetCardUsdcAssetId: '10458941',
+
+    chains: { enabled: ['algorand'], capabilities: {} },
 
     arc59: {
         testnet: {
@@ -440,6 +540,9 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     appStoreAppID: 'APP_STORE_APPLE_ID',
     playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',
 
+    googleIosClientId: 'GOOGLE_IOS_CLIENT_ID',
+    googleWebClientId: 'GOOGLE_WEB_CLIENT_ID',
+
     firebaseApiKey: 'FIREBASE_API_KEY',
     firebaseAuthDomain: 'FIREBASE_AUTH_DOMAIN',
     firebaseDatabaseUrl: 'FIREBASE_DATABASE_URL',
@@ -452,6 +555,11 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     gaMeasurementApiSecret: 'GA_MEASUREMENT_API_SECRET',
     sentryDsn: 'SENTRY_DSN',
+    reownProjectId: 'REOWN_PROJECT_ID',
+    ethereumMainnetRpcUrl: 'ETHEREUM_MAINNET_RPC_URL',
+    ethereumSepoliaRpcUrl: 'ETHEREUM_SEPOLIA_RPC_URL',
+    ethereumMainnetPeraServices: 'ETHEREUM_MAINNET_PERA_SERVICES',
+    ethereumSepoliaPeraServices: 'ETHEREUM_SEPOLIA_PERA_SERVICES',
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
@@ -486,6 +594,9 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',
+    webIntegrityMintEnabled: 'WEB_INTEGRITY_MINT_ENABLED',
+    webIntegrityBearerEnabled: 'WEB_INTEGRITY_BEARER_ENABLED',
+    webIntegrityEnrolEnabled: 'WEB_INTEGRITY_ENROL_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
     disableScreenCapturePrevention: 'DISABLE_SCREEN_CAPTURE_PREVENTION',
@@ -502,16 +613,13 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetBaanxTenantId: 'MAINNET_BAANX_TENANT_ID',
     testnetBaanxTenantId: 'TESTNET_BAANX_TENANT_ID',
 
-    mainnetCardEscrowBaseUrl: 'MAINNET_CARD_ESCROW_BASE_URL',
-    testnetCardEscrowBaseUrl: 'TESTNET_CARD_ESCROW_BASE_URL',
-    mainnetCardEscrowAuthToken: 'MAINNET_CARD_ESCROW_AUTH_TOKEN',
-    testnetCardEscrowAuthToken: 'TESTNET_CARD_ESCROW_AUTH_TOKEN',
     mainnetCardW3CardAppId: 'MAINNET_CARD_W3CARD_APP_ID',
     testnetCardW3CardAppId: 'TESTNET_CARD_W3CARD_APP_ID',
     mainnetCardKillswitchAppId: 'MAINNET_CARD_KILLSWITCH_APP_ID',
     testnetCardKillswitchAppId: 'TESTNET_CARD_KILLSWITCH_APP_ID',
     mainnetCardAutoDrawProgramHash: 'MAINNET_CARD_AUTODRAW_PROGRAM_HASH',
     testnetCardAutoDrawProgramHash: 'TESTNET_CARD_AUTODRAW_PROGRAM_HASH',
+    cardAutoDrawTemplateHash: 'CARD_AUTODRAW_TEMPLATE_HASH',
     mainnetCardUsdcAssetId: 'MAINNET_CARD_USDC_ASSET_ID',
     testnetCardUsdcAssetId: 'TESTNET_CARD_USDC_ASSET_ID',
 
@@ -521,14 +629,61 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     appBuildNumber: 'BITRISE_BUILD_NUMBER',
 }
 
+type ChainCapabilitiesEnvKey = `chain${Capitalize<ChainId>}Capabilities`
+
+/** Comma lists from `CHAINS` and `CHAIN_<ID>_CAPABILITIES`, which generate-config.sh can only emit flat. */
+type ChainEnv = { chainIds?: string } & Partial<
+    Record<ChainCapabilitiesEnvKey, string>
+>
+
+const chainCapabilitiesEnvKey = (chainId: ChainId): ChainCapabilitiesEnvKey =>
+    `chain${chainId.charAt(0).toUpperCase()}${chainId.slice(1)}Capabilities` as ChainCapabilitiesEnvKey
+
+// Left unvalidated here: configSchema.parse rejects an unknown chain id or
+// capability, so a typo fails at import rather than shipping.
+const chainsFromEnv = (
+    env: ChainEnv,
+    fallback: Config['chains'],
+): Config['chains'] => ({
+    enabled: (env.chainIds ? csv(env.chainIds) : fallback.enabled) as ChainId[],
+    capabilities: {
+        ...fallback.capabilities,
+        ...Object.fromEntries(
+            CHAIN_IDS.flatMap(chainId => {
+                const listed = env[chainCapabilitiesEnvKey(chainId)]
+                return listed === undefined ? [] : [[chainId, csv(listed)]]
+            }),
+        ),
+    },
+})
+
+const withoutChainEnv = (
+    overrides: ConfigOverrides & ChainEnv,
+): ConfigOverrides => {
+    const rest: Record<string, unknown> = { ...overrides }
+    delete rest.chainIds
+    for (const chainId of CHAIN_IDS) {
+        delete rest[chainCapabilitiesEnvKey(chainId)]
+    }
+    return rest as ConfigOverrides
+}
+
 /** Merges the safe production defaults with the generated env configuration. */
-export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
-    const mergedConfig = { ...productionConfig, ...overrides }
+export function getConfig(
+    overrides: ConfigOverrides & ChainEnv = generatedEnv,
+): Config {
+    const mergedConfig = {
+        ...productionConfig,
+        ...withoutChainEnv(overrides),
+    }
+    mergedConfig.chains = chainsFromEnv(overrides, mergedConfig.chains)
 
     return configSchema.parse({
         ...mergedConfig,
         discoverBaseUrl:
             discoverBaseUrlByEnvironment[mergedConfig.appEnvironment],
+        integrityCheckOrigin:
+            integrityCheckOriginByEnvironment[mergedConfig.appEnvironment],
     })
 }
 

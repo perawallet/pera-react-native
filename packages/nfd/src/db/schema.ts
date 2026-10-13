@@ -11,12 +11,13 @@
  */
 
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 
 export const NfdCacheSchema = sqliteTable(
     'nfd_cache',
     {
         address: text('address').notNull(),
-        network: text('network').notNull(),
+        network: text('network').notNull().$type<ChainScopeKey>(),
         /** NULL = looked up, no NFD found (negative cache) */
         name: text('name'),
         image: text('image'),

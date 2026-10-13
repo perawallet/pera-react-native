@@ -12,16 +12,12 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import {
-    CardAccountLinkedElsewhereError,
-    FundingType,
-    useCardStore,
-    type CardOwnershipProof,
-} from '@perawallet/wallet-core-card'
+import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
 import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
@@ -31,41 +27,49 @@ import {
 import { useRequirePinVerification } from '@modules/security'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
+import type { CardStepStatus } from '../../components/CardStepRow'
+import { findCardAccount } from '../../utils/cardAccountAddress'
 
-export type CardCreateStepId = 'sign' | 'create' | 'authorize'
-export type CardCreateStepStatus = 'pending' | 'active' | 'done'
+export type CardCreateStepId = 'signCreate' | 'autoFunding'
 export type CardCreateStepRowModel = {
     id: CardCreateStepId
     stepNumber: number
-    status: CardCreateStepStatus
-    /** The active step's work is in flight; the row shows a spinner. */
+    status: CardStepStatus
+    /** The step's work is in flight; the row shows a spinner. */
     isBusy: boolean
 }
 
 type UseCardCreateSigningScreenResult = {
+    fundingType: FundingType
     steps: CardCreateStepRowModel[]
     isProceeding: boolean
-    /** All steps ran; the success toast/navigation is on its way. */
+    /** Every step ran; the success toast and navigation are on their way. */
     isComplete: boolean
     onProceed: () => void
 }
 
+/**
+ * One numbered step per signature the user actually gives. The ownership proof
+ * and the card creation are a single step because one signature drives both;
+ * numbering them separately made the second row complete itself untouched.
+ * Auto funding is a second signature, reviewed on its own screen.
+ */
 export const useCardCreateSigningScreen =
     (): UseCardCreateSigningScreenResult => {
         const navigation = useAppNavigation()
-
-        const { fundingType } =
+        const {
+            params: { fundingType },
+        } =
             useRoute<
                 RouteProp<CardOnboardingStackParamList, 'CardOnboardingSigning'>
-            >().params
+            >()
 
         const connectedAddress = useCardStore(
             state => state.connectedFundingSourceAddress,
         )
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
+            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
             [accounts, connectedAddress],
         )
 
@@ -73,23 +77,17 @@ export const useCardCreateSigningScreen =
         const { requirePinVerification } = useRequirePinVerification()
         const { finish } = useFinishCardCreation()
         const showError = useCardErrorToast()
-        // Linked-elsewhere is terminal for this funding account — the generic
-        // "try again" copy would mislead, so it gets its own wording.
-        const showLinkedElsewhereError = useCardErrorToast({
-            titleKey: 'peraCard.setup_status.linked_elsewhere_error_title',
-            bodyKey: 'peraCard.setup_status.linked_elsewhere_error_body',
-        })
 
+        const isAutoFunding = fundingType === FundingType.Auto
         const stepIds = useMemo<CardCreateStepId[]>(
             () =>
-                fundingType === FundingType.Auto
-                    ? ['sign', 'create', 'authorize']
-                    : ['sign', 'create'],
-            [fundingType],
+                isAutoFunding ? ['signCreate', 'autoFunding'] : ['signCreate'],
+            [isAutoFunding],
         )
 
         const [currentStepIndex, setCurrentStepIndex] = useState(0)
         const [isProceeding, setIsProceeding] = useState(false)
+        const isComplete = currentStepIndex >= stepIds.length
 
         const steps = useMemo<CardCreateStepRowModel[]>(
             () =>
@@ -102,45 +100,37 @@ export const useCardCreateSigningScreen =
                             : index === currentStepIndex
                               ? 'active'
                               : 'pending',
-                    // The cursor advances mid-run, so the spinner follows the
-                    // step that is actually working (sign, then create, ...).
                     isBusy: isProceeding && index === currentStepIndex,
                 })),
             [stepIds, currentStepIndex, isProceeding],
         )
 
-        const isComplete = currentStepIndex >= stepIds.length
-
-        // Step 2 has no separate user gate — it runs immediately once Step 1's
-        // proof is in hand, per the product flow: sign → (auto) create+approve
-        // → Step 3 (Auto only) or finish (Manual).
-        const runCreateStep = useCallback(
-            async (account: WalletAccount, proof: CardOwnershipProof) => {
-                await createAndApprove(account, proof)
-                if (fundingType === FundingType.Auto) {
-                    setCurrentStepIndex(index => index + 1)
-                } else {
-                    setCurrentStepIndex(stepIds.length)
-                    finish(FundingType.Manual, false)
-                }
-            },
-            [createAndApprove, fundingType, stepIds, finish],
-        )
-
-        const runSignStep = useCallback(
+        const runSignCreateStep = useCallback(
             async (account: WalletAccount) => {
                 if (!(await requirePinVerification())) {
                     navigation.goBack()
                     return
                 }
                 const proof = await signOwnership(account)
-                // Only advance past 'sign' the first time — a retry of a
-                // failed create step re-signs but must not fake-advance an
-                // already-current later step.
-                setCurrentStepIndex(index => (index === 0 ? index + 1 : index))
-                await runCreateStep(account, proof)
+                await createAndApprove(account, proof)
+                // The card exists once this resolves, so the step only ever
+                // completes as a whole: a failure leaves it active to retry.
+                if (isAutoFunding) {
+                    setCurrentStepIndex(1)
+                    return
+                }
+                setCurrentStepIndex(stepIds.length)
+                finish(FundingType.Manual, false)
             },
-            [requirePinVerification, navigation, signOwnership, runCreateStep],
+            [
+                requirePinVerification,
+                navigation,
+                signOwnership,
+                createAndApprove,
+                isAutoFunding,
+                stepIds,
+                finish,
+            ],
         )
 
         const onProceed = useCallback(() => {
@@ -148,8 +138,7 @@ export const useCardCreateSigningScreen =
             // navigation): a second tap must not re-prompt PIN + signature.
             if (!connectedAccount || isProceeding || isComplete) return
 
-            const stepId = stepIds[currentStepIndex]
-            if (stepId === 'authorize') {
+            if (stepIds[currentStepIndex] === 'autoFunding') {
                 trackEvent(CardEvent.CreateFinalizeTxProceed)
                 navigation.navigate('CardOnboardingAutoFundingSigning')
                 return
@@ -159,13 +148,9 @@ export const useCardCreateSigningScreen =
             const run = async () => {
                 setIsProceeding(true)
                 try {
-                    await runSignStep(connectedAccount)
+                    await runSignCreateStep(connectedAccount)
                 } catch (error) {
-                    if (error instanceof CardAccountLinkedElsewhereError) {
-                        await showLinkedElsewhereError(error)
-                    } else {
-                        await showError(error)
-                    }
+                    await showError(error)
                 } finally {
                     setIsProceeding(false)
                 }
@@ -178,10 +163,9 @@ export const useCardCreateSigningScreen =
             stepIds,
             currentStepIndex,
             navigation,
-            runSignStep,
+            runSignCreateStep,
             showError,
-            showLinkedElsewhereError,
         ])
 
-        return { steps, isProceeding, isComplete, onProceed }
+        return { fundingType, steps, isProceeding, isComplete, onProceed }
     }

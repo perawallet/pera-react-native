@@ -14,6 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { CardEvent } from '@analytics'
+import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useArc60SigningScreen } from '../useArc60SigningScreen'
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
@@ -52,11 +53,15 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
         ...actual,
         useSigningPipeline: () => mockPipeline,
         useLastSigningEvent: () => null,
-        isArc60OriginMismatch: () => false,
     }
 })
 
 const mockFindAccountByAddress = vi.fn()
+const SIGNER_ACCOUNT = {
+    id: 'signer',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'ADDR', keyPairId: 'signer-key' } },
+}
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useFindAccountByAddress: (address: string) =>
         mockFindAccountByAddress(address),
@@ -70,14 +75,12 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
 }))
 
 const mockIsQuantumDataSigningBlocked = vi.fn()
-vi.mock('@hooks/useIsQuantumDataSigningBlocked', () => ({
-    useIsQuantumDataSigningBlocked: (request: unknown) =>
+vi.mock('@hooks/useIsDataSigningBlocked', () => ({
+    useIsDataSigningBlocked: (request: unknown) =>
         mockIsQuantumDataSigningBlocked(request),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useAlgodErrorMessage', () => ({
     useAlgodErrorMessage: () => ({
@@ -90,11 +93,12 @@ vi.mock('@hooks/useAlgodErrorMessage', () => ({
 
 describe('useArc60SigningScreen', () => {
     beforeEach(() => {
+        registerAlgorandReviewerAdapter()
         vi.clearAllMocks()
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            type: 'auth-data',
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         mockPipeline.resolved = null
         mockPipeline.isLoading = false
@@ -136,12 +140,12 @@ describe('useArc60SigningScreen', () => {
         expect(result.current.errorMessage).toBe('errors.general.body')
     })
 
-    it('tracks card events only for card-originated (sourceType arc60) requests', async () => {
+    it('tracks card events only for card-originated (sourceType card) requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
-            sourceType: 'arc60',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            type: 'auth-data',
+            sourceType: 'card',
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -161,9 +165,9 @@ describe('useArc60SigningScreen', () => {
     it('does not track card events for dApp-originated requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
+            type: 'auth-data',
             sourceType: 'walletconnect',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -181,9 +185,9 @@ describe('useArc60SigningScreen', () => {
         mockConfirmQuantumDappUsage.mockResolvedValue('cancel')
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
+            type: 'auth-data',
             sourceType: 'walletconnect',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
@@ -198,24 +202,24 @@ describe('useArc60SigningScreen', () => {
 
     it('blocks confirmation when the signer is a quantum account', () => {
         mockIsQuantumDataSigningBlocked.mockReturnValue(true)
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.resolved = {
-            kind: { type: 'arc60', parsed: { type: 'siwa' } },
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        expect(result.current.isQuantumBlocked).toBe(true)
+        expect(result.current.isSigningBlocked).toBe(true)
         expect(result.current.canConfirm).toBe(false)
     })
 
     it('allows confirmation of the same request when the signer is not quantum', () => {
-        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
         mockPipeline.resolved = {
-            kind: { type: 'arc60', parsed: { type: 'siwa' } },
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        expect(result.current.isQuantumBlocked).toBe(false)
+        expect(result.current.isSigningBlocked).toBe(false)
         expect(result.current.canConfirm).toBe(true)
     })
 
@@ -231,12 +235,71 @@ describe('useArc60SigningScreen', () => {
         expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
     })
 
+    it('blocks confirmation when the sign-in domain differs from the browser-verified origin', async () => {
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'auth-data',
+            sourceType: 'injected',
+            verifiedOrigin: 'https://evil.example',
+            authData: { signer: 'ADDR', domain: 'app.victim.xyz' },
+        }
+        mockPipeline.resolved = {
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.hasOriginMismatch).toBe(true)
+        expect(result.current.canConfirm).toBe(false)
+
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+    })
+
+    it('allows confirmation when the sign-in domain matches the browser-verified origin', () => {
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'auth-data',
+            sourceType: 'injected',
+            verifiedOrigin: 'https://app.victim.xyz',
+            authData: { signer: 'ADDR', domain: 'app.victim.xyz' },
+        }
+        mockPipeline.resolved = {
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.hasOriginMismatch).toBe(false)
+        expect(result.current.canConfirm).toBe(true)
+    })
+
+    it('does not block a mismatched domain when no origin was verified (WalletConnect)', () => {
+        mockFindAccountByAddress.mockReturnValue(SIGNER_ACCOUNT)
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'auth-data',
+            sourceType: 'walletconnect',
+            authData: { signer: 'ADDR', domain: 'app.victim.xyz' },
+        }
+        mockPipeline.resolved = {
+            kind: { type: 'auth-data', parsed: { type: 'siwx' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.hasOriginMismatch).toBe(false)
+        expect(result.current.canConfirm).toBe(true)
+    })
+
     it('does not consult the quantum dApp warning for first-party card requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
-            type: 'arc60',
-            sourceType: 'arc60',
-            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+            type: 'auth-data',
+            sourceType: 'card',
+            authData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 

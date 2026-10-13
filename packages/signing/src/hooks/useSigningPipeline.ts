@@ -10,22 +10,33 @@
  limitations under the License
  */
 
+import type {
+    ChainId,
+    PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
 import {
     canSignWith,
+    chainAccountOf,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PipelineStage, TransactionSignRequest } from '../models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
-    createTransactionListItems,
+    isUnsignedTransactionRequest,
+    type PeraTransactionSignRequest,
+    type PipelineStage,
+    type TransactionSignRequest,
+} from '../models'
+import {
+    aggregateTransactionWarnings,
     classifyRequestStructure,
-} from '../utils/classification'
-import { calculateTotalFee, detectHighGroupFee } from '../utils/fees'
-import { aggregateTransactionWarnings } from '../utils/warnings'
+    createTransactionListItems,
+    plannerChainAdapters,
+    reviewerChainAdapters,
+} from '../chain-adapter'
 import type {
     SigningConfiguration,
     SigningPipeline,
@@ -35,6 +46,7 @@ import type {
     HardwareChildSnapshot,
 } from './types'
 import { buildResolvedSignRequest } from './buildResolvedSignRequest'
+import { chainIdOfSignRequest } from '../models/chain'
 import {
     EMPTY_TRANSACTIONS,
     EMPTY_LIST_ITEMS,
@@ -48,9 +60,19 @@ import {
     deriveEvent,
 } from './utils'
 import { useSigningRequest } from './useSigningRequest'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseSigningPipelineResult = SigningPipeline
+
+const addressesOn = (
+    accounts: WalletAccount[],
+    chainId: ChainId,
+): Set<string> =>
+    new Set(
+        accounts.flatMap(account => {
+            const address = chainAccountOf(account, chainId)?.address
+            return address === undefined ? [] : [address]
+        }),
+    )
 
 /**
  * Pure transform: a transaction request + the wallet's accounts → everything
@@ -58,16 +80,18 @@ export type UseSigningPipelineResult = SigningPipeline
  * warnings, structure). At 1000 transactions this is ~800ms of work.
  */
 const computeDisplayData = (
-    txRequest: TransactionSignRequest,
+    txRequest: PeraTransactionSignRequest,
     accounts: WalletAccount[],
 ) => {
     // Show the FULL atomic group when the source filtered down to a
     // signable subset — gives the user context for partial-group
     // requests (e.g. cross-account atomic flows). `signableIndices`
     // tells the UI which slots are actually being signed.
-    const source = txRequest.groupContext ?? txRequest.txs ?? []
+    const chainId = chainIdOfSignRequest(txRequest)
+    const source = txRequest.groupContext ?? txRequest.txs
+    const reviewer = reviewerChainAdapters.get(chainId)
     const allTransactions = source
-        .map(tx => mapToDisplayableTransaction(tx))
+        .map(tx => reviewer.toDisplayableTransaction(tx))
         .filter((tx): tx is PeraDisplayableTransaction => !!tx)
 
     // Default to "every index is signable" when groupContext is absent
@@ -78,17 +102,21 @@ const computeDisplayData = (
     )
 
     const listItems = createTransactionListItems(
+        chainId,
         allTransactions,
         signableIndices,
     )
 
-    const signableAddresses = new Set(
-        accounts.filter(a => canSignWith(a, accounts)).map(a => a.address),
+    const signableAddresses = addressesOn(
+        accounts.filter(a => canSignWith(a, accounts, chainId)),
+        chainId,
     )
 
-    const userAccountAddresses = new Set(accounts.map(a => a.address))
+    const userAccountAddresses = addressesOn(accounts, chainId)
 
-    const totalFee = calculateTotalFee(allTransactions, signableAddresses)
+    const { totalFee, highFeeWarning } = plannerChainAdapters
+        .get(chainId)
+        .reviewGroupFees(allTransactions, signableAddresses)
 
     // Gate warnings on the authorizing entity, not the raw sender: a dApp
     // can set a foreign `sender` it never imported while signing with an
@@ -108,19 +136,16 @@ const computeDisplayData = (
     }
 
     const addressWarnings = aggregateTransactionWarnings(
+        chainId,
         allTransactions,
         userAccountAddresses,
         signableAddresses,
         authorizerByIndex,
     )
 
-    // High fee is a group-level concern ("what's being signed"), so it
-    // lives here rather than in the per-transaction aggregator that the
+    // High fee is a group-level concern ("what's being signed"), so it is
+    // added here rather than in the per-transaction aggregator that the
     // transaction-history view also consumes.
-    const highFeeWarning = detectHighGroupFee(
-        allTransactions,
-        signableAddresses,
-    )
     const warnings = highFeeWarning
         ? [...addressWarnings, highFeeWarning]
         : addressWarnings
@@ -130,7 +155,7 @@ const computeDisplayData = (
             warnings.findIndex(w => w.type === warning.type) === index,
     )
 
-    const requestStructure = classifyRequestStructure(listItems)
+    const requestStructure = classifyRequestStructure(chainId, listItems)
 
     return {
         allTransactions,
@@ -176,7 +201,7 @@ let displayDataCache: {
 } | null = null
 
 const getSharedDisplayData = (
-    txRequest: TransactionSignRequest,
+    txRequest: PeraTransactionSignRequest,
     accounts: WalletAccount[],
 ): DisplayData => {
     if (
@@ -239,9 +264,11 @@ export const useSigningPipeline = (
             ? (currentRequest as TransactionSignRequest)
             : undefined
 
+    // A chain-neutral request is reviewed by its own chain, not this view,
+    // whose reviewer and planner read Algorand-shaped transactions.
     const displayData = useMemo(
         () =>
-            txRequest
+            txRequest && !isUnsignedTransactionRequest(txRequest)
                 ? getSharedDisplayData(txRequest, accounts)
                 : EMPTY_DISPLAY_DATA,
         [txRequest, accounts],
@@ -409,7 +436,7 @@ export const useSigningPipeline = (
         // A retryable failure leaves the actor parked in `failed`, where
         // resolving the approval gate (signAndSendRequest) is a no-op — the
         // actor is no longer waiting on it. Re-attempting via the same
-        // control (e.g. the ARC-60 slide-to-confirm after "device locked" /
+        // control (e.g. the auth-data slide-to-confirm after "device locked" /
         // "app not open") must RETRY the actor so the device re-prompts,
         // rather than silently doing nothing.
         if (stage === 'failed' && isRetryableError(error)) {

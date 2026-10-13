@@ -12,9 +12,11 @@
 
 import { useCallback, type ReactNode } from 'react'
 import {
+    chainAccountOf,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import {
     AccountMenuContent,
@@ -24,8 +26,11 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAccountDrawerControls } from '@modules/accounts/components/AccountDrawer'
 import { useAccountSwitcherActions } from '@modules/accounts/hooks/useAccountSwitcherActions'
 import type { StyleProp, TouchableOpacityProps, ViewStyle } from 'react-native'
-import { AccountDisplay, type AccountDisplayCard } from '../AccountDisplay'
-import type { AccountIconProps } from '../AccountIcon'
+import {
+    AccountDisplay,
+    type AccountDisplayCard,
+} from '@components/AccountDisplay'
+import type { AccountIconProps } from '@components/AccountIcon'
 import {
     type PWIconProps,
     type PWTextProps,
@@ -71,6 +76,7 @@ export const AccountSelection = ({
     const { request: requestBottomSheet } = useBottomSheet()
     const drawerControls = useAccountDrawerControls()
     const {
+        canSearch,
         goToAddAccount,
         goToSearch,
         goToPeraCardActivation,
@@ -85,7 +91,7 @@ export const AccountSelection = ({
                 <AccountMenuContent
                     headerContent={headerContent}
                     hideDefaultHeader={hideDefaultHeader}
-                    showSearch={showSearch}
+                    showSearch={showSearch && canSearch}
                     accountFilter={accountFilter}
                     showPeraCardActivation={showPeraCardActivation}
                 />
@@ -133,6 +139,7 @@ export const AccountSelection = ({
         headerContent,
         hideDefaultHeader,
         showSearch,
+        canSearch,
         accountFilter,
         showPeraCardActivation,
         onSelected,
@@ -147,8 +154,10 @@ export const AccountSelection = ({
         ...props,
         style: [styles.trigger, props.style],
         activeOpacity: 0.8,
-        // Inside the drawer's subtree the trigger opens it instead; elsewhere
-        // (swap, onramp, card) there's no drawer and the sheet still opens.
+        // The drawer wraps the whole tab bar, so inside it the trigger opens the
+        // drawer and `onSelected` here is never consulted: that behaviour comes
+        // from the kind the screen publishes. The sheet is the fallback for
+        // surfaces mounted outside the tabs.
         onPress: () => {
             if (drawerControls) {
                 drawerControls.openDrawer()
@@ -182,7 +191,7 @@ export const AccountSelection = ({
     return (
         <CopyableText
             {...triggerProps}
-            copyValue={account.address}
+            copyValue={chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''}
         >
             {display}
         </CopyableText>

@@ -12,7 +12,7 @@
 
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useReturnToDapp } from '@modules/walletconnect/hooks/useReturnToDapp'
+import { useReturnToDapp } from '@modules/walletconnect'
 
 export type SigningReturnToDapp = {
     browserName?: string

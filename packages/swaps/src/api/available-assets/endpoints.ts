@@ -10,21 +10,26 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     availableAssetsResponseSchema,
     type AvailableAssetsApiResponse,
 } from './schema'
+import { swapAdapterFor } from '../../chain-adapter'
 import { transformDexSwapAsset } from './transformers'
 
 export const fetchAvailableAssets = async (
     assetInId: number,
-    network: Network,
+    scope: ChainScope,
     q?: string,
 ) => {
     const response = await queryClient<AvailableAssetsApiResponse>({
         backend: 'pera',
-        network,
+        network: legacyNetworkOf(scope),
         method: 'GET',
         url: `/v1/dex-swap/available-assets/`,
         params: {
@@ -34,5 +39,8 @@ export const fetchAvailableAssets = async (
     })
 
     const parsed = availableAssetsResponseSchema.parse(response.data)
-    return parsed.results.map(transformDexSwapAsset)
+    const { nativeAssetId } = swapAdapterFor(scope)
+    return parsed.results.map(asset =>
+        transformDexSwapAsset(asset, nativeAssetId),
+    )
 }

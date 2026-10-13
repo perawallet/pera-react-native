@@ -12,15 +12,22 @@
 
 import { useStyles } from './styles'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
-import { ActivityIndicator, Modal } from 'react-native'
+import { Modal } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
-import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
+import {
+    PWButton,
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
 import { useQRScannerView } from './useQRScannerView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -89,6 +96,8 @@ const ScannerErrorFallback = ({
     )
 }
 
+const SCREEN_CAPTURE_TAG = 'qr-scanner'
+
 export type QRScannerViewProps = {
     title?: string
     isVisible: boolean
@@ -111,7 +120,18 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     // several of them navigate, which must not happen under a locked app.
     // Leaving `props.isVisible` untouched brings the scanner back after the PIN.
     const isLockOverlayVisible = useIsLockOverlayVisible()
-    const isScannerVisible = props.isVisible && !isLockOverlayVisible
+    const isScannerRequested = props.isVisible && !isLockOverlayVisible
+
+    // A framed QR can itself be the secret (the Pera Web transfer code carries
+    // the raw secretbox key). Gated rather than held from mount: this stays
+    // mounted while closed on the portfolio, menu and contact form, where
+    // locking would make the whole app non-capturable. The Modal waits for the
+    // lock to settle; see usePreventScreenCapture.
+    const isCaptureLockSettled = usePreventScreenCapture(
+        SCREEN_CAPTURE_TAG,
+        isScannerRequested,
+    )
+    const isScannerVisible = isScannerRequested && isCaptureLockSettled
 
     const [QRCameraScanner, setQRCameraScanner] = useState(() =>
         createQRCameraScanner(),
@@ -228,8 +248,8 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                                 must stay on top. */}
                             {isHandling ? (
                                 <PWView style={styles.handlingOverlay}>
-                                    <ActivityIndicator
-                                        size='large'
+                                    <PWLoadingIndicator
+                                        size='lg'
                                         color={theme.colors.textWhite}
                                     />
                                     <PWText

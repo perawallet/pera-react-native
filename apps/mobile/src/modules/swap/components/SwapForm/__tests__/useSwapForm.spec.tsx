@@ -44,15 +44,36 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
+const {
+    mockRequestBottomSheet,
+    mockRegisterTabResume,
+    mockClearTabResume,
+    mockCompleteTabResume,
+} = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+    mockRegisterTabResume: vi.fn(),
+    mockClearTabResume: vi.fn(),
+    mockCompleteTabResume: vi.fn(),
+}))
+
+vi.mock('@utils/tabResumeIntent', () => ({
+    registerTabResumeIntent: mockRegisterTabResume,
+    clearTabResumeIntent: mockClearTabResume,
+    completeTabResume: mockCompleteTabResume,
 }))
 
 let mockFromAsset = '0'
 let mockToAsset = '31566704'
 let mockSlippage: Nullable<string> = null
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
+vi.mock('@perawallet/wallet-core-swaps', async () => ({
+    // The real selection rule, by path: the package barrel drags in stores
+    // the global shared mock can't satisfy.
+    pickBestByAmountOut: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
+        >('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
+    ).pickBestByAmountOut,
     useSwaps: () => ({
         fromAsset: mockFromAsset,
         toAsset: mockToAsset,
@@ -78,11 +99,16 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         new Decimal(percent).div(100).toString(),
 }))
 
-let mockSelectedAccount: { address: string } = { address: 'TESTADDRESS123' }
+const accountAt = (address: string) => ({
+    chains: { algorand: { address } },
+})
+let mockSelectedAccount = accountAt('TESTADDRESS123')
 let mockPayBalance: Nullable<Decimal> = new Decimal('5000000')
 let mockIsPayBalanceFetched = true
 let mockIsPayBalanceError = false
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
+        account.chains.algorand?.address,
     useSelectedAccount: () => mockSelectedAccount,
     useAccountAssetBalanceQuery: () => ({
         data: mockPayBalance ? { amount: mockPayBalance } : null,
@@ -95,6 +121,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
     useAssetsQuery: () => ({
         data: new Map([
             [
@@ -138,16 +165,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     useNetwork: () => ({ network: 'mainnet' }),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-    baseUnitsToDisplayUnits: (amount: Decimal, decimals: number) =>
-        amount.div(Decimal.pow(10, decimals)),
-    displayUnitsToBaseUnits: (amount: Decimal, decimals: number) =>
-        amount.mul(Decimal.pow(10, decimals)),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'test-device-id',
 }))
 
@@ -180,17 +206,25 @@ vi.mock('../../SwapProviderContent', () => ({
     SwapProviderContent: () => null,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_NAME: 'ALGO',
-    isAlgoAssetName: (value: string) => value === 'ALGO',
-    isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
-        if (a === b) return true
-        if (a === null || b === null) return false
-        return a.equals(b)
-    },
-    useDebouncedValue: (value: unknown) => value,
-    uint64IdToNumber: (id: string | number) => Number(id),
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { baseUnitsToDisplayUnits, displayUnitsToBaseUnits } =
+        await vi.importActual<
+            typeof import('@packages/shared/src/utils/unit-conversion')
+        >('@packages/shared/src/utils/unit-conversion')
+    return {
+        ALGO_ASSET_NAME: 'ALGO',
+        isAlgoAssetName: (value: string) => value === 'ALGO',
+        isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
+            if (a === b) return true
+            if (a === null || b === null) return false
+            return a.equals(b)
+        },
+        useDebouncedValue: (value: unknown) => value,
+        uint64IdToNumber: (id: string | number) => Number(id),
+        baseUnitsToDisplayUnits,
+        displayUnitsToBaseUnits,
+    }
+})
 
 vi.mock('../../SwapConfirmationContent', () => ({
     SwapConfirmationContent: () => null,
@@ -202,7 +236,7 @@ describe('useSwapForm', () => {
         mockFromAsset = '0'
         mockToAsset = '31566704'
         mockSlippage = null
-        mockSelectedAccount = { address: 'TESTADDRESS123' }
+        mockSelectedAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
         mockIsPayBalanceFetched = true
         mockIsPayBalanceError = false
@@ -319,6 +353,79 @@ describe('useSwapForm', () => {
 
         expect(result.current.payAmount).toBeNull()
         expect(result.current.receiveAmount).toBeNull()
+    })
+
+    it('restores a resumed amount only once the store holds its pay asset', () => {
+        // In a fresh tab the route's pay asset lands after mount, and that
+        // change resets the amounts, so applying earlier would be wiped.
+        const { result, rerender } = renderHook(() =>
+            useSwapForm({ assetId: '123', amount: '2.5' }),
+        )
+        expect(result.current.payAmount).toBeNull()
+
+        mockFromAsset = '123'
+        rerender()
+
+        expect(result.current.payAmount).toEqual(new Decimal('2.5'))
+    })
+
+    it('applies a resumed amount once, not again on a later return to its asset', () => {
+        mockFromAsset = '123'
+        const { result, rerender } = renderHook(() =>
+            useSwapForm({ assetId: '123', amount: '2.5' }),
+        )
+        expect(result.current.payAmount).toEqual(new Decimal('2.5'))
+
+        mockFromAsset = '0'
+        rerender()
+        mockFromAsset = '123'
+        rerender()
+
+        expect(result.current.payAmount).toBeNull()
+    })
+
+    describe('resumed from the extension popup', () => {
+        const QUOTE = {
+            provider: 'tinyman',
+            amountOut: new Decimal('7000000'),
+            assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+            assetOut: { assetId: '31566704', unitName: 'USDC', decimals: 6 },
+        }
+
+        beforeEach(() => {
+            mockCreateQuotes.mockResolvedValue([QUOTE])
+            mockRequestBottomSheet.mockResolvedValue({ kind: 'cancelled' })
+        })
+
+        it('reopens the confirmation once, on a fresh quote', async () => {
+            const { result } = renderHook(() =>
+                useSwapForm({ assetId: '0', amount: '5' }),
+            )
+            await act(async () => {})
+
+            expect(result.current.selectedQuote).not.toBeNull()
+            expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
+        })
+
+        it('waits for the pay balance before reopening the confirmation', async () => {
+            mockIsPayBalanceFetched = false
+            renderHook(() => useSwapForm({ assetId: '0', amount: '5' }))
+            await act(async () => {})
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        })
+
+        it('leaves the confirmation closed once the user edits the amount', async () => {
+            const { result } = renderHook(() =>
+                useSwapForm({ assetId: '0', amount: '5' }),
+            )
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(3))
+            })
+            await act(async () => {})
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        })
     })
 
     it('handleSwapDirection carries the amounts across the pair change', async () => {
@@ -459,7 +566,7 @@ describe('useSwapForm', () => {
         })
         expect(result.current.payAmount).not.toBeNull()
 
-        mockSelectedAccount = { address: 'OTHERADDRESS456' }
+        mockSelectedAccount = accountAt('OTHERADDRESS456')
         rerender()
 
         expect(result.current.payAmount).toBeNull()
@@ -659,6 +766,55 @@ describe('useSwapForm', () => {
                 'resolved.title',
                 'body text',
             )
+        })
+
+        it('registers the swap to resume in a tab only while the confirm sheet is open', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockImplementationOnce(async () => {
+                expect(mockRegisterTabResume).toHaveBeenCalledWith({
+                    flow: 'swap',
+                    accountAddress: 'TESTADDRESS123',
+                    assetInId: '0',
+                    assetOutId: '31566704',
+                    payAmount: '5',
+                })
+                expect(mockClearTabResume).not.toHaveBeenCalled()
+                return { kind: 'cancelled' }
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockClearTabResume).toHaveBeenCalledOnce()
+        })
+
+        it('hands a successful swap back to the popup with its toast copy', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'success' })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockCompleteTabResume).toHaveBeenCalledWith({
+                title: 'swap.execution.success_title',
+                body: 'swap.execution.success_body',
+            })
+        })
+
+        it('does not hand back a swap that failed', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                kind: 'error',
+                message: 'body text',
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockCompleteTabResume).not.toHaveBeenCalled()
         })
 
         it('falls back to the default title when the confirmation result carries none', async () => {

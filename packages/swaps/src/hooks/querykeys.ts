@@ -11,7 +11,8 @@
  */
 
 import type { Query } from '@tanstack/react-query'
-import type { Network, Optional } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'swaps'
 
@@ -19,33 +20,32 @@ export const swapQueryKeys = {
     availableAssets: (
         assetInId: number,
         q: Optional<string>,
-        network: Network,
-    ) =>
-        [MODULE_PREFIX, 'available-assets', { assetInId, q, network }] as const,
+        scope: ChainScope,
+    ) => [MODULE_PREFIX, 'available-assets', { assetInId, q, scope }] as const,
     historyInfinite: (
         address: string,
         statuses: Optional<string>,
-        network: Network,
+        scope: ChainScope,
     ) =>
         [
             MODULE_PREFIX,
             'history-infinite',
-            { address, statuses, network },
+            { address, statuses, scope },
         ] as const,
     distinctPairsHistory: (
         address: string,
         statuses: Optional<string>,
-        network: Network,
+        scope: ChainScope,
     ) =>
         [
             MODULE_PREFIX,
             'distinct-pairs-history',
-            { address, statuses, network },
+            { address, statuses, scope },
         ] as const,
-    providers: (network: Network) =>
-        [MODULE_PREFIX, 'providers', { network }] as const,
-    topPairs: (limit: Optional<number>, network: Network) =>
-        [MODULE_PREFIX, 'top-pairs', { limit, network }] as const,
+    providers: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'providers', { scope }] as const,
+    topPairs: (limit: Optional<number>, scope: ChainScope) =>
+        [MODULE_PREFIX, 'top-pairs', { limit, scope }] as const,
 }
 
 /**
@@ -56,7 +56,7 @@ export const swapQueryKeys = {
  * on the strength of one trade.
  *
  * Matched on the leading segments so every cached address, status filter and
- * network refreshes at once; after a swap lands, any of them could be out of
+ * scope refreshes at once; after a swap lands, any of them could be out of
  * date. Providers and available assets are left alone — a swap doesn't move
  * them.
  */

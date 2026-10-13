@@ -12,27 +12,24 @@
 
 import { useMutation } from '@tanstack/react-query'
 
+import type {
+    ChainScope,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    useAlgorandClient,
-    useFetchSuggestedMinFee,
-    useMinimumFeeConfig,
-    useNetworkStore,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
 import {
     getOpenSubmissionAttemptsForIntent,
     STALE_OPEN_ATTEMPT_MS,
     resolveMinFeeForSender,
     submitAndAutoRefresh,
+    useFeeConfig,
+    useFetchSuggestedMinFee,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { assertOnline } from '@perawallet/wallet-core-shared'
 import { RekeyError } from '../errors'
-import { effectiveRekeyFee } from './effectiveRekeyFee'
+import { sendFlowFeatureFor } from '../chain-adapter'
 import { requestRekeySignatures } from './requestRekeySignatures'
-
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 
 export type SubmitRekeyParams = {
     /** Sender / receiver of the 0-amount payment that carries the rekey. */
@@ -42,6 +39,7 @@ export type SubmitRekeyParams = {
 }
 
 export type UseSubmitRekeyMutationOptions = {
+    scope: ChainScope
     /**
      * Localized strings shown in the signing pipeline's review UI. The
      * hook lives in a package and intentionally doesn't know about app
@@ -65,7 +63,7 @@ export type UseSubmitRekeyMutationResult = {
  *    can surface when the source's auth chain ends at a hardware account.
  * 3. Submit via `submitAndAutoRefresh` so the source account's balance and
  *    auth state are refreshed once algod accepts — otherwise the success
- *    screen would render against a stale `rekeyAddress` until periodic sync.
+ *    screen would render against a stale authority until periodic sync.
  *    Return the resulting tx IDs.
  *
  * Every failure propagates as a {@link RekeyError} tagged with the stage
@@ -81,14 +79,13 @@ export type UseSubmitRekeyMutationResult = {
  * in `resolveMinFeeForSender` too.
  */
 export const useSubmitRekeyMutation = ({
+    scope,
     signingMetadata,
 }: UseSubmitRekeyMutationOptions): UseSubmitRekeyMutationResult => {
-    const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
-    const { encodeSignedTransactions } = useTransactionEncoder()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
-    const fetchSuggestedMinFee = useFetchSuggestedMinFee()
+    const { minTxnFee, pqMultiplier } = useFeeConfig(scope.chainId)
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee(scope.chainId)
 
     const mutation = useMutation({
         // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
@@ -105,9 +102,8 @@ export const useSubmitRekeyMutation = ({
         }: SubmitRekeyParams): Promise<string[]> => {
             // A still-open ledger row for the same rekey may land any
             // moment — a rebuild would mint a new txid algod cannot dedupe.
-            const network = useNetworkStore.getState().network
             const openAttempts = await getOpenSubmissionAttemptsForIntent({
-                network,
+                scope,
                 sender: sourceAddress,
                 intentKey: { kind: 'rekey', address: sourceAddress },
                 unevaluatableBefore: Date.now() - STALE_OPEN_ATTEMPT_MS,
@@ -133,38 +129,19 @@ export const useSubmitRekeyMutation = ({
                 // (pre-rekey) — resolveMinFeeForSender resolves the
                 // effective signer via getSignerFor, so this is the correct
                 // fee basis even when undoing a rekey to a quantum auth.
-                const resolvedMinFee = resolveMinFeeForSender({
+                const resolvedMinFee = resolveMinFeeForSender(scope.chainId, {
                     senderAddress: sourceAddress,
                     accounts,
                     suggestedMinFee,
                     configMinTxnFee: minTxnFee,
                     pqMultiplier,
                 })
-                const draft = await algokit.createTransaction.payment({
-                    sender: sourceAddress,
-                    receiver: sourceAddress,
-                    amount: 0n.microAlgo(),
-                    rekeyTo: rekeyToAddress,
+                unsignedTxn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
+                    scope,
+                    sourceAddress,
+                    rekeyToAddress,
+                    minFee: resolvedMinFee,
                 })
-                // AlgoKit populates `fee` when it builds the transaction;
-                // fall back to the network minimum only to satisfy the
-                // optional type. Mirrors useRekeyTransactionFeeQuery.
-                const builtFee = draft.fee ?? minTxnFee
-                const targetFee = effectiveRekeyFee(resolvedMinFee, builtFee)
-                // Rebuild with an explicit fee only when the PQ-aware minimum
-                // exceeds what AlgoKit auto-sized from the encoded size — an
-                // override below the auto-sized fee could underpay under
-                // per-byte congestion pricing.
-                unsignedTxn =
-                    targetFee > builtFee
-                        ? await algokit.createTransaction.payment({
-                              sender: sourceAddress,
-                              receiver: sourceAddress,
-                              amount: 0n.microAlgo(),
-                              rekeyTo: rekeyToAddress,
-                              staticFee: targetFee.microAlgo(),
-                          })
-                        : draft
             } catch (error) {
                 throw new RekeyError('build_failed', error)
             }
@@ -173,21 +150,17 @@ export const useSubmitRekeyMutation = ({
             // (`user_rejected` / `signing_failed`), so it is not re-wrapped.
             const signed = await requestRekeySignatures(
                 addSignRequest,
+                scope.chainId,
                 signingMetadata,
                 [unsignedTxn],
             )
 
             try {
-                return await submitAndAutoRefresh(
-                    algokit,
-                    encodeSignedTransactions,
-                    signed,
-                    {
-                        flow: 'rekey',
-                        intentKey: { kind: 'rekey', address: sourceAddress },
-                        sender: sourceAddress,
-                    },
-                )
+                return await submitAndAutoRefresh(scope.chainId, signed, {
+                    flow: 'rekey',
+                    intentKey: { kind: 'rekey', address: sourceAddress },
+                    sender: sourceAddress,
+                })
             } catch (error) {
                 throw new RekeyError('submission_failed', error)
             }

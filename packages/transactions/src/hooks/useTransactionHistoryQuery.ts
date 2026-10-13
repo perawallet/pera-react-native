@@ -13,12 +13,16 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useInfiniteQuery, onlineManager, hashKey } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
     type SubmissionAttempt,
 } from '@perawallet/wallet-core-signing'
-import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
+import {
+    fetchTransactionHistory,
+    fetchMoreTransactions,
+} from '../history-adapter'
 import { transactionQueryKeys } from './querykeys'
 import type {
     TransactionHistoryItem,
@@ -101,8 +105,7 @@ const findOldestLoaded = (
 export type UseTransactionHistoryQueryParams = {
     /** The Algorand account address to fetch transactions for */
     accountAddress: string
-    /** The network to fetch transactions from */
-    network: Network
+    scope: ChainScope
     /** Optional: Filter transactions to only show those involving a specific asset */
     assetId?: string
     /** Optional: Only return transactions confirmed after this time (ISO 8601) */
@@ -166,6 +169,7 @@ const toPendingHistoryItem = (
     id: attempt.txIds[0] ?? attempt.id,
     txType: 'pay',
     sender: attempt.sender ?? accountAddress,
+    assetSender: null,
     receiver: null,
     confirmedRound: 0,
     roundTime: Math.floor(attempt.createdAt / 1000),
@@ -189,15 +193,15 @@ const toPendingHistoryItem = (
  */
 const buildPendingHistoryItems = async ({
     accountAddress,
-    network,
+    scope,
 }: {
     accountAddress: string
-    network: Network
+    scope: ChainScope
 }): Promise<TransactionHistoryItem[]> => {
     // Scoped in SQL: history renders per account, and a row without a
     // recorded sender can't be attributed to one.
     const attempts = await getOpenSubmissionAttempts({
-        network,
+        scope,
         sender: accountAddress,
         limit: MAX_PENDING_HISTORY_ROWS,
     })
@@ -218,7 +222,7 @@ export const useTransactionHistoryQuery = (
 ): UseTransactionHistoryQueryResult => {
     const {
         accountAddress,
-        network,
+        scope,
         assetId,
         afterTime,
         beforeTime,
@@ -228,7 +232,7 @@ export const useTransactionHistoryQuery = (
 
     const queryKey = transactionQueryKeys.historyWithFilters(
         accountAddress,
-        network,
+        scope,
         {
             assetId,
             afterTime,
@@ -251,7 +255,7 @@ export const useTransactionHistoryQuery = (
             if (pageParam == null || pageParam.type === 'db') {
                 const rows = await getTransactionHistory({
                     accountAddress,
-                    network,
+                    scope,
                     assetId,
                     afterTime,
                     beforeTime,
@@ -278,7 +282,7 @@ export const useTransactionHistoryQuery = (
                 ) {
                     const pending = await buildPendingHistoryItems({
                         accountAddress,
-                        network,
+                        scope,
                     })
                     // The real row always wins: a synthetic entry carries no
                     // amount or interpreted meaning, so shadowing a row SQLite
@@ -339,7 +343,7 @@ export const useTransactionHistoryQuery = (
             if (pageParam.url !== API_CURSOR) {
                 const result = await fetchMoreTransactions({
                     url: pageParam.url,
-                    network,
+                    scope,
                     // Only meaningful on indexer-backed networks (see
                     // `isPeraBackedNetwork`), which have no replayable
                     // pagination URL and need the address alongside the
@@ -362,7 +366,7 @@ export const useTransactionHistoryQuery = (
                     void persistTransactionsToDb(
                         result.transactions,
                         accountAddress,
-                        network,
+                        scope,
                     )
                 }
 
@@ -383,7 +387,7 @@ export const useTransactionHistoryQuery = (
 
             const result = await fetchTransactionHistory({
                 accountAddress,
-                network,
+                scope,
                 assetId,
                 afterTime,
                 beforeTime: beforeTimeForApi,
@@ -395,6 +399,8 @@ export const useTransactionHistoryQuery = (
                 beforeRound !== undefined
                     ? result.transactions.filter(
                           tx =>
+                              // A row with no round can't overlap the cursor.
+                              tx.confirmedRound === undefined ||
                               tx.confirmedRound < beforeRound ||
                               (tx.confirmedRound === beforeRound &&
                                   !beforeRoundTxIds.has(tx.id)),
@@ -406,7 +412,7 @@ export const useTransactionHistoryQuery = (
                 void persistTransactionsToDb(
                     dedupedTransactions,
                     accountAddress,
-                    network,
+                    scope,
                 )
             }
 

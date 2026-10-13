@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    isEligibleLedgerRekeyTarget,
-    useAllAccounts,
+    AuthorityTargetCategories,
+    useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
+    addressOn,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RekeyToLedgerStackParamList } from '../../../routes/rekey-to-ledger/types'
@@ -39,31 +42,28 @@ export const useRekeyToLedgerSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const accounts = useAllAccounts()
-        const source = useFindAccountByAddress(sourceAddress)
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const source = useFindAccountByAddress(sourceAddress, scope)
 
-        const targets = useMemo(
-            () =>
-                accounts.filter(account =>
-                    isEligibleLedgerRekeyTarget(
-                        account,
-                        source ?? { address: sourceAddress },
-                    ),
-                ),
-            [accounts, source, sourceAddress],
+        const targets = useAuthorityTargets(
+            source,
+            AuthorityTargetCategories.hardware,
+            scope,
         )
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {
+                const targetAddress = addressOn(target, scope)
+                if (!targetAddress) return
                 navigation.navigate('RekeyToLedger', {
                     screen: 'RekeyToLedgerConfirm',
                     params: {
                         sourceAddress,
-                        targetAddress: target.address,
+                        targetAddress,
                     },
                 })
             },
-            [navigation, sourceAddress],
+            [navigation, scope, sourceAddress],
         )
 
         return {

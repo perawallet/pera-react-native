@@ -28,7 +28,7 @@ export type PWTouchableOpacityProps = {
 const DEFAULT_ACTIVE_OPACITY = 0.8
 
 // Swallow repeat presses within this window so a double-tap can't fire onPress twice.
-const DOUBLE_PRESS_GUARD_MS = 500
+export const DOUBLE_PRESS_GUARD_MS = 500
 
 export const PWTouchableOpacity = ({
     children,

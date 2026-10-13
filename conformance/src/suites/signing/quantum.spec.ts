@@ -14,9 +14,9 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import algosdk from 'algosdk'
 import { describe, expect, it } from 'vitest'
 
-import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-blockchain/constants'
-import { calculateMinTxnFee } from '@perawallet/wallet-core-blockchain/fees/feeCalculator'
-import { pqSigningDigest } from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
+import { FALLBACK_PQ_MULTIPLIER } from '@perawallet/wallet-core-chain-algorand/blockchain/constants'
+import { calculateMinTxnFee } from '@perawallet/wallet-core-chain-algorand/blockchain/fees/feeCalculator'
+import { pqSigningDigest } from '@perawallet/wallet-core-chain-algorand/blockchain/pq/quantumAdapter'
 
 import {
     createAlgo25Account,

@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
+import { PassphraseGrid } from '@components/PassphraseGrid'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
-import { PinEditView } from '@modules/security'
 import { useBackupReminderMnemonicScreen } from './useBackupReminderMnemonicScreen'
 import { useStyles } from './styles'
 
@@ -25,29 +24,13 @@ const SCREEN_CAPTURE_TAG = 'backup-mnemonic'
 export const BackupReminderMnemonicScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        wordIndices,
-        isLoading,
-        error,
-        isPinVisible,
-        isPinGateResolved,
-        handlePinVerified,
-        onContinue,
-    } = useBackupReminderMnemonicScreen()
+    const { wordIndices, isLoading, error, isPinGateResolved, onContinue } =
+        useBackupReminderMnemonicScreen()
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG)
 
     if (!isPinGateResolved) {
-        return (
-            <PWView style={styles.root}>
-                {isPinVisible && (
-                    <PinEditView
-                        mode='verify'
-                        onSuccess={handlePinVerified}
-                    />
-                )}
-            </PWView>
-        )
+        return <PWView style={styles.root} />
     }
 
     if (isLoading) {
@@ -76,6 +59,7 @@ export const BackupReminderMnemonicScreen = () => {
 
     return (
         <PWScreen
+            testID='backup_mnemonic_screen'
             footer={
                 <PWButton
                     title={t('backup.mnemonic.cta_continue')}
@@ -90,21 +74,10 @@ export const BackupReminderMnemonicScreen = () => {
                     title={t('backup.mnemonic.title')}
                     description={t('backup.mnemonic.body')}
                 />
-                <PWView style={styles.grid}>
-                    {Array.from(wordIndices ?? []).map((wordIndex, i) => (
-                        <PWView
-                            key={`${i}-${wordIndex}`}
-                            style={styles.wordCell}
-                        >
-                            <PWText style={styles.wordIndex}>
-                                {String(i + 1)}
-                            </PWText>
-                            <PWText style={styles.wordText}>
-                                {mnemonicIndexToWord(wordIndex)}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
+                <PassphraseGrid
+                    wordIndices={wordIndices}
+                    style={styles.grid}
+                />
             </PWView>
         </PWScreen>
     )

@@ -83,6 +83,20 @@ describe('PanelButton', () => {
         expect(screen.getByTestId('panel_btn_view')).toBeTruthy()
     })
 
+    it('renders a leading image when one is given', () => {
+        render(
+            <PanelButton
+                testID='panel_btn'
+                title='With Image'
+                titleWeight='h3'
+                leftImage={1}
+                onPress={() => {}}
+            />,
+        )
+
+        expect(screen.getByTestId('panel_btn_image')).toBeTruthy()
+    })
+
     it('renders the badge label when a badge is provided', () => {
         render(
             <PanelButton

@@ -249,7 +249,7 @@ export const hardwareSigningMachine = setup({
                     target: 'error',
                     actions: 'setInterruptedError',
                 },
-                // Non-device errors (e.g. ARC-60 validation) bypass the
+                // Non-device errors (e.g. auth-data validation) bypass the
                 // BLE-class teardown gate — go straight to done with kind:
                 // 'error' so the inline failure sheet surfaces immediately
                 // instead of pinning the troubleshooting sheet open.

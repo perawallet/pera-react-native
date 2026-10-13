@@ -13,6 +13,8 @@
 import { useEffect, useState } from 'react'
 import { AppState } from 'react-native'
 import { useSwapCosignResolver } from '@perawallet/wallet-core-swaps'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useErrorToast } from '@hooks/useErrorToast'
 
 /**
@@ -24,6 +26,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
  * persisted shared-account swap once its co-signer has signed.
  */
 export const SwapOverlays = (): null => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const [isAppActive, setIsAppActive] = useState(
         AppState.currentState === 'active',
     )
@@ -37,7 +40,7 @@ export const SwapOverlays = (): null => {
         return () => subscription.remove()
     }, [])
 
-    useSwapCosignResolver({ isAppActive, reportError: showError })
+    useSwapCosignResolver({ isAppActive, reportError: showError, scope })
 
     return null
 }

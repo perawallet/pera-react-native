@@ -30,34 +30,36 @@ export type {
     CardTransportResponse,
 } from './api/transport/types'
 
-// Funding seam — the deposit pipeline routes through getCardFundingProvider().
-// Defaults to unavailableFundingProvider until the Baanx Algorand provider ships.
 export {
-    getCardFundingProvider,
-    setCardFundingProvider,
-    resetCardFundingProvider,
-} from './api/funding'
+    cardChainAdapters,
+    type CardAutoDrawOperations,
+    type CardChainAdapter,
+    type CardChainErrorReason,
+    type CardDelegationRequest,
+    type CardEscrowWithdrawals,
+    type CardFundingSourceEligibility,
+    type CardManualDepositBuildParams,
+    type DelegationApprovalParams,
+    type EscrowWithdrawalParams,
+} from './chain-adapter'
 
-// AutoDraw delegation helpers — the compile → sign → POST /lsig leg, shared by
-// onboarding card creation and the post-onboarding funding-type switch.
 export {
-    compileAutoDrawProgram,
-    postDelegatorLsig,
-    resolveEscrowChainConfig,
-    // Thrown when algod's compiled program doesn't match the pinned bytes.
-    // Exported so the funding-type flows can degrade to Manual with honest
-    // copy instead of a generic "please try again".
+    // Thrown when the compiled program doesn't match the pin. Exported so the
+    // funding-type flows can degrade to Manual with honest copy instead of a
+    // generic "please try again".
     AutoDrawProgramUnverifiedError,
-    type EscrowChainConfig,
-    type PostDelegatorLsigParams,
+    AutoDrawTealUnverifiedError,
 } from './api/escrow'
+export { postCardDelegation } from './api/delegation'
 
 // API error normalization — lets screens attribute a Baanx failure to a field.
 export {
     getCardApiError,
     isConflictError,
     isInvalidInputError,
+    isInvalidCredentialsError,
     isDuplicateError,
+    isUserAlreadyCreatedError,
     isNotVerifiedError,
 } from './api/errors'
 export type { CardApiError } from './api/errors'
@@ -66,8 +68,13 @@ export type { CardApiError } from './api/errors'
 // copy (the classes carry no user-facing wording of their own).
 export {
     CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
     CardIntegrityAttestationRequiredError,
     CardUserUnavailableError,
 } from './api/card-creation'
 export { CardOrderNotVerifiedError } from './api/card'
+export { CardEscrowNotConfiguredError } from './api/escrow'
 export { OnboardingNotVerifiedError } from './api/errors'

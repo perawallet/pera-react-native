@@ -11,15 +11,21 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { fetchProviders } from '../api'
 import { swapQueryKeys } from './querykeys'
 
-export const useProvidersQuery = (enabled: boolean = true) => {
-    const { network } = useNetwork()
+export const useProvidersQuery = (
+    scope: ChainScope,
+    enabled: boolean = true,
+) => {
+    const network = legacyNetworkOf(scope)
 
     return useQuery({
-        queryKey: swapQueryKeys.providers(network),
+        queryKey: swapQueryKeys.providers(scope),
         queryFn: () => fetchProviders(network),
         enabled,
     })

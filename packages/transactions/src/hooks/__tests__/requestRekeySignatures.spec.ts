@@ -18,16 +18,8 @@ import { RekeyError } from '../../errors'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-
-// The module under test only needs `compactSignedResults` at runtime;
-// loading the real blockchain package would drag react-native-mmkv into
-// this node test. The stub mirrors the real one-line implementation.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    compactSignedResults: (signed: unknown[]) =>
-        signed.filter(tx => tx !== null),
-}))
 
 describe('requestRekeySignatures', () => {
     const source = { name: 'src-name', description: 'src-description' }
@@ -43,12 +35,18 @@ describe('requestRekeySignatures', () => {
     it('hands a headless transactions sign request to the pipeline with the supplied txs', () => {
         const addSignRequest = vi.fn()
 
-        void requestRekeySignatures(addSignRequest, source, unsignedTxs)
+        void requestRekeySignatures(
+            addSignRequest,
+            'algorand',
+            source,
+            unsignedTxs,
+        )
 
         expect(addSignRequest).toHaveBeenCalledTimes(1)
         const request = addSignRequest.mock
             .calls[0][0] as TransactionSignRequest
         expect(request.type).toBe('transactions')
+        expect(request).toMatchObject({ chainId: 'algorand' })
         expect(request.transport).toBe('callback')
         expect(request.sourceType).toBe('local')
         expect(request.txs).toEqual(unsignedTxs)
@@ -64,6 +62,7 @@ describe('requestRekeySignatures', () => {
 
         const promise = requestRekeySignatures(
             addSignRequest,
+            'algorand',
             source,
             unsignedTxs,
         )
@@ -71,6 +70,25 @@ describe('requestRekeySignatures', () => {
         await capturedRequest!.approve!(signed)
 
         await expect(promise).resolves.toEqual(signed)
+    })
+
+    it('drops padded null slots from the signed result', async () => {
+        let capturedRequest: TransactionSignRequest | undefined
+        const addSignRequest = vi.fn((request: TransactionSignRequest) => {
+            capturedRequest = request
+        })
+        const signedA = { signed: true } as unknown as PeraSignedTransaction
+
+        const promise = requestRekeySignatures(
+            addSignRequest,
+            'algorand',
+            source,
+            unsignedTxs,
+        )
+
+        await capturedRequest!.approve!([signedA, null])
+
+        await expect(promise).resolves.toEqual([signedA])
     })
 
     it('rejects with a user_rejected RekeyError when the pipeline calls reject', async () => {
@@ -81,6 +99,7 @@ describe('requestRekeySignatures', () => {
 
         const promise = requestRekeySignatures(
             addSignRequest,
+            'algorand',
             source,
             unsignedTxs,
         )
@@ -100,6 +119,7 @@ describe('requestRekeySignatures', () => {
 
         const promise = requestRekeySignatures(
             addSignRequest,
+            'algorand',
             source,
             unsignedTxs,
         )

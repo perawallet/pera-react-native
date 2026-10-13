@@ -25,13 +25,15 @@ import {
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import type { MessagesStackParamList } from '@modules/messages/routes/types'
+import type { MessagesStackParamList } from '@modules/messages'
 import {
     useAccountBalancesInvalidator,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useArc59Invalidator } from '@perawallet/wallet-core-asa-inbox'
+import { useArc59Invalidator } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import { useErrorToast } from '@hooks/useErrorToast'
 
@@ -43,14 +45,15 @@ export const useClaimProcessingScreen = () => {
         useRoute<RouteProp<MessagesStackParamList, 'ClaimProcessing'>>()
     const { mode, assetIndex, shouldClaimAlgo } = route.params
     const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
-    const account = useFindAccountByAddress(accountAddress ?? '')
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useFindAccountByAddress(accountAddress ?? '', scope)
     const { showError } = useErrorToast()
 
     const { remove: removeArc59Queries } = useArc59Invalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
-    const { execute } = useTransactionSendFlow()
+    const { execute } = useTransactionSendFlow(scope)
 
     const asset = assetRequests[assetIndex]
 

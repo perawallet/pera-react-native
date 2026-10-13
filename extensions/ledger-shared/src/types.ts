@@ -16,12 +16,16 @@ import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 
-/**
- * Supported Ledger device models with Bluetooth capability.
- */
-export type LedgerDeviceModel = 'nanoX' | 'stax' | 'flex' | 'nanoGen5'
+/** `nanoS` and `nanoSPlus` have no Bluetooth, so only USB discovery reports them. */
+export type LedgerDeviceModel =
+    | 'nanoS'
+    | 'nanoSPlus'
+    | 'nanoX'
+    | 'stax'
+    | 'flex'
+    | 'nanoGen5'
 
 /**
  * A discovered Ledger device during BLE scanning.
@@ -32,7 +36,7 @@ export type LedgerDevice = HardwareWalletDevice & {
 }
 
 /**
- * An Algorand account derived from a Ledger device.
+ * An account derived from a Ledger device.
  * Alias for the generic hardware wallet derived account.
  */
 export type LedgerAccount = HardwareWalletDerivedAccount

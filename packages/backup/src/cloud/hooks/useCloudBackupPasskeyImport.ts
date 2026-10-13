@@ -1,0 +1,311 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+    logger,
+} from '@perawallet/wallet-core-shared'
+import {
+    deriveEnginePasskeyEntry,
+    derivePasskeyCredential,
+    derivePasskeyMainKey,
+    enginePasskeyEntryExists,
+    isStoreDisabledError,
+    nativePasskeyEntryExists,
+    p256PrivateKeyToSpkiDer,
+    passkeyMainKeyIdFromSeedKeyId,
+    storesPasskeysInEngine,
+    usePasskeyAutofillService,
+    writeNativePasskeyEntry,
+} from '@perawallet/wallet-core-passkeys'
+import { handOffSecret, zeroBytes } from '@perawallet/wallet-core-kms'
+import type { PasskeyBackupPayload } from '../models'
+import type {
+    PasskeyImportFn,
+    PasskeyImportSummary,
+    PasskeySkipReason,
+} from '../sync/types'
+import { resolveBackupSeedKeyId } from './useResolveSeedEntropyForBackup'
+
+/** The owning seed as this device knows it. `seedKeyId` is local — the id the
+ *  restoring device minted, not the one the collecting device had — and is what
+ *  the written credential's `parentKeyId` has to point at. */
+export type ResolvedSeed = {
+    seedKeyId: string
+    entropy: Uint8Array
+}
+
+/** Resolves a seed's BIP39 entropy from the first-derived address the payload
+ *  names. Injected because it needs a KMS session, which the engine has no
+ *  access to. `null` means the wallet is not on this device. */
+export type SeedEntropyResolver = (
+    seedAddress: string,
+) => Promise<ResolvedSeed | null>
+
+export type UseCloudBackupPasskeyImportResult = {
+    importPasskeys: PasskeyImportFn
+}
+
+type SeedCache = Map<string, { seedKeyId: string; mainKey: Uint8Array } | null>
+
+/** Seed address to the seed's local key id, or `null` when it is not here. */
+type SeedIdCache = Map<string, string | null>
+
+/** `privateKey` is owned by whoever receives this and must be zeroed. */
+type ResolvedKey =
+    | { privateKey: Uint8Array; parentKeyId?: string }
+    | { skip: PasskeySkipReason }
+
+/** `chainId` names the chain whose first-derived address the payloads carry as `seedAddress`. */
+export const useCloudBackupPasskeyImport = (
+    chainId: ChainId,
+    resolveSeedEntropy: SeedEntropyResolver,
+): UseCloudBackupPasskeyImportResult => {
+    const autofill = usePasskeyAutofillService()
+
+    /** Only for a credential backed up without its `passkey-secrets/` item, by
+     *  a build that re-derived every credential from its seed. */
+    const keyFromSeed = useCallback(
+        async (
+            payload: PasskeyBackupPayload,
+            seeds: SeedCache,
+        ): Promise<ResolvedKey> => {
+            const { seedAddress, identity, counter } = payload
+            if (seedAddress == null || identity == null) {
+                return { skip: 'secret-missing' }
+            }
+
+            if (!seeds.has(seedAddress)) {
+                const resolved = await resolveSeedEntropy(seedAddress)
+                try {
+                    seeds.set(
+                        seedAddress,
+                        resolved === null
+                            ? null
+                            : {
+                                  seedKeyId: resolved.seedKeyId,
+                                  mainKey: handOffSecret(
+                                      await derivePasskeyMainKey(
+                                          resolved.entropy,
+                                      ),
+                                  ),
+                              },
+                    )
+                } finally {
+                    if (resolved !== null) zeroBytes(resolved.entropy)
+                }
+            }
+            const seed = seeds.get(seedAddress) ?? null
+            if (seed === null) return { skip: 'seed-missing' }
+
+            const derived = await derivePasskeyCredential({
+                mainKey: seed.mainKey,
+                origin: payload.origin,
+                identity,
+                counter: counter ?? 0,
+            })
+            return {
+                privateKey: derived.privateKey,
+                // Without this the credential is unprovable from its seed here.
+                parentKeyId: passkeyMainKeyIdFromSeedKeyId(seed.seedKeyId),
+            }
+        },
+        [resolveSeedEntropy],
+    )
+
+    /** `null` once written. The backed-up private key is no use here: the
+     *  engine only holds credentials it can re-derive from their seed. */
+    const importIntoEngine = useCallback(
+        async (
+            payload: PasskeyBackupPayload,
+            seedIds: SeedIdCache,
+        ): Promise<PasskeySkipReason | null> => {
+            const publicKeySpkiDer = decodeFromBase64(payload.publicKeySpkiDer)
+            if (
+                enginePasskeyEntryExists(payload.credentialId, publicKeySpkiDer)
+            ) {
+                return 'already-present'
+            }
+
+            const { seedAddress, identity } = payload
+            if (seedAddress == null || identity == null) return 'underivable'
+
+            if (!seedIds.has(seedAddress)) {
+                seedIds.set(
+                    seedAddress,
+                    await resolveBackupSeedKeyId(seedAddress, chainId),
+                )
+            }
+            const seedKeyId = seedIds.get(seedAddress) ?? null
+            if (seedKeyId === null) return 'seed-missing'
+
+            const result = await deriveEnginePasskeyEntry({
+                credentialId: payload.credentialId,
+                origin: payload.origin,
+                identity,
+                counter: payload.counter ?? 0,
+                seedKeyId,
+                publicKeySpkiDer,
+                userId: payload.userId,
+                userName: payload.userName,
+                displayName: payload.displayName,
+                createdAtMs: payload.createdAt,
+            })
+            return result === 'written' ? null : 'pubkey-mismatch'
+        },
+        [],
+    )
+
+    const importPasskeys = useCallback<PasskeyImportFn>(
+        async passkeys => {
+            const summary: PasskeyImportSummary = {
+                imported: 0,
+                skipped: [],
+                failed: [],
+            }
+            // PBKDF2 at 210k iterations is the expensive part, and a user's
+            // credentials cluster on one seed.
+            const seeds: SeedCache = new Map()
+            const seedIds: SeedIdCache = new Map()
+            const inEngine = storesPasskeysInEngine()
+
+            try {
+                for (const { payload, secret } of passkeys) {
+                    const { credentialId } = payload
+                    let privateKey: Uint8Array | null = null
+                    try {
+                        if (inEngine) {
+                            const skip = await importIntoEngine(
+                                payload,
+                                seedIds,
+                            )
+                            if (skip === null) {
+                                summary.imported += 1
+                            } else {
+                                summary.skipped.push({
+                                    credentialId,
+                                    reason: skip,
+                                })
+                            }
+                            continue
+                        }
+
+                        if (nativePasskeyEntryExists(credentialId)) {
+                            summary.skipped.push({
+                                credentialId,
+                                reason: 'already-present',
+                            })
+                            continue
+                        }
+
+                        const resolved =
+                            secret !== null
+                                ? {
+                                      privateKey: decodeFromBase64(
+                                          secret.privateKey,
+                                      ),
+                                  }
+                                : await keyFromSeed(payload, seeds)
+                        if ('skip' in resolved) {
+                            summary.skipped.push({
+                                credentialId,
+                                reason: resolved.skip,
+                            })
+                            continue
+                        }
+                        privateKey = resolved.privateKey
+
+                        // The collecting device checked this key, so a mismatch is
+                        // corruption; written, every signature would be rejected.
+                        let publicKeySpkiDer: string | null
+                        try {
+                            publicKeySpkiDer = encodeToBase64(
+                                p256PrivateKeyToSpkiDer(privateKey),
+                            )
+                        } catch {
+                            publicKeySpkiDer = null
+                        }
+                        if (publicKeySpkiDer !== payload.publicKeySpkiDer) {
+                            logger.warn(
+                                'useCloudBackupPasskeyImport: private key does not match the public key',
+                                { origin: payload.origin },
+                            )
+                            summary.skipped.push({
+                                credentialId,
+                                reason: 'pubkey-mismatch',
+                            })
+                            continue
+                        }
+
+                        await writeNativePasskeyEntry({
+                            credentialId,
+                            origin: payload.origin,
+                            userId: payload.userId ?? payload.identity ?? '',
+                            userName: payload.userName,
+                            displayName: payload.displayName,
+                            publicKeySpkiDer: decodeFromBase64(
+                                payload.publicKeySpkiDer,
+                            ),
+                            privateKey,
+                            // The proven string, not a guess: `identityCandidates`
+                            // cannot rebuild it from the fields this device writes.
+                            identity: payload.identity,
+                            // The derivation counter; the WebAuthn signature
+                            // counter starts fresh on this device.
+                            counter: payload.counter,
+                            parentKeyId: resolved.parentKeyId,
+                            createdAtMs: payload.createdAt,
+                        })
+                        summary.imported += 1
+                    } catch (error) {
+                        summary.failed.push({
+                            credentialId,
+                            reason:
+                                error instanceof Error
+                                    ? error.message
+                                    : String(error),
+                        })
+                    } finally {
+                        // writeNativePasskeyEntry seals its own copy; this one is ours.
+                        zeroBytes(privateKey)
+                    }
+                }
+            } finally {
+                // The cached keys outlive the call that derived them, so this
+                // is the only place that can zero them.
+                for (const seed of seeds.values()) {
+                    if (seed) zeroBytes(seed.mainKey)
+                }
+            }
+
+            // iOS only offers credentials published to its identity store.
+            if (summary.imported > 0) {
+                await autofill.refreshCredentialIdentities().catch(err => {
+                    if (!isStoreDisabledError(err)) {
+                        logger.warn(
+                            'useCloudBackupPasskeyImport: identity refresh failed',
+                            { error: String(err) },
+                        )
+                    }
+                })
+            }
+
+            return summary
+        },
+        [keyFromSeed, importIntoEngine, autofill],
+    )
+
+    return { importPasskeys }
+}

@@ -12,16 +12,6 @@
 
 import { z } from 'zod'
 
-// GET /api/v3/asset-prices returns one row per requested id; `price` is null
-// when the backend has no price for it (an explicit miss, not an omission).
-const assetPriceResponseSchema = z.object({
-    asset_id: z.string(),
-    price: z.string().nullable(),
-    currency: z.string(),
-})
-
-export const assetPricesResponseSchema = z.array(assetPriceResponseSchema)
-
 const assetPriceHistoryResponseItemSchema = z.object({
     datetime: z.string(),
     price: z.number(),
@@ -31,8 +21,6 @@ export const assetPriceHistoryResponseSchema = z.array(
     assetPriceHistoryResponseItemSchema,
 )
 
-export type AssetPriceResponse = z.infer<typeof assetPriceResponseSchema>
-export type AssetPricesResponse = z.infer<typeof assetPricesResponseSchema>
 export type AssetPriceHistoryResponseItem = z.infer<
     typeof assetPriceHistoryResponseItemSchema
 >

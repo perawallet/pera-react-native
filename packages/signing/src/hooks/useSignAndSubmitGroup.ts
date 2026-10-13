@@ -11,20 +11,20 @@
  */
 
 import { useCallback } from 'react'
-import {
-    compactSignedResults,
-    useAlgorandClient,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
 import type {
+    ChainId,
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
+
 import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { submitAndAutoRefresh } from '../pipeline/submission/submitAndAutoRefresh'
+import { submitAndAutoRefresh } from '../broadcaster'
 import type { TransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 
@@ -33,9 +33,12 @@ import { useSigningRequest } from './useSigningRequest'
  * signing sheet for a headless request. Callers should treat this
  * as a non-fatal cancellation rather than a backend failure.
  */
-export class UserRejectedSigningError extends Error {
+export class UserRejectedSigningError extends AppError {
     constructor() {
-        super('User rejected signing')
+        super('User rejected signing', {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.TRANSACTIONS,
+        })
         this.name = 'UserRejectedSigningError'
     }
 }
@@ -48,6 +51,7 @@ export type SignAndSubmitGroupSource = {
 }
 
 export type SignAndSubmitGroupParams = {
+    chainId: ChainId
     /** Unsigned transactions, already grouped by the caller. */
     unsignedTxs: PeraTransaction[]
     /** Display metadata threaded through the pipeline. */
@@ -72,11 +76,10 @@ export type SignAndSubmitGroupResult = {
  */
 export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
     const { addSignRequest } = useSigningRequest()
-    const algokit = useAlgorandClient()
-    const { encodeSignedTransactions } = useTransactionEncoder()
 
     const submit = useCallback(
         ({
+            chainId,
             unsignedTxs,
             source,
         }: SignAndSubmitGroupParams): Promise<{ txIds: string[] }> => {
@@ -89,6 +92,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     type: 'transactions',
                     transport: 'callback',
                     sourceType: 'local',
+                    chainId,
                     txs: unsignedTxs,
                     sourceMetadata: source,
                     approve: async (
@@ -99,10 +103,12 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             // filters slots (unlike the ARC-0001 enqueue
                             // path), so every entry is expected to be
                             // present — the null guard is defensive only.
-                            const signedTxns = compactSignedResults(signed)
+                            const signedTxns = signed.filter(
+                                (tx): tx is PeraSignedTransaction =>
+                                    tx !== null,
+                            )
                             const txIds = await submitAndAutoRefresh(
-                                algokit,
-                                encodeSignedTransactions,
+                                chainId,
                                 signedTxns,
                                 { flow: 'sign-and-submit' },
                             )
@@ -132,7 +138,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                 addSignRequest(request)
             })
         },
-        [addSignRequest, algokit, encodeSignedTransactions],
+        [addSignRequest],
     )
 
     return { submit }

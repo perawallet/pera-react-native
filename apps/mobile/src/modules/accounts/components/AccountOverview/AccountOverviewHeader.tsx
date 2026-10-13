@@ -11,8 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { AssetAmount } from '@components/AssetAmount'
 import { Decimal } from 'decimal.js'
@@ -26,7 +30,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
@@ -43,10 +47,12 @@ export const AccountOverviewHeader = ({
     chartVisible,
     isLoading,
 }: AccountOverviewHeaderProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        portfolioAlgoValue,
+        portfolioNativeValue,
+        portfolioPreferredValue,
         isPending,
         period,
         setPeriod,
@@ -78,10 +84,10 @@ export const AccountOverviewHeader = ({
                                 variant='h1'
                                 value={
                                     selectedPoint
-                                        ? new Decimal(selectedPoint.algoValue)
-                                        : portfolioAlgoValue
+                                        ? new Decimal(selectedPoint.nativeValue)
+                                        : portfolioNativeValue
                                 }
-                                asset={ALGO_ASSET}
+                                asset={nativeAsset}
                                 style={styles.primaryCurrency}
                                 isLoading={isPending}
                             />
@@ -91,8 +97,8 @@ export const AccountOverviewHeader = ({
                             {!isPending &&
                                 !selectedPoint &&
                                 !isBalanceComplete && (
-                                    <ActivityIndicator
-                                        size='small'
+                                    <PWLoadingIndicator
+                                        size='sm'
                                         style={styles.balanceSpinner}
                                     />
                                 )}
@@ -101,12 +107,11 @@ export const AccountOverviewHeader = ({
                             <PreferredAmount
                                 variant='h4'
                                 style={styles.valueTitle}
-                                sourceAmount={
+                                value={
                                     selectedPoint
-                                        ? selectedPoint.algoValue
-                                        : portfolioAlgoValue
+                                        ? selectedPoint.preferredValue
+                                        : portfolioPreferredValue
                                 }
-                                sourceAssetId={ALGO_ASSET.assetId}
                                 density='compact'
                                 showSymbol
                                 prefix='≈ '
@@ -121,12 +126,30 @@ export const AccountOverviewHeader = ({
                                 />
                             )}
                             {selectedPoint && (
-                                <PWText
-                                    variant='h4'
-                                    style={styles.dateDisplay}
-                                >
-                                    {formatDatetime(selectedPoint.datetime)}
-                                </PWText>
+                                <PWView style={styles.dateTimeColumn}>
+                                    <PWText
+                                        variant='h4'
+                                        style={styles.dateDisplay}
+                                    >
+                                        {formatDatetime(
+                                            selectedPoint.datetime,
+                                            undefined,
+                                            'medium',
+                                            'date',
+                                        )}
+                                    </PWText>
+                                    <PWText
+                                        variant='h4'
+                                        style={styles.dateDisplay}
+                                    >
+                                        {formatDatetime(
+                                            selectedPoint.datetime,
+                                            undefined,
+                                            'medium',
+                                            'time',
+                                        )}
+                                    </PWText>
+                                </PWView>
                             )}
                         </PWView>
                     </PWTouchableOpacity>
@@ -180,7 +203,8 @@ export const AccountOverviewHeader = ({
         togglePrivacyMode,
         styles,
         selectedPoint,
-        portfolioAlgoValue,
+        portfolioNativeValue,
+        portfolioPreferredValue,
         isPending,
         isBalanceComplete,
         account,
@@ -189,6 +213,7 @@ export const AccountOverviewHeader = ({
         handleChartSelectionChange,
         setPeriod,
         t,
+        nativeAsset,
     ])
 
     const useLoadingHeight = isLoading && chartVisible

@@ -12,16 +12,21 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import {
-    useAllAccounts,
-    getAccountDisplayName,
-    type WalletAccount,
-    useCreateAccount,
-    useSelectedAccountAddress,
-    isHDWalletAccount,
-    useUpdateAccount,
-    useAccountsStore,
-    consumePendingAccountRollback,
     clearPendingAccountRollback,
+    consumePendingAccountRollback,
+    chainAccountOf,
+    findAccountByAddressOn,
+    getAccountDisplayName,
+    hdIndexOf,
+    isHardwareWalletAccount,
+    isWatchAccount,
+    signingKeyOn,
+    useAccountsStore,
+    useAllAccounts,
+    useCreateAccount,
+    useSelectedAccountId,
+    useUpdateAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
@@ -34,6 +39,8 @@ import {
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -45,8 +52,9 @@ export const useNameAccountScreen = () => {
 
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
-    const { buildHdWalletAccount, saveAccount } = useCreateAccount()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { buildHdWalletAccount, saveAccount } = useCreateAccount(scope)
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
@@ -65,8 +73,8 @@ export const useNameAccountScreen = () => {
         let otherAccountsCount = 0
 
         accounts.forEach(acc => {
-            if (isHDWalletAccount(acc)) {
-                const seedId = seedIdOf(acc.keyPairId)
+            if (hdIndexOf(acc) !== undefined) {
+                const seedId = seedIdOf(signingKeyOn(acc, scope.chainId))
                 if (seedId) hdSeedIds.add(seedId)
             } else {
                 otherAccountsCount++
@@ -75,10 +83,10 @@ export const useNameAccountScreen = () => {
 
         // TODO: otherAccountsCount might not be necessary here. Come back at this once integrating multiple wallets.
         return hdSeedIds.size + otherAccountsCount
-    }, [accounts, seedIdOf])
+    }, [accounts, seedIdOf, scope.chainId])
 
     const initialWalletName = account
-        ? getAccountDisplayName(account)
+        ? getAccountDisplayName(account, scope.chainId)
         : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
 
     const [walletDisplay, setWalletDisplay] =
@@ -114,9 +122,17 @@ export const useNameAccountScreen = () => {
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
             const namedAccount = { ...targetAccount, name: walletDisplay }
-            const isAlreadyInStore = useAccountsStore
-                .getState()
-                .accounts.some(a => a.address === targetAccount.address)
+            const targetAddress = chainAccountOf(
+                targetAccount,
+                scope.chainId,
+            )?.address
+            const isAlreadyInStore =
+                targetAddress !== undefined &&
+                !!findAccountByAddressOn(
+                    useAccountsStore.getState().accounts,
+                    scope.chainId,
+                    targetAddress,
+                )
 
             if (isAlreadyInStore) {
                 updateAccount(namedAccount)
@@ -126,16 +142,16 @@ export const useNameAccountScreen = () => {
 
             trackEvent(OnboardingEvent.RegisterAccount, {
                 [AnalyticsMetadataKey.AccountCreationType]:
-                    targetAccount.type === 'hardware'
+                    isHardwareWalletAccount(targetAccount)
                         ? 'ledger'
-                        : targetAccount.type === 'watch'
+                        : isWatchAccount(targetAccount)
                           ? 'watch'
                           : 'create',
             })
 
             // Explicitly select the new account to ensure it's ready for AccountScreen
             // This triggers navigation via useShowOnboarding(), which waits for selection
-            setSelectedAccountAddress(targetAccount.address)
+            setSelectedAccountId(targetAccount.id)
 
             // Set confetti state - AccountScreen will read this and play the animation
             setShouldPlayConfetti(true)

@@ -31,16 +31,7 @@ import {
     wipeSecrets,
     type Canary13Record,
 } from '../canary13'
-import { LAYOUT_VERSION_KEY } from './0003-remove-layout-version-stamp'
-
-/** See `0002-lift-nested-material.ts` — same literal, same reason. */
-const MIGRATIONS_LEDGER_KEY = '@algorandfoundation/provider-migrations'
-
-const isFlatCandidate = (key: string): boolean =>
-    !key.startsWith(MATERIAL_PREFIX) &&
-    !key.startsWith(METADATA_PREFIX) &&
-    key !== MIGRATIONS_LEDGER_KEY &&
-    key !== LAYOUT_VERSION_KEY
+import { isFlatCandidate } from '../flatCandidate'
 
 /**
  * Adopts flat canary.13 records that carry **no material at all** — neither a
@@ -187,10 +178,12 @@ export const migration: Migration<PeraMigrationContext> = {
 
                     // A biometric-wrapped passkey credential carries its key
                     // under `privateKeyEnc` (`{iv, data}`), not a top-level
-                    // `Uint8Array`, so without this it looks material-less and
-                    // gets moved into `k/` — killing it, since the native
-                    // Android/iOS credential providers only ever read a passkey
-                    // at its bare id. Leave it there.
+                    // `Uint8Array`, so without this it looks material-less, and
+                    // moving it here would strand its only key where no
+                    // provider reads it. Credential records are left to their
+                    // own passes: iOS reads them only at their bare id, and on
+                    // Android `splitFlatPasskeyCredentials` moves them together
+                    // with their material. Leave it there.
                     if (
                         (record as { privateKeyEnc?: unknown })
                             .privateKeyEnc !== undefined

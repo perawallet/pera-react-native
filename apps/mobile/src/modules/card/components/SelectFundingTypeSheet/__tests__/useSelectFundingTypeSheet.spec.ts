@@ -54,9 +54,20 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
-    useNetwork: () => ({ network: 'testnet' }),
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
 let mockAccounts: WalletAccount[] = []
@@ -119,9 +130,8 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
 import { useSelectFundingTypeSheet } from '../useSelectFundingTypeSheet'
 
 const connectedAccount = {
-    address: 'ADDR1',
-    type: 'algo25',
-    keyPairId: 'key-1',
+    chains: { algorand: { address: 'ADDR1', keyPairId: 'key-1' } },
+    custody: { kind: 'local', seed: null },
 } as unknown as WalletAccount
 
 const CARD = 'ESCROWCARD1'
@@ -330,8 +340,17 @@ describe('useSelectFundingTypeSheet', () => {
     it('flags a Ledger connected account (drives the Ledger-specific hint)', () => {
         mockAccounts = [
             {
-                address: 'ADDR1',
-                type: 'hardware',
+                chains: { algorand: { address: 'ADDR1' } },
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
                 hardwareDetails: { manufacturer: 'ledger' },
             } as unknown as WalletAccount,
         ]

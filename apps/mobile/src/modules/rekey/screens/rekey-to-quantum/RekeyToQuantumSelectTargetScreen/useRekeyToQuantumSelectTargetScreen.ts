@@ -10,16 +10,18 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    isEligibleQuantumRekeyTarget,
-    useAllAccounts,
+    AuthorityTargetCategories,
+    useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
+    addressOn,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 
 import type { RekeyToQuantumStackParamList } from '../../../routes/rekey-to-quantum/types'
 
@@ -40,33 +42,27 @@ export const useRekeyToQuantumSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const accounts = useAllAccounts()
-        const source = useFindAccountByAddress(sourceAddress)
-        const isQuantumTargetEnabled = useIsQuantumAccountsEnabled()
-
-        const targets = useMemo(
-            () =>
-                accounts.filter(account =>
-                    isEligibleQuantumRekeyTarget(
-                        account,
-                        source ?? { address: sourceAddress },
-                        isQuantumTargetEnabled,
-                    ),
-                ),
-            [accounts, source, sourceAddress, isQuantumTargetEnabled],
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const source = useFindAccountByAddress(sourceAddress, scope)
+        const targets = useAuthorityTargets(
+            source,
+            AuthorityTargetCategories.postQuantum,
+            scope,
         )
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {
+                const targetAddress = addressOn(target, scope)
+                if (!targetAddress) return
                 navigation.navigate('RekeyToQuantum', {
                     screen: 'RekeyToQuantumConfirm',
                     params: {
                         sourceAddress,
-                        targetAddress: target.address,
+                        targetAddress,
                     },
                 })
             },
-            [navigation, sourceAddress],
+            [navigation, scope, sourceAddress],
         )
 
         return {

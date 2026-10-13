@@ -27,9 +27,7 @@ vi.mock('@modules/security', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@components/ConfirmActionContent', () => ({
     ConfirmActionContent: () => null,
@@ -38,6 +36,13 @@ vi.mock('@components/ConfirmActionContent', () => ({
 vi.mock('@perawallet/wallet-core-card', () => ({
     AUTO_FUNDING_PER_TX_LIMIT_USD: new Decimal(400),
 }))
+// Stands in for the real network store, which needs the shared store registry this spec mocks away.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     formatCurrency: () => '$400',
     truncateAlgorandAddress: (address: string) => address,
@@ -109,5 +114,23 @@ describe('useAuthorizeCardDelegation', () => {
         await expect(
             result.current.authorizeDelegation(account, delegate),
         ).rejects.toThrow('baanx down')
+    })
+
+    it('opens the sheet at its content height, not full screen', async () => {
+        mockRequest.mockResolvedValueOnce('confirm')
+        const { result } = renderHook(() => useAuthorizeCardDelegation())
+
+        await result.current.authorizeDelegation(account, delegate)
+
+        // 'modal' is full-height (see SheetHeader), which leaves this short
+        // confirm copy sitting above a screen of empty sheet.
+        const [{ options }] = mockRequest.mock.calls[0] as [
+            { options: Record<string, unknown> },
+        ]
+        expect(options.size).toBe('auto')
+        // ConfirmActionContent brings no container, so the host must create one
+        // for 'auto' to have anything to measure; otherwise the sheet is invisible
+        // and the confirm promise never settles.
+        expect(options.autoCreateContainer).toBeUndefined()
     })
 })

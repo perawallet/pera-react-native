@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
-import type { CardTransactionFilters } from '../models'
+import type { CardTransactionFilters, CardWalletKind } from '../models'
 
 export const MODULE_PREFIX = 'card'
 
@@ -20,31 +21,57 @@ export const MODULE_PREFIX = 'card'
 // are imperative mutations and must never be cached.
 export const cardQueryKeys = {
     all: [MODULE_PREFIX] as const,
-    status: (network: Network) =>
-        [MODULE_PREFIX, 'status', { network }] as const,
-    user: (network: Network) => [MODULE_PREFIX, 'user', { network }] as const,
-    onboardingDetails: (network: Network, onboardingId: Nullable<string>) =>
+    status: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'status', { scope }] as const,
+    user: (scope: ChainScope) => [MODULE_PREFIX, 'user', { scope }] as const,
+    onboardingDetails: (scope: ChainScope, onboardingId: Nullable<string>) =>
+        [MODULE_PREFIX, 'onboarding-details', { scope, onboardingId }] as const,
+    registrationSettings: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'registration-settings', { scope }] as const,
+    currentRegion: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'current-region', { scope }] as const,
+    transactions: (scope: ChainScope, filters?: CardTransactionFilters) =>
+        [MODULE_PREFIX, 'transactions', { scope, ...(filters ?? {}) }] as const,
+    pendingWithdrawal: (scope: ChainScope, ownerAddress: Nullable<string>) =>
+        [MODULE_PREFIX, 'pending-withdrawal', { scope, ownerAddress }] as const,
+    usdcBalance: (scope: ChainScope, address: string) =>
+        [MODULE_PREFIX, 'usdc-balance', { scope, address }] as const,
+    // bigints are stringified: React Query hashes keys with JSON.stringify.
+    // The deadline makes every wait its own query.
+    usdcCredit: (
+        scope: ChainScope,
+        watch: {
+            address: string
+            before: bigint
+            minimum: bigint
+            deadline: number
+        },
+    ) =>
         [
             MODULE_PREFIX,
-            'onboarding-details',
-            { network, onboardingId },
+            'usdc-credit',
+            {
+                scope,
+                address: watch.address,
+                before: watch.before.toString(),
+                minimum: watch.minimum.toString(),
+                deadline: watch.deadline,
+            },
         ] as const,
-    registrationSettings: (network: Network) =>
-        [MODULE_PREFIX, 'registration-settings', { network }] as const,
-    currentRegion: (network: Network) =>
-        [MODULE_PREFIX, 'current-region', { network }] as const,
-    transactions: (network: Network, filters?: CardTransactionFilters) =>
-        [
-            MODULE_PREFIX,
-            'transactions',
-            { network, ...(filters ?? {}) },
-        ] as const,
-    internalWallets: (network: Network) =>
-        [MODULE_PREFIX, 'internal-wallets', { network }] as const,
-    externalWallets: (network: Network) =>
-        [MODULE_PREFIX, 'external-wallets', { network }] as const,
+    walletBalance: (scope: ChainScope, kind: CardWalletKind) =>
+        [MODULE_PREFIX, 'wallet-balance', { scope, kind }] as const,
+    walletHistory: (
+        scope: ChainScope,
+        kind: CardWalletKind,
+        walletId: string,
+    ) => [MODULE_PREFIX, 'wallet-history', { scope, kind, walletId }] as const,
+    // Prefix of `walletHistory` for invalidating every page of one wallet kind.
+    walletHistoryByKind: (scope: ChainScope, kind: CardWalletKind) =>
+        [MODULE_PREFIX, 'wallet-history', { scope, kind }] as const,
+    externalWallets: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'external-wallets', { scope }] as const,
     // OS-wallet push provisioning state is device-local, so these two are
-    // deliberately not keyed by network.
+    // deliberately not keyed by scope.
     walletProvisioningAvailability: [
         MODULE_PREFIX,
         'wallet-provisioning',

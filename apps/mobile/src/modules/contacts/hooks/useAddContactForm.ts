@@ -18,9 +18,11 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import {
+    contactFromFormValues,
     DuplicateAddressError,
     useContacts,
     type Contact,
+    type ContactFormValues,
 } from '@perawallet/wallet-core-contacts'
 
 import { useLanguage } from '@hooks/useLanguage'
@@ -31,7 +33,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ContactsStackParamsList } from '@modules/contacts/routes'
 
 export type UseAddContactFormResult = UseContactFormResult & {
-    save: (data: Contact) => void
+    save: (data: ContactFormValues) => void
 }
 
 export const useAddContactForm = (): UseAddContactFormResult => {
@@ -45,16 +47,16 @@ export const useAddContactForm = (): UseAddContactFormResult => {
     const prefillName = route.params?.label ?? ''
     const initialContact = useMemo<Contact | null>(() => {
         if (!prefillAddress && !prefillName) return null
-        return { address: prefillAddress, name: prefillName }
+        return { addresses: { algorand: prefillAddress }, name: prefillName }
     }, [prefillAddress, prefillName])
     const form = useContactForm(initialContact)
 
     const save = useCallback(
-        (data: Contact) => {
+        (data: ContactFormValues) => {
             if (!form.isValid) return
 
             try {
-                addContact(data)
+                addContact(contactFromFormValues(data))
                 trackEvent(ContactsEvent.Add)
             } catch (e) {
                 if (e instanceof DuplicateAddressError) {

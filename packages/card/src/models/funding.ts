@@ -11,7 +11,6 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Max USD Baanx auto-funds per card transaction; also sent as the delegation
@@ -31,75 +30,3 @@ export const FundingType = {
     Manual: 'MANUAL',
 } as const
 export type FundingType = (typeof FundingType)[keyof typeof FundingType]
-
-/** ASA id, or 'ALGO' for the native asset. */
-export type FundingAssetId = string
-
-export type FundingQuote = {
-    sourceAsset: FundingAssetId
-    sourceAmount: Decimal
-    targetCurrency: string
-    targetAmount: Decimal
-    rate: Decimal
-    fee: Decimal
-    /** ISO 8601 timestamp. */
-    expiresAt: string
-}
-
-export type FundingRequest = {
-    network: Network
-    cardId: string
-    sourceAsset: FundingAssetId
-    sourceAmount: Decimal
-}
-
-/** Opaque Algorand delegation/authorization payload Baanx will define. */
-export type FundingDelegation = {
-    unsignedTxns?: string[]
-    delegationId?: string
-}
-
-export type FundingResult = {
-    delegationId: string
-    status: 'PENDING' | 'CONFIRMED' | 'FAILED'
-}
-
-/**
- * Extension point for the deferred Algorand funding/delegation layer. No
- * implementation in v1 — Baanx has no Algorand support yet. When it ships, a
- * concrete `baanxAlgorandFundingProvider implements CardFundingProvider` lands
- * under src/api/funding/ with no changes to existing card/transaction code.
- */
-export interface CardFundingProvider {
-    isAvailable(network: Network): boolean
-    getQuote(request: FundingRequest): Promise<Nullable<FundingQuote>>
-    buildDelegation(request: FundingRequest): Promise<FundingDelegation>
-    submitFunding(
-        delegation: FundingDelegation,
-        network: Network,
-    ): Promise<FundingResult>
-}
-
-/**
- * Thrown by the deposit pipeline when no funding provider is wired yet (the
- * default {@link unavailableFundingProvider}). Screens catch this to fall back
- * to the "coming soon" path instead of surfacing a generic error.
- */
-export class CardFundingUnavailableError extends Error {
-    constructor() {
-        super('Card funding is not available yet')
-        this.name = 'CardFundingUnavailableError'
-    }
-}
-
-/** Null-object so callers can branch on availability without null checks. */
-export const unavailableFundingProvider: CardFundingProvider = {
-    isAvailable: () => false,
-    getQuote: async () => null,
-    buildDelegation: async () => {
-        throw new CardFundingUnavailableError()
-    },
-    submitFunding: async () => {
-        throw new CardFundingUnavailableError()
-    },
-}

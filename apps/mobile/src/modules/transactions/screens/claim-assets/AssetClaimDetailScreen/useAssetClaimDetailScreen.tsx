@@ -12,41 +12,49 @@
 
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import {
+    findAccountByAddressOn,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
-import type { MessagesStackParamList } from '@modules/messages/routes/types'
+import type { MessagesStackParamList } from '@modules/messages'
 import { Decimal } from 'decimal.js'
+import { useCapability } from '@hooks/useCapability'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import {
     ALGO_ASSET_NAME,
     DEFAULT_PRECISION,
     formatCurrency,
     type Nullable,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 
 type UseAssetClaimDetailScreenResult = {
     request: Nullable<Arc59AssetRequest>
     receiverAccount: Nullable<WalletAccount>
     amount: Decimal
+    isClaimBlocked: boolean
+    isRejectBlocked: boolean
     handleClaim: () => void
     handleRejectPress: () => void
+    canBuy: boolean
+    handleAddFunds: () => void
     handleCopyAssetId: () => void
 }
 
 export const useAssetClaimDetailScreen =
     (): UseAssetClaimDetailScreenResult => {
-        const { push } = useAppNavigation()
+        const nativeAsset = useNativeAsset()
+        const { push, navigate } = useAppNavigation()
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()
         const { assetIndex } = route.params
@@ -55,16 +63,33 @@ export const useAssetClaimDetailScreen =
         const { copyToClipboard } = useClipboard()
         const { request: requestBottomSheet } = useBottomSheet()
         const { showToast, errorToast } = useToast()
+        const canBuy = useCapability({ anyChain: 'onramp' })
         const { t } = useLanguage()
 
         const request = assetRequests[assetIndex] ?? null
-        const account = accounts.find(acc => acc.address === accountAddress)
+        const account = accountAddress
+            ? findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, accountAddress)
+            : undefined
+
+        // The opt-in this claim performs raises the account's minimum balance,
+        // so a claim the backend says is unaffordable can only be unblocked by
+        // adding ALGO — unless the inbox itself carries enough to cover it.
+        const isClaimBlocked =
+            !!request?.insufficientAlgoForClaiming &&
+            !request.shouldUseFundsBeforeClaiming
+
+        // Rejecting only pays a fee, so it can be affordable when claiming is
+        // not; the two are stated separately rather than as one "no ALGO".
+        const isRejectBlocked =
+            !!request?.insufficientAlgoForRejecting &&
+            !request.shouldUseFundsBeforeRejecting
+
+        const handleAddFunds = useCallback(() => {
+            navigate('TabBar', { screen: 'Fund' })
+        }, [navigate])
 
         const handleClaim = useCallback(() => {
-            if (
-                request?.insufficientAlgoForClaiming &&
-                !request?.shouldUseFundsBeforeClaiming
-            ) {
+            if (isClaimBlocked) {
                 showToast({
                     title: t('errors.transaction.title'),
                     body: t('messages.claim.insufficient_algo_claim'),
@@ -82,15 +107,12 @@ export const useAssetClaimDetailScreen =
                         request?.shouldUseFundsBeforeClaiming ?? false,
                 },
             })
-        }, [push, assetIndex, request, showToast, t])
+        }, [push, assetIndex, request, showToast, t, isClaimBlocked])
 
         const handleRejectPress = useCallback(async () => {
             if (!request) return
 
-            if (
-                request.insufficientAlgoForRejecting &&
-                !request.shouldUseFundsBeforeRejecting
-            ) {
+            if (isRejectBlocked) {
                 errorToast(
                     t('errors.transaction.title'),
                     t('messages.claim.insufficient_algo_reject'),
@@ -101,9 +123,9 @@ export const useAssetClaimDetailScreen =
             const algoDisplayAmount = formatCurrency(
                 baseUnitsToDisplayUnits(
                     request.microAlgoGainOnReject,
-                    ALGO_ASSET.decimals,
+                    nativeAsset.decimals,
                 ),
-                ALGO_ASSET.decimals,
+                nativeAsset.decimals,
                 ALGO_ASSET_NAME,
                 undefined,
                 false,
@@ -139,7 +161,16 @@ export const useAssetClaimDetailScreen =
                         request.shouldUseFundsBeforeRejecting ?? false,
                 },
             })
-        }, [push, assetIndex, request, requestBottomSheet, t, errorToast])
+        }, [
+            push,
+            assetIndex,
+            request,
+            requestBottomSheet,
+            t,
+            errorToast,
+            isRejectBlocked,
+            nativeAsset.decimals,
+        ])
 
         const handleCopyAssetId = useCallback(() => {
             if (request.id) {
@@ -156,7 +187,11 @@ export const useAssetClaimDetailScreen =
             request,
             amount,
             receiverAccount: account ?? null,
+            isClaimBlocked,
+            isRejectBlocked,
             handleClaim,
+            canBuy,
+            handleAddFunds,
             handleRejectPress: () => void handleRejectPress(),
             handleCopyAssetId,
         }

@@ -12,6 +12,10 @@
 
 import { and, eq, gte, inArray } from 'drizzle-orm'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { NfdName } from '../models'
 import { NfdCacheSchema } from './schema'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -48,15 +52,16 @@ function rowToEntry(row: {
 
 type UpsertNfdEntriesParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     entries: NfdCacheEntry[]
 }
 
 export async function upsertNfdEntries({
     db = getDatabase(),
-    network,
+    scope,
     entries,
 }: UpsertNfdEntriesParams): Promise<void> {
+    const network = toScopeKey(scope)
     if (entries.length === 0) return
 
     const now = Date.now()
@@ -90,14 +95,15 @@ export async function upsertNfdEntries({
 type GetNfdByAddressParams = {
     db?: Database
     address: string
-    network: string
+    scope: ChainScope
 }
 
 export async function getNfdByAddress({
     db = getDatabase(),
     address,
-    network,
+    scope,
 }: GetNfdByAddressParams): Promise<Nullable<NfdCacheRow>> {
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             address: NfdCacheSchema.address,
@@ -121,14 +127,15 @@ export async function getNfdByAddress({
 type GetNfdsByAddressesParams = {
     db?: Database
     addresses: string[]
-    network: string
+    scope: ChainScope
 }
 
 export async function getNfdsByAddresses({
     db = getDatabase(),
     addresses,
-    network,
+    scope,
 }: GetNfdsByAddressesParams): Promise<NfdCacheRow[]> {
+    const network = toScopeKey(scope)
     if (addresses.length === 0) return []
 
     const rows = await db
@@ -154,7 +161,7 @@ export async function getNfdsByAddresses({
 type GetStaleOrMissingAddressesParams = {
     db?: Database
     addresses: string[]
-    network: string
+    scope: ChainScope
     ttlMs: number
 }
 
@@ -169,9 +176,10 @@ type GetStaleOrMissingAddressesParams = {
 export async function getStaleOrMissingAddresses({
     db = getDatabase(),
     addresses,
-    network,
+    scope,
     ttlMs,
 }: GetStaleOrMissingAddressesParams): Promise<string[]> {
+    const network = toScopeKey(scope)
     if (addresses.length === 0) return []
 
     const freshThreshold = Date.now() - ttlMs

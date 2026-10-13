@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
-import { PWView, PWText, PWIcon } from '@components/core'
+import { PWView, PWText, PWIcon, PWLoadingIndicator } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -31,7 +29,6 @@ export const LedgerVerificationCard = ({
 }: LedgerVerificationCardProps) => {
     const styles = useStyles({ status })
     const { t } = useLanguage()
-    const { theme } = useTheme()
 
     return (
         <PWView
@@ -47,9 +44,8 @@ export const LedgerVerificationCard = ({
                         testID={testID ? `${testID}-check` : undefined}
                     />
                 ) : (
-                    <ActivityIndicator
-                        size='small'
-                        color={theme.colors.negative}
+                    <PWLoadingIndicator
+                        size='sm'
                         testID={testID ? `${testID}-spinner` : undefined}
                     />
                 )}

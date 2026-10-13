@@ -12,17 +12,15 @@
 
 import { Decimal } from 'decimal.js'
 import {
-    type Network,
-    type PeraBackedNetwork,
-    isPeraBackedNetwork,
-} from '@perawallet/wallet-core-config'
+    scopeForLegacyNetwork,
+    toScopeKey,
+    type ChainScope,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import { type Network } from '@perawallet/wallet-core-config'
 
 import type { PeraCollectible } from './collectibles'
-import {
-    ALGO_ASSET_ID,
-    ALGO_ASSET_NAME,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const PeraAssetVerificationTier = {
     verified: 'verified',
@@ -118,15 +116,28 @@ export type PeraAssetMetadata = {
     isPriceAlertEnabled?: boolean
 }
 
-export const KNOWN_ASSET_IDS = {
-    USDC: { mainnet: '31566704', testnet: '10458941' },
-} as const satisfies Record<string, Record<PeraBackedNetwork, string>>
+const legacyScopeKey = (network: Network): ChainScopeKey =>
+    toScopeKey(scopeForLegacyNetwork(network))
+
+/**
+ * Every declared network has an explicit entry, `null` included, so a network
+ * added to a chain without deciding its asset ids shows up as a missing key.
+ */
+export const KNOWN_ASSET_IDS: {
+    readonly USDC: ReadonlyMap<ChainScopeKey, Nullable<string>>
+} = {
+    USDC: new Map([
+        [legacyScopeKey('mainnet'), '31566704'],
+        [legacyScopeKey('testnet'), '10458941'],
+        [legacyScopeKey('betanet'), null],
+    ]),
+}
 
 export type KnownAssetKey = keyof typeof KNOWN_ASSET_IDS
 
 /**
- * The network's id for a well-known asset, or `null` where there is no known
- * id.
+ * The scope's id for a well-known asset, or `null` where there is no known
+ * id, including a scope that is not a valid scope key.
  *
  * Returned `null` rather than TestNet's id: that id does not identify the same
  * asset on another chain. Every consumer is a Pera-backed feature that is
@@ -135,29 +146,20 @@ export type KnownAssetKey = keyof typeof KNOWN_ASSET_IDS
  */
 export const getKnownAssetId = (
     key: KnownAssetKey,
-    network: Network,
-): Nullable<string> =>
-    isPeraBackedNetwork(network) ? KNOWN_ASSET_IDS[key][network] : null
-
-export const ALGO_ASSET: PeraAsset = {
-    assetId: ALGO_ASSET_ID,
-    name: 'Algo',
-    unitName: ALGO_ASSET_NAME,
-    decimals: 6,
-    totalSupply: new Decimal('10000000000000000'), // 10B ALGO in microAlgos
-    creator: {
-        address: '',
-    },
-    peraMetadata: {
-        ...DEFAULT_ASSET_METADATA,
-        verificationTier: PeraAssetVerificationTier.verified,
-        type: PeraAssetType.algo,
-    },
+    scope: ChainScope,
+): Nullable<string> => {
+    let scopeKey: ChainScopeKey
+    try {
+        scopeKey = toScopeKey(scope)
+    } catch {
+        return null
+    }
+    return KNOWN_ASSET_IDS[key].get(scopeKey) ?? null
 }
 
-export type AssetPrice = {
+export type AlgorandAssetPrice = {
     assetId: string
     usdPrice: Decimal
 }
 
-export type AssetPrices = Map<string, AssetPrice>
+export type AssetPrices = Map<string, AlgorandAssetPrice>

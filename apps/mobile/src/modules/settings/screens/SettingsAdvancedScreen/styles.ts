@@ -19,4 +19,15 @@ export const useStyles = makeStyles(theme => ({
     row: {
         paddingHorizontal: theme.spacing.xs,
     },
+    toggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+        paddingVertical: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xs,
+    },
+    toggleLabel: {
+        flex: 1,
+        minWidth: 0,
+    },
 }))

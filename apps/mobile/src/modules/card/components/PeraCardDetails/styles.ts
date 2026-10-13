@@ -102,10 +102,6 @@ export const useStyles = makeStyles(theme => ({
     fundingGroupLabel: {
         color: theme.colors.textGray,
     },
-    fundingGroupDivider: {
-        height: theme.borders.sm,
-        backgroundColor: theme.colors.layerGray,
-    },
     changeLink: {
         color: theme.colors.linkPrimary,
     },

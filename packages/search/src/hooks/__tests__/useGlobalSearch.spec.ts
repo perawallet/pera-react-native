@@ -15,11 +15,12 @@ import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '../useGlobalSearch'
+
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const makeWrapper = () => {
     const client = new QueryClient({
@@ -46,7 +47,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockAllAccounts(),
-        useOwnedAssets: (options?: { enabled?: boolean }) =>
+        useOwnedAssets: (_scope: unknown, options?: { enabled?: boolean }) =>
             mockUseOwnedAssets(options),
     }
 })
@@ -67,9 +68,9 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 const makeAccount = (address: string, name?: string): WalletAccount => ({
-    type: AccountTypes.algo25,
-    address,
-    keyPairId: '',
+    id: address,
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address, keyPairId: '' } },
     name,
 })
 
@@ -128,7 +129,7 @@ describe('useGlobalSearch', () => {
         })
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0, scopes: ['assets'] }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0, scopes: ['assets'] }),
             { wrapper: makeWrapper() },
         )
 
@@ -153,7 +154,7 @@ describe('useGlobalSearch', () => {
 
         const { result } = renderHook(
             () =>
-                useGlobalSearch({
+                useGlobalSearch(SCOPE, {
                     debounceMs: 0,
                     scopes: ['assets'],
                     remoteAssets: {},
@@ -180,7 +181,7 @@ describe('useGlobalSearch', () => {
         })
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0, scopes: ['assets'] }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0, scopes: ['assets'] }),
             { wrapper: makeWrapper() },
         )
 
@@ -193,7 +194,7 @@ describe('useGlobalSearch', () => {
         setOwnedAssets([])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0 }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 
@@ -209,14 +210,14 @@ describe('useGlobalSearch', () => {
         const alice = makeAccount('ALICE_ADDR', 'Alice')
         mockAllAccounts.mockReturnValue([alice])
         mockFindContacts.mockReturnValue([
-            { name: 'Alice Contact', address: 'CONTACT_ADDR' },
+            { name: 'Alice Contact', addresses: { algorand: 'CONTACT_ADDR' } },
         ])
         setOwnedAssets([
             makeAsset('1', { name: 'Alice Asset', unitName: 'ALI' }),
         ])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0, scopes: ['assets'] }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0, scopes: ['assets'] }),
             { wrapper: makeWrapper() },
         )
 
@@ -240,7 +241,7 @@ describe('useGlobalSearch', () => {
 
         const { result } = renderHook(
             () =>
-                useGlobalSearch({
+                useGlobalSearch(SCOPE, {
                     debounceMs: 0,
                     scopes: ['assets'],
                     assetFilter: a => a.assetId === '1',
@@ -259,12 +260,25 @@ describe('useGlobalSearch', () => {
         )
     })
 
+    test('searches remote assets on the chain scope it is given', () => {
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+
+        renderHook(() => useGlobalSearch(SCOPE, { debounceMs: 0 }), {
+            wrapper: makeWrapper(),
+        })
+
+        const lastCall = mockUseAssetSearchQuery.mock.calls.at(-1)
+        expect(lastCall?.[1]).toEqual(SCOPE)
+    })
+
     test('remote asset search is disabled by default (enabled=false)', () => {
         mockAllAccounts.mockReturnValue([])
         mockFindContacts.mockReturnValue([])
         setOwnedAssets([])
 
-        renderHook(() => useGlobalSearch({ debounceMs: 0 }), {
+        renderHook(() => useGlobalSearch(SCOPE, { debounceMs: 0 }), {
             wrapper: makeWrapper(),
         })
 
@@ -273,7 +287,7 @@ describe('useGlobalSearch', () => {
             mockUseAssetSearchQuery.mock.calls[
                 mockUseAssetSearchQuery.mock.calls.length - 1
             ]
-        expect(lastCall?.[1]?.enabled).toBe(false)
+        expect(lastCall?.[2]?.enabled).toBe(false)
     })
 
     test('showOnEmptyQuery runs the remote search with no query and surfaces suggestions', () => {
@@ -303,7 +317,7 @@ describe('useGlobalSearch', () => {
 
         const { result } = renderHook(
             () =>
-                useGlobalSearch({
+                useGlobalSearch(SCOPE, {
                     debounceMs: 0,
                     scopes: ['assets'],
                     remoteAssets: { showOnEmptyQuery: true },
@@ -316,7 +330,7 @@ describe('useGlobalSearch', () => {
                 mockUseAssetSearchQuery.mock.calls.length - 1
             ]
         expect(lastCall?.[0]).toBe('')
-        expect(lastCall?.[1]?.enabled).toBe(true)
+        expect(lastCall?.[2]?.enabled).toBe(true)
         expect(result.current.value).toBe('')
         expect(result.current.results.remoteAssets).toEqual(suggestions)
         expect(result.current.results.accounts).toEqual([])
@@ -338,7 +352,7 @@ describe('useGlobalSearch', () => {
 
         const { result } = renderHook(
             () =>
-                useGlobalSearch({
+                useGlobalSearch(SCOPE, {
                     debounceMs: 0,
                     scopes: ['assets'],
                     remoteAssets: { showOnEmptyQuery: true },
@@ -355,7 +369,8 @@ describe('useGlobalSearch', () => {
         setOwnedAssets([makeAsset('1', { name: 'USDC', unitName: 'USDC' })])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 100, scopes: ['assets'] }),
+            () =>
+                useGlobalSearch(SCOPE, { debounceMs: 100, scopes: ['assets'] }),
             { wrapper: makeWrapper() },
         )
 
@@ -403,7 +418,7 @@ describe('useGlobalSearch', () => {
 
         const { result } = renderHook(
             () =>
-                useGlobalSearch({
+                useGlobalSearch(SCOPE, {
                     debounceMs: 0,
                     scopes: ['assets'],
                     remoteAssets: { hasCollectible: true },
@@ -433,7 +448,7 @@ describe('useGlobalSearch', () => {
         setOwnedAssets([])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0 }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 
@@ -447,16 +462,43 @@ describe('useGlobalSearch', () => {
         expect(result.current.hasResults).toBe(true)
     })
 
+    test('matches an account by its address on any chain', async () => {
+        const evm: WalletAccount = {
+            id: 'evm',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: '0xBEEF' } },
+        }
+        mockAllAccounts.mockReturnValue([makeAccount('ALICE_ADDR'), evm])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+
+        const { result } = renderHook(
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
+            { wrapper: makeWrapper() },
+        )
+
+        await act(async () => {
+            result.current.setValue('beef')
+        })
+
+        await waitFor(() =>
+            expect(result.current.results.accounts).toEqual([evm]),
+        )
+    })
+
     test('matches contacts via findContacts', async () => {
         mockAllAccounts.mockReturnValue([])
-        const charlie: Contact = { name: 'Charlie', address: 'CHAR_ADDR' }
+        const charlie: Contact = {
+            name: 'Charlie',
+            addresses: { algorand: 'CHAR_ADDR' },
+        }
         mockFindContacts.mockImplementation(({ keyword }) =>
             keyword.toLowerCase() === 'char' ? [charlie] : [],
         )
         setOwnedAssets([])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0 }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 
@@ -483,7 +525,7 @@ describe('useGlobalSearch', () => {
         setOwnedAssets([usdc, goBtc])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0 }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 
@@ -501,7 +543,7 @@ describe('useGlobalSearch', () => {
         mockAllAccounts.mockReturnValue([alice])
         const aliceContact: Contact = {
             name: 'Alice Contact',
-            address: 'ALICECONTACTADDR',
+            addresses: { algorand: 'ALICECONTACTADDR' },
         }
         mockFindContacts.mockReturnValue([aliceContact])
         const aliceAsset = makeAsset('1', {
@@ -511,7 +553,7 @@ describe('useGlobalSearch', () => {
         setOwnedAssets([aliceAsset])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0 }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 
@@ -539,7 +581,7 @@ describe('useGlobalSearch', () => {
         setOwnedAssets([carrot, apple, banana])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0 }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
             {
                 wrapper: makeWrapper(),
             },
@@ -569,7 +611,7 @@ describe('useGlobalSearch', () => {
         setOwnedAssets([makeAsset('1', { name: 'USDC', unitName: 'USDC' })])
 
         const { result } = renderHook(
-            () => useGlobalSearch({ debounceMs: 0 }),
+            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 

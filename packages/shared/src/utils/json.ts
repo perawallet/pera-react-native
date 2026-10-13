@@ -10,6 +10,14 @@
  limitations under the License
  */
 
+import { fromByteArray, toByteArray } from 'base64-js'
+import { Decimal } from 'decimal.js'
+
+const BIGINT_TAG = '__bigint__'
+const MAP_TAG = '__map__'
+const BYTES_TAG = '__bytes__'
+const DECIMAL_TAG = '__decimal__'
+
 /**
  * Cheap pre-check: only payloads containing a run of 16+ digits can hold an
  * integer literal outside the IEEE-754 safe range (2^53 - 1 has 16 digits).
@@ -130,4 +138,76 @@ export const uint64IdToNumber = (id: string | number): number => {
         )
     }
     return value
+}
+
+/**
+ * Round-trip safe JSON serialization that preserves bigint, Map, Uint8Array
+ * and Decimal types. Use with {@link parseTypedJson} to restore them.
+ */
+export const stringifyTypedJson = (value: unknown): string => {
+    // JSON.stringify applies toJSON before the replacer, and Buffer has one, so a
+    // replacer reading its `value` argument sees {type:'Buffer',data:[...]} and never
+    // recognizes the bytes. Read the raw pre-toJSON value off the holder instead.
+    return JSON.stringify(value, function (key, value) {
+        const raw = (this as Record<string, unknown>)[key]
+        if (typeof raw === 'bigint') {
+            return `${BIGINT_TAG}${raw.toString()}`
+        }
+        if (raw instanceof Map) {
+            return { [MAP_TAG]: Array.from(raw.entries()) }
+        }
+        // Decimal's own toJSON emits a bare string, which parses back as a
+        // string and takes every Decimal method with it. isDecimal rather than
+        // instanceof so a Decimal from another decimal.js copy is still caught.
+        if (Decimal.isDecimal(raw)) {
+            return { [DECIMAL_TAG]: (raw as Decimal).toString() }
+        }
+        // Buffer reports [object Uint8Array] too, and unlike `instanceof` the tag
+        // survives the realm split between Node's Buffer and jsdom's Uint8Array
+        // under vitest — while still excluding Int32Array and DataView, which must
+        // not be re-typed as bytes.
+        if (Object.prototype.toString.call(raw) === '[object Uint8Array]') {
+            return {
+                [BYTES_TAG]: fromByteArray(raw as Uint8Array<ArrayBufferLike>),
+            }
+        }
+        return value
+    })
+}
+
+/**
+ * Parses JSON produced by {@link stringifyTypedJson},
+ * restoring tagged bigint, Map, Uint8Array and Decimal values.
+ */
+export const parseTypedJson = <T = unknown>(data: string): T => {
+    return JSON.parse(data, (_key, value) => {
+        if (typeof value === 'string' && value.startsWith(BIGINT_TAG)) {
+            return BigInt(value.slice(BIGINT_TAG.length))
+        }
+        if (
+            value !== null &&
+            typeof value === 'object' &&
+            MAP_TAG in value &&
+            Array.isArray(value[MAP_TAG])
+        ) {
+            return new Map(value[MAP_TAG])
+        }
+        if (
+            value !== null &&
+            typeof value === 'object' &&
+            BYTES_TAG in value &&
+            typeof value[BYTES_TAG] === 'string'
+        ) {
+            return toByteArray(value[BYTES_TAG])
+        }
+        if (
+            value !== null &&
+            typeof value === 'object' &&
+            DECIMAL_TAG in value &&
+            typeof value[DECIMAL_TAG] === 'string'
+        ) {
+            return new Decimal(value[DECIMAL_TAG])
+        }
+        return value
+    })
 }

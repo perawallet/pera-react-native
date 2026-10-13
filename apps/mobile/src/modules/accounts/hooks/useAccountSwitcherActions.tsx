@@ -14,10 +14,12 @@ import { useCallback } from 'react'
 import { hasCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 
 export type UseAccountSwitcherActionsResult = {
+    canSearch: boolean
     goToAddAccount: () => void
     goToSearch: () => void
     goToPeraCardActivation: () => void
@@ -35,6 +37,7 @@ export const useAccountSwitcherActions =
     (): UseAccountSwitcherActionsResult => {
         const navigation = useAppNavigation()
         const { request: requestBottomSheet } = useBottomSheet()
+        const canSearch = useCapability({ anyChain: 'assetSearch' })
 
         const goToAddAccount = useCallback(() => {
             trackEvent(HomeEvent.AccountAdd)
@@ -88,6 +91,7 @@ export const useAccountSwitcherActions =
         }, [requestBottomSheet])
 
         return {
+            canSearch,
             goToAddAccount,
             goToSearch,
             goToPeraCardActivation,

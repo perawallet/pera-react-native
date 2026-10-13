@@ -10,33 +10,26 @@
  limitations under the License
  */
 
-// ONLY the verified-requester row lives here. Everything this screen shares
-// with mobile's ConnectionView — header, permissions panel, account rows,
-// footer buttons — comes from that component's own stylesheet
-// (@modules/walletconnect/components/ConnectionView/styles), imported rather
-// than copied, so the two cannot drift on spacing or colour.
-//
-// The requester row has no counterpart there: mobile pairs by QR or deeplink,
-// so it has no browser-verified requesting tab to attribute. These values match
-// EnableRequestScreen's, which is where this row was introduced.
+// Only the requester rows live here; everything shared with
+// ConnectionApprovalView comes from its stylesheet so the two cannot drift.
+// Mobile pairs by QR or deeplink, so it has no requesting tab to attribute.
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    // Column, not row: normally the badge alone sits centred under the dApp
-    // url, and in the mismatch case the origin line stacks above it. Centring
-    // is what makes the badge read as qualifying the url directly above.
-    verifiedRow: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
+    // The requesting tab is not the site the peer claims: a warning box,
+    // shaped like the ARC-60 sign-in origin warning, in place of the url link.
+    mismatchWarning: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.sm,
+        backgroundColor: theme.colors.negativeLighter,
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing.md,
+        marginTop: theme.spacing.sm,
     },
-    // Distinct from the peer-asserted url above: this is the browser-verified
-    // requester. Uses `textMain`, NOT `verifiedBannerContent` — at `caption`
-    // (11px) that colour only clears 3.82:1 against `theme.colors.background`
-    // in light mode, below WCAG AA's 4.5:1 for that size. It stays reserved for
-    // the badge below, whose icon+label pairing carries the meaning.
-    requesterOrigin: {
-        color: theme.colors.textMain,
+    mismatchWarningText: {
+        flex: 1,
+        color: theme.colors.negative,
     },
     verifiedBadge: {
         flexDirection: 'row',
@@ -46,10 +39,8 @@ export const useStyles = makeStyles(theme => ({
     verifiedBadgeText: {
         color: theme.colors.verifiedBannerContent,
     },
-    // Also has no mobile counterpart: mobile's approve-delivery failure is a
-    // toast over a sheet that stays open for an in-place retry, whereas this
-    // window has lost the service worker's pending entry and can only tell the
-    // user to start the request again from the site.
+    // No mobile counterpart: this window has lost the service worker's pending
+    // entry and can only tell the user to start the request again from the site.
     deliveryError: {
         color: theme.colors.negative,
         textAlign: 'center',

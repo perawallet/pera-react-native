@@ -31,8 +31,7 @@ export const useMessagesSpotBanners = (): UseMessagesSpotBannersResult => {
     const { route } = useBannerLinkRouter()
 
     const onPress = useCallback(
-        (banner: SpotBanner) =>
-            route({ url: banner.url, isExternal: banner.isUrlExternal }),
+        (banner: SpotBanner) => route({ url: banner.url }),
         [route],
     )
 

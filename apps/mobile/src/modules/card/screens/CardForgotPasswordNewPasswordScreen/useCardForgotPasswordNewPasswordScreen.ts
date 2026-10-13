@@ -26,6 +26,7 @@ import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardStackParamList } from '../../routes/types'
 
 export type UseCardForgotPasswordNewPasswordScreenResult = {
@@ -40,6 +41,7 @@ export type UseCardForgotPasswordNewPasswordScreenResult = {
 
 export const useCardForgotPasswordNewPasswordScreen =
     (): UseCardForgotPasswordNewPasswordScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const { successToast, errorToast } = useToast()
         const navigation = useAppNavigation()
@@ -51,7 +53,7 @@ export const useCardForgotPasswordNewPasswordScreen =
                 >
             >()
         const { email, token } = route.params
-        const confirmReset = useConfirmPasswordResetMutation()
+        const confirmReset = useConfirmPasswordResetMutation(scope)
         const showError = useCardErrorToast({
             titleKey: 'peraCard.forgot_password.error_title',
             bodyKey: 'peraCard.forgot_password.error_body',

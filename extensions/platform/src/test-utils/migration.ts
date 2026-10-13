@@ -54,7 +54,7 @@ export const createEmptyLegacyMigrationData = (
     auth: { pin: null },
     accounts: [],
     undecodableAccounts: [],
-    hdWallets: [],
+    hdSeeds: [],
     contacts: [],
     notificationFilters: [],
     walletConnectV1: [],
@@ -129,10 +129,6 @@ export class StubMigrationService implements MigrationService {
     async getMigrationPlans() {
         return []
     }
-
-    async simulateLegacyDatabase() {}
-
-    async simulatePreSixxAccounts() {}
 
     async resetLegacyData() {
         this.hasData = false

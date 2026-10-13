@@ -11,8 +11,8 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AccountWithBalance } from '@components/AccountWithBalance'
 import { useStyles } from './styles'
 
 type AccountResultRowProps = {

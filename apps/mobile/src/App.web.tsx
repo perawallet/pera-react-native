@@ -22,27 +22,30 @@ import {
     hydratePlatform,
     installOffscreenStorageShim,
 } from '@perawallet/wallet-extension-platform-chrome/bootstrap'
-// Bootstrap-only subpath: exports hydrateKeystoreStorage without pulling the
-// extension's vendored ./keystore graph, which reaches xhd-wallet-api (and,
-// through libs.ts, dp256) — a large pure-JS crypto graph with no business
-// loading before hydration. The /bootstrap subpath is storage-only.
-import { hydrateKeystoreStorage } from '@perawallet/wallet-extension-keystore-chrome/bootstrap'
 
 type ShellComponent = React.ComponentType
 
+// Dynamic for the same boot-order reason as the surfaces themselves. Runs after
+// a surface's module graph (which builds the provider) and before it starts.
+const registerTransports = async (): Promise<void> => {
+    const [{ getProvider }, { registerHardwareWalletTransports }] =
+        await Promise.all([
+            import('@perawallet/wallet-extension-provider'),
+            import('./bootstrap/hardware-wallet-transports'),
+        ])
+    registerHardwareWalletTransports(getProvider().hardwareWalletRegistry)
+}
+
 const OffscreenStatus = (): React.JSX.Element => (
     <View style={{ flex: 1 }}>
+        {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- e2e status probe in the offscreen document, never shown to a user */}
         <Text testID='offscreen-status'>offscreen host running</Text>
     </View>
 )
 
-// Outermost mount guard, ABOVE ThemeProvider. AppShell.web has its own themed
-// WebShellErrorBoundary, but that boundary lives *inside* ThemeProvider — a
-// throw in AppShell's own render body (theme construction) or in ThemeProvider
-// itself is above it and would white-screen the whole tree. This boundary is
-// the last line of defence, so it stays store-free and unthemed (plain RN
-// primitives only, per this file's boot-order contract) and renders a
-// reload-to-recover fallback instead of a blank page.
+// Outermost mount guard ABOVE ThemeProvider: AppShell's own boundary lives
+// inside it, so a throw in theme construction or ThemeProvider itself would
+// white-screen. Store-free and unthemed per this file's boot-order contract.
 class RootBoundary extends React.Component<
     { children: React.ReactNode },
     { hasError: boolean }
@@ -64,12 +67,14 @@ class RootBoundary extends React.Component<
                     padding: 24,
                 }}
             >
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
                 <Text
                     testID='root-boundary-fallback'
                     style={{ marginBottom: 16 }}
                 >
                     Pera Wallet failed to start.
                 </Text>
+                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
                 <Text
                     testID='root-boundary-reload'
                     accessibilityRole='button'
@@ -96,38 +101,44 @@ export const App = (): React.JSX.Element => {
                 // reads chrome.storage.local.
                 installOffscreenStorageShim()
             }
-            await Promise.all([
-                hydratePlatform(),
-                // Nothing in the offscreen document reads keystore storage — no vault UI ever mounts there.
-                ...(isOffscreen ? [] : [hydrateKeystoreStorage()]),
-            ])
+            await hydratePlatform()
 
             if (isOffscreen) {
-                // Headless surface: no shell, no React tree beyond the status
-                // line. Store-bearing imports stay behind this dynamic import
-                // (same boot-order contract as AppShell).
-                const mod = await import('@browser/offscreen/runOffscreenApp')
-                await mod.runOffscreenApp()
+                // Headless surface; store-bearing imports stay behind these dynamic
+                // imports (same boot-order contract as AppShell).
+                const [
+                    mod,
+                    { registerChainAdapters },
+                    { markDatabaseResetNoticePending },
+                ] = await Promise.all([
+                    import('@browser/offscreen/runOffscreenApp'),
+                    import('./bootstrap/chain-adapters'),
+                    import('./bootstrap/databaseResetNotice'),
+                ])
+                await registerTransports()
+                await mod.runOffscreenApp({
+                    registerChainAdapters,
+                    onDatabaseReset: markDatabaseResetNoticePending,
+                })
                 setShell(() => OffscreenStatus)
                 return
             }
 
-            // BOOT-ORDER CONTRACT: Zustand persist stores read
-            // getProvider().keyValueStorage at module evaluation, which throws
-            // before hydrate() resolves. Everything that (transitively)
-            // imports a store MUST live behind this dynamic import. Never add
-            // a static import of app code to this file.
-            const mod = await import('./AppShell.web')
+            // BOOT-ORDER CONTRACT: Zustand persist stores read getProvider().keyValueStorage
+            // at module evaluation, which throws before hydrate() resolves. Everything
+            // that transitively imports a store MUST stay behind this dynamic import.
+            const [mod, { initRuntime }] = await Promise.all([
+                import('./AppShell.web'),
+                import('./bootstrap/preReact.web'),
+            ])
+            initRuntime()
+            await registerTransports()
             setShell(() => mod.AppShell)
         }
         bootstrap().catch((err: unknown) => {
-            // The offscreen document has no user to read an error, and leaving
-            // it alive is actively harmful: `chrome.offscreen.hasDocument()`
-            // keeps returning true, so `ensureOffscreenDocument` stays a no-op
-            // and nothing can ever recreate it — the database stays unreachable
-            // until the user manually reloads the extension. Closing makes the
-            // next `ensure-offscreen` rebuild it, which is the same recovery
-            // runOffscreenApp uses when the db worker dies under it.
+            // A dead offscreen document is worse than none: `hasDocument()` keeps
+            // returning true so nothing ever recreates it and the database stays
+            // unreachable until a manual reload. Closing lets `ensure-offscreen` rebuild it.
             if (getSurface() === 'offscreen') {
                 console.error('[pera] offscreen bootstrap failed:', err)
                 window.close()

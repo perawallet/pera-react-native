@@ -29,8 +29,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAccountSummaryQuery: vi.fn(() => ({
-            algoAmount: new Decimal('100'),
-            portfolioAlgoValue: new Decimal('100'),
+            nativeAmount: new Decimal('100'),
+            portfolioNativeValue: new Decimal('100'),
             portfolioUsdValue: new Decimal('200'),
             holdingsCount: 3,
             isComplete: true,
@@ -69,7 +69,11 @@ vi.mock('@hooks/useChartInteraction', () => ({
 }))
 
 const mockContextValue: UseAccountOverviewModalResult = {
-    account: { address: 'test-address' } as WalletAccount,
+    account: {
+        id: 'test',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'test-address' } },
+    } as WalletAccount,
     openSendFunds: vi.fn(),
     openReceiveFunds: vi.fn(),
     openAccountOptions: vi.fn(),
@@ -82,7 +86,11 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 describe('useAccountOverviewHeader', () => {
-    const mockAccount = { address: 'test-address' } as WalletAccount
+    const mockAccount = {
+        id: 'test',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'test-address' } },
+    } as WalletAccount
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -116,7 +124,7 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.portfolioAlgoValue.toString()).toBe('100')
+        expect(result.current.portfolioNativeValue.toString()).toBe('100')
         expect(result.current.portfolioPreferredValue?.toString()).toBe('200')
     })
 
@@ -129,12 +137,12 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.hasBalance).toBe(true)
     })
 
-    it('hasBalance is false for a lone account with 0 ALGO (shows "get started")', async () => {
+    it('hasBalance is false for a lone account with 0 native balance (shows "get started")', async () => {
         const { useAccountSummaryQuery, useAllAccounts } =
             await import('@perawallet/wallet-core-accounts')
         vi.mocked(useAccountSummaryQuery).mockReturnValue({
-            algoAmount: new Decimal('0'),
-            portfolioAlgoValue: new Decimal('0'),
+            nativeAmount: new Decimal('0'),
+            portfolioNativeValue: new Decimal('0'),
             portfolioUsdValue: new Decimal('0'),
             holdingsCount: 1,
             isComplete: true,
@@ -158,8 +166,8 @@ describe('useAccountOverviewHeader', () => {
         const { useAccountSummaryQuery, useAllAccounts } =
             await import('@perawallet/wallet-core-accounts')
         vi.mocked(useAccountSummaryQuery).mockReturnValue({
-            algoAmount: new Decimal('0'),
-            portfolioAlgoValue: new Decimal('0'),
+            nativeAmount: new Decimal('0'),
+            portfolioNativeValue: new Decimal('0'),
             portfolioUsdValue: new Decimal('0'),
             holdingsCount: 1,
             isComplete: true,
@@ -222,9 +230,8 @@ describe('useAccountOverviewHeader', () => {
 
         const mockPoint = {
             datetime: new Date(),
-            algoValue: new Decimal('100'),
+            nativeValue: new Decimal('100'),
             preferredValue: new Decimal('200'),
-            round: 12_345,
         }
 
         act(() => {

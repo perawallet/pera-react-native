@@ -1,7 +1,7 @@
 import { AlgorandClient, algo } from '@algorandfoundation/algokit-utils'
 import algosdk from 'algosdk'
 import { generateKey } from 'falcon-1024'
-import { deriveQuantumAddress } from '../packages/blockchain/src/pq/quantumAdapter'
+import { deriveQuantumAddress } from '../packages/chain-algorand/src/blockchain/pq/quantumAdapter'
 
 const DEFAULT_ALGOS = 100
 

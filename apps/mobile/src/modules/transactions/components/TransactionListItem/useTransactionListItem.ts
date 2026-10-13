@@ -12,16 +12,23 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
-    baseUnitsToDisplayUnits,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+    chainAccountOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
+    getDebitedAddress,
+    isOutgoingFor,
     useOpenSubmissionTxIdsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatNumber,
+    type Nullable,
+    baseUnitsToDisplayUnits,
+} from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
@@ -29,7 +36,7 @@ import { getTransactionIconType } from './utils'
 import { safeDecimals, type AmountDisplay } from './amounts'
 import { useTransactionAmounts } from './useTransactionAmounts'
 
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+import type { AlgorandTransactionIconType } from '@modules/algorand/icons'
 
 type TFunction = ReturnType<typeof useLanguage>['t']
 
@@ -39,7 +46,7 @@ export type UseTransactionListItemParams = {
 }
 
 export type UseTransactionListItemResult = {
-    iconType: TransactionIconType
+    iconType: AlgorandTransactionIconType
     title: string
     subtitle: Nullable<string>
     amounts: AmountDisplay[]
@@ -89,7 +96,7 @@ const getTitle = (
 
     if (tx.swapGroupDetail) return t('transactions.list_item.swap')
 
-    const isOutgoing = tx.sender === userAddress
+    const isOutgoing = isOutgoingFor(tx, userAddress)
     const sendOrReceive = isOutgoing
         ? t('transactions.list_item.send')
         : t('transactions.list_item.receive')
@@ -145,19 +152,23 @@ export const useTransactionListItem = ({
     const account = useSelectedAccount()
     const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
-    const { network } = useNetwork()
-    const { openTxIds } = useOpenSubmissionTxIdsQuery({ network })
-    const userAddress = account?.address ?? ''
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { openTxIds } = useOpenSubmissionTxIdsQuery({ scope })
+    const userAddress = account
+        ? (chainAccountOf(account, scope.chainId)?.address ?? '')
+        : ''
     const isPendingVerifying = openTxIds.has(transaction.id)
 
     const isOutgoing = useMemo(
-        () => transaction.sender === userAddress,
-        [transaction.sender, userAddress],
+        () => isOutgoingFor(transaction, userAddress),
+        [transaction, userAddress],
     )
 
     const counterpartyAddress = useMemo(() => {
         if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
-            return isOutgoing ? transaction.receiver : transaction.sender
+            return isOutgoing
+                ? transaction.receiver
+                : getDebitedAddress(transaction)
         }
         return undefined
     }, [transaction, isOutgoing])
@@ -168,7 +179,7 @@ export const useTransactionListItem = ({
     )
 
     const iconType = useMemo(
-        (): TransactionIconType =>
+        (): AlgorandTransactionIconType =>
             getTransactionIconType(transaction, isOutgoing),
         [transaction, isOutgoing],
     )

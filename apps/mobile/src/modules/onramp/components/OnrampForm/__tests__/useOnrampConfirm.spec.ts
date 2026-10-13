@@ -12,9 +12,11 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import type { RampPair, MeldQuote } from '@perawallet/wallet-core-onramp'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampConfirm } from '../useOnrampConfirm'
 
 // --- mock fns -------------------------------------------------------------
@@ -38,27 +40,50 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     >('@perawallet/wallet-core-onramp')
     return {
         ...actual,
+        useEnsureRampDestination: () => ({
+            ensureCanReceive: mockEnsureOptIn,
+        }),
         useCreateRampOrderMutation: () => ({
             mutateAsync: mockCreateRampOrder,
         }),
-        useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
         useOnramp: () => ({ senderAddress: 'SENDER_ADDRESS' }),
     }
 })
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccountAddress: () => ({
-        selectedAccountAddress: mockSelectedAccountAddress,
-    }),
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    // Real enums (models/accounts has no runtime imports): components reached
+    // through module barrels read them at import time.
+    ...(await vi.importActual<object>(
+        '@packages/accounts/src/models/accounts',
+    )),
+    useSelectedAccount: () => selectedAccountMock(),
     useAccountsStore: {
-        getState: () => ({
-            selectedAccountAddress: mockSelectedAccountAddress,
-        }),
+        getState: () => ({ getSelectedAccount: () => selectedAccountMock() }),
     },
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+const selectedAccountMock = () =>
+    mockSelectedAccountAddress === null
+        ? null
+        : {
+              id: 'selected',
+              custody: { kind: 'watch' },
+              chains: { algorand: { address: mockSelectedAccountAddress } },
+          }
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: mockNetwork }),
+    useSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: mockNetwork,
+    }),
 }))
 
 // The order-review sheet (imported transitively by the confirm hook) pulls in
@@ -69,13 +94,21 @@ vi.mock('@components/AddressDisplay', () => ({
     AddressDisplay: () => null,
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    unitName: 'ALGO',
+    decimals: 6,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane. A
     // constant id here would route past resolveDestinationAssetId's null
     // branch instead of exercising it.
-    getKnownAssetId: (_key: string, network: string) =>
-        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
-    ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+    getKnownAssetId: (
+        _key: string,
+        { networkId: network }: { networkId: string },
+    ) => ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
+    useNativeAsset: () => NATIVE_ASSET,
     toWholeUnits: (value: number) => value,
     useAssetsQuery: () => ({ data: undefined }),
     PeraAssetVerificationTier: {
@@ -93,8 +126,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 // Shadow the webview barrel so its transitive `AccountTypes` import (via
 // usePeraWebviewInterface) doesn't load against the partial accounts mock.
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
     useWebView: () => ({ pushWebView: vi.fn(), removeWebView: vi.fn() }),
+    openValidatedBrowserUrl: (
+        await vi.importActual<typeof import('@modules/webview/hooks/handlers')>(
+            '@modules/webview/hooks/handlers',
+        )
+    ).openValidatedBrowserUrl,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -198,11 +236,13 @@ const defaultProps: Parameters<typeof useOnrampConfirm>[0] = {
 
 describe('useOnrampConfirm', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         mockSelectedAccountAddress = 'ACCOUNT_ADDRESS'
         mockNetwork = 'mainnet'
         mockEnsureOptIn.mockResolvedValue(true)
         mockRequestBottomSheet.mockResolvedValue(undefined)
+        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     })
 
     it('shows localized offline copy and resets confirming state when order creation fails offline', async () => {
@@ -250,5 +290,37 @@ describe('useOnrampConfirm', () => {
         expect(mockEnsureOptIn).not.toHaveBeenCalled()
         expect(mockCreateRampOrder).not.toHaveBeenCalled()
         expect(result.current.isConfirming).toBe(false)
+    })
+
+    it('opens the Meld widget URL in the system browser', async () => {
+        mockCreateRampOrder.mockResolvedValueOnce({
+            kind: 'meld',
+            swapOrderId: 'order-meld-1',
+            widgetUrl: 'https://widget.example.com/session',
+        })
+        const { result } = renderHook(() => useOnrampConfirm(defaultProps))
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(Linking.openURL).toHaveBeenCalledWith(
+            'https://widget.example.com/session',
+        )
+    })
+
+    it('refuses a Meld widget URL that is not absolute https', async () => {
+        mockCreateRampOrder.mockResolvedValueOnce({
+            kind: 'meld',
+            swapOrderId: 'order-meld-1',
+            widgetUrl: 'algorand://ATTACKER?amount=1',
+        })
+        const { result } = renderHook(() => useOnrampConfirm(defaultProps))
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(Linking.openURL).not.toHaveBeenCalled()
     })
 })

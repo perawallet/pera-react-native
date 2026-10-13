@@ -13,7 +13,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useRekeyToLedgerConfirmScreen } from '../useRekeyToLedgerConfirmScreen'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -58,12 +66,29 @@ vi.mock('@modules/webview', () => ({
 }))
 
 const mockSourceAccount = {
-    address: 'SRC',
+    chains: { algorand: { address: 'SRC' } },
     name: 'Source',
-    rekeyAddress: undefined as string | undefined,
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
 }
-const mockTargetAccount = { address: 'TGT', name: 'Target' }
-const mockAuthAccount = { address: 'AUTH', name: 'Auth' }
+const mockTargetAccount = {
+    chains: { algorand: { address: 'TGT' } },
+    name: 'Target',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    } as WalletAccount['custody'],
+}
+const mockAuthAccount = {
+    chains: { algorand: { address: 'AUTH' } },
+    name: 'Auth',
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
+}
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -109,8 +134,9 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
 
 describe('useRekeyToLedgerConfirmScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
-        mockSourceAccount.rekeyAddress = undefined
+        useAccountChainStateStore.getState().resetState()
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
     })
@@ -143,7 +169,7 @@ describe('useRekeyToLedgerConfirmScreen', () => {
     })
 
     it('handleConfirmPress requests the warning sheet without submitting when source has a previous rekey', async () => {
-        mockSourceAccount.rekeyAddress = 'AUTH'
+        seedAuthority('SRC', 'AUTH')
         // Sheet stays pending so we can assert it was opened without resolution.
         mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
         const { result } = renderHook(() => useRekeyToLedgerConfirmScreen())
@@ -157,7 +183,7 @@ describe('useRekeyToLedgerConfirmScreen', () => {
     })
 
     it('submits after the warning sheet resolves with true', async () => {
-        mockSourceAccount.rekeyAddress = 'AUTH'
+        seedAuthority('SRC', 'AUTH')
         mockRequestBottomSheet.mockResolvedValueOnce(true)
         mockSubmitAsync.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useRekeyToLedgerConfirmScreen())
@@ -172,7 +198,7 @@ describe('useRekeyToLedgerConfirmScreen', () => {
     })
 
     it('does not submit when the warning sheet resolves with false', async () => {
-        mockSourceAccount.rekeyAddress = 'AUTH'
+        seedAuthority('SRC', 'AUTH')
         mockRequestBottomSheet.mockResolvedValueOnce(false)
         const { result } = renderHook(() => useRekeyToLedgerConfirmScreen())
 

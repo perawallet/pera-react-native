@@ -19,8 +19,9 @@ import {
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
 import { createRef, useCallback, useEffect, useRef } from 'react'
+import { isIOS } from '@utils/platform'
 import { useStyles } from './styles'
-import { Keyboard, Platform, useWindowDimensions, View } from 'react-native'
+import { Keyboard, useWindowDimensions, View } from 'react-native'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -74,8 +75,13 @@ export const PWBottomSheet = ({
     const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
 
+    // Against the container `topInset` has already shortened, the basis of
+    // `modal`'s percentage snap point too: a whole-window ratio leaves a tall
+    // sheet no room below the notch, so it runs to the edge and loses its radius.
     const maxDynamicContentSize =
-        size === 'auto' ? Math.round(windowHeight * SHEET_MAX_RATIO) : undefined
+        size === 'auto'
+            ? Math.round((windowHeight - insets.top) * SHEET_MAX_RATIO)
+            : undefined
 
     const styles = useStyles({
         insets,
@@ -218,11 +224,9 @@ export const PWBottomSheet = ({
                             // for `auto` (content-sized) sheets, where a
                             // height-based avoider would collapse to zero.
                             <KeyboardAvoidingView
-                                behavior={
-                                    Platform.OS === 'ios' ? 'padding' : 'height'
-                                }
+                                behavior={isIOS() ? 'padding' : 'height'}
                                 keyboardVerticalOffset={
-                                    Platform.OS === 'ios' ? insets.bottom : 0
+                                    isIOS() ? insets.bottom : 0
                                 }
                                 style={styles.keyboardAvoider}
                             >

@@ -133,7 +133,7 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
                 throw new Error(
                     `Bottom sheet type "${String(type)}" is not registered. ` +
                         'Add a registerBottomSheet(...) call in ' +
-                        'apps/mobile/src/modules/bottom-sheet/registrations.ts',
+                        'apps/mobile/src/bootstrap/bottom-sheet-registrations.ts',
                 )
             }
             return useBottomSheetStore.getState().request({

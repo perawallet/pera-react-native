@@ -14,8 +14,8 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import algosdk, { encodeMsgpack } from 'algosdk'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createLocalKeyStrategy } from '@perawallet/wallet-core-signing/pipeline/signing/createLocalKeyStrategy'
-import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-signing/pipeline/signing/signTransactionsWithLocalKey'
+import { createLocalKeyStrategy } from '@perawallet/wallet-core-chain-algorand/signing/local-key/createLocalKeyStrategy'
+import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
 import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing/pipeline/types'
 
 import { createAlgo25Account, fundAccount } from '../../harness/accounts'
@@ -30,6 +30,7 @@ import {
 } from '../../harness/build'
 import { balanceOf } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
+import { localNetScope } from '../../harness/scope'
 
 /**
  * Baseline for the suite: a plain Ed25519 spend signed through the keystore
@@ -125,9 +126,10 @@ describe('ed25519 signing conformance', () => {
             signArbitraryData: () => {
                 throw new Error('not exercised by this test')
             },
-            signArc60: () => {
+            signAuthData: () => {
                 throw new Error('not exercised by this test')
             },
+            scope: await localNetScope(),
         })
 
         expect(strategy.canSign(sender.walletAccount)).toBe(true)
@@ -143,7 +145,6 @@ describe('ed25519 signing conformance', () => {
             originalIndices: [0],
             analysis: {
                 totalFees: txn.fee,
-                transactionSummaries: [],
                 warnings: [],
                 signableAddresses: [sender.address],
                 riskLevel: 'low',

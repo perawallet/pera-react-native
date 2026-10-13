@@ -11,10 +11,13 @@
  */
 
 import {
-    isQuantumAccount,
+    hasCustody,
+    signingKeyOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
+    FALCON_CHILD_KEY_TYPE,
     PQ_DERIVATION_CANONICAL,
     type PQDerivation,
     type useKMS,
@@ -23,7 +26,9 @@ import {
 type GetKey = ReturnType<typeof useKMS>['getKey']
 
 /**
- * Whether `account`'s quantum signing child is legacy-derivation.
+ * Whether `account`'s quantum signing child is legacy-derivation. Judged from
+ * the keystore entry the account signs with, since only a quantum child
+ * carries a derivation stamp.
  *
  * Deliberately `!== CANONICAL` rather than `=== LEGACY`: a canonical child is
  * always stamped at mint time, but migration 0004 swallows per-key stamping
@@ -34,16 +39,25 @@ type GetKey = ReturnType<typeof useKMS>['getKey']
  * mean an unstamped legacy child, so it must fail closed into "legacy",
  * matching the fail-closed pattern `repairQuantumMaterial.ts` already uses
  * for this exact ambiguity.
+ *
+ * A missing key record is the opposite case and must NOT fail closed:
+ * delete-all removes keystore keys several steps before the accounts store
+ * clears, and flagging every quantum account as legacy in that window made
+ * the notice prompt flash over the wipe. An account with no key can't sign
+ * anything, so a derivation warning for it is meaningless anyway.
  */
 export const isLegacyQuantumChild = (
     getKey: GetKey,
     account: WalletAccount,
+    chainId: ChainId,
 ): boolean => {
-    if (!isQuantumAccount(account)) return false
+    if (!hasCustody(account, 'local')) return false
+    const keyPairId = signingKeyOn(account, chainId)
+    if (!keyPairId) return false
+    const key = getKey(keyPairId)
+    if (key?.type !== FALCON_CHILD_KEY_TYPE) return false
     const pqDerivation = (
-        getKey(account.keyPairId)?.metadata as
-            | { pqDerivation?: PQDerivation }
-            | undefined
+        key.metadata as { pqDerivation?: PQDerivation } | undefined
     )?.pqDerivation
     return pqDerivation !== PQ_DERIVATION_CANONICAL
 }

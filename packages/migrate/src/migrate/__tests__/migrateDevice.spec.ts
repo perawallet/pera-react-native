@@ -28,6 +28,14 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: { getState: () => deviceStoreMock },
+    deviceIdFor: (
+        state: { deviceIDs: Map<string, string | null> },
+        network: string,
+    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
+    deviceIdOriginFor: (
+        state: { deviceIdOrigins: Record<string, string | undefined> },
+        network: string,
+    ) => state.deviceIdOrigins[`algorand/${network}`],
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -202,8 +210,8 @@ describe('migrateDeviceIdentifiers', () => {
     it('re-flags a superseded id as recreated instead of stomping the live id on re-run', () => {
         // Case 1: we already wrote the migrated id (origin 'migrated') and
         // registration's recreate-fallback replaced it — retrying is pointless.
-        deviceStoreMock.deviceIDs.set('mainnet', 'RECREATED-1')
-        deviceStoreMock.deviceIdOrigins = { mainnet: 'migrated' }
+        deviceStoreMock.deviceIDs.set('algorand/mainnet', 'RECREATED-1')
+        deviceStoreMock.deviceIdOrigins = { 'algorand/mainnet': 'migrated' }
 
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
 
@@ -219,7 +227,7 @@ describe('migrateDeviceIdentifiers', () => {
         // the skip on id inequality alone discarded it permanently — the exact
         // orphaning this ticket measures. `pera_7_migration` defaults to false,
         // so registering first and migrating on a later launch is routine.
-        deviceStoreMock.deviceIDs.set('mainnet', 'REGISTERED-FIRST')
+        deviceStoreMock.deviceIDs.set('algorand/mainnet', 'REGISTERED-FIRST')
         deviceStoreMock.deviceIdOrigins = {}
 
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
@@ -235,8 +243,8 @@ describe('migrateDeviceIdentifiers', () => {
     })
 
     it('leaves an already-recreated id untouched on a further re-run', () => {
-        deviceStoreMock.deviceIDs.set('mainnet', 'RECREATED-1')
-        deviceStoreMock.deviceIdOrigins = { mainnet: 'recreated' }
+        deviceStoreMock.deviceIDs.set('algorand/mainnet', 'RECREATED-1')
+        deviceStoreMock.deviceIdOrigins = { 'algorand/mainnet': 'recreated' }
 
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
 
@@ -245,7 +253,7 @@ describe('migrateDeviceIdentifiers', () => {
     })
 
     it('idempotently re-writes the migrated id when it is still the active one', () => {
-        deviceStoreMock.deviceIDs.set('mainnet', 'M1')
+        deviceStoreMock.deviceIDs.set('algorand/mainnet', 'M1')
 
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
 

@@ -10,12 +10,15 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useRef } from 'react'
 import {
     getAccountDisplayName,
-    isQuantumDowngrade,
-    isRekeyedAccount,
+    isAuthorityDowngrade,
+    isDelegatedAccount,
     useAllAccounts,
+    useAuthorityOf,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -81,9 +84,11 @@ export const useRekeyConfirmScreen = ({
 }: RekeyConfirmConfig): UseRekeyConfirmScreenResult => {
     const navigation = useAppNavigation()
 
-    const source = useFindAccountByAddress(sourceAddress)
-    const target = useFindAccountByAddress(targetAddress)
-    const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const source = useFindAccountByAddress(sourceAddress, scope)
+    const target = useFindAccountByAddress(targetAddress, scope)
+    const sourceAuthority = useAuthorityOf(source, scope)
+    const currentAuth = useFindAccountByAddress(sourceAuthority ?? '', scope)
     const accounts = useAllAccounts()
 
     // A shared-account rekey is signed via the multisig propose flow, whose
@@ -98,6 +103,7 @@ export const useRekeyConfirmScreen = ({
     const { pushWebView } = useWebView()
     const { request: requestBottomSheet } = useBottomSheet()
     const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation({
+        scope,
         signingMetadata: {
             name: t('rekey.signing.source_name'),
             description: t('rekey.signing.source_description'),
@@ -106,12 +112,17 @@ export const useRekeyConfirmScreen = ({
     const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
         sourceAddress,
         targetAddress,
+        scope,
     )
     // The source pays the rekey fee — block before any sign request is
     // created (and before the Ledger device prompt for hardware auths).
-    const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
+    const { isUnderfunded } = useRekeyFeePreflight(
+        sourceAddress,
+        feeAlgos,
+        scope,
+    )
 
-    const hasPreviousRekey = isRekeyedAccount(source)
+    const hasPreviousRekey = isDelegatedAccount(source, scope.chainId)
 
     // Synchronous in-flight guard: `isSubmitting` only propagates on the
     // next render, so a same-frame double tap would submit twice without it.
@@ -129,7 +140,7 @@ export const useRekeyConfirmScreen = ({
         }
         if (isUnderfunded) return
 
-        if (target.address === source.rekeyAddress) {
+        if (targetAddress === sourceAuthority) {
             // Unreachable via the select-target screens (eligibility excludes
             // the current auth), but guard against a stale route param
             // producing a fee-burning no-op rekey.
@@ -142,14 +153,14 @@ export const useRekeyConfirmScreen = ({
         markSubmitted()
         try {
             await submitAsync({
-                sourceAddress: source.address,
-                rekeyToAddress: target.address,
+                sourceAddress,
+                rekeyToAddress: targetAddress,
             })
             // A multisig propose already handed off via the 'proposed' event;
             // don't also show the success screen.
             if (hasHandedOff()) return
             trackEvent(OnboardingEvent.RekeyAccount)
-            onSubmitSuccess(source.address)
+            onSubmitSuccess(sourceAddress)
         } catch (error) {
             // After a propose handoff the signing Promise eventually rejects on
             // timeout — that's expected, not a failure to surface.
@@ -161,7 +172,10 @@ export const useRekeyConfirmScreen = ({
         navigation,
         handleRekeyError,
         source,
+        sourceAuthority,
         target,
+        sourceAddress,
+        targetAddress,
         isUnderfunded,
         onSubmitSuccess,
         markSubmitted,
@@ -178,9 +192,11 @@ export const useRekeyConfirmScreen = ({
         if (isUnderfunded) return
 
         if (hasPreviousRekey) {
-            const sourceName = source ? getAccountDisplayName(source) : ''
+            const sourceName = source
+                ? getAccountDisplayName(source, scope.chainId)
+                : ''
             const currentAuthName = currentAuth
-                ? getAccountDisplayName(currentAuth)
+                ? getAccountDisplayName(currentAuth, scope.chainId)
                 : ''
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
@@ -200,12 +216,22 @@ export const useRekeyConfirmScreen = ({
         // Rekeying a quantum account to an Ed25519 authority strips its
         // quantum-safe protection — warn before it happens. Not shown when the
         // target's effective authority is also quantum, nor for Ed25519 sources.
-        if (source && target && isQuantumDowngrade(source, target, accounts)) {
+        if (
+            source &&
+            target &&
+            isAuthorityDowngrade(source, target, accounts, scope.chainId)
+        ) {
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <QuantumDowngradeWarningSheet
-                        sourceName={getAccountDisplayName(source)}
-                        targetName={getAccountDisplayName(target)}
+                        sourceName={getAccountDisplayName(
+                            source,
+                            scope.chainId,
+                        )}
+                        targetName={getAccountDisplayName(
+                            target,
+                            scope.chainId,
+                        )}
                     />
                 ),
                 options: { size: 'auto', enablePanDownToClose: true },
@@ -226,6 +252,7 @@ export const useRekeyConfirmScreen = ({
         submit,
         warningI18nPrefix,
         warningTestID,
+        scope.chainId,
     ])
 
     const handleConfirmPress = useCallback(async () => {

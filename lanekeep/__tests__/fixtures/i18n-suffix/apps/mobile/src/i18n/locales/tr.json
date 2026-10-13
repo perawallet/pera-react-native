@@ -1,0 +1,10 @@
+{
+    "send": {
+        "apostrophe": "{{name}}'e gönder",
+        "curly": "{{name}}’a gönder",
+        "glued": "{{count}}ün hesabı",
+        "dotless": "{{name}}ı seç",
+        "spaced": "{{name}} kişisine gönder",
+        "punctuation": "{{count}}. hesap"
+    }
+}

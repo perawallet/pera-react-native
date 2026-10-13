@@ -11,19 +11,14 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
-import { PWText, PWView } from '@components/core'
+import { PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePairingProgressStore } from '../../stores/usePairingProgressStore'
 import { useStyles } from './styles'
 
-/**
- * Full-screen "connecting" scrim for deep-link-initiated WC pairings. The
- * OS deep link gives the user no other feedback for the whole outcome wait
- * (up to 15s) — without this, a slow pairing is indistinguishable from the
- * tap having done nothing (mirror of the QR path's handling overlay).
- */
+// The OS deep link gives the user no other feedback for the whole outcome wait
+// (up to 15s); without this scrim a slow pairing looks like the tap did nothing.
 export const PairingProgressOverlay = () => {
     const isPairing = usePairingProgressStore(state => state.pendingCount > 0)
     const styles = useStyles()
@@ -37,8 +32,8 @@ export const PairingProgressOverlay = () => {
             style={styles.overlay}
             testID='wc_pairing_progress_overlay'
         >
-            <ActivityIndicator
-                size='large'
+            <PWLoadingIndicator
+                size='lg'
                 color={theme.colors.textWhite}
             />
             <PWText

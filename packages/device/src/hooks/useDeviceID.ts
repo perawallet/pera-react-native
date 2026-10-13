@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { useDeviceStore } from '../store'
+import { deviceIdFor, useDeviceStore } from '../store'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 export const useDeviceID = (network: Network) => {
-    const deviceIDs = useDeviceStore(state => state.deviceIDs)
-    return deviceIDs?.get(network) ?? null
+    return useDeviceStore(state => deviceIdFor(state, network))
 }

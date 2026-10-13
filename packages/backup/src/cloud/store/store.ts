@@ -11,8 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { CloudBackupActions, CloudBackupStore } from '../models'
@@ -22,6 +21,7 @@ const STORE_NAME = 'cloud-backup-store'
 const initialState = {
     backupId: null as string | null,
     salt: null as string | null,
+    deviceId: null as string | null,
 }
 
 type SetState = (partial: Partial<CloudBackupStore>) => void
@@ -31,7 +31,8 @@ const createActions = (
     set: SetState,
     get: GetState,
 ): CloudBackupActions & BaseStoreState => ({
-    setConfigured: ({ backupId, salt }) => set({ backupId, salt }),
+    setConfigured: ({ backupId, salt, deviceId }) =>
+        set({ backupId, salt, deviceId }),
     isConfigured: () => get().backupId != null,
     resetState: () => set(initialState),
 })
@@ -39,15 +40,19 @@ const createActions = (
 const persistedState = (state: CloudBackupStore) => ({
     backupId: state.backupId,
     salt: state.salt,
+    deviceId: state.deviceId,
 })
 
 export const useCloudBackupStore = create<CloudBackupStore>()(
-    persist((set, get) => ({ ...initialState, ...createActions(set, get) }), {
-        name: STORE_NAME,
-        storage: createJSONStorage(() => getProvider().keyValueStorage),
-        version: 1,
-        partialize: persistedState,
-    }),
+    guardedPersist(
+        (set, get) => ({ ...initialState, ...createActions(set, get) }),
+        {
+            name: STORE_NAME,
+            storage: () => getProvider().keyValueStorage,
+            version: 1,
+            partialize: persistedState,
+        },
+    ),
 )
 
 registerStore({

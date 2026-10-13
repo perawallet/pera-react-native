@@ -10,38 +10,41 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
+import {
+    ChainAdapterNotRegisteredError,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { createTransportSelector } from '../getTransport'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    algodBackedTransport,
+    registerFakeBroadcaster,
+} from '../../../__tests__/fakeBroadcaster'
+import {
+    algo25Account as algo25,
+    multisigAccount as multisig,
+} from '../../../__tests__/accounts'
 import type {
     SigningResult,
     SignedTransactionData,
     SourceMetadata,
 } from '../../types'
+import type { DataTransport } from '../../types'
+import { registerFakePlannerAdapter } from '../../../__tests__/fakePlannerAdapter'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: {
-        getState: () => ({ network: 'testnet' }),
-        subscribe: () => () => {},
-    },
-    encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1])),
-}))
+const ALGORAND_TESTNET: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'testnet',
+}
 
-const algo25Account: WalletAccount = {
-    type: 'algo25',
-    address: 'ADDR',
-    keyPairId: 'key-1',
-} as WalletAccount
+const algo25Account = algo25('ADDR', { keyPairId: 'key-1' })
 
-const multisigAccount: WalletAccount = {
-    type: 'multisig',
-    address: 'MSIG',
-    multisigDetails: {
-        version: 1,
-        threshold: 2,
-        addresses: ['A', 'B'],
-    },
-} as unknown as WalletAccount
+const multisigAccount = multisig('MSIG', {
+    version: 1,
+    threshold: 2,
+    addresses: ['A', 'B'],
+})
 
 const MSIG_METADATA = {
     version: 1,
@@ -50,11 +53,7 @@ const MSIG_METADATA = {
 }
 
 const baseOptions = () => ({
-    algokit: {
-        client: { algod: { sendRawTransaction: vi.fn() } },
-    },
-    encodeSignedTransactions: vi.fn(),
-    network: 'testnet' as const,
+    scope: ALGORAND_TESTNET,
     getMsigMetadata: () => MSIG_METADATA,
     getDeviceId: () => 'device-1',
 })
@@ -68,6 +67,19 @@ const stubResult: SigningResult = {
 }
 
 describe('createTransportSelector', () => {
+    const proposeTransport: DataTransport = { send: vi.fn() }
+    const cosignTransport: DataTransport = { send: vi.fn() }
+    let planner: ReturnType<typeof registerFakePlannerAdapter>
+
+    beforeEach(() => {
+        useNetworkStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('testnet')
+        planner = registerFakePlannerAdapter({
+            createMultisigProposeTransport: vi.fn(() => proposeTransport),
+            createMultisigCosignTransport: vi.fn(() => cosignTransport),
+        })
+    })
+
     test('non-multisig walletconnect source returns WC transport', async () => {
         const proposeSignRequest = vi.fn()
         const selector = createTransportSelector({
@@ -122,13 +134,14 @@ describe('createTransportSelector', () => {
         const sendRawTransaction = vi.fn(() => ({
             do: async () => ({ txid: 'KEYREG-TXID' }),
         }))
-        const selector = createTransportSelector({
-            ...baseOptions(),
-            algokit: {
-                client: { algod: { sendRawTransaction } },
-            } as never,
-            encodeSignedTransactions: vi.fn(() => [new Uint8Array([0xa1])]),
+        registerFakeBroadcaster({
+            createSubmitTransport: () =>
+                algodBackedTransport(
+                    { client: { algod: { sendRawTransaction } } },
+                    () => [new Uint8Array([0xa1])],
+                ),
         })
+        const selector = createTransportSelector(baseOptions())
         const source = {
             type: 'deeplink',
             transport: 'algod',
@@ -154,7 +167,7 @@ describe('createTransportSelector', () => {
         ).toThrow('addSignatures')
     })
 
-    test('multisig-cosign uses cosign transport when addSignatures provided', () => {
+    test('multisig-cosign uses the planner cosign transport when addSignatures provided', () => {
         const addSignatures = vi.fn()
         const selector = createTransportSelector({
             ...baseOptions(),
@@ -164,7 +177,11 @@ describe('createTransportSelector', () => {
             { type: 'multisig-cosign' } as SourceMetadata,
             algo25Account,
         )
-        expect(transport.send).toBeInstanceOf(Function)
+        expect(transport).toBe(cosignTransport)
+        expect(planner.createMultisigCosignTransport).toHaveBeenCalledWith(
+            addSignatures,
+            ALGORAND_TESTNET,
+        )
     })
 
     test('multisig account + local source throws without proposeSignRequest', () => {
@@ -178,29 +195,35 @@ describe('createTransportSelector', () => {
         ).toThrow('proposeSignRequest')
     })
 
-    test('multisig account + local source uses propose transport when configured', () => {
+    test('multisig account + local source uses the planner propose transport when configured', () => {
         const proposeSignRequest = vi.fn()
-        const selector = createTransportSelector({
+        const createDraftSignRequest = vi.fn()
+        const options = {
             ...baseOptions(),
             proposeSignRequest,
-        })
+            createDraftSignRequest,
+        }
+        const selector = createTransportSelector(options)
         const transport = selector(
             { type: 'local' } as SourceMetadata,
             multisigAccount,
         )
-        expect(transport.send).toBeInstanceOf(Function)
+        expect(transport).toBe(proposeTransport)
+        expect(planner.createMultisigProposeTransport).toHaveBeenCalledWith(
+            proposeSignRequest,
+            ALGORAND_TESTNET,
+            options.getMsigMetadata,
+            options.getDeviceId,
+            createDraftSignRequest,
+        )
     })
 
     test.each(['walletconnect', 'webview', 'deeplink'] as const)(
-        'multisig account + %s source uses propose transport (sync handoff)',
-        async sourceType => {
-            const proposeSignRequest = vi.fn().mockResolvedValue({
-                signRequestId: 'mp-1',
-                status: 'pending',
-            })
+        'multisig account + %s source uses the propose transport (sync handoff)',
+        sourceType => {
             const selector = createTransportSelector({
                 ...baseOptions(),
-                proposeSignRequest,
+                proposeSignRequest: vi.fn(),
             })
 
             const transport = selector(
@@ -208,18 +231,7 @@ describe('createTransportSelector', () => {
                 multisigAccount,
             )
 
-            const result = await transport.send(
-                stubResult,
-                { type: sourceType } as SourceMetadata,
-                'MSIG',
-            )
-
-            expect(proposeSignRequest).toHaveBeenCalledTimes(1)
-            expect(result).toMatchObject({
-                type: 'proposed',
-                signRequestId: 'mp-1',
-                sourceType,
-            })
+            expect(transport).toBe(proposeTransport)
         },
     )
 
@@ -276,12 +288,27 @@ describe('createTransportSelector', () => {
         expect(transport.send).toBeInstanceOf(Function)
     })
 
-    test('default (local, non-multisig, no callback) returns algod transport', () => {
+    test("default (local, non-multisig, no callback) returns the scope chain's submit transport", () => {
+        const broadcaster = registerFakeBroadcaster()
         const selector = createTransportSelector(baseOptions())
         const transport = selector(
             { type: 'local' } as SourceMetadata,
             algo25Account,
         )
         expect(transport.send).toBeInstanceOf(Function)
+        expect(broadcaster.createSubmitTransport).toHaveBeenCalledWith(
+            ALGORAND_TESTNET,
+        )
+    })
+
+    test('the default route never falls back to another chain', () => {
+        const selector = createTransportSelector({
+            ...baseOptions(),
+            scope: { chainId: 'ethereum', networkId: 'sepolia' },
+        })
+
+        expect(() =>
+            selector({ type: 'local' } as SourceMetadata, algo25Account),
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 })

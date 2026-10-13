@@ -12,15 +12,13 @@
 
 import type { Decimal } from 'decimal.js'
 
-import type {
-    BaseStoreState,
-    Network,
-    Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 export type SwapsState = BaseStoreState & {
-    fromAsset: string
+    /** null until the user picks one: the chain's native asset. */
+    fromAsset: Nullable<string>
     toAsset: string
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
@@ -200,8 +198,8 @@ export interface SwapHandoffRecord {
     swapIdStr: string
     /** Backend multisig sign-request id this swap is waiting on. */
     signRequestId: string
-    /** Network the sign request lives on. */
-    network: Network
+    /** Scope the sign request lives on. */
+    scope: ChainScope
     /** The shared (multisig) account proposing the swap. */
     multisigAddress: string
     /** Persistent device id for the `with-signatures` + `mark-confirmed` calls. */

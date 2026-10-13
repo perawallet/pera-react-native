@@ -37,7 +37,7 @@ const mocks = vi.hoisted(() => ({
     setPinMutateAsync: vi.fn(),
     setPinPending: false,
     requirePinVerification: vi.fn(),
-    connectAsync: vi.fn(),
+    setFundingAddress: vi.fn(),
     pushWebView: vi.fn(),
     openURL: vi.fn(),
     infoToast: vi.fn(),
@@ -45,10 +45,7 @@ const mocks = vi.hoisted(() => ({
     request: vi.fn(),
     accounts: [] as unknown[],
     pickFundingSource: vi.fn(),
-    delegateTo: vi.fn(),
     authorizeDelegation: vi.fn(),
-    cancelDelegation: vi.fn(),
-    canDelegate: vi.fn(),
     canPushProvision: false,
     isCardInWallet: false,
     startAddCardToWallet: vi.fn(),
@@ -73,20 +70,27 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useCardStore: (
-            selector: (state: {
-                lastKnownPanLast4: string | null
-                connectedFundingSourceAddress: string | null
-                selectedFundingType: string | null
-            }) => unknown,
-        ) =>
-            selector({
-                lastKnownPanLast4: mocks.panLast4,
-                connectedFundingSourceAddress: mocks.fundingAddress,
-                selectedFundingType: mocks.selectedFundingType,
-            }),
-        useConnectFundingSourceMutation: () =>
-            mutationResult(mocks.connectAsync),
+        // Selector reads come from the mock state; the Connect action writes
+        // through getState(), so expose that too.
+        useCardStore: Object.assign(
+            (
+                selector: (state: {
+                    lastKnownPanLast4: string | null
+                    connectedFundingSourceAddress: string | null
+                    selectedFundingType: string | null
+                }) => unknown,
+            ) =>
+                selector({
+                    lastKnownPanLast4: mocks.panLast4,
+                    connectedFundingSourceAddress: mocks.fundingAddress,
+                    selectedFundingType: mocks.selectedFundingType,
+                }),
+            {
+                getState: () => ({
+                    setConnectedFundingSourceAddress: mocks.setFundingAddress,
+                }),
+            },
+        ),
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
             fetchStatus: mocks.fetchStatus,
@@ -149,6 +153,10 @@ vi.mock('@modules/network', () => ({
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
     useAllAccounts: () => mocks.accounts,
+    useFindAccountByAddress: (address: string) =>
+        (mocks.accounts as WalletAccount[]).find(
+            account => account.chains.algorand?.address === address,
+        ) ?? null,
 }))
 
 vi.mock('react-native', async importOriginal => {
@@ -177,12 +185,6 @@ vi.mock('../../../hooks', async () => ({
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mocks.pickFundingSource,
     }),
-    useCardFundingDelegation: () => ({
-        delegateTo: mocks.delegateTo,
-        cancelDelegation: mocks.cancelDelegation,
-        isPending: false,
-        canDelegate: mocks.canDelegate,
-    }),
     useAuthorizeCardDelegation: () => ({
         authorizeDelegation: mocks.authorizeDelegation,
     }),
@@ -199,22 +201,25 @@ import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 import { ReportSuspiciousActivitySheet } from '../../ReportSuspiciousActivitySheet'
 import { usePeraCardDetails } from '../usePeraCardDetails'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const walletAccount = (address: string): WalletAccount =>
-    ({ address, type: 'algo25', keyPairId: `key-${address}` }) as WalletAccount
-
-const ledgerAccount = (address: string): WalletAccount =>
     ({
-        address,
-        type: 'hardware',
-        hardwareDetails: { manufacturer: 'ledger' },
-    }) as unknown as WalletAccount
+        chains: { algorand: { address: address, keyPairId: `key-${address}` } },
+        custody: { kind: 'local', seed: null },
+    }) as WalletAccount
 
 // Shared secure-view response the reveal tests resolve the token request with.
 const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
 
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
+
 describe('usePeraCardDetails', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         Object.assign(mockCapabilities, { inAppWebView: true })
         mocks.panLast4 = null
@@ -232,10 +237,6 @@ describe('usePeraCardDetails', () => {
         // The freeze sheet runs the freeze itself; opening it just resolves.
         mocks.request.mockResolvedValue(undefined)
         mocks.pickFundingSource.mockResolvedValue(null)
-        mocks.connectAsync.mockResolvedValue({ fundingSourceId: 'fs_1' })
-        mocks.delegateTo.mockResolvedValue(undefined)
-        mocks.cancelDelegation.mockResolvedValue(undefined)
-        mocks.canDelegate.mockReturnValue(true)
         // The consent + auth gate passes through to the delegate fn by default.
         mocks.authorizeDelegation.mockImplementation(
             passThroughAuthorizeDelegation,
@@ -265,22 +266,6 @@ describe('usePeraCardDetails', () => {
         const { result } = renderHook(() => usePeraCardDetails())
 
         expect(result.current.fundingAddress).toBe('QKZ6ABCDEFG2IHH')
-    })
-
-    it('reports hasCard true once the status query returns a card', () => {
-        mocks.status = 'ACTIVE'
-
-        const { result } = renderHook(() => usePeraCardDetails())
-
-        expect(result.current.hasCard).toBe(true)
-    })
-
-    it('reports hasCard false when no card has been created yet', () => {
-        mocks.status = null
-
-        const { result } = renderHook(() => usePeraCardDetails())
-
-        expect(result.current.hasCard).toBe(false)
     })
 
     it('reveals, hides, and re-reveals from cache without re-fetching', async () => {
@@ -771,53 +756,6 @@ describe('usePeraCardDetails', () => {
         expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
     })
 
-    describe('funding type', () => {
-        it('labels the funding type from the stored preference', () => {
-            mocks.selectedFundingType = FundingType.Auto
-            mocks.fundingAddress = 'LINKED_ADDR'
-            mocks.accounts = [walletAccount('LINKED_ADDR')]
-
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            expect(result.current.fundingTypeLabel).toBe(
-                'peraCard.setup_status.funding_type_auto_title',
-            )
-        })
-
-        // A Ledger can't sign the AutoDraw LSig, so a stored AUTO is stale and
-        // the row must not claim Auto is on.
-        it('labels Manual when the connected account is a Ledger despite a stored AUTO', () => {
-            mocks.selectedFundingType = FundingType.Auto
-            mocks.fundingAddress = 'LEDGER_ADDR'
-            mocks.accounts = [ledgerAccount('LEDGER_ADDR')]
-
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            expect(result.current.fundingTypeLabel).toBe(
-                'peraCard.setup_status.funding_type_manual_title',
-            )
-        })
-
-        it('falls back to the manual label when nothing is stored', () => {
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            expect(result.current.fundingTypeLabel).toBe(
-                'peraCard.setup_status.funding_type_manual_title',
-            )
-        })
-
-        it('opens the Select Funding Type sheet', () => {
-            const { result } = renderHook(() => usePeraCardDetails())
-
-            act(() => {
-                result.current.onChangeFundingType()
-            })
-
-            expect(mocks.request).toHaveBeenCalledTimes(1)
-            expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
-        })
-    })
-
     describe('changing the funding account', () => {
         it('connects the picked account without delegating on manual funding', async () => {
             mocks.selectedFundingType = FundingType.Manual
@@ -829,11 +767,8 @@ describe('usePeraCardDetails', () => {
                 result.current.onChangeFunding()
             })
 
-            expect(mocks.connectAsync).toHaveBeenCalledWith({
-                address: 'NEW_ADDR',
-            })
-            expect(mocks.delegateTo).not.toHaveBeenCalled()
-            expect(mocks.cancelDelegation).not.toHaveBeenCalled()
+            // Connecting is a local selection now: no Baanx call, just the store.
+            expect(mocks.setFundingAddress).toHaveBeenCalledWith('NEW_ADDR')
         })
 
         // Guards the restore path, not a path the UI can reach today: the
@@ -860,7 +795,7 @@ describe('usePeraCardDetails', () => {
             )
             // Blocked before the picker even opens.
             expect(mocks.pickFundingSource).not.toHaveBeenCalled()
-            expect(mocks.connectAsync).not.toHaveBeenCalled()
+            expect(mocks.setFundingAddress).not.toHaveBeenCalled()
         })
 
         it('does nothing when the picker is dismissed or re-picks the same account', async () => {
@@ -872,7 +807,7 @@ describe('usePeraCardDetails', () => {
                 result.current.onChangeFunding()
             })
 
-            expect(mocks.connectAsync).not.toHaveBeenCalled()
+            expect(mocks.setFundingAddress).not.toHaveBeenCalled()
         })
     })
 

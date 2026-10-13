@@ -57,6 +57,7 @@ export const FeatureFlagOverrides = () => {
                         <PWSwitch
                             value={expanded?.includes(key) ?? false}
                             onValueChange={() => toggleExpand(key)}
+                            testID={`feature_flag_expand_${key}`}
                         />
                     </PWView>
 
@@ -71,6 +72,7 @@ export const FeatureFlagOverrides = () => {
                             <PWSwitch
                                 value={configOverrides[key] === true}
                                 onValueChange={() => toggleOverride(key)}
+                                testID={`feature_flag_override_${key}`}
                             />
                         </PWView>
                     )}

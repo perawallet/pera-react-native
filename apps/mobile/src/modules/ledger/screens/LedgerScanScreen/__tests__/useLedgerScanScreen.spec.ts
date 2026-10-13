@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 
 const {
     mockNavigate,
+    mockPush,
     mockStartScan,
     mockStopScan,
     mockRequestPermissions,
@@ -28,8 +29,10 @@ const {
     connectionState,
     platformState,
     expandedTabHandoffState,
+    browserState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
+    mockPush: vi.fn(),
     mockStartScan: vi.fn(),
     mockStopScan: vi.fn(),
     mockRequestPermissions: vi.fn(),
@@ -59,6 +62,7 @@ const {
     },
     platformState: { os: 'android' as 'android' | 'ios' | 'web' },
     expandedTabHandoffState: { isPopupSurface: false },
+    browserState: { isBrave: false },
 }))
 
 vi.mock('react-native', () => ({
@@ -66,6 +70,19 @@ vi.mock('react-native', () => ({
         get OS() {
             return platformState.os
         },
+    },
+}))
+
+// vitest doesn't resolve `.web.ts` twins; follow the simulated OS instead.
+vi.mock('../../../utils/scanGesture', () => ({
+    get isScanGestureRequired() {
+        return platformState.os === 'web'
+    },
+}))
+
+vi.mock('../../../utils/braveBrowser', () => ({
+    get isBraveBrowser() {
+        return browserState.isBrave
     },
 }))
 
@@ -77,12 +94,10 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({ navigate: mockNavigate }),
+    useAppNavigation: () => ({ navigate: mockNavigate, push: mockPush }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ errorToast: mockErrorToast }),
@@ -156,6 +171,7 @@ describe('useLedgerScanScreen', () => {
         platformState.os = 'android'
         routeParams.current = {}
         expandedTabHandoffState.isPopupSurface = false
+        browserState.isBrave = false
         mockOpenLedgerExpandedTab.mockReset()
         mockRequestPermissions.mockResolvedValue(true)
         mockOpenSettings.mockResolvedValue(undefined)
@@ -551,6 +567,128 @@ describe('useLedgerScanScreen', () => {
 
             expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('ble')
             expect(mockStartScan).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('Bluetooth entry point (route param transportType: "ble")', () => {
+        it('scans BLE-only on web so a single tap opens only the Bluetooth picker', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['ble', 'usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(connectionState.capturedOptions).toEqual({
+                transportTypes: ['ble'],
+            })
+
+            act(() => {
+                result.current.handleStartScan()
+            })
+
+            expect(mockStartScan).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps scanning every transport on native', () => {
+            platformState.os = 'android'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['ble', 'usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(connectionState.capturedOptions).toBeUndefined()
+            expect(result.current.isBleUnsupported).toBe(false)
+        })
+
+        it('surfaces the unsupported state instead of the search CTA when the browser lacks Web Bluetooth', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['usb']
+            bluetoothState.adapterState = 'unsupported'
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBleUnsupported).toBe(true)
+            expect(result.current.needsManualStart).toBe(false)
+            expect(mockStartScan).not.toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('does not flag unsupported while Web Bluetooth is available', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['ble', 'usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBleUnsupported).toBe(false)
+            expect(result.current.needsManualStart).toBe(true)
+        })
+
+        it('handleUseUsb opens the USB pairing flow', () => {
+            platformState.os = 'web'
+            routeParams.current = { transportType: 'ble' }
+            connectionState.supportedTransportTypes = ['usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            act(() => {
+                result.current.handleUseUsb()
+            })
+
+            expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+                transportType: 'usb',
+            })
+        })
+    })
+
+    describe('Brave: Web Bluetooth switched off behind a flag', () => {
+        beforeEach(() => {
+            platformState.os = 'web'
+            browserState.isBrave = true
+            routeParams.current = { transportType: 'ble' }
+        })
+
+        it('flags a failed Bluetooth scan so the screen can point to the flag', () => {
+            connectionState.error = new LedgerConnectionError('picker rejected')
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(true)
+        })
+
+        it('does not flag before any scan has failed', () => {
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
+        })
+
+        it('does not flag a scan timeout, which has its own state', () => {
+            connectionState.error = new LedgerScanTimeoutError(
+                'no device found',
+            )
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
+        })
+
+        it('does not flag a failed USB-only scan', () => {
+            routeParams.current = { transportType: 'usb' }
+            connectionState.error = new LedgerConnectionError('no hid device')
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
+        })
+
+        it('does not flag outside Brave', () => {
+            browserState.isBrave = false
+            connectionState.error = new LedgerConnectionError('picker rejected')
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isBraveBluetoothScanError).toBe(false)
         })
     })
 

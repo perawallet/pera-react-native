@@ -19,7 +19,9 @@ import {
     LedgerDeviceBusyError,
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
+    LedgerDevicePickerUnavailableError,
     LedgerDisconnectedError,
+    LedgerError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
     LedgerNoAccountsFoundError,
@@ -39,49 +41,17 @@ import {
 import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
 
 /**
- * Every typed Ledger error class. Kept in one place so both the
- * UI-preset classifier ({@link classifyLedgerErrorKind}) and the
- * device-error predicate ({@link isLedgerError}) stay in sync.
- */
-const LEDGER_ERROR_CLASSES = [
-    LedgerBluetoothDisabledError,
-    LedgerPermissionDeniedError,
-    LedgerScanTimeoutError,
-    LedgerUserRejectedError,
-    LedgerAppNotOpenError,
-    LedgerAddressMismatchError,
-    LedgerSigningError,
-    LedgerSigningFailedError,
-    LedgerTransmissionError,
-    LedgerPublicKeyReadError,
-    LedgerNetworkError,
-    LedgerAppOutdatedError,
-    LedgerUnsupportedDeviceError,
-    LedgerDisconnectedError,
-    LedgerTimeoutError,
-    LedgerDeviceLockedError,
-    LedgerDeviceNotFoundError,
-    LedgerDeviceBusyError,
-    LedgerUsbNoDeviceError,
-    LedgerUsbMultipleDevicesError,
-    LedgerNoAccountsFoundError,
-    LedgerLocationServicesDisabledError,
-    LedgerProviderNotFoundError,
-    LedgerConnectionError,
-] as const
-
-/**
  * True only for genuine Ledger device/transport errors (the typed classes
  * thrown by the Ledger extension). Used to decide whether a thrown error
  * should drive the hardware-signing overlay/troubleshooting surface
  * (`true`) or fall through to the generic inline error view (`false`).
  *
- * Non-device failures — ARC-60 validation errors, generic JS errors, or a
+ * Non-device failures — auth-data validation errors, generic JS errors, or a
  * `SigningError` wrapping one — return `false` so they surface inline in the
  * sign-request sheet rather than masquerading as a connection problem.
  */
-export const isLedgerError = (error: unknown): boolean =>
-    LEDGER_ERROR_CLASSES.some(LedgerError => error instanceof LedgerError)
+export const isLedgerError = (error: unknown): error is LedgerError =>
+    error instanceof LedgerError
 
 /**
  * Strategy-agnostic classifier that turns a thrown error into the
@@ -113,6 +83,8 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerTimeoutError) return 'timeout'
     if (error instanceof LedgerDeviceLockedError) return 'device_locked'
     if (error instanceof LedgerDeviceNotFoundError) return 'device_not_found'
+    if (error instanceof LedgerDevicePickerUnavailableError)
+        return 'device_picker_unavailable'
     if (error instanceof LedgerDeviceBusyError) return 'device_busy'
     if (error instanceof LedgerUsbNoDeviceError) return 'usb_no_device'
     if (error instanceof LedgerUsbMultipleDevicesError)

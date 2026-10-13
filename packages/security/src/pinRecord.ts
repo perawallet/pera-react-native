@@ -75,7 +75,9 @@ const hashPin = (pin: string, salt: Uint8Array): Promise<Uint8Array> =>
                     reject(err ?? new Error('pbkdf2 returned no key'))
                     return
                 }
-                resolve(new Uint8Array(derivedKey))
+                const hash = new Uint8Array(derivedKey)
+                zeroBytes(derivedKey)
+                resolve(hash)
             },
         )
     })

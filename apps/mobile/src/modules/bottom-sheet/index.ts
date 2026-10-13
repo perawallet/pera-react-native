@@ -20,7 +20,6 @@ export type {
 } from './types'
 
 export { useBottomSheet } from './hooks/useBottomSheet'
-export { useBottomSheetStack } from './hooks/useBottomSheetStack'
 export { useBottomSheetResult } from './hooks/useBottomSheetResult'
 export { useBottomSheetPanDownEnabled } from './hooks/useBottomSheetPanDownEnabled'
 export { useBottomSheetSize } from './hooks/useBottomSheetSize'

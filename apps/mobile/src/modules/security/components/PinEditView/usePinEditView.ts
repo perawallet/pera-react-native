@@ -18,7 +18,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 
 export type PinEntryMode = 'setup' | 'confirm' | 'verify' | 'change_old'
 
-export type SavePinHandlerResult =
+export type PinConfirmedResult =
     | { ok: true }
     | { ok: false; reason: 'matches-regular-pin' }
 
@@ -26,18 +26,27 @@ type UsePinEditViewParams = {
     mode: PinEntryMode
     onSuccess?: () => void
     /**
-     * Overrides the default `savePin(pin)` call at the end of a setup→confirm
-     * flow. Use to set up a secondary PIN (e.g. the duress PIN) that needs
-     * additional validation. Returning `{ ok: false }` shows the standard
-     * error animation and resets the flow back to `setup`.
+     * Takes over from the default `savePin(pin)` at the end of a setup→confirm
+     * flow: the caller decides what the confirmed code is for, whether that is
+     * persisting it elsewhere (the duress PIN) or never persisting it at all.
+     * Returning `{ ok: false }` shows the standard error animation and resets
+     * the flow back to `setup`.
      */
-    savePinHandler?: (pin: string) => Promise<SavePinHandlerResult>
+    onPinConfirmed?: (pin: string) => Promise<PinConfirmedResult>
+    /**
+     * Overrides the `setup` step's title. Use when the code being collected
+     * is not the app PIN, so the two never read as the same thing.
+     */
+    title?: string
+    /** Overrides the `confirm` step's title. */
+    confirmTitle?: string
 }
 
 type UsePinEditViewResult = {
     title: string
     hasError: boolean
     isDisabled: boolean
+    isBiometricUnlockInProgress: boolean
     handlePinComplete: (pin: string) => void
     handleErrorAnimationComplete: () => void
 }
@@ -48,31 +57,30 @@ const isVerifyMode = (mode: Nullable<PinEntryMode>): boolean =>
 export const usePinEditView = ({
     mode,
     onSuccess,
-    savePinHandler,
+    onPinConfirmed,
+    title: titleOverride,
+    confirmTitle,
 }: UsePinEditViewParams): UsePinEditViewResult => {
     const { t } = useLanguage()
-    const {
-        savePin,
-        verifyPin,
-        handleFailedAttempt,
-        resetFailedAttempts,
-        isLockedOut,
-    } = usePinCode()
-    const { checkBiometricsEnabled, authenticateWithBiometrics } =
+    const { savePin, verifyPin, resetFailedAttempts, isLockedOut } =
+        usePinCode()
+    const { isEnabled: isBiometricsEnabled, unlockWithBiometrics } =
         useBiometrics()
     const { showError } = useErrorToast()
 
     const [currentMode, setCurrentMode] = useState<PinEntryMode>(mode)
     const [storedPin, setStoredPin] = useState<string>('')
     const [hasError, setHasError] = useState(false)
+    const [isBiometricUnlockInProgress, setIsBiometricUnlockInProgress] =
+        useState(false)
 
     const title = useMemo(() => {
         switch (currentMode) {
             case 'setup': {
-                return t('security.pin.setup_title')
+                return titleOverride ?? t('security.pin.setup_title')
             }
             case 'confirm': {
-                return t('security.pin.confirm_title')
+                return confirmTitle ?? t('security.pin.confirm_title')
             }
             case 'verify': {
                 return t('security.pin.verify_title')
@@ -84,33 +92,46 @@ export const usePinEditView = ({
                 return ''
             }
         }
-    }, [currentMode, t])
+    }, [currentMode, t, titleOverride, confirmTitle])
 
-    // Auto-prompt biometrics when entering a verification step. The user's
-    // security settings drive which factor is used: if biometrics is enabled,
-    // we prompt automatically; on cancel/failure, the user falls back to PIN.
-    // Tracked per-mode so re-entering verify after a cancelled prompt doesn't
-    // immediately re-fire, but switching from change_old → setup → ... does.
+    // Auto-prompt biometrics when entering a verification step; on
+    // cancel/failure, the user falls back to PIN. Tracked per-mode so
+    // re-entering verify after a cancelled prompt doesn't immediately re-fire,
+    // but switching from change_old → setup → ... does.
     //
+    // Gated on the store flag, not a fresh reconcile: unlockWithBiometrics runs
+    // its own, so a second one here only doubles the wait on the shared Expo
+    // queue. The flag also keeps a disabled user out of unlock's pending-rearm
+    // recovery, which this sheet must not start.
     const lastPromptedModeRef = useRef<Nullable<PinEntryMode>>(null)
 
+    // A transient reconcile can clear the flag and the sheet's own mount
+    // reconcile set it again, so the effect re-runs on that first false→true
+    // flip. Latched so a mid-prompt flicker can't run the cleanup and drop an
+    // in-flight success.
+    const [hasSeenBiometricsEnabled, setHasSeenBiometricsEnabled] =
+        useState(isBiometricsEnabled)
+    if (isBiometricsEnabled && !hasSeenBiometricsEnabled) {
+        setHasSeenBiometricsEnabled(true)
+    }
+
     // The prompt's collaborators are read through a ref so the effect depends
-    // only on `currentMode`. Otherwise an unrelated re-render (e.g. the host
-    // bottom sheet finishing its open animation) — which changes the inline
-    // `onSuccess` identity — would run the effect cleanup mid-prompt, drop the
-    // in-flight biometric success, and force the user onto the PIN pad after
-    // already passing biometrics.
+    // only on `currentMode` and the latch above. Otherwise an unrelated
+    // re-render (e.g. the host bottom sheet finishing its open animation) —
+    // which changes the inline `onSuccess` identity — would run the effect
+    // cleanup mid-prompt, drop the in-flight biometric success, and force the
+    // user onto the PIN pad after already passing biometrics.
     const promptRef = useRef({
-        checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        isBiometricsEnabled,
+        unlockWithBiometrics,
         resetFailedAttempts,
         onSuccess,
         t,
         showError,
     })
     promptRef.current = {
-        checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        isBiometricsEnabled,
+        unlockWithBiometrics,
         resetFailedAttempts,
         onSuccess,
         t,
@@ -123,23 +144,30 @@ export const usePinEditView = ({
             return
         }
         if (lastPromptedModeRef.current === currentMode) return
+        if (!promptRef.current.isBiometricsEnabled) return
         lastPromptedModeRef.current = currentMode
 
         let cancelled = false
         try {
             void (async () => {
-                const enabled = await promptRef.current.checkBiometricsEnabled()
-                if (cancelled || !enabled) return
-                const result =
-                    await promptRef.current.authenticateWithBiometrics({
+                const outcome = await promptRef.current.unlockWithBiometrics(
+                    {
                         title: promptRef.current.t(
                             'security.biometric.unlock_prompt_title',
                         ),
                         cancelLabel: promptRef.current.t(
                             'security.biometric.cancel_label',
                         ),
-                    })
-                if (cancelled || !result.success) return
+                    },
+                    {
+                        onAuthenticated: () => {
+                            if (!cancelled) setIsBiometricUnlockInProgress(true)
+                        },
+                    },
+                )
+                if (cancelled) return
+                setIsBiometricUnlockInProgress(false)
+                if (outcome.kind !== 'ok') return
                 void promptRef.current.resetFailedAttempts()
                 setHasError(false)
                 if (currentMode === 'verify') {
@@ -153,8 +181,9 @@ export const usePinEditView = ({
         }
         return () => {
             cancelled = true
+            setIsBiometricUnlockInProgress(false)
         }
-    }, [currentMode])
+    }, [currentMode, hasSeenBiometricsEnabled])
 
     const handlePinComplete = useCallback(
         async (pin: string) => {
@@ -167,16 +196,16 @@ export const usePinEditView = ({
                 }
                 case 'confirm': {
                     if (pin === storedPin) {
-                        if (savePinHandler) {
-                            const result = await savePinHandler(pin)
+                        if (onPinConfirmed) {
+                            const result = await onPinConfirmed(pin)
                             if (result.ok) {
                                 setHasError(false)
                                 onSuccess?.()
                             } else {
-                                // Save was rejected by the handler — most
-                                // common case is the duress PIN matching the
-                                // regular PIN. Reset back to setup so the
-                                // user re-enters from scratch.
+                                // Rejected by the handler — most common
+                                // case is the duress PIN matching the regular
+                                // PIN. Reset back to setup so the user
+                                // re-enters from scratch.
                                 setStoredPin('')
                                 setCurrentMode('setup')
                                 setHasError(true)
@@ -195,39 +224,24 @@ export const usePinEditView = ({
                 case 'verify': {
                     const result = await verifyPin(pin)
                     if (result.kind === 'ok') {
-                        void resetFailedAttempts()
                         setHasError(false)
                         if (currentMode === 'change_old') {
                             setCurrentMode('setup')
                         } else {
                             onSuccess?.()
                         }
-                    } else if (result.kind === 'duress') {
+                    } else {
                         // The user is already unlocked here (settings, view-
                         // passphrase, etc.) so wiping would be wrong; the
-                        // duress branch is only honoured at the lock screen.
-                        // Show the same error as a wrong PIN but do not
-                        // increment the failed-attempt counter — a stray
-                        // duress entry should not contribute to lockout.
-                        setHasError(true)
-                    } else {
-                        void handleFailedAttempt()
+                        // duress branch is only honoured at the lock screen,
+                        // and a duress match reads as a wrong PIN.
                         setHasError(true)
                     }
                     break
                 }
             }
         },
-        [
-            currentMode,
-            storedPin,
-            savePin,
-            verifyPin,
-            handleFailedAttempt,
-            resetFailedAttempts,
-            onSuccess,
-            savePinHandler,
-        ],
+        [currentMode, storedPin, savePin, verifyPin, onSuccess, onPinConfirmed],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {
@@ -237,7 +251,8 @@ export const usePinEditView = ({
     return {
         title,
         hasError,
-        isDisabled: isLockedOut,
+        isDisabled: isLockedOut || isBiometricUnlockInProgress,
+        isBiometricUnlockInProgress,
         handlePinComplete: (pin: string) => void handlePinComplete(pin),
         handleErrorAnimationComplete,
     }

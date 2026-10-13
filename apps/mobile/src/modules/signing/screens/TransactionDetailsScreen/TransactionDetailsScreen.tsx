@@ -18,9 +18,9 @@ import { PWButton, PWScreen } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
-import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
+import { GroupTransactionsPanel } from '@modules/algorand'
 import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
+import { TransactionDetailBody } from '@modules/signing/family-bodies/TransactionDetailBody'
 import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
 
 export const TransactionDetailsScreen = () => {
@@ -40,15 +40,16 @@ export const TransactionDetailsScreen = () => {
         currentTransactionId,
         isExternal,
         handleTransactionPress,
+        handleRelatedTransactionPress,
         handleRetry,
     } = useTransactionDetailsScreen()
 
     if (renderState.kind === 'content') {
         return (
             <PWScreen testID='transaction_details_screen'>
-                <TransactionDisplay
+                <TransactionDetailBody
                     transaction={renderState.transaction}
-                    onInnerTransactionsPress={handleTransactionPress}
+                    onRelatedTransactionPress={handleRelatedTransactionPress}
                 />
                 {isExternal && <ExternalTransactionCallout />}
                 {groupTransactions.length > 1 && (

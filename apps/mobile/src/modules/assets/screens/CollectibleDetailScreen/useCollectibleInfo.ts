@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { formatWithUnits } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -38,6 +38,7 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     const openExternalLink = useCallback(
         (url: string) => {
             if (!routeCapabilities.inAppWebView) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers build on config.explorerUrl
                 void Linking.openURL(url)
                 return
             }

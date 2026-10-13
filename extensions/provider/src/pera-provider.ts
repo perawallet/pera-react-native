@@ -14,11 +14,12 @@ import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
 import { WithMigrations } from '@algorandfoundation/provider-migrations'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
-import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
-import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
+import { WithHardwareWalletExtension } from '@perawallet/wallet-extension-hardware-wallet'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import { WithConnections } from '@perawallet/wallet-extension-connections'
 import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
+import { WithChainRegistry } from './withChainRegistry'
 import type {
     PeraExtensions,
     PeraProvider as PeraProviderShape,
@@ -27,18 +28,8 @@ import type {
 
 export type PeraProvider = PeraProviderShape
 
-/**
- * The Pera Wallet Provider with platform services, Ledger hardware wallet,
- * keystore, and passkey autofill. Instances include all platform service
- * properties (analytics, keyValueStorage, etc.) via the build-time resolved
- * platform driver extension, the Ledger extension for hardware wallet support,
- * the keystore extension for cryptographic key management, plus the passkey
- * autofill service exposed at `provider.passkeyAutofill`.
- *
- * Native/RN build — see `pera-provider.web.ts` for the web twin (Web
- * Bluetooth/WebHID Ledger transports instead of the RN ones), which Metro
- * resolves in its place for web bundles.
- */
+// Metro resolves `pera-provider.web.ts` in its place for web bundles; keep the
+// two extension arrays in the same order.
 export const PeraProvider: {
     new (
         config: ProviderOptions,
@@ -51,8 +42,10 @@ export const PeraProvider: {
     // through `provider.migrations`, which does not exist until this has run.
     WithMigrations,
     WithPlatformExtension,
-    WithLedgerExtension,
-    WithLedgerUsbExtension,
+    // Before the app's composition root runs, which registers the concrete
+    // transports into the `hardwareWalletRegistry` this supplies.
+    WithHardwareWalletExtension,
+    WithChainRegistry,
     // Immediately before WithKeyStore, and load-bearing: modules migrate in
     // registration order, so this is the only thing that gets revision 0001
     // ahead of upstream's `adopt-flat-records`.
@@ -63,4 +56,7 @@ export const PeraProvider: {
     // produces, which do not exist yet before it runs.
     WithPeraKeystoreRepairs,
     WithPasskeyAutofill,
+    // Last, and load-bearing: reads `provider.keyValueStorage`, which
+    // WithPlatformExtension supplies.
+    WithConnections,
 ] as const)

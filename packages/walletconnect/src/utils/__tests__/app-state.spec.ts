@@ -12,16 +12,16 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
-let mockOS = 'android'
+let mockPlatform = 'android'
 
-// Default the RN Platform mock to android so the implicit-platform branch
-// of `getAppStatePlatform` (when called without an override) lands on a
-// known value. Individual tests pass an explicit platform argument to
+// Defaults to android so the implicit-platform branch of
+// `getAppStatePlatform` (when called without an override) lands on a known
+// value. Individual tests pass an explicit platform argument to
 // `isForegroundTransition`, so this only affects the no-arg path.
-vi.mock('react-native', () => ({
-    get Platform() {
-        return { OS: mockOS }
-    },
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: { getDevicePlatform: () => mockPlatform },
+    }),
 }))
 
 import { getAppStatePlatform, isForegroundTransition } from '../app-state'
@@ -67,21 +67,29 @@ describe('isForegroundTransition', () => {
 })
 
 describe('getAppStatePlatform', () => {
-    it('returns android when Platform.OS is android', () => {
+    it('returns android when the device platform is android', () => {
         expect(getAppStatePlatform()).toBe('android')
+    })
+
+    it('returns ios when the device platform is ios', () => {
+        mockPlatform = 'ios'
+
+        expect(getAppStatePlatform()).toBe('ios')
+
+        mockPlatform = 'android'
     })
 })
 
 describe('web platform', () => {
     beforeEach(() => {
-        mockOS = 'web'
+        mockPlatform = 'web'
     })
 
     afterEach(() => {
-        mockOS = 'android'
+        mockPlatform = 'android'
     })
 
-    it('reports web when Platform.OS is web', () => {
+    it('reports web when the device platform is web', () => {
         expect(getAppStatePlatform()).toBe('web')
     })
 
@@ -89,7 +97,7 @@ describe('web platform', () => {
         expect(isForegroundTransition('background', 'active', 'web')).toBe(true)
     })
 
-    it('ignores every other transition on web (react-native-web emits only active/background)', () => {
+    it('ignores every other transition on web (the web lifecycle emits only active/background)', () => {
         expect(isForegroundTransition('active', 'background', 'web')).toBe(
             false,
         )

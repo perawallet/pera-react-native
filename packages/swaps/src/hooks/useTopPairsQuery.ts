@@ -11,16 +11,18 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchTopPairs } from '../api'
 import { swapQueryKeys } from './querykeys'
 
-export const useTopPairsQuery = (limit?: number, enabled: boolean = true) => {
-    const { network } = useNetwork()
-
+export const useTopPairsQuery = (
+    scope: ChainScope,
+    limit?: number,
+    enabled: boolean = true,
+) => {
     return useQuery({
-        queryKey: swapQueryKeys.topPairs(limit, network),
-        queryFn: () => fetchTopPairs(network, limit),
+        queryKey: swapQueryKeys.topPairs(limit, scope),
+        queryFn: () => fetchTopPairs(scope, limit),
         enabled,
     })
 }

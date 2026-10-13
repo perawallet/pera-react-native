@@ -11,11 +11,16 @@
  */
 
 import { subtle } from 'react-native-quick-crypto'
-import { createReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
+import {
+    createDefaultShims,
+    createReactNativeKeyStore,
+    loadDefaultFalconBinding,
+} from '@algorandfoundation/react-native-keystore'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { Store } from '@tanstack/store'
 import type { HookCollection } from 'before-after-hook'
+import { secp256k1Shim } from './shims/secp256k1'
 
 export type PeraKeystoreDeps = {
     /** The provider's reactive store — never a fresh one, or kms reads stale state. */
@@ -34,10 +39,10 @@ export type PeraKeystoreDeps = {
 
 /**
  * React Native has no global `SubtleCrypto`, so the engine requires one to be
- * supplied. `falcon` is deliberately omitted: when it is absent the engine
- * loads `@joe-p/react-native-falcon` itself and leaves Falcon out of the
- * default shim set when the native module is unavailable — which is what keeps
- * off-device bundles working.
+ * supplied. The shim list rebuilds exactly the engine's own default set, with
+ * Falcon loaded from `@joe-p/react-native-falcon` and left out when the native
+ * module is unavailable (which keeps off-device bundles working), and adds
+ * secp256k1 on top.
  */
 export const createPeraKeystore = (
     deps: PeraKeystoreDeps,
@@ -47,4 +52,10 @@ export const createPeraKeystore = (
         hooks: deps.hooks,
         subtle: subtle as unknown as SubtleCrypto,
         before: deps.before,
+        shims: async () => [
+            ...(await createDefaultShims({
+                falcon: await loadDefaultFalconBinding(),
+            })),
+            secp256k1Shim(),
+        ],
     })

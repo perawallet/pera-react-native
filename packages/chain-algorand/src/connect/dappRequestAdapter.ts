@@ -1,0 +1,190 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { arc0001SignTxnRequestSchema } from '../blockchain/arc0001/schema'
+import { ARC0001_MAX_TXN_B64_LENGTH } from '../blockchain/arc0001/limits'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    getNetworkConfig,
+    Networks,
+    type Network,
+} from '@perawallet/wallet-core-config'
+import {
+    describeZodIssues,
+    type DappRequestChainAdapter,
+    type DappSigningParamsResult,
+} from '@perawallet/wallet-core-connections'
+import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
+import {
+    accountType,
+    AccountTypes,
+    type AccountType,
+} from '../accounts/vocabulary'
+import { algorandAuthority } from '../accounts/authority'
+import { resolveAlgorandSigner } from '../accounts/signer-resolution'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { isArc60WirePayload } from '../signing/message/arc60-wire'
+import { useAlgorandTransactionSigning } from './transactionSigning'
+import { algorandEmptySignaturesFor } from './emptySignatures'
+import {
+    algorandWalletConnectSupport,
+    createAlgorandWalletConnectV2Support,
+} from './walletConnect'
+
+/**
+ * The resolver's own schema, not a copy: zod strips undeclared keys, so any
+ * divergence would silently disarm a resolver refusal (a dropped `msig` turns
+ * a 4200 into an ordinary signing sheet). Capped here because this is the one
+ * gate every transport passes; the resolver decodes every entry before any
+ * later check could refuse the group.
+ */
+const arc0001GroupSchema = arc0001SignTxnRequestSchema
+    .min(1)
+    .max(MAX_TRANSACTION_SIGN_REQUESTS)
+
+const BAKED_NETWORKS: Network[] = [
+    Networks.mainnet,
+    Networks.testnet,
+    Networks.betanet,
+]
+
+// The webview bridge's account-type names, shared with the Pera webapp.
+const BRIDGE_ACCOUNT_TYPES: Record<AccountType, string> = {
+    [AccountTypes.standalone]: 'Algo25',
+    [AccountTypes.hdWallet]: 'HDWallet',
+    [AccountTypes.hardware]: 'Hardware',
+    [AccountTypes.multisig]: 'Multisig',
+    [AccountTypes.watch]: 'Unsignable',
+    // Not aliased to `Algo25`: a dApp told `Algo25` expects a 64-byte Ed25519
+    // signature verifiable against a recoverable public key, and a quantum
+    // account yields neither.
+    [AccountTypes.quantum]: 'Quantum',
+}
+
+/**
+ * The bridge only lists signing accounts, so `Unsignable` and
+ * `RekeyedUnsignable` never emit in practice; they stay mapped so the wire
+ * format doesn't depend on that filter.
+ */
+const bridgeAccountTypeOf = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): string => {
+    if (algorandAuthority.isDelegated(account, scope)) {
+        return resolveAlgorandSigner(account, accounts, scope).kind === 'ok'
+            ? 'RekeyedSignable'
+            : 'RekeyedUnsignable'
+    }
+    return BRIDGE_ACCOUNT_TYPES[accountType(account)]
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null
+
+const isWithinTxnBounds = (txns: unknown): boolean =>
+    Array.isArray(txns) &&
+    txns.length > 0 &&
+    txns.length <= MAX_TRANSACTION_SIGN_REQUESTS &&
+    txns.every(
+        entry =>
+            isRecord(entry) &&
+            typeof entry.txn === 'string' &&
+            entry.txn.length > 0 &&
+            entry.txn.length <= ARC0001_MAX_TXN_B64_LENGTH,
+    )
+
+export const algorandDappRequestAdapter: DappRequestChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    accountTypeOf: bridgeAccountTypeOf,
+    // ARC-0001 requires a message that only echoes the dApp's own request. Other
+    // signing errors wrap third-party text or interpolate held addresses.
+    relayableErrorNames: ['Arc0001Error'],
+
+    // Webview-compatible param shapes: `{ txns, opts?, metadata? }` for
+    // ARC-0001; an ARC-60 wire object or `{ data: [...] }` for data. Only the
+    // operation payload crosses into the registry; `opts`/`metadata` are
+    // display hints the connection's own peer record supersedes.
+    parseSigningParams(type, params): DappSigningParamsResult {
+        if (type === 'sign-transactions') {
+            if (params.txns === undefined) {
+                return {
+                    ok: false,
+                    reason: 'missing',
+                    message: 'Missing required param: txns',
+                }
+            }
+            if (!isWithinTxnBounds(params.txns)) {
+                return {
+                    ok: false,
+                    reason: 'out-of-bounds',
+                    message: 'Request exceeds size limits',
+                }
+            }
+            return { ok: true, payload: params.txns }
+        }
+        const payload = isArc60WirePayload(params) ? params : params.data
+        if (payload === undefined) {
+            return {
+                ok: false,
+                reason: 'missing',
+                message: 'Missing required param: data',
+            }
+        }
+        return { ok: true, payload }
+    },
+
+    // A custom network is reported as the baked network sharing its genesis
+    // hash and never by name: the custom-network envelope is plaintext, so a
+    // forged one with a MainNet hash and an attacker's node URLs must not make
+    // the wallet tell a dApp "this is MainNet" — the hash check is what a dApp
+    // actually validates.
+    resolveReportedNetwork(scope, customGenesisHash): NetworkId | undefined {
+        if (scope.networkId !== Networks.custom) return scope.networkId
+        if (!customGenesisHash) return undefined
+        return BAKED_NETWORKS.find(
+            baked => getNetworkConfig(baked).genesisHash === customGenesisHash,
+        )
+    },
+
+    emptySignaturesFor: algorandEmptySignaturesFor,
+
+    walletConnect: {
+        ...algorandWalletConnectSupport,
+        // Through the adapter's own member, so empty signatures have one entry point.
+        v2: createAlgorandWalletConnectV2Support(addresses =>
+            algorandDappRequestAdapter.emptySignaturesFor(addresses),
+        ),
+    },
+
+    validateTransactionPayload(payload) {
+        const parsed = arc0001GroupSchema.safeParse(payload)
+        if (!parsed.success) {
+            return {
+                ok: false,
+                message: `Invalid algo_signTxn payload — ${describeZodIssues(parsed.error)}`,
+            }
+        }
+        return { ok: true, group: parsed.data }
+    },
+
+    useEnqueueTransactionSigning: useAlgorandTransactionSigning,
+
+    switchChain(networkId) {
+        useNetworkStore.getState().selectNetwork(ALGORAND_CHAIN_ID, networkId)
+    },
+}

@@ -11,16 +11,19 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { fetchCurrentRegion } from '../api/region'
 import { cardQueryKeys } from './querykeys'
 
-export const useCurrentRegionQuery = () => {
-    const { network } = useNetwork()
+export const useCurrentRegionQuery = (scope: ChainScope) => {
+    const network = legacyNetworkOf(scope)
 
     return useQuery({
-        queryKey: cardQueryKeys.currentRegion(network),
+        queryKey: cardQueryKeys.currentRegion(scope),
         queryFn: ({ signal }) => fetchCurrentRegion({ network, signal }),
         staleTime: config.reactQueryLongLivedStaleTime,
     })

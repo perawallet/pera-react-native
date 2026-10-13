@@ -26,8 +26,9 @@ import {
 
 type ErrorClass = new (...args: string[]) => Error
 
+// `LedgerError` is the abstract base, not a throwable kind.
 const ERROR_CLASS_NAMES = Object.keys(ledger)
-    .filter(name => /^Ledger\w*Error$/.test(name))
+    .filter(name => /^Ledger\w+Error$/.test(name))
     .sort()
 
 describe('ledger error class coverage', () => {

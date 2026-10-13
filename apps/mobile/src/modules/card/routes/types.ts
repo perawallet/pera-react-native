@@ -11,6 +11,7 @@
  */
 
 import type { NavigatorScreenParams } from '@react-navigation/native'
+import type { CardWalletKind } from '@perawallet/wallet-core-card'
 import type { CardOnboardingStackParamList } from './card-onboarding/types'
 
 /**
@@ -39,8 +40,13 @@ export type PeraCardAccountStackParamList = {
  */
 export type PeraCardFlowParamList = {
     CardAddFunds: undefined
+    // lanekeep-ignore-next-line pera/amount-types reason: React Navigation params must be serializable, so the amount travels as a string
     CardConfirmSwap: { sourceAssetId: string; amount: string }
     CardWithdraw: undefined
+    /** The wait between the withdraw request and its claim, plus Cancel. */
+    CardWithdrawStatus: undefined
+    CardWalletBalance: { kind: CardWalletKind }
+    CardWalletBalanceWithdraw: { kind: CardWalletKind }
 }
 
 /**

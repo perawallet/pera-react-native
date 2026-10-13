@@ -1,0 +1,77 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { sql } from 'drizzle-orm'
+import {
+    runMigrations,
+    migrations,
+    type Database,
+    type MigrationConfig,
+} from '@perawallet/wallet-core-database'
+import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    refreshAccountHoldings,
+    getAccountHoldings,
+} from '../holdingsRepository'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+
+const HOLDINGS = [
+    { assetId: '0', amount: 5_000_000n },
+    { assetId: '31566704', amount: 300n },
+]
+
+const migrationsBefore = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
+
+describe('holdings across the asset cache rebuild', () => {
+    let db: Database
+    let teardown: () => void
+
+    beforeEach(async () => {
+        const result = createTestDatabase()
+        db = result.db
+        teardown = result.teardown
+        await runMigrations(db, migrationsBefore('0010_text_asset_ids'))
+        // Raw, because the holdings table still has its pre-rebuild shape here.
+        for (const { assetId, amount } of HOLDINGS) {
+            await db.run(sql`
+                INSERT INTO account_asset_holdings (account_address, asset_id, network, amount, updated_at)
+                VALUES ('ADDR1', ${assetId}, 'algorand/mainnet', ${amount.toString()}, 1)
+            `)
+        }
+        await runMigrations(db, migrations)
+    })
+
+    afterEach(() => {
+        teardown()
+    })
+
+    it('reports the next sync of the same holdings as a change, so asset and price syncs run', async () => {
+        const isChanged = await refreshAccountHoldings({
+            db,
+            accountAddress: 'ADDR1',
+            holdings: HOLDINGS,
+            scope: MAINNET_SCOPE,
+        })
+
+        expect(isChanged).toBe(true)
+        const holdings = await getAccountHoldings({
+            db,
+            accountAddress: 'ADDR1',
+            scope: MAINNET_SCOPE,
+        })
+        expect(holdings.map(h => h.assetId).sort()).toEqual(['0', '31566704'])
+    })
+})

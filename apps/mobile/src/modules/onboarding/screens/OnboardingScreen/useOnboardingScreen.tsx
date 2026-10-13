@@ -14,7 +14,7 @@ import { useCallback, useRef } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
-import { useWebView } from '@modules/webview'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -24,6 +24,8 @@ import { TermsAndConditionsSheet } from '../../components/TermsAndConditionsShee
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -44,9 +46,10 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         close: closeCreatingAccount,
     } = useModalState()
     const { setIsOnboarding } = useIsOnboarding()
-    const { buildHdWalletAccount } = useCreateAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { buildHdWalletAccount } = useCreateAccount(scope)
     const { showError } = useErrorToast()
-    const { t } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const { needsAcceptance } = useTermsAcceptance()
 
@@ -92,10 +95,10 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
 
     const handlePrivacyPress = useCallback(() => {
         pushWebView({
-            url: config.privacyPolicyUrl,
+            url: withLanguageParam(config.privacyPolicyUrl, currentLanguage),
             id: 'privacy-policy',
         })
-    }, [pushWebView])
+    }, [pushWebView, currentLanguage])
 
     const handleCreateAccount = useCallback(() => {
         if (isStartingRef.current) return

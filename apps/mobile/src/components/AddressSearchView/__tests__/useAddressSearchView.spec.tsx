@@ -1,0 +1,873 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import React from 'react'
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import {
+    useAddressSearchView,
+    type AddressSearchItem,
+} from '../useAddressSearchView'
+import {
+    useContacts,
+    type ContactAddresses,
+} from '@perawallet/wallet-core-contacts'
+import {
+    useAllAccounts,
+    useSortedAccounts,
+    useAccountValueTotalsQuery,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+
+vi.mock('@perawallet/wallet-core-contacts', () => ({
+    useContacts: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    const addressOn = (account: {
+        chains?: Record<string, { address?: string }>
+    }) => account.chains?.algorand?.address
+    return {
+        addressOn,
+        findAddressHolder: (
+            accounts: Array<{ chains?: Record<string, { address?: string }> }>,
+            _scope: unknown,
+            address: string,
+        ) => accounts.find(a => addressOn(a) === address),
+        useAllAccounts: vi.fn(),
+        useSortedAccounts: vi.fn(),
+        useAccountValueTotalsQuery: vi.fn(),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    isValidAlgorandAddress: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
+}))
+
+const mockReadText = vi.fn(async () => '')
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ readText: mockReadText, copyToClipboard: vi.fn() }),
+}))
+
+// The global mock stubs useFocusEffect to a no-op, which would never run the
+// clipboard read. Run the callback so the paste row is actually exercised.
+vi.mock('@react-navigation/native', () => ({
+    useFocusEffect: (callback: () => void | (() => void)) => {
+        React.useEffect(callback, [callback])
+    },
+}))
+
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        useDebouncedValue: (value: unknown) => value,
+    }
+})
+
+const itemsOfType = (items: AddressSearchItem[], type: string) =>
+    items.filter(i => i.type === type)
+
+describe('useAddressSearchView', () => {
+    const mockFindContacts = vi.fn()
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+
+        vi.mocked(useContacts).mockReturnValue({
+            findContacts: mockFindContacts,
+        } as unknown as ReturnType<typeof useContacts>)
+
+        vi.mocked(useAllAccounts).mockReturnValue([])
+        vi.mocked(useSortedAccounts).mockImplementation(
+            accounts =>
+                ({ sortedAccounts: accounts }) as unknown as ReturnType<
+                    typeof useSortedAccounts
+                >,
+        )
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
+            accountValueTotals: new Map(),
+        } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [],
+            isLoading: false,
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+        mockFindContacts.mockReturnValue([])
+    })
+
+    it('initializes with empty value and no results', () => {
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        expect(result.current.value).toBe('')
+        expect(result.current.matchingItems).toEqual([])
+        expect(result.current.hasResults).toBe(false)
+    })
+
+    it('returns account items with section header when accounts match', () => {
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Account 2' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('ABC')
+        })
+
+        const headers = itemsOfType(
+            result.current.matchingItems,
+            'section_header',
+        )
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+
+        expect(headers).toHaveLength(1)
+        expect(headers[0]).toEqual(
+            expect.objectContaining({
+                title: 'address_entry.my_accounts',
+            }),
+        )
+        expect(accountItems).toHaveLength(1)
+        expect(result.current.hasResults).toBe(true)
+    })
+
+    it('matches an account by its custom name, not just its address', () => {
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Savings' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Spending' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('Savings')
+        })
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'ABC123' } },
+                }),
+            }),
+        )
+    })
+
+    it('excludes account matching excludeAddress', () => {
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Account 2' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                excludeAddress: 'ABC123',
+            }),
+        )
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'DEF456' } },
+                }),
+            }),
+        )
+    })
+
+    it('offers only the accounts the filter accepts', () => {
+        const accounts = [
+            {
+                chains: { algorand: { address: 'STD_ADDR' } },
+                name: 'Standard',
+                custody: { kind: 'local', seed: null },
+            },
+            {
+                chains: { algorand: { address: 'QUANTUM_ADDR' } },
+                name: 'Quantum',
+                custody: { kind: 'local', seed: 'quantum' },
+            },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                accountFilter: account =>
+                    (account.custody as { seed?: string }).seed !== 'quantum',
+            }),
+        )
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'STD_ADDR' } },
+                }),
+            }),
+        )
+    })
+
+    it('returns contact items with section header when contacts match', () => {
+        const contacts = [
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
+        ]
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('Friend')
+        })
+
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: 'Friend',
+            family: 'algorand',
+        })
+
+        const headers = itemsOfType(
+            result.current.matchingItems,
+            'section_header',
+        )
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+
+        expect(headers).toHaveLength(1)
+        expect(headers[0]).toEqual(
+            expect.objectContaining({ title: 'address_entry.contacts' }),
+        )
+        expect(contactItems).toHaveLength(1)
+    })
+
+    it('does not search contacts when value is empty by default', () => {
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        expect(
+            itemsOfType(result.current.matchingItems, 'contact'),
+        ).toHaveLength(0)
+        expect(mockFindContacts).not.toHaveBeenCalled()
+    })
+
+    it('shows all contacts when value is empty and showAllContactsWhenEmpty is true', () => {
+        const contacts = [
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
+            { addresses: { algorand: 'CONT456' }, name: 'Buddy' },
+        ]
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                showAllContactsWhenEmpty: true,
+            }),
+        )
+
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: '',
+            family: 'algorand',
+        })
+
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+        const headers = itemsOfType(
+            result.current.matchingItems,
+            'section_header',
+        )
+
+        expect(contactItems).toHaveLength(2)
+        expect(headers).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ title: 'address_entry.contacts' }),
+            ]),
+        )
+    })
+
+    it('returns section header and foreign address item when address is valid and not in wallet', () => {
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
+        ])
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('VALID_58_CHAR_ADDRESS')
+        })
+
+        expect(result.current.matchingItems).toHaveLength(2)
+        expect(result.current.matchingItems[0]).toEqual(
+            expect.objectContaining({
+                type: 'section_header',
+                title: 'address_entry.address',
+            }),
+        )
+        expect(result.current.matchingItems[1]).toEqual(
+            expect.objectContaining({
+                type: 'address',
+                address: 'VALID_58_CHAR_ADDRESS',
+            }),
+        )
+        expect(result.current.hasResults).toBe(true)
+    })
+
+    it('returns the matched wallet account when typed address is in user wallet', () => {
+        const accounts = [
+            {
+                chains: { algorand: { address: 'OWN_ADDRESS' } },
+                name: 'My Account',
+                custody: { kind: 'local', seed: null },
+            },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('OWN_ADDRESS')
+        })
+
+        expect(result.current.matchingItems).toHaveLength(2)
+        expect(result.current.matchingItems[1]).toEqual(
+            expect.objectContaining({
+                type: 'account',
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'OWN_ADDRESS' } },
+                    name: 'My Account',
+                }),
+            }),
+        )
+    })
+
+    it('shows all matching accounts when no value entered', () => {
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+            { chains: { algorand: { address: 'DEF456' } }, name: 'Account 2' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        expect(accountItems).toHaveLength(2)
+        expect(result.current.hasResults).toBe(true)
+    })
+
+    it('orders items as address, accounts, then contacts', () => {
+        const accounts = [
+            { chains: { algorand: { address: 'ABC123' } }, name: 'Account 1' },
+        ]
+        const contacts = [
+            { addresses: { algorand: 'CONT123' }, name: 'Friend' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('C')
+        })
+
+        const headers = itemsOfType(
+            result.current.matchingItems,
+            'section_header',
+        )
+        expect(headers[0]).toEqual(
+            expect.objectContaining({
+                title: 'address_entry.my_accounts',
+            }),
+        )
+        expect(headers[1]).toEqual(
+            expect.objectContaining({
+                title: 'address_entry.contacts',
+            }),
+        )
+    })
+
+    it('excludes a contact whose address is already a wallet account', () => {
+        const accounts = [
+            {
+                chains: { algorand: { address: 'SHARED_ADDR' } },
+                name: 'My Account',
+            },
+        ]
+        const contacts = [
+            { addresses: { algorand: 'SHARED_ADDR' }, name: 'Same As Account' },
+            { addresses: { algorand: 'CONT_ONLY' }, name: 'Contact Only' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                showAllContactsWhenEmpty: true,
+            }),
+        )
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({
+                    chains: { algorand: { address: 'SHARED_ADDR' } },
+                }),
+            }),
+        )
+        expect(contactItems).toHaveLength(1)
+        expect(contactItems[0]).toEqual(
+            expect.objectContaining({
+                address: 'CONT_ONLY',
+            }),
+        )
+    })
+
+    it('excludes a contact whose address is a wallet account even when searching by contact name', () => {
+        const accounts = [
+            {
+                chains: { algorand: { address: 'OWN_ADDR_XYZ' } },
+                name: 'My Account',
+            },
+        ]
+        const contacts = [
+            { addresses: { algorand: 'OWN_ADDR_XYZ' }, name: 'Alice' },
+            { addresses: { algorand: 'CONT_ONLY' }, name: 'Alice Other' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('Alice')
+        })
+
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+        expect(contactItems).toHaveLength(1)
+        expect(contactItems[0]).toEqual(
+            expect.objectContaining({
+                address: 'CONT_ONLY',
+            }),
+        )
+    })
+
+    it('excludes a contact whose address matches excludeAddress', () => {
+        const accounts = [
+            {
+                chains: { algorand: { address: 'OWN_ADDR_XYZ' } },
+                name: 'My Account',
+            },
+        ]
+        const contacts = [
+            { addresses: { algorand: 'OWN_ADDR_XYZ' }, name: 'Me' },
+            { addresses: { algorand: 'CONT_ONLY' }, name: 'Someone Else' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                chainFamily: 'algorand',
+                excludeAddress: 'OWN_ADDR_XYZ',
+                showAllContactsWhenEmpty: true,
+            }),
+        )
+
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+        expect(contactItems).toHaveLength(1)
+        expect(contactItems[0]).toEqual(
+            expect.objectContaining({
+                address: 'CONT_ONLY',
+            }),
+        )
+    })
+
+    it('excludes and selects contacts by their address in the requested family', () => {
+        const accounts = [
+            {
+                chains: { algorand: { address: 'OWN_ADDR' } },
+                name: 'My Account',
+            },
+        ]
+        const otherFamily = 'other' as ChainFamily
+        const contacts = [
+            {
+                addresses: {
+                    algorand: 'OWN_ADDR',
+                    other: 'OTHER_ADDR',
+                } as ContactAddresses,
+                name: 'Two Chains',
+            },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                chainFamily: otherFamily,
+                showAllContactsWhenEmpty: true,
+            }),
+        )
+
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: '',
+            family: otherFamily,
+        })
+        expect(itemsOfType(result.current.matchingItems, 'contact')).toEqual([
+            expect.objectContaining({ address: 'OTHER_ADDR' }),
+        ])
+    })
+
+    it('returns NFD results when value contains a dot', () => {
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [
+                {
+                    name: 'alice.algo',
+                    address: 'NFD_RESOLVED_ADDR',
+                    service: { name: 'NFD', logo: '' },
+                },
+            ],
+            isLoading: false,
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('alice.algo')
+        })
+
+        const nfdItems = itemsOfType(result.current.matchingItems, 'nfd')
+        expect(nfdItems).toHaveLength(1)
+        expect(nfdItems[0]).toEqual(
+            expect.objectContaining({
+                type: 'nfd',
+                nfd: expect.objectContaining({ name: 'alice.algo' }),
+            }),
+        )
+
+        const headers = itemsOfType(
+            result.current.matchingItems,
+            'section_header',
+        )
+        expect(headers).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    title: 'address_entry.nfd_results',
+                }),
+            ]),
+        )
+    })
+
+    it('does not search NFD when value has no dot', () => {
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('alice')
+        })
+
+        expect(vi.mocked(useNfdSearchQuery)).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ enabled: false }),
+        )
+
+        const nfdItems = itemsOfType(result.current.matchingItems, 'nfd')
+        expect(nfdItems).toHaveLength(0)
+    })
+
+    it('exposes isNfdLoading state', () => {
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [],
+            isLoading: true,
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ chainFamily: 'algorand' }),
+        )
+
+        act(() => {
+            result.current.setValue('alice.algo')
+        })
+
+        expect(result.current.isNfdLoading).toBe(true)
+    })
+
+    describe('paste from clipboard', () => {
+        it('offers the clipboard address as the first row when it is a valid address', async () => {
+            mockReadText.mockResolvedValue(
+                'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+            vi.mocked(isValidAlgorandAddress).mockImplementation(
+                addr =>
+                    addr ===
+                    'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({
+                    chainFamily: 'algorand',
+                    showClipboardPaste: true,
+                }),
+            )
+
+            await waitFor(() => {
+                expect(
+                    itemsOfType(result.current.matchingItems, 'paste'),
+                ).toHaveLength(1)
+            })
+            expect(result.current.matchingItems[0]).toEqual(
+                expect.objectContaining({
+                    type: 'paste',
+                    address:
+                        'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+                }),
+            )
+        })
+
+        it('ignores clipboard contents that are not an address', async () => {
+            mockReadText.mockResolvedValue('just some copied text')
+            vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({
+                    chainFamily: 'algorand',
+                    showClipboardPaste: true,
+                }),
+            )
+
+            await waitFor(() => expect(mockReadText).toHaveBeenCalled())
+            expect(
+                itemsOfType(result.current.matchingItems, 'paste'),
+            ).toHaveLength(0)
+        })
+
+        // Opt-in so the multisig add-participant sheet does not read the
+        // clipboard (and trigger iOS's paste notice) just by mounting.
+        it('does not read the clipboard unless asked to', async () => {
+            mockReadText.mockResolvedValue(
+                'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+            vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ chainFamily: 'algorand' }),
+            )
+
+            expect(mockReadText).not.toHaveBeenCalled()
+            expect(
+                itemsOfType(result.current.matchingItems, 'paste'),
+            ).toHaveLength(0)
+        })
+
+        it('keeps offering the paste row while the user types', async () => {
+            mockReadText.mockResolvedValue(
+                'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+            vi.mocked(isValidAlgorandAddress).mockImplementation(
+                addr =>
+                    addr ===
+                    'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({
+                    chainFamily: 'algorand',
+                    showClipboardPaste: true,
+                }),
+            )
+            await waitFor(() => {
+                expect(
+                    itemsOfType(result.current.matchingItems, 'paste'),
+                ).toHaveLength(1)
+            })
+
+            act(() => {
+                result.current.setValue('ali')
+            })
+
+            expect(
+                itemsOfType(result.current.matchingItems, 'paste'),
+            ).toHaveLength(1)
+        })
+    })
+
+    describe('account ordering', () => {
+        const storeOrder = [
+            { chains: { algorand: { address: 'ZEBRA1' } }, name: 'Zebra' },
+            { chains: { algorand: { address: 'APPLE1' } }, name: 'Apple' },
+        ]
+
+        const mockSortedAs = (accounts: typeof storeOrder) =>
+            vi.mocked(useSortedAccounts).mockReturnValue({
+                sortedAccounts: accounts,
+            } as unknown as ReturnType<typeof useSortedAccounts>)
+
+        it('lists accounts in the sorted order, not the raw store order', () => {
+            vi.mocked(useAllAccounts).mockReturnValue(
+                storeOrder as unknown as ReturnType<typeof useAllAccounts>,
+            )
+            mockSortedAs([storeOrder[1]!, storeOrder[0]!])
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ chainFamily: 'algorand' }),
+            )
+
+            expect(
+                itemsOfType(result.current.matchingItems, 'account').map(
+                    item =>
+                        (item as { account: WalletAccount }).account.chains
+                            .algorand?.address,
+                ),
+            ).toEqual(['APPLE1', 'ZEBRA1'])
+        })
+
+        it('keeps the sorted order once a search narrows the list', () => {
+            const accounts = [
+                {
+                    chains: { algorand: { address: 'ZEBRA1' } },
+                    name: 'Shared Zebra',
+                },
+                {
+                    chains: { algorand: { address: 'APPLE1' } },
+                    name: 'Shared Apple',
+                },
+                {
+                    chains: { algorand: { address: 'OTHER1' } },
+                    name: 'Unrelated',
+                },
+            ]
+            vi.mocked(useAllAccounts).mockReturnValue(
+                accounts as unknown as ReturnType<typeof useAllAccounts>,
+            )
+            mockSortedAs([accounts[1]!, accounts[0]!, accounts[2]!])
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ chainFamily: 'algorand' }),
+            )
+
+            act(() => {
+                result.current.setValue('Shared')
+            })
+
+            expect(
+                itemsOfType(result.current.matchingItems, 'account').map(
+                    item =>
+                        (item as { account: WalletAccount }).account.chains
+                            .algorand?.address,
+                ),
+            ).toEqual(['APPLE1', 'ZEBRA1'])
+        })
+    })
+})

@@ -15,16 +15,32 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import {
+    useAccountValueTotalsQuery,
     useAllAccounts,
+    useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { AccountPicker } from '@modules/accounts/components/AccountPicker'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { AccountPicker } from '@components/AccountPicker'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
 export const AccountSelectionScreen = () => {
-    const accounts = useAllAccounts()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const allAccounts = useAllAccounts()
+    const { accountValueTotals } = useAccountValueTotalsQuery(
+        allAccounts,
+        scope,
+    )
+    // Same reason as the send flow's address picker: the switcher and the sort
+    // sheet render the user's chosen order, so every account list has to.
+    const { sortedAccounts: accounts } = useSortedAccounts(
+        allAccounts,
+        accountValueTotals,
+        scope.chainId,
+    )
     const { setSelectedAccount } = useReceiveFunds()
     const navigation =
         useNavigation<StackNavigationProp<ReceiveFundsStackParamList>>()

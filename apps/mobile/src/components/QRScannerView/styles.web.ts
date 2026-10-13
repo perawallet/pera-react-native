@@ -42,6 +42,10 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginBottom: theme.spacing.lg,
     },
+    cameraErrorActions: {
+        gap: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
+    },
     scanWithCamera: {
         marginBottom: theme.spacing.lg,
     },

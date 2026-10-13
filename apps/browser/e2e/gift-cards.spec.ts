@@ -26,6 +26,7 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { findBidaliFrame } from './bridge-frames'
 import {
     clickThroughPinPrompt,
     dismissPinPromptIfPresent,
@@ -181,9 +182,7 @@ test('account selection advances to the webview iframe with the bridge params', 
 // green; the manual checklist owns the full round-trip. Mirrors
 // discover.spec.ts's skip pattern for window.peraMobileInterface.
 test('gift-card iframe gets the bidali provider when the site loads', async () => {
-    const frame = page
-        .frames()
-        .find(candidate => candidate.url().includes('peraBridgeToken='))
+    const frame = findBidaliFrame(page)
     test.skip(frame == null, 'bidali frame did not load (networkless run)')
 
     const providerName = await frame!

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+    addressOn,
     useAccountBalancesQuery,
     useSelectedAccount,
     type AssetWithAccountBalance,
@@ -23,7 +24,8 @@ import {
     type PeraAssetVerificationTier,
     getAssetsQueryKey,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAvailableAssetsQuery,
     type DexSwapAsset,
@@ -61,8 +63,8 @@ export const useSwapToAssetSelectionList = ({
     excludeAssetId,
     onAssetSelected,
 }: UseSwapToAssetSelectionListParams): UseSwapToAssetSelectionListResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const queryClient = useQueryClient()
-    const { network } = useNetwork()
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
 
@@ -85,6 +87,7 @@ export const useSwapToAssetSelectionList = ({
 
     const { data: availableAssets, isLoading } = useAvailableAssetsQuery(
         fromAssetIdNumber ?? 0,
+        scope,
         debouncedSearchFilter || undefined,
         Boolean(fromAssetId) && fromAssetIdNumber !== null,
     )
@@ -92,14 +95,19 @@ export const useSwapToAssetSelectionList = ({
     const selectedAccount = useSelectedAccount()
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
 
+    const selectedAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
+
     const balanceMap = useMemo((): Map<string, Decimal> => {
-        if (!selectedAccount?.address) return new Map()
+        if (!selectedAddress) return new Map()
         const assetBalances =
-            accountBalances.get(selectedAccount.address)?.assetBalances ?? []
+            accountBalances.get(selectedAddress)?.assetBalances ?? []
         return new Map(assetBalances.map(item => [item.assetId, item.amount]))
-    }, [accountBalances, selectedAccount?.address])
+    }, [accountBalances, selectedAddress])
 
     const items = useMemo((): AvailableAssetWithBalance[] => {
         const assets = availableAssets ?? []
@@ -121,7 +129,7 @@ export const useSwapToAssetSelectionList = ({
             // Seed the query cache so the AssetSelector can display the asset
             // immediately after selection, even for unowned assets that aren't
             // in the local asset database yet.
-            const queryKey = getAssetsQueryKey([assetId], network)
+            const queryKey = getAssetsQueryKey([assetId], scope)
             // An empty array counts as "not cached": the DB-only assets query
             // caches [] (staleTime Infinity) for an asset the account doesn't
             // hold, and skipping the seed then leaves the selector unable to
@@ -147,11 +155,12 @@ export const useSwapToAssetSelectionList = ({
             onAssetSelected({
                 assetId,
                 amount: item.balance ?? new Decimal(0),
-                algoValue: new Decimal(0),
-                isFrozen: false,
+                nativeValue: new Decimal(0),
+                fiatValue: null,
+                restriction: null,
             })
         },
-        [onAssetSelected, network, queryClient],
+        [onAssetSelected, queryClient, scope],
     )
 
     return {

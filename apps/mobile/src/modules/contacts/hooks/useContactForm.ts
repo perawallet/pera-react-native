@@ -19,7 +19,12 @@ import {
     type UseFormSetError,
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { contactSchema, type Contact } from '@perawallet/wallet-core-contacts'
+import {
+    contactSchema,
+    contactToFormValues,
+    type Contact,
+    type ContactFormValues,
+} from '@perawallet/wallet-core-contacts'
 
 import { useImagePicker } from '@hooks/useImagePicker'
 import { useNfdResolve } from '@hooks/useNfdResolve'
@@ -34,10 +39,10 @@ export type NfdState = {
 }
 
 export type UseContactFormResult = {
-    control: Control<Contact>
-    handleSubmit: UseFormHandleSubmit<Contact>
-    setError: UseFormSetError<Contact>
-    errors: FieldErrors<Contact>
+    control: Control<ContactFormValues>
+    handleSubmit: UseFormHandleSubmit<ContactFormValues>
+    setError: UseFormSetError<ContactFormValues>
+    errors: FieldErrors<ContactFormValues>
     isValid: boolean
     rawAddressInput: string
     imageUri: Optional<string>
@@ -64,10 +69,12 @@ export const useContactForm = (
         setValue,
         watch,
         formState: { isValid, errors },
-    } = useForm<Contact>({
+    } = useForm<ContactFormValues>({
         resolver: zodResolver(contactSchema),
         mode: 'onChange',
-        defaultValues: initialContact ?? { name: '', address: '' },
+        defaultValues: initialContact
+            ? contactToFormValues(initialContact)
+            : { name: '', address: '' },
     })
 
     const addressFieldValue = watch('address')

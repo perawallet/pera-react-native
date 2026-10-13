@@ -13,35 +13,37 @@
 import { useCallback } from 'react'
 
 import type { Decimal } from 'decimal.js'
-import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
+import type {
+    ChainScope,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
-    useArc59SendTransaction,
-    useArc59ClaimTransaction,
-} from '@perawallet/wallet-core-asa-inbox'
-import {
-    displayUnitsToBaseUnits,
-    useAlgorandClient,
-    useFetchSuggestedMinFee,
-    useMinimumFeeConfig,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+    fetchAndPersistAssets,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import {
     resolveMinFeeForSender,
+    useFeeConfig,
+    useFetchSuggestedMinFee,
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
 import {
+    addressOn,
     addToAssetHolding,
-    isAssetFrozen,
+    fetchOnChainAccountState,
+    getHoldingRestriction,
     useAccountBalancesInvalidator,
     useAllAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    displayUnitsToBaseUnits,
+    logger,
+    type Nullable,
+    toBigInt,
+} from '@perawallet/wallet-core-shared'
+import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 import { AssetFrozenError, InvalidSendParamsError } from '../errors'
-import { isAlgoAssetId, logger } from '@perawallet/wallet-core-shared'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type BaseSendParams = {
     sendMode: 'normal' | 'express' | 'sendArc59' | 'claimArc59' | 'rejectArc59'
@@ -56,7 +58,8 @@ type SendTransactionParams = BaseSendParams & {
     sendMode: 'normal' | 'express' | 'sendArc59'
     note?: string
     isCloseAccount?: boolean
-    arc59Summary?: Arc59SendSummaryResponse
+    /** The inbox quote the send was confirmed against; the chain adapter validates it. */
+    arc59Summary?: unknown
 }
 
 type SendClaimParams = BaseSendParams & {
@@ -89,29 +92,34 @@ export const SEND_TRANSACTION_SOURCE = {
     description: 'Send transaction',
 }
 
+const senderAddressOn = (sender: WalletAccount, scope: ChainScope): string => {
+    const address = addressOn(sender, scope)
+    if (!address) throw new InvalidSendParamsError()
+    return address
+}
+
 type UseTransactionSendFlowResult = {
     execute: (args: UseTransactionSendFlowParams) => Promise<string>
 }
 
-export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
-    const algokit = useAlgorandClient()
+export const useTransactionSendFlow = (
+    scope: ChainScope,
+): UseTransactionSendFlowResult => {
     const { submit } = useSignAndSubmitGroup()
-    const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
-    const { buildSendViaInboxTxs } = useArc59SendTransaction()
-    const { buildClaimAssetTxs, buildRejectAssetTxs } =
-        useArc59ClaimTransaction()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier, assetMbr } = useMinimumFeeConfig()
-    const fetchSuggestedMinFee = useFetchSuggestedMinFee()
+    const { minTxnFee, pqMultiplier, assetOptInMinBalance } = useFeeConfig(
+        scope.chainId,
+    )
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee(scope.chainId)
 
     /**
      * Express send has two signers with independent PQ-aware rates: the sender
      * signs the funding/transfer legs, the receiver the opt-in.
      * `resolveMinFeeForSender` resolves the effective signer per address, so a
      * rekeyed party pays its auth account's rate, and owns the congestion guard.
-     * `staticFee` only overrides AlgoKit's auto-sizing when the resolved fee
-     * exceeds the suggested minimum, so a non-quantum party is unchanged.
+     * A fee is passed on only when the resolved fee exceeds the suggested
+     * minimum, so a non-quantum party is unchanged.
      */
     const buildExpressTxs = useCallback(
         async (params: {
@@ -123,18 +131,24 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             const { sender, receiver, assetId, amount } = params
 
             // Look up receiver's current balance to determine funding needed
-            const { amount: currentBalance, minBalance: currentMbr } =
-                await algokit.client.algod.accountInformation(receiver).do()
+            const receiverState = await fetchOnChainAccountState(
+                receiver,
+                scope,
+            )
+            const currentBalance = toBigInt(
+                receiverState.nativeBalanceBaseUnits,
+            )
+            const currentMbr = toBigInt(receiverState.reserveBalance)
 
             const suggestedMinFee = await fetchSuggestedMinFee()
-            const senderFee = resolveMinFeeForSender({
+            const senderFee = resolveMinFeeForSender(scope.chainId, {
                 senderAddress: sender,
                 accounts,
                 suggestedMinFee,
                 configMinTxnFee: minTxnFee,
                 pqMultiplier,
             })
-            const receiverFee = resolveMinFeeForSender({
+            const receiverFee = resolveMinFeeForSender(scope.chainId, {
                 senderAddress: receiver,
                 accounts,
                 suggestedMinFee,
@@ -142,68 +156,44 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 pqMultiplier,
             })
 
-            // After opt-in the receiver's MBR increases by assetMbr. The
+            // After opt-in the receiver's MBR increases by assetOptInMinBalance. The
             // opt-in tx fee is paid from the receiver's balance at the
             // receiver's own (PQ-aware) rate, so reserve exactly that
             // instead of the flat network minimum.
-            const mbrAfterOptIn = currentMbr + assetMbr
+            const mbrAfterOptIn = currentMbr + assetOptInMinBalance
             const balanceNeeded = mbrAfterOptIn + receiverFee
-            const fundingNeeded =
+            const funding =
                 balanceNeeded > currentBalance
                     ? balanceNeeded - currentBalance
                     : 0n
 
-            const composer = algokit.newGroup()
-
-            // Only add payment if the receiver needs funding
-            if (fundingNeeded > 0n) {
-                composer.addPayment({
-                    sender,
-                    receiver,
-                    amount: fundingNeeded.microAlgo(),
-                    ...(senderFee > suggestedMinFee
-                        ? { staticFee: senderFee.microAlgo() }
-                        : {}),
-                })
-            }
-
-            composer
-                .addAssetOptIn({
-                    sender: receiver,
-                    assetId,
-                    ...(receiverFee > suggestedMinFee
-                        ? { staticFee: receiverFee.microAlgo() }
-                        : {}),
-                })
-                .addAssetTransfer({
-                    sender,
-                    receiver,
-                    amount,
-                    assetId,
-                    ...(senderFee > suggestedMinFee
-                        ? { staticFee: senderFee.microAlgo() }
-                        : {}),
-                })
-
-            const { transactions } = await composer.build()
-            return transactions.map(t => t.txn)
+            return sendFlowFeatureFor(scope, 'express').buildTxs({
+                scope,
+                sender,
+                receiver,
+                assetId,
+                amount,
+                funding,
+                senderFee: senderFee > suggestedMinFee ? senderFee : undefined,
+                receiverFee:
+                    receiverFee > suggestedMinFee ? receiverFee : undefined,
+            })
         },
         [
-            algokit,
             accounts,
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
-            assetMbr,
+            assetOptInMinBalance,
+            scope,
         ],
     )
 
     /**
      * `resolveMinFeeForSender` resolves the effective signer, so a sender
      * rekeyed to a quantum auth pays the PQ rate even though `params.sender`
-     * still names the rekeyed account. `staticFee` only overrides AlgoKit's
-     * auto-sizing when the resolved fee exceeds the suggested minimum, so a
-     * non-quantum sender is unchanged.
+     * still names the rekeyed account. A fee is passed on only when the resolved
+     * fee exceeds the suggested minimum, so a non-quantum sender is unchanged.
      */
     const buildNormalTxs = useCallback(
         async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
@@ -225,47 +215,27 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 ).toString(),
             )
 
+            const senderAddress = senderAddressOn(params.sender, scope)
             const suggestedMinFee = await fetchSuggestedMinFee()
-            const resolvedFee = resolveMinFeeForSender({
-                senderAddress: params.sender.address,
+            const resolvedFee = resolveMinFeeForSender(scope.chainId, {
+                senderAddress,
                 accounts,
                 suggestedMinFee,
                 configMinTxnFee: minTxnFee,
                 pqMultiplier,
             })
-            const feeOverride =
-                resolvedFee > suggestedMinFee
-                    ? { staticFee: resolvedFee.microAlgo() }
-                    : {}
-
-            const composer = algokit.newGroup()
-            if (isAlgoAssetId(params.asset.assetId)) {
-                composer.addPayment({
-                    sender: params.sender.address,
-                    receiver: params.receiver,
-                    amount: params.isCloseAccount
-                        ? BigInt(0).microAlgo()
-                        : amountInBaseUnits.microAlgo(),
-                    ...(params.isCloseAccount && {
-                        closeRemainderTo: params.receiver,
-                    }),
-                    note: params.note,
-                    ...feeOverride,
-                })
-            } else {
-                composer.addAssetTransfer({
-                    sender: params.sender.address,
-                    receiver: params.receiver,
-                    amount: amountInBaseUnits,
-                    assetId: BigInt(params.asset.assetId),
-                    note: params.note,
-                    ...feeOverride,
-                })
-            }
-            const { transactions } = await composer.build()
-            return transactions.map(t => t.txn)
+            return sendFlowChainAdapters.get(scope.chainId).buildTransferTxs({
+                scope,
+                sender: senderAddress,
+                receiver: params.receiver,
+                assetId: params.asset.assetId,
+                amount: amountInBaseUnits,
+                note: params.note,
+                isCloseAccount: params.isCloseAccount,
+                fee: resolvedFee > suggestedMinFee ? resolvedFee : undefined,
+            })
         },
-        [algokit, accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier],
+        [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier, scope],
     )
 
     const executeSend = useCallback(
@@ -280,16 +250,18 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
+            const senderAddress = senderAddressOn(params.sender, scope)
+
             // Read at submit time rather than taking the caller's word: a
             // deeplink, a stale screen or a freeze that landed mid-flow would
             // all miss a flag passed in from the UI.
-            const frozen = await isAssetFrozen({
-                accountAddress: params.sender.address,
+            const restriction = await getHoldingRestriction({
+                accountAddress: senderAddress,
                 assetId: params.asset.assetId,
-                network,
+                scope,
             })
 
-            if (frozen) {
+            if (restriction !== null) {
                 throw new AssetFrozenError(params.asset.assetId)
             }
 
@@ -305,12 +277,13 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             switch (params.sendMode) {
                 case 'express': {
                     const unsignedTxs = await buildExpressTxs({
-                        sender: params.sender.address,
+                        sender: senderAddress,
                         receiver: params.receiver,
                         assetId,
                         amount: amountInBaseUnits,
                     })
                     const result = await submit({
+                        chainId: scope.chainId,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
                     })
@@ -320,16 +293,18 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     if (!params.arc59Summary) {
                         throw new InvalidSendParamsError()
                     }
+                    const assetInbox = sendFlowFeatureFor(scope, 'assetInbox')
                     const suggestedMinFee = await fetchSuggestedMinFee()
-                    const senderMinFee = resolveMinFeeForSender({
-                        senderAddress: params.sender.address,
+                    const senderMinFee = resolveMinFeeForSender(scope.chainId, {
+                        senderAddress: senderAddress,
                         accounts,
                         suggestedMinFee,
                         configMinTxnFee: minTxnFee,
                         pqMultiplier,
                     })
-                    const unsignedTxs = await buildSendViaInboxTxs({
-                        sender: params.sender.address,
+                    const unsignedTxs = await assetInbox.buildSendTxs({
+                        scope: scope,
+                        sender: senderAddress,
                         receiver: params.receiver,
                         assetId,
                         amount: amountInBaseUnits,
@@ -337,6 +312,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                         senderMinFee,
                     })
                     const result = await submit({
+                        chainId: scope.chainId,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
                     })
@@ -345,6 +321,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 case 'normal': {
                     const unsignedTxs = await buildNormalTxs(params)
                     const result = await submit({
+                        chainId: scope.chainId,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
                     })
@@ -358,14 +335,13 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
         },
         [
             buildExpressTxs,
-            buildSendViaInboxTxs,
             buildNormalTxs,
             submit,
             accounts,
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
-            network,
+            scope,
         ],
     )
 
@@ -374,10 +350,12 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             if (!params.asset || !params.sender) {
                 throw new InvalidSendParamsError()
             }
+            const senderAddress = senderAddressOn(params.sender, scope)
 
+            const assetInbox = sendFlowFeatureFor(scope, 'assetInbox')
             const suggestedMinFee = await fetchSuggestedMinFee()
-            const senderMinFee = resolveMinFeeForSender({
-                senderAddress: params.sender.address,
+            const senderMinFee = resolveMinFeeForSender(scope.chainId, {
+                senderAddress: senderAddress,
                 accounts,
                 suggestedMinFee,
                 configMinTxnFee: minTxnFee,
@@ -385,14 +363,16 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             })
 
             if (params.sendMode === 'claimArc59') {
-                const unsignedTxs = await buildClaimAssetTxs({
-                    sender: params.sender.address,
+                const unsignedTxs = await assetInbox.buildClaimTxs({
+                    scope: scope,
+                    sender: senderAddress,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
                     inboxAddress: params.inboxAddress ?? null,
                     senderMinFee,
                 })
                 const result = await submit({
+                    chainId: scope.chainId,
                     unsignedTxs,
                     source: SEND_TRANSACTION_SOURCE,
                 })
@@ -403,14 +383,14 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 if (params.amount) {
                     try {
                         await addToAssetHolding({
-                            accountAddress: params.sender.address,
+                            accountAddress: senderAddress,
                             assetId: String(params.asset.assetId),
-                            network,
+                            scope: scope,
                             amount: params.amount,
                         })
                         await fetchAndPersistAssets(
                             [String(params.asset.assetId)],
-                            network,
+                            scope,
                         )
                     } catch (error) {
                         // Cosmetic-only failure — the post-confirmation
@@ -424,8 +404,9 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
 
                 return result.txIds[result.txIds.length - 1]
             } else {
-                const unsignedTxs = await buildRejectAssetTxs({
-                    sender: params.sender.address,
+                const unsignedTxs = await assetInbox.buildRejectTxs({
+                    scope: scope,
+                    sender: senderAddress,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
                     inboxAddress: params.inboxAddress ?? null,
@@ -433,6 +414,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     senderMinFee,
                 })
                 const result = await submit({
+                    chainId: scope.chainId,
                     unsignedTxs,
                     source: SEND_TRANSACTION_SOURCE,
                 })
@@ -440,10 +422,8 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             }
         },
         [
-            buildClaimAssetTxs,
-            buildRejectAssetTxs,
             submit,
-            network,
+            scope,
             invalidateBalances,
             accounts,
             fetchSuggestedMinFee,

@@ -12,6 +12,8 @@
 
 import { useCallback } from 'react'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     MULTISIG_DECLINED_NOTIFICATION_TYPE,
     MULTISIG_EXPIRED_NOTIFICATION_TYPE,
@@ -20,7 +22,8 @@ import {
     useInboxQuery,
     type InboxItem,
 } from '@perawallet/wallet-core-messages'
-import { navigateToScreen } from '@hooks/deeplink/navigateToScreen'
+import { navigateToScreen } from '@modules/deeplink/core'
+import { useCapability } from '@hooks/useCapability'
 import { useHandleInboxItemPress } from './useHandleInboxItemPress'
 
 export type MultisigIntentKind = 'sign' | 'import'
@@ -93,11 +96,15 @@ export const findInboxItemForNotification = (
  */
 export const useHandleMultisigNotification =
     (): UseHandleMultisigNotificationResult => {
-        const { refetch: refetchInbox } = useInboxQuery()
+        const { refetch: refetchInbox } = useInboxQuery(
+            useSelectedScope(LEGACY_CHAIN_ID),
+        )
         const handleInboxItemPress = useHandleInboxItemPress()
+        const canUseMultisig = useCapability({ anyChain: 'multisig' })
 
         const handleMultisigNotification = useCallback(
             (kind: MultisigIntentKind, accountAddress: Maybe<string>) => {
+                if (!canUseMultisig) return
                 // Switch to the Inbox tab first so the user lands there while
                 // we fetch. Nested-navigator targeting (`params.screen`) is
                 // required because the `initialTab` route param is only read by
@@ -125,7 +132,7 @@ export const useHandleMultisigNotification =
                         // surface the item once it settles.
                     })
             },
-            [refetchInbox, handleInboxItemPress],
+            [refetchInbox, handleInboxItemPress, canUseMultisig],
         )
 
         return { handleMultisigNotification }

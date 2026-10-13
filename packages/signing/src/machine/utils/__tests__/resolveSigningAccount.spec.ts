@@ -10,41 +10,42 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
+import { beforeEach, describe, it, expect } from 'vitest'
+import { seedAuthority } from '../../../__tests__/registerAlgorandAccounts'
+import {
+    DelegationTargetNotFoundError,
+    chainAccountOf,
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import type { SourceMetadata } from '../../../pipeline/types'
 import { resolveSigningAccount } from '../resolveSigningAccount'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    watchAccount,
+} from '../../../__tests__/accounts'
 
 const PARTICIPANT =
     'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP'
 const AUTH = 'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
 
-const rekeyedSigner: WalletAccount = {
-    type: 'algo25',
-    address: PARTICIPANT,
+const rekeyedSigner = algo25Account(PARTICIPANT, {
     keyPairId: 'key-participant',
-    rekeyAddress: AUTH,
-} as unknown as WalletAccount
+})
 
-const authAccount: WalletAccount = {
-    type: 'algo25',
-    address: AUTH,
-    keyPairId: 'key-auth',
-} as unknown as WalletAccount
+const authAccount = algo25Account(AUTH, { keyPairId: 'key-auth' })
 
 /** The shape: rekeyed on chain, no local key of its own. */
-const keylessRekeyedSigner: WalletAccount = {
-    type: 'watch',
-    address: PARTICIPANT,
-    rekeyAddress: AUTH,
-} as unknown as WalletAccount
+const keylessRekeyedSigner = watchAccount(PARTICIPANT)
 
-const plainSigner: WalletAccount = {
-    type: 'algo25',
-    address: PARTICIPANT,
+const plainSigner = algo25Account(PARTICIPANT, {
     keyPairId: 'key-participant',
-} as unknown as WalletAccount
+})
+
+const addressOf = (account: WalletAccount) =>
+    chainAccountOf(account, TEST_CHAIN_ID)?.address
 
 const cosignSource: SourceMetadata = {
     type: 'multisig-cosign',
@@ -54,24 +55,32 @@ const cosignSource: SourceMetadata = {
 const localSource: SourceMetadata = { type: 'local' }
 
 describe('resolveSigningAccount', () => {
+    beforeEach(() => {
+        useAccountChainStateStore.getState().resetState()
+    })
+
     it('returns the signer itself for multisig-cosign even when the signer is rekeyed', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             rekeyedSigner,
             cosignSource,
             'transactions',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
     it('follows rekey to the auth account for transaction signing on non-cosign sources', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
             'transactions',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
-        expect(result.address).toBe(AUTH)
+        expect(addressOf(result)).toBe(AUTH)
     })
 
     it('returns the signer itself when not rekeyed (regardless of source)', () => {
@@ -80,19 +89,26 @@ describe('resolveSigningAccount', () => {
             localSource,
             'transactions',
             [plainSigner],
+            'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
-    it('throws RekeyTargetNotFoundError on transactions when the rekey target is missing', () => {
+    it('throws DelegationTargetNotFoundError on transactions when the rekey target is missing', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         expect(() =>
-            resolveSigningAccount(rekeyedSigner, localSource, 'transactions', [
+            resolveSigningAccount(
                 rekeyedSigner,
-            ]),
-        ).toThrow(RekeyTargetNotFoundError)
+                localSource,
+                'transactions',
+                [rekeyedSigner],
+                'algorand',
+            ),
+        ).toThrow(DelegationTargetNotFoundError)
     })
 
     it('returns the signer itself for arbitrary-data even when rekeyed', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         // ARC-1 verifies against the requested account's own pubkey; the
         // rekey hop must NOT be followed for off-chain data.
         const result = resolveSigningAccount(
@@ -100,50 +116,70 @@ describe('resolveSigningAccount', () => {
             localSource,
             'arbitrary-data',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
-    it('returns the keyless signer itself for arc60 even when its auth account holds a key', () => {
+    it('returns the keyless signer itself for auth-data even when its auth account holds a key', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         // An ARC-60 signature verifies against `signer`'s own pubkey, so a
         // signature from the auth key would fail every verifier. The signer
         // is returned as-is and the leaf signer refuses it (no key).
         const result = resolveSigningAccount(
             keylessRekeyedSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [keylessRekeyedSigner, authAccount],
+            'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
-    it('returns the rekeyed signer itself for arc60 when it holds its own key', () => {
+    it('returns the rekeyed signer itself for auth-data when it holds its own key', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [rekeyedSigner, authAccount],
+            'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
-    it('never consults the rekey target for arc60, so a missing target does not throw', () => {
+    it('never consults the rekey target for auth-data, so a missing target does not throw', () => {
+        seedAuthority(PARTICIPANT, AUTH)
         const result = resolveSigningAccount(
             keylessRekeyedSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [keylessRekeyedSigner],
+            'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
     })
 
-    it('returns the signer itself for arc60 when not rekeyed', () => {
+    it('returns the signer itself for auth-data when not rekeyed', () => {
         const result = resolveSigningAccount(
             plainSigner,
             localSource,
-            'arc60',
+            'auth-data',
             [plainSigner],
+            'algorand',
         )
-        expect(result.address).toBe(PARTICIPANT)
+        expect(addressOf(result)).toBe(PARTICIPANT)
+    })
+
+    it("follows the rekey hop through the given chain's rules, never Algorand's", () => {
+        expect(() =>
+            resolveSigningAccount(
+                rekeyedSigner,
+                localSource,
+                'transactions',
+                [rekeyedSigner, authAccount],
+                'ethereum',
+            ),
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 })

@@ -112,6 +112,37 @@ function buildAppConfig(env) {
     }
   })();
 
+  // Each plugin is added only when its setting exists. The cloud-storage plugin
+  // writes iCloud entitlements that an archive signed with a profile lacking the
+  // iCloud capability cannot sign; the Google plugin needs the iOS client id to
+  // register its reversed form as the sign-in URL scheme.
+  const iCloudContainerId = env.IOS_ICLOUD_CONTAINER_ID?.trim();
+  const googleIosClientId = env.GOOGLE_IOS_CLIENT_ID?.trim();
+  const credentialStoragePlugins = [
+    ...(iCloudContainerId
+      ? [
+          [
+            'react-native-cloud-storage',
+            {
+              iCloudContainerIdentifier: iCloudContainerId,
+              iCloudContainerEnvironment:
+                variant === 'dev' ? 'Development' : 'Production',
+            },
+          ],
+        ]
+      : []),
+    ...(googleIosClientId
+      ? [
+          [
+            '@react-native-google-signin/google-signin',
+            {
+              iosUrlScheme: googleIosClientId.split('.').reverse().join('.'),
+            },
+          ],
+        ]
+      : []),
+  ];
+
   return {
     name: appNames[variant],
     slug: slugs[variant],
@@ -367,6 +398,9 @@ function buildAppConfig(env) {
             // (react-native-ssl-public-key-pinning requirement). Debug-only
             // tooling — release builds never include it.
             networkInspector: false,
+            // Set by ci/jobs/lib/toolchain.sh only when the host has ccache,
+            // so a local prebuild keeps compiling without it.
+            ccacheEnabled: env.USE_CCACHE === '1',
           },
           android: {
             minSdkVersion: 29,
@@ -392,6 +426,19 @@ function buildAppConfig(env) {
               '-dontwarn okio.**',
               '-dontwarn javax.annotation.**',
               '-dontwarn org.conscrypt.**',
+              // JNA's Native reaches into desktop-Java AWT for window handles, which
+              // Android has no classes for, so R8 fails the release minify outright.
+              '-dontwarn com.sun.jna.**',
+              '-dontwarn java.awt.**',
+              // Suppressing those warnings is not enough: JNA resolves its own Java
+              // members from native code by name (Native.initIDs looks up Pointer.peer
+              // over JNI) and maps Structure subclasses field-by-field in declaration
+              // order, so letting R8 rename or reorder them turns the build error into
+              // an UnsatisfiedLinkError at launch instead. uniffi generates the
+              // Structure subclasses the WalletConnect Pay module passes across.
+              '-keep class com.sun.jna.** { *; }',
+              '-keepclassmembers class * extends com.sun.jna.** { *; }',
+              '-keep class uniffi.** { *; }',
               '-keep class org.bouncycastle.** { *; }',
               '-keepnames class org.bouncycastle.** { *; }',
               '-dontwarn org.bouncycastle.**',
@@ -559,6 +606,8 @@ function buildAppConfig(env) {
       // manifest-merge time. Pera does no ad attribution, so AD_ID collection is
       // an unnecessary privacy exposure for a wallet (security finding AND-02).
       './plugins/withAndroidRemoveAdIdPermissions',
+
+      ...credentialStoragePlugins,
     ],
 
     // Experiments (for bleeding edge features)

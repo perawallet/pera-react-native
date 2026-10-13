@@ -52,9 +52,7 @@ vi.mock('../useWebViewNavigationGuard', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const renderWebView = () =>
     render(

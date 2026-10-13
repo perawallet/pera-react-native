@@ -24,11 +24,17 @@ import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { formatNumber } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
+        account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
@@ -37,19 +43,25 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     return {
         ...actual,
         useSingleAssetDetailsQuery: vi.fn(),
+        useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
 
 const mockCopyToClipboard = vi.fn()
 
@@ -208,8 +220,10 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('useTransactionListItem', () => {
     beforeEach(() => {
         vi.mocked(useSelectedAccount).mockReturnValue({
-            address: USER_ADDRESS,
-        } as ReturnType<typeof useSelectedAccount>)
+            id: 'acc-1',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: USER_ADDRESS } },
+        })
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: undefined,
         } as UseQueryResult<PeraAsset, Error>)
@@ -241,6 +255,36 @@ describe('useTransactionListItem', () => {
                 { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.send')
+        })
+
+        it('returns send key for the account a clawback drained', () => {
+            const tx = createAssetTransferTx({
+                sender: OTHER_ADDRESS,
+                assetSender: USER_ADDRESS,
+                receiver: 'THIRD_ADDRESS',
+            })
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
+            )
+            expect(result.current.title).toBe('transactions.list_item.send')
+        })
+
+        it('names the drained holder, not the authority, to a clawback receiver', () => {
+            const tx = createAssetTransferTx({
+                sender: OTHER_ADDRESS,
+                assetSender: 'DRAINED_ADDRESS',
+                receiver: USER_ADDRESS,
+            })
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
+            )
+            expect(result.current.title).toBe('transactions.list_item.receive')
+            expect(vi.mocked(useResolvedAddress)).toHaveBeenCalledWith(
+                'DRAINED_ADDRESS',
+                expect.anything(),
+            )
         })
 
         it('returns receive key for incoming asset transfer', () => {

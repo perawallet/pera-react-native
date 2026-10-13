@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
     ErrorCategory,
     isExpectedError,
     type AppError,
 } from '@perawallet/wallet-core-shared'
 import {
+    classifyLedgerAppError,
     classifyLedgerError,
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
@@ -26,6 +27,7 @@ import {
     LedgerDeviceBusyError,
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
+    LedgerDevicePickerUnavailableError,
     LedgerDisconnectedError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
@@ -52,17 +54,17 @@ const createErrorWithStatus = (statusCode: number): Error => {
 }
 
 describe('classifyLedgerError', () => {
-    it('classifies 0x6986 as LedgerUserRejectedError', () => {
-        const result = classifyLedgerError(createErrorWithStatus(0x6986))
+    it('classifies 0x6985 as LedgerUserRejectedError', () => {
+        const result = classifyLedgerError(createErrorWithStatus(0x6985))
         expect(result).toBeInstanceOf(LedgerUserRejectedError)
         // The swap flow's user-rejection classification matches by name to
         // avoid a value import — the name must survive minification.
         expect(result.name).toBe('LedgerUserRejectedError')
     })
 
-    it('classifies 0x6985 (legacy) as LedgerUserRejectedError', () => {
-        const result = classifyLedgerError(createErrorWithStatus(0x6985))
-        expect(result).toBeInstanceOf(LedgerUserRejectedError)
+    it("leaves an app's own non-standard reject code to its driver", () => {
+        const result = classifyLedgerError(createErrorWithStatus(0x6986))
+        expect(result).toBeInstanceOf(LedgerConnectionError)
     })
 
     it('classifies 0x5515 as LedgerDeviceLockedError', () => {
@@ -130,8 +132,8 @@ describe('classifyLedgerError', () => {
 })
 
 describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
-    it('classifies returnCode 0x6986 as LedgerUserRejectedError', () => {
-        expect(classifyLedgerError({ returnCode: 0x6986 })).toBeInstanceOf(
+    it('classifies returnCode 0x6985 as LedgerUserRejectedError', () => {
+        expect(classifyLedgerError({ returnCode: 0x6985 })).toBeInstanceOf(
             LedgerUserRejectedError,
         )
     })
@@ -144,99 +146,77 @@ describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
 
     it('prefers statusCode when both are present', () => {
         expect(
-            classifyLedgerError({ statusCode: 0x6986, returnCode: 0x9000 }),
+            classifyLedgerError({ statusCode: 0x6985, returnCode: 0x9000 }),
         ).toBeInstanceOf(LedgerUserRejectedError)
     })
 })
 
-describe('classifyLedgerError with HwTransportError (BLE scan/connect)', () => {
-    // Mirrors what @ledgerhq/react-native-hw-transport-ble emits after
-    // remapping a react-native-ble-plx BleError: name === 'HwTransportError',
-    // an optional `.type`, and the numeric BleErrorCode appended to the message.
-    const createHwTransportError = (
-        type: string | undefined,
-        originCode: number,
-        message = 'BleError',
-    ): Error => {
-        const error = new Error(`${message}. Origin: ${originCode}`)
-        error.name = 'HwTransportError'
-        if (type !== undefined) {
-            ;(error as unknown as { type: string }).type = type
-        }
-        return error
-    }
+describe('classifyLedgerAppError', () => {
+    const app = { appName: 'Fixture', userRejectedStatusCodes: [0x6999] }
 
-    it('classifies LocationServicesDisabled type as LedgerLocationServicesDisabledError', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('LocationServicesDisabled', 601),
-        )
-        expect(result).toBeInstanceOf(LedgerLocationServicesDisabledError)
+    it("classifies the app's own reject code as LedgerUserRejectedError", () => {
+        expect(
+            classifyLedgerAppError(createErrorWithStatus(0x6999), app),
+        ).toBeInstanceOf(LedgerUserRejectedError)
     })
 
-    it('classifies BleErrorCode 601 by message origin even without a typed .type', () => {
-        const result = classifyLedgerError(
-            createHwTransportError(undefined, 601),
-        )
-        expect(result).toBeInstanceOf(LedgerLocationServicesDisabledError)
+    it('still classifies the standard reject code as LedgerUserRejectedError', () => {
+        expect(
+            classifyLedgerAppError({ returnCode: 0x6985 }, app),
+        ).toBeInstanceOf(LedgerUserRejectedError)
     })
 
-    it('classifies LocationServicesUnauthorized type as LedgerPermissionDeniedError', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('LocationServicesUnauthorized', 101),
-        )
-        expect(result).toBeInstanceOf(LedgerPermissionDeniedError)
-    })
+    it('names the app that is not open', () => {
+        const original = createErrorWithStatus(0x6e00)
 
-    it('classifies BleErrorCode 102 (BluetoothPoweredOff) as LedgerBluetoothDisabledError', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('Unknown', 102),
-        )
-        expect(result).toBeInstanceOf(LedgerBluetoothDisabledError)
-    })
+        const result = classifyLedgerAppError(original, app)
 
-    it('falls back to LedgerConnectionError for unmapped transport errors', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('Unknown', 600),
+        expect(result).toBeInstanceOf(LedgerAppNotOpenError)
+        expect(result.message).toBe(
+            'Fixture app is not open on the Ledger device',
         )
-        expect(result).toBeInstanceOf(LedgerConnectionError)
-    })
-
-    it('still routes an unmapped transport error through the disconnect heuristic', () => {
-        const result = classifyLedgerError(
-            createHwTransportError('Unknown', 201, 'Device was disconnected'),
-        )
-        expect(result).toBeInstanceOf(LedgerDisconnectedError)
-    })
-
-    it('preserves the original error reference', () => {
-        const original = createHwTransportError('LocationServicesDisabled', 601)
-        const result = classifyLedgerError(original)
         expect(result.originalError).toBe(original)
     })
 
-    // A powered-off or out-of-range device fails the connect with one of these
-    // rather than hanging, so they are what drives the "Ledger not found" copy.
-    it.each([200, 204, 205])(
-        'classifies BleErrorCode %i as LedgerDeviceNotFoundError',
-        code => {
-            expect(
-                classifyLedgerError(createHwTransportError(undefined, code)),
-            ).toBeInstanceOf(LedgerDeviceNotFoundError)
-        },
-    )
+    it('names the app that is outdated', () => {
+        const result = classifyLedgerAppError({ returnCode: 0x6d00 }, app)
 
-    it('classifies BleErrorCode 201 (DeviceDisconnected) as LedgerDisconnectedError', () => {
-        expect(
-            classifyLedgerError(
-                createHwTransportError(undefined, 201, 'BleError'),
-            ),
-        ).toBeInstanceOf(LedgerDisconnectedError)
+        expect(result).toBeInstanceOf(LedgerAppOutdatedError)
+        expect(result.message).toBe(
+            'The Ledger Fixture app must be updated to sign this request',
+        )
     })
 
-    it('classifies BleErrorCode 3 (OperationTimedOut) as LedgerTimeoutError', () => {
+    it('passes an already-classified error through', () => {
+        const classified = new LedgerDeviceLockedError()
+
+        expect(classifyLedgerAppError(classified, app)).toBe(classified)
+    })
+
+    it('hands everything else to the fallback classifier', () => {
+        const fallback = vi.fn(() => new LedgerDeviceLockedError())
+        const error = createErrorWithStatus(0x1234)
+
+        const result = classifyLedgerAppError(error, app, fallback)
+
+        expect(fallback).toHaveBeenCalledWith(error)
+        expect(result).toBeInstanceOf(LedgerDeviceLockedError)
+    })
+
+    it("does not treat another app's reject code as a rejection", () => {
         expect(
-            classifyLedgerError(createHwTransportError(undefined, 3)),
-        ).toBeInstanceOf(LedgerTimeoutError)
+            classifyLedgerAppError(createErrorWithStatus(0x6986), app),
+        ).toBeInstanceOf(LedgerConnectionError)
+    })
+})
+
+describe('classifyLedgerError with HwTransportError', () => {
+    it('leaves ble-plx origin codes to the BLE transport classifier', () => {
+        // The shared classifier is transport-neutral; mapping these codes
+        // belongs to the RN BLE transport.
+        const error = new Error('BleError. Origin: 601')
+        error.name = 'HwTransportError'
+        expect(classifyLedgerError(error)).toBeInstanceOf(LedgerConnectionError)
     })
 })
 
@@ -254,6 +234,8 @@ describe('classifyLedgerError with @ledgerhq/errors typed errors', () => {
         ['TransportRaceCondition', LedgerDeviceBusyError],
         ['UnresponsiveDeviceError', LedgerTimeoutError],
         ['LockedDeviceError', LedgerDeviceLockedError],
+        ['NotFoundError', LedgerDeviceNotFoundError],
+        ['TransportOpenUserCancelled', LedgerDeviceNotFoundError],
     ] as const)('maps %s to the matching typed error', (name, expected) => {
         expect(classifyLedgerError(createNamedError(name))).toBeInstanceOf(
             expected,
@@ -276,7 +258,7 @@ describe('classifyLedgerError with @ledgerhq/errors typed errors', () => {
     })
 
     it('classifies 0x6d00 (INS_NOT_SUPPORTED) as LedgerAppOutdatedError', () => {
-        // The installed Algorand app predates the instruction we sent — the
+        // The installed app predates the instruction we sent — the
         // only version signal the device volunteers.
         expect(
             classifyLedgerError(createErrorWithStatus(0x6d00)),
@@ -356,6 +338,10 @@ describe('expected-error classification', () => {
     // until someone decides whether it is our defect or the environment's.
     const EXPECTED: Array<[string, AppError]> = [
         ['LedgerDeviceNotFoundError', new LedgerDeviceNotFoundError()],
+        [
+            'LedgerDevicePickerUnavailableError',
+            new LedgerDevicePickerUnavailableError(),
+        ],
         ['LedgerDeviceBusyError', new LedgerDeviceBusyError()],
         ['LedgerDeviceLockedError', new LedgerDeviceLockedError()],
         ['LedgerAppNotOpenError', new LedgerAppNotOpenError()],
@@ -409,7 +395,8 @@ describe('expected-error classification', () => {
             [...EXPECTED, ...REPORTABLE].map(([name]) => name),
         )
         const exported = Object.keys(ledgerErrors).filter(
-            key => key.startsWith('Ledger') && key.endsWith('Error'),
+            // `\w+` skips the abstract `LedgerError` base.
+            key => /^Ledger\w+Error$/.test(key),
         )
         expect(exported.filter(name => !covered.has(name))).toEqual([])
     })

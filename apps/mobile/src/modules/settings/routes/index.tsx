@@ -17,8 +17,9 @@ import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { screenListeners } from '@routes/listeners'
 import { routeCapabilities } from '@routes/capabilities'
 import { VaultSecuritySettingsScreen } from './vault-security'
+import { developerGalleryScreens } from './developer-gallery'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
-import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
+import { SettingsSecurityScreen } from '@modules/security/routes'
 import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
 import { SettingsWalletConnectScreen } from '@modules/settings/screens/SettingsWalletConnectScreen'
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
@@ -32,17 +33,17 @@ import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/Set
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
 import type { NavigatorScreenParams } from '@react-navigation/native'
-import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+import {
+    CloudBackupStackNavigator,
+    type CloudBackupStackParamList,
+} from '@modules/cloud-backup'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
-import { ConnectedSitesScreen } from '@modules/settings/screens/ConnectedSitesScreen'
 import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'
-import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
+import { SettingsDebugToolsScreen } from '../screens/developer/SettingsDebugToolsScreen/SettingsDebugToolsScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
 import { SettingsDeveloperAppIntegrityScreen } from '../screens/developer/SettingsDeveloperAppIntegrityScreen'
-import { SettingsDeveloperGalleryScreen } from '../screens/developer/SettingsDeveloperGalleryScreen'
-import { GalleryCategoryScreen } from '../screens/developer/GalleryCategoryScreen'
-import { GalleryComponentPreviewScreen } from '../screens/developer/GalleryComponentPreviewScreen'
 import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/SettingsDeveloperMigrationViewerScreen'
 import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
 import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
@@ -53,7 +54,7 @@ import type { GalleryCategoryId } from '@modules/settings/screens/developer/gall
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
     NodeSettings: undefined
-    DevMenu: undefined
+    DebugTools: undefined
     FeatureFlags: undefined
     ManageCache: undefined
     AppIntegrity: undefined
@@ -98,11 +99,11 @@ const DeveloperSettingsStackNavigator = () => {
                 component={SettingsDeveloperNodeSettingsScreen}
             />
             <DeveloperSettingsStack.Screen
-                name='DevMenu'
+                name='DebugTools'
                 options={{
-                    title: 'screens.developer_menu',
+                    title: 'screens.debug_tools',
                 }}
-                component={SettingsDeveloperMenuScreen}
+                component={SettingsDebugToolsScreen}
             />
             <DeveloperSettingsStack.Screen
                 name='FeatureFlags'
@@ -125,23 +126,29 @@ const DeveloperSettingsStackNavigator = () => {
                 }}
                 component={SettingsDeveloperAppIntegrityScreen}
             />
-            <DeveloperSettingsStack.Screen
-                name='Gallery'
-                options={{
-                    title: 'Screen Gallery',
-                }}
-                component={SettingsDeveloperGalleryScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='GalleryCategory'
-                options={{ title: 'UI Catalog' }}
-                component={GalleryCategoryScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='GalleryPreview'
-                options={{ title: 'Preview' }}
-                component={GalleryComponentPreviewScreen}
-            />
+            {developerGalleryScreens && (
+                <>
+                    <DeveloperSettingsStack.Screen
+                        name='Gallery'
+                        options={{
+                            title: 'Screen Gallery',
+                        }}
+                        component={developerGalleryScreens.GalleryScreen}
+                    />
+                    <DeveloperSettingsStack.Screen
+                        name='GalleryCategory'
+                        options={{ title: 'UI Catalog' }}
+                        component={
+                            developerGalleryScreens.GalleryCategoryScreen
+                        }
+                    />
+                    <DeveloperSettingsStack.Screen
+                        name='GalleryPreview'
+                        options={{ title: 'Preview' }}
+                        component={developerGalleryScreens.GalleryPreviewScreen}
+                    />
+                </>
+            )}
             <DeveloperSettingsStack.Screen
                 name='MigrationViewer'
                 options={{
@@ -176,7 +183,7 @@ const DeveloperSettingsStackNavigator = () => {
 
 export type WalletConnectSettingsStackParamsList = {
     WalletConnectSettingsHome: undefined
-    WalletConnectSettingsDetails: { session: WalletConnectConnection }
+    WalletConnectSettingsDetails: { connection: ConnectionSettingsRow }
 }
 
 const WalletConnectSettingsStack =
@@ -216,12 +223,12 @@ const WalletConnectSettingsStackNavigator = () => {
 
 export type SettingsStackParamsList = {
     SettingsHome: undefined
+    CloudBackupSettings: NavigatorScreenParams<CloudBackupStackParamList>
     SecuritySettings: undefined
     VaultSecuritySettings: undefined
     NotificationsSettings: undefined
     WalletConnectSettings: undefined
     PasskeysSettings: undefined
-    ConnectedSites: undefined
     ConnectionsSettings: undefined
     CurrencySettings: undefined
     ThemeSettings: undefined
@@ -254,6 +261,15 @@ export const SettingsStackNavigator = () => {
                     title: 'screens.settings',
                 }}
                 component={SettingsScreen}
+            />
+            <SettingsStack.Screen
+                name='CloudBackupSettings'
+                options={{
+                    title: 'screens.cloud_backup',
+                    // The nested navigator draws its own headers.
+                    headerShown: false,
+                }}
+                component={CloudBackupStackNavigator}
             />
             <SettingsStack.Screen
                 name='SecuritySettings'
@@ -298,15 +314,6 @@ export const SettingsStackNavigator = () => {
                         title: 'screens.passkeys',
                     }}
                     component={SettingsPasskeyScreen}
-                />
-            )}
-            {routeCapabilities.dappConnections && (
-                <SettingsStack.Screen
-                    name='ConnectedSites'
-                    options={{
-                        title: 'screens.connected_sites',
-                    }}
-                    component={ConnectedSitesScreen}
                 />
             )}
             {routeCapabilities.connectionsSettings && (

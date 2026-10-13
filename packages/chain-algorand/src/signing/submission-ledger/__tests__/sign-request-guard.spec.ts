@@ -1,0 +1,264 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import {
+    Address,
+    computeGroupID,
+    Transaction,
+    TransactionType,
+    type Transaction as AlgoTransaction,
+} from 'algosdk'
+import {
+    runMigrations,
+    migrations,
+    type Database,
+} from '@perawallet/wallet-core-database'
+import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { deriveRequestGroupTxIds, isRequestGroupAlreadySubmitted } from '..'
+import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
+import {
+    recordSubmissionAttempt,
+    resolveSubmissionAttempt,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+
+const makeTestAddress = (fill: number): Address =>
+    new Address(new Uint8Array(32).fill(fill))
+
+const makeTestPaymentTx = (
+    sender: Address,
+    { receiver }: { receiver: Address },
+): Transaction =>
+    new Transaction({
+        type: TransactionType.pay,
+        sender,
+        paymentParams: { receiver, amount: 0n },
+        suggestedParams: {
+            fee: 1000n,
+            minFee: 1000n,
+            firstValid: 1000n,
+            lastValid: 2000n,
+            genesisID: 'mainnet-v1.0',
+            genesisHash: new Uint8Array(32).fill(0xab),
+        },
+    })
+
+// Reproduces the pipeline's submit-time derivation: group copies of the
+// ungrouped originals, then read the txids.
+const submitTimeTxIds = (txs: AlgoTransaction[]): string[] => {
+    const ungrouped = txs.map(txn => {
+        const clone = Transaction.fromEncodingData(txn.toEncodingData())
+        clone.group = undefined
+        return clone
+    })
+    const groupId = computeGroupID(ungrouped)
+    return txs.map(txn => {
+        const clone = Transaction.fromEncodingData(txn.toEncodingData())
+        clone.group = groupId
+        return clone.txID()
+    })
+}
+
+const makeGroup = (): AlgoTransaction[] => {
+    const sender = makeTestAddress(1)
+    const receiver = makeTestAddress(2)
+    return [
+        makeTestPaymentTx(sender, { receiver }),
+        makeTestPaymentTx(receiver, { receiver: sender }),
+    ]
+}
+
+const makeTransactionSignRequest = (
+    txs: AlgoTransaction[],
+    overrides: Record<string, unknown> = {},
+): SignRequest =>
+    ({
+        id: 'REQ-1',
+        type: 'transactions',
+        transport: 'algod',
+        sourceType: 'multisig-cosign',
+        txs,
+        ...overrides,
+    }) as SignRequest
+
+describe('deriveRequestGroupTxIds', () => {
+    it('derives the submit-time txids of an ungrouped request', () => {
+        const txs = makeGroup()
+        const expected = submitTimeTxIds(txs)
+
+        const derived = deriveRequestGroupTxIds(txs)
+        expect(derived).toEqual(expected)
+        // The originals must not be mutated.
+        expect(txs.every(txn => txn.group === undefined)).toBe(true)
+    })
+
+    it('keeps the txids as-is when the group is already set consistently', () => {
+        const txs = makeGroup()
+        const groupId = computeGroupID(txs)
+        for (const txn of txs) txn.group = groupId
+
+        const derived = deriveRequestGroupTxIds(txs)
+        expect(derived).toEqual(txs.map(txn => txn.txID()))
+    })
+
+    it('returns no txids for an empty request', () => {
+        expect(deriveRequestGroupTxIds([])).toEqual([])
+    })
+})
+
+describe('isRequestGroupAlreadySubmitted', () => {
+    let db: Database
+    let teardown: () => void
+
+    beforeEach(async () => {
+        const result = createTestDatabase()
+        db = result.db
+        teardown = result.teardown
+        await runMigrations(db, migrations)
+    })
+
+    afterEach(() => {
+        teardown()
+        vi.restoreAllMocks()
+    })
+
+    it('is false for a chain-neutral request, which the Algorand ledger never records', async () => {
+        const request = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [makeUnsignedAlgorandTransaction()],
+        } as SignRequest
+
+        await expect(
+            isRequestGroupAlreadySubmitted(request, { db }),
+        ).resolves.toBe(false)
+    })
+
+    it('is true when the group has an open ledger row', async () => {
+        const txs = makeGroup()
+        const txIds = submitTimeTxIds(txs)
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            txIds,
+            flow: 'generic',
+        })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db, scope: scopeForLegacyNetwork('mainnet') },
+        )
+        expect(submitted).toBe(true)
+    })
+
+    it('is true when the group already confirmed on chain', async () => {
+        const txs = makeGroup()
+        const txIds = submitTimeTxIds(txs)
+        const id = await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            txIds,
+            flow: 'generic',
+        })
+        await resolveSubmissionAttempt({ db, id, status: 'confirmed' })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db, scope: scopeForLegacyNetwork('mainnet') },
+        )
+        expect(submitted).toBe(true)
+    })
+
+    it('is false when the group was definitively rejected', async () => {
+        const txs = makeGroup()
+        const txIds = submitTimeTxIds(txs)
+        const id = await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            txIds,
+            flow: 'generic',
+        })
+        // A node rejection means the bytes are provably not on chain — the
+        // user is entitled to approve a fresh attempt.
+        await resolveSubmissionAttempt({ db, id, status: 'failed' })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db, scope: scopeForLegacyNetwork('mainnet') },
+        )
+        expect(submitted).toBe(false)
+    })
+
+    it('is false when the group was submitted under another scope', async () => {
+        const txs = makeGroup()
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: submitTimeTxIds(txs),
+            flow: 'generic',
+        })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db, scope: scopeForLegacyNetwork('mainnet') },
+        )
+        expect(submitted).toBe(false)
+    })
+
+    it('looks the group up on the active network when no scope is given', async () => {
+        vi.spyOn(useNetworkStore, 'getState').mockReturnValue({
+            network: 'testnet',
+        } as ReturnType<typeof useNetworkStore.getState>)
+        const txs = makeGroup()
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('testnet'),
+            txIds: submitTimeTxIds(txs),
+            flow: 'generic',
+        })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db },
+        )
+        expect(submitted).toBe(true)
+    })
+
+    it('is false for non-transaction requests and empty groups', async () => {
+        expect(
+            await isRequestGroupAlreadySubmitted({
+                id: 'REQ-2',
+                type: 'arbitrary-data',
+                transport: 'algod',
+                data: [],
+            } as SignRequest),
+        ).toBe(false)
+        expect(
+            await isRequestGroupAlreadySubmitted(
+                makeTransactionSignRequest([]),
+            ),
+        ).toBe(false)
+    })
+
+    it('fails open (false) when the database is unavailable', async () => {
+        const txs = makeGroup()
+        // No db initialized — getDatabase() throws inside the guard.
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+        )
+        expect(submitted).toBe(false)
+    })
+})

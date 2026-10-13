@@ -11,3 +11,7 @@
  */
 
 export { nfdBatchQueue } from './nfdBatchQueue'
+export {
+    verifyNameAddress,
+    type VerifyNameAddressParams,
+} from './verifyNameAddress'

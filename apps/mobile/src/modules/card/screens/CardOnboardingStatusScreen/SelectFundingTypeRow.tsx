@@ -11,11 +11,7 @@
  */
 
 import React from 'react'
-import {
-    AUTO_FUNDING_PER_TX_LIMIT_USD,
-    FundingType,
-} from '@perawallet/wallet-core-card'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
+import { FundingType } from '@perawallet/wallet-core-card'
 import { PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
@@ -54,9 +50,6 @@ export const SelectFundingTypeRow = ({
         isAutoFundingEnabled,
         isAutoUnavailable: isAutoFundingUnavailable,
         isLedgerAccount,
-        fallback: t('peraCard.setup_status.funding_type_limit_hint', {
-            limit: formatCurrency(AUTO_FUNDING_PER_TX_LIMIT_USD, 0, 'USD'),
-        }),
     })
 
     if (!isFundsConnected) {

@@ -22,7 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     getLedgerErrorPresetByKind,
     type LedgerErrorPreset,
-} from '@modules/ledger/utils/ledgerErrorPresets'
+} from '@modules/ledger'
 
 type HardwareSigningStatus =
     | 'idle'

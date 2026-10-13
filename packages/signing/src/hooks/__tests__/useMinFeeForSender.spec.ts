@@ -9,108 +9,60 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useMinFeeForSender } from '../useMinFeeForSender'
 
-const mockUseAllAccounts = vi.fn()
-const mockUseSuggestedParametersQuery = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
-
-vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-accounts',
-    )
-    return {
-        ...actual,
-        useAllAccounts: () => mockUseAllAccounts(),
-    }
-})
-
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),
-        useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    }
-})
-
-const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'q1',
-        address: 'QADDR',
-        type: AccountTypes.quantum,
-        keyPairId: 'kp-quantum',
-        ...overrides,
-    }) as WalletAccount
-
-const algo25 = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
-    ({
-        id: 'a1',
-        address: 'AADDR',
-        type: AccountTypes.algo25,
-        keyPairId: 'kp-algo25',
-        ...overrides,
-    }) as WalletAccount
-
 describe('useMinFeeForSender', () => {
+    const chainHook = vi.fn()
+
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: { minFee: 1000 },
-            isPending: false,
-        })
-        mockUseMinimumFeeConfig.mockReturnValue({
-            minTxnFee: 1000n,
-            pqMultiplier: 3n,
-        })
-        mockUseAllAccounts.mockReturnValue([])
+        chainHook.mockReturnValue({ minFee: 3000n, isPending: false })
+        registerFakePlannerAdapter({ useMinFeeForSender: chainHook })
     })
 
-    it('resolves the multiplied fee for a quantum sender', () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
+    it('returns what the planner hook returns, with the sender passed through', () => {
+        const { result } = renderHook(() =>
+            useMinFeeForSender('QADDR', 'algorand'),
+        )
 
-        const { result } = renderHook(() => useMinFeeForSender('QADDR'))
+        expect(chainHook).toHaveBeenCalledWith('QADDR')
+        expect(result.current).toEqual({ minFee: 3000n, isPending: false })
+    })
 
+    it('passes an undefined sender through', () => {
+        chainHook.mockReturnValue({ minFee: undefined, isPending: false })
+        const { result } = renderHook(() =>
+            useMinFeeForSender(undefined, 'algorand'),
+        )
+
+        expect(chainHook).toHaveBeenCalledWith(undefined)
+        expect(result.current.minFee).toBeUndefined()
+    })
+
+    it('gives no fee on a chain with no planner, still running the registered hooks', () => {
+        const { result } = renderHook(() =>
+            useMinFeeForSender('0xA', 'fixturehex' as ChainId),
+        )
+
+        expect(result.current).toEqual({ minFee: undefined, isPending: false })
+        expect(chainHook).toHaveBeenCalledWith(undefined)
+    })
+
+    it('calls the same hooks when the chain changes between renders', () => {
+        const { result, rerender } = renderHook(
+            ({ chainId }: { chainId: ChainId }) =>
+                useMinFeeForSender('QADDR', chainId),
+            { initialProps: { chainId: 'algorand' as ChainId } },
+        )
         expect(result.current.minFee).toBe(3000n)
-        expect(result.current.isPending).toBe(false)
-    })
 
-    it('resolves the base fee for an algo25 sender (regression)', () => {
-        mockUseAllAccounts.mockReturnValue([algo25()])
-
-        const { result } = renderHook(() => useMinFeeForSender('AADDR'))
-
-        expect(result.current.minFee).toBe(1000n)
-        expect(result.current.isPending).toBe(false)
-    })
-
-    it('returns undefined minFee while suggested params are pending', () => {
-        mockUseSuggestedParametersQuery.mockReturnValue({
-            data: undefined,
-            isPending: true,
-        })
-        mockUseAllAccounts.mockReturnValue([quantum()])
-
-        const { result } = renderHook(() => useMinFeeForSender('QADDR'))
+        rerender({ chainId: 'fixturehex' as ChainId })
 
         expect(result.current.minFee).toBeUndefined()
-        expect(result.current.isPending).toBe(true)
-    })
-
-    it('returns undefined minFee when senderAddress is undefined', () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
-
-        const { result } = renderHook(() => useMinFeeForSender(undefined))
-
-        expect(result.current.minFee).toBeUndefined()
+        expect(chainHook).toHaveBeenCalledTimes(2)
     })
 })

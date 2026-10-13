@@ -18,7 +18,6 @@ import {
 } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Decimal } from 'decimal.js'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
 const VALID_PROJECTS = [
@@ -57,17 +56,15 @@ const VALID_PROJECTS_CONFIG = JSON.stringify({ en: VALID_PROJECTS })
 const mocks = vi.hoisted(() => ({
     fetchStakingProjectsInfo: vi.fn(),
     getStringValue: vi.fn(),
-    useNetwork: vi.fn(),
+    useSelectedScope: vi.fn(),
 }))
 
 vi.mock('../endpoints', () => ({
     fetchStakingProjectsInfo: mocks.fetchStakingProjectsInfo,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
-    microAlgosToAlgos: (v: unknown) =>
-        new Decimal(v?.toString() ?? '0').div(1_000_000),
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: mocks.useSelectedScope,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -95,7 +92,10 @@ describe('useStakingProjectsQuery', () => {
                 },
             },
         })
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         mockRemoteConfig(VALID_PROJECTS_CONFIG)
     })
 
@@ -193,7 +193,7 @@ describe('useStakingProjectsQuery', () => {
         })
     })
 
-    it('merges projects and sorts by tvl in algo descending', async () => {
+    it('merges projects and sorts by native tvl descending', async () => {
         mocks.fetchStakingProjectsInfo.mockResolvedValue({
             folks: {
                 tvl_in_algo: '1000',
@@ -218,7 +218,8 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.data[0].id).toBe('pact')
         expect(result.current.data[1].id).toBe('folks')
         expect(result.current.data[2].id).toBe('valar')
-        expect(result.current.data[0].tvlInAlgo.toString()).toBe('0.002')
+        // Algorand's native asset has six decimals, so 2000 base units is 0.002.
+        expect(result.current.data[0].tvlInNative.toString()).toBe('0.002')
         expect(result.current.data[0].tvlInUsd.toString()).toBe('2500')
         expect(result.current.data.length).toBe(3)
     })
@@ -294,7 +295,10 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('uses the active network when fetching', async () => {
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         renderHook(() => useStakingProjectsQuery(), {
@@ -305,6 +309,28 @@ describe('useStakingProjectsQuery', () => {
             expect(mocks.fetchStakingProjectsInfo).toHaveBeenCalledWith(
                 'testnet',
             ),
+        )
+    })
+
+    it('keys the query by the selected chain scope', async () => {
+        mocks.useSelectedScope.mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
+        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+        renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() =>
+            expect(
+                queryClient.getQueryData([
+                    'staking',
+                    'projects',
+                    { scope: { chainId: 'algorand', networkId: 'testnet' } },
+                ]),
+            ).toEqual({}),
         )
     })
 

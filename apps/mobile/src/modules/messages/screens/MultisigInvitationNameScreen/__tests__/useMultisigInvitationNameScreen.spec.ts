@@ -15,10 +15,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useMultisigInvitationNameScreen } from '../useMultisigInvitationNameScreen'
 import type { MultisigInvitationParam } from '../../../routes/types'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
-const mockSetSelectedAccountAddress = vi.fn()
+const mockSetSelectedAccountId = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockErrorToast = vi.fn()
 const mockSuccessToast = vi.fn()
@@ -30,7 +31,7 @@ const mockAddListener = vi.fn(
 const mockSetOptions = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 const mockUseDeviceID = vi.fn(() => 'device-id')
-const mockGenerateMultisigAddress = vi.fn()
+const mockDeriveMultisigAddress = vi.fn()
 
 const invitation: MultisigInvitationParam = {
     customId: 'invite-1',
@@ -63,9 +64,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
-        useSelectedAccountAddress: () => ({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        useSelectedAccountId: () => ({
+            selectedAccountId: null,
+            setSelectedAccountId: mockSetSelectedAccountId,
         }),
         useAccountsStore: (selector: (state: unknown) => unknown) =>
             selector({ setAccounts: mockSetAccounts }),
@@ -79,28 +80,47 @@ vi.mock('@modules/onboarding/hooks', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
+vi.mock('@perawallet/wallet-core-multisig', async () => {
     const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
+        '@perawallet/wallet-core-multisig',
     )
     return {
         ...actual,
-        useNetwork: () => ({ network: 'mainnet' }),
-        generateMultisigAddress: (...args: unknown[]) =>
-            mockGenerateMultisigAddress(...args),
+        multisigAdapterFor: () => ({
+            chainId: 'algorand',
+            deriveAddress: ({
+                version,
+                threshold,
+                addresses,
+            }: {
+                version: number
+                threshold: number
+                addresses: string[]
+            }) => mockDeriveMultisigAddress(version, threshold, addresses),
+        }),
     }
 })
 
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => mockUseDeviceID(),
-    DeviceAccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
@@ -135,13 +155,14 @@ vi.mock('react-i18next', async () => {
 
 describe('useMultisigInvitationNameScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockUseDeviceID.mockReturnValue('device-id')
         mockMutateAsync.mockResolvedValue(undefined)
         mockAddListener.mockReturnValue(vi.fn())
         // Default: re-derived address matches the invitation's claimed address.
-        mockGenerateMultisigAddress.mockReturnValue(invitation.address)
+        mockDeriveMultisigAddress.mockReturnValue(invitation.address)
     })
 
     it('initializes with auto-numbered default name (#1) when no shared accounts exist', () => {
@@ -164,14 +185,21 @@ describe('useMultisigInvitationNameScreen', () => {
     it('increments default name based on existing multisig account count', () => {
         mockUseAllAccounts.mockReturnValue([
             {
-                address: 'M1',
-                name: 'Coffee fund',
-                type: 'multisig',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['A', 'B'],
-                    version: 1,
+                chains: {
+                    algorand: {
+                        address: 'M1',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['A', 'B'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
+                name: 'Coffee fund',
+                custody: { kind: 'multisig' },
             } as WalletAccount,
         ])
 
@@ -186,24 +214,38 @@ describe('useMultisigInvitationNameScreen', () => {
     it('skips taken "#N" slots above the multisig count', () => {
         mockUseAllAccounts.mockReturnValue([
             {
-                address: 'M1',
-                name: 'Shared Account #1',
-                type: 'multisig',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['A', 'B'],
-                    version: 1,
+                chains: {
+                    algorand: {
+                        address: 'M1',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['A', 'B'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
+                name: 'Shared Account #1',
+                custody: { kind: 'multisig' },
             } as WalletAccount,
             {
-                address: 'M2',
-                name: 'shared account #2',
-                type: 'multisig',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['C', 'D'],
-                    version: 1,
+                chains: {
+                    algorand: {
+                        address: 'M2',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['C', 'D'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
+                name: 'shared account #2',
+                custody: { kind: 'multisig' },
             } as WalletAccount,
         ])
 
@@ -215,7 +257,11 @@ describe('useMultisigInvitationNameScreen', () => {
 
     it('fires isNameTaken when user types a colliding name (case-insensitive, trimmed)', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'A', name: 'My Wallet' } as WalletAccount,
+            {
+                chains: { algorand: { address: 'A' } },
+                name: 'My Wallet',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
@@ -232,14 +278,21 @@ describe('useMultisigInvitationNameScreen', () => {
     it('excludes the invitation account itself from the count and the taken set (post-save re-render)', () => {
         mockUseAllAccounts.mockReturnValue([
             {
-                address: invitation.address,
-                name: 'Shared Account #1',
-                type: 'multisig',
-                multisigDetails: {
-                    threshold: invitation.threshold,
-                    addresses: invitation.participantAddresses,
-                    version: 1,
+                chains: {
+                    algorand: {
+                        address: invitation.address,
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: invitation.threshold,
+                                addresses: invitation.participantAddresses,
+                                version: 1,
+                            },
+                        },
+                    },
                 },
+                name: 'Shared Account #1',
+                custody: { kind: 'multisig' },
             } as WalletAccount,
         ])
 
@@ -262,7 +315,13 @@ describe('useMultisigInvitationNameScreen', () => {
     })
 
     it('handleFinish follows happy path: DELETE, setAccounts, select new account, play confetti, success toast, popToTop', async () => {
-        const existing = [{ address: 'X', name: 'Other' } as WalletAccount]
+        const existing = [
+            {
+                chains: { algorand: { address: 'X' } },
+                name: 'Other',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
+        ]
         mockUseAllAccounts.mockReturnValue(existing)
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
@@ -277,17 +336,27 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith([
             ...existing,
             expect.objectContaining({
-                type: 'multisig',
-                address: 'MSIG_ADDR',
+                custody: { kind: 'multisig' },
                 name: 'Shared Account #1',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
-                    version: 1,
+                chains: {
+                    algorand: {
+                        address: 'MSIG_ADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
             }),
         ])
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('MSIG_ADDR')
+        const [savedAccounts] = mockSetAccounts.mock.calls[0]
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+            savedAccounts.at(-1).id,
+        )
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockSuccessToast).toHaveBeenCalled()
         expect(mockPopToTop).toHaveBeenCalled()
@@ -296,7 +365,7 @@ describe('useMultisigInvitationNameScreen', () => {
     it('handleFinish refuses to persist (and does not consume the invitation) when the re-derived address does not match the claimed address', async () => {
         // Backend-supplied address disagrees with what the participant set
         // actually derives to — corrupt or tampered invitation.
-        mockGenerateMultisigAddress.mockReturnValue('DERIVED_DIFFERENT_ADDR')
+        mockDeriveMultisigAddress.mockReturnValue('DERIVED_DIFFERENT_ADDR')
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
 
@@ -304,7 +373,7 @@ describe('useMultisigInvitationNameScreen', () => {
             await result.current.handleFinish()
         })
 
-        expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(
+        expect(mockDeriveMultisigAddress).toHaveBeenCalledWith(
             invitation.version,
             invitation.threshold,
             invitation.participantAddresses,
@@ -315,14 +384,18 @@ describe('useMultisigInvitationNameScreen', () => {
         )
         expect(mockMutateAsync).not.toHaveBeenCalled()
         expect(mockSetAccounts).not.toHaveBeenCalled()
-        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockPopToTop).not.toHaveBeenCalled()
         expect(result.current.isSaving).toBe(false)
     })
 
     it('handleFinish bails with error toast when account with same address already exists', async () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'MSIG_ADDR', name: 'Other' } as WalletAccount,
+            {
+                chains: { algorand: { address: 'MSIG_ADDR' } },
+                name: 'Other',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())

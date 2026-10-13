@@ -11,13 +11,13 @@
  */
 
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import type { AccountAssetBalanceHistoryItem, WalletAccount } from '../models'
+import { chainAccountOf } from '../credentials/accessors'
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
-import { fetchAccountAssetBalanceHistory } from './endpoints'
-import { Decimal } from 'decimal.js'
+import { fetchHoldingBalanceHistory } from '../chain-adapter'
 import { getAccountAssetBalanceHistoryQueryKey } from './querykeys'
 
 export type UseAccountsAssetsBalanceHistoryQueryResult = {
@@ -27,7 +27,7 @@ export type UseAccountsAssetsBalanceHistoryQueryResult = {
     isError: boolean
     isPaused: boolean
     error: Nullable<Error>
-    /** True when the active network has no Pera backend — this can never succeed here. */
+    /** True when the chain has no holding history source — this can never succeed here. */
     isUnavailableOnNetwork: boolean
     refetch: (options?: RefetchOptions) => unknown
 }
@@ -36,41 +36,38 @@ export const useAccountsAssetsBalanceHistoryQuery = (
     account: WalletAccount,
     assetId: string,
     period: HistoryPeriod,
+    scope: ChainScope,
 ): UseAccountsAssetsBalanceHistoryQueryResult => {
-    const { network } = useNetwork()
+    const address = chainAccountOf(account, scope.chainId)?.address ?? ''
     const { preferredCurrency, usdToPreferred } = useCurrency()
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'balanceHistory',
+    )
 
     const query = useQuery({
         queryKey: getAccountAssetBalanceHistoryQueryKey(
-            network,
-            account.address,
+            scope,
+            address,
             assetId,
             period,
             preferredCurrency,
         ),
         enabled: !isUnavailableOnNetwork,
         queryFn: () =>
-            fetchAccountAssetBalanceHistory(
-                account.address,
+            fetchHoldingBalanceHistory(
+                address,
                 assetId,
                 period,
                 preferredCurrency,
-                network,
+                scope,
             ),
-        // `data` / `data.results` can be absent when the endpoint answers with
-        // an empty or 204 body (the fetch layer yields `undefined` for those).
-        // Guard so a not-ready response collapses to an empty chart instead of
-        // throwing and surfacing as a query error.
-        select: data =>
-            data?.results?.map(item => ({
-                datetime: new Date(item.datetime),
-                amount: new Decimal(item.amount ?? '0'),
-                preferredValue: usdToPreferred(
-                    new Decimal(item.usd_value ?? '0'),
-                ),
-                round: item.round,
-            })) ?? [],
+        select: points =>
+            points.map(point => ({
+                datetime: new Date(point.timestamp),
+                amount: point.amount,
+                preferredValue: usdToPreferred(point.usdValue),
+            })),
     })
 
     return {
@@ -82,7 +79,7 @@ export const useAccountsAssetsBalanceHistoryQuery = (
         error: query.error,
         isUnavailableOnNetwork,
         // The observer's refetch() ignores `enabled` and would still fire the
-        // doomed Pera request on a non-backed network.
+        // doomed request on a chain without the source.
         refetch: (options?: RefetchOptions) =>
             isUnavailableOnNetwork
                 ? Promise.resolve(query)

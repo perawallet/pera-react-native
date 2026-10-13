@@ -30,6 +30,7 @@ type UsePWTapToConfirmParams = {
     isLoading: boolean
     isDisabled: boolean
     isConfirmed: boolean
+    minConfirmDelayMs: number
 }
 
 type UsePWTapToConfirmResult = {
@@ -53,6 +54,7 @@ export const usePWTapToConfirm = ({
     isLoading,
     isDisabled,
     isConfirmed,
+    minConfirmDelayMs,
 }: UsePWTapToConfirmParams): UsePWTapToConfirmResult => {
     const { theme } = useTheme()
     const [isArmed, setIsArmed] = useState(false)
@@ -63,6 +65,7 @@ export const usePWTapToConfirm = ({
     // the action silently never fires. `allowRapidPress` on the Pressable is
     // what lets that second tap through in the first place.
     const isArmedRef = useRef(false)
+    const armedAtRef = useRef(0)
     const disarmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const armedProgress = useSharedValue(0)
     const phase = useSharedValue(getPhaseTarget(isLoading, isConfirmed))
@@ -106,10 +109,14 @@ export const usePWTapToConfirm = ({
         if (isArmedRef.current) {
             clearDisarmTimer()
             setArmed(false)
+            // Disarm rather than ignore: rapid clicking then alternates arm and
+            // disarm and never lands a confirm.
+            if (Date.now() - armedAtRef.current < minConfirmDelayMs) return
             onConfirm()
             return
         }
 
+        armedAtRef.current = Date.now()
         setArmed(true)
         clearDisarmTimer()
         disarmTimerRef.current = setTimeout(() => {
@@ -120,6 +127,7 @@ export const usePWTapToConfirm = ({
         isDisabled,
         isConfirmed,
         onConfirm,
+        minConfirmDelayMs,
         clearDisarmTimer,
         setArmed,
     ])

@@ -14,11 +14,30 @@ import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
+    CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
+} from '@perawallet/wallet-core-card'
+import {
     NoConnectionError,
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
+
+// The suite-wide stub short-circuits the node-error parser the card adapter
+// reads to `unknown_node_error`; this file asserts on the real parser's codes.
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () =>
+    vi.importActual<
+        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+    >('@perawallet/wallet-core-chain-algorand/blockchain'),
+)
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
@@ -29,7 +48,14 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-import { useCardErrorToast } from '../useCardErrorToast'
+import { resolveCardErrorCopy, useCardErrorToast } from '../useCardErrorToast'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardErrorToast', () => {
     beforeEach(() => {
@@ -154,5 +180,148 @@ describe('useCardErrorToast', () => {
             'peraCard.verification.error_title',
             'Registration is not in the expected phase',
         )
+    })
+
+    it('shows the typed card-creation copy instead of the generic keys', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new CardAccountLinkedElsewhereError())
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.setup_status.linked_elsewhere_error_title',
+            'peraCard.setup_status.linked_elsewhere_error_body',
+        )
+    })
+
+    it('lets precise copy win over shouldUseBackendMessage=false', async () => {
+        const { result } = renderHook(() =>
+            useCardErrorToast({
+                titleKey: 'peraCard.auto_funding_signing.error_title',
+                bodyKey: 'peraCard.auto_funding_signing.error_body',
+                shouldUseBackendMessage: false,
+            }),
+        )
+
+        await act(async () => {
+            await result.current({
+                response: { status: 400 },
+                data: {
+                    type: 'SIGNATURE_VERIFICATION_FAILED',
+                    details: 'bad signature',
+                },
+            })
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.account.auto_funding_rejected_title',
+            'peraCard.account.auto_funding_rejected_body',
+        )
+    })
+
+    it('shows the timeout copy when the request ran out of time', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new PeraNetworkError('timeout'))
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.timeout.title',
+            'errors.network.timeout.body',
+        )
+    })
+
+    it('stays silent when the user declined the signing prompt', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new UserRejectedSigningError())
+        })
+
+        expect(mocks.errorToast).not.toHaveBeenCalled()
+    })
+})
+
+describe('resolveCardErrorCopy', () => {
+    it.each([
+        [
+            new CardCreateInProgressError(),
+            'peraCard.setup_status.create_in_progress',
+        ],
+        [
+            new CardSetupIncompleteError(),
+            'peraCard.setup_status.setup_incomplete_error',
+        ],
+        [
+            new CardOwnershipProofRejectedError('ARC60_SIGNATURE_INVALID'),
+            'peraCard.setup_status.create_card_account_error',
+        ],
+        [
+            new CardCreateUnavailableError('CARD_CREATE_FAILED'),
+            'peraCard.setup_status.create_card_unavailable',
+        ],
+        [
+            new AutoDrawProgramUnverifiedError('testnet'),
+            'peraCard.account.auto_funding_unavailable',
+        ],
+        [
+            new AutoDrawTealUnverifiedError(),
+            'peraCard.account.auto_funding_unavailable',
+        ],
+    ])('maps %s to its own copy', (error, prefix) => {
+        expect(resolveCardErrorCopy(error, SCOPE)).toEqual({
+            titleKey: `${prefix}_title`,
+            bodyKey: `${prefix}_body`,
+        })
+    })
+
+    it('maps the escrow ownership mismatch code to the unavailable copy', () => {
+        expect(
+            resolveCardErrorCopy(new Error('HTTP 400'), SCOPE, {
+                status: 400,
+                code: 'CARD_OWNERSHIP_MISMATCH',
+            }),
+        ).toEqual({
+            titleKey: 'peraCard.account.auto_funding_unavailable_title',
+            bodyKey: 'peraCard.account.auto_funding_unavailable_body',
+        })
+    })
+
+    it.each([
+        // algokit wraps the node's text in its own simulate preamble, so the
+        // match has to survive being mid-sentence.
+        [
+            'Error resolving execution info via simulate in transaction 0: transaction ABC: account 5EZXTMDYUXJTPFUL5HMNCVXOYKV33N2MPECM3DFRAPYIMN2IERNH4TVJYA balance 755288 below min 756000 (1 assets)',
+        ],
+        [
+            'TransactionPool.Remember: transaction ABC: overspend (account 5EZXTMDYUXJTPFUL5HMNCVXOYKV33N2MPECM3DFRAPYIMN2IERNH4TVJYA, data {AccountBaseData:{MicroAlgos:{Raw:199000}}}, tried to spend {201000})',
+        ],
+    ])('names a fee shortfall instead of asking for a retry', message => {
+        expect(resolveCardErrorCopy(new Error(message), SCOPE)).toEqual({
+            titleKey: 'peraCard.account.insufficient_algo_title',
+            bodyKey: 'peraCard.account.insufficient_algo_body',
+        })
+    })
+
+    it('leaves a TEAL rejection to the caller generic copy', () => {
+        // Unreadable to a user, and the flow's own copy says more than
+        // "assert failed" ever could.
+        expect(
+            resolveCardErrorCopy(
+                new Error(
+                    'logic eval error: assert failed pc=1849. Details: app=769896880',
+                ),
+                SCOPE,
+            ),
+        ).toBeUndefined()
+    })
+
+    it('returns undefined for errors it cannot name', () => {
+        expect(resolveCardErrorCopy(new Error('boom'), SCOPE)).toBeUndefined()
+        expect(
+            resolveCardErrorCopy(new Error('boom'), SCOPE, { status: 500 }),
+        ).toBeUndefined()
     })
 })

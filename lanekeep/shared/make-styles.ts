@@ -121,7 +121,7 @@ export function relativeBase(
  * to delete code that is in use. Callers must treat `undefined` as "unknown",
  * never as "not used".
  */
-export function resolveRelative(
+export function resolveModuleFile(
     ctx: RuleContext,
     fromFile: string,
     specifier: string,

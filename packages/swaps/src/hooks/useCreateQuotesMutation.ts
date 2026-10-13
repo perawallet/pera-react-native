@@ -11,22 +11,25 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { createQuotes, fetchProviders } from '../api'
 import type { CreateQuotesRequest } from '../api'
 import { swapQueryKeys } from './querykeys'
 
-export const useCreateQuotesMutation = () => {
-    const { network } = useNetwork()
+export const useCreateQuotesMutation = (scope: ChainScope) => {
+    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     return useMutation({
         mutationFn: async (data: CreateQuotesRequest) => {
             const providers = await queryClient.ensureQueryData({
-                queryKey: swapQueryKeys.providers(network),
+                queryKey: swapQueryKeys.providers(scope),
                 queryFn: () => fetchProviders(network),
             })
-            return createQuotes(data, network, providers)
+            return createQuotes(data, scope, providers)
         },
         // Errors are caught in the calling effect (useSwapForm); suppress
         // TanStack Query re-throwing them as unhandled promise rejections.

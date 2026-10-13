@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import {
+    HoldingRestrictions,
+    type AssetWithAccountBalance,
+} from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
@@ -51,19 +54,24 @@ export const AccountAssetSelectionList = ({
     } = useAccountAssetSelectionList({ isVisible, excludeAssetId, filterAsset })
 
     const renderItem = useCallback(
-        ({ item }: { item: AssetWithAccountBalance }) => (
-            <AccountAssetItemView
-                onPress={() => onAssetSelected(item)}
-                style={styles.item}
-                accountBalance={item}
-                // Every consumer of this list moves funds (send, swap, card),
-                // and a frozen holding can't be transferred — keep it visible
-                // so the user knows it exists, but not selectable.
-                disabled={item.isFrozen}
-                showFrozenBadge={item.isFrozen}
-                testID={`asset-list-item-${item.assetId}`}
-            />
-        ),
+        ({ item }: { item: AssetWithAccountBalance }) => {
+            const isTransferBlocked =
+                item.restriction === HoldingRestrictions.transferBlocked
+            return (
+                <AccountAssetItemView
+                    onPress={() => onAssetSelected(item)}
+                    style={styles.item}
+                    accountBalance={item}
+                    // Every consumer of this list moves funds (send, swap,
+                    // card), and a restricted holding can't be transferred —
+                    // keep it visible so the user knows it exists, but not
+                    // selectable.
+                    disabled={isTransferBlocked}
+                    showFrozenBadge={isTransferBlocked}
+                    testID={`asset-list-item-${item.assetId}`}
+                />
+            )
+        },
         [onAssetSelected, styles],
     )
 

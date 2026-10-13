@@ -41,7 +41,7 @@ import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerifi
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
-import { ViewTextDetailsContent } from '@modules/transactions/components/ViewTextDetailsContent'
+import { ViewTextDetailsContent } from '@modules/algorand/components/ViewTextDetailsContent'
 import { SwapAssetSelectionContent } from '@modules/swap/components/SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '@modules/swap/components/SwapConfigurationContent'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
@@ -58,7 +58,7 @@ import { AddParticipantContent } from '@modules/multisig/components/AddParticipa
 import { BeforeYouCreateContent } from '@modules/multisig/components/BeforeYouCreateContent'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
 import { MultisigInvitationDetailContent } from '@modules/messages/components/MultisigInvitationDetailContent'
-import { ConnectionSuccessContent } from '@modules/walletconnect/components/ConnectionSuccessContent'
+import { ConnectionApprovalSuccessView } from '@modules/walletconnect/components/ConnectionApprovalSuccessView'
 import { WalletConnectErrorContent } from '@modules/walletconnect/components/WalletConnectErrorContent'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessContent'
@@ -77,7 +77,7 @@ import { PWText } from '@components/core'
 import { GallerySheetBoundary } from './GallerySheetBoundary'
 
 import type { GallerySection } from './types'
-import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
+import type { Connection } from '@perawallet/wallet-extension-connections'
 
 const A = MOCK_ADDRESS
 const A2 = MOCK_ADDRESS_2
@@ -175,7 +175,11 @@ export const getSheetSections = (): GallerySection[] => [
                                 />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'modal', enablePanDownToClose: true },
+                        options: {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
                     }),
                 },
             },
@@ -901,8 +905,8 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <ConnectionSuccessContent
-                                    request={MOCK_WC_SESSION_REQUEST}
+                                <ConnectionApprovalSuccessView
+                                    connection={MOCK_CONNECTION}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -952,7 +956,7 @@ export const getSheetSections = (): GallerySection[] => [
                                 <ContactQRContent
                                     contact={{
                                         name: 'Mock Contact',
-                                        address: A,
+                                        addresses: { algorand: A },
                                     }}
                                 />
                             </GallerySheetBoundary>
@@ -1301,14 +1305,19 @@ export const getSheetSections = (): GallerySection[] => [
     },
 ]
 
-const MOCK_WC_SESSION_REQUEST: WalletConnectSessionRequest = {
-    peerMeta: {
+const MOCK_CONNECTION: Connection = {
+    id: 'mock-connection-id',
+    kind: 'walletconnect-v1',
+    name: 'Mock dApp',
+    peer: {
         name: 'Mock dApp',
         description: 'A mock decentralized application',
         url: 'https://mock-dapp.example.com',
         icons: [],
     },
-    chainId: 416_001,
-    permissions: ['algo_getAccounts', 'algo_signTxn'],
-    clientId: 'mock-client-id',
+    accounts: [A],
+    status: 'active',
+    createdAt: 0,
+    lastActiveAt: 0,
+    origin: { source: 'qr' },
 }

@@ -12,20 +12,9 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-    useNetworkStatusStore,
-    useOfflineFeedbackStore,
-} from '@modules/network'
+import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
+import { useOfflineFeedbackStore } from '@hooks/useOfflineFeedbackStore'
 import { usePWRefreshControl } from '../usePWRefreshControl'
-
-// The `@modules/network` barrel also re-exports useNetworkStatusListener,
-// which imports the real @react-native-community/netinfo native module —
-// that module can't be parsed under vitest/jsdom, so it must be mocked.
-vi.mock('@react-native-community/netinfo', () => ({
-    default: {
-        addEventListener: vi.fn(),
-    },
-}))
 
 describe('usePWRefreshControl', () => {
     beforeEach(() => {

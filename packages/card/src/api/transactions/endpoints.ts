@@ -87,16 +87,16 @@ export const exportCardStatement = async (
     if (filters?.dateFrom) dateParams.dateFrom = filters.dateFrom
     if (filters?.dateTo) dateParams.dateTo = filters.dateTo
 
-    const response = await getCardTransport().request<Blob>({
+    const response = await getCardTransport().request<ArrayBuffer>({
         network,
         method: 'GET',
         path: '/v1/card/transactions/statement',
         authenticated: true,
         params: dateParams,
         headers: { Accept: STATEMENT_ACCEPT[format] },
-        responseType: 'blob',
+        responseType: 'arraybuffer',
         signal,
     })
 
-    return { format, blob: response.data }
+    return { format, bytes: new Uint8Array(response.data) }
 }

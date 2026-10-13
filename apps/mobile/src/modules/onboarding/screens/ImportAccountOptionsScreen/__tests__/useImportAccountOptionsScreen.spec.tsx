@@ -11,19 +11,51 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { Platform } from 'react-native'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    resolveImportAccountType,
+    detectImportKind,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { Networks } from '@perawallet/wallet-core-config'
-import { DeeplinkType } from '@hooks/deeplink/types'
-import { useImportAccountOptionsScreen } from '../useImportAccountOptionsScreen'
+import { DeeplinkType } from '@modules/deeplink/types'
+import {
+    useImportAccountOptionsScreen,
+    type UseImportAccountOptionsScreenResult,
+} from '../useImportAccountOptionsScreen'
+import { capabilityState } from '@test-utils/capability-mock'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { OnboardingEvent, trackEvent } from '@analytics'
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
+
+const { mockCapabilities, mockRouteParams, mockHandoff } = vi.hoisted(() => ({
+    mockCapabilities: {} as Record<string, boolean>,
+    mockRouteParams: {
+        current: undefined as { isScannerOpen?: boolean } | undefined,
+    },
+    mockHandoff: { shouldHandOff: false, openTab: vi.fn() },
+}))
+
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useRoute: () => ({ params: mockRouteParams.current }),
+}))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    trackEvent: vi.fn(),
+}))
+
+vi.mock('@hooks/useTabHandoff', () => ({
+    useTabHandoff: () => mockHandoff,
+}))
+vi.mock('@routes/capabilities', async () => {
+    const actual = await vi.importActual<typeof import('@routes/capabilities')>(
+        '@routes/capabilities',
+    )
+    Object.assign(mockCapabilities, actual.routeCapabilities)
+    return { ...actual, routeCapabilities: mockCapabilities }
+})
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -54,7 +86,7 @@ vi.mock('react-i18next', async () => {
 })
 
 const mockParseDeeplink = vi.fn()
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         parseDeeplink: mockParseDeeplink,
         handleDeepLink: vi.fn(),
@@ -69,13 +101,14 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        resolveImportAccountType: vi.fn(),
+        detectImportKind: vi.fn(),
         setPendingImportMnemonic: vi.fn(),
     }
 })
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
+const { mockRequestBottomSheet, mockChooseRestoreRoute } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+    mockChooseRestoreRoute: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -87,36 +120,82 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-const mockQuantumFlag = vi.hoisted(() => ({ enabled: false }))
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
+const setQuantumEnabled = (isEnabled: boolean): void => {
+    capabilityState.reset()
+    if (!isEnabled) {
+        capabilityState.turnOff('quantumAccounts')
+    }
+}
+
+const mockCloudBackupFlag = vi.hoisted(() => ({ enabled: false }))
+vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
+    useIsCloudBackupEnabled: () => mockCloudBackupFlag.enabled,
 }))
 
-describe('useImportAccountOptionsScreen', () => {
-    const originalOS = Platform.OS
+const mockCloudBackupState = vi.hoisted(() => ({ isConfigured: false }))
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useCloudBackupStore: (
+        selector: (state: { isConfigured: () => boolean }) => unknown,
+    ) => selector({ isConfigured: () => mockCloudBackupState.isConfigured }),
+}))
 
+const { mockLedgerSupport } = vi.hoisted(() => ({
+    mockLedgerSupport: {
+        isReady: false,
+        supportedTransportTypes: [] as string[],
+    },
+}))
+
+vi.mock('@modules/ledger', () => ({
+    useSupportedLedgerTransports: () => mockLedgerSupport,
+}))
+
+vi.mock('@modules/cloud-backup', () => ({
+    useRestoreBackupOptions: () => ({
+        chooseRestoreRoute: mockChooseRestoreRoute,
+        isReadingCredentials: false,
+    }),
+}))
+
+const pressCloudBackupOption = async (result: {
+    current: UseImportAccountOptionsScreenResult
+}) => {
+    const option = result.current.options.find(
+        o => o.testID === 'import_account_options_cloud_backup_button',
+    )!
+
+    await act(async () => {
+        await option.onPress()
+    })
+}
+
+describe('useImportAccountOptionsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        Platform.OS = 'ios'
+        registerAlgorandAccountsAdapter()
+        mockRouteParams.current = undefined
+        mockHandoff.shouldHandOff = false
+        mockCapabilities.ledgerUsb = false
         mockRequestBottomSheet.mockResolvedValue(undefined)
-        mockQuantumFlag.enabled = false
-        vi.mocked(useNetwork).mockReturnValue({
-            network: Networks.mainnet,
-        } as ReturnType<typeof useNetwork>)
+        setQuantumEnabled(false)
+        mockCloudBackupFlag.enabled = false
+        mockCloudBackupState.isConfigured = false
+        mockLedgerSupport.isReady = false
+        mockLedgerSupport.supportedTransportTypes = []
     })
 
-    afterEach(() => {
-        Platform.OS = originalOS
-    })
-
-    it('returns 5 options on iOS', () => {
+    it('returns 5 options without Ledger USB', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         expect(result.current.options).toHaveLength(5)
     })
 
-    it('returns 6 options on Android (includes USB)', () => {
-        Platform.OS = 'android'
+    it('returns 6 options with Ledger USB', () => {
+        mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -137,7 +216,7 @@ describe('useImportAccountOptionsScreen', () => {
         expect(testIDs).toContain('import_account_options_asb_button')
     })
 
-    it('USB option is hidden on iOS', () => {
+    it('hides the USB option without Ledger USB', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const testIDs = result.current.options.map(o => o.testID)
@@ -147,28 +226,8 @@ describe('useImportAccountOptionsScreen', () => {
         )
     })
 
-    it('USB option is shown on Android', () => {
-        Platform.OS = 'android'
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        const testIDs = result.current.options.map(o => o.testID)
-
-        expect(testIDs).toContain(
-            'import_account_options_pair_ledger_usb_button',
-        )
-    })
-
-    it('returns 6 options on web (includes USB)', () => {
-        Platform.OS = 'web'
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        expect(result.current.options).toHaveLength(6)
-    })
-
-    it('USB option is shown on web', () => {
-        Platform.OS = 'web'
+    it('shows the USB option with Ledger USB', () => {
+        mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -194,7 +253,7 @@ describe('useImportAccountOptionsScreen', () => {
     })
 
     it('navigates to ImportInfo when the import options sheet resolves with a result', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('algo25')
+        mockRequestBottomSheet.mockResolvedValueOnce(null)
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const recoverOption = result.current.options.find(
@@ -206,8 +265,71 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'algo25',
+            accountType: null,
         })
+    })
+
+    it.each([
+        ['bip39', OnboardingEvent.RecoverOneKey],
+        [null, OnboardingEvent.RecoverAlgo25],
+    ] as const)(
+        "tracks the picked kind's recover event (%s)",
+        async (seed, event) => {
+            mockRequestBottomSheet.mockResolvedValueOnce(seed)
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await act(async () => {
+                await result.current.options
+                    .find(
+                        o =>
+                            o.testID ===
+                            'import_account_options_recover_wallet_button',
+                    )!
+                    .onPress()
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(event)
+        },
+    )
+
+    it('stays put when the import options sheet is dismissed', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const recoverOption = result.current.options.find(
+            o => o.testID === 'import_account_options_recover_wallet_button',
+        )!
+
+        await act(async () => {
+            await recoverOption.onPress()
+        })
+
+        expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    it('hands the QR scan off to the expanded tab from the extension popup', () => {
+        mockHandoff.shouldHandOff = true
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        act(() => {
+            result.current.options
+                .find(
+                    o =>
+                        o.testID === 'import_account_options_recover_qr_button',
+                )!
+                .onPress()
+        })
+
+        expect(mockHandoff.openTab).toHaveBeenCalledTimes(1)
+        expect(result.current.isQRScannerVisible).toBe(false)
+    })
+
+    it('opens the scanner on arrival when the popup handed the scan off', () => {
+        mockRouteParams.current = { isScannerOpen: true }
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        expect(result.current.isQRScannerVisible).toBe(true)
     })
 
     it('QR option opens QR scanner', () => {
@@ -240,26 +362,8 @@ describe('useImportAccountOptionsScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('LedgerPair')
     })
 
-    it('Ledger USB option navigates to LedgerInstructions with usb transportType on Android', () => {
-        Platform.OS = 'android'
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        const usbOption = result.current.options.find(
-            o => o.testID === 'import_account_options_pair_ledger_usb_button',
-        )!
-
-        act(() => {
-            usbOption.onPress()
-        })
-
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
-            transportType: 'usb',
-        })
-    })
-
-    it('Ledger USB option navigates to LedgerInstructions with usb transportType on web', () => {
-        Platform.OS = 'web'
+    it('Ledger USB option navigates to LedgerInstructions with usb transportType', () => {
+        mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -304,6 +408,66 @@ describe('useImportAccountOptionsScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('AsbImportInfo')
     })
 
+    it('ASB option keeps its Algorand Secure Backup title when cloud backup is off', () => {
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const asbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_asb_button',
+        )!
+
+        expect(asbOption.titleKey).toBe(
+            'onboarding.import_account_options.asb_title',
+        )
+    })
+
+    it('ASB option is titled as the legacy backup when cloud backup is on', () => {
+        mockCloudBackupFlag.enabled = true
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const asbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_asb_button',
+        )!
+
+        expect(asbOption.titleKey).toBe(
+            'onboarding.import_account_options.asb_legacy_title',
+        )
+    })
+
+    it('drops the cloud restore row and the legacy ASB title when cloud backup is off on every chain', () => {
+        mockCloudBackupFlag.enabled = true
+        capabilityState.turnOff('cloudBackup')
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const testIDs = result.current.options.map(o => o.testID)
+        const asbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_asb_button',
+        )!
+
+        expect(testIDs).not.toContain(
+            'import_account_options_cloud_backup_button',
+        )
+        expect(asbOption.titleKey).toBe(
+            'onboarding.import_account_options.asb_title',
+        )
+    })
+
+    it('drops the ASB row without secure backup while the cloud restore row stays', () => {
+        mockCloudBackupFlag.enabled = true
+        capabilityState.turnOff('secureBackup')
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const testIDs = result.current.options.map(o => o.testID)
+
+        expect(testIDs).not.toContain('import_account_options_asb_button')
+        expect(testIDs).toContain(
+            'import_account_options_recover_wallet_button',
+        )
+        expect(testIDs).toContain('import_account_options_cloud_backup_button')
+    })
+
     it('handleCloseQRScanner closes the QR scanner', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -331,9 +495,9 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic,
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'hdWallet',
+            seed: 'bip39',
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -345,7 +509,7 @@ describe('useImportAccountOptionsScreen', () => {
         // Mnemonic goes through the in-memory store, never the route params.
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'hdWallet',
+            accountType: 'bip39',
         })
     })
 
@@ -355,9 +519,9 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic,
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: true,
-            accountType: 'algo25',
+            seed: null,
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -368,7 +532,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'algo25',
+            accountType: null,
         })
     })
 
@@ -395,9 +559,10 @@ describe('useImportAccountOptionsScreen', () => {
             type: DeeplinkType.RECOVER_ADDRESS,
             mnemonic: 'too short',
         })
-        vi.mocked(resolveImportAccountType).mockReturnValue({
+        vi.mocked(detectImportKind).mockReturnValue({
             success: false,
-        } as never)
+            wordCount: 2,
+        })
         const restartScanning = vi.fn()
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -416,7 +581,7 @@ describe('useImportAccountOptionsScreen', () => {
 
     describe('quantum import option', () => {
         it('is absent when the quantum accounts flag is off', () => {
-            mockQuantumFlag.enabled = false
+            setQuantumEnabled(false)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -426,13 +591,13 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         it('is present with the quantum title when the flag is on and adds exactly one option', () => {
-            mockQuantumFlag.enabled = false
+            setQuantumEnabled(false)
             const { result: offResult } = renderHook(() =>
                 useImportAccountOptionsScreen(),
             )
             const offLength = offResult.current.options.length
 
-            mockQuantumFlag.enabled = true
+            setQuantumEnabled(true)
             const { result: onResult } = renderHook(() =>
                 useImportAccountOptionsScreen(),
             )
@@ -449,7 +614,7 @@ describe('useImportAccountOptionsScreen', () => {
         })
 
         it('navigates to ImportAccount with the quantum account type on press', () => {
-            mockQuantumFlag.enabled = true
+            setQuantumEnabled(true)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -467,59 +632,187 @@ describe('useImportAccountOptionsScreen', () => {
         })
     })
 
-    describe('non-Pera-backed networks', () => {
-        it.each([Networks.betanet, Networks.custom])(
-            'disables the Pera Web option with the network-unavailable reason on %s',
-            network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                } as ReturnType<typeof useNetwork>)
-
-                const { result } = renderHook(() =>
-                    useImportAccountOptionsScreen(),
-                )
-
-                const peraWebOption = result.current.options.find(
-                    o => o.testID === 'import_account_options_pera_web_button',
-                )!
-
-                expect(peraWebOption.isDisabled).toBe(true)
-                expect(peraWebOption.descriptionKey).toBe(
-                    'common.network_unavailable.body',
-                )
-            },
-        )
-
-        it('keeps the other options untouched on a non-Pera-backed network', () => {
-            vi.mocked(useNetwork).mockReturnValue({
-                network: Networks.betanet,
-            } as ReturnType<typeof useNetwork>)
-
+    describe('cloud backup import option', () => {
+        it('is absent when the cloud backup flag is off', () => {
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const otherOptions = result.current.options.filter(
-                o => o.testID !== 'import_account_options_pera_web_button',
-            )
+            const testIDs = result.current.options.map(o => o.testID)
 
-            expect(otherOptions.every(o => o.isDisabled === undefined)).toBe(
-                true,
+            expect(testIDs).not.toContain(
+                'import_account_options_cloud_backup_button',
             )
         })
 
-        it('enables the Pera Web option with its original description on mainnet', () => {
-            vi.mocked(useNetwork).mockReturnValue({
-                network: Networks.mainnet,
-            } as ReturnType<typeof useNetwork>)
+        it('sits directly above the ASB option when the flag is on', () => {
+            mockCloudBackupFlag.enabled = true
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const peraWebOption = result.current.options.find(
-                o => o.testID === 'import_account_options_pera_web_button',
-            )!
+            const testIDs = result.current.options.map(o => o.testID)
 
-            expect(peraWebOption.isDisabled).toBe(false)
-            expect(peraWebOption.descriptionKey).toBe(
-                'onboarding.import_account_options.pera_web_description',
+            expect(testIDs.indexOf('import_account_options_asb_button')).toBe(
+                testIDs.indexOf('import_account_options_cloud_backup_button') +
+                    1,
+            )
+        })
+
+        it.each([
+            [['CloudBackupRestoreScan']],
+            [['CloudBackupRestorePassphrase']],
+            [
+                [
+                    'CloudBackupRestorePassphrase',
+                    { importedKey: { salt: 'c2FsdA==' } },
+                ],
+            ],
+        ])('pushes %j when the restore options pick it', async route => {
+            mockCloudBackupFlag.enabled = true
+            mockChooseRestoreRoute.mockResolvedValueOnce(route)
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressCloudBackupOption(result)
+
+            expect(mockPush).toHaveBeenCalledWith(route[0], route[1])
+        })
+
+        it('pushes nothing when no route is picked', async () => {
+            mockCloudBackupFlag.enabled = true
+            mockChooseRestoreRoute.mockResolvedValueOnce(null)
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressCloudBackupOption(result)
+
+            expect(mockPush).not.toHaveBeenCalled()
+        })
+
+        it('shows an error without opening the sheet when a backup is already configured on this device', async () => {
+            mockCloudBackupFlag.enabled = true
+            mockCloudBackupState.isConfigured = true
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressCloudBackupOption(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account_options.cloud_backup_already_enabled_title',
+                'onboarding.import_account_options.cloud_backup_already_enabled_body',
+            )
+            expect(mockChooseRestoreRoute).not.toHaveBeenCalled()
+            expect(mockPush).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('capability gating', () => {
+        const optionIds = (): string[] => {
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+            return result.current.options.map(o => o.testID)
+        }
+
+        it('removes the Pera Web row, and only it, when peraWebImport is off', () => {
+            const before = optionIds()
+            capabilityState.turnOff('peraWebImport')
+
+            const after = optionIds()
+
+            expect(after).not.toContain(
+                'import_account_options_pera_web_button',
+            )
+            expect(after).toEqual(
+                before.filter(
+                    id => id !== 'import_account_options_pera_web_button',
+                ),
+            )
+        })
+
+        it('removes both Ledger rows when the ledger capability is off', () => {
+            mockCapabilities.ledgerUsb = true
+            const before = optionIds()
+            expect(before).toContain(
+                'import_account_options_pair_ledger_button',
+            )
+            capabilityState.turnOff('ledger')
+
+            const after = optionIds()
+
+            expect(after).not.toContain(
+                'import_account_options_pair_ledger_button',
+            )
+            expect(after).not.toContain(
+                'import_account_options_pair_ledger_usb_button',
+            )
+        })
+
+        it('keeps every other row enabled', () => {
+            capabilityState.turnOff('peraWebImport')
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            expect(result.current.options.every(o => !o.isDisabled)).toBe(true)
+        })
+    })
+
+    describe('Ledger transport support', () => {
+        const findOption = (
+            result: { current: UseImportAccountOptionsScreenResult },
+            testID: string,
+        ) => result.current.options.find(o => o.testID === testID)!
+
+        beforeEach(() => {
+            mockCapabilities.ledgerUsb = true
+        })
+
+        it('keeps both Ledger rows enabled until the browser check resolves', () => {
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            expect(
+                findOption(result, 'import_account_options_pair_ledger_button')
+                    .isDisabled,
+            ).toBe(false)
+            expect(
+                findOption(
+                    result,
+                    'import_account_options_pair_ledger_usb_button',
+                ).isDisabled,
+            ).toBe(false)
+        })
+
+        it('disables Bluetooth pairing, and says why, in a browser without Web Bluetooth', () => {
+            mockLedgerSupport.isReady = true
+            mockLedgerSupport.supportedTransportTypes = ['usb']
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+            const ble = findOption(
+                result,
+                'import_account_options_pair_ledger_button',
+            )
+
+            expect(ble.isDisabled).toBe(true)
+            expect(ble.descriptionKey).toBe(
+                'onboarding.import_account_options.pair_ledger_unsupported_description',
+            )
+            expect(
+                findOption(
+                    result,
+                    'import_account_options_pair_ledger_usb_button',
+                ).isDisabled,
+            ).toBe(false)
+        })
+
+        it('disables USB pairing in a browser without WebHID', () => {
+            mockLedgerSupport.isReady = true
+            mockLedgerSupport.supportedTransportTypes = ['ble']
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+            const usb = findOption(
+                result,
+                'import_account_options_pair_ledger_usb_button',
+            )
+
+            expect(usb.isDisabled).toBe(true)
+            expect(usb.descriptionKey).toBe(
+                'onboarding.import_account_options.pair_ledger_unsupported_description',
             )
         })
     })

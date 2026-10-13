@@ -11,7 +11,6 @@
  */
 
 import React from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
     PWRoundIcon,
@@ -21,11 +20,11 @@ import {
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
+import { AccountAssetItemView } from '@modules/assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useRekeyedAccountInfoContent } from './useRekeyedAccountInfoContent'
@@ -38,18 +37,18 @@ export type RekeyedAccountInfoContentProps = {
 export const RekeyedAccountInfoContent = ({
     account,
 }: RekeyedAccountInfoContentProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
-    const { displayName: accountDisplayName } = useResolvedAddress(
-        account.address,
-    )
     const {
+        address,
         rekeyedAccountBalances,
         rekeyedAccountAlgoValue,
         authAddress,
         authAccountAlgoValue,
     } = useRekeyedAccountInfoContent({ account })
+    const { displayName: accountDisplayName } = useResolvedAddress(address)
 
     return (
         <PWSheetLayout header={<SheetHeader title={accountDisplayName} />}>
@@ -70,13 +69,13 @@ export const RekeyedAccountInfoContent = ({
                     size='md'
                 />
                 <PWView style={styles.accountTextContainer}>
-                    <CopyableText copyValue={account.address}>
+                    <CopyableText copyValue={address}>
                         <PWText
                             variant='body'
                             truncate
                             ellipsizeMode='middle'
                         >
-                            {account.address}
+                            {address}
                         </PWText>
                     </CopyableText>
                     <PWText
@@ -90,13 +89,13 @@ export const RekeyedAccountInfoContent = ({
                 </PWView>
                 <PWView style={styles.balanceContainer}>
                     <AssetAmount
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         value={rekeyedAccountAlgoValue}
                         showSymbol
                     />
                     <PreferredAmount
                         sourceAmount={rekeyedAccountAlgoValue}
-                        sourceAssetId={ALGO_ASSET_ID}
+                        sourceAssetId={nativeAsset.assetId}
                         density='compact'
                         showSymbol
                         style={styles.secondaryBalance}
@@ -155,13 +154,13 @@ export const RekeyedAccountInfoContent = ({
                         </PWView>
                         <PWView style={styles.balanceContainer}>
                             <AssetAmount
-                                asset={ALGO_ASSET}
+                                asset={nativeAsset}
                                 value={authAccountAlgoValue}
                                 showSymbol
                             />
                             <PreferredAmount
                                 sourceAmount={authAccountAlgoValue}
-                                sourceAssetId={ALGO_ASSET_ID}
+                                sourceAssetId={nativeAsset.assetId}
                                 density='compact'
                                 showSymbol
                                 style={styles.secondaryBalance}

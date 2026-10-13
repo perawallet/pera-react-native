@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const MODULE_PREFIX = 'currencies'
 
 export const currencyQueryKeys = {
     all: [MODULE_PREFIX] as const,
-    list: (network: Network) => [MODULE_PREFIX, { network }] as const,
-    price: (network: Network, preferredFiatCurrency: string) =>
-        [MODULE_PREFIX, { network, preferredFiatCurrency }] as const,
-    algoUsdPrice: (network: Network) =>
-        ['assets', 'prices', 'algo-usd', { network }] as const,
+    list: (scope: ChainScope) => [MODULE_PREFIX, { scope }] as const,
+    price: (scope: ChainScope, preferredFiatCurrency: string) =>
+        [MODULE_PREFIX, { scope, preferredFiatCurrency }] as const,
+    algoUsdPrice: (scope: ChainScope) =>
+        ['assets', 'prices', 'algo-usd', { scope }] as const,
 }
 
 // Aliases for backward compatibility

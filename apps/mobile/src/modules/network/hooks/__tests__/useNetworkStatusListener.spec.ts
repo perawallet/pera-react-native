@@ -14,7 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useNetworkStatusListener } from '../useNetworkStatusListener'
-import { useNetworkStatusStore } from '../useNetworkStatusStore'
+import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 import { OFFLINE_DEBOUNCE_MS, REACHABILITY_URL } from '../../networkStatus'
 
 // Mock dependencies

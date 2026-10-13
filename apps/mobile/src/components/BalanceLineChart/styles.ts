@@ -11,10 +11,20 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { CHART_HEIGHT } from '@constants/ui'
 
 export const useStyles = makeStyles(() => ({
     // Callers size the outer container (CHART_HEIGHT); the Skia canvas fills it.
     canvas: {
         flex: 1,
+    },
+    // Non-chart states (offline/error/etc.) carry a title, a full-sentence
+    // body and sometimes a retry button — taller than the chart canvas needs.
+    // Unsetting the caller's fixed height in favour of a floor lets that copy
+    // grow past CHART_HEIGHT instead of overflowing it and colliding with
+    // whatever renders below.
+    message: {
+        height: undefined,
+        minHeight: CHART_HEIGHT,
     },
 }))

@@ -14,31 +14,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { QueryClient } from '@tanstack/react-query'
 import { syncAndEnrichNewAccount } from '../account-syncer'
+import {
+    fakeAccountsChain,
+    MAINNET_SCOPE,
+} from '../../__tests__/fakeAccountsChain'
 
-// algosdk v9 builder: `accountInformation(addr).do()`. The data mock backs
-// `.do()` so the existing `mockResolvedValue`/`mockRejectedValue` setups keep
-// working; the factory spy records the address for the call-arg assertion.
-const mockAccountInformationDo = vi.fn()
-const mockAccountInformation = vi.fn(() => ({
-    exclude: vi.fn().mockReturnThis(),
-    do: () => mockAccountInformationDo(),
-}))
-const mockGetAlgorandClient = vi.fn(() => ({
-    client: {
-        algod: { accountInformation: mockAccountInformation },
-        indexer: {
-            lookupAccountAssets: vi.fn(() => ({
-                limit: vi.fn().mockReturnThis(),
-                nextToken: vi.fn().mockReturnThis(),
-                do: vi.fn().mockResolvedValue({ assets: [] }),
-            })),
-        },
-    },
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    getAlgorandClient: (...args: unknown[]) => mockGetAlgorandClient(...args),
-}))
+const fetchAccountState = () =>
+    vi.mocked(fakeAccountsChain().adapter.fetchAccountState)
 
 const mockFetchAndPersistAssets = vi.fn(() => Promise.resolve())
 const mockFetchAndPersistPrices = vi.fn(() => Promise.resolve())
@@ -50,17 +32,16 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         mockFetchAndPersistPrices(...args),
 }))
 
-const mockUpsertAccountBalance = vi.fn()
 const mockRefreshAccountHoldings = vi.fn()
-const mockGetAccountBalance = vi.fn()
+const mockGetAccountChainStateRow = vi.fn()
 const mockGetAccountHoldings = vi.fn()
 
 vi.mock('../../db', () => ({
-    upsertAccountBalance: (...args: unknown[]) =>
-        mockUpsertAccountBalance(...args),
+    upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: (...args: unknown[]) =>
         mockRefreshAccountHoldings(...args),
-    getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
+    getAccountChainStateRow: (...args: unknown[]) =>
+        mockGetAccountChainStateRow(...args),
     getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
 }))
 
@@ -75,13 +56,23 @@ const makeQueryClient = () => {
 describe('syncAndEnrichNewAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
-        mockGetAccountBalance.mockResolvedValue(undefined)
-        mockAccountInformationDo.mockResolvedValue({
-            amount: 1_000_000n,
-            minBalance: 100_000n,
-            assets: [{ assetId: 100n, amount: 5n, isFrozen: false }],
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
+        fetchAccountState().mockResolvedValue({
+            nativeBalanceBaseUnits: new Decimal(1_000_000),
+            chainState: {
+                family: 'algorand',
+                minBalance: new Decimal(100_000),
+                status: 'Offline',
+                totalAssetsOptedIn: 1,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+            },
+            holdings: [
+                { assetId: '0', amount: new Decimal(1_000_000) },
+                { assetId: '100', amount: new Decimal(5) },
+            ],
+            observedRound: null,
         })
         mockGetAccountHoldings.mockResolvedValue([
             { assetId: '0', amount: new Decimal(1_000_000) },
@@ -92,13 +83,17 @@ describe('syncAndEnrichNewAccount', () => {
     it('fetches the account, then enriches held assets with metadata + prices, invalidating after each phase', async () => {
         const { queryClient, invalidateSpy } = makeQueryClient()
 
-        await syncAndEnrichNewAccount('ADDR1', 'mainnet', queryClient)
+        await syncAndEnrichNewAccount('ADDR1', MAINNET_SCOPE, queryClient)
 
-        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
-        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
-            ['0', '100'],
-            'mainnet',
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            { priorChainState: undefined },
         )
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['0', '100'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockFetchAndPersistPrices).toHaveBeenCalledWith(
             ['0', '100'],
             'mainnet',
@@ -111,7 +106,7 @@ describe('syncAndEnrichNewAccount', () => {
         const { queryClient, invalidateSpy } = makeQueryClient()
         mockGetAccountHoldings.mockResolvedValue([])
 
-        await syncAndEnrichNewAccount('ADDR1', 'mainnet', queryClient)
+        await syncAndEnrichNewAccount('ADDR1', MAINNET_SCOPE, queryClient)
 
         expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()
         expect(mockFetchAndPersistPrices).not.toHaveBeenCalled()
@@ -120,10 +115,10 @@ describe('syncAndEnrichNewAccount', () => {
 
     it('swallows fetch errors (never throws to the caller)', async () => {
         const { queryClient, invalidateSpy } = makeQueryClient()
-        mockAccountInformationDo.mockRejectedValue(new Error('algod down'))
+        fetchAccountState().mockRejectedValue(new Error('algod down'))
 
         await expect(
-            syncAndEnrichNewAccount('ADDR1', 'mainnet', queryClient),
+            syncAndEnrichNewAccount('ADDR1', MAINNET_SCOPE, queryClient),
         ).resolves.toBeUndefined()
 
         expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()

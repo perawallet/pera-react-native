@@ -13,10 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { MeldQuote, XoQuote } from '@perawallet/wallet-core-onramp'
-import {
-    getOnrampDestinationCurrency,
-    getOnrampFeeCurrency,
-} from '../onrampQuoteDisplay'
+import { getOnrampDestinationCurrency } from '../onrampQuoteDisplay'
 
 const meldQuote: MeldQuote = {
     kind: 'meld',
@@ -56,15 +53,5 @@ describe('getOnrampDestinationCurrency', () => {
 
     it('returns the destination asset id for XO quotes', () => {
         expect(getOnrampDestinationCurrency(xoQuote)).toBe('ALGO')
-    })
-})
-
-describe('getOnrampFeeCurrency', () => {
-    it('returns the source currency code for Meld quotes', () => {
-        expect(getOnrampFeeCurrency(meldQuote)).toBe('USD')
-    })
-
-    it('returns the miner-fee asset id for XO quotes', () => {
-        expect(getOnrampFeeCurrency(xoQuote)).toBe('USDC')
     })
 })

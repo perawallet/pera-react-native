@@ -13,6 +13,10 @@
 import { Decimal } from 'decimal.js'
 
 import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     queryClient,
     type Network,
     type Nullable,
@@ -29,6 +33,7 @@ import {
     type CalculateSwapAmountApiResponse,
     type CreateQuotesApiResponse,
 } from './schema'
+import { swapAdapterFor } from '../../chain-adapter'
 import { transformDexSwapAsset } from '../available-assets/transformers'
 import type {
     CalculatePeraFeeResult,
@@ -87,12 +92,12 @@ export const calculateSwapAmount = async (
 
 export const createQuotes = async (
     data: CreateQuotesRequest,
-    network: Network,
+    scope: ChainScope,
     providers: SwapProviderItem[],
 ): Promise<SwapQuote[]> => {
     const response = await queryClient<CreateQuotesApiResponse>({
         backend: 'pera',
-        network,
+        network: legacyNetworkOf(scope),
         method: 'POST',
         url: `/v2/dex-swap/quotes/`,
         data,
@@ -124,6 +129,7 @@ export const createQuotes = async (
         }
     }
 
+    const { nativeAssetId } = swapAdapterFor(scope)
     return parsed.results.map(quote => ({
         id: quote.id,
         quoteIdStr: quote.quote_id_str,
@@ -133,8 +139,8 @@ export const createQuotes = async (
         swapType: quote.swap_type,
         swapperAddress: data.swapper_address,
         device: quote.device,
-        assetIn: transformDexSwapAsset(quote.asset_in),
-        assetOut: transformDexSwapAsset(quote.asset_out),
+        assetIn: transformDexSwapAsset(quote.asset_in, nativeAssetId),
+        assetOut: transformDexSwapAsset(quote.asset_out, nativeAssetId),
         amountIn: toOptionalDecimal(quote.amount_in),
         amountInWithSlippage: toOptionalDecimal(quote.amount_in_with_slippage),
         amountInUsdValue: quote.amount_in_usd_value,
@@ -148,7 +154,7 @@ export const createQuotes = async (
         priceImpact: toOptionalDecimal(quote.price_impact),
         peraFeeAmount: toOptionalDecimal(quote.pera_fee_amount),
         peraFeeAsset: quote.pera_fee_asset
-            ? transformDexSwapAsset(quote.pera_fee_asset)
+            ? transformDexSwapAsset(quote.pera_fee_asset, nativeAssetId)
             : undefined,
         transactionFees: toNullableDecimal(quote.transaction_fees),
         // Client-stamped: the wire schema has no expiry, and the

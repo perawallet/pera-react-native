@@ -17,7 +17,7 @@ import { useWebViewNavigationGuard } from '../useWebViewNavigationGuard'
 
 const handleDeepLink = vi.fn()
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({ handleDeepLink }),
 }))
 

@@ -13,11 +13,9 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 // A pinned, syntactically-valid Algorand address (passes the real
 // `isValidAlgorandAddress` checksum round-trip mocked above) used to exercise
@@ -58,10 +56,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >('@perawallet/wallet-core-blockchain')
+        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+    >('@perawallet/wallet-core-chain-algorand/blockchain')
     return {
         ...actual,
         // Keep the existing sentinel for legacy test cases, but delegate any
@@ -91,6 +89,7 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
 
 describe('useWatchAccountScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         vi.mocked(useNfdSearchQuery).mockReturnValue({
@@ -135,8 +134,8 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                address: 'VALID_ALGORAND_ADDRESS',
-                type: 'watch',
+                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
+                custody: { kind: 'watch' },
             } as WalletAccount,
         ])
 
@@ -153,8 +152,8 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                address: 'invalid',
-                type: 'watch',
+                chains: { algorand: { address: 'invalid' } },
+                custody: { kind: 'watch' },
             } as WalletAccount,
         ])
 
@@ -186,8 +185,8 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                address: 'VALID_ALGORAND_ADDRESS',
-                type: 'watch',
+                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
+                custody: { kind: 'watch' },
             } as WalletAccount,
         ])
 
@@ -218,8 +217,8 @@ describe('useWatchAccountScreen', () => {
 
         const expectedAccount = {
             id: 'mock-uuid',
-            address: 'VALID_ALGORAND_ADDRESS',
-            type: 'watch',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
         }
 
         expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
@@ -231,8 +230,8 @@ describe('useWatchAccountScreen', () => {
     it('handleWatchAccount appends to existing accounts', () => {
         const existingAccount = {
             id: 'existing',
-            address: 'OTHER_ADDRESS',
-            type: 'watch',
+            chains: { algorand: { address: 'OTHER_ADDRESS' } },
+            custody: { kind: 'watch' },
         } as WalletAccount
 
         mockUseAllAccounts.mockReturnValue([existingAccount])
@@ -251,8 +250,8 @@ describe('useWatchAccountScreen', () => {
             existingAccount,
             {
                 id: 'mock-uuid',
-                address: 'VALID_ALGORAND_ADDRESS',
-                type: 'watch',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
             },
         ])
     })
@@ -307,8 +306,8 @@ describe('useWatchAccountScreen', () => {
 
         const expectedAccount = {
             id: 'mock-uuid',
-            address: QUANTUM_TEST_ADDRESS,
-            type: AccountTypes.watch,
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: QUANTUM_TEST_ADDRESS } },
         }
 
         expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])

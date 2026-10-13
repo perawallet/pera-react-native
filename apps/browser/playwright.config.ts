@@ -10,10 +10,66 @@
  limitations under the License
  */
 
+import { readdirSync } from 'node:fs'
+import path from 'node:path'
 import { defineConfig } from '@playwright/test'
 
+const testDir = path.join(import.meta.dirname, 'e2e')
+
+// Seconds per spec on a CI runner, beforeAll included: Playwright's own
+// --shard balances by test count, and these specs differ by 40x in cost.
+// Re-measure from a run's list-reporter output when one shard trails.
+const SPEC_SECONDS: Record<string, number> = {
+    'quantum-import.spec.ts': 49,
+    'wallet-smoke.spec.ts': 33,
+    'delete-all-data.spec.ts': 32,
+    'passkey-provider.spec.ts': 24,
+    'walletconnect.spec.ts': 21,
+    'onboarding.spec.ts': 19,
+    'cloud-backup-restore.spec.ts': 19,
+    'feature-tabs.spec.ts': 17,
+    'deeplinks.spec.ts': 15,
+    'quantum-account.spec.ts': 14,
+    'window-pera.spec.ts': 13,
+    'screenshots.spec.ts': 12,
+    'connect-modal-hook.spec.ts': 11,
+}
+const DEFAULT_SPEC_SECONDS = 5
+
+/**
+ * The specs shard `index` of `count` runs, from E2E_SHARD ("2/4"). Each spec
+ * goes to the lightest shard so far, heaviest first, so a new spec lands in
+ * exactly one shard without being listed.
+ */
+const specsForShard = (shard: string): string[] => {
+    const [index, count] = shard.split('/').map(Number)
+    const specs = readdirSync(testDir)
+        .filter(file => file.endsWith('.spec.ts'))
+        .sort(
+            (a, b) =>
+                (SPEC_SECONDS[b] ?? DEFAULT_SPEC_SECONDS) -
+                    (SPEC_SECONDS[a] ?? DEFAULT_SPEC_SECONDS) ||
+                a.localeCompare(b),
+        )
+    const shards = Array.from({ length: count }, () => ({
+        seconds: 0,
+        specs: [] as string[],
+    }))
+    for (const spec of specs) {
+        const lightest = shards.reduce((min, next) =>
+            next.seconds < min.seconds ? next : min,
+        )
+        lightest.seconds += SPEC_SECONDS[spec] ?? DEFAULT_SPEC_SECONDS
+        lightest.specs.push(spec)
+    }
+    return shards[index - 1].specs
+}
+
 export default defineConfig({
-    testDir: './e2e',
+    testDir,
+    ...(process.env.E2E_SHARD && {
+        testMatch: specsForShard(process.env.E2E_SHARD),
+    }),
     timeout: 120_000,
     // Extension state (chrome.storage) persists per launch context; keep
     // workers at 1 so tests don't share/clobber a profile.

@@ -15,9 +15,10 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { toAlgodError } from '@perawallet/wallet-core-blockchain'
+import { toAlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason,
     isExternalCallbackSource,
     isSignRequestMultisigUnsignable,
     resolveAllSignerAddresses,
@@ -149,18 +150,19 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 body: t('signing.cannot_sign.body'),
             }
         }
-        const rekeyedReason = getRekeyedUnsignableReason(
+        const delegatedReason = getDelegatedUnsignableReason(
+            LEGACY_CHAIN_ID,
             currentRequest,
             allAccounts,
         )
-        if (rekeyedReason) {
+        if (delegatedReason) {
             return {
                 title: t('signing.cannot_sign.title'),
                 body: t(
-                    rekeyedReason.kind === 'authMissing'
+                    delegatedReason.kind === 'authMissing'
                         ? 'signing.cannot_sign.rekeyed_auth_missing_body'
                         : 'signing.cannot_sign.rekeyed_auth_watch_body',
-                    { authAddress: rekeyedReason.authAddress },
+                    { authAddress: delegatedReason.authAddress },
                 ),
             }
         }
@@ -194,7 +196,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 isExternalCallbackSource(currentRequest.sourceType)
             ) {
                 const decision = await confirmQuantumDappUsage(
-                    resolveAllSignerAddresses(currentRequest),
+                    resolveAllSignerAddresses(LEGACY_CHAIN_ID, currentRequest),
                 )
                 if (decision === 'cancel') {
                     if (walletConnectTxPayload) {

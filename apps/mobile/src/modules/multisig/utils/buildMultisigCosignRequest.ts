@@ -11,18 +11,29 @@
  */
 
 import {
-    generateMultisigAddress,
+    legacyNetworkOf,
+    type ChainScope,
     type PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
-
-import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
+import {
+    chainAccountOf,
+    authorityOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    multisigAdapterFor,
+    type MultisigSignRequest,
+} from '@perawallet/wallet-core-multisig'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
+    scope: ChainScope
     decodeTransaction: (bytes: Uint8Array) => PeraTransaction
+    /** Used to recognise senders the joint account authorizes via a rekey. */
+    localAccounts: WalletAccount[]
 }
 
 /**
@@ -34,7 +45,9 @@ type BuildMultisigCosignRequestParams = {
 export const buildMultisigCosignRequest = ({
     signRequest,
     signerAddress,
+    scope,
     decodeTransaction,
+    localAccounts,
 }: BuildMultisigCosignRequestParams): TransactionSignRequest => {
     const transactionList = signRequest.transactionLists[0]
     if (!transactionList) {
@@ -48,40 +61,39 @@ export const buildMultisigCosignRequest = ({
         decodeTransaction(decodeFromBase64(base64)),
     )
 
-    // A cosignature is only ever a subsig of the joint (multisig) account, and
-    // the backend is a relay — not a trust anchor — for what we sign. Two hard
-    // checks close the standalone-single-sig drain:
-    const { address, version, threshold, participantAddresses } =
-        signRequest.multisigAccount
-
-    // 1. The joint account must actually derive from its own participant set.
-    //    This pins `address` to a genuine multisig hash, so a fabricated
-    //    request can't pass off a participant's *personal* address as the
-    //    "joint account" (which would make check 2 vacuous).
-    if (
-        generateMultisigAddress(version, threshold, participantAddresses) !==
-        address
-    ) {
-        throw new Error(
-            `Sign request ${signRequest.id}: joint account address does not derive from its participant set`,
-        )
-    }
-
-    // 2. No transaction may be sent by the co-signer themselves. That is the
-    //    exact condition under which the local signer omits `sgnr`
-    //    (`account.address === senderPublicKey` in useLocalKeyTransactionSigner),
-    //    producing a plain Ed25519 signature that verifies standalone and
-    //    drains the co-signer's own account — the multisig threshold provides
-    //    no protection. Any other sender (the joint account, or an account
-    //    rekeyed to it — see the sign-multisig-rekeyed integration test) still
-    //    yields a subsig bound to `sgnr`, which is useless on its own.
-    const offenderIndex = txs.findIndex(
-        tx => tx.sender.toString() === signerAddress,
-    )
-    if (offenderIndex !== -1) {
-        throw new Error(
-            `Sign request ${signRequest.id}: transaction ${offenderIndex} is sent by the co-signer, not the joint account ${address}`,
-        )
+    // The backend is a relay, not a trust anchor, for what we sign.
+    const { address } = signRequest.multisigAccount
+    const jointAuthorizedSenders = new Set([
+        address,
+        ...localAccounts
+            .filter(account => authorityOf(account, scope) === address)
+            .flatMap(
+                account =>
+                    chainAccountOf(account, scope.chainId)?.address ?? [],
+            ),
+    ])
+    const validation = multisigAdapterFor(
+        legacyNetworkOf(scope),
+    ).validateSignRequest(signRequest, jointAuthorizedSenders)
+    switch (validation.kind) {
+        case 'valid': {
+            break
+        }
+        case 'address-mismatch': {
+            throw new Error(
+                `Sign request ${signRequest.id}: joint account address does not derive from its participant set`,
+            )
+        }
+        case 'no-transactions': {
+            throw new Error(
+                `Sign request ${signRequest.id} has no transaction lists`,
+            )
+        }
+        case 'unauthorized-sender': {
+            throw new Error(
+                `Sign request ${signRequest.id}: transaction ${validation.txIndex} is not authorized by the joint account ${address}`,
+            )
+        }
     }
 
     return {
@@ -94,6 +106,7 @@ export const buildMultisigCosignRequest = ({
         // inline-error guards in SignRequestView keep cosigns apart as before.
         id: `${signRequest.id}:${signerAddress}`,
         type: 'transactions',
+        chainId: scope.chainId,
         transport: 'callback',
         // `sourceType: 'multisig-cosign'` is in `INTERACTIVE_SOURCES`, so
         // the standard review flow shows the review sheet automatically

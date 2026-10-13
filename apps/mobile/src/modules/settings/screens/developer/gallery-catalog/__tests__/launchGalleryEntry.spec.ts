@@ -54,11 +54,11 @@ describe('launchGalleryEntry', () => {
             label: 'X',
             launch: {
                 kind: 'navigate',
-                target: { name: 'Home', params: { a: 1 } },
+                target: { name: 'TabBar', params: { screen: 'Home' } },
             },
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('Home', { a: 1 })
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
         expect(outcome).toBe('launched')
     })
 
@@ -133,7 +133,7 @@ describe('launchGalleryEntry', () => {
         const outcome = launchGalleryEntry({
             id: 'scr-x',
             label: 'X',
-            launch: { kind: 'navigate', target: { name: 'Home' } },
+            launch: { kind: 'navigate', target: { name: 'TabBar' } },
         })
 
         expect(mockNavigate).not.toHaveBeenCalled()

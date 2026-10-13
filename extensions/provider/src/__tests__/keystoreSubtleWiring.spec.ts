@@ -19,13 +19,6 @@ import { resolve } from 'node:path'
 const rnqc = vi.hoisted(() => ({ subtle: { __pera: 'subtle-sentinel' } }))
 vi.mock('react-native-quick-crypto', () => ({ subtle: rnqc.subtle }))
 
-vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
-    WithLedgerExtension: () => ({}),
-}))
-vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
-    WithLedgerUsbExtension: () => ({}),
-}))
-
 /**
  * Captures the options `singleton.ts` hands to `WithKeyStore`, which is the one
  * place `subtle` can reach upstream's migration context: it builds that context

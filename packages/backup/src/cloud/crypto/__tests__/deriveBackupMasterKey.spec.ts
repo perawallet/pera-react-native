@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 
 const { argon2Mock } = vi.hoisted(() => ({ argon2Mock: vi.fn() }))
 
@@ -22,6 +23,31 @@ vi.mock('crypto', async importOriginal => {
 })
 
 import { deriveBackupMasterKey } from '../deriveBackupMasterKey'
+import { argon2OffThread } from './argon2OffThread'
+
+/**
+ * `crypto.argon2` landed in Node 24 and reaches production through
+ * react-native-quick-crypto, so standing a conformant Argon2id in its place is
+ * the only way to run the primitive here. Dispatching on the algorithm name
+ * keeps the `'argon2id'` choice itself under test: argon2d would derive
+ * different bytes and fail the vector below.
+ */
+const useRealArgon2 = () => {
+    argon2Mock.mockImplementation(argon2OffThread)
+}
+
+/**
+ * Cross-platform reference vector for `ARGON2ID_CONFIG`. Every platform
+ * deriving a backup master key must reproduce it — if it moves, existing
+ * backups stop restoring. Verified against OpenSSL 3.6 `kdf ARGON2ID`,
+ * independently of the @noble implementation this file runs.
+ *
+ * THROWAWAY INPUTS — published in source, never used for a real backup.
+ */
+const KAT_PASSWORD = new TextEncoder().encode('pera-cloud-backup-kat')
+const KAT_SALT = Uint8Array.from({ length: 16 }, (_, index) => index)
+const KAT_MASTER_KEY =
+    '21abf8fa4c9235ea8bd4374ba19d41a5cf2ee3b94f80c803a44b30d646c02506'
 
 describe('deriveBackupMasterKey', () => {
     beforeEach(() => {
@@ -53,6 +79,35 @@ describe('deriveBackupMasterKey', () => {
         expect(result).toEqual(output)
     })
 
+    test('derives under a supplied config instead of the canonical one', async () => {
+        argon2Mock.mockImplementation((_algorithm, _params, callback) => {
+            callback(null, new Uint8Array(32))
+        })
+
+        await deriveBackupMasterKey(
+            new TextEncoder().encode('pw'),
+            new Uint8Array([1, 2, 3, 4]),
+            {
+                timeCost: 4,
+                memoryCost: 128,
+                parallelism: 2,
+                outputLength: 32,
+            },
+        )
+
+        expect(argon2Mock).toHaveBeenCalledWith(
+            'argon2id',
+            expect.objectContaining({
+                parallelism: 2,
+                tagLength: 32,
+                // Still MiB → KiB on the caller-supplied config.
+                memory: 131_072,
+                passes: 4,
+            }),
+            expect.any(Function),
+        )
+    })
+
     test('rejects when argon2 reports an error', async () => {
         argon2Mock.mockImplementation((_algorithm, _params, callback) => {
             callback(new Error('argon2 failed'), Buffer.alloc(0))
@@ -65,4 +120,13 @@ describe('deriveBackupMasterKey', () => {
             ),
         ).rejects.toThrow('argon2 failed')
     })
+
+    // One real 256 MiB derive; the timeout is the machine allowance, not a hang guard.
+    test('derives the reference key from a real Argon2id', async () => {
+        useRealArgon2()
+
+        const result = await deriveBackupMasterKey(KAT_PASSWORD, KAT_SALT)
+
+        expect(bytesToHex(result)).toBe(KAT_MASTER_KEY)
+    }, 60_000)
 })

@@ -39,7 +39,10 @@ type RepairsOptions = {
  * a service.
  */
 export const WithPeraKeystoreRepairs: Extension<object> = (
-    provider: { migrations?: MigrationsApi },
+    provider: {
+        migrations?: MigrationsApi
+        deviceInfo?: { getDevicePlatform: () => 'ios' | 'android' | 'web' }
+    },
     options: RepairsOptions = {},
 ) => {
     // Same resolution as `WithKeyStore`, so the two can never end up pointed at
@@ -62,6 +65,7 @@ export const WithPeraKeystoreRepairs: Extension<object> = (
                 // would leave it non-empty and block a fresh install from
                 // minting its master key.
                 declined: createDeclinedRegister(peraMigrationNoteStore()),
+                platform: provider.deviceInfo?.getDevicePlatform(),
             }
         },
         migrations: repairsMigrations,

@@ -13,8 +13,8 @@
 import { PWText, PWView } from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
-import { AssetTierChip } from '@modules/assets/components/AssetTierChip'
+import { AssetIcon } from '@components/AssetIcon'
+import { AssetTierChip } from '@modules/assets'
 import { useStyles } from './styles'
 
 type SwapAssetSectionProps = {

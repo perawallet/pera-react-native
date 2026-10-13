@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -32,13 +33,33 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/provider/src/index.ts',
             ),
+            '@perawallet/wallet-extension-connections': path.resolve(
+                __dirname,
+                '../../extensions/connections/src/index.ts',
+            ),
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
             ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
+            ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
                 '../../extensions/platform/src/index.ts',
+            ),
+            // The walletconnect barrel drags in RN-only deps that do not
+            // resolve here, so the two pure helpers this package's migrator
+            // shares with the blob importer are aliased to source.
+            '@perawallet/wallet-core-walletconnect/shared/peer': path.resolve(
+                __dirname,
+                '../walletconnect/src/shared/peer.ts',
+            ),
+            '@perawallet/wallet-core-walletconnect/v1/connection': path.resolve(
+                __dirname,
+                '../walletconnect/src/v1/connection.ts',
             ),
             '@perawallet/wallet-core-accounts': path.resolve(
                 __dirname,
@@ -48,6 +69,10 @@ export default defineConfig({
                 __dirname,
                 '../currencies/src/index.ts',
             ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
                 '../kms/src/index.ts',
@@ -55,6 +80,19 @@ export default defineConfig({
             '@perawallet/wallet-core-passkeys/native': path.resolve(
                 __dirname,
                 '../passkeys/src/native.ts',
+            ),
+            '@perawallet/wallet-core-passkeys/crypto': path.resolve(
+                __dirname,
+                '../passkeys/src/crypto.ts',
+            ),
+            // Must come after the two subpath entries above: plugin-alias
+            // matches string keys in order, and a bare-name entry earlier in
+            // the list would shadow both `/native` and `/crypto` (same
+            // ordering this file already relies on for
+            // `wallet-core-kms/constants` before `wallet-core-kms`).
+            '@perawallet/wallet-core-passkeys': path.resolve(
+                __dirname,
+                '../passkeys/src/index.ts',
             ),
             '@perawallet/wallet-core-database/test-utils': path.resolve(
                 __dirname,
@@ -70,5 +108,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

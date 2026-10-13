@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { isNotFoundError, type Optional } from '@perawallet/wallet-core-shared'
 
 import { getRampHistory, getRampHistoryByUrl } from '../api'
@@ -67,14 +71,15 @@ export const useRampHistoryInfiniteQuery = ({
     status,
     isActive = true,
 }: UseRampHistoryInfiniteQueryParams): UseRampHistoryInfiniteQueryResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
     const query = useInfiniteQuery({
         queryKey: onrampQueryKeys.history(
             deviceId,
             accountAddress,
             status,
-            network,
+            scope,
         ),
         queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
             pageParam

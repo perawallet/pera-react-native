@@ -10,35 +10,46 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo } from 'react'
-import { Platform } from 'react-native'
+import React, { useCallback, useEffect, useMemo } from 'react'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
-    resolveImportAccountType,
+    detectImportKind,
+    keyKindOptionsOf,
+    offeredLocalKeyKinds,
     setPendingImportMnemonic,
+    type LocalKeySeed,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { trackEvent, OnboardingEvent } from '@analytics'
+import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
+import {
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
+import { useCapability } from '@hooks/useCapability'
 import { useModalState } from '@hooks/useModalState'
+import { useTabHandoff } from '@hooks/useTabHandoff'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDeepLink } from '@hooks/useDeepLink'
-import { DeeplinkType } from '@hooks/deeplink/types'
+import { useDeepLink, DeeplinkType } from '@modules/deeplink'
 import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useRestoreBackupOptions } from '@modules/cloud-backup'
+import { useSupportedLedgerTransports } from '@modules/ledger'
 import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
+import type { ImportFlowParamList } from '../../routes/types'
+import { trackChainOnboardingEvent } from '../../utils'
 
 export type UseImportAccountOptionsScreenResult = {
     options: AccountOption[]
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
     handleQRScannerSuccess: (url: string, restartScanning?: () => void) => void
+    isReadingCredentials: boolean
 }
 
 export const useImportAccountOptionsScreen =
@@ -48,14 +59,58 @@ export const useImportAccountOptionsScreen =
         const { t } = useLanguage()
         const { parseDeeplink } = useDeepLink()
         const { request: requestBottomSheet } = useBottomSheet()
-        const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
-        const { network } = useNetwork()
+        const { chooseRestoreRoute, isReadingCredentials } =
+            useRestoreBackupOptions()
+        const isQuantumEnabled = useCapability({
+            platform: 'quantum',
+            anyChain: 'quantumAccounts',
+        })
+        const canUseLedger = useCapability({ anyChain: 'ledger' })
+        const canUseLedgerUsb = useCapability({
+            platform: 'ledgerUsb',
+            anyChain: 'ledger',
+        })
+        const canImportPeraWeb = useCapability({ anyChain: 'peraWebImport' })
+        const isCloudBackupAvailable = useIsCloudBackupAvailable()
+        const canImportSecureBackup = useCapability({
+            anyChain: 'secureBackup',
+        })
+        const {
+            isReady: isLedgerSupportKnown,
+            supportedTransportTypes: ledgerTransports,
+        } = useSupportedLedgerTransports()
+        // Browsers differ (Brave ships Web Bluetooth off, Firefox has neither
+        // API), so each row reflects what this one can do. Enabled until the
+        // check resolves, so rows don't flash disabled on every visit.
+        const isLedgerBleAvailable =
+            !isLedgerSupportKnown || ledgerTransports.includes('ble')
+        const isLedgerUsbAvailable =
+            !isLedgerSupportKnown || ledgerTransports.includes('usb')
+        const isCloudBackupConfigured = useCloudBackupStore(state =>
+            state.isConfigured(),
+        )
 
         const {
             isOpen: isQRScannerVisible,
             open: openQRScanner,
             close: closeQRScanner,
         } = useModalState()
+        const { shouldHandOff, openTab } = useTabHandoff('recover-qr')
+        const isScannerOpenOnArrival =
+            useRoute<RouteProp<ImportFlowParamList, 'ImportAccountOptions'>>()
+                .params?.isScannerOpen ?? false
+
+        useEffect(() => {
+            if (isScannerOpenOnArrival) openQRScanner()
+        }, [isScannerOpenOnArrival, openQRScanner])
+
+        const handleOpenQRScanner = useCallback(() => {
+            if (shouldHandOff) {
+                void openTab()
+                return
+            }
+            openQRScanner()
+        }, [shouldHandOff, openTab, openQRScanner])
 
         const handleOpenImportOptions = useCallback(async () => {
             const result = await requestBottomSheet<ImportOptionsContentResult>(
@@ -68,11 +123,10 @@ export const useImportAccountOptionsScreen =
                     },
                 },
             )
-            if (!result) return
-            trackEvent(
-                result === 'algo25'
-                    ? OnboardingEvent.RecoverAlgo25
-                    : OnboardingEvent.RecoverOneKey,
+            if (result === undefined) return
+            trackChainOnboardingEvent(
+                keyKindOptionsOf(LEGACY_CHAIN_ID, result)?.recover
+                    ?.analyticsEvent,
             )
             navigation.push('ImportInfo', { accountType: result })
         }, [requestBottomSheet, navigation])
@@ -103,7 +157,8 @@ export const useImportAccountOptionsScreen =
                     return
                 }
 
-                const resolved = resolveImportAccountType(
+                const resolved = detectImportKind(
+                    LEGACY_CHAIN_ID,
                     parsedDeeplink.mnemonic,
                 )
                 if (!resolved.success) {
@@ -126,7 +181,7 @@ export const useImportAccountOptionsScreen =
                 // secret never enters the navigation state tree.
                 setPendingImportMnemonic(parsedDeeplink.mnemonic)
                 navigation.push('ImportAccount', {
-                    accountType: resolved.accountType,
+                    accountType: resolved.seed,
                 })
             },
             [closeQRScanner, parseDeeplink, navigation, errorToast, t],
@@ -140,9 +195,60 @@ export const useImportAccountOptionsScreen =
             navigation.push('PeraWebImportInfo')
         }, [navigation])
 
-        const handleImportQuantum = useCallback(() => {
-            navigation.push('ImportAccount', { accountType: 'quantum' })
-        }, [navigation])
+        // Restoring over a device that already holds a backup would replace
+        // the local backup identity, orphaning what this device pushed.
+        const handleImportCloudBackup = useCallback(async () => {
+            if (isCloudBackupConfigured) {
+                errorToast(
+                    t(
+                        'onboarding.import_account_options.cloud_backup_already_enabled_title',
+                    ),
+                    t(
+                        'onboarding.import_account_options.cloud_backup_already_enabled_body',
+                    ),
+                )
+                return
+            }
+
+            const route = await chooseRestoreRoute()
+            if (!route) return
+            const [screen, params] = route
+            navigation.push(screen, params)
+        }, [
+            isCloudBackupConfigured,
+            errorToast,
+            t,
+            chooseRestoreRoute,
+            navigation,
+        ])
+
+        const handleImportKind = useCallback(
+            (seed: LocalKeySeed) =>
+                navigation.push('ImportAccount', { accountType: seed }),
+            [navigation],
+        )
+
+        const kindImportOptions: AccountOption[] = useMemo(
+            () =>
+                offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
+                    ({ kind, options: { import: entry } }) =>
+                        entry &&
+                        (!isPostQuantumScheme(kind.signingScheme) ||
+                            isQuantumEnabled)
+                            ? [
+                                  {
+                                      testID: `import_account_${entry.id}_button`,
+                                      titleKey: entry.titleKey,
+                                      descriptionKey: entry.descriptionKey,
+                                      leftIcon: entry.icon as IconName,
+                                      onPress: () =>
+                                          handleImportKind(kind.seed),
+                                  },
+                              ]
+                            : [],
+                ),
+            [isQuantumEnabled, handleImportKind],
+        )
 
         const options: AccountOption[] = useMemo(() => {
             const allOptions: AccountOption[] = [
@@ -155,19 +261,7 @@ export const useImportAccountOptionsScreen =
                     leftIcon: 'fund' as IconName,
                     onPress: () => void handleOpenImportOptions(),
                 },
-                ...(isQuantumAccountsEnabled
-                    ? [
-                          {
-                              testID: 'import_account_quantum_button',
-                              titleKey:
-                                  'onboarding.import_account_options.quantum_title',
-                              descriptionKey:
-                                  'onboarding.import_account_options.quantum_description',
-                              leftIcon: 'quantum' as IconName,
-                              onPress: handleImportQuantum,
-                          },
-                      ]
-                    : []),
+                ...kindImportOptions,
                 {
                     testID: 'import_account_options_recover_qr_button',
                     titleKey:
@@ -175,69 +269,98 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.recover_qr_description',
                     leftIcon: 'qr' as IconName,
-                    onPress: openQRScanner,
-                },
-                {
-                    testID: 'import_account_options_pair_ledger_button',
-                    titleKey:
-                        'onboarding.import_account_options.pair_ledger_title',
-                    descriptionKey:
-                        'onboarding.import_account_options.pair_ledger_description',
-                    leftIcon: 'wallet' as IconName,
-                    onPress: handlePairLedgerBle,
+                    onPress: handleOpenQRScanner,
                 },
             ]
 
-            if (Platform.OS === 'android' || Platform.OS === 'web') {
+            if (canUseLedger) {
+                allOptions.push({
+                    testID: 'import_account_options_pair_ledger_button',
+                    titleKey:
+                        'onboarding.import_account_options.pair_ledger_title',
+                    descriptionKey: isLedgerBleAvailable
+                        ? 'onboarding.import_account_options.pair_ledger_description'
+                        : 'onboarding.import_account_options.pair_ledger_unsupported_description',
+                    leftIcon: 'wallet' as IconName,
+                    onPress: handlePairLedgerBle,
+                    isDisabled: !isLedgerBleAvailable,
+                })
+            }
+
+            if (canUseLedgerUsb) {
                 allOptions.push({
                     testID: 'import_account_options_pair_ledger_usb_button',
                     titleKey:
                         'onboarding.import_account_options.pair_ledger_usb_title',
-                    descriptionKey:
-                        'onboarding.import_account_options.pair_ledger_usb_description',
+                    descriptionKey: isLedgerUsbAvailable
+                        ? 'onboarding.import_account_options.pair_ledger_usb_description'
+                        : 'onboarding.import_account_options.pair_ledger_unsupported_description',
                     leftIcon: 'wallet' as IconName,
                     onPress: handlePairLedgerUsb,
+                    isDisabled: !isLedgerUsbAvailable,
                 })
             }
 
-            // There is no Pera-free source for a Pera Web backup, so the
-            // flow can't work on betanet/custom — disable the row instead
-            // of letting the user hit a misleading fetch failure.
-            const isPeraWebImportAvailable = isPeraBackedNetwork(network)
-
             allOptions.push(
-                {
-                    testID: 'import_account_options_pera_web_button',
-                    titleKey:
-                        'onboarding.import_account_options.pera_web_title',
-                    descriptionKey: isPeraWebImportAvailable
-                        ? 'onboarding.import_account_options.pera_web_description'
-                        : 'common.network_unavailable.body',
-                    leftIcon: 'globe' as IconName,
-                    onPress: handleImportPeraWeb,
-                    isDisabled: !isPeraWebImportAvailable,
-                },
-                {
-                    testID: 'import_account_options_asb_button',
-                    titleKey: 'onboarding.import_account_options.asb_title',
-                    descriptionKey:
-                        'onboarding.import_account_options.asb_description',
-                    leftIcon: 'shield-check' as IconName,
-                    onPress: handleImportAsb,
-                },
+                ...(canImportPeraWeb
+                    ? [
+                          {
+                              testID: 'import_account_options_pera_web_button',
+                              titleKey:
+                                  'onboarding.import_account_options.pera_web_title',
+                              descriptionKey:
+                                  'onboarding.import_account_options.pera_web_description',
+                              leftIcon: 'globe' as IconName,
+                              onPress: handleImportPeraWeb,
+                          },
+                      ]
+                    : []),
+                ...(isCloudBackupAvailable
+                    ? [
+                          {
+                              testID: 'import_account_options_cloud_backup_button',
+                              titleKey:
+                                  'onboarding.import_account_options.cloud_backup_title',
+                              descriptionKey:
+                                  'onboarding.import_account_options.cloud_backup_description',
+                              leftIcon: 'cloud-download' as IconName,
+                              onPress: () => void handleImportCloudBackup(),
+                          },
+                      ]
+                    : []),
+                ...(canImportSecureBackup
+                    ? [
+                          {
+                              testID: 'import_account_options_asb_button',
+                              titleKey: isCloudBackupAvailable
+                                  ? 'onboarding.import_account_options.asb_legacy_title'
+                                  : 'onboarding.import_account_options.asb_title',
+                              descriptionKey:
+                                  'onboarding.import_account_options.asb_description',
+                              leftIcon: 'shield-check' as IconName,
+                              onPress: handleImportAsb,
+                          },
+                      ]
+                    : []),
             )
 
             return allOptions
         }, [
             handleOpenImportOptions,
-            openQRScanner,
+            handleOpenQRScanner,
             handlePairLedgerBle,
             handlePairLedgerUsb,
             handleImportAsb,
             handleImportPeraWeb,
-            handleImportQuantum,
-            isQuantumAccountsEnabled,
-            network,
+            handleImportCloudBackup,
+            kindImportOptions,
+            isCloudBackupAvailable,
+            canImportSecureBackup,
+            canUseLedger,
+            canUseLedgerUsb,
+            canImportPeraWeb,
+            isLedgerBleAvailable,
+            isLedgerUsbAvailable,
         ])
 
         return {
@@ -245,5 +368,6 @@ export const useImportAccountOptionsScreen =
             isQRScannerVisible,
             handleCloseQRScanner: closeQRScanner,
             handleQRScannerSuccess,
+            isReadingCredentials,
         }
     }

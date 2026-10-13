@@ -78,4 +78,21 @@ describe('clearDatabase', () => {
             teardown()
         }
     })
+
+    it('leaves the tables it is told to keep', async () => {
+        const { db, teardown } = createTestDatabase()
+        try {
+            await db.run(sql`CREATE TABLE accounts (address TEXT)`)
+            await db.run(sql`CREATE TABLE ledger (id TEXT)`)
+            await db.run(sql`INSERT INTO accounts (address) VALUES ('A')`)
+            await db.run(sql`INSERT INTO ledger (id) VALUES ('L')`)
+
+            await clearDatabase(db, { keep: ['ledger'] })
+
+            expect(await db.all(sql`SELECT * FROM accounts`)).toHaveLength(0)
+            expect(await db.all(sql`SELECT * FROM ledger`)).toHaveLength(1)
+        } finally {
+            teardown()
+        }
+    })
 })

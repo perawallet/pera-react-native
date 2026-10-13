@@ -10,45 +10,26 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    useMinimumFeeConfig,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
-import { resolveMinFeeForSender } from '../pipeline/sources/minFeeResolver'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { MinFeeForSenderResult } from '../chain-adapter'
+import { usePlannerHook } from './usePlannerHook'
 
-type UseMinFeeForSenderResult = {
-    /** PQ-aware minimum fee in µAlgo for a txn sent by `senderAddress`; undefined while suggested params load */
-    minFee: bigint | undefined
-    isPending: boolean
+const NO_MIN_FEE: MinFeeForSenderResult = {
+    minFee: undefined,
+    isPending: false,
 }
 
 /**
  * PQ-aware minimum fee for display and fee inputs: resolves the effective
- * signer of `senderAddress` and applies the remote-config PQ multiplier on
- * top of max(algod suggested minFee, config base). Keeps UI fee displays in
- * agreement with fees applied when building transactions.
+ * signer of `senderAddress` and applies the remote-config PQ multiplier.
+ * Keeps UI fee displays in agreement with fees applied when building
+ * transactions. No fee on a chain with no planner.
  */
 export const useMinFeeForSender = (
     senderAddress: string | undefined,
-): UseMinFeeForSenderResult => {
-    const accounts = useAllAccounts()
-    const { data: params, isPending } = useSuggestedParametersQuery()
-    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
-
-    const minFee = useMemo(() => {
-        if (senderAddress === undefined || params === undefined) {
-            return undefined
-        }
-        return resolveMinFeeForSender({
-            senderAddress,
-            accounts,
-            suggestedMinFee: BigInt(params.minFee),
-            configMinTxnFee: minTxnFee,
-            pqMultiplier,
-        })
-    }, [senderAddress, accounts, params, minTxnFee, pqMultiplier])
-
-    return { minFee, isPending }
-}
+    chainId: ChainId,
+): MinFeeForSenderResult =>
+    // Only the chain's own planner sees the sender.
+    usePlannerHook(chainId, NO_MIN_FEE, (planner, isChain) =>
+        planner.useMinFeeForSender(isChain ? senderAddress : undefined),
+    )

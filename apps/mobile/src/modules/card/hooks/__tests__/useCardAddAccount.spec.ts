@@ -17,7 +17,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 const mockBuildHd = vi.fn()
 const mockBuildNext = vi.fn()
 let mockHasHDWallet = false
-let mockHasMultipleHDWallets = false
+let mockHasMultipleHdSeeds = false
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useCreateAccount: () => ({ buildHdWalletAccount: mockBuildHd }),
@@ -25,8 +25,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         buildNextHDAccount: mockBuildNext,
         hasHDWallet: mockHasHDWallet,
     }),
-    useHDWalletGroups: () => ({
-        hasMultipleHDWallets: mockHasMultipleHDWallets,
+    useHdSeedGroups: () => ({
+        hasMultipleHdSeeds: mockHasMultipleHdSeeds,
     }),
 }))
 
@@ -63,9 +63,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardAddAccount } from '../useCardAddAccount'
 
@@ -80,12 +78,15 @@ const RETURN_TO = {
     },
 }
 
-const NEW_ACCOUNT = { address: 'NEW', type: 'hdWallet' } as WalletAccount
+const NEW_ACCOUNT = {
+    chains: { algorand: { address: 'NEW' } },
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+} as WalletAccount
 
 beforeEach(() => {
     vi.clearAllMocks()
     mockHasHDWallet = false
-    mockHasMultipleHDWallets = false
+    mockHasMultipleHdSeeds = false
     mockBuildHd.mockResolvedValue(NEW_ACCOUNT)
     mockBuildNext.mockResolvedValue(NEW_ACCOUNT)
 })
@@ -93,7 +94,7 @@ beforeEach(() => {
 describe('useCardAddAccount', () => {
     it('lets the user pick a wallet when there are multiple HD wallets', async () => {
         mockHasHDWallet = true
-        mockHasMultipleHDWallets = true
+        mockHasMultipleHdSeeds = true
         const { result } = renderHook(() => useCardAddAccount())
 
         act(() => result.current.handleCreateAccount())

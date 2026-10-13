@@ -20,14 +20,37 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
-        setupFiles: ['./vitest.setup.ts'],
+        setupFiles: [
+            './vitest.setup.ts',
+            './src/__tests__/registerDappRequestAdapter.ts',
+        ],
     },
     resolve: {
         conditions: ['default'],
         alias: {
+            // Source, not `dist`, so tests cannot pass against a stale build
+            // artifact. Both aliases are load-bearing: `Networks`
+            // (betanet/custom) lives in packages/config and shared only
+            // re-exports it, so aliasing shared alone still resolves that
+            // re-export through config's own dist.
+            // Before the barrel key: aliases prefix-match, so the barrel entry
+            // would rewrite `/queue` (imported by assets' dist) to a bad path.
+            '@perawallet/wallet-core-shared/queue': path.resolve(
+                __dirname,
+                '../shared/src/queue/index.ts',
+            ),
+            '@perawallet/wallet-core-shared': path.resolve(
+                __dirname,
+                '../shared/src/index.ts',
+            ),
+            '@perawallet/wallet-core-config': path.resolve(
+                __dirname,
+                '../config/src/index.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',
@@ -36,13 +59,26 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
             ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
+            ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
                 '../../extensions/platform/src/index.ts',
             ),
+            '@perawallet/wallet-core-signing/constants': path.resolve(
+                __dirname,
+                '../signing/src/constants.ts',
+            ),
             '@perawallet/wallet-core-signing': path.resolve(
                 __dirname,
                 '../signing/src/index.ts',
+            ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
             ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
@@ -52,15 +88,51 @@ export default defineConfig({
                 __dirname,
                 '../accounts/src/index.ts',
             ),
-            '@perawallet/wallet-core-blockchain': path.resolve(
+            // Source, not dist: the dist reaches a second getProvider()
+            // instance the mocks here never see.
+            '@perawallet/wallet-core-chain-shared': path.resolve(
                 __dirname,
-                '../blockchain/src/index.ts',
+                '../chain-shared/src/index.ts',
             ),
             '@perawallet/wallet-core-device': path.resolve(
                 __dirname,
                 '../device/src/index.ts',
             ),
+            // The `/testing` subpath needs its own entry — aliasing the
+            // package root does not cover it, and the v1 handler spec runs
+            // the shared handler contract suite from there.
+            '@perawallet/wallet-core-connections/testing': path.resolve(
+                __dirname,
+                '../connections/src/__tests__/handler-contract.ts',
+            ),
+            '@perawallet/wallet-core-connections/handlerKit': path.resolve(
+                __dirname,
+                '../connections/src/handlerKit.ts',
+            ),
+            // Registering the real Algorand adapter (registerDappRequestAdapter.ts)
+            // through a dist copy of connections would land in a different
+            // `dappRequestChainAdapters` registry instance than the one this
+            // package's own source resolves to below.
+            '@perawallet/wallet-core-connections/dappRequest': path.resolve(
+                __dirname,
+                '../connections/src/dappRequest.ts',
+            ),
+            '@perawallet/wallet-core-connections': path.resolve(
+                __dirname,
+                '../connections/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-connections': path.resolve(
+                __dirname,
+                '../../extensions/connections/src/index.ts',
+            ),
+            // Test-only: the one place walletconnect names a chain package,
+            // to register its adapter (see registerDappRequestAdapter.ts).
+            // Source, so it shares the module graph above rather than a dist
+            // copy resolving its own dependencies separately.
+            '@perawallet/wallet-core-chain-algorand/connect': path.resolve(
+                __dirname,
+                '../chain-algorand/src/connect/index.ts',
+            ),
         },
     },
-    ...poolConfig,
 })

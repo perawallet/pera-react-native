@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type Decimal from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type Currency = {

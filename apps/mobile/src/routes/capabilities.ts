@@ -11,10 +11,18 @@
  */
 
 import { isDebug, isStaging } from '@perawallet/wallet-core-config'
+import { isAndroid } from '@utils/platform'
+import type {
+    RouteCapabilities,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
+import { isDeveloperGalleryIncluded } from './developer-gallery'
 
-import type { RouteCapabilities } from './capabilities-types'
-
-export type { RouteCapabilities } from './capabilities-types'
+export type {
+    RouteCapabilities,
+    RouteCapability,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
     discoverTab: true,
@@ -25,6 +33,7 @@ export const routeCapabilities: RouteCapabilities = {
     giftCards: true,
     inAppWebView: true,
     qrScanner: true,
+    ledgerUsb: isAndroid(),
     // Native keeps the camera; paste has no reason to exist there.
     deepLinkPaste: false,
     pushNotificationSettings: true,
@@ -33,19 +42,20 @@ export const routeCapabilities: RouteCapabilities = {
     accountDrawer: true,
     storeRating: true,
     confirmationModeSetting: true,
+    analyticsConsent: true,
     // Carries destructive tooling (the migration simulator wipes the real
     // legacy stores and plants fixture accounts with publicly-derivable keys),
     // so the signed store build must not expose it. metro.config.js
     // additionally strips those screens from non-dev/non-staging bundles.
     developerSettings: isDebug || isStaging,
+    developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: false,
-    // Native's WalletConnect covers dapp connections; the ARC-0027 injected
-    // provider is browser-extension only.
-    dappConnections: false,
+    pin: true,
     quantum: true,
     rekeyFlows: true,
     sharedAccounts: true,
-    // Native keeps the two separate WalletConnect/Connected Sites menu
-    // entries (dappConnections is off there anyway).
+    // Native lists WalletConnect sessions under its own menu entry instead.
     connectionsSettings: false,
 }
+
+export const routeCapabilityRestrictions: RouteCapabilityRestrictions = {}

@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { base32nopad } from '@scure/base'
 import { backupIdToAddress } from '../backupIdToAddress'
 import { deriveBackupId } from '../deriveBackupId'
 
@@ -26,6 +27,22 @@ const AUTH_PUBLIC_KEY = Uint8Array.from(
 describe('deriveBackupId', () => {
     test('formats the backupId as did:pera:<algorand address>', () => {
         expect(deriveBackupId(AUTH_PUBLIC_KEY)).toBe(`did:pera:${ADDRESS}`)
+    })
+
+    test('derives the all-zero key to its fixed id', () => {
+        expect(deriveBackupId(new Uint8Array(32))).toBe(
+            'did:pera:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ',
+        )
+    })
+
+    test('round-trips back to the auth public key', () => {
+        const key = new Uint8Array(32).fill(7)
+
+        const decoded = base32nopad.decode(
+            backupIdToAddress(deriveBackupId(key)),
+        )
+
+        expect(decoded.slice(0, 32)).toEqual(key)
     })
 })
 

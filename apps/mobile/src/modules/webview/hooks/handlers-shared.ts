@@ -10,66 +10,27 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { dappRelayableErrorNames } from '@perawallet/wallet-core-connections/dappRequest'
+import {
+    JsonRpcErrorCode,
+    sanitizeErrorForWebview as sanitizeDappError,
+} from '@perawallet/wallet-core-dapp/wire'
 import { logger, bytesToHex } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
 import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
 
-const MAX_ERROR_LENGTH = 200
-const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
+// One codec for the in-app webview and the extension's window.pera bridge.
+// The `/wire` subpath, not the barrel: the barrel reaches the handler and its
+// connections graph, which nothing in the webview bridge needs.
+export { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
 
-/**
- * Errors whose `message` may be relayed verbatim to untrusted web content.
- * Deny-by-default — anything not named here gets {@link GENERIC_ERROR_MESSAGE}.
- *
- * `instanceof AppError` was the previous test, and it is NOT a safety property:
- * PipelineError subclasses wrap third-party text verbatim (`TransportError` and
- * `SourceError` pass `err.message` straight through) and interpolate wallet-held
- * addresses (`CannotSignError`, `NoLocalParticipantsError`) — the exact data
- * `Arc0001Error`'s own docblock forbids sending to a remote peer.
- *
- * The two entries earn their place: ARC-0001 requires a meaningful message
- * alongside the numeric code, and those strings only echo the dApp's own request
- * back at it; `UserCancelledError` is a fixed literal with no interpolation.
- *
- * Matched by name rather than `instanceof` deliberately. Importing the classes
- * would pull the blockchain and signing packages into this module, which is
- * loaded in a bare node environment by handlers.test.ts. A rename that breaks a
- * name here fails CLOSED (generic copy, no leak) and is caught by
- * sanitizeErrorForWebview.spec.ts, which pins each name to the real class.
- */
-const WEBVIEW_SAFE_ERROR_NAMES: readonly string[] = [
-    'Arc0001Error',
-    'UserCancelledError',
-]
-
-/**
- * This is a JSON-RPC protocol surface exposed to untrusted web content, and is
- * deliberately NOT localized — a protocol response must not vary by user
- * locale.
- */
-export const sanitizeErrorForWebview = (error: Error): string => {
-    const message = WEBVIEW_SAFE_ERROR_NAMES.includes(error.name)
-        ? error.message
-        : GENERIC_ERROR_MESSAGE
-    return message.length > MAX_ERROR_LENGTH
-        ? message.slice(0, MAX_ERROR_LENGTH)
-        : message
-}
-
-export const JsonRpcErrorCode = {
-    ParseError: -32_700,
-    InvalidRequest: -32_600,
-    MethodNotFound: -32_601,
-    InvalidParams: -32_602,
-    InternalError: -32_603,
-    ServerErrorStart: -32_000,
-    Unauthorized: -32_001,
-    ServerErrorEnd: -32_099,
-} as const
-
-export type JsonRpcErrorCode =
-    (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
+// The in-app bridge speaks ARC-0001, which only the legacy networks' chain
+// does, so it relays that chain's adapter errors on top of the codec default.
+export const sanitizeErrorForWebview = (error: Error): string =>
+    sanitizeDappError(error, dappRelayableErrorNames(LEGACY_CHAIN_ID))
 
 export type RequireSecureContext = {
     operation: string
@@ -194,6 +155,54 @@ export const toValidatedBrowserUrl = (raw: unknown): string | null => {
     if (!trimmed || trimmed.startsWith('//')) return null
     const normalized = toLoadableUrl(trimmed)
     return isSafeBrowserUrl(normalized) ? normalized : null
+}
+
+const SCHEME_PATTERN = /^([a-z][a-z\d+.-]*):/i
+
+// Script/document-carrying schemes, and the ones that address the browser or
+// the extension itself, which a page must never reach through the wallet.
+const BLOCKED_NATIVE_URI_SCHEMES = new Set([
+    'javascript',
+    'data',
+    'blob',
+    'file',
+    'about',
+    'chrome',
+    'chrome-extension',
+    'moz-extension',
+])
+
+/**
+ * Gates a dApp-supplied URI for the OS (custom schemes are the point here, so
+ * no https-only rule). It must carry an explicit scheme: react-native-web
+ * resolves a scheme-less string against the current `chrome-extension://` page.
+ */
+export const toValidatedNativeUri = (raw: unknown): string | null => {
+    if (typeof raw !== 'string') return null
+    const trimmed = raw.trim()
+    const scheme = SCHEME_PATTERN.exec(trimmed)?.[1]?.toLowerCase()
+    if (!scheme || BLOCKED_NATIVE_URI_SCHEMES.has(scheme)) return null
+    return trimmed
+}
+
+/**
+ * The only way a peer-, backend- or metadata-supplied URL may reach
+ * `Linking.openURL`: react-native-web resolves a relative string against the
+ * current page, which in the extension is a `chrome-extension://` surface.
+ * Returns false (and opens nothing) when {@link toValidatedBrowserUrl} rejects it.
+ */
+export const openValidatedBrowserUrl = (raw: unknown): boolean => {
+    const url = toValidatedBrowserUrl(raw)
+    if (!url) {
+        logger.warn('Refused to open unvalidated external URL', { url: raw })
+        return false
+    }
+    // No OS handler for the URL is a device condition, not our bug.
+    // oxlint-disable-next-line pera/no-unvalidated-open-url -- validated just above
+    Linking.openURL(url).catch(err =>
+        logger.warn('Failed to open external URL', { url, err }),
+    )
+    return true
 }
 
 const RELATIVE_PATH_BASE = 'https://perawallet.invalid/'

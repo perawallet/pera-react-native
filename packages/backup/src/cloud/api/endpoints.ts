@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isPeraNetworkError,
+    queryClient,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import type {
     BackupId,
     BackupItemKey,
@@ -85,20 +89,47 @@ export const fetchManifest = async (
     )
 }
 
+const HTTP_GONE = 410
+
+/** Changelog retention has pruned past the requested `from_seq`, so the deltas
+ *  that would describe the gap no longer exist. Retrying cannot help — not even
+ *  at `from_seq=0`, which is itself rejected once anything has been pruned — so
+ *  callers have to rebuild from the manifest instead. */
+export class FromSeqTooOldError extends Error {
+    constructor(readonly fromSeq: number) {
+        super(`Backup changelog no longer reaches back to seq ${fromSeq}`)
+        this.name = 'FromSeqTooOldError'
+    }
+}
+
+export const isFromSeqTooOldError = (
+    error: unknown,
+): error is FromSeqTooOldError => error instanceof FromSeqTooOldError
+
 export const fetchDelta = async (
     network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     fromSeq: number,
 ): Promise<DeltaEntry[]> => {
-    const data = await signedBackupRequest<unknown>({
-        network,
-        method: 'GET',
-        backupId,
-        pathSuffix: '/delta',
-        deviceId,
-        params: { from_seq: fromSeq },
-    })
+    let data: unknown
+    try {
+        data = await signedBackupRequest<unknown>({
+            network,
+            method: 'GET',
+            backupId,
+            pathSuffix: '/delta',
+            deviceId,
+            params: { from_seq: fromSeq },
+        })
+    } catch (error) {
+        // 410 is FROM_SEQ_TOO_OLD and nothing else: it is the only Gone the
+        // backup API returns, and only this route returns it.
+        if (isPeraNetworkError(error) && error.status === HTTP_GONE) {
+            throw new FromSeqTooOldError(fromSeq)
+        }
+        throw error
+    }
     return transformDeltaEntries(
         parseBackupResponse(deltaResponseSchema, data, 'delta').entries,
     )

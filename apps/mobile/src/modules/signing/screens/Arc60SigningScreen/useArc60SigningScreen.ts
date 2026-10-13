@@ -13,11 +13,13 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    type Arc60ParsedPayload,
-    type Arc60SignRequest,
+    type AuthDataSignRequest,
+    type ParsedAuthData,
     type SigningLifecycleEvent,
-    isArc60OriginMismatch,
+    isAuthDataOriginMismatch,
     isExternalCallbackSource,
     resolveAllSignerAddresses,
     useLastSigningEvent,
@@ -30,7 +32,7 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsQuantumDataSigningBlocked } from '@hooks/useIsQuantumDataSigningBlocked'
+import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
@@ -39,18 +41,19 @@ import type { SigningStackParamList } from '@modules/signing/routes'
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
 
 type UseArc60SigningScreenResult = {
-    request: Nullable<Arc60SignRequest>
+    request: Nullable<AuthDataSignRequest>
     account: Optional<WalletAccount>
-    parsed: Nullable<Arc60ParsedPayload>
+    parsed: Nullable<ParsedAuthData>
     isPending: boolean
     canConfirm: boolean
     /** Localized copy for the pipeline's failure, resolved for direct display. */
     errorMessage: Nullable<string>
     /**
-     * The SIWA `domain` is asking for a signature from an origin the wallet
-     * actually loaded a different page from — a relay/phishing signal. Surfaced
-     * as a non-blocking warning (the user can still confirm). False unless the
-     * request carries a platform-verified origin (i.e. webview-sourced).
+     * The SIWA `domain` differs from the origin the platform observed sending
+     * the request, a relay/phishing signal. Blocks confirm, since a verified
+     * origin makes the mismatch unambiguous. False unless the request carries
+     * a platform-verified origin (extension or webview), so WalletConnect
+     * requests are never blocked by it.
      */
     hasOriginMismatch: boolean
     /**
@@ -58,7 +61,7 @@ type UseArc60SigningScreenResult = {
      * ARC-60 protocol can't verify yet — the screen must show a terminal
      * notice instead of the confirm control.
      */
-    isQuantumBlocked: boolean
+    isSigningBlocked: boolean
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: () => void
@@ -71,12 +74,16 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const pipeline = useSigningPipeline()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const request =
-        (pipeline.currentRequest as Optional<Arc60SignRequest>) ?? null
+        (pipeline.currentRequest as Optional<AuthDataSignRequest>) ?? null
 
-    const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
-    const isQuantumBlocked = useIsQuantumDataSigningBlocked(request)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useFindAccountByAddress(
+        request?.authData.signer ?? '',
+        scope,
+    )
+    const isSigningBlocked = useIsDataSigningBlocked(request)
     const parsed =
-        pipeline.resolved?.kind.type === 'arc60'
+        pipeline.resolved?.kind.type === 'auth-data'
             ? pipeline.resolved.kind.parsed
             : null
 
@@ -90,15 +97,21 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     )
     const isApproving = !!signingStarted
 
-    // `sourceType: 'arc60'` marks the first-party card-creation request (the
+    // `sourceType: 'card'` marks the first-party card-creation request (the
     // only local producer of ARC-60 requests); dApp-originated ones come in as
     // 'injected' / 'webview' / 'walletconnect' and must not fire card events.
-    const isCardRequest = request?.sourceType === 'arc60'
+    const isCardRequest = request?.sourceType === 'card'
+
+    const hasOriginMismatch = isAuthDataOriginMismatch(
+        request?.authData.domain ?? '',
+        request?.verifiedOrigin,
+    )
 
     const handleApprove = useCallback(() => {
-        // Backstop for the blocked terminal state — the confirm control is
-        // not rendered when quantum-blocked, so this should be unreachable.
-        if (isQuantumBlocked) return
+        // Backstop for the blocked terminal states: the confirm control is
+        // hidden when quantum-blocked and disabled on an origin mismatch, so
+        // this should be unreachable.
+        if (isSigningBlocked || hasOriginMismatch) return
 
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxConfirm)
 
@@ -107,7 +120,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
             // in SigningActionButtons never runs for ARC-60.
             if (request && isExternalCallbackSource(request.sourceType)) {
                 const decision = await confirmQuantumDappUsage(
-                    resolveAllSignerAddresses(request),
+                    resolveAllSignerAddresses(scope.chainId, request),
                 )
                 if (decision === 'cancel') {
                     pipeline.fail()
@@ -122,7 +135,9 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         isCardRequest,
         request,
         confirmQuantumDappUsage,
-        isQuantumBlocked,
+        isSigningBlocked,
+        hasOriginMismatch,
+        scope.chainId,
     ])
 
     const handleReject = useCallback(() => {
@@ -136,12 +151,11 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
 
     const isPending = pipeline.isLoading || isApproving
     const canConfirm =
-        !isPending && !!account && parsed?.type === 'siwa' && !isQuantumBlocked
-
-    const hasOriginMismatch = isArc60OriginMismatch(
-        request?.stdSigData.domain ?? '',
-        request?.verifiedOrigin,
-    )
+        !isPending &&
+        !!account &&
+        parsed?.type === 'siwx' &&
+        !isSigningBlocked &&
+        !hasOriginMismatch
 
     const errorMessage = pipeline.error
         ? resolveErrorCopy(pipeline.error, t, undefined, getMessage).body
@@ -155,7 +169,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         canConfirm,
         errorMessage,
         hasOriginMismatch,
-        isQuantumBlocked,
+        isSigningBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,

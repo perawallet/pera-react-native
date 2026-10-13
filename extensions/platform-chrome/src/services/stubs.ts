@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,18 +16,23 @@ import type {
     AgeGateService,
     AppIntegrityAttestation,
     AppIntegrityService,
+    BiometricArmResult,
     BiometricAvailability,
     BiometricEnrollmentBinding,
     BiometricSecurityLevel,
     BiometricType,
-    BiometricsAuthenticateResult,
     BiometricsService,
+    BiometricUnwrapResult,
+    BiometricUnwrapSession,
+    CloudFileReadResult,
+    CloudFileSaveResult,
+    CloudFileStorageService,
+    CloudFileStore,
     LegacyMigrationData,
     LegacyMigrationSourcePlatform,
     MigrationPlanSummary,
     MigrationService,
     MigrationStepVersions,
-    SimulateLegacyDatabaseArgs,
     WalletProvisioningCardStatus,
     WalletProvisioningService,
     WalletProvisioningTokenizationStatus,
@@ -52,14 +57,24 @@ export class ChromeBiometricsService implements BiometricsService {
     async getSecurityLevel(): Promise<BiometricSecurityLevel> {
         return 'none'
     }
-    async authenticate(): Promise<BiometricsAuthenticateResult> {
-        return { success: false, reason: 'unavailable' }
-    }
-    async createEnrollmentBinding(): Promise<void> {}
     async checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding> {
         return 'unavailable'
     }
     async clearEnrollmentBinding(): Promise<void> {}
+    async armBiometricBinding(): Promise<BiometricArmResult | null> {
+        return null
+    }
+    async unwrapBiometricToken(): Promise<BiometricUnwrapResult> {
+        return { success: false, reason: 'unavailable' }
+    }
+    beginBiometricUnwrap(): BiometricUnwrapSession {
+        const unavailable = { success: false, reason: 'unavailable' } as const
+        return {
+            authenticated: Promise.resolve(unavailable),
+            finish: async () => unavailable,
+            cancel: async () => undefined,
+        }
+    }
 }
 
 export class ChromeAgeGateService implements AgeGateService {
@@ -97,14 +112,6 @@ export class ChromeMigrationService implements MigrationService {
     async getMigrationPlans(): Promise<MigrationPlanSummary[]> {
         return []
     }
-    async simulateLegacyDatabase(
-        _args: SimulateLegacyDatabaseArgs,
-    ): Promise<void> {
-        throw new Error('simulateLegacyDatabase is unavailable on web')
-    }
-    async simulatePreSixxAccounts(): Promise<void> {
-        throw new Error('simulatePreSixxAccounts is unavailable on web')
-    }
     async resetLegacyData(): Promise<void> {}
     async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
         return null
@@ -130,5 +137,22 @@ export class ChromeWalletProvisioningService implements WalletProvisioningServic
     }
     async addCardToGoogleWallet(): Promise<WalletProvisioningTokenizationStatus> {
         throw new Error('Wallet provisioning is unavailable on web')
+    }
+}
+
+/**
+ * Neither cloud SDK ships in a browser extension, so no store is ever offered
+ * and the transfers reject. The only place the extension can put a file is the
+ * user's own download folder, which the app layer owns.
+ */
+export class ChromeCloudFileStorageService implements CloudFileStorageService {
+    getAvailableStores(): CloudFileStore[] {
+        return []
+    }
+    async save(): Promise<CloudFileSaveResult> {
+        throw new Error('Cloud file storage is unavailable on web')
+    }
+    async read(): Promise<CloudFileReadResult> {
+        throw new Error('Cloud file storage is unavailable on web')
     }
 }

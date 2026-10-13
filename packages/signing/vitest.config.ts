@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -28,6 +29,23 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
+            // Test-only: the real Algorand accounts adapter, so specs resolve
+            // signers with the production rules. Not a package dependency,
+            // because chain-algorand depends on signing.
+            '@perawallet/wallet-core-chain-algorand/accounts': path.resolve(
+                __dirname,
+                '../chain-algorand/src/accounts/index.ts',
+            ),
+            '@perawallet/wallet-core-chain-algorand/descriptor': path.resolve(
+                __dirname,
+                '../chain-algorand/src/descriptor/index.ts',
+            ),
+            // Test-only: Ethereum's planner and known-answer vectors, so a spec
+            // runs Ethereum signing through the machine.
+            '@perawallet/wallet-core-chain-ethereum/testing': path.resolve(
+                __dirname,
+                '../chain-ethereum/src/__tests__/testing.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',
@@ -35,6 +53,11 @@ export default defineConfig({
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
+            ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
             ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
@@ -48,13 +71,21 @@ export default defineConfig({
                 __dirname,
                 '../ledger/src/index.ts',
             ),
+            // Must precede the barrel entry: these aliases prefix-match, so
+            // the barrel would otherwise swallow the subpath.
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
                 '../kms/src/index.ts',
             ),
-            '@perawallet/wallet-core-blockchain': path.resolve(
+            // Source, not dist: the dist reaches a second getProvider()
+            // instance the mocks here never see.
+            '@perawallet/wallet-core-chain-shared': path.resolve(
                 __dirname,
-                '../blockchain/src/index.ts',
+                '../chain-shared/src/index.ts',
             ),
             '@perawallet/wallet-core-assets': path.resolve(
                 __dirname,
@@ -70,5 +101,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

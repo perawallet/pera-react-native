@@ -10,17 +10,22 @@
  limitations under the License
  */
 
-import type { RouteCapabilities } from './capabilities-types'
+import type {
+    RouteCapabilities,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
+import { isDeveloperGalleryIncluded } from './developer-gallery'
 
-export type { RouteCapabilities } from './capabilities-types'
+export type {
+    RouteCapabilities,
+    RouteCapability,
+    RouteCapabilityRestrictions,
+} from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
-    // Off pending a Discover-side fix. Discover gates its UI tier on
-    // compareVersions(version, DISCOVER_V3[platform], '>=') with
-    // DISCOVER_V3 = { ios, android } — our honest clientType 'web' makes that
-    // lookup undefined, compare-versions throws mid-render, and React unmounts
-    // the whole Discover root (renders, then blanks). The iframe/bridge layer
-    // itself is verified working. See routes/capabilities.web.ts's discoverTab comment.
+    // Off: Discover gates its UI tier on compareVersions(version, DISCOVER_V3[platform])
+    // with DISCOVER_V3 = { ios, android }, so clientType 'web' makes the lookup
+    // undefined, compare-versions throws mid-render and React unmounts the Discover root.
     discoverTab: false,
     swapTab: true, // native RN screen graph
     fundTab: true, // native RN screen graph (Meld checkout via window.open)
@@ -28,13 +33,12 @@ export const routeCapabilities: RouteCapabilities = {
     peraCard: true, // Baanx card, additionally gated by useIsPeraCardEnabled() remote flag
     giftCards: true,
     inAppWebView: false, // stays false — help/terms open browser tabs
-    // Off in the Menu and the home header: replaced by deepLinkPaste below.
-    // The QRScannerView camera+paste sheet itself stays reachable from the
-    // in-field scan buttons (AddressEntryField, ContactForm, Connections
-    // settings, Passkeys settings) and the ScanQR expanded tab — this flag
-    // only gates those two icon bars.
+    // Off in the Menu and home header, replaced by deepLinkPaste. The scanner
+    // sheet itself stays reachable from in-field scan buttons and the ScanQR
+    // expanded tab; this flag only gates those two icon bars.
     qrScanner: false,
     deepLinkPaste: true, // paste a WC URI / perawallet:// link instead
+    ledgerUsb: true, // WebHID
     pushNotificationSettings: true, // FCM web push via the background SW
     walletConnectSettings: true, // WC v1 pairing + sessions on web
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
@@ -43,20 +47,19 @@ export const routeCapabilities: RouteCapabilities = {
     // Off: ConfirmAction.web.tsx always renders tap-to-confirm (swipe is
     // awkward with a mouse), so the slide/tap choice would be a no-op here.
     confirmationModeSetting: false,
+    analyticsConsent: false,
     developerSettings: true, // internal builds need network/debug toggles
+    developerGallery: isDeveloperGalleryIncluded,
     vaultSecuritySettings: true,
-    dappConnections: true,
-    // Off: the keystore signs Falcon-1024 from sealed material, and off
-    // device its Falcon shim is backed by the WASM `falcon-1024` build —
-    // whose Emscripten bundle fails to parse under Metro's web bundler. So
-    // quantum accounts have no working signer path in the browser extension
-    // yet.
-    quantum: false,
+    // Off: the vault password already locks the extension, and web has no PIN
+    // lock screen, so shake to lock and duress PIN would do nothing.
+    pin: false,
+    quantum: true, // WASM quantum signer via its synchronous CJS build (metro.config.js)
     rekeyFlows: true,
-    // Gates the SHARED_ACCOUNT_IMPORT deeplink as well as the UI entry points;
-    // without the Multisig stack registered it navigated to an unregistered
-    // route — a no-op that also left the QR scanner locked, since it waits for
-    // one of its callbacks.
+    // Also gates the SHARED_ACCOUNT_IMPORT deeplink: without the Multisig stack
+    // registered it navigates nowhere and leaves the QR scanner locked awaiting a callback.
     sharedAccounts: true,
     connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
 }
+
+export const routeCapabilityRestrictions: RouteCapabilityRestrictions = {}

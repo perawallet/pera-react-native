@@ -19,6 +19,8 @@ import {
     createEmptySyncState,
 } from '../../models'
 import { applyDeltas } from '../applyDeltas'
+import { reconcileSettings } from '../reconcileSettings'
+import { TEST_SETTINGS } from './testSettings'
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const baseDeps = () => ({
@@ -29,6 +31,14 @@ const baseDeps = () => ({
     importAccounts: vi.fn(async () => ({
         imported: 1,
         skippedDuplicate: 0,
+        failed: [],
+    })),
+    importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
+    getSettings: () => TEST_SETTINGS,
+    importSettings: vi.fn(),
+    importPasskeys: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
         failed: [],
     })),
     readItems: vi.fn(),
@@ -196,6 +206,7 @@ describe('applyDeltas', () => {
                 type: 'hdSeed',
                 seed: 'aa'.repeat(96),
                 entropy: 'bb'.repeat(32),
+                address: 'F',
             }),
             'accounts/G': JSON.stringify({
                 type: 'hdWallet',
@@ -252,5 +263,636 @@ describe('applyDeltas', () => {
                 }),
             ]),
         )
+    })
+
+    it('holds a returning account for review instead of re-importing it', async () => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'accounts/X', ver: 4, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(
+            JSON.stringify({ type: 'watch', address: 'X', customName: null }),
+        )
+        const state = createEmptySyncState('b')
+        // The tombstone this device left when the user deleted the account.
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.IGNORED,
+            lastRemoteHash: 'old',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 9,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 4,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.importAccounts).not.toHaveBeenCalled()
+        expect(next.items['accounts/X']).toMatchObject({
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+        })
+    })
+
+    // Without the cached address the row silently disappears from "Add from
+    // backup".
+    it('caches the address of a held account without importing it', async () => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'accounts/X', ver: 4, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(
+            JSON.stringify({ type: 'watch', address: 'X', customName: null }),
+        )
+        const state = createEmptySyncState('b')
+        // Seeded from the manifest by a restore: tracked but never read.
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.IGNORED,
+            lastRemoteHash: 'old',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 9,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 4,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.importAccounts).not.toHaveBeenCalled()
+        expect(next.items['accounts/X']).toMatchObject({
+            pendingImport: true,
+            address: 'X',
+            accountType: 'watch',
+        })
+    })
+
+    // The address record is safe to read; the secret is not.
+    it('leaves a held account secrets record undownloaded', async () => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([])
+        const state = createEmptySyncState('b')
+        state.items['secrets/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'old',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 9,
+                    key: 'secrets/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 4,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.readItems).not.toHaveBeenCalled()
+    })
+
+    it('keeps an account under review across later deltas', async () => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'accounts/X', ver: 5, hash: 'rh2', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(
+            JSON.stringify({ type: 'watch', address: 'X', customName: null }),
+        )
+        const state = createEmptySyncState('b')
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 4,
+            baseVer: 4,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'rh',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 10,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 5,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh2',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.importAccounts).not.toHaveBeenCalled()
+        expect(next.items['accounts/X'].pendingImport).toBe(true)
+    })
+
+    it('drops the review flag when the backup deletes the account', async () => {
+        const deps = baseDeps()
+        const state = createEmptySyncState('b')
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 4,
+            baseVer: 4,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'rh',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 11,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 5,
+                    status: BackupItemStatus.IGNORED,
+                    op: DeltaOperation.DELETE,
+                    hash: null,
+                },
+            ],
+            deps,
+        })
+
+        expect(next.items['accounts/X']).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            pendingImport: false,
+        })
+    })
+})
+
+describe('applyDeltas: contacts', () => {
+    const contactDelta = (over: Record<string, unknown> = {}) => ({
+        seq: 5,
+        key: 'contacts/C1',
+        type: BackupItemType.CONTACT,
+        ver: 3,
+        status: BackupItemStatus.ACTIVE,
+        op: DeltaOperation.UPSERT,
+        hash: 'rh',
+        ...over,
+    })
+
+    const trackedContact = (over: Record<string, unknown> = {}) => ({
+        type: BackupItemType.CONTACT,
+        knownVer: 1,
+        baseVer: 1,
+        isDirty: false,
+        status: BackupItemStatus.ACTIVE,
+        lastRemoteHash: 'old',
+        localContentHash: null,
+        localUpdatedAt: null,
+        ...over,
+    })
+
+    const serving = (payload: Record<string, unknown>) => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'contacts/C1', ver: 3, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(JSON.stringify(payload))
+        return deps
+    }
+
+    it('imports a new contact and caches its name', async () => {
+        const deps = serving({ address: 'C1', name: 'Alice' })
+
+        const next = await applyDeltas({
+            state: createEmptySyncState('b'),
+            deltas: [contactDelta()],
+            deps,
+        })
+
+        expect(deps.importContacts).toHaveBeenCalledWith([
+            { address: 'C1', name: 'Alice' },
+        ])
+        expect(next.items['contacts/C1']).toMatchObject({
+            label: 'Alice',
+            isDirty: false,
+            knownVer: 3,
+            baseVer: 3,
+        })
+    })
+
+    it('holds a contact this device deleted, downloading it only for its name', async () => {
+        const deps = serving({ address: 'C1', name: 'Alice' })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = trackedContact({
+            status: BackupItemStatus.IGNORED,
+        })
+
+        const next = await applyDeltas({
+            state,
+            deltas: [contactDelta({ ver: 4 })],
+            deps,
+        })
+
+        expect(deps.importContacts).not.toHaveBeenCalled()
+        expect(next.items['contacts/C1']).toMatchObject({
+            pendingImport: true,
+            label: 'Alice',
+        })
+    })
+
+    it('keeps a strictly newer local rename over the remote copy', async () => {
+        const deps = serving({
+            address: 'C1',
+            name: 'Remote',
+            updatedAt: 1000,
+        })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = trackedContact({
+            isDirty: true,
+            localUpdatedAt: 2000,
+        })
+
+        const next = await applyDeltas({
+            state,
+            deltas: [contactDelta()],
+            deps,
+        })
+
+        expect(deps.importContacts).not.toHaveBeenCalled()
+        expect(next.items['contacts/C1']).toMatchObject({
+            isDirty: true,
+            baseVer: 3,
+        })
+    })
+
+    it('lets the remote win a tie', async () => {
+        const deps = serving({
+            address: 'C1',
+            name: 'Remote',
+            updatedAt: 1000,
+        })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = trackedContact({
+            isDirty: true,
+            localUpdatedAt: 1000,
+        })
+
+        await applyDeltas({ state, deltas: [contactDelta()], deps })
+
+        expect(deps.importContacts).toHaveBeenCalledWith([
+            { address: 'C1', name: 'Remote', updatedAt: 1000 },
+        ])
+    })
+})
+
+describe('applyDeltas: passkeys', () => {
+    const passkeyDelta = (over: Record<string, unknown> = {}) => ({
+        seq: 5,
+        key: 'passkeys/P1',
+        type: BackupItemType.PASSKEY,
+        ver: 3,
+        status: BackupItemStatus.ACTIVE,
+        op: DeltaOperation.UPSERT,
+        hash: 'rh',
+        ...over,
+    })
+
+    const trackedPasskey = (over: Record<string, unknown> = {}) => ({
+        type: BackupItemType.PASSKEY,
+        knownVer: 1,
+        baseVer: 1,
+        isDirty: false,
+        status: BackupItemStatus.ACTIVE,
+        lastRemoteHash: 'old',
+        localContentHash: null,
+        localUpdatedAt: null,
+        ...over,
+    })
+
+    const passkeyPayload = (over: Record<string, unknown> = {}) => ({
+        credentialId: 'P1',
+        origin: 'webauthn.io',
+        identity: 'alice',
+        counter: 0,
+        publicKeySpkiDer: 'cHVi',
+        seedAddress: 'SEEDADDRESS',
+        displayName: 'Alice',
+        createdAt: 1,
+        ...over,
+    })
+
+    const serving = (payload: Record<string, unknown>) => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'passkeys/P1', ver: 3, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(JSON.stringify(payload))
+        return deps
+    }
+
+    it('imports a new credential and caches its display name', async () => {
+        const deps = serving(passkeyPayload())
+
+        const next = await applyDeltas({
+            state: createEmptySyncState('b'),
+            deltas: [passkeyDelta()],
+            deps,
+        })
+
+        expect(deps.importPasskeys).toHaveBeenCalledWith([
+            { payload: passkeyPayload(), secret: null },
+        ])
+        expect(next.items['passkeys/P1']).toMatchObject({
+            label: 'Alice',
+            isDirty: false,
+            knownVer: 3,
+            baseVer: 3,
+            address: 'P1',
+        })
+    })
+
+    describe('with a secret', () => {
+        const SECRET_KEY = 'passkey-secrets/P1'
+        const secret = { credentialId: 'P1', privateKey: 'a2V5' }
+
+        // Serves whichever keys are asked for, so a test can assert on what
+        // the engine chose to read.
+        const servingBoth = () => {
+            const deps = baseDeps()
+            deps.readItems.mockImplementation(
+                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                    keys.map(key => ({
+                        key,
+                        ver: 3,
+                        hash: 'rh',
+                        payload: key,
+                    })),
+            )
+            deps.decrypt.mockImplementation((payload: string) =>
+                JSON.stringify(
+                    payload === SECRET_KEY ? secret : passkeyPayload(),
+                ),
+            )
+            return deps
+        }
+
+        it('imports a credential with its secret when both arrive', async () => {
+            const deps = servingBoth()
+
+            await applyDeltas({
+                state: createEmptySyncState('b'),
+                deltas: [passkeyDelta(), passkeyDelta({ key: SECRET_KEY })],
+                deps,
+            })
+
+            expect(deps.importPasskeys).toHaveBeenCalledWith([
+                { payload: passkeyPayload(), secret },
+            ])
+        })
+
+        it('reads the unchanged half of a pair alongside the one that changed', async () => {
+            const deps = servingBoth()
+            const state = createEmptySyncState('b')
+            state.items['passkeys/P1'] = trackedPasskey({
+                lastRemoteHash: 'rh',
+            })
+
+            await applyDeltas({
+                state,
+                deltas: [passkeyDelta({ key: SECRET_KEY })],
+                deps,
+            })
+
+            expect(deps.readItems.mock.calls[0]![3]).toEqual([
+                SECRET_KEY,
+                'passkeys/P1',
+            ])
+            expect(deps.importPasskeys).toHaveBeenCalledWith([
+                { payload: passkeyPayload(), secret },
+            ])
+        })
+
+        it('never downloads the secret of a credential held for review', async () => {
+            const deps = servingBoth()
+            const state = createEmptySyncState('b')
+            state.items['passkeys/P1'] = trackedPasskey({
+                status: BackupItemStatus.IGNORED,
+            })
+            state.items[SECRET_KEY] = trackedPasskey({
+                status: BackupItemStatus.IGNORED,
+            })
+
+            await applyDeltas({
+                state,
+                deltas: [
+                    passkeyDelta({ ver: 4 }),
+                    passkeyDelta({ key: SECRET_KEY, ver: 4 }),
+                ],
+                deps,
+            })
+
+            expect(deps.readItems.mock.calls[0]![3]).toEqual(['passkeys/P1'])
+            expect(deps.importPasskeys).not.toHaveBeenCalled()
+        })
+    })
+
+    it('holds a credential this device removed, downloading it only for its label', async () => {
+        const deps = serving(passkeyPayload())
+        const state = createEmptySyncState('b')
+        state.items['passkeys/P1'] = trackedPasskey({
+            status: BackupItemStatus.IGNORED,
+        })
+
+        const next = await applyDeltas({
+            state,
+            deltas: [passkeyDelta({ ver: 4 })],
+            deps,
+        })
+
+        expect(deps.importPasskeys).not.toHaveBeenCalled()
+        expect(next.items['passkeys/P1']).toMatchObject({
+            pendingImport: true,
+            label: 'Alice',
+        })
+    })
+
+    describe('settings', () => {
+        const SETTINGS_KEY = 'settings/S'
+
+        const settingsDelta = (over: Record<string, unknown> = {}) => ({
+            seq: 9,
+            key: SETTINGS_KEY,
+            type: BackupItemType.SETTINGS,
+            ver: 4,
+            status: BackupItemStatus.ACTIVE,
+            op: DeltaOperation.UPSERT,
+            hash: 'rh',
+            ...over,
+        })
+
+        const trackedSettings = (now: number, local = TEST_SETTINGS) =>
+            reconcileSettings(
+                createEmptySyncState('b'),
+                SETTINGS_KEY,
+                local,
+                now,
+            )
+
+        const serving = (payload: Record<string, unknown>) => {
+            const deps = baseDeps()
+            deps.readItems.mockResolvedValue([
+                { key: SETTINGS_KEY, ver: 4, hash: 'rh', payload: 'enc' },
+            ])
+            deps.decrypt.mockReturnValue(JSON.stringify(payload))
+            return deps
+        }
+
+        it('applies a newer remote setting and adopts the remote version', async () => {
+            const deps = serving({
+                language: { value: 'de', updatedAt: 50 },
+            })
+
+            const next = await applyDeltas({
+                state: trackedSettings(1),
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(deps.importSettings).toHaveBeenCalledWith({
+                language: 'de',
+            })
+            expect(next.items[SETTINGS_KEY]).toMatchObject({
+                knownVer: 4,
+                baseVer: 4,
+                lastRemoteHash: 'rh',
+                // The remote lacks the other fields this device holds.
+                isDirty: true,
+            })
+            expect(next.items[SETTINGS_KEY].settingsFields?.language).toEqual({
+                value: 'de',
+                updatedAt: 50,
+                observed: null,
+            })
+        })
+
+        it('keeps a later local edit and stays dirty to push it', async () => {
+            const state = reconcileSettings(
+                trackedSettings(1),
+                SETTINGS_KEY,
+                { ...TEST_SETTINGS, language: 'tr' },
+                100,
+            )
+            const deps = serving({
+                currency: {
+                    value: { preferred: 'USD', fallback: 'USD' },
+                    updatedAt: 0,
+                },
+                language: { value: 'de', updatedAt: 50 },
+                confirmationMode: { value: 'slide', updatedAt: 0 },
+                launchAccount: {
+                    value: { mode: 'lastUsed', address: null },
+                    updatedAt: 0,
+                },
+            })
+
+            const next = await applyDeltas({
+                state,
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(deps.importSettings).not.toHaveBeenCalled()
+            expect(next.items[SETTINGS_KEY]).toMatchObject({
+                isDirty: true,
+                baseVer: 4,
+            })
+            expect(
+                next.items[SETTINGS_KEY].settingsFields?.language?.value,
+            ).toBe('tr')
+        })
+
+        it('never holds a returning settings item for review', async () => {
+            const deps = serving({ language: { value: 'de', updatedAt: 50 } })
+            const state = trackedSettings(1)
+            state.items[SETTINGS_KEY] = {
+                ...state.items[SETTINGS_KEY],
+                status: BackupItemStatus.IGNORED,
+            }
+
+            const next = await applyDeltas({
+                state,
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(next.items[SETTINGS_KEY].pendingImport).toBe(false)
+            expect(deps.importSettings).toHaveBeenCalledWith({
+                language: 'de',
+            })
+        })
+
+        it('skips a payload that does not parse', async () => {
+            const deps = baseDeps()
+            deps.readItems.mockResolvedValue([
+                { key: SETTINGS_KEY, ver: 4, hash: 'rh', payload: 'enc' },
+            ])
+            deps.decrypt.mockReturnValue('not json')
+            const state = trackedSettings(1)
+
+            const next = await applyDeltas({
+                state,
+                deltas: [settingsDelta()],
+                deps,
+            })
+
+            expect(deps.importSettings).not.toHaveBeenCalled()
+            expect(next.items[SETTINGS_KEY].settingsFields).toEqual(
+                state.items[SETTINGS_KEY].settingsFields,
+            )
+        })
     })
 })

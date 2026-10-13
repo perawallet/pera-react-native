@@ -87,14 +87,17 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingPasswordScreen } from '../useCardOnboardingPasswordScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const renderPasswordHook = () =>
     renderHook(() => useCardOnboardingPasswordScreen())
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingPasswordScreen', () => {
     beforeEach(() => {

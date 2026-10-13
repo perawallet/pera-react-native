@@ -12,7 +12,17 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '../../models'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    watchAccount,
+} from '../../__tests__/accounts'
 
 const mockSigningRequest = {
     currentRequest: undefined as unknown,
@@ -26,15 +36,14 @@ vi.mock('../useSigningRequest', () => ({
     useSigningRequest: () => mockSigningRequest,
 }))
 
-const mockAllAccounts = vi.fn<() => Array<{ address: string; type: string }>>(
-    () => [
-        { address: 'ADDR_A', type: 'algo25' },
-        { address: 'ADDR_B', type: 'algo25' },
-    ],
-)
-const mockCanSignWith = vi.fn<(account: { address: string }) => boolean>(
-    () => true,
-)
+const addressOf = (account: WalletAccount) =>
+    chainAccountOf(account, TEST_CHAIN_ID)?.address
+
+const mockAllAccounts = vi.fn<() => WalletAccount[]>(() => [
+    algo25Account('ADDR_A'),
+    algo25Account('ADDR_B'),
+])
+const mockCanSignWith = vi.fn<(account: WalletAccount) => boolean>(() => true)
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -43,36 +52,32 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockAllAccounts(),
-        canSignWith: (account: { address: string }) => mockCanSignWith(account),
+        canSignWith: (account: WalletAccount) => mockCanSignWith(account),
     }
 })
 
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        mapToDisplayableTransaction: (tx: unknown) => mockMapToDisplayable(tx),
-    }
-})
-
+import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
+import { makeUnsignedTransaction } from '../../__tests__/transactions'
 import {
     useSigningPipeline,
     __resetDisplayDataCacheForTests,
 } from '../useSigningPipeline'
 
 beforeEach(() => {
+    registerFakeReviewerAdapter({
+        toDisplayableTransaction: tx =>
+            mockMapToDisplayable(tx) as PeraDisplayableTransaction,
+    })
     mockSigningRequest.currentRequest = undefined
     mockSigningRequest.currentActorRef = null
     mockSigningRequest.signAndSendRequest.mockReset()
     mockSigningRequest.rejectRequest.mockReset()
     mockSigningRequest.retryRequest.mockReset()
     mockAllAccounts.mockReturnValue([
-        { address: 'ADDR_A', type: 'algo25' },
-        { address: 'ADDR_B', type: 'algo25' },
+        algo25Account('ADDR_A'),
+        algo25Account('ADDR_B'),
     ])
     mockCanSignWith.mockReturnValue(true)
     mockMapToDisplayable.mockClear()
@@ -126,6 +131,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [
                 { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
@@ -139,12 +145,28 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableAddresses.size).toBeGreaterThan(0)
     })
 
+    test('shows no Algorand transactions for a chain-neutral request, which its own chain reviews', () => {
+        mockSigningRequest.currentRequest = {
+            id: 'req-neutral',
+            type: 'transactions',
+            chainId: 'algorand',
+            transport: 'algod',
+            txs: [makeUnsignedTransaction('0xFROM')],
+        } satisfies TransactionSignRequest
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        expect(result.current.allTransactions).toEqual([])
+        expect(mockMapToDisplayable).not.toHaveBeenCalled()
+    })
+
     test('prefers groupContext over txs for display so partial atomic groups show fully', () => {
         const wallet = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
         const other = { sender: { toString: () => 'ADDR_B' }, fee: 1000n }
         const request: TransactionSignRequest = {
             id: 'req-2',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             // Wallet only signs slot 0; slot 1 is the other party's tx.
             txs: [wallet as never],
@@ -158,32 +180,27 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableIndices).toEqual(new Set([0]))
     })
 
-    test('stamps isExternal on list items based on signableIndices', () => {
-        // Three transactions without a group so they each become a
-        // SingleTransactionItem directly (no group-expansion path).
+    test('builds list items from the full group context and the signable subset', () => {
+        const adapter = registerFakeReviewerAdapter()
         const tx0 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
         const tx1 = { sender: { toString: () => 'ADDR_B' }, fee: 1000n }
         const tx2 = { sender: { toString: () => 'ADDR_A' }, fee: 1000n }
-        const request: TransactionSignRequest = {
+        mockSigningRequest.currentRequest = {
             id: 'req-external',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
-            // Wallet signs slots 0 and 2; slot 1 belongs to the other party.
             txs: [tx0 as never, tx2 as never],
             groupContext: [tx0 as never, tx1 as never, tx2 as never],
             signableIndices: [0, 2],
-        }
-        mockSigningRequest.currentRequest = request
+        } satisfies TransactionSignRequest
 
-        const { result } = renderHook(() => useSigningPipeline())
+        renderHook(() => useSigningPipeline())
 
-        // Three items, one per transaction (no grouping without a `group` field).
-        expect(result.current.listItems).toHaveLength(3)
-        expect(
-            result.current.listItems.map(
-                item => (item as { isExternal: boolean }).isExternal,
-            ),
-        ).toEqual([false, true, false])
+        expect(adapter.createTransactionListItems).toHaveBeenCalledWith(
+            [tx0, tx1, tx2],
+            new Set([0, 2]),
+        )
     })
 
     test('shares the display transform across consumers — computes once per request', () => {
@@ -195,6 +212,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'shared-req',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: txs as never,
         }
@@ -217,6 +235,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'kept-req',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: txs as never,
         }
@@ -242,6 +261,7 @@ describe('useSigningPipeline', () => {
         const request: TransactionSignRequest = {
             id: 'req-3',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [
                 { sender: { toString: () => 'ADDR_A' }, fee: 1000n } as never,
@@ -254,67 +274,74 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableIndices).toEqual(new Set([0, 1]))
     })
 
-    // a dApp can set a foreign `sender` it never imported while
-    // signing with a wallet-held account via `signerOverrides`. The rekey/close
-    // warning (and its blocking gate) must follow the authorizing entity, and
-    // the override is keyed by position in `txs` (the signable subset) — so the
+    // The override is keyed by position in `txs` (the signable subset), so the
     // pipeline must translate it into the full-group display index space via
-    // `signableIndices` before gating.
-    test('gates warnings on signerOverrides, translating subset index via signableIndices', () => {
-        mockAllAccounts.mockReturnValue([{ address: 'ADDR_O', type: 'algo25' }])
-
+    // `signableIndices` before handing it to the adapter.
+    test('passes signerOverrides to the warnings aggregator, translating subset index via signableIndices', () => {
+        const adapter = registerFakeReviewerAdapter()
         const otherPartyTx = { sender: 'OTHER', fee: 1000n }
-        const foreignRekeyTx = {
-            sender: 'FOREIGN_E',
-            fee: 1000n,
-            rekeyTo: { publicKey: new Uint8Array(32) },
-        }
-        const request: TransactionSignRequest = {
+        const foreignTx = { sender: 'FOREIGN_E', fee: 1000n }
+        mockSigningRequest.currentRequest = {
             id: 'req-override',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'callback',
-            // Wallet signs only the foreign-sender tx, authorized by ADDR_O.
-            txs: [foreignRekeyTx as never],
-            groupContext: [otherPartyTx as never, foreignRekeyTx as never],
-            // foreignRekeyTx sits at group index 1; override is keyed by its
-            // subset index 0.
+            txs: [foreignTx as never],
+            groupContext: [otherPartyTx as never, foreignTx as never],
             signableIndices: [1],
             signerOverrides: new Map([[0, 'ADDR_O']]),
-        }
-        mockSigningRequest.currentRequest = request
+        } satisfies TransactionSignRequest
 
-        const { result } = renderHook(() => useSigningPipeline())
+        renderHook(() => useSigningPipeline())
 
-        const rekeyWarnings = result.current.warnings.filter(
-            w => w.type === 'rekey',
+        expect(adapter.aggregateTransactionWarnings).toHaveBeenCalledWith(
+            [otherPartyTx, foreignTx],
+            expect.any(Set),
+            expect.any(Set),
+            new Map([[1, 'ADDR_O']]),
         )
-        expect(rekeyWarnings).toHaveLength(1)
-        expect(
-            (rekeyWarnings[0] as { senderAddress: string }).senderAddress,
-        ).toBe('FOREIGN_E')
     })
 
-    test('does not warn for a foreign sender when no signerOverride authorizes it', () => {
-        mockAllAccounts.mockReturnValue([{ address: 'ADDR_O', type: 'algo25' }])
-
-        const foreignRekeyTx = {
-            sender: 'FOREIGN_E',
-            fee: 1000n,
-            rekeyTo: { publicKey: new Uint8Array(32) },
-        }
-        const request: TransactionSignRequest = {
+    test('passes an empty authorizer map when there are no signerOverrides', () => {
+        const adapter = registerFakeReviewerAdapter()
+        mockSigningRequest.currentRequest = {
             id: 'req-no-override',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'callback',
-            txs: [foreignRekeyTx as never],
-        }
-        mockSigningRequest.currentRequest = request
+            txs: [{ sender: 'FOREIGN_E', fee: 1000n } as never],
+        } satisfies TransactionSignRequest
+
+        renderHook(() => useSigningPipeline())
+
+        expect(adapter.aggregateTransactionWarnings).toHaveBeenCalledWith(
+            expect.any(Array),
+            expect.any(Set),
+            expect.any(Set),
+            new Map(),
+        )
+    })
+
+    test("surfaces the adapter's warnings", () => {
+        registerFakeReviewerAdapter({
+            aggregateTransactionWarnings: vi.fn(() => [
+                {
+                    type: 'rekey',
+                    senderAddress: 'FOREIGN_E',
+                } as never,
+            ]),
+        })
+        mockSigningRequest.currentRequest = {
+            id: 'req-warn',
+            type: 'transactions',
+            chainId: 'algorand',
+            transport: 'callback',
+            txs: [{ sender: 'FOREIGN_E', fee: 1000n } as never],
+        } satisfies TransactionSignRequest
 
         const { result } = renderHook(() => useSigningPipeline())
 
-        expect(
-            result.current.warnings.filter(w => w.type === 'rekey'),
-        ).toHaveLength(0)
+        expect(result.current.warnings.map(w => w.type)).toEqual(['rekey'])
     })
 
     test('subscribes to actor ref and derives stage from snapshot', () => {
@@ -344,15 +371,16 @@ describe('useSigningPipeline', () => {
 
     test('signableAddresses contains only accounts where canSignWith returns true', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'SIGNER', type: 'algo25' },
-            { address: 'WATCH', type: 'watch' },
-            { address: 'REKEYED_UNSIGNABLE', type: 'watch' },
+            algo25Account('SIGNER'),
+            watchAccount('WATCH'),
+            watchAccount('REKEYED_UNSIGNABLE'),
         ])
-        mockCanSignWith.mockImplementation(a => a.address === 'SIGNER')
+        mockCanSignWith.mockImplementation(a => addressOf(a) === 'SIGNER')
 
         const request: TransactionSignRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [],
         }
@@ -369,15 +397,13 @@ describe('useSigningPipeline', () => {
     })
 
     test('signableAddresses is empty when no accounts pass canSignWith', () => {
-        mockAllAccounts.mockReturnValue([
-            { address: 'A', type: 'watch' },
-            { address: 'B', type: 'watch' },
-        ])
+        mockAllAccounts.mockReturnValue([watchAccount('A'), watchAccount('B')])
         mockCanSignWith.mockReturnValue(false)
 
         mockSigningRequest.currentRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [],
         } as TransactionSignRequest
@@ -392,6 +418,7 @@ describe('useSigningPipeline', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-1',
             type: 'transactions',
+            chainId: 'algorand',
             transport: 'algod',
             txs: [],
         } as TransactionSignRequest
@@ -415,7 +442,9 @@ describe('useSigningPipeline', () => {
                 matches: (s: string) => s === 'signing',
                 context: {
                     error: null,
-                    groupSignerTypes: new Map([['g0', 'localKey']]),
+                    groupSigners: new Map([
+                        ['g0', { custody: 'local', scheme: 'ed25519' }],
+                    ]),
                 },
             })
         })
@@ -430,8 +459,10 @@ describe('useSigningPipeline', () => {
             matches: (s: string) => s === 'awaiting_user',
             context: {
                 signerAddress: 'A123',
-                allAccounts: [{ address: 'A123', type: 'algo25' }],
-                groupSignerTypes: new Map([['A123', 'localKey']]),
+                allAccounts: [algo25Account('A123')],
+                groupSigners: new Map([
+                    ['A123', { custody: 'local', scheme: 'ed25519' }],
+                ]),
                 request: {
                     id: 'r1',
                     type: 'transactions',
@@ -440,6 +471,9 @@ describe('useSigningPipeline', () => {
                     txs: [{}],
                 },
                 signableGroups: [{ signerAddress: 'A123' }],
+                deps: {
+                    scope: { chainId: TEST_CHAIN_ID, networkId: 'mainnet' },
+                },
                 error: null,
             },
         }
@@ -455,7 +489,7 @@ describe('useSigningPipeline', () => {
         const { result } = renderHook(() => useSigningPipeline())
 
         expect(result.current.resolved).not.toBeNull()
-        expect(result.current.resolved!.signerType).toBe('localKey')
+        expect(result.current.resolved!.signerType).toBe('local')
         expect(result.current.resolved!.kind).toMatchObject({
             type: 'transactions',
             isMultisigCosign: false,

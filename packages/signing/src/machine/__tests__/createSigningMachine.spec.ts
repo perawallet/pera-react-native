@@ -13,17 +13,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createSigningMachine } from '../createSigningMachine'
 import type { SigningMachineDeps } from '../context'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '../../models'
+import { algo25Account } from '../../__tests__/accounts'
 
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
-const mockAccount = {
-    type: 'algo25',
-    address: MOCK_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const mockAccount = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 
 const mockRequest: TransactionSignRequest = {
     id: 'req-create-1',
@@ -42,9 +38,9 @@ const makeDeps = (): SigningMachineDeps =>
     ({
         signTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
-        signArc60: vi.fn(),
+        signAuthData: vi.fn(),
         createTransport: vi.fn(),
-        network: 'mainnet',
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         encodeTransaction: vi.fn(),
     }) as never
 
@@ -68,10 +64,10 @@ describe('createSigningMachine', () => {
         // Each dep function is forwarded by reference into context.deps.
         expect(ctx.deps.signTransactions).toBe(deps.signTransactions)
         expect(ctx.deps.signArbitraryData).toBe(deps.signArbitraryData)
-        expect(ctx.deps.signArc60).toBe(deps.signArc60)
+        expect(ctx.deps.signAuthData).toBe(deps.signAuthData)
         expect(ctx.deps.createTransport).toBe(deps.createTransport)
         expect(ctx.deps.encodeTransaction).toBe(deps.encodeTransaction)
-        expect(ctx.deps.network).toBe(deps.network)
+        expect(ctx.deps.scope).toBe(deps.scope)
         actor.stop()
     })
 

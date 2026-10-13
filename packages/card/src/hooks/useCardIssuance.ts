@@ -16,10 +16,11 @@ import {
     useQueryClient,
     type Mutation,
 } from '@tanstack/react-query'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { CardOrderNotVerifiedError } from '../api/card'
 import { CardStatus, VerificationState, isKycVerified } from '../models'
-import type { Card } from '../models'
+import type { Card, CardEligibilityReason } from '../models'
 import { cardMutationKeys } from './querykeys'
 import { useCardStatusQuery } from './useCardStatusQuery'
 import { useCardUserQuery } from './useCardUserQuery'
@@ -64,6 +65,12 @@ export type UseCardIssuanceResult = {
     card: Optional<Nullable<Card>>
     /** True when the status query is paused waiting for connectivity. */
     isStatusPaused: boolean
+    /**
+     * Why Baanx won't issue a card yet, when it says so. Read alongside
+     * `VerificationPending`, which otherwise can't distinguish "queued for
+     * review" from "blocked on extra compliance checks".
+     */
+    eligibilityReason: Nullable<CardEligibilityReason>
 }
 
 type OrderAttempt = {
@@ -118,7 +125,7 @@ const isBlockingMutation = (mutation: Mutation): boolean =>
  * order the explicit `retryOrder` is the recovery path; auto-fire stays
  * disarmed so a broken backend is never hammered.
  */
-export const useCardIssuance = (): UseCardIssuanceResult => {
+export const useCardIssuance = (scope: ChainScope): UseCardIssuanceResult => {
     const queryClient = useQueryClient()
 
     // Every order attempt under the shared key, whichever mounted instance
@@ -142,7 +149,7 @@ export const useCardIssuance = (): UseCardIssuanceResult => {
     const isOrderInFlight = latestAttempt?.status === 'pending'
     const hasOrderSucceeded = latestAttempt?.status === 'success'
 
-    const statusQuery = useCardStatusQuery({
+    const statusQuery = useCardStatusQuery(scope, {
         // Poll while issuance is in motion: order accepted (or still in
         // flight) but the card not visible yet, or the card is visible but
         // still provisioning. This is the docs' "poll until ACTIVE".
@@ -159,7 +166,7 @@ export const useCardIssuance = (): UseCardIssuanceResult => {
     // "has no card", or loading would briefly claim the card is missing.
     const hasNoCard = statusQuery.data === null
 
-    const userQuery = useCardUserQuery({
+    const userQuery = useCardUserQuery(scope, {
         // The KYC watch only exists while there is no card: card-holders
         // never trigger dashboard /v1/user traffic.
         enabled: hasNoCard,
@@ -175,7 +182,7 @@ export const useCardIssuance = (): UseCardIssuanceResult => {
     const verificationState = userQuery.data?.verificationState
     const isVerified = isKycVerified(verificationState ?? null)
 
-    const orderMutation = useOrderCardMutation()
+    const orderMutation = useOrderCardMutation(scope)
     const { mutate: mutateOrder } = orderMutation
 
     const hasBlockingAttempt =
@@ -251,5 +258,6 @@ export const useCardIssuance = (): UseCardIssuanceResult => {
         // status query just to read the card.
         card,
         isStatusPaused: statusQuery.fetchStatus === 'paused',
+        eligibilityReason: userQuery.data?.eligibilityReason ?? null,
     }
 }

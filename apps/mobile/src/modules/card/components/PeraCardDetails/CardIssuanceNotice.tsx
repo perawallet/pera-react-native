@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { CardIssuanceState } from '@perawallet/wallet-core-card'
+import {
+    CardEligibilityReason,
+    CardIssuanceState,
+} from '@perawallet/wallet-core-card'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWButton, PWView } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
@@ -18,6 +22,8 @@ import { useStyles } from './styles'
 
 type CardIssuanceNoticeProps = {
     state: CardIssuanceState
+    /** Baanx's reason for withholding the card, when it gives one. */
+    eligibilityReason: Nullable<CardEligibilityReason>
     /** Fires a fresh order attempt (rendered for ORDER_FAILED only). */
     onRetryOrder: () => void
     /** Opens support (rendered for the terminal VERIFICATION_REJECTED only). */
@@ -33,6 +39,7 @@ type CardIssuanceNoticeProps = {
  */
 export const CardIssuanceNotice = ({
     state,
+    eligibilityReason,
     onRetryOrder,
     onContactSupport,
 }: CardIssuanceNoticeProps) => {
@@ -79,6 +86,24 @@ export const CardIssuanceNotice = ({
                     title={t('peraCard.account.issuance_retry')}
                     onPress={onRetryOrder}
                     testID='pera_card_issuance_retry_button'
+                />
+            </PWView>
+        )
+    }
+
+    if (eligibilityReason === CardEligibilityReason.EddRequired) {
+        return (
+            <PWView style={styles.issuanceNotice}>
+                <InfoCallout
+                    title={t('peraCard.account.issuance_edd_title')}
+                    body={t('peraCard.account.issuance_edd_body')}
+                    testID='pera_card_issuance_edd_notice'
+                />
+                <PWButton
+                    variant='secondary'
+                    title={t('peraCard.account.issuance_rejected_support')}
+                    onPress={onContactSupport}
+                    testID='pera_card_issuance_edd_support_button'
                 />
             </PWView>
         )

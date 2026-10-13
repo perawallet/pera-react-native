@@ -11,44 +11,32 @@
  */
 
 import type {
-    Key,
     KeyStoreAPI,
     KeyData,
     KeyId,
 } from '@algorandfoundation/keystore-core'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import { zeroBytes } from '../crypto/secure-memory'
-import { AccessControlPermission } from '../models'
-import { aclOf } from '../utils'
-import { KeyAccessError } from '../errors'
+import { checkAccess } from '../core/access'
+import { KeyNotFoundError } from '../errors'
 import { useCallback } from 'react'
 import {
     commitSecret,
+    getSecretMetadata,
     hasSecret,
     removeSecret,
     withSecret,
 } from '../storage/secrets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-export const checkAccess = (key: Key, domain: string): void => {
-    // `aclOf` always returns a non-empty ACL (the wallet's own-origin default
-    // for seeds without an explicit one), so this is fail-closed: a domain not
-    // granted ReadPrivate is rejected rather than slipping through the old
-    // empty-ACL bypass.
-    const acl = aclOf(key)
-    const hasAccess = acl.some(
-        entry =>
-            entry.domains.includes(domain) &&
-            entry.permissions.includes(AccessControlPermission.ReadPrivate),
-    )
-
-    if (!hasAccess) {
-        throw new KeyAccessError()
-    }
-}
+export { checkAccess }
 
 type WithExportedKey = <T>(
     keyId: KeyId,
+    domain: string,
     handler: (keyData: KeyData) => T | Promise<T>,
 ) => Promise<T>
 
@@ -63,6 +51,7 @@ type UseKMSServiceResult = {
         handler: (bytes: Uint8Array) => T | Promise<T>,
     ) => Promise<Nullable<T>>
     hasSecret: (id: string) => boolean
+    getSecretMetadata: (id: string) => Nullable<Record<string, unknown>>
     removeSecret: (id: string) => Promise<void>
 }
 
@@ -79,7 +68,13 @@ export const useKMSService = (): UseKMSServiceResult => {
         [keyStore],
     )
 
-    const withExportedKey: WithExportedKey = async (keyId, handler) => {
+    const withExportedKey: WithExportedKey = async (keyId, domain, handler) => {
+        // The gate lives here rather than at the call sites: this is the raw
+        // private-key read, and a caller that forgets `checkAccess` skips it.
+        const key = getKeystoreStore().state.keys.find(k => k.id === keyId)
+        if (!key) throw new KeyNotFoundError(keyId)
+        checkAccess(key, domain)
+
         const keyData = await keyStore.export(keyId)
         try {
             return await handler(keyData)
@@ -100,6 +95,7 @@ export const useKMSService = (): UseKMSServiceResult => {
         commitSecret,
         withSecret,
         hasSecret,
+        getSecretMetadata,
         removeSecret,
     }
 }

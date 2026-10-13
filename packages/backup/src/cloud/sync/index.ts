@@ -11,11 +11,29 @@
  */
 
 export { canonicalJson, contentHash } from './canonicalize'
-export { serializeAccountItems } from './serializeAccountItems'
+export {
+    accountAddressesOf,
+    accountBackupAddresses,
+    buildAccountRecord,
+} from './serializeAccountItems'
 export { buildLocalItems } from './buildLocalItems'
+export { buildLocalContactItems } from './buildLocalContactItems'
+export { contactsFingerprint } from './contactsFingerprint'
 export { reconcile } from './reconcile'
 export { applyDeltas } from './applyDeltas'
 export { pushDirty } from './pushDirty'
+export {
+    markAccountForBackup,
+    importFromBackup,
+    deleteFromBackup,
+    keepAccountInBackup,
+    markContactForBackup,
+    importContactFromBackup,
+    deleteContactFromBackup,
+    keepContactInBackup,
+    reviewActionDeps,
+} from './reviewActions'
+export type { ReviewActionDeps } from './reviewActions'
 export { syncBackup } from './syncBackup'
 export { pullBackupDeltas } from './pullBackupDeltas'
 export { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -31,6 +49,15 @@ export {
     getBackupSyncManager,
 } from './backupSyncManager'
 export type { BackupSyncManagerDeps } from './backupSyncManager'
+export { createBackupSyncStatePort } from './backupSyncStatePort'
+export { backupBusyItemKey } from './busyItems'
+export { createBackupSyncStoreSources } from './backupSyncStoreSources'
+export {
+    applyBackupSettings,
+    readBackupSettings,
+    subscribeBackupSettings,
+} from './backupSettingsStores'
+export type { BackupDeleteResult } from './reviewActions'
 export {
     BackupWebSocketMessageType,
     BackupWebSocketMessageReject,
@@ -43,13 +70,28 @@ export type {
 } from './webSocketMessage'
 export { UnsupportedBackupAccountTypeError } from './types'
 export type {
+    BackupActionOutcome,
+    BackupBackUpOutcome,
+    BackupSyncSources,
+    BackupSyncStatePort,
     SerializedItem,
     SerializedAccount,
     LocalItem,
     LocalSnapshot,
     SyncEngineDeps,
     SyncImportFn,
+    ImportProgressFn,
     ImportSummary,
+    ContactImportFn,
+    ContactImportSummary,
+    BackupPasskey,
+    LocalPasskey,
+    PulledPasskey,
+    PasskeyImportFn,
+    PasskeyImportSummary,
+    PasskeySkipReason,
+    SettingsImportFn,
     SerializeHdResolver,
     SerializeMnemonicResolver,
+    SerializePrivateKeyResolver,
 } from './types'

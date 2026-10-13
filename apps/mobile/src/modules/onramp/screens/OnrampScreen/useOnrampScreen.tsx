@@ -16,15 +16,21 @@ import {
     useRampPairsQuery,
     useRampRegionQuery,
     useOnramp,
+    isNativeRampToken,
     type RampPair,
     type RampRegion,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    ALGO_ASSET_NAME,
-    type Nullable,
-    type Optional,
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import type {
+    Network,
+    Nullable,
+    Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
@@ -36,8 +42,6 @@ import {
 import { trackEvent, OnrampEvent } from '@analytics'
 import type { OnrampScreenParams } from '@modules/onramp/routes/types'
 import { useOnrampIntroduction } from './useOnrampIntroduction'
-
-const DEFAULT_DESTINATION_TOKEN_ID = ALGO_ASSET_NAME
 
 type UseOnrampScreenResult = {
     isReady: boolean
@@ -59,14 +63,16 @@ type UseOnrampScreenResult = {
 const resolveSeedDestinationId = (
     pairs: RampPair[],
     destinationTokenId: Optional<string>,
+    network: Network,
 ): Nullable<string> => {
     const destinationIds = pairs.map(pair => pair.destinationToken.id)
     if (destinationTokenId && destinationIds.includes(destinationTokenId)) {
         return destinationTokenId
     }
-    if (destinationIds.includes(DEFAULT_DESTINATION_TOKEN_ID)) {
-        return DEFAULT_DESTINATION_TOKEN_ID
-    }
+    const nativePair = pairs.find(pair =>
+        isNativeRampToken(pair.destinationToken, network),
+    )
+    if (nativePair) return nativePair.destinationToken.id
     return destinationIds[0] ?? null
 }
 
@@ -81,8 +87,13 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const pairsQuery = useRampPairsQuery()
     const { data: pairs = [], isLoading: pairsLoading } = pairsQuery
     const { hasInternet } = useNetworkStatus()
+    const { network } = useNetwork()
     const { data: region } = useRampRegionQuery()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const {
         selectedSourceTokenId,
         selectedDestinationTokenId,
@@ -106,6 +117,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
             const seedDestinationId = resolveSeedDestinationId(
                 pairs,
                 destinationTokenId,
+                network,
             )
             if (seedDestinationId !== null) {
                 setSelectedDestinationTokenId(seedDestinationId)
@@ -128,6 +140,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         pairsLoading,
         sourceTokenId,
         destinationTokenId,
+        network,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
     ])

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
 /** Normalized view of a card/Baanx API failure, used to attribute it to a field. */
 export type CardApiError = {
     /** HTTP status code, when the failure carried an HTTP response. */
@@ -151,19 +153,32 @@ export const getCardApiError = async (
     const status = getStatus(error)
     const body = await resolveErrorBody(error)
 
-    // A plain-text error body is itself the message.
+    // A plain-text error body is itself the message, unless it is markup: an
+    // Express 404 page is text/html and would otherwise be shown verbatim.
     if (typeof body === 'string') {
-        return { status, message: body.length > 0 ? body : undefined }
+        const text = body.trim()
+        const isMarkup = text.startsWith('<')
+        return {
+            status,
+            message: text.length > 0 && !isMarkup ? body : undefined,
+        }
     }
     if (typeof body !== 'object' || body === null) return { status }
 
     const record = body as Record<string, unknown>
-    const code = firstString(record, ['code', 'errorCode', 'error'])
-    const message = firstString(record, [
-        'message',
-        'detail',
-        'error_description',
-    ])
+    // `type`/`details`/`data.message` are the delegation service's error shape.
+    const code = firstString(record, ['code', 'errorCode', 'error', 'type'])
+    const data = record.data
+    const message =
+        firstString(record, [
+            'message',
+            'detail',
+            'details',
+            'error_description',
+        ]) ??
+        (typeof data === 'object' && data !== null
+            ? firstString(data as Record<string, unknown>, ['message'])
+            : undefined)
 
     // Baanx wraps the real error as a JSON string inside `message` — unwrap it so
     // callers see the actual status/code/message instead of an opaque blob.
@@ -191,11 +206,44 @@ export const isInvalidInputError = (apiError: CardApiError): boolean =>
     apiError.status === 400 || apiError.status === 422
 
 /**
+ * A rejected email/password on login. Baanx documents 400 but its dev API
+ * answers 404 "Invalid Login Details", and 401 has been seen too. The 404 is
+ * matched on its message so a missing route still reads as an outage.
+ */
+export const isInvalidCredentialsError = (apiError: CardApiError): boolean =>
+    apiError.status === 401 ||
+    isInvalidInputError(apiError) ||
+    (apiError.status === 404 && /invalid login/i.test(apiError.message ?? ''))
+
+/**
  * Lets a retried non-idempotent submit count as success. Matched on message
  * text, since Baanx's status for this case is unconfirmed.
  */
 export const isDuplicateError = (apiError: CardApiError): boolean =>
     /duplicate|already exists/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )
+
+/**
+ * A delegation post-approval re-run after a prior success (e.g. an app restart
+ * between create and approve). Matched on text like {@link isDuplicateError},
+ * since the rejection carries no stable code.
+ */
+export const isAlreadyCreatedError = (apiError: CardApiError): boolean =>
+    /already (created|approved)/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )
+
+/**
+ * Baanx's final registration step (address) returns this generic message when
+ * the user was already created by an earlier attempt whose response was lost
+ * (seen live on the dev env: first call 500s after creating the user, every
+ * retry then fails with this text). Matched on text like
+ * {@link isDuplicateError}; kept separate because other steps use
+ * `isDuplicateError` with different follow-up semantics.
+ */
+export const isUserAlreadyCreatedError = (apiError: CardApiError): boolean =>
+    /create user failed/i.test(
         `${apiError.code ?? ''} ${apiError.message ?? ''}`,
     )
 
@@ -221,11 +269,11 @@ export const isNotVerifiedError = (apiError: CardApiError): boolean =>
  * undefined and break `instanceof`. Named for the flow, not one step, since
  * both the details and address steps raise it.
  */
-export class OnboardingNotVerifiedError extends Error {
+export class OnboardingNotVerifiedError extends AppError {
     constructor(
         message = 'Identity verification must be submitted before registration can continue.',
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.ACCOUNTS })
         this.name = 'OnboardingNotVerifiedError'
     }
 }

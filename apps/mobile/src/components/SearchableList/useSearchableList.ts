@@ -19,7 +19,6 @@ import {
     useState,
 } from 'react'
 import {
-    Platform,
     type LayoutChangeEvent,
     type NativeScrollEvent,
     type NativeSyntheticEvent,
@@ -28,6 +27,10 @@ import {
 import type { PWFlatListRef } from '@components/core'
 import type { SearchInputRef } from '@components/SearchInput'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    shouldReleasePinOnScrollUp,
+    shouldUnpinSearchOnScroll,
+} from './scrollUnpin'
 
 const SEARCH_KEY = '__searchable_list_search__'
 const HEADER_KEY = '__searchable_list_header__'
@@ -68,6 +71,18 @@ export const isSearchSentinel = (item: unknown): item is SearchSentinel =>
     item != null &&
     '__searchableListSearch' in item &&
     item.__searchableListSearch === true
+
+const isClampedAtMaxOffset = ({
+    contentOffset,
+    contentSize,
+    layoutMeasurement,
+}: NativeScrollEvent): boolean => {
+    if (contentSize == null || layoutMeasurement == null) {
+        return false
+    }
+    const maxOffset = contentSize.height - layoutMeasurement.height
+    return contentOffset.y >= maxOffset - WEB_PIN_SETTLE_EPSILON
+}
 
 export const isHeaderSentinel = (item: unknown): item is HeaderSentinel =>
     typeof item === 'object' &&
@@ -313,12 +328,25 @@ export const useSearchableList = <T>({
             onScroll?.(event)
             const headerH = headerHeightRef.current
             const offsetY = event.nativeEvent.contentOffset.y
+            const previousOffsetY = scrollOffsetRef.current
+            // A shrink that pushed the offset above the pin leaves it clamped
+            // at the max offset; anywhere else something moved it there.
+            const isClampedAtEnd = isClampedAtMaxOffset(event.nativeEvent)
             // Latest known position, so handleContentSizeChange can tell a
             // scroll that drifted above the pin from one that is simply far down
             // the list.
             scrollOffsetRef.current = offsetY
             if (headerH > 0 && offsetY >= headerH) {
                 isCollapsedRef.current = true
+            } else if (
+                shouldReleasePinOnScrollUp &&
+                !isSearchingRef.current &&
+                !isClampedAtEnd
+            ) {
+                // Correcting would yank the user off the header they scrolled
+                // to. Skipped while searching: the pin animation's own ticks
+                // land here.
+                isCollapsedRef.current = false
             }
 
             // Web has no onScrollBeginDrag/onScrollEndDrag to drive
@@ -329,12 +357,23 @@ export const useSearchableList = <T>({
             // settled at headerH, any further movement away from it — either
             // direction — means the user is manually scrolling, so unpin.
             if (
-                Platform.OS === 'web' &&
+                shouldUnpinSearchOnScroll &&
                 isSearchingRef.current &&
                 headerH > 0
             ) {
                 const distanceFromPin = Math.abs(offsetY - headerH)
-                if (!hasReachedWebPinOffsetRef.current) {
+                // The pin can settle a few px off headerH and never arm below,
+                // so a move up past the pin unpins on its own. The pin
+                // animation only ever moves towards it.
+                const isLeavingPinUpward =
+                    offsetY < headerH - WEB_PIN_SETTLE_EPSILON &&
+                    offsetY < previousOffsetY &&
+                    !isClampedAtEnd
+                if (isLeavingPinUpward) {
+                    hasReachedWebPinOffsetRef.current = false
+                    setIsSearching(false)
+                    overlayRef.current?.blur()
+                } else if (!hasReachedWebPinOffsetRef.current) {
                     if (distanceFromPin <= WEB_PIN_SETTLE_EPSILON) {
                         hasReachedWebPinOffsetRef.current = true
                     }

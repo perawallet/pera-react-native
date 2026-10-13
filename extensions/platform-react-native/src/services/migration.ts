@@ -31,6 +31,7 @@ import {
     type LegacyWalletConnectV2Session,
     MIGRATION_SENTINEL_KEY,
     MIGRATION_STEPS_KEY,
+    type MigrationDevTools,
     type MigrationPlanSummary,
     type MigrationSentinelValue,
     type MigrationService,
@@ -129,24 +130,31 @@ export class RNMigrationService implements MigrationService {
         return raw as MigrationPlanSummary[]
     }
 
-    async simulateLegacyDatabase(
-        args: SimulateLegacyDatabaseArgs,
-    ): Promise<void> {
-        const module = getNativeModule()
-        if (!module || typeof module.simulateLegacyDatabase !== 'function') {
-            return
-        }
-        await module.simulateLegacyDatabase(args)
-        this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
-    }
-
-    async simulatePreSixxAccounts(): Promise<void> {
-        const module = getNativeModule()
-        if (!module || typeof module.simulatePreSixxAccounts !== 'function') {
-            return
-        }
-        await module.simulatePreSixxAccounts()
-        this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+    readonly devTools: MigrationDevTools = {
+        simulateLegacyDatabase: async (
+            args: SimulateLegacyDatabaseArgs,
+        ): Promise<void> => {
+            const module = getNativeModule()
+            if (
+                !module ||
+                typeof module.simulateLegacyDatabase !== 'function'
+            ) {
+                return
+            }
+            await module.simulateLegacyDatabase(args)
+            this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        },
+        simulatePreSixxAccounts: async (): Promise<void> => {
+            const module = getNativeModule()
+            if (
+                !module ||
+                typeof module.simulatePreSixxAccounts !== 'function'
+            ) {
+                return
+            }
+            await module.simulatePreSixxAccounts()
+            this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        },
     }
 
     async resetLegacyData(): Promise<void> {
@@ -237,11 +245,10 @@ const summarizeLegacyData = (
     accounts: data.accounts.length,
     accountsWithSecretKey: data.accounts.filter(a => a.secretKey !== null)
         .length,
-    accountsWithHDWallet: data.accounts.filter(a => a.hdWalletId !== null)
-        .length,
+    accountsWithHDWallet: data.accounts.filter(a => a.hdSeedId !== null).length,
     accountsWithLedger: data.accounts.filter(a => a.ledger !== null).length,
     accountsWithJoint: data.accounts.filter(a => a.joint !== null).length,
-    hdWallets: data.hdWallets.length,
+    hdWallets: data.hdSeeds.length,
     contacts: data.contacts.length,
     notificationFilters: data.notificationFilters.length,
     walletConnectV1: data.walletConnectV1.length,
@@ -338,10 +345,11 @@ type RawLegacyPreferences = Omit<
 
 interface RawLegacyAccount extends Omit<
     LegacyAccount,
-    'secretKey' | 'authAddress'
+    'secretKey' | 'authAddress' | 'hdSeedId'
 > {
     secretKey: Base64
     authAddress?: string | null
+    hdWalletId: string | null
 }
 
 interface RawLegacyHDWallet extends Omit<LegacyHDWallet, 'entropy' | 'keys'> {
@@ -422,7 +430,7 @@ const decodeLegacyMigrationData = (
         auth: { pin: decodeAuthPin(raw.auth.pin) },
         accounts,
         undecodableAccounts,
-        hdWallets: decodeHDWallets(raw.hdWallets),
+        hdSeeds: decodeHDWallets(raw.hdWallets),
         contacts: raw.contacts,
         notificationFilters: raw.notificationFilters,
         walletConnectV1: raw.walletConnectV1.map(decodeWalletConnectV1Session),
@@ -460,8 +468,12 @@ const decodeLegacyMigrationData = (
     }
 }
 
-const decodeAccount = (raw: RawLegacyAccount): LegacyAccount => ({
+const decodeAccount = ({
+    hdWalletId,
+    ...raw
+}: RawLegacyAccount): LegacyAccount => ({
     ...raw,
+    hdSeedId: hdWalletId,
     secretKey: decodeBase64(raw.secretKey),
     authAddress: raw.authAddress ?? null,
 })
@@ -569,7 +581,7 @@ const emptyLegacyMigrationData = (): LegacyMigrationData => ({
     auth: { pin: null },
     accounts: [],
     undecodableAccounts: [],
-    hdWallets: [],
+    hdSeeds: [],
     contacts: [],
     notificationFilters: [],
     walletConnectV1: [],

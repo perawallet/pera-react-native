@@ -39,7 +39,7 @@ export const useReceiveFundsContent = (
                 setCanSelectAccount(false)
             }
 
-            if (selectedAccount?.address !== account.address) {
+            if (selectedAccount?.id !== account.id) {
                 setSelectedAccount(account)
             }
         }
@@ -48,7 +48,7 @@ export const useReceiveFundsContent = (
         setCanSelectAccount,
         setSelectedAccount,
         canSelectAccount,
-        selectedAccount?.address,
+        selectedAccount?.id,
     ])
 
     const handleFinished = useCallback(() => {

@@ -2,25 +2,25 @@ declare const params: Record<string, unknown>
 declare const base: Record<string, unknown>
 
 export const missingParam = {
-    messageKey: 'dapp.enable.peer_origin_claim',
+    messageKey: 'dapp.approval.request_origin',
     params: { unrelated: 1 },
 }
 
 export const noParamsAtAll = {
-    messageKey: 'dapp.enable.peer_origin_claim',
+    messageKey: 'dapp.approval.request_origin',
 }
 
 export const shorthandIsUnverifiable = {
-    messageKey: 'dapp.enable.peer_origin_claim',
+    messageKey: 'dapp.approval.request_origin',
     params,
 }
 
 export const containerSpreadIsUnverifiable = {
     ...base,
-    messageKey: 'dapp.enable.peer_origin_claim',
+    messageKey: 'dapp.approval.request_origin',
 }
 
 export const paramsSpreadIsUnverifiable = {
-    messageKey: 'dapp.enable.peer_origin_claim',
+    messageKey: 'dapp.approval.request_origin',
     params: { ...base },
 }

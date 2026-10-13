@@ -18,9 +18,12 @@ import {
     type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
-import { isCollectible, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    useIsNativeAssetId,
+    isCollectible,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
@@ -51,6 +54,7 @@ export const AccountAssetItemView = ({
     ...rest
 }: AccountAssetItemViewProps) => {
     const styles = useStyles()
+    const isNativeAssetId = useIsNativeAssetId()
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
     // Falls back to individual fetch for callers that don't populate
@@ -112,7 +116,7 @@ export const AccountAssetItemView = ({
                 asset={asset}
                 value={accountBalance.amount}
                 density='compact'
-                showSymbol={isAlgoAssetId(accountBalance.assetId)}
+                showSymbol={isNativeAssetId(accountBalance.assetId)}
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />

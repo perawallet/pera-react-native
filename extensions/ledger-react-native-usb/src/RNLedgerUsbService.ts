@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import TransportHID from '@ledgerhq/react-native-hid'
-import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
-    createLedgerTransportWrapper,
+    resolveUsbDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
 
 type LedgerHIDDescriptor = {
@@ -47,36 +47,9 @@ const descriptorId = (descriptor: LedgerHIDDescriptor): string | undefined => {
 }
 
 /**
- * Maps a HID descriptor product ID to a friendly model name.
- * IDs from https://developers.ledger.com (vendor 0x2C97).
- */
-const resolveModel = (productId: Nullable<number>): string => {
-    switch (productId) {
-        case 0x00_01: {
-            return 'nanoS'
-        }
-        case 0x00_04: {
-            return 'nanoX'
-        }
-        case 0x40_11: {
-            return 'nanoSPlus'
-        }
-        case 0x60_11: {
-            return 'stax'
-        }
-        case 0x70_11: {
-            return 'flex'
-        }
-        default: {
-            return 'ledger'
-        }
-    }
-}
-
-/**
  * React Native implementation of HardwareWalletService for Ledger USB (Android).
  * Uses @ledgerhq/react-native-hid for USB host communication and
- * @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
+ * the registered Ledger app driver for the chain app's APDU commands.
  *
  * iOS: TransportHID.isSupported() throws because the native module is
  * Android-only — the catch block in isSupported() returns false there,
@@ -102,7 +75,7 @@ export class RNLedgerUsbService implements HardwareWalletService {
                     }) => {
                         if (event.type !== 'add') return
                         const { productId, deviceName } = event.descriptor
-                        const model = resolveModel(productId ?? null)
+                        const model = resolveUsbDeviceModel(productId)
                         // If neither deviceId nor productId is present we skip
                         // the descriptor rather than emit a sentinel that would
                         // alias multiple devices in the connection-routing map.
@@ -138,6 +111,9 @@ export class RNLedgerUsbService implements HardwareWalletService {
             async connect(
                 _deviceId?: string,
             ): Promise<HardwareWalletTransport> {
+                // Resolved at connect, not when the transport registers: the
+                // chain package registers its driver after the transports.
+                const appDriver = ledgerAppDriverRegistry.resolve()
                 const descriptors = await TransportHID.list()
                 if (descriptors.length === 0) {
                     throw new LedgerUsbNoDeviceError()
@@ -149,11 +125,7 @@ export class RNLedgerUsbService implements HardwareWalletService {
 
                 try {
                     const hidTransport = await TransportHID.open(descriptors[0])
-                    const algorandApp = new AlgorandApp(hidTransport)
-                    return createLedgerTransportWrapper(
-                        hidTransport,
-                        algorandApp,
-                    )
+                    return appDriver.open(hidTransport)
                 } catch (error) {
                     throw classifyLedgerError(error)
                 }

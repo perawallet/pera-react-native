@@ -12,10 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     MultisigSignRequest,
     SignRequestStatus,
@@ -27,6 +24,12 @@ const decodeTransactionMock = vi.fn(() => ({}))
 const localUnsignedSignersMock = vi.fn<() => WalletAccount[]>(() => [])
 const buildCosignArgsMock = vi.fn()
 const cosignRequestStub = { id: 'cosign-stub' }
+const errorToastMock = vi.fn()
+const allAccountsStub = vi.hoisted(() => [{ address: 'LOCAL' }])
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ errorToast: errorToastMock }),
+}))
 
 vi.mock('../../stores/usePendingSignaturesSheetStore', () => ({
     usePendingSignaturesSheetStore: (
@@ -41,17 +44,24 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAllAccounts: () => [],
+        useAllAccounts: () => allAccountsStub,
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
@@ -114,22 +124,23 @@ const buildSignRequest = (
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
-    address,
-    keyPairId: `kp-${address}`,
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
-    address,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'dev-1',
-        deviceName: 'Ledger Nano X',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
         accountIndex: 0,
-        transportType: 'ble',
     },
+    chains: { algorand: { address } },
 })
 
 describe('useHandleMultisigSignTap', () => {
@@ -137,6 +148,7 @@ describe('useHandleMultisigSignTap', () => {
         openSheetMock.mockClear()
         addSignRequestMock.mockClear()
         buildCosignArgsMock.mockClear()
+        errorToastMock.mockClear()
         localUnsignedSignersMock.mockReset()
         localUnsignedSignersMock.mockReturnValue([])
         pendingSignRequestsMock.mockReturnValue([])
@@ -155,13 +167,28 @@ describe('useHandleMultisigSignTap', () => {
             expect(buildCosignArgsMock).toHaveBeenCalledWith({
                 signRequest,
                 signerAddress: 'A',
+                scope: expect.objectContaining({ chainId: 'algorand' }),
                 decodeTransaction: decodeTransactionMock,
+                localAccounts: allAccountsStub,
             })
             expect(addSignRequestMock).toHaveBeenCalledTimes(1)
             expect(addSignRequestMock).toHaveBeenCalledWith(cosignRequestStub)
             expect(openSheetMock).not.toHaveBeenCalled()
         },
     )
+
+    it('tells the user when a cosign request fails validation', () => {
+        localUnsignedSignersMock.mockReturnValue([buildAccount('A')])
+        buildCosignArgsMock.mockImplementationOnce(() => {
+            throw new Error('not authorized by the joint account')
+        })
+
+        const { result } = renderHook(() => useHandleMultisigSignTap())
+        result.current(buildSignRequest({ status: 'pending' }))
+
+        expect(addSignRequestMock).not.toHaveBeenCalled()
+        expect(errorToastMock).toHaveBeenCalledTimes(1)
+    })
 
     it('dispatches one cosign per local unsigned signer in order', () => {
         localUnsignedSignersMock.mockReturnValue([

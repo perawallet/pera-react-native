@@ -12,8 +12,6 @@
 
 import React from 'react'
 
-import { Platform } from 'react-native'
-
 import { useTheme } from '@rneui/themed'
 
 import {
@@ -209,25 +207,7 @@ export const ImportAccountScreen = () => {
                                                                 column === 0 &&
                                                                 index === 0
                                                             }
-                                                            autoCapitalize='none'
-                                                            autoCorrect={false}
-                                                            spellCheck={false}
-                                                            autoComplete='off'
-                                                            // autoCapitalize is only a hint and Samsung
-                                                            // Keyboard / Gboard ignore it; visible-password
-                                                            // is the one Android input type that actually
-                                                            // disables capitalization and prediction.
-                                                            // On iOS, ascii-capable keeps IME keyboards
-                                                            // (Japanese, Pinyin) out of their composing
-                                                            // state: composed text can't prefix-match the
-                                                            // ASCII wordlist, and leaving the slot commits
-                                                            // the marked text over a tapped suggestion.
-                                                            keyboardType={
-                                                                Platform.OS ===
-                                                                'android'
-                                                                    ? 'visible-password'
-                                                                    : 'ascii-capable'
-                                                            }
+                                                            isSensitive
                                                         />
                                                     </PWView>
                                                 </PWView>

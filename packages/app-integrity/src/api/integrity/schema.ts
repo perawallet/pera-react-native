@@ -20,8 +20,13 @@ export const attestResponseSchema = z.object({
 export const verifyResponseSchema = z.object({
     ok: z.boolean(),
     device_id: z.string(),
-    platform: z.enum(['ios', 'android']),
+    platform: z.enum(['ios', 'android', 'web']),
+})
+export const enrolResponseSchema = z.object({
+    enrolled: z.literal(true),
+    kid: z.string(),
 })
 
 export type AttestApiResponse = z.infer<typeof attestResponseSchema>
 export type VerifyApiResponse = z.infer<typeof verifyResponseSchema>
+export type EnrolApiResponse = z.infer<typeof enrolResponseSchema>

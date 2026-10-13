@@ -11,36 +11,31 @@
  */
 
 import { useCallback } from 'react'
-import { useKMS } from '@perawallet/wallet-core-kms'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     discoverAccounts as baseDiscoverAccounts,
-    discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
-    type GetPublicKey,
+    discoverDelegatedAccounts as baseDiscoverDelegatedAccounts,
 } from '../account-discovery'
-import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import { deriveHdAccount, type GetPublicKey } from '../chain-adapter'
+import { useIsDelegationAvailable } from './useIsDelegationAvailable'
 
-export const useAccountDiscovery = () => {
-    const { getDerivedPublicKey } = useKMS()
+export const useAccountDiscovery = (scope: ChainScope) => {
+    const isDelegationAvailable = useIsDelegationAvailable(scope.chainId)
 
     const sessionGetPublicKey = useCallback(
         async (
             walletKeyId: string,
             params: Parameters<GetPublicKey>[0],
         ): Promise<Uint8Array> => {
-            return getDerivedPublicKey(
-                walletKeyId,
-                params.account,
-                params.keyIndex,
-                params.derivationType,
-            )
+            const derived = await deriveHdAccount(scope, walletKeyId, params)
+            return derived.publicKey
         },
-        [getDerivedPublicKey],
+        [scope],
     )
 
     const discoverAccounts = useCallback(
         async (params: {
             walletKeyId: string
-            derivationType: BIP32DerivationType
             accountGapLimit?: number
             keyIndexGapLimit?: number
         }) => {
@@ -48,20 +43,25 @@ export const useAccountDiscovery = () => {
                 sessionGetPublicKey(params.walletKeyId, inner)
             return baseDiscoverAccounts({
                 ...params,
+                scope,
                 getPublicKey,
             })
         },
-        [sessionGetPublicKey],
+        [scope, sessionGetPublicKey],
     )
 
-    const discoverRekeyedAccounts = useCallback(
+    // Resolves empty rather than rejecting, so a caller's delegation step is skipped
+    // without a failure notice while the capability is off.
+    const discoverDelegatedAccounts = useCallback(
         async (params: { accountAddresses: string[] }) =>
-            baseDiscoverRekeyedAccounts(params),
-        [],
+            isDelegationAvailable
+                ? baseDiscoverDelegatedAccounts({ ...params, scope })
+                : [],
+        [isDelegationAvailable, scope],
     )
 
     return {
         discoverAccounts,
-        discoverRekeyedAccounts,
+        discoverDelegatedAccounts,
     }
 }

@@ -28,7 +28,8 @@ type UseLockScreenResult = {
     hasError: boolean
     isLockedOut: boolean
     remainingSeconds: number
-    isDuressWipeInProgress: boolean
+    isPinUnlockInProgress: boolean
+    isBiometricUnlockInProgress: boolean
     handlePinComplete: (pin: string) => Promise<void>
     handleErrorAnimationComplete: () => void
 }
@@ -40,19 +41,19 @@ export const useLockScreen = ({
     const { t } = useLanguage()
     const {
         verifyPin,
-        handleFailedAttempt,
         resetFailedAttempts,
         isLockedOut,
         lockoutEndTime,
         setLockoutEndTime,
     } = usePinCode()
-    const { checkBiometricsEnabled, authenticateWithBiometrics } =
-        useBiometrics()
+    const { unlockWithBiometrics } = useBiometrics()
     const { performDuressWipe } = useDuressWipe()
 
     const [hasError, setHasError] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
-    const [isDuressWipeInProgress, setIsDuressWipeInProgress] = useState(false)
+    const [isPinUnlockInProgress, setIsPinUnlockInProgress] = useState(false)
+    const [isBiometricUnlockInProgress, setIsBiometricUnlockInProgress] =
+        useState(false)
 
     useEffect(() => {
         if (!isLockedOut || !lockoutEndTime) {
@@ -89,17 +90,17 @@ export const useLockScreen = ({
     // stranding the user on the PIN pad.
     const hasPromptedForLockRef = useRef(false)
     const promptRef = useRef({
-        checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
+        setLockoutEndTime,
         onUnlock,
         t,
         isLockedOut,
     })
     promptRef.current = {
-        checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
+        setLockoutEndTime,
         onUnlock,
         t,
         isLockedOut,
@@ -118,6 +119,8 @@ export const useLockScreen = ({
 
         let cancelled = false
         let subscription: NativeEventSubscription | null = null
+        let isPromptPending = false
+        let hasLeftForeground = false
 
         // Resolves on the next 'active'; abandoned on cleanup (never resolves).
         const waitForNextActive = () =>
@@ -139,35 +142,79 @@ export const useLockScreen = ({
             }
             // Lockout can begin while waiting (failed PIN attempts on the pad).
             if (promptRef.current.isLockedOut) return
-            const enabled = await promptRef.current.checkBiometricsEnabled()
-            if (cancelled || !enabled) return
-            const result = await promptRef.current.authenticateWithBiometrics({
-                title: promptRef.current.t(
-                    'security.biometric.unlock_prompt_title',
-                ),
-                cancelLabel: promptRef.current.t(
-                    'security.biometric.cancel_label',
-                ),
-            })
+            hasLeftForeground = false
+            const outcome = await promptRef.current.unlockWithBiometrics(
+                {
+                    title: promptRef.current.t(
+                        'security.biometric.unlock_prompt_title',
+                    ),
+                    cancelLabel: promptRef.current.t(
+                        'security.biometric.cancel_label',
+                    ),
+                },
+                {
+                    onAuthenticated: () => {
+                        if (!cancelled) setIsBiometricUnlockInProgress(true)
+                    },
+                },
+            )
             if (cancelled) return
-            if (result.success) {
+            setIsBiometricUnlockInProgress(false)
+            if (outcome.kind === 'ok') {
                 void promptRef.current.resetFailedAttempts()
                 promptRef.current.onUnlock()
                 return
             }
-            // Only OS-initiated cancellation re-arms; a user cancel stays
-            // terminal (silent fallback to PIN), and lockout/failed/unknown
-            // never retry.
-            if (result.reason !== 'system-cancel' || retriesLeft === 0) return
+            // The hook read the lockout from the record because the store is
+            // not hydrated yet on a cold start; feed it back so the pad counts
+            // down instead of silently refusing input.
+            if (outcome.kind === 'locked') {
+                void promptRef.current.setLockoutEndTime(outcome.lockoutEndTime)
+                return
+            }
+            // A dead blob terminates here too: re-prompting would burn
+            // another ceremony on it.
+            if (outcome.kind !== 'failed') return
+            // Only OS-initiated cancellation retries in place; anything else
+            // stays on the PIN pad until the app returns from the background.
+            if (outcome.reason !== 'system-cancel' || retriesLeft === 0) return
             return attemptPrompt(retriesLeft - 1)
         }
 
-        void attemptPrompt(MAX_SYSTEM_CANCEL_RETRIES)
+        const runPrompt = async () => {
+            isPromptPending = true
+            try {
+                await attemptPrompt(MAX_SYSTEM_CANCEL_RETRIES)
+            } finally {
+                isPromptPending = false
+            }
+        }
+
+        // Android rejects a device lock or HOME mid-prompt with the same code as
+        // a dismissal, so the rejection cannot say whether to ask again; leaving
+        // the foreground can. Only 'background' counts: the iOS Face ID sheet
+        // itself drives the app through 'inactive'.
+        const foregroundSubscription = AppState.addEventListener(
+            'change',
+            next => {
+                if (next === 'background') {
+                    hasLeftForeground = true
+                    return
+                }
+                if (next !== 'active' || !hasLeftForeground || isPromptPending)
+                    return
+                void runPrompt()
+            },
+        )
+
+        void runPrompt()
 
         return () => {
             cancelled = true
+            setIsBiometricUnlockInProgress(false)
             subscription?.remove()
             subscription = null
+            foregroundSubscription.remove()
         }
     }, [isLocked])
 
@@ -176,39 +223,36 @@ export const useLockScreen = ({
 
     const handlePinComplete = useCallback(
         async (pin: string) => {
-            const result = await verifyPin(pin)
-            if (result.kind === 'ok') {
-                void resetFailedAttempts()
-                onUnlock()
-                return
-            }
-            if (result.kind === 'duress') {
-                // Silent on this branch: no haptic, no error, no toast
-                // useDuressWipe wipes data, provisions a decoy account, and
-                // leaves us with a fresh "empty wallet" state. On any
-                // internal failure, the wipe path still drops to onboarding.
-                //
-                // The wipe is slow; show a "logging in" overlay so it reads as
-                // a normal (if sluggish) unlock rather than a frozen app.
-                setIsDuressWipeInProgress(true)
-                try {
-                    await performDuressWipe()
-                } finally {
+            // Verifying hashes the PIN against both slots and reads the record,
+            // which takes seconds on a slow keystore; the pad must not look idle.
+            setIsPinUnlockInProgress(true)
+            try {
+                const result = await verifyPin(pin)
+                if (result.kind === 'ok') {
                     onUnlock()
-                    setIsDuressWipeInProgress(false)
+                    return
                 }
-                return
+                if (result.kind === 'duress') {
+                    // Silent on this branch: no haptic, no error, no toast
+                    // useDuressWipe wipes data, provisions a decoy account, and
+                    // leaves us with a fresh "empty wallet" state. On any
+                    // internal failure, the wipe path still drops to onboarding.
+                    //
+                    // The wipe is slow; the overlay stays up so it reads as a
+                    // normal (if sluggish) unlock rather than a frozen app.
+                    try {
+                        await performDuressWipe()
+                    } finally {
+                        onUnlock()
+                    }
+                    return
+                }
+                setHasError(true)
+            } finally {
+                setIsPinUnlockInProgress(false)
             }
-            void handleFailedAttempt()
-            setHasError(true)
         },
-        [
-            verifyPin,
-            resetFailedAttempts,
-            handleFailedAttempt,
-            onUnlock,
-            performDuressWipe,
-        ],
+        [verifyPin, onUnlock, performDuressWipe],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {
@@ -219,7 +263,8 @@ export const useLockScreen = ({
         hasError,
         isLockedOut,
         remainingSeconds,
-        isDuressWipeInProgress,
+        isPinUnlockInProgress,
+        isBiometricUnlockInProgress,
         handlePinComplete,
         handleErrorAnimationComplete,
     }

@@ -10,15 +10,11 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
-/**
- * RN AppState helpers scoped to what the WalletConnect foreground-reconnect
- * hook needs. The app exposes a fuller set of helpers (background-transition,
- * polling action) at `@utils/app-state`; only the foreground-transition
- * detection is duplicated here so the hook can live in this package.
- */
+// Duplicates the foreground-transition detection from the app's `@utils/app-state`
+// so this package needs no app import.
 
 const ACTIVE_STATE = 'active'
 const IOS_BACKGROUND_LIKE_STATES = new Set(['inactive', 'background'])
@@ -27,8 +23,9 @@ export type AppStatePlatform = 'ios' | 'android' | 'web'
 type AppStateValue = Maybe<string>
 
 export const getAppStatePlatform = (): AppStatePlatform => {
-    if (Platform.OS === 'ios') return 'ios'
-    if (Platform.OS === 'web') return 'web'
+    const platform = getProvider().deviceInfo.getDevicePlatform()
+    if (platform === 'ios') return 'ios'
+    if (platform === 'web') return 'web'
     return 'android'
 }
 
@@ -59,7 +56,7 @@ export const isForegroundTransition = (
     }
     // android and web share the strict two-state model: android because
     // inactive→active transitions are noise there, web because
-    // react-native-web's AppState (document.visibilitychange) only ever
+    // the web lifecycle service (document.visibilitychange) only ever
     // emits 'active' and 'background'.
     return previousState === 'background' && nextState === 'active'
 }

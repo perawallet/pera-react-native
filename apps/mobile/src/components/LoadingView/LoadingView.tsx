@@ -10,16 +10,17 @@
  limitations under the License
  */
 
-import { ActivityIndicator, type StyleProp, type ViewStyle } from 'react-native'
+import { type StyleProp, type ViewStyle } from 'react-native'
 import { PWSkeleton } from '@components/core/PWSkeleton'
 import { PWView } from '@components/core/PWView'
+import { PWLoadingIndicator } from '@components/core/PWLoadingIndicator'
 import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import type { PropsWithChildren, ReactNode } from 'react'
 
 export type LoadingViewProps = {
     variant: 'circle' | 'skeleton'
-    size?: 'sm' | 'lg'
+    size?: 'sm' | 'lg' | 'xl'
     count?: number
     isLoading?: boolean
     renderSkeleton?: (index: number) => ReactNode
@@ -45,10 +46,7 @@ export const LoadingView = ({
     if (variant === 'circle') {
         return (
             <PWView style={[defaultStyles.container, style]}>
-                <ActivityIndicator
-                    size={size === 'sm' ? 'small' : 'large'}
-                    color={theme.colors.linkPrimary}
-                />
+                <PWLoadingIndicator size={size} />
             </PWView>
         )
     }

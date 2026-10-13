@@ -12,6 +12,7 @@
 
 import React, { useMemo } from 'react'
 import { PWText, PWView } from '@components/core'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeArbitraryDataForDisplay,
     type ArbitraryDataSignRequest,
@@ -20,11 +21,14 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { SignedDataWarning } from '../SignedDataWarning'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import {
+    findAccountByAddressOn,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { AssetAmount } from '@components/AssetAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 
 export type ArbitraryDataSigningDetailsViewProps = {
@@ -36,10 +40,13 @@ export const ArbitraryDataSigningDetailsView = ({
     request,
     dataMessage,
 }: ArbitraryDataSigningDetailsViewProps) => {
+    const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-    const account = accounts.find(
-        account => account.address === dataMessage.signer,
+    const account = findAccountByAddressOn(
+        accounts,
+        LEGACY_CHAIN_ID,
+        dataMessage.signer,
     )
     const styles = useStyles()
 
@@ -47,7 +54,7 @@ export const ArbitraryDataSigningDetailsView = ({
     // user reviews the actual signed bytes. Memoized: `data` is unbounded
     // dApp input.
     const signedContent = useMemo(
-        () => decodeArbitraryDataForDisplay(dataMessage.data),
+        () => decodeArbitraryDataForDisplay(LEGACY_CHAIN_ID, dataMessage.data),
         [dataMessage.data],
     )
 
@@ -75,8 +82,8 @@ export const ArbitraryDataSigningDetailsView = ({
             <PWView style={styles.section}>
                 <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
                     <AssetAmount
-                        asset={ALGO_ASSET}
-                        value={Decimal(0)}
+                        asset={nativeAsset}
+                        value={new Decimal(0)}
                         showSymbol
                         density='compact'
                         ignorePrivacyMode
@@ -84,8 +91,8 @@ export const ArbitraryDataSigningDetailsView = ({
                 </KeyValueRow>
                 <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
                     <AssetAmount
-                        asset={ALGO_ASSET}
-                        value={Decimal(0)}
+                        asset={nativeAsset}
+                        value={new Decimal(0)}
                         showSymbol
                         density='compact'
                         ignorePrivacyMode

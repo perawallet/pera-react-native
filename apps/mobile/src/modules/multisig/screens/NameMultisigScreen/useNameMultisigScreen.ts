@@ -13,27 +13,26 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    useAllAccounts,
-    useSelectedAccountAddress,
+    buildAccount,
+    findAccountByAddressOn,
     useAccountsStore,
-    type MultiSigAccount,
+    useAllAccounts,
+    useSelectedAccountId,
+    withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
-import { useCreateMultisigAccountMutation } from '@perawallet/wallet-core-multisig'
-import { trackEvent, MultisigEvent } from '@analytics'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    generateMultisigAddress,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+    multisigAdapterFor,
+    useCreateMultisigAccountMutation,
+} from '@perawallet/wallet-core-multisig'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
-import {
-    useShouldPlayConfetti,
-    useExitAccountFlow,
-} from '@modules/onboarding/hooks'
+import { useShouldPlayConfetti, useExitAccountFlow } from '@modules/onboarding'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import { getNextSharedAccountName } from '../../utils'
 import type { MultisigStackParamList } from '../../routes/types'
@@ -70,7 +69,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
     const accounts = useAllAccounts()
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
     const { errorToast } = useToast()
     const { showError } = useErrorToast()
@@ -83,7 +82,11 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     })
 
     const [accountName, setAccountName] = useState(() =>
-        getNextSharedAccountName(accounts, t('multisig.name.default_name')),
+        getNextSharedAccountName(
+            accounts,
+            t('multisig.name.default_name'),
+            LEGACY_CHAIN_ID,
+        ),
     )
     const [isCreating, setIsCreating] = useState(false)
     const { allowProgrammaticNavigation } = useNavigationLock(isCreating)
@@ -107,11 +110,12 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const multisigAddress = generateMultisigAddress(
+            const adapter = multisigAdapterFor(network)
+            const multisigAddress = adapter.deriveAddress({
                 version,
                 threshold,
                 addresses,
-            )
+            })
 
             // An imported shared account carries the address its QR code
             // claimed. Re-derive it from the same (version, threshold,
@@ -130,8 +134,10 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
                 return
             }
 
-            const alreadyExists = accounts.some(
-                a => a.address === multisigAddress,
+            const alreadyExists = !!findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                multisigAddress,
             )
             if (alreadyExists) {
                 errorToast(
@@ -148,20 +154,19 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
                 device_id: deviceId,
             })
 
-            const newAccount: MultiSigAccount = {
-                id: generateOrderedUniqueId(),
-                type: 'multisig',
-                address: multisigAddress,
-                name: accountName,
-                multisigDetails: {
-                    threshold,
-                    addresses,
-                    version,
-                },
-            }
+            const newAccount = withMultisigParameters(
+                buildAccount({
+                    name: accountName,
+                    custody: { kind: 'multisig' },
+                    chainId: adapter.chainId,
+                    chains: { [adapter.chainId]: { address: multisigAddress } },
+                }),
+                adapter.chainId,
+                { version, threshold, addresses },
+            )
 
             setAccounts([...accounts, newAccount])
-            setSelectedAccountAddress(multisigAddress)
+            setSelectedAccountId(newAccount.id)
             setShouldPlayConfetti(true)
             resetState()
             // Release the navigation lock so this flow's own exit isn't
@@ -176,6 +181,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         }
     }, [
         isCreating,
+        network,
         deviceId,
         importParams,
         addresses,
@@ -185,7 +191,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         accounts,
         setAccounts,
         createMultisigMutation,
-        setSelectedAccountAddress,
+        setSelectedAccountId,
         setShouldPlayConfetti,
         resetState,
         exitAccountFlow,

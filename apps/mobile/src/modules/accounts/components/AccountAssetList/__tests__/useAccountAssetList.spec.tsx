@@ -16,11 +16,16 @@ import { Decimal } from 'decimal.js'
 import { useAccountAssetList } from '../useAccountAssetList'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
-const mockAccount = {
-    address: 'test-address',
+const mockAccount: WalletAccount = {
+    id: 'test-account',
     name: 'Test Account',
-} as WalletAccount
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+}
 
 const mockT = (key: string) => key
 
@@ -50,7 +55,6 @@ const makeHolding = (assetId: string) => ({
     peraMetadataJson: null,
     isFavorited: false,
     usdPrice: null,
-    isFrozen: false,
 })
 
 const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
@@ -103,11 +107,23 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    unitName: 'ALGO',
+    decimals: 6,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
+        useIsNativeAssetId: () => (id: unknown) =>
+            id != null && String(id) === NATIVE_ASSET.assetId,
+        useNativeAsset: () => NATIVE_ASSET,
+        nativeAssetFor: () => NATIVE_ASSET,
+        isNativeAssetId: (_chainId: string, assetId: string) =>
+            assetId === NATIVE_ASSET.assetId,
         useAssetPreferencesStore: vi.fn(
             (selector: (state: unknown) => unknown) =>
                 selector({
@@ -148,10 +164,25 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useAccountAssetList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
+        useRemoteConfigStore.getState().resetState()
         mockAssetsQuery.holdings = [makeHolding('123')]
         mockAssetsQuery.isPending = false
         mockAssetsQuery.isPlaceholderData = false
         mockPreferences.assetSortMode = 'balanceDesc'
+    })
+
+    it('offers asset management only while the manageAssets capability is on', () => {
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: mockAccount, t: mockT }),
+        )
+        expect(result.current.canManageAssets).toBe(true)
+        expect(result.current.renderItemProps.canManageAssets).toBe(true)
+
+        act(() => setCapabilityOverrides({ manageAssets: false }))
+
+        expect(result.current.canManageAssets).toBe(false)
+        expect(result.current.renderItemProps.canManageAssets).toBe(false)
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
@@ -176,7 +207,6 @@ describe('useAccountAssetList', () => {
                 peraMetadataJson: null,
                 isFavorited: false,
                 usdPrice: null,
-                isFrozen: false,
             })
         })
 
@@ -206,7 +236,6 @@ describe('useAccountAssetList', () => {
                 peraMetadataJson: null,
                 isFavorited: false,
                 usdPrice: null,
-                isFrozen: false,
             })
         })
 
@@ -335,7 +364,10 @@ describe('useAccountAssetList', () => {
 
             mockAssetsQuery.holdings = [makeHolding('789')]
             rerender({
-                account: { ...mockAccount, address: 'other-address' },
+                account: {
+                    ...mockAccount,
+                    chains: { algorand: { address: 'other-address' } },
+                },
             })
             await flushFrame()
 

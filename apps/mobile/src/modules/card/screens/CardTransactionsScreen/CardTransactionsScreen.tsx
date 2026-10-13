@@ -11,18 +11,19 @@
  */
 
 import { useCallback, useLayoutEffect } from 'react'
-import { ActivityIndicator, SectionList } from 'react-native'
+import { SectionList } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import {
     PWButton,
     PWIcon,
+    PWLoadingIndicator,
     PWScreen,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
+import { TransactionDateHeader } from '@modules/transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 import { CardTransactionListItem } from '../../components/CardTransactionListItem'
@@ -43,6 +44,7 @@ export const CardTransactionsScreen = () => {
         handleLoadMore,
         handleRetry,
         onExport,
+        isExporting,
         onPressTransaction,
     } = useCardTransactions()
 
@@ -51,6 +53,7 @@ export const CardTransactionsScreen = () => {
             headerRight: () => (
                 <PWTouchableOpacity
                     onPress={onExport}
+                    disabled={isExporting}
                     testID='card_transactions_export'
                     accessibilityLabel={t(
                         'peraCard.transactions.export_accessibility_label',
@@ -60,7 +63,7 @@ export const CardTransactionsScreen = () => {
                 </PWTouchableOpacity>
             ),
         })
-    }, [navigation, onExport, t])
+    }, [navigation, onExport, isExporting, t])
 
     const renderItem = useCallback(
         ({ item }: { item: CardTransaction }) => (
@@ -85,7 +88,7 @@ export const CardTransactionsScreen = () => {
         if (!isFetchingNextPage) return null
         return (
             <PWView style={styles.loadingFooter}>
-                <ActivityIndicator size='small' />
+                <PWLoadingIndicator size='sm' />
             </PWView>
         )
     }, [isFetchingNextPage, styles.loadingFooter])

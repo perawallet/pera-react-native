@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
     backfillSwapAssetFacts: vi.fn(),
 }))
 
-vi.mock('../../api/history', () => ({
+vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: mocks.fetchTransactionHistory,
 }))
 
@@ -38,6 +38,7 @@ vi.mock('../swap-asset-facts-backfill', () => ({
 }))
 
 import { fetchAndPersistTransactions } from '../transaction-syncer'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const ADDRESS = 'ADDR'
 const NETWORK = 'mainnet' as const
@@ -60,21 +61,24 @@ describe('fetchAndPersistTransactions', () => {
             transactions: [{ id: 'tx1' }],
         })
 
-        await fetchAndPersistTransactions(ADDRESS, NETWORK)
+        await fetchAndPersistTransactions(
+            ADDRESS,
+            scopeForLegacyNetwork(NETWORK),
+        )
 
         expect(mocks.getLatestTransactionRoundTime).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
         expect(mocks.fetchTransactionHistory).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             afterTime: undefined,
         })
         expect(mocks.upsertTransactions).toHaveBeenCalledWith({
             items: [{ id: 'tx1' }],
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
     })
 
@@ -85,20 +89,23 @@ describe('fetchAndPersistTransactions', () => {
             transactions: [{ id: 'tx2' }],
         })
 
-        await fetchAndPersistTransactions(ADDRESS, NETWORK)
+        await fetchAndPersistTransactions(
+            ADDRESS,
+            scopeForLegacyNetwork(NETWORK),
+        )
 
         const expectedAfterTime = new Date((latestRoundTime + 1) * 1000)
             .toISOString()
             .split('T')[0]
         expect(mocks.fetchTransactionHistory).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             afterTime: expectedAfterTime,
         })
         expect(mocks.upsertTransactions).toHaveBeenCalledWith({
             items: [{ id: 'tx2' }],
             accountAddress: ADDRESS,
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
     })
 
@@ -106,24 +113,33 @@ describe('fetchAndPersistTransactions', () => {
         mocks.getLatestTransactionRoundTime.mockResolvedValue(null)
         mocks.fetchTransactionHistory.mockResolvedValue({ transactions: [] })
 
-        await fetchAndPersistTransactions(ADDRESS, NETWORK)
+        await fetchAndPersistTransactions(
+            ADDRESS,
+            scopeForLegacyNetwork(NETWORK),
+        )
 
         expect(mocks.upsertTransactions).not.toHaveBeenCalled()
     })
 
     it('runs the close-amount backfill after persisting the page', async () => {
-        await fetchAndPersistTransactions(ADDRESS, NETWORK)
+        await fetchAndPersistTransactions(
+            ADDRESS,
+            scopeForLegacyNetwork(NETWORK),
+        )
 
         expect(mocks.backfillMissingCloseAmounts).toHaveBeenCalledWith({
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
         })
     })
 
     it('heals swap rows cached without their asset facts', async () => {
-        await fetchAndPersistTransactions(ADDRESS, NETWORK)
+        await fetchAndPersistTransactions(
+            ADDRESS,
+            scopeForLegacyNetwork(NETWORK),
+        )
 
         expect(mocks.backfillSwapAssetFacts).toHaveBeenCalledWith({
-            network: NETWORK,
+            scope: scopeForLegacyNetwork(NETWORK),
             accountAddress: ADDRESS,
         })
     })

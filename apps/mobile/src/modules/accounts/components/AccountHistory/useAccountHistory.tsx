@@ -13,17 +13,22 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
+    CSV_MIME_TYPE,
     useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { shareCsvFile } from '@utils/shareCsvFile'
+import { shareFile } from '@utils/shareFile'
 import { trackEvent, AccountDetailsEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
@@ -38,7 +43,7 @@ import { getFilterTimes } from './utils'
 import {
     buildTransactionListRows,
     type TransactionListRow,
-} from '@modules/transactions/utils/transactionListRows'
+} from '@modules/transactions'
 import {
     PeraServiceUnavailableError,
     type Nullable,
@@ -102,6 +107,8 @@ export type UseAccountHistoryResult = {
  */
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountAddress = account ? addressOn(account, scope) : undefined
     const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()
     const navigation =
@@ -146,9 +153,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         hasNextPage,
         fetchNextPage,
     } = useTransactionHistoryQuery({
-        accountAddress: account?.address ?? '',
-        network,
-        isEnabled: !!account?.address,
+        accountAddress: accountAddress ?? '',
+        scope,
+        isEnabled: !!accountAddress,
         afterTime,
         beforeTime,
     })
@@ -165,8 +172,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     const refreshAddresses = useMemo(
-        () => (account?.address ? [account.address] : []),
-        [account?.address],
+        () => (accountAddress ? [accountAddress] : []),
+        [accountAddress],
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
@@ -180,11 +187,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoading: isExportingCsv,
         isUnavailableOnNetwork,
     } = useCsvExportMutation({
-        network,
+        scope,
         onSuccess: result => {
             void (async () => {
                 try {
-                    await shareCsvFile(result.filename, result.csvContent)
+                    await shareFile(result.filename, result.csvContent, {
+                        mimeType: CSV_MIME_TYPE,
+                    })
                 } catch (error) {
                     showError(error, t('errors.general.title'))
                 }
@@ -206,11 +215,11 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
             )
             return
         }
-        if (account?.address) {
-            exportCsv({ accountAddress: account.address })
+        if (accountAddress) {
+            exportCsv({ accountAddress })
         }
     }, [
-        account?.address,
+        accountAddress,
         exportCsv,
         isUnavailableOnNetwork,
         network,

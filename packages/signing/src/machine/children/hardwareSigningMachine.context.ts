@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AnalyzedSignableGroup, SigningResult } from '../../pipeline/types'
@@ -24,7 +25,7 @@ export type HardwareErrorPayload = {
 
 /**
  * Discriminates whether the hardware-signing session is approving a
- * transaction group or a data-signing request (ARC-60 / arbitrary-data).
+ * transaction group or a data-signing request (auth-data / arbitrary-data).
  * Drives the awaiting-approval overlay copy so the user sees context-aware
  * instructions rather than generic transaction language.
  */
@@ -33,13 +34,15 @@ export type HardwareSigningOperation = 'transaction' | 'data'
 export type HardwareSigningInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
+    /** The request's scope; each group's signer is looked up by its address there. */
+    scope: ChainScope
     hardwareWalletRegistry: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
     /** Total transactions across all groups — set by parent for initial currentTx/totalTxs. */
     totalTxs: number
     /** Device name resolved at parent build-time so the overlay can render immediately. */
     deviceName: Nullable<string>
-    /** 'transaction' for tx groups, 'data' for arc60/arbitrary-data. Drives overlay copy. */
+    /** 'transaction' for tx groups, 'data' for auth-data/arbitrary-data. Drives overlay copy. */
     operation: HardwareSigningOperation
 }
 
@@ -64,7 +67,7 @@ export type HardwareSigningEvent =
     | { type: 'GROUP_SIGNED'; result: SigningResult }
     | { type: 'STRATEGY_ERROR'; error: HardwareErrorPayload }
     /**
-     * Non-device errors (ARC-60 validation, generic JS errors). Surface as an
+     * Non-device errors (auth-data validation, generic JS errors). Surface as an
      * immediate failure rather than the BLE-class teardown carveout — the
      * troubleshooting sheet only makes sense for genuine connection problems.
      */

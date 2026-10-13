@@ -42,18 +42,24 @@ export * from './useCardTransactionsQuery'
 export * from './useExportCardStatementMutation'
 
 // Funding (deposit / top-up)
-export * from './useDepositToCardMutation'
+export * from './useSubmitAndConfirmMutation'
+export * from './useCardUsdcCreditQuery'
 
 // Internal wallet (balance / withdraw)
-export * from './useCardInternalWalletsQuery'
-export * from './useWithdrawFromCardMutation'
+export * from './useCardWalletBalanceQuery'
+export * from './useWithdrawWalletBalanceMutation'
+export * from './useCardWalletHistoryQuery'
 
-// Funding delegation (auto-funding LSig lifecycle)
+// Funding delegation (auto-funding lifecycle)
 export * from './useCardExternalWalletsQuery'
-export * from './useUpdateCardFundingDelegationMutation'
 export * from './useSignCardOwnershipMutation'
 export * from './useCreateAndApproveCardMutation'
-export * from './useKillswitchAutoDraw'
+export * from './useFundingAddressLinkMutation'
+export * from './useRestoreEscrowCardMutation'
+export * from './useCardAutoDraw'
+export * from './cardChain'
+export * from './useEscrowWithdrawal'
+export * from './useCardPendingWithdrawalQuery'
 
 // Onboarding / KYC
 export * from './useSendEmailVerificationMutation'
@@ -62,9 +68,9 @@ export * from './useSendPhoneVerificationMutation'
 export * from './useVerifyPhoneMutation'
 export * from './useSubmitPersonalDetailsMutation'
 export * from './useSubmitAddressMutation'
+export * from './useSubmitMailingAddressMutation'
 export * from './useSubmitConsentMutation'
 export * from './useLinkConsentMutation'
-export * from './useConnectFundingSourceMutation'
 export * from './useStartVerificationMutation'
 export * from './useOnboardingDetailsQuery'
 export * from './useOnboardingKycGate'

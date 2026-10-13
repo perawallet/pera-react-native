@@ -10,121 +10,251 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    algorandCapabilityDefaults,
+    algorandDescriptor,
+} from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    allCapabilities,
+    ETHEREUM_CHAIN_ID,
+    fixtureEthereumDescriptor,
+} from '@test-utils/chain-fixtures'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen'
 
-const switchNetwork = vi.fn()
-const mockRequestBottomSheet = vi.fn()
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useSwitchNetwork: () => ({ switchNetwork }),
+const mocks = vi.hoisted(() => ({
+    restart: vi.fn(),
+    getSyncService: vi.fn(),
+    requestBottomSheet: vi.fn(),
+    isCustomNetworkOffered: vi.fn(() => true),
 }))
 
-// Overrides the global vitest.setup.ts mock (which hard-codes 'mainnet') so
-// this suite can flip the active network per-test.
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+vi.mock('@perawallet/wallet-core-background', () => ({
+    getSyncService: () => mocks.getSyncService(),
 }))
 
-// The screen hook no longer owns any sheet state itself — selecting `custom`
-// just routes to the shared bottom-sheet manager. The sheet's own state
-// machine (draft/save/reset validation, cache clearing, etc.) is fully
-// covered by useCustomNetworkSheet.spec.ts, so it isn't exercised here.
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
-        request: mockRequestBottomSheet,
+        request: mocks.requestBottomSheet,
         requestByType: vi.fn(),
         dismiss: vi.fn(),
         dismissAll: vi.fn(),
     }),
 }))
 
+vi.mock('../isCustomNetworkOffered', () => ({
+    isCustomNetworkOffered: () => mocks.isCustomNetworkOffered(),
+}))
+
+// Echoes the key, with the interpolated network when there is one, so the
+// default label can be told apart from a plain display name.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { network?: string }) =>
+            options ? `${key}(${options.network})` : key,
+    }),
+}))
+
+const DEFAULT_LABEL = 'settings.developer.node_settings.default_network_label'
+const CUSTOM_LABEL = 'settings.developer.node_settings.custom_label'
+
+const registerEthereum = (customNetworks = false) =>
+    getProvider().chains.register(fixtureEthereumDescriptor, {
+        ...allCapabilities(false),
+        customNetworks,
+    })
+
+const renderScreenHook = () =>
+    renderHook(() => useSettingsDeveloperNodeSettingsScreen())
+
+const sectionFor = (
+    result: ReturnType<typeof renderScreenHook>['result'],
+    chainId: string,
+) => result.current.chainSections.find(section => section.chainId === chainId)
+
 describe('useSettingsDeveloperNodeSettingsScreen', () => {
     beforeEach(() => {
-        switchNetwork.mockClear()
-        mockRequestBottomSheet.mockClear()
+        vi.clearAllMocks()
+        mocks.isCustomNetworkOffered.mockReturnValue(true)
+        mocks.getSyncService.mockReturnValue({ restart: mocks.restart })
+        getProvider().chains.reset()
+        getProvider().chains.register(
+            algorandDescriptor,
+            algorandCapabilityDefaults,
+        )
+        useNetworkStore.getState().resetState()
     })
 
-    test('lists every network exactly once, regardless of display order', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
+    it('is in live mode with no chain sections by default', () => {
+        const { result } = renderScreenHook()
 
-        // Guards against a network being added to the union without a
-        // matching NETWORK_DISPLAY_ORDER entry — a plain Network[] type
-        // can't catch that at compile time.
-        expect(result.current.networks.map(row => row.network).sort()).toEqual(
-            Object.values(Networks).sort(),
-        )
+        expect(result.current.isDeveloperMode).toBe(false)
+        expect(result.current.chainSections).toEqual([])
     })
 
-    test('displays MainNet first, followed by TestNet, BetaNet, then Custom', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
+    describe('turning developer mode on', () => {
+        it('sets the mode and restarts sync once', () => {
+            const { result } = renderScreenHook()
 
-        expect(result.current.networks.map(row => row.network)).toEqual([
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-            Networks.custom,
-        ])
-        expect(result.current.networks[0].network).toBe(Networks.mainnet)
-    })
+            act(() => result.current.setDeveloperMode(true))
 
-    test('marks the active network as selected and the rest as not', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        // Default mock: useNetwork() -> { network: 'mainnet' }.
-        const selected = result.current.networks.filter(row => row.isSelected)
-        expect(selected.map(row => row.network)).toEqual([Networks.mainnet])
-    })
-
-    test('selecting a real network switches and kicks the sync', async () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        await act(async () => {
-            await result.current.selectNetwork(Networks.betanet)
+            expect(useNetworkStore.getState().mode).toBe('developer')
+            expect(result.current.isDeveloperMode).toBe(true)
+            expect(mocks.restart).toHaveBeenCalledOnce()
         })
 
-        expect(switchNetwork).toHaveBeenCalledWith(Networks.betanet)
-    })
+        it('still switches when the sync service is not initialized', () => {
+            mocks.getSyncService.mockImplementation(() => {
+                throw new Error('SyncService not yet initialized')
+            })
+            const { result } = renderScreenHook()
 
-    test('selecting custom requests the sheet from the bottom-sheet manager instead of switching', async () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
+            act(() => result.current.setDeveloperMode(true))
 
-        await act(async () => {
-            await result.current.selectNetwork(Networks.custom)
+            expect(useNetworkStore.getState().mode).toBe('developer')
         })
 
-        expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
-        expect(switchNetwork).not.toHaveBeenCalled()
+        it('lists the Algorand test networks with the default marked and selected, then Custom', () => {
+            const { result } = renderScreenHook()
+
+            act(() => result.current.setDeveloperMode(true))
+
+            expect(sectionFor(result, 'algorand')?.networks).toEqual([
+                {
+                    networkId: 'testnet',
+                    label: `${DEFAULT_LABEL}(TestNet)`,
+                    isDefault: true,
+                    isSelected: true,
+                },
+                {
+                    networkId: 'betanet',
+                    label: 'BetaNet',
+                    isDefault: false,
+                    isSelected: false,
+                },
+                {
+                    networkId: 'custom',
+                    label: CUSTOM_LABEL,
+                    isDefault: false,
+                    isSelected: false,
+                },
+            ])
+        })
+
+        it('lists only Ethereum active test networks, with no Custom row even when it supports custom networks', () => {
+            registerEthereum(true)
+            const { result } = renderScreenHook()
+
+            act(() => result.current.setDeveloperMode(true))
+
+            expect(
+                sectionFor(result, ETHEREUM_CHAIN_ID)?.networks.map(
+                    network => network.networkId,
+                ),
+            ).toEqual(['sepolia'])
+            expect(
+                sectionFor(result, ETHEREUM_CHAIN_ID)?.networks[0],
+            ).toMatchObject({
+                label: `${DEFAULT_LABEL}(Sepolia)`,
+                isDefault: true,
+            })
+        })
     })
 
-    test('warns on every network except mainnet', () => {
-        for (const network of ['testnet', 'betanet', 'custom'] as const) {
-            vi.mocked(useNetwork).mockReturnValue({ network } as never)
-            const { result } = renderHook(() =>
-                useSettingsDeveloperNodeSettingsScreen(),
+    describe('the Custom row', () => {
+        it('is hidden when the build does not offer custom networks', () => {
+            mocks.isCustomNetworkOffered.mockReturnValue(false)
+            const { result } = renderScreenHook()
+
+            act(() => result.current.setDeveloperMode(true))
+
+            expect(
+                sectionFor(result, 'algorand')?.networks.map(
+                    network => network.networkId,
+                ),
+            ).toEqual(['testnet', 'betanet'])
+        })
+
+        it('is hidden when no registered chain supports custom networks', () => {
+            getProvider().chains.reset()
+            registerEthereum(false)
+            const { result } = renderScreenHook()
+
+            act(() => result.current.setDeveloperMode(true))
+
+            expect(
+                result.current.chainSections.flatMap(section =>
+                    section.networks.map(network => network.networkId),
+                ),
+            ).not.toContain('custom')
+        })
+
+        it('requests the configuration sheet and writes nothing', async () => {
+            const { result } = renderScreenHook()
+            act(() => result.current.setDeveloperMode(true))
+            mocks.restart.mockClear()
+
+            await act(async () => {
+                await result.current.selectNetwork('algorand', 'custom')
+            })
+
+            expect(mocks.requestBottomSheet).toHaveBeenCalledOnce()
+            expect(useNetworkStore.getState().selectedNetworkByChain).toEqual(
+                {},
             )
-            expect(result.current.isNonMainnetWarningVisible).toBe(true)
-        }
+            expect(mocks.restart).not.toHaveBeenCalled()
+        })
+    })
 
-        vi.mocked(useNetwork).mockReturnValue({
-            network: Networks.mainnet,
-        } as never)
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-        expect(result.current.isNonMainnetWarningVisible).toBe(false)
+    describe('selecting a network', () => {
+        it('selects BetaNet and restarts the sync', async () => {
+            const { result } = renderScreenHook()
+            act(() => result.current.setDeveloperMode(true))
+            mocks.restart.mockClear()
+
+            await act(async () => {
+                await result.current.selectNetwork('algorand', 'betanet')
+            })
+
+            expect(useNetworkStore.getState().network).toBe('betanet')
+            expect(
+                sectionFor(result, 'algorand')?.networks.find(
+                    network => network.isSelected,
+                )?.networkId,
+            ).toBe('betanet')
+            expect(mocks.restart).toHaveBeenCalledOnce()
+        })
+
+        it('returns Algorand to the default by selecting TestNet again', async () => {
+            const { result } = renderScreenHook()
+            act(() => result.current.setDeveloperMode(true))
+            await act(async () => {
+                await result.current.selectNetwork('algorand', 'betanet')
+            })
+
+            await act(async () => {
+                await result.current.selectNetwork('algorand', 'testnet')
+            })
+
+            expect(useNetworkStore.getState().network).toBe('testnet')
+        })
+
+        it('restores the BetaNet choice when developer mode goes off and on again', async () => {
+            const { result } = renderScreenHook()
+            act(() => result.current.setDeveloperMode(true))
+            await act(async () => {
+                await result.current.selectNetwork('algorand', 'betanet')
+            })
+
+            act(() => result.current.setDeveloperMode(false))
+            expect(useNetworkStore.getState().network).toBe('mainnet')
+            expect(result.current.chainSections).toEqual([])
+
+            act(() => result.current.setDeveloperMode(true))
+            expect(useNetworkStore.getState().network).toBe('betanet')
+        })
     })
 })

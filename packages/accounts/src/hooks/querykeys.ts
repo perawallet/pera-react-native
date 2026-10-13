@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { AccountAddress } from '../models'
 import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
@@ -22,56 +23,56 @@ export const isAccountQuery = (queryKey: QueryKey): boolean =>
 type AccountBalancesQueryKeyFilters = {
     hideZeroBalance?: boolean
     hideNfts?: boolean
-    hideOptedInNfts?: boolean
+    hideZeroBalanceNfts?: boolean
     excludeAssetTypes?: string[]
 }
 
 export const getAccountBalancesQueryKey = (
     address: string,
-    network: Network,
+    scope: ChainScope,
     filters?: AccountBalancesQueryKeyFilters,
 ) => {
-    return [MODULE_PREFIX, 'balance', { address, network, filters }]
+    return [MODULE_PREFIX, 'balance', { address, scope, filters }]
 }
 
 export const getAccountSummaryQueryKey = (
     address: string,
-    network: Network,
-) => [MODULE_PREFIX, 'summary', { address, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'summary', { address, scope }]
 
 // Network-agnostic by design (see `getAccountFundedNetworks`), but keyed on the
-// active network so the entry refetches once a newly selected network syncs.
+// active scope so the entry refetches once a newly selected network syncs.
 // The `{ address }` payload keeps it inside the sync tick's scoped invalidation.
 export const getAccountFundedNetworksQueryKey = (
     address: string,
-    network: Network,
-) => [MODULE_PREFIX, 'funded-networks', { address, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'funded-networks', { address, scope }]
 
 export const getAccountHoldingsPageQueryKey = (
     address: string,
-    network: Network,
+    scope: ChainScope,
     params?: {
         filters?: AccountBalancesQueryKeyFilters
         sortMode?: string
         search?: string
     },
-) => [MODULE_PREFIX, 'holdings-page', { address, network, ...params }]
+) => [MODULE_PREFIX, 'holdings-page', { address, scope, ...params }]
 
 export const getAccountCollectiblesQueryKey = (
     address: string,
-    network: Network,
+    scope: ChainScope,
     params?: {
         sortMode?: string
         search?: string
-        includeOptedInOnly?: boolean
+        includeZeroBalance?: boolean
     },
-) => [MODULE_PREFIX, 'collectibles', { address, network, ...params }]
+) => [MODULE_PREFIX, 'collectibles', { address, scope, ...params }]
 
 export const getAccountBalancesHistoryQueryKey = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
-    network: Network,
-) => [MODULE_PREFIX, 'balance-history', { period, addresses, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'balance-history', { period, addresses, scope }]
 
 /**
  * Wealth chart-history key guard. Allowlisted into query persistence:
@@ -83,37 +84,37 @@ export const getAccountBalancesHistoryQueryKey = (
 export const isAccountBalancesHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX && queryKey[1] === 'balance-history'
 
-export const getOnChainAccountInformationQueryKey = (
+export const getOnChainAccountStateQueryKey = (
     address: string,
-    network: Network,
-) => [MODULE_PREFIX, 'on-chain-account-information', { address, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'on-chain-account-state', { address, scope }]
 
 // The { address } payload keeps this key inside the sync tick's scoped
-// invalidation, so a fresh opt-in reorders the gallery on the next sync.
-export const getAccountOptInRoundsQueryKey = (
+// invalidation, so a newly acquired asset reorders the gallery on the next sync.
+export const getHoldingAcquisitionOrderQueryKey = (
     address: string,
-    network: Network,
-) => [MODULE_PREFIX, 'opt-in-rounds', { address, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'holding-acquisition-order', { address, scope }]
 
-export const getRekeyedAddressesQueryKey = (
+export const getDelegatedAddressesQueryKey = (
     address: string,
-    network: Network,
-) => [MODULE_PREFIX, 'rekeyed-addresses', { address, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'delegated-addresses', { address, scope }]
 
-export const getOwnedAssetIdsQueryKey = (network: Network) => [
+export const getOwnedAssetIdsQueryKey = (scope: ChainScope) => [
     MODULE_PREFIX,
     'owned-asset-ids',
-    { network },
+    { scope },
 ]
 
-export const getAssetHoldersQueryKey = (assetId: string, network: Network) => [
+export const getAssetHoldersQueryKey = (assetId: string, scope: ChainScope) => [
     MODULE_PREFIX,
     'asset-holders',
-    { assetId, network },
+    { assetId, scope },
 ]
 
 export const getAccountAssetBalanceHistoryQueryKey = (
-    network: Network,
+    scope: ChainScope,
     account_address: string,
     asset_id: string,
     period: HistoryPeriod,
@@ -122,7 +123,7 @@ export const getAccountAssetBalanceHistoryQueryKey = (
     MODULE_PREFIX,
     'assets',
     'balance-history',
-    { period, currency, network, asset_id, account_address },
+    { period, currency, scope, asset_id, account_address },
 ]
 
 export const getInvalidateAccountBalancesPredicate = (query: Query) =>

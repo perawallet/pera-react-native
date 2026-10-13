@@ -18,28 +18,26 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    AccountTypes,
+    buildAccount,
+    chainAccountOf,
+    findAccountByAddressOn,
     useAccountsStore,
     useAllAccounts,
-    useSelectedAccountAddress,
-    type MultiSigAccount,
+    useSelectedAccountId,
+    withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
-import {
-    generateMultisigAddress,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
+import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
-import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
-import { getNextSharedAccountName } from '@modules/multisig/utils'
+import { useShouldPlayConfetti } from '@modules/onboarding'
+import { getNextSharedAccountName } from '@modules/multisig'
 import type { MessagesStackParamList } from '../../routes/types'
-import {
-    generateOrderedUniqueId,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
 
 type UseMultisigInvitationNameScreenResult = {
     accountName: string
@@ -73,7 +71,7 @@ export const useMultisigInvitationNameScreen =
 
         const accounts = useAllAccounts()
         const setAccounts = useAccountsStore(state => state.setAccounts)
-        const { setSelectedAccountAddress } = useSelectedAccountAddress()
+        const { setSelectedAccountId } = useSelectedAccountId()
         const { setShouldPlayConfetti } = useShouldPlayConfetti()
 
         const deleteImportInboxMutation = useDeleteMultisigInvitationMutation({
@@ -85,6 +83,7 @@ export const useMultisigInvitationNameScreen =
             getNextSharedAccountName(
                 accounts,
                 t('multisig.invitation.name.default_name'),
+                LEGACY_CHAIN_ID,
                 invitation.address,
             ),
         )
@@ -97,7 +96,8 @@ export const useMultisigInvitationNameScreen =
             trimmedName !== '' &&
             accounts.some(
                 a =>
-                    a.address !== invitation.address &&
+                    chainAccountOf(a, LEGACY_CHAIN_ID)?.address !==
+                        invitation.address &&
                     (a.name ?? '').trim().toLowerCase() === normalizedName,
             )
         const nameError = isNameTaken
@@ -120,8 +120,10 @@ export const useMultisigInvitationNameScreen =
                 return
             }
 
-            const alreadyExists = accounts.some(
-                a => a.address === invitation.address,
+            const alreadyExists = findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                invitation.address,
             )
             if (alreadyExists) {
                 errorToast(
@@ -141,11 +143,12 @@ export const useMultisigInvitationNameScreen =
                 // invitation is corrupt or tampered. Checked before the inbox
                 // delete so a bad invitation isn't consumed. Mirrors the QR
                 // import path in useNameMultisigScreen.
-                const derivedAddress = generateMultisigAddress(
-                    invitation.version,
-                    invitation.threshold,
-                    invitation.participantAddresses,
-                )
+                const adapter = multisigAdapterFor(network)
+                const derivedAddress = adapter.deriveAddress({
+                    version: invitation.version,
+                    threshold: invitation.threshold,
+                    addresses: invitation.participantAddresses,
+                })
                 if (derivedAddress !== invitation.address) {
                     errorToast(
                         t('multisig.import.address_mismatch_title'),
@@ -158,20 +161,25 @@ export const useMultisigInvitationNameScreen =
                     multisigAddress: invitation.address,
                 })
 
-                const newAccount: MultiSigAccount = {
-                    id: generateOrderedUniqueId(),
-                    type: AccountTypes.multisig,
-                    address: derivedAddress,
-                    name: trimmedName,
-                    multisigDetails: {
+                const newAccount = withMultisigParameters(
+                    buildAccount({
+                        name: trimmedName,
+                        custody: { kind: 'multisig' },
+                        chainId: adapter.chainId,
+                        chains: {
+                            [adapter.chainId]: { address: derivedAddress },
+                        },
+                    }),
+                    adapter.chainId,
+                    {
+                        version: invitation.version,
                         threshold: invitation.threshold,
                         addresses: invitation.participantAddresses,
-                        version: invitation.version,
                     },
-                }
+                )
 
                 setAccounts([...accounts, newAccount])
-                setSelectedAccountAddress(derivedAddress)
+                setSelectedAccountId(newAccount.id)
                 setShouldPlayConfetti(true)
                 successToast(
                     t('multisig.invitation.accept_success'),
@@ -189,6 +197,7 @@ export const useMultisigInvitationNameScreen =
             }
         }, [
             isSaving,
+            network,
             deviceId,
             accounts,
             invitation.address,
@@ -198,7 +207,7 @@ export const useMultisigInvitationNameScreen =
             trimmedName,
             deleteImportInboxMutation,
             setAccounts,
-            setSelectedAccountAddress,
+            setSelectedAccountId,
             setShouldPlayConfetti,
             successToast,
             errorToast,

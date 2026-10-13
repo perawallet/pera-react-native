@@ -10,8 +10,23 @@
  limitations under the License
  */
 
-import type { RampHistoryItem } from './models'
+import type { Network } from '@perawallet/wallet-core-shared'
+
+import { rampAdapterFor } from './chain-adapter'
+import type { RampHistoryItem, RampToken } from './models'
 
 /** Whether any order in a ramp history slice still awaits user attention. */
 export const hasPendingRampOrder = (items: RampHistoryItem[]): boolean =>
     items.some(item => item.status === 'pending')
+
+/** Whether a ramp-catalogue token is the network's native coin. */
+export const isNativeRampToken = (
+    token: Pick<RampToken, 'id' | 'symbol'>,
+    network: Network,
+): boolean => rampAdapterFor(network).isNativeToken(token)
+
+/** The on-chain asset id a ramp token arrives as on the network. */
+export const rampTokenAssetId = (
+    token: Pick<RampToken, 'id' | 'symbol'>,
+    network: Network,
+): string => rampAdapterFor(network).toAssetId(token)

@@ -42,7 +42,7 @@ let mockSettings:
       }
     | undefined
 // The gate's own derivation is unit-tested in the card package
-// (useOnboardingKycGate.test.ts); here only the screen's wiring matters.
+// (useOnboardingKycGate.spec.ts); here only the screen's wiring matters.
 let mockIsKycRequired = false
 const mockMarkServerRefused = vi.fn()
 
@@ -142,6 +142,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 const mockPushWebView = vi.fn()
 vi.mock('@modules/webview', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
+    withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
 
 const mockOpenURL = vi.fn()
@@ -180,11 +181,10 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingAddressScreen } from '../useCardOnboardingAddressScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const gb: SupportedCountry = {
     id: 'gb',
@@ -206,6 +206,10 @@ const california: SupportedUsState = {
     name: 'California',
     canSignUp: true,
 }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingAddressScreen', () => {
     beforeEach(() => {
@@ -290,9 +294,25 @@ describe('useCardOnboardingAddressScreen', () => {
         await waitFor(() => expect(result.current.selectedCountry).toEqual(gb))
     })
 
-    it('reveals the US state requirement when residence switches to US', async () => {
+    it('reveals the US state requirement for a US resident', async () => {
+        mockCountryIso = 'US'
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        await waitFor(() => expect(result.current.isUsResident).toBe(true))
+    })
+
+    it('locks the country field once the residence is known', async () => {
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        await waitFor(() => expect(result.current.selectedCountry).toEqual(gb))
+        expect(result.current.isCountryLocked).toBe(true)
+    })
+
+    it('offers the picker only when no residence was stored', async () => {
+        mockCountryIso = null
         mockRequest.mockResolvedValueOnce(us)
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        expect(result.current.isCountryLocked).toBe(false)
 
         act(() => {
             result.current.handleSelectCountry()
@@ -439,6 +459,45 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
+    it('US: a separate mailing address posts the flag and continues to the mailing step', async () => {
+        mockCountryIso = 'US'
+        mockMutateAsync.mockResolvedValueOnce({
+            accessToken: null,
+            onboardingId: 'mock-onboarding-id',
+            userId: null,
+        })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        await waitFor(() => expect(result.current.isUsResident).toBe(true))
+        expect(result.current.isSameMailingAddress).toBe(true)
+
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                addressLine1: '1 Main Street',
+                city: 'Los Angeles',
+                zip: '90001',
+                usState: 'CA',
+            })
+            result.current.handleToggleCardTerms()
+            result.current.handleTogglePlatformTerms()
+            result.current.handleToggleSameMailingAddress()
+        })
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingMailingAddress',
+            ),
+        )
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+                isSameMailingAddress: false,
+                usState: 'CA',
+            }),
+        )
+    })
+
     it("surfaces Baanx's own error message when the submit is rejected", async () => {
         mockMutateAsync.mockRejectedValueOnce({
             response: { status: 400 },
@@ -485,6 +544,31 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
+    it("routes Baanx's 'Create user failed' to sign-in (user already created on an earlier attempt)", async () => {
+        // Seen live: the first address call created the user but errored, so
+        // every retry fails with this generic text. The account exists, so
+        // signing in is the only way to obtain the session token.
+        mockMutateAsync.mockRejectedValueOnce({
+            response: { status: 400 },
+            data: { message: 'Create user failed' },
+        })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        fillValidAddress(result)
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn'),
+        )
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'peraCard.address.already_registered_title',
+            'peraCard.address.already_registered_body',
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
     it('opens the intl Baanx card T&C and Pera platform T&C links', () => {
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
 
@@ -498,7 +582,7 @@ describe('useCardOnboardingAddressScreen', () => {
         // The second checkbox is Pera's own T&C.
         act(() => result.current.handleOpenPlatformTerms())
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: config.termsOfServiceUrl,
+            url: `${config.termsOfServiceUrl}?lang=en`,
             id: 'platform-terms',
         })
         expect(mockOpenURL).not.toHaveBeenCalled()
@@ -512,15 +596,15 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockOpenURL).toHaveBeenCalledWith('https://baanx/intl-terms.pdf')
 
         act(() => result.current.handleOpenPlatformTerms())
-        expect(mockOpenURL).toHaveBeenCalledWith(config.termsOfServiceUrl)
+        expect(mockOpenURL).toHaveBeenCalledWith(
+            `${config.termsOfServiceUrl}?lang=en`,
+        )
         expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
-    it('opens the US Baanx card T&C once the resident is in the US', async () => {
-        mockRequest.mockResolvedValueOnce(us)
+    it('opens the US Baanx card T&C for a US resident', async () => {
+        mockCountryIso = 'US'
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
-
-        act(() => result.current.handleSelectCountry())
         await waitFor(() => expect(result.current.isUsResident).toBe(true))
 
         act(() => result.current.handleOpenCardTerms())
@@ -540,7 +624,7 @@ describe('useCardOnboardingAddressScreen', () => {
 
         act(() => result.current.handleOpenCardTerms())
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: config.termsOfServiceUrl,
+            url: `${config.termsOfServiceUrl}?lang=en`,
             id: 'card-terms',
         })
     })
@@ -553,7 +637,7 @@ describe('useCardOnboardingAddressScreen', () => {
 
         act(() => result.current.handleOpenCardTerms())
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: config.termsOfServiceUrl,
+            url: `${config.termsOfServiceUrl}?lang=en`,
             id: 'card-terms',
         })
     })

@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import { act, renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useCollectibleDetail } from '../useCollectibleDetail'
@@ -20,11 +21,13 @@ import type {
 } from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { MediaPermissionDeniedError } from '@utils/mediaErrors'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
 const mockShowError = vi.fn()
-const mockOpenURL = vi.fn()
+const mockOpenURL = vi.fn().mockResolvedValue(true)
 const mockOptOut = vi.fn()
 const mockGoBack = vi.fn()
 const mockCanGoBack = vi.fn(() => true)
@@ -38,8 +41,8 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 // Mutable capability map: mutate `mockCapabilities` per test to simulate the
-// native-shaped (inAppWebView: true) and web-shaped (false) route capability
-// maps without re-mocking.
+// native-shaped (true) and web-shaped (false) route capability maps without
+// re-mocking.
 const { mockCapabilities } = vi.hoisted(() => ({
     mockCapabilities: { inAppWebView: true },
 }))
@@ -95,19 +98,11 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
-
-// Mutable platform stub: mutate `mockPlatform` per test to simulate the
-// native (ios) and web builds without re-mocking.
-const { mockPlatform } = vi.hoisted(() => ({
-    mockPlatform: { OS: 'ios' },
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('react-native', () => ({
     Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
-    Platform: mockPlatform,
+    Platform: { OS: 'ios' },
 }))
 
 vi.mock('@utils/shareText', () => ({
@@ -228,18 +223,25 @@ const makeAssetWithMedia = (
     }) as PeraAsset
 
 describe('useCollectibleDetail', () => {
-    const mockAccount = { address: 'ACCOUNT_ADDRESS' }
+    const mockAccount = {
+        id: 'account',
+        custody: { kind: 'local', seed: null },
+        chains: {
+            algorand: { address: 'ACCOUNT_ADDRESS', keyPairId: 'account-key' },
+        },
+    }
 
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
+        useRemoteConfigStore.getState().resetState()
         Object.assign(mockCapabilities, { inAppWebView: true })
-        Object.assign(mockPlatform, { OS: 'ios' })
         mockGetImageBase64.mockResolvedValue('base64data')
         mockSaveImageToDevice.mockResolvedValue(undefined)
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         mockUseAllAccounts.mockReturnValue([mockAccount])
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(1), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(1), nativeValue: new Decimal(0) },
         })
         mockUseSingleAssetDetailsQuery.mockReturnValue({
             data: makeCollectibleAsset(),
@@ -287,7 +289,7 @@ describe('useCollectibleDetail', () => {
 
     it('reports opted-in-not-owned when balance exists with amount 0', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
 
         const { result } = renderHook(() => useCollectibleDetail('12345'))
@@ -309,7 +311,7 @@ describe('useCollectibleDetail', () => {
 
     it('opts out the asset and navigates back on success', async () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockResolvedValueOnce({ txIds: ['TX1'] })
@@ -331,7 +333,7 @@ describe('useCollectibleDetail', () => {
 
     it('shows an error toast when opt-out fails', async () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         const optOutError = new Error('signing rejected')
@@ -350,7 +352,7 @@ describe('useCollectibleDetail', () => {
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
@@ -737,6 +739,41 @@ describe('useCollectibleDetail', () => {
                     'https://example.com/m.glb',
                 )
             })
+
+            it('refuses a model URL that is not absolute https', () => {
+                Object.assign(mockCapabilities, { inAppWebView: false })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'algorand://ATTACKER?amount=1',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                act(() => {
+                    result.current.handleModelPress()
+                })
+
+                expect(mockOpenURL).not.toHaveBeenCalled()
+            })
+        })
+    })
+
+    describe('handleSendPressed', () => {
+        it('requests the send sheet under its stable id so a repeat tap is ignored', () => {
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            result.current.handleSendPressed()
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'send-funds' }),
+            )
         })
     })
 
@@ -778,32 +815,14 @@ describe('useCollectibleDetail', () => {
 
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         })
+    })
 
-        describe('on web', () => {
-            it('opens the raw media URL in a new tab instead of a bottom sheet', () => {
-                Object.assign(mockPlatform, { OS: 'web' })
-                mockUseSingleAssetDetailsQuery.mockReturnValue({
-                    data: makeAssetWithMedia([
-                        {
-                            type: 'image',
-                            downloadUrl: 'https://example.com/full.png',
-                            extension: 'png',
-                        },
-                    ]),
-                    isPending: false,
-                })
+    it('offers opting out only while the manageAssets capability is on', () => {
+        const { result } = renderHook(() => useCollectibleDetail('123'))
+        expect(result.current.canManageAssets).toBe(true)
 
-                const { result } = renderHook(() =>
-                    useCollectibleDetail('12345'),
-                )
+        act(() => setCapabilityOverrides({ manageAssets: false }))
 
-                result.current.handleFullScreenPress(0)
-
-                expect(mockOpenURL).toHaveBeenCalledWith(
-                    'https://example.com/full.png',
-                )
-                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
-            })
-        })
+        expect(result.current.canManageAssets).toBe(false)
     })
 })

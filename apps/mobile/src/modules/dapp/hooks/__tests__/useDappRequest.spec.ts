@@ -41,7 +41,7 @@ describe('useDappRequest', () => {
         sendMessage.mockResolvedValueOnce({
             requestId: 'q1',
             origin: 'https://x.com',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
         const { result } = renderHook(() => useDappRequest())
         await waitFor(() =>
@@ -56,7 +56,7 @@ describe('useDappRequest', () => {
         sendMessage.mockResolvedValueOnce({
             requestId: 'q1',
             origin: 'https://x.com',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
         sendMessage.mockResolvedValueOnce({ ok: true })
         const { result } = renderHook(() => useDappRequest())
@@ -75,7 +75,7 @@ describe('useDappRequest', () => {
         sendMessage.mockResolvedValueOnce({
             requestId: 'q1',
             origin: 'https://x.com',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
         sendMessage.mockResolvedValueOnce({ ok: true })
         const { result } = renderHook(() => useDappRequest())
@@ -98,7 +98,7 @@ describe('useDappRequest', () => {
         sendMessage.mockResolvedValueOnce({
             requestId: 'popup-r1',
             origin: 'https://y.com',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
         const { result } = renderHook(() => useDappRequest())
         await waitFor(() =>
@@ -114,7 +114,7 @@ describe('useDappRequest', () => {
         sendMessage.mockResolvedValueOnce({
             requestId: 'q1',
             origin: 'https://x.com',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
         const { result } = renderHook(() => useDappRequest())
         await waitFor(() => expect(result.current.approval).not.toBeNull())
@@ -152,7 +152,7 @@ describe('useDappRequest', () => {
             sendMessage.mockResolvedValueOnce({
                 requestId: 'q1',
                 origin: 'https://x.com',
-                kind: 'enable',
+                kind: 'connection-proposal',
             })
             const rendered = renderHook(() => useDappRequest())
             await waitFor(() =>

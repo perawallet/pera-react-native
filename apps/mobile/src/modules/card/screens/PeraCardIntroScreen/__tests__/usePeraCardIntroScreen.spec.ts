@@ -41,6 +41,7 @@ vi.mock('@modules/webview', () => ({
     useWebView: () => ({
         pushWebView: mockPushWebView,
     }),
+    withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
 
 const mockOpenURL = vi.fn()
@@ -140,7 +141,7 @@ describe('usePeraCardIntroScreen', () => {
         })
 
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://example.com/pera-card',
+            url: 'https://example.com/pera-card?lang=en',
         })
         expect(mockOpenURL).not.toHaveBeenCalled()
     })
@@ -154,7 +155,7 @@ describe('usePeraCardIntroScreen', () => {
         })
 
         expect(mockOpenURL).toHaveBeenCalledWith(
-            'https://example.com/pera-card',
+            'https://example.com/pera-card?lang=en',
         )
         expect(mockPushWebView).not.toHaveBeenCalled()
     })

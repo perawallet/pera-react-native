@@ -17,20 +17,25 @@ import { useRemoveAssetsScreen } from '../useRemoveAssetsScreen'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
-const mockAccount = { address: 'test-address', name: 'Test' }
+const mockAccount = {
+    id: 'test',
+    name: 'Test',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+}
 
 const mockAssetBalances = [
     {
         assetId: '0',
         amount: new Decimal('1000'),
-        algoValue: new Decimal('1000'),
+        nativeValue: new Decimal('1000'),
     },
-    { assetId: '123', amount: new Decimal(0), algoValue: new Decimal(0) },
-    { assetId: '456', amount: new Decimal(0), algoValue: new Decimal(0) },
+    { assetId: '123', amount: new Decimal(0), nativeValue: new Decimal(0) },
+    { assetId: '456', amount: new Decimal(0), nativeValue: new Decimal(0) },
     {
         assetId: '789',
         amount: new Decimal('500'),
-        algoValue: new Decimal('500'),
+        nativeValue: new Decimal('500'),
     },
 ]
 
@@ -59,6 +64,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
 }))
 

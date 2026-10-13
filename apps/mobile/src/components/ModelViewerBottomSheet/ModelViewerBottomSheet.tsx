@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback } from 'react'
-import { ActivityIndicator, useWindowDimensions } from 'react-native'
+import { useWindowDimensions } from 'react-native'
 import { WebView } from 'react-native-webview'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
@@ -20,7 +20,12 @@ import {
     BottomSheetModal,
 } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWLoadingIndicator,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useStyles } from './styles'
 import { useModelViewerBottomSheet } from './useModelViewerBottomSheet'
 
@@ -127,8 +132,8 @@ export const ModelViewerBottomSheet = ({
                         pointerEvents='none'
                         testID='model-viewer-loading'
                     >
-                        <ActivityIndicator
-                            size='large'
+                        <PWLoadingIndicator
+                            size='lg'
                             color='white'
                         />
                     </PWView>

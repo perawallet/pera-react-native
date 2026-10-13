@@ -16,6 +16,7 @@ import {
     type SupportedUsState,
 } from '@perawallet/wallet-core-card'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardUsStatePickerResult = {
     search: string
@@ -34,7 +35,9 @@ export type UseCardUsStatePickerResult = {
  * caller.
  */
 export const useCardUsStatePicker = (): UseCardUsStatePickerResult => {
-    const { data, isLoading, isError, refetch } = useRegistrationSettingsQuery()
+    const scope = useCardScope()
+    const { data, isLoading, isError, refetch } =
+        useRegistrationSettingsQuery(scope)
     const { resolve } = useBottomSheetResult<SupportedUsState>()
     const [search, setSearch] = useState('')
 

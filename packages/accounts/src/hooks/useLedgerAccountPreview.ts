@@ -10,72 +10,91 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
-    ALGO_ASSET,
+    nativeAssetFor,
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
-import {
-    baseUnitsToDisplayUnits,
-    microAlgosToAlgos,
-} from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID, ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
     LedgerAccountPreviewAsset,
-    LedgerAccountRekeyRelationship,
+    LedgerAccountDelegation,
     UseLedgerAccountPreviewResult,
 } from '../models'
-import { useOnChainAccountInformationQuery } from './useOnChainAccountInformationQuery'
-import { useRekeyedAddressesQuery } from './useRekeyedAddressesQuery'
+import { describeHolding } from '../chain-adapter'
+import { recordAuthority } from '../store/recordAuthority'
+import { useOnChainAccountStateQuery } from './useOnChainAccountStateQuery'
+import { useDelegatedAddressesQuery } from './useDelegatedAddressesQuery'
 
 export const useLedgerAccountPreview = (
     address: string,
+    scope: ChainScope,
 ): UseLedgerAccountPreviewResult => {
-    const onChain = useOnChainAccountInformationQuery(address)
-    const rekeyed = useRekeyedAddressesQuery(address)
+    const nativeAsset = nativeAssetFor(scope.chainId)
+    const onChain = useOnChainAccountStateQuery(address, scope)
+    const delegated = useDelegatedAddressesQuery(address, scope)
     const { usdToPreferred } = useCurrency()
+    const authorityAddress = onChain.data?.authorityAddress
 
+    // The sheet's synthetic watch row reads its delegation state from the slice.
+    useEffect(() => {
+        if (authorityAddress && authorityAddress !== address) {
+            recordAuthority(scope, address, authorityAddress)
+        }
+    }, [scope, address, authorityAddress])
+
+    const heldAssets = useMemo(
+        () =>
+            (onChain.data?.holdings ?? []).filter(
+                holding => holding.assetId !== nativeAsset.assetId,
+            ),
+        [onChain.data, nativeAsset.assetId],
+    )
     const assetIds = useMemo(
-        () => (onChain.data?.assets ?? []).map(a => String(a.assetId)),
-        [onChain.data],
+        () => heldAssets.map(holding => holding.assetId),
+        [heldAssets],
     )
 
     const { data: assets } = useAssetsQuery(assetIds)
-    const priceIds = useMemo(() => [ALGO_ASSET_ID, ...assetIds], [assetIds])
+    const priceIds = useMemo(
+        () => [nativeAsset.assetId, ...assetIds],
+        [nativeAsset.assetId, assetIds],
+    )
     const { data: prices } = useAssetPricesQuery(priceIds)
 
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
         if (!onChain.data) return undefined
 
-        const algoBalance = microAlgosToAlgos(onChain.data.amount)
-        const algoUsdPrice =
-            prices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0)
+        const nativeBalance = onChain.data.nativeBalance
+        const nativeUsdPrice =
+            prices?.get(nativeAsset.assetId)?.usdPrice ?? new Decimal(0)
 
         const previewAssets: LedgerAccountPreviewAsset[] = []
-        let totalUsd = algoBalance.times(algoUsdPrice)
+        let totalUsd = nativeBalance.times(nativeUsdPrice)
 
         previewAssets.push({
-            assetId: ALGO_ASSET_ID,
-            name: ALGO_ASSET.name ?? 'Algo',
-            unitName: ALGO_ASSET.unitName ?? ALGO_ASSET_NAME,
-            decimals: ALGO_ASSET.decimals,
+            assetId: nativeAsset.assetId,
+            name: nativeAsset.name ?? '',
+            unitName: nativeAsset.unitName ?? '',
+            decimals: nativeAsset.decimals,
             hasKnownDecimals: true,
-            amount: algoBalance,
-            fiatValue: usdToPreferred(algoBalance.times(algoUsdPrice)),
-            usdPrice: algoUsdPrice,
+            amount: nativeBalance,
+            fiatValue: usdToPreferred(nativeBalance.times(nativeUsdPrice)),
+            usdPrice: nativeUsdPrice,
             verificationTier: PeraAssetVerificationTier.verified,
             logo: undefined,
-            isAlgo: true,
-            isFrozen: false,
+            isNative: true,
+            restriction: null,
         })
 
-        for (const holding of onChain.data.assets) {
-            const id = String(holding.assetId)
+        for (const holding of heldAssets) {
+            const id = holding.assetId
             const meta = assets?.get(id)
             const hasKnownDecimals = meta?.decimals !== undefined
             const decimals = meta?.decimals ?? 0
@@ -100,37 +119,46 @@ export const useLedgerAccountPreview = (
                     meta?.peraMetadata?.verificationTier ??
                     PeraAssetVerificationTier.unverified,
                 logo: meta?.peraMetadata?.logo ?? undefined,
-                isAlgo: false,
-                isFrozen: holding.isFrozen,
+                isNative: false,
+                restriction: describeHolding(
+                    scope.chainId,
+                    holding.native ?? null,
+                ).restriction,
             })
         }
 
-        const authAddress = onChain.data.authAddress
-        let rekey: LedgerAccountRekeyRelationship = { kind: 'none' }
-        if (authAddress && authAddress !== address) {
-            rekey = { kind: 'rekeyedTo', authAddress }
+        let delegation: LedgerAccountDelegation = { kind: 'none' }
+        if (authorityAddress && authorityAddress !== address) {
+            delegation = { kind: 'delegatedTo', authorityAddress }
         } else if (
-            !rekeyed.isError &&
-            rekeyed.rekeyedAddresses &&
-            rekeyed.rekeyedAddresses.length > 0
+            !delegated.isError &&
+            delegated.delegatedAddresses &&
+            delegated.delegatedAddresses.length > 0
         ) {
-            rekey = { kind: 'canSignFor', addresses: rekeyed.rekeyedAddresses }
+            delegation = {
+                kind: 'canSignFor',
+                addresses: delegated.delegatedAddresses,
+            }
         }
 
         return {
             address,
-            algoBalance,
+            nativeBalance,
             totalFiatValue: usdToPreferred(totalUsd),
             assets: previewAssets,
-            rekey,
+            delegation,
         }
     }, [
         address,
+        scope.chainId,
+        nativeAsset,
+        authorityAddress,
         onChain.data,
+        heldAssets,
         assets,
         prices,
-        rekeyed.rekeyedAddresses,
-        rekeyed.isError,
+        delegated.delegatedAddresses,
+        delegated.isError,
         usdToPreferred,
     ])
 

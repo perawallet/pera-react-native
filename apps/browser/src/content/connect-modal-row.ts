@@ -26,8 +26,7 @@ export const INJECTED_ROW_ID = 'pera-extension-injected-row'
 // The button inside the expanded panel that actually starts the pairing.
 // Distinct from the SDK's own `pera-wallet-connect-extension-launch-button`:
 // that id is bound by the desktop-mode element's constructor to call
-// `window.onExtensionConnect()`, which is exactly the transport we know is
-// absent whenever this row is injected at all.
+// `window.onExtensionConnect()`, a global no build of ours installs.
 export const LAUNCH_BUTTON_ID = 'pera-extension-injected-launch-button'
 
 const ACCORDION_ITEM_CLASS = 'pera-wallet-accordion-item'
@@ -67,37 +66,17 @@ const modalElement = (wrapper: Element): Element | null =>
 const desktopModeShadowRoot = (modal: Element): ShadowRoot | null =>
     modal.shadowRoot?.querySelector(DESKTOP_MODE_TAG)?.shadowRoot ?? null
 
-/**
- * Whether the page's own @perawallet/connect instance can already drive the
- * ARC-0027 extension transport. `window.onExtensionConnect` is installed by
- * PeraWalletConnect.connect() only when the dApp passed `experimental: true`
- * AND discovery found us — and the modal's own "Connect with Extension"
- * button does nothing but call it. So its presence means the dApp owns the
- * flow and we must stay out; its absence means the SDK never built an
- * extension transport for this connect() call, so ARC-0027 is unreachable
- * from outside and WC pairing off the `uri` attribute is the only mechanism.
- *
- * Only observable from the MAIN world — this is a page global.
- */
-const pageCanDriveArc0027 = (): boolean =>
-    typeof (globalThis as { onExtensionConnect?: unknown })
-        .onExtensionConnect === 'function'
-
 export const shouldInjectRow = (wrapper: Element): boolean => {
-    if (pageCanDriveArc0027()) return false
     const modal = modalElement(wrapper)
     // Gate on is-extension-enabled, not is-extension-available.
-    // is-extension-enabled tracks the dApp's `experimental` constructor
-    // option and is set whenever the SDK renders an extension row at all —
-    // either "Connect with Extension" (is-extension-available="true", when
-    // discovery resolved) or "Install Pera Extension" (is-extension-available
-    // absent/false, when it hasn't). is-extension-available alone tracks only
-    // discovery success, so gating on it lets both an SDK "Install Pera
-    // Extension" row and our row render together whenever discovery is still
-    // pending. Gating on is-extension-enabled instead means we never show two
-    // extension rows, at the accepted cost that in that state the user sees
-    // only the SDK's stale install prompt and not our row, even though the
-    // extension is in fact installed.
+    // is-extension-enabled tracks the dApp's `experimental` constructor option
+    // and is set whenever the SDK renders an extension row at all; gating on
+    // is-extension-available instead would let the SDK's row and ours render
+    // together. The transitional cost is real and deliberate: until
+    // @perawallet/connect speaks `window.pera` and renders a working row of
+    // its own, a dApp passing `experimental: true` sees only the SDK's stale
+    // "Install Pera Extension" prompt and never our row, even though the
+    // extension is installed. Everyone else gets our row.
     if (modal?.getAttribute('is-extension-enabled') === 'true') return false
     return isWcUri(extractUriFromConnectModal(wrapper))
 }

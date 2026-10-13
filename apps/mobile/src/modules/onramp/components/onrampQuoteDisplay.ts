@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
 import { MELD_PROVIDERS, type RampQuote } from '@perawallet/wallet-core-onramp'
 
 // XO quotes have no first-class "service provider" name, so we fall back to the
@@ -34,18 +33,8 @@ export const getOnrampProviderName = (quote: RampQuote): string => {
 export const getOnrampPaymentMethodName = (quote: RampQuote): string =>
     quote.paymentMethod.name
 
-// Total fee shown in the row/details. Meld exposes an aggregate `totalFee`; XO
-// only exposes a `minerFee`, so we surface that as the single fee figure.
-export const getOnrampTotalFee = (quote: RampQuote): Decimal =>
-    quote.kind === 'meld' ? quote.totalFee : quote.minerFee.value
-
 // Currency of the destination (receive) amount. Meld carries a fiat/crypto code
 // (e.g. "USD", "ALGO"); XO only has the destination asset id. The asset id may
 // not be a recognisable symbol — that's acceptable, it's surfaced verbatim.
 export const getOnrampDestinationCurrency = (quote: RampQuote): string =>
     quote.kind === 'meld' ? quote.destinationCurrencyCode : quote.amount.assetId
-
-// Currency of the fee. Meld fees are charged in the source currency; XO's miner
-// fee is denominated in its own asset id.
-export const getOnrampFeeCurrency = (quote: RampQuote): string =>
-    quote.kind === 'meld' ? quote.sourceCurrencyCode : quote.minerFee.assetId

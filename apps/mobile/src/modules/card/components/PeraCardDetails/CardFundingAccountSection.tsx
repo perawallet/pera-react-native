@@ -20,20 +20,12 @@ type CardFundingAccountSectionProps = {
     address: string | null
     /** Fires from the Connect affordance; unreachable once an address is set. */
     onChange: () => void
-    /** Funding TYPE only applies once a card exists — hides that row until then. */
-    hasCard: boolean
-    /** Localised Auto/Manual funding label. */
-    fundingTypeLabel: string
-    onChangeFundingType: () => void
 }
 
-/** Grouped "Funding" selectors: the linked account and the funding type. */
+/** The linked funding account. The funding type is switched from the Overview tab. */
 export const CardFundingAccountSection = ({
     address,
     onChange,
-    hasCard,
-    fundingTypeLabel,
-    onChangeFundingType,
 }: CardFundingAccountSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -88,46 +80,6 @@ export const CardFundingAccountSection = ({
                     </PWTouchableOpacity>
                 )}
             </PWView>
-
-            {hasCard && (
-                <>
-                    <PWView style={styles.fundingGroupDivider} />
-
-                    <PWView
-                        style={styles.fundingGroupRow}
-                        testID='pera_card_funding_type_row'
-                    >
-                        <PWView style={styles.fundingGroupValue}>
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                style={styles.fundingGroupLabel}
-                            >
-                                {t('peraCard.account.funding_type_label')}
-                            </PWText>
-                            <PWText
-                                variant='body'
-                                weight={500}
-                            >
-                                {fundingTypeLabel}
-                            </PWText>
-                        </PWView>
-                        <PWTouchableOpacity
-                            onPress={onChangeFundingType}
-                            hitSlop={8}
-                            testID='pera_card_change_funding_type_button'
-                        >
-                            <PWText
-                                variant='body'
-                                weight={500}
-                                style={styles.changeLink}
-                            >
-                                {t('peraCard.account.change')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    </PWView>
-                </>
-            )}
         </PWView>
     )
 }

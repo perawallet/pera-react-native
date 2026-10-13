@@ -15,9 +15,10 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatList } from '@components/core'
 import {
+    addressOn,
     useSelectedAccount,
     useAccountCollectiblesQuery,
-    useAccountOptInRoundsQuery,
+    useHoldingAcquisitionOrderQuery,
     useCanSignWith,
     type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
@@ -28,9 +29,12 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useCapability } from '@hooks/useCapability'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
+import { AddAssetContent } from '@modules/assets'
 import { NftFilterContent } from '../NftFilterContent'
 import { NftSortContent } from '../NftSortContent'
 import { ManageNftsContent, type ManageNftsAction } from '../ManageNftsContent'
@@ -64,7 +68,13 @@ type UseAccountNftsResult = {
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
-    const canOptIn = useCanSignWith(account)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const address = account ? addressOn(account, scope) : undefined
+    const canSign = useCanSignWith(account, scope.chainId)
+    const canManageAssets = useCapability({
+        chain: { chainId: scope.chainId, capability: 'manageAssets' },
+    })
+    const canOptIn = canSign && canManageAssets
     const [searchFilter, setSearchFilter] = useState('')
 
     const sortMode = useCollectiblePreferencesStore(
@@ -144,14 +154,15 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         }
     }, [requestBottomSheet, openSortSheet, openFilterSheet])
 
-    const { optInRounds } = useAccountOptInRoundsQuery(
-        account?.address,
+    const { acquisitionOrder } = useHoldingAcquisitionOrderQuery(
+        address,
+        scope,
         sortMode === 'recentlyAdded',
     )
 
     const refreshAddresses = useMemo(
-        () => (account?.address ? [account.address] : []),
-        [account?.address],
+        () => (address ? [address] : []),
+        [address],
     )
     const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
         addresses: refreshAddresses,
@@ -159,15 +170,15 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     useEffect(() => {
         setSearchFilter('')
-    }, [account?.address])
+    }, [address])
 
     const debouncedSearchFilter = useDebouncedValue(
         searchFilter,
         SEARCH_DEBOUNCE_TIME_SHORT,
     )
 
-    // Opt-in round lives in a separate indexer-backed query, so that one order
-    // can't be expressed in SQL. Everything else — the collectible filter, the
+    // Acquisition order lives in a separate chain-backed query, so that one
+    // order can't be expressed in SQL. Everything else — the collectible filter, the
     // search, the sort — runs in the engine, and rows come back unparsed.
     const sqlSortMode = sortMode === 'recentlyAdded' ? undefined : sortMode
 
@@ -175,30 +186,30 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         collectibles: rows,
         isPending,
         isPlaceholderData,
-    } = useAccountCollectiblesQuery(account?.address, {
+    } = useAccountCollectiblesQuery(address, scope, {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
-        includeOptedInOnly: showOptedIn,
+        includeZeroBalance: showOptedIn,
     })
 
     const collectibles = useMemo(() => {
         if (sortMode !== 'recentlyAdded') return rows
 
-        // A row with no known round is newer than the indexer's view: holdings
-        // mirror algod, so only a just-opted-in asset can be missing from the
-        // (lagging) indexer map. Float those to the top so a fresh opt-in
+        // A row with no known order is newer than the chain's view: holdings
+        // mirror the node, so only a just-acquired asset can be missing from
+        // the (lagging) map. Float those to the top so a fresh acquisition
         // lands first instantly. `sort` is stable, so ties keep
         // SQL's asset-id-descending order, which also covers the map's empty
         // pre-load state.
         return [...rows].sort((a, b) => {
-            const aRound = optInRounds.get(a.assetId)
-            const bRound = optInRounds.get(b.assetId)
-            if (aRound === bRound) return 0
-            if (aRound === undefined) return -1
-            if (bRound === undefined) return 1
-            return bRound - aRound
+            const aOrder = acquisitionOrder.get(a.assetId)
+            const bOrder = acquisitionOrder.get(b.assetId)
+            if (aOrder === bOrder) return 0
+            if (aOrder === undefined) return -1
+            if (bOrder === undefined) return 1
+            return bOrder - aOrder
         })
-    }, [rows, sortMode, optInRounds])
+    }, [rows, sortMode, acquisitionOrder])
 
     const handlePress = useCallback(
         (item: AccountCollectibleLiteRow) => {
@@ -219,13 +230,13 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     // skipped the reset exactly when it was needed, which is how sorting a
     // freshly imported account dropped the user mid-list.
     const viewRequestKey = [
-        account?.address ?? '',
+        address ?? '',
         sortMode,
         debouncedSearchFilter,
         showOptedIn,
-        // recentlyAdded is ordered by a separate indexer query, whose rounds
-        // arrive after the rows: the map landing is its own reorder.
-        sortMode === 'recentlyAdded' ? optInRounds.size : '',
+        // recentlyAdded is ordered by a separate query, whose order arrives
+        // after the rows: the map landing is its own reorder.
+        sortMode === 'recentlyAdded' ? acquisitionOrder.size : '',
     ].join('|')
     const appliedViewRequestKeyRef = useRef(viewRequestKey)
     const hasRowsForRequest = collectibles.length > 0 && !isPlaceholderData

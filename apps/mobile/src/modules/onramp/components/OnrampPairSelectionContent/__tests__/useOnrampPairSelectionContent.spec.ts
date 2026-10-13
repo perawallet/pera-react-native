@@ -51,22 +51,33 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({ resolve: mockResolve }),
 }))
 
-vi.mock('@perawallet/wallet-core-onramp', () => ({
+vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
+    ...(await importOriginal()),
     useRampPairsQuery: mockUseRampPairsQuery,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
 }))
 
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampPairSelectionContent } from '../useOnrampPairSelectionContent'
 
 describe('useOnrampPairSelectionContent', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         mockUseRampPairsQuery.mockReturnValue({ data: PAIRS, isLoading: false })
-        mockUseSelectedAccount.mockReturnValue({ address: 'ADDR' })
+        mockUseSelectedAccount.mockReturnValue({
+            id: 'selected',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'ADDR' } },
+        })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map(),
         })

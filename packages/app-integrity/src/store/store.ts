@@ -11,8 +11,11 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AppIntegrityStore } from '../models'
 
@@ -32,7 +35,7 @@ const initialState = {
 export const useAppIntegrityStore: UseBoundStore<
     WithPersist<StoreApi<AppIntegrityStore>, unknown>
 > = create<AppIntegrityStore>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setRegistration: ({
@@ -57,7 +60,7 @@ export const useAppIntegrityStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             // `integrityToken` and `expiresAt` are intentionally NOT persisted:
             // the token is a bearer-style attestation credential and the
             // platform key-value storage is unencrypted (plaintext MMKV on RN).

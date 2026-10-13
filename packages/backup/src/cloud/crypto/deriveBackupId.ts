@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { sha512_256 } from '@noble/hashes/sha2.js'
+import { concatBytes } from '@noble/hashes/utils.js'
+import { base32nopad } from '@scure/base'
 import type { BackupId } from '../models'
 import { BACKUP_ID_PREFIX } from './constants'
 
@@ -19,7 +21,10 @@ import { BACKUP_ID_PREFIX } from './constants'
  * `did:pera:<algorand address>`. The identifier is the standard Algorand
  * address of the auth public key (base32 of `pubkey || sha512_256(pubkey)[-4:]`)
  * — the backend decodes it back to the public key to verify the registration
- * proof.
+ * proof. Encoded here, not by a chain codec, because it's a backend wire
+ * format that must not change with a codec.
  */
 export const deriveBackupId = (authPublicKey: Uint8Array): BackupId =>
-    `${BACKUP_ID_PREFIX}${encodeAlgorandAddress(authPublicKey)}`
+    `${BACKUP_ID_PREFIX}${base32nopad.encode(
+        concatBytes(authPublicKey, sha512_256(authPublicKey).slice(-4)),
+    )}`

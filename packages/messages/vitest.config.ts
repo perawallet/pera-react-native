@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -28,8 +29,8 @@ export default defineConfig({
             '**/node_modules/**',
             '**/dist/**',
             // These tests reference hooks from a different package
-            '**/usePreferences.test.ts',
-            '**/useSettings.test.ts',
+            '**/usePreferences.spec.ts',
+            '**/useSettings.spec.ts',
         ],
     },
     resolve: {
@@ -47,6 +48,11 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
             ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
+            ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
                 '../../extensions/platform/src/index.ts',
@@ -61,5 +67,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

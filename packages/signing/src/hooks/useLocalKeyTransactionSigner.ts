@@ -12,16 +12,14 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import {
-    type PeraSignedTransaction,
-    type PeraTransaction,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+import type {
+    ChainScope,
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import { signTransactionsWithLocalKey } from '../pipeline/signing/signTransactionsWithLocalKey'
-
-export { SIGN_BATCH_SIZE } from '../pipeline/signing/signTransactionsWithLocalKey'
+import { localKeySignerAdapterFor } from '../chain-adapter'
 
 export type UseLocalKeyTransactionSignerResult = {
     /**
@@ -42,27 +40,27 @@ export type UseLocalKeyTransactionSignerResult = {
         txnGroup: PeraTransaction[],
         indexesToSign: number[],
         account: WalletAccount,
+        scope: ChainScope,
     ) => Promise<PeraSignedTransaction[]>
 }
 
 /**
- * React binding for {@link signTransactionsWithLocalKey}: supplies key
- * custody (`useKMS`) and the transaction encoder, and holds no signing logic
- * of its own. The batching, `sgnr` and `pqsig` rules live in the pure
+ * React binding for the chain's local-key signer: supplies key
+ * custody (`useKMS`) and holds no signing logic of its own. The batching, `sgnr` and `pqsig` rules live in the pure
  * pipeline function so they can be proven against a real node.
  */
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
         const { signTransactionsWithKey, getPQSigningInfo } = useKMS()
-        const { encodeTransaction } = useTransactionEncoder()
 
         const signTransactions = useCallback(
-            (
+            async (
                 txnGroup: PeraTransaction[],
                 indexesToSign: number[],
                 account: WalletAccount,
+                scope: ChainScope,
             ): Promise<PeraSignedTransaction[]> =>
-                signTransactionsWithLocalKey(
+                localKeySignerAdapterFor(scope).signTransactions(
                     {
                         signPayloads: (keyPairId, payloads) =>
                             signTransactionsWithKey(
@@ -71,13 +69,12 @@ export const useLocalKeyTransactionSigner =
                                 payloads,
                             ),
                         getPQSigningInfo,
-                        encodeTransaction,
                     },
                     txnGroup,
                     indexesToSign,
                     account,
                 ),
-            [signTransactionsWithKey, getPQSigningInfo, encodeTransaction],
+            [signTransactionsWithKey, getPQSigningInfo],
         )
 
         return {

@@ -11,7 +11,7 @@
  */
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import type { AccountStackParamsList } from '@modules/accounts/routes'
+import type { AccountStackParamsList } from '@modules/accounts'
 import {
     PWButton,
     PWChip,
@@ -51,6 +51,7 @@ export const CollectibleDetailScreen = ({
         collectible,
         isPending,
         isReadOnly,
+        canManageAssets,
         traits,
         media,
         hasImage,
@@ -190,7 +191,7 @@ export const CollectibleDetailScreen = ({
                         </PWView>
                     )}
 
-                    {isOptedInNotOwned && !isReadOnly && (
+                    {isOptedInNotOwned && !isReadOnly && canManageAssets && (
                         <PWView style={styles.optOutNotice}>
                             <PWView style={styles.optOutNoticeRow}>
                                 <PWIcon

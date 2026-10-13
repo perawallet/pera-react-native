@@ -16,7 +16,12 @@ import { Decimal } from 'decimal.js'
 import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
-const mockAccount = { address: 'test-address', name: 'Test Account' }
+const mockAccount = {
+    id: 'test-account',
+    name: 'Test Account',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+}
 
 const { mockGetSelectedAccount } = vi.hoisted(() => ({
     mockGetSelectedAccount: vi.fn(() => mockAccount),
@@ -41,7 +46,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
                             {
                                 assetId: '123',
                                 amount: new Decimal(1),
-                                algoValue: new Decimal(1),
+                                nativeValue: new Decimal(1),
                             },
                         ],
                     },
@@ -76,9 +81,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const { mockUseGlobalSearch, defaultGlobalSearchResult } = vi.hoisted(() => {
     const defaultGlobalSearchResult = {

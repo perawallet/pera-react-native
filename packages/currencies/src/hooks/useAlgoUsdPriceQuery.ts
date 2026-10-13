@@ -12,43 +12,31 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { eq, and } from 'drizzle-orm'
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { decimalColumn, getDatabase } from '@perawallet/wallet-core-database'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import {
+    getAssetPricesByIds,
+    nativeAssetFor,
+} from '@perawallet/wallet-core-assets'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { currencyQueryKeys } from './querykeys'
 
-const AssetPricesTable = sqliteTable('asset_prices', {
-    assetId: decimalColumn('asset_id').notNull(),
-    network: text('network').notNull(),
-    usdPrice: decimalColumn('usd_price').notNull(),
-})
-
-const algoAssetIdDecimal = new Decimal(ALGO_ASSET_ID)
-
-async function getAlgoPriceFromDb(network: string): Promise<Decimal> {
-    const db = getDatabase()
-    const rows = await db
-        .select({ usdPrice: AssetPricesTable.usdPrice })
-        .from(AssetPricesTable)
-        .where(
-            and(
-                eq(AssetPricesTable.assetId, algoAssetIdDecimal),
-                eq(AssetPricesTable.network, network),
-            ),
-        )
-        .all()
-
-    return rows[0]?.usdPrice ?? new Decimal(0)
+async function getAlgoPriceFromDb(scope: ChainScope): Promise<Decimal> {
+    const [price] = await getAssetPricesByIds({
+        assetIds: [nativeAssetFor(scope.chainId).assetId],
+        scope,
+    })
+    return price?.usdPrice ?? new Decimal(0)
 }
 
 export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     return useQuery({
-        queryKey: currencyQueryKeys.algoUsdPrice(network),
-        queryFn: () => getAlgoPriceFromDb(network),
+        queryKey: currencyQueryKeys.algoUsdPrice(scope),
+        queryFn: () => getAlgoPriceFromDb(scope),
         staleTime: Infinity,
         // SQLite is the source of truth for the ALGO price. Force the queryFn
         // to run even while offline — TanStack's default networkMode: 'online'

@@ -1,0 +1,89 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { ChainKeyStore } from '../contracts/key-derivation'
+import type {
+    ChainCapabilities,
+    ChainCapabilityRestrictions,
+} from './capabilities'
+import type { ChainDescriptor } from './descriptor'
+import type { ChainScope } from './identity'
+
+/** Base URLs keyed by the chain's own endpoint names. */
+export type ChainEndpoints = Readonly<Record<string, string>>
+
+/**
+ * The wallet's ceilings for a node request, in milliseconds. A chain client
+ * adds no retries on top: TanStack Query retries reads and the signing
+ * pipeline retries submission.
+ */
+export interface ChainRequestTimeouts {
+    readMs: number
+    submitMs: number
+}
+
+/** The Pera backend serving a scope; `baseUrl` is empty where `services` is. */
+export interface ChainPeraBackend {
+    baseUrl: string
+    /** Pera service names, such as `blockFollowing`, the scope's backend offers. */
+    services: ReadonlySet<string>
+}
+
+/**
+ * What a chain package is handed at registration. Scope and endpoints are
+ * getters because `register` runs once, before the selected network can
+ * change. Pera backend requests go through shared's `queryClient`, which
+ * holds the Pera credential.
+ */
+export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
+    getScope(): ChainScope
+    getEndpoints(): E
+    getPeraBackend(scope: ChainScope): ChainPeraBackend
+    timeouts: ChainRequestTimeouts
+    kms: ChainKeyStore
+}
+
+export type ChainRemoteConfigValue = string | boolean | number
+
+/** Remote-config keys a chain reads, with their bundled defaults. */
+export type ChainRemoteConfigDefaults = Readonly<
+    Record<string, ChainRemoteConfigValue>
+>
+
+/**
+ * Node hosts a chain wants SSL-pinned, under its own remote-config kill switch.
+ * Every group shares one pin set (the CA roots behind Cloudflare), so a host
+ * served through another CA fails once its flag is on.
+ */
+export interface ChainPinnedHosts {
+    /** Remote-config boolean key; pinning applies only once a fetched value is `true`. */
+    flag: string
+    /** Base URLs whose hostnames are pinned. */
+    urls: readonly string[]
+    /** Registrable domains a host must sit under to be pinned. */
+    domains: readonly string[]
+}
+
+export interface ChainModule<E extends ChainEndpoints = ChainEndpoints> {
+    descriptor: ChainDescriptor
+    capabilityDefaults: ChainCapabilities
+    /** The developer modes each capability is off in, e.g. because the chain's backend only serves mainnet. */
+    capabilityRestrictions?: ChainCapabilityRestrictions
+    /** Adds every adapter the chain implements to its feature registry; `registerChainSetup` registers the descriptor. */
+    register(ctx: ChainContext<E>): void
+    /** Every i18n key the chain's adapters emit as data, which the literal-`t()` lint can't see. */
+    i18nKeys(): readonly string[]
+    /** Key names are the wire contract with remote config, so they never change. */
+    remoteConfigDefaults?: ChainRemoteConfigDefaults
+    /** Called once at registration. */
+    pinnedHosts?: () => ChainPinnedHosts
+}

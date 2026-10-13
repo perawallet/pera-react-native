@@ -11,45 +11,53 @@
  */
 
 import { useCallback } from 'react'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { prepareHDMasterKey, useKMS } from '@perawallet/wallet-core-kms'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    handOffSecret,
+    prepareHDMasterKey,
+    useKMS,
+} from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
-import { discoverAccounts, createXHDGetPublicKey } from '../account-discovery'
-import type { HDWalletAccount } from '../models/accounts'
+import { discoverAccounts } from '../account-discovery'
+import {
+    accountsChainAdapters,
+    deriveHdAccount,
+    requirePublicKeyGetter,
+} from '../chain-adapter'
+import type { LocalAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
-import { HDImportSessionNotFoundError } from '../errors'
+import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
+import { hdIndexOf } from '../credentials'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
         walletKeyId: string
-        derivationType: BIP32DerivationType
     }>
     discoverImportAccounts: (params: {
         walletKeyId: string
-    }) => Promise<HDWalletAccount[]>
+    }) => Promise<LocalAccount[]>
     commitImport: (params: {
         walletKeyId: string
-        selectedAccounts: HDWalletAccount[]
-    }) => Promise<HDWalletAccount[]>
+        selectedAccounts: LocalAccount[]
+    }) => Promise<LocalAccount[]>
     cancelImport: () => void
 }
 
-export const useHDImportSession = (): UseHDImportSessionResult => {
-    const { persistHDMasterKey, generateDerivedKey, removeKeyAndChildren } =
-        useKMS()
+export const useHDImportSession = (
+    scope: ChainScope,
+): UseHDImportSessionResult => {
+    const { persistHDMasterKey, removeKeyAndChildren } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     const prepareImport = useCallback(
         async ({ mnemonicIndices }: { mnemonicIndices?: Uint16Array }) => {
             const prepared = await prepareHDMasterKey({ mnemonicIndices })
-            const derivationType = BIP32DerivationType.Peikert
             useHDImportSessionStore.getState().start({
                 walletKeyId: prepared.keyId,
-                rootKey: prepared.rootKey,
-                entropy: prepared.entropy,
-                derivationType,
+                rootKey: handOffSecret(prepared.rootKey),
+                entropy: handOffSecret(prepared.entropy),
             })
-            return { walletKeyId: prepared.keyId, derivationType }
+            return { walletKeyId: prepared.keyId }
         },
         [],
     )
@@ -60,14 +68,16 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             if (!pending || pending.walletKeyId !== walletKeyId) {
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
-            const getPublicKey = createXHDGetPublicKey(pending.rootKey)
+            const getPublicKey = requirePublicKeyGetter(
+                accountsChainAdapters.get(scope.chainId),
+            )(pending.rootKey)
             return discoverAccounts({
+                scope,
                 getPublicKey,
-                derivationType: pending.derivationType,
                 walletKeyId: pending.walletKeyId,
             })
         },
-        [],
+        [scope],
     )
 
     // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so
@@ -80,7 +90,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
             selectedAccounts,
         }: {
             walletKeyId: string
-            selectedAccounts: HDWalletAccount[]
+            selectedAccounts: LocalAccount[]
         }) => {
             const pending = useHDImportSessionStore.getState().pending
             if (!pending || pending.walletKeyId !== walletKeyId) {
@@ -95,14 +105,17 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
 
             try {
                 await Promise.all(
-                    selectedAccounts.map(acc =>
-                        generateDerivedKey(
+                    selectedAccounts.map(acc => {
+                        const index = hdIndexOf(acc)
+                        if (!index) {
+                            throw new NoHdSeedError(pending.walletKeyId)
+                        }
+                        return deriveHdAccount(
+                            scope,
                             pending.walletKeyId,
-                            acc.hdWalletDetails.account,
-                            acc.hdWalletDetails.keyIndex,
-                            acc.hdWalletDetails.derivationType,
-                        ),
-                    ),
+                            index,
+                        )
+                    }),
                 )
             } catch (e) {
                 // Roll back the seed + any successfully-derived children so
@@ -125,12 +138,7 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
 
             return selectedAccounts
         },
-        [
-            persistHDMasterKey,
-            generateDerivedKey,
-            removeKeyAndChildren,
-            setAccounts,
-        ],
+        [persistHDMasterKey, removeKeyAndChildren, scope, setAccounts],
     )
 
     const cancelImport = useCallback(() => {

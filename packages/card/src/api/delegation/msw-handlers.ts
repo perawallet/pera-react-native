@@ -40,35 +40,6 @@ export const mockGetDelegationToken = ({
     )
 }
 
-export type MockGetDelegationProgramParams = {
-    /** Base64 compiled program blob. */
-    program?: string
-    status?: number
-}
-
-export const mockGetDelegationProgram = ({
-    program = 'BIEB',
-    status = 200,
-}: MockGetDelegationProgramParams = {}): HttpHandler =>
-    http.get('*/v1/delegation/chain/config', () =>
-        HttpResponse.json({ program }, { status }),
-    )
-
-export type MockPostAlgorandDelegationApprovalParams = {
-    status?: number
-    /** Captures each request body for assertions. */
-    onRequest?: (body: Record<string, unknown>) => void
-}
-
-export const mockPostAlgorandDelegationApproval = ({
-    status = 200,
-    onRequest,
-}: MockPostAlgorandDelegationApprovalParams = {}): HttpHandler =>
-    http.post('*/v1/delegation/algorand/post-approval', async ({ request }) => {
-        onRequest?.((await request.json()) as Record<string, unknown>)
-        return HttpResponse.json({ success: status < 400 }, { status })
-    })
-
 export type MockGetExternalWalletsParams = {
     response: ExternalWalletApiResponse[]
     status?: number

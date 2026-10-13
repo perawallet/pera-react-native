@@ -8,6 +8,15 @@ Only key custody is substituted: `harness/keystore.ts` swaps the React Native
 Keychain driver for an in-memory one, and everything above it is the app's own
 code: `signTransactionsWithLocalKey`, `resolvePQSigningInfo`,
 `createLocalKeyStrategy`, `assignMinimumFeesToGroup`.
+
+Transactions the app builds (transfers, express send, opt-in/out, rekey, key
+registration) come from its builders in `packages/chain-algorand/src/transactions/builders.ts`,
+and history from the indexer fetchers beside them. Both take a `ChainScope` and
+resolve their node from `getChainConfig`, so `harness/scope.ts` saves LocalNet
+as the `custom` network through the network store, the way a user saves a
+custom node. `harness/build.ts`'s raw composer calls are only for shapes no
+builder makes: asset creation, pinned fees and negative cases.
+
 `harness/__tests__/algokey.spec.ts` and `harness/__tests__/keystore.spec.ts`
 test the harness itself rather than the app, and each says so in its header;
 the other files in that directory are ordinary conformance tests.
@@ -39,21 +48,42 @@ pnpm test:conformance   # from the repo root, or `pnpm exec vitest run` from her
 `src/harness/localnet.ts` fails fast with a clear message if LocalNet isn't
 reachable at `http://localhost:4001`.
 
+Two vitest projects share the run: `chain` stubs the accounts barrel's persisted
+store, and `store-migration` loads it for real. `vitest --project <name>` runs
+one.
+
+## Store migrations
+
+A migration must leave equivalent state durably present, in the same write
+that removes the old field, so no account loses a capability even until the
+next sync. `src/suites/store-migration/` holds the `accounts-store` payload
+each past version wrote and replays each one through the real rehydrate and
+`hydrateAccountChainStates` path, then through two cold starts with no synced
+rows. After every step each local key must sign for itself, the rekeyed
+account must sign through its authority, and LocalNet must accept both.
+
+Any change to `migrateAccountsState`, and any `STORE_VERSION` bump, adds the
+outgoing version's payload to `fixtures.ts`, written as plain JSON the way that
+version persisted it. A lanekeep rule could enforce this by failing a diff that
+touches `STORE_VERSION` or `migrateAccountsState` in
+`packages/accounts/src/store/store.ts` without touching `fixtures.ts`; nothing
+enforces it yet.
+
 ## `dist/` dependency (CI-relevant)
 
 Every workspace package this suite imports is aliased in `vitest.config.ts`'s
-`resolve.alias`. `@perawallet/wallet-core-blockchain` maps to
-`packages/blockchain/src`, and Vite's prefix replacement means both the bare
-specifier and any deep import hit `src`, never `dist`. That is not where the
+`resolve.alias`. `@perawallet/wallet-core-chain-algorand` maps to `packages/chain-algorand/src`,
+and Vite's prefix replacement means the bare specifier, `/blockchain` and any
+deep import under it hit `src`, never `dist`. That is not where the
 problem is.
 
 `src/suites/submission/chokepoint.spec.ts` imports `submitAndAutoRefreshCore`
-from `@perawallet/wallet-core-signing`, and that file also imports the full
-`@perawallet/wallet-core-blockchain` barrel (for real `toAlgodError`
+from `@perawallet/wallet-core-chain-algorand`'s signing module, and that file also imports the full
+`@perawallet/wallet-core-chain-algorand/blockchain` barrel (for real `toAlgodError`
 classification logic the suite exercises). The barrel itself resolves fine, but
 its own source has non-aliased dependencies one level out:
 `fees/useMinimumFeeConfig.ts` imports `@perawallet/wallet-core-remote-config`,
-and `utils/clearCustomNetworkCache.ts` imports `@perawallet/wallet-core-database`.
+and chain-shared's `utils/clearCustomNetworkCache.ts` imports `@perawallet/wallet-core-database`.
 Neither of those is in `vitest.config.ts`'s alias list, so each resolves
 through its own `package.json` `main` or `exports` field, meaning its built
 `dist/`, and remote-config transitively pulls in `wallet-extension-platform` and
@@ -102,21 +132,21 @@ The point of this suite is to put Pera's own functions in front of a real
 node. Where a third-party library appears, it is on the _other_ side of the
 comparison as an independent oracle, never on both.
 
-| Area                                                                  | The app code under test                                                                                                                       |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Envelope construction (`sig`, `sgnr`, `pqsig`, batching)              | `signTransactionsWithLocalKey`, the pure pipeline function `useLocalKeyTransactionSigner` delegates to                                        |
-| Signature-scheme decision                                             | `resolvePQSigningInfo`, reading a live keystore snapshot                                                                                      |
-| Strategy layer (capability gate, progress, backend signature payload) | `createLocalKeyStrategy`                                                                                                                      |
-| Signer dispatch and rekey resolution                                  | `buildGroupSignerTypeMap`, `resolveSigningAccount`                                                                                            |
-| Group fee assignment and re-grouping                                  | `assignMinimumFeesToGroup`, `groupHasQuantumSigner`                                                                                           |
-| Fee arithmetic                                                        | `calculateMinTxnFee`, `calculatePQFeeSurcharge`                                                                                               |
-| Address derivation                                                    | `algo25SeedToAddress`, `deriveQuantumAddress`, `derivePQKeygenSeed`, `generateMultisigAddress`, `encodeAlgorandAddress`, `prepareHDMasterKey` |
-| In-memory PQ keygen (import probe, legacy-account notice)             | `getPQProvider().generateKeypairFromSeed`, `quantumAddressCandidates`                                                                         |
-| Account state                                                         | `fetchOnChainAccountInformation` + `mapOnChainAccountInformation`, `fetchAccountAssetOptInRounds`                                             |
-| Transaction history                                                   | `transformIndexerTransactions`, `collectAssetIds`, `computeBalanceImpacts`                                                                    |
-| Multisig assembly                                                     | `assembleSignedMultisigTransactions`                                                                                                          |
-| Submission                                                            | `submitAndAutoRefreshCore`                                                                                                                    |
-| Error classification                                                  | `toAlgodError` / `parseAlgodMessage`                                                                                                          |
+| Area                                                                  | The app code under test                                                                                                                        |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Envelope construction (`sig`, `sgnr`, `pqsig`, batching)              | `signTransactionsWithLocalKey`, the pure pipeline function `useLocalKeyTransactionSigner` delegates to                                         |
+| Signature-scheme decision                                             | `resolvePQSigningInfo`, reading a live keystore snapshot                                                                                       |
+| Strategy layer (capability gate, progress, backend signature payload) | `createLocalKeyStrategy`                                                                                                                       |
+| Signer dispatch and rekey resolution                                  | `buildGroupSignerMap`, `resolveSigningAccount`                                                                                                 |
+| Group fee assignment and re-grouping                                  | `assignMinimumFeesToGroup`, `groupHasQuantumSigner`                                                                                            |
+| Fee arithmetic                                                        | `calculateMinTxnFee`, `calculatePQFeeSurcharge`                                                                                                |
+| Address derivation                                                    | `algorandAddressCodec`, `deriveQuantumAddress`, `derivePQKeygenSeed`, `generateMultisigAddress`, `encodeAlgorandAddress`, `prepareHDMasterKey` |
+| In-memory PQ keygen (import probe, legacy-account notice)             | `getPQProvider().generateKeypairFromSeed`, `quantumAddressCandidates`                                                                          |
+| Account state                                                         | `fetchOnChainAccountInformation` + `mapOnChainAccountInformation`, `fetchAccountAssetOptInRounds`                                              |
+| Transaction history                                                   | `transformIndexerTransactions`, `collectAssetIds`, `computeBalanceImpacts`                                                                     |
+| Multisig assembly                                                     | `assembleSignedMultisigTransactions`                                                                                                           |
+| Submission                                                            | `submitAndAutoRefreshCore`                                                                                                                     |
+| Error classification                                                  | `toAlgodError` / `parseAlgodMessage`                                                                                                           |
 
 Two files under `harness/__tests__/` are deliberate exceptions, and say so in
 their own headers: `algokey.spec.ts` self-tests the oracle (so a broken oracle
@@ -242,7 +272,7 @@ an open follow-up, not an oversight this doc is hiding.
 
 ## Shape-based algod error parsing
 
-`packages/blockchain/src/errors/parseAlgodMessage.ts` matches rejection messages on their _shape_,
+`packages/chain-algorand/src/blockchain/errors/parseAlgodMessage.ts` matches rejection messages on their _shape_,
 never on how algod renders the numbers in them. Algod changes those renderings between versions, and
 a regex written against one rendering silently stops matching: overspend has been rendered both as
 `MicroAlgos:{Raw:300000}` and as `MicroAlgos:300mA`, an expired-transaction round range has used both

@@ -20,7 +20,8 @@ export * from './useInvalidateAssetPrices'
 export * from './useToggleAssetFavoriteMutation'
 export * from './useToggleAssetPriceAlertMutation'
 export * from './useAssetSearchQuery'
-export * from './mappers'
+export * from './useNativeAsset'
+export * from './useIsNativeAssetId'
 
 export {
     invalidateAssetQueries,

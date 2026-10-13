@@ -22,9 +22,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mocks.request }),
 }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const defaultParams = {
     hasData: false,

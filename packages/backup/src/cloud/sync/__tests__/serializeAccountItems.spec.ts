@@ -9,126 +9,226 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
 // @vitest-environment node
-
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-    AccountTypes,
+    buildAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainDescriptor } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import {
-    parseAddressPayload,
-    parseSecretsPayload,
-} from '../../api/payloadParsers'
-import { serializeAccountItems } from '../serializeAccountItems'
-import { canonicalJson } from '../canonicalize'
+    registerAlgorandAccountsAdapter,
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
+import {
+    accountAddressesOf,
+    accountBackupAddresses,
+    buildAccountRecord,
+    hasBackupChains,
+} from '../serializeAccountItems'
 
-const algo25: WalletAccount = {
-    id: '1',
-    type: AccountTypes.algo25,
-    address: 'ADDR',
-    keyPairId: 'seed-1-ed25519',
-    name: 'Main',
-}
+// A chain is backed up only with an accounts adapter registered for it.
+registerAlgorandAccountsAdapter()
+registerEthereumAccountsAdapter()
 
-describe('serializeAccountItems', () => {
-    it('serializes an algo25 account to address + secrets items that round-trip', () => {
-        const result = serializeAccountItems(algo25, {
-            updatedAt: 1719300000000,
-            secrets: { type: 'algo25', mnemonic: 'word1 word2' },
+const UPDATED_AT = 5
+const HD = { seedFirstDerivedAddress: 'SEED', publicKeyHex: 'aabb' }
+
+const hdAccount = (chains: WalletAccount['chains']): WalletAccount =>
+    buildAccount({
+        id: 'hd',
+        name: 'Child',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 1 },
+        },
+        chainId: Object.keys(chains)[0] as 'algorand',
+        chains,
+    })
+
+const watchAccount = (chains: WalletAccount['chains']): WalletAccount =>
+    buildAccount({
+        id: 'watch',
+        custody: { kind: 'watch' },
+        chainId: Object.keys(chains)[0] as 'algorand',
+        chains,
+    })
+
+const ALGO = { algorand: { address: 'ALGO', keyPairId: 'algo-key' } }
+const ETH = { ethereum: { address: '0xeth', keyPairId: 'eth-key' } }
+
+describe('buildAccountRecord', () => {
+    beforeEach(() => {
+        registerFakeBackupAdapter()
+        registerEthereumBackupChain()
+    })
+
+    it('writes the adapter entry for Algorand and a format entry for Ethereum', () => {
+        const record = buildAccountRecord(hdAccount({ ...ETH, ...ALGO }), {
+            updatedAt: UPDATED_AT,
+            hd: HD,
         })
-        expect(result).not.toBeNull()
-        expect(result?.address.key).toBe('accounts/ADDR')
-        expect(result?.secrets?.key).toBe('secrets/ADDR')
-        expect(
-            parseAddressPayload(canonicalJson(result!.address.payload)),
-        ).toMatchObject({
-            type: 'algo25',
-            address: 'ADDR',
-            customName: 'Main',
-            updatedAt: 1719300000000,
-        })
-        expect(
-            parseSecretsPayload(canonicalJson(result!.secrets!.payload)),
-        ).toMatchObject({
-            type: 'algo25',
-            mnemonic: 'word1 word2',
+
+        expect(record).toEqual({
+            formatVersion: 2,
+            customName: 'Child',
+            updatedAt: UPDATED_AT,
+            chains: [
+                {
+                    chain: 'algorand',
+                    type: 'hdWallet',
+                    address: 'ALGO',
+                    seedFirstDerivedAddress: 'SEED',
+                    publicKey: 'aabb',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 1,
+                    derivationType: 9,
+                },
+                {
+                    chain: 'ethereum',
+                    type: 'hdChain',
+                    address: '0xeth',
+                    seedFirstDerivedAddress: 'SEED',
+                    account: 0,
+                    keyIndex: 1,
+                },
+            ],
         })
     })
 
-    it('serializes a watch account to an address-only item (no secrets)', () => {
-        const watch: WalletAccount = {
-            id: '2',
-            type: AccountTypes.watch,
-            address: 'WADDR',
-            name: 'Watcher',
-        }
-        const result = serializeAccountItems(watch, {
-            updatedAt: 1,
-            secrets: null,
+    it('leaves out the Algorand entry when the account has no key there to record', () => {
+        const record = buildAccountRecord(hdAccount({ ...ALGO, ...ETH }), {
+            updatedAt: UPDATED_AT,
+            hd: { seedFirstDerivedAddress: 'SEED', publicKeyHex: null },
         })
-        expect(result?.address.key).toBe('accounts/WADDR')
-        expect(result?.secrets).toBeNull()
-        expect(
-            parseAddressPayload(canonicalJson(result!.address.payload)),
-        ).toMatchObject({
-            type: 'watch',
-            address: 'WADDR',
-            customName: 'Watcher',
-        })
+
+        expect(record?.chains.map(({ type }) => type)).toEqual(['hdChain'])
     })
 
-    it('returns null for HD accounts when no hd context is provided', () => {
-        const hd: WalletAccount = {
-            id: '3',
-            type: AccountTypes.hdWallet,
-            address: 'HADDR',
-            keyPairId: 'k',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-        }
+    it('has no HD record without a seed reference', () => {
         expect(
-            serializeAccountItems(hd, { updatedAt: 1, secrets: null }),
+            buildAccountRecord(hdAccount(ALGO), { updatedAt: UPDATED_AT }),
         ).toBeNull()
     })
 
-    it('builds an hdWallet address payload from the injected hd context (no personal secret)', () => {
-        const hd: WalletAccount = {
-            id: '3',
-            type: AccountTypes.hdWallet,
-            address: 'CHILD',
-            keyPairId: 'seed-1-acc0-idx1-dt9',
-            name: 'Child 1',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 1,
-                derivationType: 9,
+    it('writes a raw private key as the format entry the key chain owns', () => {
+        const account = buildAccount({
+            id: 'key',
+            name: 'Imported',
+            custody: { kind: 'local', seed: null },
+            chainId: 'ethereum',
+            chains: ETH,
+        })
+
+        expect(
+            buildAccountRecord(account, { updatedAt: UPDATED_AT })?.chains,
+        ).toEqual([
+            { chain: 'ethereum', type: 'standaloneKey', address: '0xeth' },
+        ])
+    })
+
+    it('writes one watch record across its chains, in chain-id order', () => {
+        const account = watchAccount({
+            ethereum: { address: '0xw' },
+            algorand: { address: 'W' },
+        })
+
+        expect(
+            buildAccountRecord(account, { updatedAt: UPDATED_AT })?.chains,
+        ).toEqual([
+            { chain: 'algorand', type: 'watch', address: 'W' },
+            { chain: 'ethereum', type: 'watch', address: '0xw' },
+        ])
+    })
+
+    it("carries a hardware account's device on its Algorand entry", () => {
+        const account = buildAccount({
+            id: 'ledger',
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'ble-1',
+                    deviceName: 'Nano',
+                    transportType: 'ble',
+                },
+                accountIndex: 2,
             },
-        }
-        const result = serializeAccountItems(hd, {
-            updatedAt: 1719300000000,
-            secrets: null,
-            hd: { seedFirstDerivedAddress: 'FIRST', publicKeyHex: 'aabb' },
+            chainId: 'algorand',
+            chains: { algorand: { address: 'L' } },
         })
-        expect(result?.address.key).toBe('accounts/CHILD')
-        expect(result?.secrets).toBeNull()
-        expect(result?.address.payload).toMatchObject({
-            type: 'hdWallet',
-            address: 'CHILD',
-            seedFirstDerivedAddress: 'FIRST',
-            publicKey: 'aabb',
-            account: 0,
-            change: 0,
-            keyIndex: 1,
-            derivationType: 9,
-            customName: 'Child 1',
-            updatedAt: 1719300000000,
-        })
+
+        expect(
+            buildAccountRecord(account, { updatedAt: UPDATED_AT })?.chains,
+        ).toEqual([
+            {
+                chain: 'algorand',
+                type: 'hardware',
+                address: 'L',
+                deviceId: 'ble-1',
+                deviceName: 'Nano',
+                accountIndex: 2,
+                manufacturer: 'ledger',
+                transportType: 'ble',
+            },
+        ])
+    })
+
+    it('leaves out a chain this build cannot back up', () => {
+        getProvider().chains.reset()
+        getProvider().chains.register(
+            {
+                id: 'algorand',
+                signing: { schemes: ['ed25519'], derivationPaths: {} },
+            } as unknown as ChainDescriptor,
+            Object.fromEntries([['cloudBackup', true]]) as never,
+        )
+
+        const record = buildAccountRecord(
+            watchAccount({
+                algorand: { address: 'W' },
+                ethereum: { address: '0xw' },
+            }),
+            { updatedAt: UPDATED_AT },
+        )
+
+        expect(record?.chains.map(({ chain }) => chain)).toEqual(['algorand'])
+    })
+
+    it('has no record for an account with nothing this build backs up', () => {
+        getProvider().chains.reset()
+
+        expect(
+            buildAccountRecord(watchAccount({ algorand: { address: 'W' } }), {
+                updatedAt: UPDATED_AT,
+            }),
+        ).toBeNull()
+    })
+})
+
+describe('account addresses', () => {
+    beforeEach(registerEthereumBackupChain)
+
+    const account = watchAccount({
+        ethereum: { address: '0xw' },
+        algorand: { address: 'W' },
+    })
+
+    it('lists the backed-up addresses in chain-id order', () => {
+        expect(accountBackupAddresses(account)).toEqual(['W', '0xw'])
+        expect(hasBackupChains(account)).toBe(true)
+    })
+
+    it('lists every address once, backed up or not', () => {
+        getProvider().chains.reset()
+
+        expect(accountAddressesOf(account).sort()).toEqual(['0xw', 'W'])
+        expect(accountBackupAddresses(account)).toEqual([])
+        expect(hasBackupChains(account)).toBe(false)
     })
 })

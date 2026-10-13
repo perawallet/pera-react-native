@@ -36,7 +36,7 @@ export const useLedgerDeviceGroups = (): UseLedgerDeviceGroupsResult => {
 
         const groupMap = new Map<string, HardwareWalletAccount[]>()
         for (const account of ledgerAccounts) {
-            const deviceId = account.hardwareDetails.deviceId
+            const { deviceId } = account.custody.device
             const existing = groupMap.get(deviceId) ?? []
             existing.push(account)
             groupMap.set(deviceId, existing)
@@ -45,13 +45,11 @@ export const useLedgerDeviceGroups = (): UseLedgerDeviceGroupsResult => {
         return Array.from(groupMap.entries()).map(
             ([deviceId, groupAccounts]): LedgerDeviceGroup => {
                 const sorted = [...groupAccounts].sort(
-                    (a, b) =>
-                        a.hardwareDetails.accountIndex -
-                        b.hardwareDetails.accountIndex,
+                    (a, b) => a.custody.accountIndex - b.custody.accountIndex,
                 )
                 return {
                     deviceId,
-                    deviceName: sorted[0].hardwareDetails.deviceName,
+                    deviceName: sorted[0].custody.device.deviceName,
                     accounts: sorted,
                     firstAccount: sorted[0],
                     accountCount: sorted.length,

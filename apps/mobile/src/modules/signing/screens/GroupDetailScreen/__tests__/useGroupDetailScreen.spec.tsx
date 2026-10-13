@@ -14,7 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupDetailScreen } from '../useGroupDetailScreen'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 
 const mockNavigate = vi.fn()
 const mockRouteParams = { groupIndex: 0 }
@@ -110,7 +110,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItem1)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockTx1,
+            transaction: { family: 'algorand', transaction: mockTx1 },
             isExternal: false,
         })
     })
@@ -121,7 +121,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItemExternal)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockTx1,
+            transaction: { family: 'algorand', transaction: mockTx1 },
             isExternal: true,
         })
     })

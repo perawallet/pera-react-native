@@ -19,12 +19,16 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { useMemo } from 'react'
-import type { AccountIconProps } from '@modules/accounts/components/AccountIcon'
+import type { AccountIconProps } from '@components/AccountIcon'
 import { useStyles } from './styles'
 import type { StyleProp, ViewStyle } from 'react-native'
 
@@ -94,6 +98,7 @@ export const NotificationSettingsList = ({
     const {
         isSystemNotificationEnabled,
         isSystemNotificationLoading,
+        isPushServiceUnavailable,
         isPushSupported,
         accounts,
         disabledAccounts,
@@ -114,7 +119,7 @@ export const NotificationSettingsList = ({
         <PWFlatList
             data={accounts}
             extraData={extraData}
-            keyExtractor={item => item.address}
+            keyExtractor={item => item.id}
             style={style}
             inBottomSheet={inBottomSheet}
             contentContainerStyle={contentContainerStyle}
@@ -126,16 +131,20 @@ export const NotificationSettingsList = ({
                     body={t('settings.notifications.no_accounts_body')}
                 />
             }
-            renderItem={({ item }) => (
-                <AccountNotificationItem
-                    account={item}
-                    isEnabled={isAccountNotificationEnabled(item.address)}
-                    isPending={isAccountNotificationPending(item.address)}
-                    onToggle={enabled =>
-                        handleAccountNotificationToggle(item, enabled)
-                    }
-                />
-            )}
+            renderItem={({ item }) => {
+                const address =
+                    chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
+                return (
+                    <AccountNotificationItem
+                        account={item}
+                        isEnabled={isAccountNotificationEnabled(address)}
+                        isPending={isAccountNotificationPending(address)}
+                        onToggle={enabled =>
+                            handleAccountNotificationToggle(item, enabled)
+                        }
+                    />
+                )
+            }}
             ListHeaderComponent={
                 <PWView style={styles.header}>
                     {isPushSupported && (
@@ -160,6 +169,16 @@ export const NotificationSettingsList = ({
                                 />
                             </PWView>
                         </PWView>
+                    )}
+                    {isPushSupported && isPushServiceUnavailable && (
+                        <PWText
+                            variant='caption'
+                            style={styles.grayText}
+                        >
+                            {t(
+                                'settings.notifications.push_service_unavailable',
+                            )}
+                        </PWText>
                     )}
                     <PWView style={styles.headerRow}>
                         <PWView style={styles.headerLabelContainer}>

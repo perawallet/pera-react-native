@@ -21,7 +21,6 @@
     "@algorandfoundation/keystore-core": "catalog:",
     "@algorandfoundation/react-native-passkey-autofill": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
-    "@perawallet/wallet-core-shared": "workspace:*",
     "react-native": "catalog:"
   },
   "devDependencies": {

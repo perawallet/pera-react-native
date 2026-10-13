@@ -13,13 +13,13 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAssetTransferRequestsScreen } from '../useAssetTransferRequestsScreen'
-import { useArc59AssetRequestsQuery } from '@perawallet/wallet-core-asa-inbox'
+import { useArc59AssetRequestsQuery } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 
 const mockPush = vi.fn()
 const mockSetAccountAddress = vi.fn()
 const mockSetAssetRequests = vi.fn()
 
-vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
     useArc59AssetRequestsQuery: vi.fn(),
 }))
 

@@ -13,14 +13,19 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
     useLedgerAccountPreview,
-    AccountTypes,
+    buildAccount,
     type AssetWithAccountBalance,
     type WalletAccount,
     type HardwareWalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { AccountDisplayState } from '@modules/accounts/components/AccountIcon'
+import type { AccountDisplayState } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type LedgerInfoListItem =
@@ -44,7 +49,7 @@ export type LedgerInfoListItem =
           hasKnownDecimals: boolean
       }
     | {
-          kind: 'rekeyAddress'
+          kind: 'authorityAccount'
           key: string
           account: WalletAccount
           displayStateOverride?: AccountDisplayState
@@ -58,6 +63,35 @@ type UseLedgerAccountInfoContentResult = {
     refetch: () => void
 }
 
+const ledgerDisplayAccount = (
+    address: string,
+    accountIndex: number,
+    chainId: ChainId,
+): HardwareWalletAccount =>
+    buildAccount({
+        id: address,
+        custody: {
+            kind: 'hardware',
+            device: {
+                manufacturer: 'ledger',
+                deviceId: '',
+                deviceName: '',
+                transportType: 'ble',
+            },
+            accountIndex,
+        },
+        chainId,
+        chains: { [chainId]: { address } },
+    })
+
+const watchDisplayAccount = (address: string, chainId: ChainId): WatchAccount =>
+    buildAccount({
+        id: address,
+        custody: { kind: 'watch' },
+        chainId,
+        chains: { [chainId]: { address } },
+    })
+
 export const useLedgerAccountInfoContent = (
     address: string,
     accountIndex: number,
@@ -65,40 +99,30 @@ export const useLedgerAccountInfoContent = (
     titleOverride?: string,
 ): UseLedgerAccountInfoContentResult => {
     const { t } = useLanguage()
-    const { preview, isLoading, isError, refetch } =
-        useLedgerAccountPreview(address)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { preview, isLoading, isError, refetch } = useLedgerAccountPreview(
+        address,
+        scope,
+    )
 
     const items = useMemo<LedgerInfoListItem[]>(() => {
         if (!preview) return []
 
         // Build the synth account for the sheet's own address.
         // If the account is rekeyed to an auth address, render it as a watch
-        // account with rekeyAddress set. Otherwise render it as a hardware
+        // account (the preview records its authority). Otherwise render it as a hardware
         // Ledger account so AccountDisplay/AccountIcon show the correct icon.
         const synthAccount: WalletAccount =
-            preview.rekey.kind === 'rekeyedTo'
-                ? ({
-                      // Display-only synth account, keyed by its address.
-                      id: preview.address,
-                      type: AccountTypes.watch,
-                      address: preview.address,
-                      rekeyAddress: preview.rekey.authAddress,
-                  } satisfies WatchAccount)
-                : ({
-                      id: preview.address,
-                      type: AccountTypes.hardware,
-                      address: preview.address,
-                      hardwareDetails: {
-                          manufacturer: 'ledger',
-                          deviceId: '',
-                          deviceName: '',
-                          accountIndex,
-                          transportType: 'ble',
-                      },
-                  } satisfies HardwareWalletAccount)
+            preview.delegation.kind === 'delegatedTo'
+                ? watchDisplayAccount(preview.address, scope.chainId)
+                : ledgerDisplayAccount(
+                      preview.address,
+                      accountIndex,
+                      scope.chainId,
+                  )
 
         // Extract usdPrice from the ALGO preview asset for the account row.
-        const algoPreviewAsset = preview.assets.find(a => a.isAlgo)
+        const algoPreviewAsset = preview.assets.find(a => a.isNative)
         const algoUsdPrice = algoPreviewAsset?.usdPrice ?? new Decimal(0)
 
         const list: LedgerInfoListItem[] = [
@@ -111,13 +135,13 @@ export const useLedgerAccountInfoContent = (
                 kind: 'account',
                 key: 'account',
                 account: synthAccount,
-                algoBalance: preview.algoBalance,
+                algoBalance: preview.nativeBalance,
                 algoUsdPrice,
                 // For the rekeyed-to case the synth is a watch + rekey,
                 // and the auth Ledger isn't in the store yet — force the
                 // signable icon. For the plain Ledger case the base type
                 // already yields the right icon, no override needed.
-                ...(preview.rekey.kind === 'rekeyedTo'
+                ...(preview.delegation.kind === 'delegatedTo'
                     ? { displayStateOverride: 'rekeyedSignable' as const }
                     : {}),
             },
@@ -132,35 +156,30 @@ export const useLedgerAccountInfoContent = (
                 accountBalance: {
                     assetId: asset.assetId,
                     amount: asset.amount,
-                    isFrozen: asset.isFrozen,
+                    restriction: asset.restriction,
                     // Holding value in ALGOs (display units):
                     // amount * usdPrice / algoUsdPrice. Falls back to 0
                     // when the ALGO USD price is unknown (avoids /0).
-                    algoValue: algoUsdPrice.isZero()
+                    nativeValue: algoUsdPrice.isZero()
                         ? new Decimal(0)
                         : asset.amount.times(asset.usdPrice).div(algoUsdPrice),
+                    // The preview's usdPrice is 0 when unknown, so it can't tell unpriced from worthless.
+                    fiatValue: null,
                 } satisfies AssetWithAccountBalance,
                 usdPrice: asset.usdPrice,
                 hasKnownDecimals: asset.hasKnownDecimals,
             })),
         ]
 
-        if (preview.rekey.kind === 'rekeyedTo') {
+        if (preview.delegation.kind === 'delegatedTo') {
             // Build a synth hardware account for the auth address (it's a Ledger
             // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
-            // only reads type/address/name for display.
-            const authSynthAccount: HardwareWalletAccount = {
-                id: preview.rekey.authAddress,
-                type: AccountTypes.hardware,
-                address: preview.rekey.authAddress,
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: '',
-                    deviceName: '',
-                    accountIndex: 0,
-                    transportType: 'ble',
-                },
-            }
+            // only reads kind/address/name for display.
+            const authSynthAccount = ledgerDisplayAccount(
+                preview.delegation.authorityAddress,
+                0,
+                scope.chainId,
+            )
             list.push(
                 {
                     kind: 'sectionHeader',
@@ -168,27 +187,23 @@ export const useLedgerAccountInfoContent = (
                     title: t('ledger.account_info.can_be_signed_by'),
                 },
                 {
-                    kind: 'rekeyAddress',
-                    key: `rekey-${preview.rekey.authAddress}`,
+                    kind: 'authorityAccount',
+                    key: `rekey-${preview.delegation.authorityAddress}`,
                     account: authSynthAccount,
                     // synth is hardware — base icon resolves to Ledger.
                 },
             )
-        } else if (preview.rekey.kind === 'canSignFor') {
+        } else if (preview.delegation.kind === 'canSignFor') {
             list.push({
                 kind: 'sectionHeader',
                 key: 'h-rekey',
                 title: t('ledger.account_info.can_sign_for'),
             })
-            preview.rekey.addresses.forEach(addr => {
+            preview.delegation.addresses.forEach(addr => {
                 // These rekeyed addresses are watch accounts (no key on this device).
-                const watchSynth: WatchAccount = {
-                    id: addr,
-                    type: AccountTypes.watch,
-                    address: addr,
-                }
+                const watchSynth = watchDisplayAccount(addr, scope.chainId)
                 list.push({
-                    kind: 'rekeyAddress',
+                    kind: 'authorityAccount',
                     key: `rekey-${addr}`,
                     account: watchSynth,
                     // Address is rekeyed to this Ledger — display as
@@ -199,7 +214,7 @@ export const useLedgerAccountInfoContent = (
         }
 
         return list
-    }, [preview, t, accountIndex])
+    }, [preview, t, accountIndex, scope.chainId])
 
     return {
         title:

@@ -19,7 +19,7 @@ import { useButtonPanel } from './useButtonPanel'
 export const ButtonPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
-    const { handleSwap, handleSend, handleReceive, handleMore } =
+    const { canSwap, handleSwap, handleSend, handleReceive, handleMore } =
         useButtonPanel()
 
     return (
@@ -27,14 +27,16 @@ export const ButtonPanel = () => {
             style={themeStyle.container}
             testID='button_panel'
         >
-            <RoundButton
-                title={t('account_details.button_panel.swap')}
-                icon='swap'
-                variant='primary'
-                onPress={handleSwap}
-                testID='swap_button'
-                style={themeStyle.button}
-            />
+            {canSwap && (
+                <RoundButton
+                    title={t('account_details.button_panel.swap')}
+                    icon='swap'
+                    variant='primary'
+                    onPress={handleSwap}
+                    testID='swap_button'
+                    style={themeStyle.button}
+                />
+            )}
             <RoundButton
                 title={t('account_details.button_panel.send')}
                 icon='outflow'

@@ -20,7 +20,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/useLanguage'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { noteSchema } from '@perawallet/wallet-core-blockchain'
+import { noteSchema } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 
 export const AddNoteContent = () => {

@@ -12,15 +12,21 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapExecution, useSwapQuotes } from '@modules/swap/hooks'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    baseUnitsToDisplayUnits,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     formatSwapRate,
     pickBestByAmountOut,
-} from '@modules/swap/hooks/swapQuoteHelpers'
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSwapExecution, useSwapQuotes } from '@modules/swap'
 
 const SWAPPING_STATUSES = new Set([
     'preparing',
@@ -40,6 +46,9 @@ type CardAddFundsSwapOutcome =
     // An earlier attempt for this swap is still being verified — nothing was
     // re-signed or broadcast, and the user needs to be told why.
     | { kind: 'verifying' }
+    // The quote outlived its TTL before Confirm; nothing ran. The caller
+    // refreshes and asks the user to confirm the new rate.
+    | { kind: 'stale-quote' }
 
 type UseCardAddFundsSwapParams = {
     account: Nullable<WalletAccount>
@@ -62,6 +71,8 @@ type UseCardAddFundsSwapResult = {
     isQuoteFetching: boolean
     isSwapping: boolean
     executeSwap: () => Promise<CardAddFundsSwapOutcome>
+    /** Re-fetches the quote for the same inputs. */
+    refreshQuote: () => void
 }
 
 /**
@@ -78,9 +89,15 @@ export const useCardAddFundsSwap = ({
     amount,
     enabled,
 }: UseCardAddFundsSwapParams): UseCardAddFundsSwapResult => {
-    const { allQuotes, isQuoteFetching } = useSwapQuotes({
+    const {
+        allQuotes,
+        isQuoteFetching,
+        refresh: refreshQuote,
+    } = useSwapQuotes({
         enabled,
-        swapperAddress: account?.address ?? null,
+        swapperAddress:
+            (account && chainAccountOf(account, LEGACY_CHAIN_ID)?.address) ??
+            null,
         fromAssetId: sourceAssetId,
         toAssetId: usdcAssetId,
         payAmount: amount,
@@ -112,10 +129,7 @@ export const useCardAddFundsSwap = ({
                 return { kind: 'pending-cosign' }
             }
             if (outcome.kind === 'stale-quote') {
-                // The card flow re-quotes continuously; a stale quote here
-                // just means this attempt raced the TTL — treat as cancelled
-                // so the user re-taps with the already-refreshed rate.
-                return { kind: 'cancelled' }
+                return { kind: 'stale-quote' }
             }
             if (outcome.kind === 'verifying-previous') {
                 return { kind: 'verifying' }
@@ -127,5 +141,13 @@ export const useCardAddFundsSwap = ({
             }
         }, [quote, execute])
 
-    return { quote, rate, usdcOut, isQuoteFetching, isSwapping, executeSwap }
+    return {
+        quote,
+        rate,
+        usdcOut,
+        isQuoteFetching,
+        isSwapping,
+        executeSwap,
+        refreshQuote,
+    }
 }

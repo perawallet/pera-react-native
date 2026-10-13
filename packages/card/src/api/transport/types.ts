@@ -20,12 +20,8 @@ import type { Network } from '@perawallet/wallet-core-shared'
  * Baanx requires it. Use `proxy` only for the OAuth initiate and
  * authorization-code token exchange; everything else (including the
  * refresh-token grant) goes direct.
- * `escrow` → the AppliedBlockchain (AB) card service (card creation + delegated
- * LSig `/lsig`), on its own base URL with a static raw `Authorization` token
- * from config. No per-user Bearer, no 401 refresh. SWAP POINT — AB-hosted on
- * testnet until Baanx wraps these endpoints.
  */
-export type CardRoute = 'direct' | 'proxy' | 'escrow'
+export type CardRoute = 'direct' | 'proxy'
 
 export type CardHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -50,6 +46,8 @@ export type CardTransportRequest<TVars = unknown> = {
      * or a stale token from a prior session leaks in ("Missing User Data").
      */
     authenticated?: boolean
+    /** Per-call override in ms of the client default (ky's 10 s), for calls that wait on chain confirmation. */
+    timeoutMs?: number
 }
 
 export type CardTransportResponse<TData> = {

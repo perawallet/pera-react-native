@@ -12,8 +12,9 @@
 
 import type { Decimal } from 'decimal.js'
 
-import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
 import {
+    AppError,
+    ErrorCategory,
     isPeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -21,6 +22,22 @@ import {
 import { parseRampAmount } from '../quotes'
 
 const GENERIC_FALLBACK = 'Something went wrong. Please try again.'
+
+/**
+ * Preparing the destination account needs a sponsored transaction, and the
+ * sponsor requires a device attestation token that isn't available.
+ */
+export class RampAttestationRequiredError extends AppError {
+    constructor() {
+        super('Device verification is required to prepare the account.', {
+            category: ErrorCategory.UNKNOWN,
+            recoverable: false,
+        })
+        this.name = 'RampAttestationRequiredError'
+    }
+}
+
+const SOURCE_AMOUNT_TOO_LOW_FALLBACK = "Amount is below the provider's minimum."
 
 // Shape of a Pera API exception response body, ported from the web
 // onramp peraApi.exception.types.ts.
@@ -87,10 +104,32 @@ function parseSourceAmountLeaf(
     return null
 }
 
+// `fallback_message` is not always prose: the same serialised dict that fills
+// `non_field_errors` can land in it verbatim, and showing "{'message': ...}" to
+// a user is worse than a generic apology.
+function isDisplayableMessage(message: string): boolean {
+    return message.trim() !== '' && !message.trimStart().startsWith('{')
+}
+
+/** An amount field that is present but is not a number the UI can render. */
+function isUnusableAmount(raw: string | undefined): boolean {
+    return raw !== undefined && parseRampAmount(raw) === null
+}
+
 function parseSourceAmountIsTooLow(exception: PeraApiException): string {
     const leaf = parseSourceAmountLeaf(exception)
 
-    if (leaf) {
+    // The backend can substitute a non-numeric token for the limit — the TRY
+    // pair returns the literal word "for" as `min_amount`, and the same token
+    // is interpolated into `message` and `fallback_message` ("...which is
+    // for."). One bad amount therefore condemns the whole payload, prose
+    // included, so fall back rather than echo any of it.
+    const isCoherent =
+        leaf !== null &&
+        !isUnusableAmount(leaf.min_amount) &&
+        !isUnusableAmount(leaf.max_amount)
+
+    if (isCoherent) {
         const parts: string[] = []
 
         if (leaf.message) {
@@ -110,7 +149,7 @@ function parseSourceAmountIsTooLow(exception: PeraApiException): string {
         }
     }
 
-    return exception.fallback_message || GENERIC_FALLBACK
+    return SOURCE_AMOUNT_TOO_LOW_FALLBACK
 }
 
 /**
@@ -121,6 +160,16 @@ function parseSourceAmountIsTooLow(exception: PeraApiException): string {
 export type RampQuoteLimits = {
     min: Nullable<Decimal>
     max: Nullable<Decimal>
+}
+
+/**
+ * Whether the error is the provider rejecting the amount as below its minimum,
+ * regardless of whether a usable limit came with it. Lets the UI show its own
+ * localized copy instead of the backend's (sometimes corrupt) prose.
+ */
+export function isSourceAmountTooLowError(error: unknown): boolean {
+    const exception = resolvePeraApiException(unwrapNetworkError(error))
+    return exception?.type === 'SourceAmountIsTooLow'
 }
 
 /**
@@ -142,7 +191,7 @@ export function resolveRampQuoteLimits(
     return min === null && max === null ? null : { min, max }
 }
 
-// Bun-backend error body (e.g. the fee-delegation route): `{ error, code }`.
+// Bun-backend error body (e.g. the sponsored-transaction route): `{ error, code }`.
 // Resolved from the error itself or the parsed body the ky client attaches.
 type BunApiError = { error: string; code?: string }
 
@@ -173,9 +222,7 @@ const ATTESTATION_REQUIRED_MESSAGE =
 export function toOnrampUserMessage(error: unknown): string {
     const raw = unwrapNetworkError(error)
 
-    // The fee-delegation flow throws before the request when no device
-    // attestation token is available; surface it with onramp wording.
-    if (raw instanceof FeeDelegationAttestationRequiredError) {
+    if (raw instanceof RampAttestationRequiredError) {
         return ATTESTATION_REQUIRED_MESSAGE
     }
 
@@ -184,7 +231,9 @@ export function toOnrampUserMessage(error: unknown): string {
         if (exception.type === 'SourceAmountIsTooLow') {
             return parseSourceAmountIsTooLow(exception)
         }
-        return exception.fallback_message || GENERIC_FALLBACK
+        return isDisplayableMessage(exception.fallback_message)
+            ? exception.fallback_message
+            : GENERIC_FALLBACK
     }
 
     const bunError = resolveBunApiError(raw)

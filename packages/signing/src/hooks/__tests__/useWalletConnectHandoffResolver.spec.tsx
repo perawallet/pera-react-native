@@ -14,6 +14,7 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, act, waitFor } from '@testing-library/react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
     getSignRequestsWithSignatures: vi.fn(),
@@ -27,33 +28,19 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
     addSignature: mocks.addSignature,
     getSignRequestsWithSignatures: mocks.getSignRequestsWithSignatures,
     getSignRequestsWithSignaturesQueryKey: (
-        network: string,
+        scope: ChainScope,
         signRequestId: string,
-    ) => ['multisig', 'sign-request-with-signatures', network, signRequestId],
+    ) => ['multisig', 'sign-request-with-signatures', { scope, signRequestId }],
     useMarkSignRequestsConfirmedMutation: () => ({
         markConfirmed: mocks.markConfirmed,
         isPending: false,
     }),
 }))
 
-// Stub the pure classifier + delivery functions so this suite verifies only
-// the poll → classify → resolve wiring. Their own behavior is covered by
-// classifyHandoffPoll.spec.ts.
-vi.mock('../../pipeline/classifyHandoffPoll', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('../../pipeline/classifyHandoffPoll')
-        >()
-    return {
-        ...actual,
-        classifyHandoffPoll: mocks.classifyHandoffPoll,
-        resolveHandoffOutcome: mocks.resolveHandoffOutcome,
-    }
-})
-
 import { useWalletConnectHandoffResolver } from '../useWalletConnectHandoffResolver'
 import { useWalletConnectHandoffsStore } from '../../store/walletConnectHandoffsStore'
-import type { ResolverMessages } from '../../pipeline/classifyHandoffPoll'
+import type { ResolverMessages } from '../../chain-adapter'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import type { PendingWalletConnectHandoff } from '../../pipeline/walletConnectHandoffs'
 
 const messages: ResolverMessages = {
@@ -66,7 +53,7 @@ const messages: ResolverMessages = {
         `multisig.sync_sign.errors.assembly_failed:${reason}`,
 }
 
-// Injected peer delivery — this suite stubs `resolveHandoffOutcome`, so these
+// Injected peer delivery; this suite stubs `resolveHandoffOutcome`, so these
 // are pass-through no-ops that only satisfy the hook's required arg.
 const delivery = {
     deliverResult: vi.fn().mockResolvedValue(undefined),
@@ -83,7 +70,7 @@ const makeHandoff = (
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
     expectedRawTransactionsBase64: [btoa('raw-tx-1')],
     deviceId: 'device-1',
-    network: 'testnet',
+    scope: { chainId: 'algorand', networkId: 'testnet' },
     callbacks: {},
     sourceType: 'walletconnect',
     registeredAt: Date.now(),
@@ -112,6 +99,12 @@ describe('useWalletConnectHandoffResolver', () => {
         mocks.getSignRequestsWithSignatures.mockResolvedValue([{ id: 'sr-1' }])
         mocks.classifyHandoffPoll.mockReturnValue({ kind: 'keep-polling' })
         mocks.resolveHandoffOutcome.mockResolvedValue(undefined)
+        // Stubs the planner's classifier and delivery so this suite verifies
+        // only the poll -> classify -> resolve wiring.
+        registerFakePlannerAdapter({
+            classifyHandoffPoll: mocks.classifyHandoffPoll,
+            resolveHandoffOutcome: mocks.resolveHandoffOutcome,
+        })
     })
 
     afterEach(() => {

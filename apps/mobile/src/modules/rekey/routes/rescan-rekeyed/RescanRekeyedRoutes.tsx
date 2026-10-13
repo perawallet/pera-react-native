@@ -15,7 +15,7 @@ import {
     type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
-import { RescanRekeyedSelectScreen } from '../../screens/rescan-rekeyed/RescanRekeyedSelectScreen'
+import { DelegatedSweepSelectScreen } from '../../screens/rescan-rekeyed/DelegatedSweepSelectScreen'
 
 import type { RescanRekeyedStackParamList } from './types'
 
@@ -33,7 +33,7 @@ export const RescanRekeyedStackNavigator = () => {
         >
             <Stack.Screen
                 name='RescanRekeyedSelect'
-                component={RescanRekeyedSelectScreen}
+                component={DelegatedSweepSelectScreen}
                 options={{ title: '' }}
             />
         </Stack.Navigator>

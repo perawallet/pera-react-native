@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -20,8 +21,28 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform/src/test-utils',
             ),
+            // Test-only: lets specs that mock the accounts package wholesale
+            // still build accounts with the real constructor.
+            '@perawallet/wallet-core-accounts/chain-adapter': path.resolve(
+                __dirname,
+                '../accounts/src/chain-adapter.ts',
+            ),
+            '@perawallet/wallet-core-accounts/build-account': path.resolve(
+                __dirname,
+                '../accounts/src/credentials/buildAccount.ts',
+            ),
+            // Test-only: the round-trip spec builds a real KMS core over an
+            // in-memory secp256k1 keystore.
+            '@perawallet/wallet-core-kms/create-kms-core': path.resolve(
+                __dirname,
+                '../kms/src/core/createKmsCore.ts',
+            ),
             // Resolve to source, not dist: the browser dist externalizes
             // node `crypto`, which the mnemonic index codecs rely on.
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
                 '../kms/src/index.ts',
@@ -34,7 +55,13 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
             ),
+            // Resolve to source, not dist: this package has no build output on
+            // a fresh checkout (`dist` is gitignored and `test:unit` bypasses
+            // turbo's `^build` graph).
+            '@perawallet/wallet-core-passkeys': path.resolve(
+                __dirname,
+                '../passkeys/src/index.ts',
+            ),
         },
     },
-    ...poolConfig,
 })

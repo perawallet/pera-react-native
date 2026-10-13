@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import type { ModeRestrictions } from '@perawallet/wallet-core-chain-contract'
+
 /**
- * Capability map (design spec: "a capability map in the web bootstrap drives
- * which tabs/routes register — no scattered Platform.OS checks in screens").
- * Native resolves capabilities.ts (everything on, current behavior); web
- * resolves capabilities.web.ts. Gate UI on these flags, never on Platform.OS.
+ * Gate UI on these flags, never on Platform.OS (pera/no-platform-os-web fails
+ * `=== 'web'`). Native resolves capabilities.ts; web resolves capabilities.web.ts.
  */
 export type RouteCapabilities = {
     discoverTab: boolean
@@ -26,10 +26,10 @@ export type RouteCapabilities = {
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
     qrScanner: boolean
-    /** Paste-a-deeplink entry point in the Menu icon bar (web only). Replaces
-     * qrScanner there: a camera is near-useless in a 360x600 toolbar popup and
-     * Pera Connect now covers the pairing path scanning existed to serve. The
-     * two flags are mutually exclusive per platform. */
+    /** Ledger pairing over USB: Android OTG and WebHID. iOS has no USB HID route. */
+    ledgerUsb: boolean
+    /** Paste-a-deeplink entry point (web only), replacing qrScanner there: a camera
+     * is near-useless in a 360x600 popup. The two flags are mutually exclusive per platform. */
     deepLinkPaste: boolean
     pushNotificationSettings: boolean
     walletConnectSettings: boolean
@@ -44,16 +44,23 @@ export type RouteCapabilities = {
      * hides it: swipe is awkward with a mouse, so ConfirmAction.web.tsx
      * always uses tap-to-confirm and the setting would be a no-op. */
     confirmationModeSetting: boolean
+    /**
+     * The analytics consent prompt and Settings toggle. Off on web: the
+     * extension reports through its own analytics service, which does not read
+     * the stored consent yet, so asking there would record a choice it ignores.
+     */
+    analyticsConsent: boolean
     developerSettings: boolean
+    /** Developer screen gallery. Off in production bundles, where Metro drops
+     * its code entirely (see metro-build-gates.js), not just its entry points. */
+    developerGallery: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean
-    /** ARC-0027 injected-provider dapp connections (browser-extension only;
-     * not the native app's WalletConnect, tracked separately by
-     * walletConnectSettings). */
-    dappConnections: boolean
-    /** Quantum (PQ/Falcon-1024) accounts. Off on web: the WASM signer is
-     * Node/test-only today and its Emscripten build doesn't bundle for the
-     * browser extension (see useIsQuantumAccountsEnabled). */
+    /** App-lock PIN and what hangs off it: the set-PIN prompt, PIN and
+     * biometrics settings, shake to lock, duress PIN. Off on web, where the
+     * vault password is the lock. */
+    pin: boolean
+    /** Quantum (Falcon-1024) accounts. */
     quantum: boolean
     /** Rekey feature area (wallet-wide scan-for-rekeyed sweep, rekey-to-
      * standard/shared/ledger flows) — native-only; these stacks aren't
@@ -63,10 +70,12 @@ export type RouteCapabilities = {
      * registered, so the SHARED_ACCOUNT_IMPORT deeplink can decline cleanly
      * instead of navigating nowhere. */
     sharedAccounts: boolean
-    /** Unified settings screen merging WalletConnect sessions and ARC-0027
-     * dapp connections into one list (web only). When on, it supersedes the
-     * separate walletConnectSettings/dappConnections settings-menu entries —
-     * their routes/screens/capabilities stay untouched for direct
-     * navigation (e.g. WalletConnectSettingsDetails). */
+    /** Unified settings list of every connection record — WalletConnect sessions
+     * and `window.pera` dapp connections alike (web only). Supersedes the separate
+     * settings-menu entries; their routes stay for direct navigation. */
     connectionsSettings: boolean
 }
+
+export type RouteCapability = keyof RouteCapabilities
+
+export type RouteCapabilityRestrictions = ModeRestrictions<RouteCapability>

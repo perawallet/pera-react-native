@@ -11,23 +11,24 @@
  */
 
 import React from 'react'
+import { FundingType } from '@perawallet/wallet-core-card'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { CardCreateStepRow } from './CardCreateStepRow'
+import { CardStepRow } from '../../components/CardStepRow'
 import { useCardCreateSigningScreen } from './useCardCreateSigningScreen'
 import { useStyles } from './styles'
 
 const STEP_LABEL_KEYS = {
-    sign: 'peraCard.signing.step_sign_label',
-    create: 'peraCard.signing.step_create_label',
-    authorize: 'peraCard.signing.step_authorize_label',
+    signCreate: 'peraCard.signing.step_sign_create_label',
+    autoFunding: 'peraCard.signing.step_auto_funding_label',
 } as const
 
 export const CardCreateSigningScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { steps, isProceeding, isComplete, onProceed } =
+    const { fundingType, steps, isProceeding, isComplete, onProceed } =
         useCardCreateSigningScreen()
+    const isAutoFunding = fundingType === FundingType.Auto
 
     return (
         <PWScreen testID='card-create-signing'>
@@ -43,12 +44,16 @@ export const CardCreateSigningScreen = () => {
                     weight={400}
                     style={styles.body}
                 >
-                    {t('peraCard.signing.body')}
+                    {t(
+                        isAutoFunding
+                            ? 'peraCard.signing.body_auto'
+                            : 'peraCard.signing.body_manual',
+                    )}
                 </PWText>
 
                 <PWView style={styles.steps}>
                     {steps.map(step => (
-                        <CardCreateStepRow
+                        <CardStepRow
                             key={step.id}
                             stepNumber={step.stepNumber}
                             label={t(STEP_LABEL_KEYS[step.id])}
@@ -58,6 +63,23 @@ export const CardCreateSigningScreen = () => {
                         />
                     ))}
                 </PWView>
+
+                {isAutoFunding && (
+                    <PWView
+                        style={styles.disclosure}
+                        testID='card-create-signing-standing-authority'
+                    >
+                        <PWText variant='bodySemibold'>
+                            {t('peraCard.signing.standing_authority_title')}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.disclosureBody}
+                        >
+                            {t('peraCard.signing.standing_authority_body')}
+                        </PWText>
+                    </PWView>
+                )}
 
                 <PWButton
                     variant='primary'

@@ -11,20 +11,30 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AccountTypes, useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useContacts } from '@perawallet/wallet-core-contacts'
+import {
+    findAccountByAddressOn,
+    isWatchAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,
-    ParticipantIsQuantumError,
+    ParticipantSchemeUnsupportedError,
     ParticipantIsWatchError,
+    ParticipantVerdicts,
     useIsMultisigAddressQuery,
+    useParticipantVerdictQuery,
     type MultisigValidationError,
 } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { signsWithParticipantScheme } from '../../utils/participantEligibility'
 
 /**
  * Value the add-participant bottom sheet resolves with. `nfdName` is set
@@ -44,24 +54,35 @@ export type UseAddParticipantContentResult = {
 export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { t } = useLanguage()
     const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast } = useToast()
     const accounts = useAllAccounts()
-    const { contacts } = useContacts()
     const [selectedAddress, setSelectedAddress] = useState('')
     const [selectedNfdName, setSelectedNfdName] = useState<Optional<string>>()
     const { resolve, dismiss } = useBottomSheetResult<AddParticipantResult>()
 
-    const isLocalEntity = useMemo(
+    const isLocalAccount = useMemo(
         () =>
-            accounts.some(a => a.address === selectedAddress) ||
-            contacts.some(c => c.address === selectedAddress),
-        [accounts, contacts, selectedAddress],
+            !!findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                selectedAddress,
+            ),
+        [accounts, selectedAddress],
     )
 
     const multisigCheck = useIsMultisigAddressQuery({
         network,
         address: selectedAddress,
-        enabled: !!selectedAddress && !isLocalEntity,
+        enabled: !!selectedAddress && !isLocalAccount,
+    })
+
+    // External addresses (QR scans included) hold no local key, so the chain
+    // classifies them; one it can't classify passes.
+    const verdictCheck = useParticipantVerdictQuery({
+        address: selectedAddress,
+        scope,
+        enabled: !!selectedAddress && !isLocalAccount,
     })
 
     const showValidationError = useCallback(
@@ -93,10 +114,22 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     )
 
     useEffect(() => {
-        if (!selectedAddress || multisigCheck.isFetching) return
+        if (
+            !selectedAddress ||
+            multisigCheck.isFetching ||
+            verdictCheck.isFetching
+        )
+            return
 
         if (multisigCheck.data?.isMultisig) {
             showValidationError(new ParticipantIsMultisigError())
+            setSelectedAddress('')
+            setSelectedNfdName(undefined)
+            return
+        }
+
+        if (verdictCheck.verdict === ParticipantVerdicts.incompatibleScheme) {
+            showValidationError(new ParticipantSchemeUnsupportedError())
             setSelectedAddress('')
             setSelectedNfdName(undefined)
             return
@@ -110,33 +143,40 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         selectedNfdName,
         multisigCheck.data?.isMultisig,
         multisigCheck.isFetching,
+        verdictCheck.verdict,
+        verdictCheck.isFetching,
         resolve,
         showValidationError,
     ])
 
     const handleSelected = useCallback(
         (address: string, nfdName?: string) => {
-            const localAccount = accounts.find(a => a.address === address)
+            const localAccount = findAccountByAddressOn(
+                accounts,
+                LEGACY_CHAIN_ID,
+                address,
+            )
             if (localAccount) {
-                if (localAccount.type === AccountTypes.watch) {
+                if (isWatchAccount(localAccount)) {
                     showValidationError(new ParticipantIsWatchError())
                     return
                 }
-                if (localAccount.type === AccountTypes.quantum) {
-                    showValidationError(new ParticipantIsQuantumError())
+                if (
+                    !signsWithParticipantScheme(localAccount, LEGACY_CHAIN_ID)
+                ) {
+                    showValidationError(new ParticipantSchemeUnsupportedError())
                     return
                 }
                 resolve({ address, nfdName })
                 return
             }
-            if (contacts.some(c => c.address === address)) {
-                resolve({ address, nfdName })
-                return
-            }
+            // Contacts are only saved addresses — their account type is
+            // unknown, so they need the same remote validation as any other
+            // external address.
             setSelectedAddress(address)
             setSelectedNfdName(nfdName)
         },
-        [accounts, contacts, resolve, showValidationError],
+        [accounts, resolve, showValidationError],
     )
 
     return { handleSelected, dismiss }

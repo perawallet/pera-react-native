@@ -19,16 +19,17 @@ import {
 } from '@modules/bottom-sheet'
 import { useReceiveFundsContent } from '../useReceiveFundsContent'
 import { useReceiveFunds } from '@modules/transactions/hooks'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(),
 }))
 
-const mockAccount = {
+const mockAccount: WalletAccount = {
     id: 'watch-test-account',
-    address: 'test-address-123',
     name: 'Test Account',
-    type: 'watch' as const,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address-123' } },
 }
 
 const mockSetSelectedAccount = vi.fn()
@@ -144,7 +145,7 @@ describe('useReceiveFundsContent', () => {
         expect(mockReset).not.toHaveBeenCalled()
     })
 
-    it('does not update selected account if address matches', () => {
+    it('does not update selected account if it is already selected', () => {
         ;(useReceiveFunds as Mock).mockReturnValue({
             canSelectAccount: false,
             setSelectedAccount: mockSetSelectedAccount,

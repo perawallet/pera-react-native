@@ -42,6 +42,10 @@ export const prepareHDMasterKey = async (params?: {
     let rootKey: Uint8Array
     try {
         rootKey = fromSeed(masterKey.seed)
+    } catch (error) {
+        // The entropy is handed back only on success.
+        zeroBytes(masterKey.entropy)
+        throw error
     } finally {
         // Wipe the BIP39 seed unconditionally — if `fromSeed` throws, the seed
         // would otherwise stay resident on the heap until GC.

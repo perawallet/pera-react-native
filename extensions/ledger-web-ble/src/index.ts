@@ -13,4 +13,7 @@
 export const name = '@perawallet/wallet-extension-ledger-web-ble'
 
 export { WithLedgerWebBleExtension } from './extension'
-export { LedgerWebBleService } from './LedgerWebBleService'
+export {
+    LedgerWebBleService,
+    type LedgerWebBleServiceOptions,
+} from './LedgerWebBleService'

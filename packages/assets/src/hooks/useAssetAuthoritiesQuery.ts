@@ -11,29 +11,13 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAlgoAssetId,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { fetchIndexerAssetDetails } from '../api'
+    assetsAdapterFor,
+    fetchAssetAuthorities,
+    type AssetAuthorities,
+} from '../chain-adapter'
 import { getAssetAuthoritiesQueryKey } from './querykeys'
-
-type AssetAuthorities = {
-    hasFreeze: boolean
-    hasClawback: boolean
-    freezeAddress: Nullable<string>
-    clawbackAddress: Nullable<string>
-}
-
-// Nodes usually omit a cleared authority, but some serialize the all-zero
-// address instead. Both mean "no authority".
-const ZERO_ADDRESS =
-    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
-
-const activeAuthority = (address: Optional<string>): Nullable<string> =>
-    address && address !== ZERO_ADDRESS ? address : null
 
 type UseAssetAuthoritiesQueryResult = AssetAuthorities & {
     isLoading: boolean
@@ -43,24 +27,15 @@ type UseAssetAuthoritiesQueryResult = AssetAuthorities & {
 
 export const useAssetAuthoritiesQuery = (
     assetId: string,
+    scope: ChainScope,
 ): UseAssetAuthoritiesQueryResult => {
-    const { network } = useNetwork()
-    const enabled = assetId.length > 0 && !isAlgoAssetId(assetId)
+    const adapter = assetsAdapterFor(scope)
+    const enabled =
+        assetId.length > 0 && assetId !== adapter.getNativeAsset().assetId
 
     const query = useQuery<AssetAuthorities, Error>({
-        queryKey: getAssetAuthoritiesQueryKey(assetId, network),
-        queryFn: async (): Promise<AssetAuthorities> => {
-            const response = await fetchIndexerAssetDetails(assetId, network)
-            const params = response.asset.params
-            const freeze = activeAuthority(params.freeze)
-            const clawback = activeAuthority(params.clawback)
-            return {
-                hasFreeze: freeze !== null,
-                hasClawback: clawback !== null,
-                freezeAddress: freeze,
-                clawbackAddress: clawback,
-            }
-        },
+        queryKey: getAssetAuthoritiesQueryKey(assetId, scope),
+        queryFn: () => fetchAssetAuthorities(assetId, scope),
         enabled,
         staleTime: Infinity,
     })

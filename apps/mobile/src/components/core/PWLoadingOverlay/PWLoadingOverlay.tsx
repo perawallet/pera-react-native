@@ -11,23 +11,23 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
 import { PWOverlay } from '../PWOverlay'
 import { PWText } from '../PWText'
+import { PWLoadingIndicator } from '../PWLoadingIndicator'
 
 import { useStyles } from './styles'
 
 export type PWLoadingOverlayProps = {
     isVisible: boolean
     title?: string
+    description?: string
 }
 
 export const PWLoadingOverlay = ({
     isVisible,
     title,
+    description,
 }: PWLoadingOverlayProps) => {
-    const { theme } = useTheme()
     const styles = useStyles()
 
     return (
@@ -37,11 +37,18 @@ export const PWLoadingOverlay = ({
             backdropStyle={styles.overlayBackdrop}
         >
             {!!title && <PWText variant='body'>{title}</PWText>}
-            <ActivityIndicator
-                size='large'
-                color={theme.colors.linkPrimary}
+            <PWLoadingIndicator
+                size='lg'
                 testID='activity-indicator'
             />
+            {!!description && (
+                <PWText
+                    variant='caption'
+                    style={styles.description}
+                >
+                    {description}
+                </PWText>
+            )}
         </PWOverlay>
     )
 }

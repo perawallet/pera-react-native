@@ -11,20 +11,27 @@
  */
 
 import {
+    chainAccountOf,
     isMultisigAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export const getNextSharedAccountName = (
     accounts: WalletAccount[],
     baseName: string,
+    chainId: ChainId,
     excludeAddress?: string,
 ): string => {
     const taken = new Set<string>()
     let sharedCount = 0
 
     for (const account of accounts) {
-        if (excludeAddress && account.address === excludeAddress) continue
+        if (
+            excludeAddress &&
+            chainAccountOf(account, chainId)?.address === excludeAddress
+        )
+            continue
 
         taken.add((account.name ?? '').trim().toLowerCase())
         if (isMultisigAccount(account)) sharedCount++

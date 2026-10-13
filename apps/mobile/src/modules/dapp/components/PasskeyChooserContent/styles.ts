@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing.md,
     },
-    // Matches the account rows in EnableRequestScreen so the two consent
+    // Matches the account rows in WcConnectScreen so the two consent
     // surfaces read as one family.
     row: {
         flexDirection: 'row',

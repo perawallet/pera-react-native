@@ -26,7 +26,7 @@ import {
 } from '../constants'
 import { scaleLineHeight } from '@theme/scaling'
 import { getTestProps } from '@utils/test-id-helper'
-import { useOverflowProbe } from '@modules/locale-tour/hooks/useOverflowProbe'
+import { useOverflowProbe } from './useOverflowProbe'
 
 export type PWTextProps = {
     children?: React.ReactNode

@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isKycSubmitted, isKycVerified } from '../models'
 import { useOnboardingDetailsQuery } from './useOnboardingDetailsQuery'
@@ -46,11 +47,12 @@ export type UseOnboardingKycGateResult = {
  * on a slow fetch. (`isLoading` can't stand in for this: it is false for an
  * errored query.)
  */
-export const useOnboardingKycGate = ({
-    onboardingId,
-}: UseOnboardingKycGateParams): UseOnboardingKycGateResult => {
+export const useOnboardingKycGate = (
+    scope: ChainScope,
+    { onboardingId }: UseOnboardingKycGateParams,
+): UseOnboardingKycGateResult => {
     const { data: onboardingDetails, dataUpdatedAt } =
-        useOnboardingDetailsQuery({ onboardingId })
+        useOnboardingDetailsQuery(scope, { onboardingId })
     // Snapshots the query's own dataUpdatedAt, not Date.now(): "newer" means
     // the query refetched since the refusal, and a wall clock answers that only
     // by coincidence — a refetch landing in the same millisecond as the refusal

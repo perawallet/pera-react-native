@@ -11,6 +11,8 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
+import { chainAccountOf } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     PWFlatList,
     PWIcon,
@@ -23,9 +25,9 @@ import {
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetTitle } from '@modules/assets/components/AssetTitle'
+import { AssetTitle } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useStyles } from './styles'
@@ -84,7 +86,7 @@ export const SearchScreen = () => {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onAccountPress(item.account)}
-                            testID={`search_result_account_${item.account.address}`}
+                            testID={`search_result_account_${chainAccountOf(item.account, LEGACY_CHAIN_ID)?.address}`}
                         >
                             <AccountDisplay
                                 account={item.account}
@@ -98,10 +100,10 @@ export const SearchScreen = () => {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onContactPress(item.contact)}
-                            testID={`search_result_contact_${item.contact.address}`}
+                            testID={`search_result_contact_${item.contact.addresses.algorand}`}
                         >
                             <AddressDisplay
-                                address={item.contact.address}
+                                address={item.contact.addresses.algorand ?? ''}
                                 showCopy={false}
                                 style={styles.rowContainer}
                             />

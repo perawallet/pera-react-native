@@ -19,9 +19,9 @@ import {
 } from '@perawallet/wallet-core-remote-config'
 import {
     apiSlippageToPercent,
+    formatSwapRate,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
-import { formatSwapRate } from '../../hooks/swapQuoteHelpers'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 
 export type PriceImpactLevel = 'none' | 'low' | 'medium' | 'high'

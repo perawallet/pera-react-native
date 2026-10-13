@@ -28,9 +28,10 @@ import {
     verifyPinAgainstDuressSlot,
     verifyPinAgainstRecord,
 } from '../pinRecord'
-import { migratePinRecordToV3 } from '../pinRecordMigration'
+import { hydrateLockoutState } from '../lockoutHydration'
 import { useBiometrics } from './useBiometrics'
 import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type VerifyPinResult = { kind: 'ok' } | { kind: 'duress' } | { kind: 'fail' }
@@ -48,14 +49,16 @@ type UsePinCodeResult = {
      *
      * - `ok`: matches the regular PIN. Caller should unlock normally.
      * - `duress`: matches the duress PIN. Caller is responsible for triggering
-     *   the duress wipe + decoy provisioning. Treated as success for lockout
-     *   bookkeeping (`handleFailedAttempt` is NOT called) so the duress path
-     *   is always reachable, even when failed attempts have triggered a
+     *   the duress wipe + decoy provisioning. Costs no attempt, so the duress
+     *   path is always reachable, even when failed attempts have triggered a
      *   lockout — the duress comparison also bypasses the lockout gate.
-     * - `fail`: matches neither. Caller should increment failed attempts.
+     * - `fail`: matches neither.
+     *
+     * Attempt bookkeeping is owned here, not by the caller: the attempt is
+     * charged to the record before the comparison runs and refunded on
+     * success, so killing the app mid-attempt cannot buy a free guess.
      */
     verifyPin: (pin: string) => Promise<VerifyPinResult>
-    handleFailedAttempt: () => Promise<void>
     resetFailedAttempts: () => Promise<void>
     setLockoutEndTime: (date: Nullable<number>) => Promise<void>
     getLockoutDuration: () => number
@@ -92,7 +95,7 @@ export const usePinCode = (): UsePinCodeResult => {
         state => state.setAutoLockStartedAt,
     )
 
-    const { disableBiometrics, refreshBiometricsBinding } = useBiometrics()
+    const { disableBiometrics, completePendingBiometricRearm } = useBiometrics()
 
     const isLockedOut = useMemo(
         () => lockoutEndTime !== null && Date.now() < lockoutEndTime,
@@ -128,22 +131,20 @@ export const usePinCode = (): UsePinCodeResult => {
     //
     // The legacy-record migration runs first, eagerly: the separate v2 duress
     // record's key id sits in the keystore's plaintext metadata bucket, so it
-    // must disappear at launch, not on the next PIN interaction. When the
-    // migration rewrote the record, the biometric blob (a byte-for-byte
-    // mirror of it) is re-bound to the new bytes.
+    // must disappear at launch, not on the next PIN interaction. Rewriting the
+    // record does not touch biometrics: the blob holds a random token sealed by
+    // an OS-bound key, not a mirror of these bytes, so it stays valid.
     useEffect(() => {
         let cancelled = false
         void (async () => {
-            const { migrated } = await migratePinRecordToV3({
+            const lockout = await hydrateLockoutState({
                 withSecret,
                 commitSecret,
                 removeSecret,
             })
-            if (migrated) await refreshBiometricsBinding()
-            const record = await loadRecord()
-            if (cancelled || !record) return
-            setFailedAttemptsInStore(record.failedAttempts)
-            setLockoutEndTimeInStore(record.lockoutEndTime)
+            if (cancelled || !lockout) return
+            setFailedAttemptsInStore(lockout.failedAttempts)
+            setLockoutEndTimeInStore(lockout.lockoutEndTime)
         })()
         return () => {
             cancelled = true
@@ -152,8 +153,6 @@ export const usePinCode = (): UsePinCodeResult => {
         withSecret,
         commitSecret,
         removeSecret,
-        refreshBiometricsBinding,
-        loadRecord,
         setFailedAttemptsInStore,
         setLockoutEndTimeInStore,
     ])
@@ -215,12 +214,8 @@ export const usePinCode = (): UsePinCodeResult => {
                 await writeRecord(record)
                 setFailedAttemptsInStore(0)
                 setLockoutEndTimeInStore(null)
-                // Re-bind the biometric blob to the new PinRecord bytes so
-                // its content matches `PIN_RECORD_KEY_ID`. Critically, this
-                // does NOT write the raw PIN — that previously meant a
-                // 6-digit cleartext PIN sat in the keystore alongside the
-                // PBKDF2-hashed record, defeating the hashing.
-                await refreshBiometricsBinding()
+                // Nothing to re-bind: the biometric blob holds a random token, not a copy of
+                // the PIN record, so a new PIN neither invalidates nor needs to touch it.
             } else {
                 await removeSecret(PIN_RECORD_KEY_ID)
                 // The duress slot lives inside the record just removed; this
@@ -232,8 +227,9 @@ export const usePinCode = (): UsePinCodeResult => {
                 // Unconditional: `checkBiometricsEnabled` reporting false no
                 // longer implies the blob is gone — it keeps one whose
                 // enrollment it could not confirm — and `disableBiometrics` is
-                // an idempotent delete. Guarding here would strand the blob
-                // holding a copy of the PinRecord just removed above.
+                // an idempotent delete. Guarding here would strand a blob
+                // whose PIN just got removed above, unreachable until the
+                // next unlock ceremony revokes it.
                 await disableBiometrics()
             }
             forceRefresh.current += 1
@@ -244,7 +240,6 @@ export const usePinCode = (): UsePinCodeResult => {
             writeRecord,
             setFailedAttemptsInStore,
             setLockoutEndTimeInStore,
-            refreshBiometricsBinding,
             disableBiometrics,
         ],
     )
@@ -262,6 +257,21 @@ export const usePinCode = (): UsePinCodeResult => {
                 record.lockoutEndTime !== null &&
                 Date.now() < record.lockoutEndTime
 
+            // Only the record is charged up front; the store waits for a
+            // `fail`, or a correct PIN on a lockout boundary would flash the
+            // lockout screen while the hashes run.
+            const newAttempts = record.failedAttempts + 1
+            const triggerLockout =
+                newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT === 0
+            const charged: PinRecord = {
+                ...record,
+                failedAttempts: newAttempts,
+                lockoutEndTime: triggerLockout
+                    ? Date.now() + calculateLockoutSeconds(newAttempts) * 1000
+                    : record.lockoutEndTime,
+            }
+            await writeRecord(charged)
+
             // Both slots are hashed on EVERY attempt — the duress slot holds
             // random fill when no duress PIN is set — so an attempt's cost
             // never reveals whether the feature is configured. Do not
@@ -271,57 +281,58 @@ export const usePinCode = (): UsePinCodeResult => {
             const regularOk = lockedByRecord
                 ? false
                 : await verifyPinAgainstRecord(pin, record)
+            // Overlaps the duress hash instead of lengthening the unlock, but
+            // settles before `ok` returns: a put awaits the Keychain and a
+            // remove does not, so a late refund would restore a removed record.
+            const refund = regularOk
+                ? writeRecord({
+                      ...record,
+                      failedAttempts: 0,
+                      lockoutEndTime: null,
+                  }).catch(error => {
+                      logger.warn(
+                          'PIN attempt refund failed; the attempt stays charged',
+                          { error },
+                      )
+                  })
+                : null
             const duressOk = await verifyPinAgainstDuressSlot(pin, record)
 
-            if (regularOk) return { kind: 'ok' }
+            if (regularOk) {
+                await refund
+                resetFailedAttemptsInStore()
+                setLockoutEndTimeInStore(null)
+                // Not awaited, though that only helps so much: arming holds
+                // the Android keystore while it runs, so anything the unlock
+                // reads from it queues behind arming either way.
+                void completePendingBiometricRearm()
+                return { kind: 'ok' }
+            }
             // The duress comparison deliberately bypasses the lockout gate
             // (the caller's `isLockedOut` check) — duress must be reachable
             // even mid-lockout, otherwise an attacker could lock the user out
-            // and then demand the regular PIN. The caller treats `duress` as
-            // a success for the lockout counter as well (do NOT call
-            // handleFailedAttempt on `duress`).
+            // and then demand the regular PIN. The charge is reverted to the
+            // pre-attempt counter rather than zeroed: zeroing would let a
+            // duress entry clear an accumulated lockout on the settings path,
+            // where duress does not wipe.
             // duress: do not emit telemetry on this branch.
-            if (duressOk) return { kind: 'duress' }
+            if (duressOk) {
+                await writeRecord(record)
+                return { kind: 'duress' }
+            }
+            setFailedAttemptsInStore(newAttempts)
+            if (triggerLockout) setLockoutEndTimeInStore(charged.lockoutEndTime)
             return { kind: 'fail' }
         },
-        [loadRecord],
+        [
+            loadRecord,
+            writeRecord,
+            resetFailedAttemptsInStore,
+            setFailedAttemptsInStore,
+            setLockoutEndTimeInStore,
+            completePendingBiometricRearm,
+        ],
     )
-
-    const handleFailedAttempt = useCallback(async () => {
-        const record = await loadRecord()
-        const currentAttempts = record?.failedAttempts ?? failedAttempts
-        const newAttempts = currentAttempts + 1
-        const triggerLockout =
-            newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT === 0
-        const newLockoutEndTime = triggerLockout
-            ? Date.now() +
-              INITIAL_LOCKOUT_SECONDS *
-                  2 **
-                      (Math.floor(
-                          newAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
-                      ) -
-                          1) *
-                  1000
-            : (record?.lockoutEndTime ?? lockoutEndTime)
-
-        setFailedAttemptsInStore(newAttempts)
-        if (triggerLockout) setLockoutEndTimeInStore(newLockoutEndTime)
-
-        if (record) {
-            await writeRecord({
-                ...record,
-                failedAttempts: newAttempts,
-                lockoutEndTime: newLockoutEndTime,
-            })
-        }
-    }, [
-        loadRecord,
-        writeRecord,
-        failedAttempts,
-        lockoutEndTime,
-        setFailedAttemptsInStore,
-        setLockoutEndTimeInStore,
-    ])
 
     const checkAutoLock = useCallback(async () => {
         if (!(await checkPinEnabled())) return false
@@ -357,11 +368,9 @@ export const usePinCode = (): UsePinCodeResult => {
                 )
             }
             await writeRecord(await applyDuressPin(record, pin))
-            // The biometric blob mirrors the record bytes just rewritten.
-            await refreshBiometricsBinding()
             forceRefresh.current += 1
         },
-        [loadRecord, writeRecord, refreshBiometricsBinding],
+        [loadRecord, writeRecord],
     )
 
     return {
@@ -373,7 +382,6 @@ export const usePinCode = (): UsePinCodeResult => {
         remainingLockoutSeconds,
         savePin,
         verifyPin,
-        handleFailedAttempt,
         resetFailedAttempts,
         getLockoutDuration,
         setLockoutEndTime,

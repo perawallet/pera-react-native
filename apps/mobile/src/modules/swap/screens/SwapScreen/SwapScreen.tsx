@@ -14,12 +14,12 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import {
+    AccountSelection,
     AccountDrawerPager,
     useAccountDrawerPickerKind,
     useSigningPicker,
-} from '@modules/accounts/components/AccountDrawer'
+} from '@modules/accounts'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
 import { SwapForm, SwapIntroductionContent } from '@modules/swap/components'
@@ -33,7 +33,7 @@ export const SwapScreen = () => {
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const { request: requestBottomSheet } = useBottomSheet()
-    useSwapScreen()
+    const { initialPayAmount } = useSwapScreen()
 
     const hasShownIntroRef = useRef(false)
     useEffect(() => {
@@ -94,7 +94,7 @@ export const SwapScreen = () => {
                 </PWView>
 
                 <PWView style={styles.formWrapper}>
-                    <SwapForm />
+                    <SwapForm initialPayAmount={initialPayAmount} />
                 </PWView>
             </PWView>
         </AccountDrawerPager>

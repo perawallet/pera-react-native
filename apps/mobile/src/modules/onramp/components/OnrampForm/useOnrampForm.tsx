@@ -161,6 +161,8 @@ export const useOnrampForm = (
         selectQuote,
         selectedPaymentMethodId,
         selectPaymentMethod,
+        destinationPriceInUsd:
+            selectedPair?.destinationToken.priceInUsd ?? null,
         senderAddress,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,

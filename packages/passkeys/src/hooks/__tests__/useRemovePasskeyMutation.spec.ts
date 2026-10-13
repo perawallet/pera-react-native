@@ -29,6 +29,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 import { useRemovePasskeyMutation } from '../useRemovePasskeyMutation'
 import { passkeysQueryKey, passkeysQueryKeyRoot } from '../usePasskeysQuery'
+import { subscribeToPasskeyChanges } from '../../native/passkeyChanges'
 
 const keystorePasskey: Passkey = {
     id: 'cred-a',
@@ -181,5 +182,40 @@ describe('useRemovePasskeyMutation', () => {
 
         expect(mocks.removeKey).toHaveBeenCalledWith('cred-a')
         expect(result.current.isError).toBe(false)
+    })
+
+    it('announces the removal of a native passkey once it is deleted', async () => {
+        const deletesAtAnnouncement: number[] = []
+        const unsubscribe = subscribeToPasskeyChanges(() => {
+            deletesAtAnnouncement.push(mocks.deleteCredential.mock.calls.length)
+        })
+        const { result } = renderHook(() => useRemovePasskeyMutation(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.removePasskey(nativePasskey)
+        })
+        unsubscribe()
+
+        expect(deletesAtAnnouncement).toEqual([1])
+    })
+
+    it('announces a removal that fails partway', async () => {
+        mocks.removeKey.mockRejectedValue(new Error('keystore busy'))
+        const listener = vi.fn()
+        const unsubscribe = subscribeToPasskeyChanges(listener)
+        const { result } = renderHook(() => useRemovePasskeyMutation(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current
+                .removePasskey(keystorePasskey)
+                .catch(() => undefined)
+        })
+        unsubscribe()
+
+        expect(listener).toHaveBeenCalledTimes(1)
     })
 })

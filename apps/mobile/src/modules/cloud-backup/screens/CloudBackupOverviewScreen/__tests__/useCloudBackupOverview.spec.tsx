@@ -1,0 +1,717 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import {
+    useCloudBackupStore,
+    useBackupSyncStateStore,
+} from '@perawallet/wallet-core-backup'
+import {
+    accountItemKey,
+    contactItemKey,
+    createItemKeyHasher,
+    passkeyItemKey,
+    secretsItemKey,
+} from '@perawallet/wallet-core-backup/test-handlers'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
+import { trackEvent, CloudBackupEvent } from '@analytics'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCloudBackupOverview } from '../useCloudBackupOverview'
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
+
+// The bucket rules live in the package; import the real ones so this spec
+// exercises what the screen actually renders.
+vi.mock('@perawallet/wallet-core-backup', async () => ({
+    useCloudBackupStore: vi.fn(),
+    useBackupSyncStateStore: vi.fn(),
+    backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
+    accountBackupAddresses: (account: {
+        chains: Record<string, { address: string }>
+    }) =>
+        Object.entries(account.chains)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, entry]) => entry.address),
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/backup/src/cloud/models/itemKeys')
+    >('../../../../../../../../packages/backup/src/cloud/models/itemKeys')),
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/backup/src/cloud/models/reviewBuckets')
+    >(
+        '../../../../../../../../packages/backup/src/cloud/models/reviewBuckets',
+    )),
+}))
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
+    useAccountsStore: vi.fn(),
+}))
+vi.mock('@perawallet/wallet-core-contacts', () => ({
+    useContactsStore: vi.fn(),
+}))
+// This replaces the module wholesale, so the item-key hasher's `bytesToHex`
+// has to come along or hashing a fixture address throws.
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/shared/src/utils/strings')
+    >('../../../../../../../../packages/shared/src/utils/strings')),
+    truncateAlgorandAddress: (v: string) => `truncated(${v})`,
+}))
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: vi.fn(),
+}))
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({
+        requirePinVerification: requirePinVerificationMock,
+    }),
+}))
+vi.mock('../../../components/BackupCredentialsSheet', () => ({
+    BackupCredentialsSheet: () => null,
+}))
+vi.mock('../../../components/TurnOffBackupSheet', () => ({
+    TurnOffBackupSheet: () => null,
+}))
+vi.mock('../../../components/ConfirmTurnOffBackupSheet', () => ({
+    ConfirmTurnOffBackupSheet: () => null,
+}))
+
+const {
+    disableBackupMock,
+    removeBackupMock,
+    syncNowMock,
+    showSyncQrMock,
+    requirePinVerificationMock,
+    markIntroductionSeenMock,
+    useCloudBackupIntroductionMock,
+    storeCredentialsMock,
+    provenPasskeysMock,
+    navigationMock,
+} = vi.hoisted(() => ({
+    disableBackupMock: vi.fn(),
+    removeBackupMock: vi.fn(),
+    syncNowMock: vi.fn(),
+    showSyncQrMock: vi.fn(),
+    requirePinVerificationMock: vi.fn(),
+    markIntroductionSeenMock: vi.fn(),
+    useCloudBackupIntroductionMock: vi.fn(),
+    storeCredentialsMock: vi.fn(),
+    provenPasskeysMock: { current: [] as { credentialId: string }[] },
+    // The global mock hands out fresh vi.fn()s per call, so nothing can be
+    // asserted on it; this one is stable, like the real navigation object.
+    navigationMock: {
+        navigate: vi.fn(),
+        push: vi.fn(),
+        reset: vi.fn(),
+        goBack: vi.fn(),
+        setParams: vi.fn(),
+        canGoBack: vi.fn(() => false),
+        isFocused: vi.fn(() => true),
+    },
+}))
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => navigationMock,
+}))
+vi.mock('../../../hooks', () => ({
+    useDisableCloudBackup: () => ({
+        disableBackup: disableBackupMock,
+        isDisabling: false,
+    }),
+    useRemoveCloudBackup: () => ({
+        removeBackup: removeBackupMock,
+        isRemoving: false,
+    }),
+    useSyncDevicesQr: () => ({
+        showSyncQr: showSyncQrMock,
+    }),
+    useCloudBackupIntroduction: useCloudBackupIntroductionMock,
+    useStoreBackupCredentials: () => ({
+        storeCredentials: storeCredentialsMock,
+    }),
+    useProvenPasskeysQuery: () => ({
+        passkeys: provenPasskeysMock.current,
+        isLoading: false,
+    }),
+}))
+
+const mockRequestBottomSheet = vi.fn()
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const accountKey = (address: string) => accountItemKey(hashAddress(address))
+const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
+const contactKey = (address: string) => contactItemKey(hashAddress(address))
+// test-handlers doesn't re-export the record key builder; the prefix is the format.
+const recordKey = (identity: string) =>
+    `account-records/${hashAddress(identity)}`
+const passkeyKey = (credentialId: string) =>
+    passkeyItemKey(hashAddress(credentialId))
+
+type SyncStateFixture = {
+    backupId: string
+    lastKnownBackupHash: null
+    lastSyncedSeq: number
+    lastSyncedAt: number | null
+    lastSyncResult: 'SUCCESS' | 'FAILED' | null
+    items: Record<
+        string,
+        {
+            type: string
+            status: string
+            isDirty: boolean
+            knownVer: number
+            address: string
+            addresses?: string[]
+            pendingDelete?: boolean
+            record?: Record<string, unknown>
+        }
+    >
+}
+
+/** `knownVer > 0` is what marks an item as actually uploaded, so a fixture
+ *  needs both it and an address to read as backed up. */
+const uploaded = (
+    address: string,
+    over: Partial<SyncStateFixture['items'][string]> = {},
+): SyncStateFixture['items'][string] => ({
+    type: 'ACCOUNT',
+    status: 'ACTIVE',
+    isDirty: false,
+    knownVer: 1,
+    address,
+    ...over,
+})
+
+const emptySync = (): SyncStateFixture => ({
+    backupId: 'did:pera:abc',
+    lastKnownBackupHash: null,
+    lastSyncedSeq: 0,
+    lastSyncedAt: null,
+    lastSyncResult: null,
+    items: {},
+})
+
+const mockStores = (opts: {
+    backupId: string | null
+    syncState: SyncStateFixture | null
+    accounts: (string | { chains: Record<string, { address: string }> })[]
+    contacts: string[]
+}) => {
+    ;(useCloudBackupStore as unknown as Mock).mockImplementation(
+        (s: (st: { backupId: string | null }) => unknown) =>
+            s({ backupId: opts.backupId }),
+    )
+    ;(useBackupSyncStateStore as unknown as Mock).mockImplementation(
+        (s: (st: { syncState: unknown }) => unknown) =>
+            s({ syncState: opts.syncState }),
+    )
+    ;(useAccountsStore as unknown as Mock).mockImplementation(
+        (s: (st: { accounts: unknown[] }) => unknown) =>
+            s({
+                accounts: opts.accounts.map(account =>
+                    typeof account === 'string'
+                        ? { chains: { algorand: { address: account } } }
+                        : account,
+                ),
+            }),
+    )
+    ;(useContactsStore as unknown as Mock).mockImplementation(
+        (s: (st: { contacts: unknown[] }) => unknown) =>
+            s({
+                contacts: opts.contacts.map(address => ({
+                    addresses: { algorand: address },
+                })),
+            }),
+    )
+}
+
+const mockPasskeys = (credentialIds: string[]) => {
+    provenPasskeysMock.current = credentialIds.map(credentialId => ({
+        credentialId,
+    }))
+}
+
+beforeEach(() => {
+    vi.clearAllMocks()
+    mockPasskeys([])
+    ;(useBottomSheet as unknown as Mock).mockReturnValue({
+        request: mockRequestBottomSheet,
+    })
+    requirePinVerificationMock.mockResolvedValue(true)
+    showSyncQrMock.mockResolvedValue(undefined)
+    mockRequestBottomSheet.mockResolvedValue(undefined)
+    useCloudBackupIntroductionMock.mockReturnValue({
+        isIntroductionSeen: true,
+        markIntroductionSeen: markIntroductionSeenMock,
+    })
+    storeCredentialsMock.mockResolvedValue(undefined)
+})
+
+describe('useCloudBackupOverview', () => {
+    test('counts: 0 in sync, all local accounts not backed up (empty sync state)', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: emptySync(),
+            accounts: ['A', 'B'],
+            contacts: ['C1', 'C2', 'C3'],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.accountsInSync).toBe(0)
+        expect(result.current.accountsNotBackedUp).toBe(2)
+        expect(result.current.contactsInSync).toBe(0)
+        expect(result.current.contactsNotBackedUp).toBe(3)
+    })
+
+    test('counts ACTIVE items as in sync regardless of dirty, excludes IGNORED', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            // Dirty but still backed up (local edits not yet pushed).
+            [accountKey('A')]: uploaded('A'),
+            [accountKey('B')]: uploaded('B', { isDirty: true }),
+            // IGNORED = not backed up.
+            [accountKey('C')]: uploaded('C', { status: 'IGNORED' }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: ['A', 'B', 'C'],
+            contacts: [],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.accountsInSync).toBe(2)
+        expect(result.current.accountsNotBackedUp).toBe(1)
+    })
+
+    test('an account tracked but never uploaded is not in sync', () => {
+        const syncState = emptySync()
+        // What reconcile writes for a brand-new local account, before any push.
+        syncState.items = {
+            [accountKey('A')]: uploaded('A', { knownVer: 0, isDirty: true }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: ['A'],
+            contacts: [],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.accountsInSync).toBe(0)
+        expect(result.current.accountsNotBackedUp).toBe(1)
+    })
+
+    test('counts a backed-up contact in sync and a local-only one as not backed up', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [contactKey('C1')]: uploaded('C1', { type: 'CONTACT' }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: ['C1', 'C2'],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.contactsInSync).toBe(1)
+        expect(result.current.contactsNotBackedUp).toBe(1)
+    })
+
+    test('a single backed-up account reads as one, not one per stored item', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [accountKey('A')]: uploaded('A'),
+            [secretsKey('A')]: uploaded('A'),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: ['A'],
+            contacts: [],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.accountsInSync).toBe(1)
+        expect(result.current.accountsNotBackedUp).toBe(0)
+    })
+
+    test.each([
+        ['not in sync until its record is uploaded', 0, 0, 1],
+        ['in sync on one uploaded record for every chain', 1, 1, 0],
+    ])(
+        'an account on two chains is %s',
+        (_label, knownVer, inSync, notBackedUp) => {
+            const syncState = emptySync()
+            syncState.items = {
+                [recordKey('A')]: uploaded('A', {
+                    addresses: ['A', '0xeth'],
+                    knownVer,
+                }),
+            }
+            mockStores({
+                backupId: 'did:pera:abc',
+                syncState,
+                accounts: [
+                    {
+                        chains: {
+                            algorand: { address: 'A' },
+                            ethereum: { address: '0xeth' },
+                        },
+                    },
+                ],
+                contacts: [],
+            })
+            const { result } = renderHook(() => useCloudBackupOverview())
+            expect(result.current.accountsInSync).toBe(inSync)
+            expect(result.current.accountsNotBackedUp).toBe(notBackedUp)
+        },
+    )
+
+    test('counts the backup accounts only a newer version of the app can restore', () => {
+        const syncState = emptySync()
+        const record = (formatVersion: number, address: string) => ({
+            formatVersion,
+            chains: [{ chain: 'algorand', type: 'algo25', address }],
+        })
+        syncState.items = {
+            [recordKey('A')]: uploaded('A', { record: record(3, 'A') }),
+            [recordKey('B')]: uploaded('B', { record: record(2, 'B') }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: ['B'],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.accountsNeedingUpdate).toBe(1)
+    })
+
+    test('strips the did:pera: prefix and truncates for the credential address label', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.credentialAddressLabel).toBe('truncated(abc)')
+    })
+
+    test('counts passkeys in sync and not backed up', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [passkeyKey('cred-1')]: uploaded('cred-1', { type: 'PASSKEY' }),
+        }
+        mockPasskeys(['cred-1', 'cred-2'])
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.passkeysInSync).toBe(1)
+        expect(result.current.passkeysNotBackedUp).toBe(1)
+    })
+
+    test('reports zero not-backed-up when every credential is in the backup', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [passkeyKey('cred-1')]: uploaded('cred-1', { type: 'PASSKEY' }),
+        }
+        mockPasskeys(['cred-1'])
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.passkeysNotBackedUp).toBe(0)
+    })
+
+    test('tracks opening the accounts, contacts and passkeys rows', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        act(() => result.current.onPressAccounts())
+        act(() => result.current.onPressContacts())
+        act(() => result.current.onPressPasskeys())
+
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewAccounts,
+        )
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewContacts,
+        )
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewPasskeys,
+        )
+        expect(navigationMock.navigate).toHaveBeenCalledWith(
+            'CloudBackupPasskeys',
+        )
+    })
+
+    test('opens the turn off confirmation sheet when pressing turn off', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewTurnOff,
+        )
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+    })
+
+    const confirmationSheetChoice = () =>
+        mockRequestBottomSheet.mock.calls[1][0].contents.props.choice
+
+    test('confirms the choice, then asks for the PIN, before turning off', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOff')
+            .mockResolvedValueOnce(true)
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+        expect(confirmationSheetChoice()).toBe('turnOff')
+        expect(mockRequestBottomSheet.mock.invocationCallOrder[1]).toBeLessThan(
+            requirePinVerificationMock.mock.invocationCallOrder[0],
+        )
+        expect(disableBackupMock).toHaveBeenCalledTimes(1)
+        expect(removeBackupMock).not.toHaveBeenCalled()
+    })
+
+    test('removes the remote backup once turning off and removing is confirmed', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOffAndRemove')
+            .mockResolvedValueOnce(true)
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(confirmationSheetChoice()).toBe('turnOffAndRemove')
+        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
+        expect(removeBackupMock).toHaveBeenCalledTimes(1)
+        expect(disableBackupMock).not.toHaveBeenCalled()
+    })
+
+    test.each(['turnOff', 'turnOffAndRemove'])(
+        'does nothing when the %s confirmation is dismissed',
+        async choice => {
+            mockStores({
+                backupId: 'did:pera:abc',
+                syncState: null,
+                accounts: [],
+                contacts: [],
+            })
+            mockRequestBottomSheet
+                .mockResolvedValueOnce(choice)
+                .mockResolvedValueOnce(undefined)
+
+            const { result } = renderHook(() => useCloudBackupOverview())
+            await result.current.onPressTurnOff()
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+            expect(requirePinVerificationMock).not.toHaveBeenCalled()
+            expect(disableBackupMock).not.toHaveBeenCalled()
+            expect(removeBackupMock).not.toHaveBeenCalled()
+        },
+    )
+
+    test('does not ask for the PIN when the turn off sheet is dismissed', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet.mockResolvedValueOnce(undefined) // dismissed
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressTurnOff()
+
+        expect(requirePinVerificationMock).not.toHaveBeenCalled()
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(disableBackupMock).not.toHaveBeenCalled()
+        expect(removeBackupMock).not.toHaveBeenCalled()
+    })
+
+    test('opens the credentials sheet directly when no PIN is set', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        // The gate resolves true with no sheet of its own when no PIN is set.
+        requirePinVerificationMock.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressCredentialAddress()
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+    })
+
+    test('asks for the PIN first and opens the credentials sheet when verified', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        requirePinVerificationMock.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressCredentialAddress()
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(
+            requirePinVerificationMock.mock.invocationCallOrder[0],
+        ).toBeLessThan(mockRequestBottomSheet.mock.invocationCallOrder[0])
+    })
+
+    test('tracks the credential address tap but opens nothing when PIN verification fails', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        requirePinVerificationMock.mockResolvedValue(false)
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressCredentialAddress()
+
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewCredentialAddress,
+        )
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+    })
+
+    test('hands off to the store flow when the credentials sheet resolves with store', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet.mockResolvedValueOnce('store')
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressCredentialAddress()
+
+        expect(storeCredentialsMock).toHaveBeenCalledTimes(1)
+        // This entry point took the PIN before opening the sheet, so the store
+        // flow must not ask for it a second time.
+        expect(storeCredentialsMock).toHaveBeenCalledWith({
+            hasVerifiedPin: true,
+        })
+        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not start the store flow when the credentials sheet is dismissed', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressCredentialAddress()
+
+        expect(storeCredentialsMock).not.toHaveBeenCalled()
+    })
+
+    test('opens the sync QR flow instead of forcing a sync', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        await act(() => result.current.onPressSyncDevices())
+
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewSyncDevices,
+        )
+        expect(showSyncQrMock).toHaveBeenCalledTimes(1)
+        expect(syncNowMock).not.toHaveBeenCalled()
+    })
+
+    test('marks the intro seen when viewing the overview with it unseen', () => {
+        useCloudBackupIntroductionMock.mockReturnValue({
+            isIntroductionSeen: false,
+            markIntroductionSeen: markIntroductionSeenMock,
+        })
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        renderHook(() => useCloudBackupOverview())
+
+        expect(markIntroductionSeenMock).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not mark the intro again when it is already seen', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        renderHook(() => useCloudBackupOverview())
+
+        expect(markIntroductionSeenMock).not.toHaveBeenCalled()
+    })
+})

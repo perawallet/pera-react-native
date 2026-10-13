@@ -18,7 +18,6 @@
 // The vitest config aliases the package here, so every
 // `getPlatformServices` import resolves to this at test time.
 import {
-    MemoryKeyValueStorage,
     DevicePlatforms,
     type AnalyticsService,
     type AppIntegrityService,
@@ -34,8 +33,12 @@ import {
     type PushNotificationService,
     type RemoteConfigService,
     type WalletProvisioningService,
+    type CloudFileStorageService,
 } from '@perawallet/wallet-extension-platform'
-import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    MemoryAppLifecycleService,
+    MemoryKeyValueStorage,
+} from '@perawallet/wallet-extension-platform/test-utils'
 import { testDatabaseService } from './sqlite-database'
 
 const buildServices = (): PlatformServices => {
@@ -64,19 +67,37 @@ const buildServices = (): PlatformServices => {
         async getSecurityLevel() {
             return 'strong'
         },
-        async authenticate() {
-            return { success: true } as const
-        },
-        async createEnrollmentBinding() {},
         async checkEnrollmentBinding() {
             return 'valid' as const
         },
         async clearEnrollmentBinding() {},
+        async armBiometricBinding() {
+            // Hash of the 32-zero-byte token below, so a test that actually
+            // verifies the two must cohere.
+            return {
+                blob: 'test-blob',
+                tokenHash:
+                    '66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925',
+            }
+        },
+        async unwrapBiometricToken() {
+            return { success: true, token: new Uint8Array(32) } as const
+        },
+        beginBiometricUnwrap() {
+            return {
+                authenticated: Promise.resolve({ success: true } as const),
+                async finish() {
+                    return { success: true, token: new Uint8Array(32) } as const
+                },
+                async cancel() {},
+            }
+        },
     }
 
     const analytics: AnalyticsService = {
         initializeAnalytics() {},
         logEvent() {},
+        setCollectionEnabled() {},
     }
 
     const crashReporting: CrashReportingService = {
@@ -149,6 +170,14 @@ const buildServices = (): PlatformServices => {
         },
     }
 
+    // Dormant default: no drive is reachable, so a flow test sees the same
+    // source list as a build without the OAuth clients until it says otherwise.
+    const cloudFileStorage: CloudFileStorageService = {
+        getAvailableStores: () => [],
+        save: async () => 'cancelled',
+        read: async () => ({ status: 'cancelled' }),
+    }
+
     const migration: MigrationService = {
         hasLegacyData: async () => false,
         getLegacyData: async () => {
@@ -160,8 +189,6 @@ const buildServices = (): PlatformServices => {
         markMigrationComplete: async () => {},
         clearMigrationComplete: async () => {},
         getMigrationPlans: async () => [],
-        simulateLegacyDatabase: async () => {},
-        simulatePreSixxAccounts: async () => {},
         resetLegacyData: async () => {},
         getCompletedStepVersions: async () => null,
         setCompletedStepVersions: async () => {},
@@ -178,9 +205,10 @@ const buildServices = (): PlatformServices => {
         database,
         deviceInfo,
         appIntegrity,
-        hardwareWalletRegistry: createHardwareWalletRegistry(),
+        appLifecycle: new MemoryAppLifecycleService(),
         migration,
         walletProvisioning,
+        cloudFileStorage,
     }
 }
 

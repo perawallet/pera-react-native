@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    signingKeyOn,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     entropyChildIdOf,
     entropyToMnemonic,
@@ -19,7 +22,10 @@ import {
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { bytesEqual, bytesToHex, logger } from '@perawallet/wallet-core-shared'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import type { LegacyPasskey } from '@perawallet/wallet-extension-platform'
 import {
     credentialIdBytesToStandardBase64,
@@ -33,7 +39,8 @@ import {
     createNativePasskeyWriter,
     nativePasskeyEntryExists,
     type NativePasskeyWriter,
-} from './passkeys/writeNativePasskeyEntry'
+} from '@perawallet/wallet-core-passkeys'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export type PasskeysMigrationResult = {
     imported: number
@@ -68,7 +75,7 @@ const toWebAuthnOrigin = (siteUrl: string): string =>
 
 /**
  * Per-platform legacy derivation convention. Migration always reads the
- * same-platform legacy DB (in-place upgrade), so `Platform.OS` selects it; a
+ * same-platform legacy DB (in-place upgrade), so the device platform selects it; a
  * wrong guess only causes a safe skip (credentialId is verified before write).
  */
 type PlatformPasskeyConvention = {
@@ -77,7 +84,7 @@ type PlatformPasskeyConvention = {
 }
 
 const resolvePlatformConvention = (): PlatformPasskeyConvention =>
-    Platform.OS === 'ios'
+    getProvider().deviceInfo.getDevicePlatform() === 'ios'
         ? { resolveOrigin: siteUrl => siteUrl, credentialIdBasis: 'raw-point' }
         : { resolveOrigin: toWebAuthnOrigin, credentialIdBasis: 'spki-der' }
 
@@ -130,12 +137,15 @@ type MigrationContext = {
     dispose: () => Promise<void>
 }
 
-const createMigrationContext = (): MigrationContext => {
+const createMigrationContext = (chainId: ChainId): MigrationContext => {
     const keyById = new Map(
         getKeystoreStore().state.keys.map(key => [key.id, key]),
     )
     const accountByAddress = new Map(
-        useAccountsStore.getState().accounts.map(acc => [acc.address, acc]),
+        useAccountsStore.getState().accounts.flatMap(acc => {
+            const address = chainAccountOf(acc, chainId)?.address
+            return address === undefined ? [] : [[address, acc] as const]
+        }),
     )
     const mainKeyBySeed = new Map<string, Promise<Uint8Array>>()
     const writePasskey = createNativePasskeyWriter()
@@ -143,7 +153,10 @@ const createMigrationContext = (): MigrationContext => {
     return {
         hasAccount: address => accountByAddress.has(address),
         resolveSeedKeyId: address => {
-            const keyPairId = accountByAddress.get(address)?.keyPairId
+            const account = accountByAddress.get(address)
+            const keyPairId = account
+                ? signingKeyOn(account, chainId)
+                : undefined
             if (!keyPairId) return undefined
             const parentKeyId = (
                 keyById.get(keyPairId)?.metadata as
@@ -318,11 +331,12 @@ const migrateSinglePasskey = async (
  */
 export const migratePasskeys = async (
     passkeys: LegacyPasskey[],
+    chainId: ChainId,
 ): Promise<PasskeysMigrationResult> => {
     const result: PasskeysMigrationResult = { imported: 0, skipped: 0 }
     if (passkeys.length === 0) return result
 
-    const ctx = createMigrationContext()
+    const ctx = createMigrationContext(chainId)
     const writtenIds = new Set<string>()
 
     try {

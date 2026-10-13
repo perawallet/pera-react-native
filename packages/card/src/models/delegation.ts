@@ -31,9 +31,3 @@ export type CardExternalWallet = {
     allowance: Decimal
     network: string
 }
-
-/** Signed delegated-LSig payload produced by the injected program signer. */
-export type DelegationSignature = {
-    /** msgpack-encoded signed LogicSig. */
-    signedProgram: Uint8Array
-}

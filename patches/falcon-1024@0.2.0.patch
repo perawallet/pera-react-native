@@ -1,0 +1,13 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index b7fef93b5e38b858091543cd538da79988c71e2d..5981452af73a09db79c701eb1d5bbbcf7f683397 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -41,7 +41,7 @@ function Module(moduleArg = {}) {
+   var ENVIRONMENT_IS_NODE = globalThis.process?.versions?.node && globalThis.process?.type != "renderer";
+   var arguments_ = [];
+   var thisProgram = "./this.program";
+-  var _scriptName = __filename;
++  var _scriptName = typeof __filename !== "undefined" ? __filename : "";
+   var scriptDirectory = "";
+   var readAsync, readBinary;
+   if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {

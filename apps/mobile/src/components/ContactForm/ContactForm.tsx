@@ -11,7 +11,6 @@
  */
 
 import { type ReactNode, useCallback, useRef, useState } from 'react'
-import { ActivityIndicator } from 'react-native'
 import {
     type Control,
     Controller,
@@ -27,6 +26,7 @@ import {
     PWText,
     PWTouchableOpacity,
     PWView,
+    PWLoadingIndicator,
 } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { QRScannerView } from '@components/QRScannerView'
@@ -74,7 +74,11 @@ export const ContactForm = <T extends FieldValues>({
     const renderAvatar = () => (
         <ContactAvatar
             size='xxl'
-            contact={{ name: '', address, image: imageUri }}
+            contact={{
+                name: '',
+                addresses: { algorand: address },
+                image: imageUri,
+            }}
         />
     )
 
@@ -173,7 +177,7 @@ export const ContactForm = <T extends FieldValues>({
                 />
                 {isResolvingNfd && (
                     <PWView style={styles.nfdStatus}>
-                        <ActivityIndicator size='small' />
+                        <PWLoadingIndicator size='sm' />
                         <PWText
                             variant='caption'
                             style={styles.nfdStatusText}

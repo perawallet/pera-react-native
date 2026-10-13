@@ -1,0 +1,177 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    MessageRequest,
+    SigningRequest,
+} from '@perawallet/wallet-core-chain-contract'
+import { algo25Account } from '../../__tests__/accounts'
+import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
+import { messageSignerChainAdapters } from '../../message-signer'
+import { CannotSignError } from '../../pipeline/errors'
+import type { AuthData, AuthDataMetadata } from '../../pipeline/types'
+import { useAuthDataSigner } from '../useAuthDataSigner'
+
+const mockSignDataWithKey = vi.fn()
+// Stable reference across renders: only the `accounts` dependency may force a
+// callback rebuild, so the stale-list test actually guards the dep array.
+const mockStableSignData = (...args: unknown[]) => mockSignDataWithKey(...args)
+
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useKMS: () => ({ signDataWithKey: mockStableSignData }),
+}))
+
+let mockAccounts: WalletAccount[] = []
+
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    useAllAccounts: () => mockAccounts,
+}))
+
+const account = algo25Account('ADDR', { keyPairId: 'key-1' })
+
+const authData: AuthData = {
+    data: 'ZGF0YQ==',
+    signer: 'ADDR',
+    domain: 'example.io',
+    authenticatorData: new Uint8Array(37),
+}
+const metadata: AuthDataMetadata = { scope: 1, encoding: 'base64' }
+
+const planFor = (request: MessageRequest): SigningRequest[] => [
+    {
+        requestIndex: 0,
+        signer: request.signer,
+        scheme: 'ed25519',
+        payload: new Uint8Array([4]),
+    },
+]
+
+const assembleFirst = vi.fn((request: MessageRequest, signatures) => ({
+    scope: request.scope,
+    signature: signatures[0],
+}))
+
+describe('useAuthDataSigner', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockAccounts = []
+        mockSignDataWithKey.mockResolvedValue([new Uint8Array([9])])
+    })
+
+    test('plans an auth-data request for the account with the current accounts, and returns the signature', async () => {
+        const adapter = registerFakeMessageSignerAdapter({
+            plan: vi.fn(planFor),
+            assemble: assembleFirst,
+        })
+        mockAccounts = [account]
+        const { result } = renderHook(() => useAuthDataSigner())
+
+        await expect(
+            result.current.signAuthData(
+                'algorand',
+                account,
+                authData,
+                metadata,
+            ),
+        ).resolves.toEqual(new Uint8Array([9]))
+
+        expect(adapter.plan).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'auth-data',
+                signer: 'ADDR',
+                payload: { authData, metadata },
+            }),
+            { account, accounts: [account] },
+        )
+    })
+
+    test('signs the planned payload through the KMS under the signing key domain', async () => {
+        registerFakeMessageSignerAdapter({
+            plan: vi.fn(planFor),
+            assemble: assembleFirst,
+        })
+        const { result } = renderHook(() => useAuthDataSigner())
+
+        await result.current.signAuthData(
+            'algorand',
+            account,
+            authData,
+            metadata,
+        )
+
+        expect(mockSignDataWithKey).toHaveBeenCalledWith(
+            'key-1',
+            'pera.accounts',
+            [new Uint8Array([4])],
+        )
+    })
+
+    test('passes the accounts current at call time, not at first render', async () => {
+        const adapter = registerFakeMessageSignerAdapter({
+            plan: vi.fn(planFor),
+            assemble: assembleFirst,
+        })
+        mockAccounts = [account]
+        const { result, rerender } = renderHook(() => useAuthDataSigner())
+
+        const revoked = { ...account, name: 'Renamed' }
+        mockAccounts = [revoked]
+        rerender()
+        await result.current.signAuthData(
+            'algorand',
+            account,
+            authData,
+            metadata,
+        )
+
+        expect(vi.mocked(adapter.plan).mock.calls[0][1].accounts).toEqual([
+            revoked,
+        ])
+    })
+
+    test('refuses and never touches the KMS when no message signer is registered', async () => {
+        messageSignerChainAdapters.reset()
+        const { result } = renderHook(() => useAuthDataSigner())
+
+        await expect(
+            result.current.signAuthData(
+                'algorand',
+                account,
+                authData,
+                metadata,
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
+    })
+
+    test('refuses an account with no address on the chain before reaching the signer', async () => {
+        const plan = vi.fn()
+        registerFakeMessageSignerAdapter({ plan })
+        const { result } = renderHook(() => useAuthDataSigner())
+
+        await expect(
+            result.current.signAuthData(
+                'algorand',
+                { ...account, chains: {} },
+                authData,
+                metadata,
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(plan).not.toHaveBeenCalled()
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
+    })
+})

@@ -10,24 +10,36 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     getAllKeys: vi.fn(() => [] as string[]),
     getString: vi.fn(),
     decode: vi.fn(),
+    set: vi.fn(),
 }))
+
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     METADATA_PREFIX: 'k/',
+    MATERIAL_PREFIX: 'm/',
     decode: mocks.decode,
+    readMasterKey: vi.fn(),
     storage: {
         getAllKeys: mocks.getAllKeys,
         getString: mocks.getString,
+        set: mocks.set,
     },
 }))
 
-import { readPersistedKeys } from '../maintenance'
+import {
+    hasKeyMaterial,
+    readPersistedKeys,
+    writePasskeyCredential,
+} from '../maintenance'
 
 describe('readPersistedKeys', () => {
     beforeEach(() => {
@@ -84,5 +96,29 @@ describe('readPersistedKeys', () => {
 
         expect(result.keys).toEqual([])
         expect(result.failedIds).toEqual([])
+    })
+})
+
+describe('hasKeyMaterial', () => {
+    test('reports whether m/<id> holds anything', () => {
+        mocks.getString.mockImplementation((key: string) =>
+            key === 'm/with' ? 'sealed' : undefined,
+        )
+
+        expect(hasKeyMaterial('with')).toBe(true)
+        expect(hasKeyMaterial('without')).toBe(false)
+    })
+})
+
+describe('writePasskeyCredential', () => {
+    test('refuses a record the provider could never list, before writing anything', async () => {
+        await expect(
+            writePasskeyCredential(new Uint8Array(32), 'cred-1', {
+                type: 'hd-derived-p256',
+                publicKey: new Uint8Array(4).fill(4),
+                metadata: {},
+            }),
+        ).rejects.toThrow('cannot be stored in the split layout')
+        expect(mocks.set).not.toHaveBeenCalled()
     })
 })

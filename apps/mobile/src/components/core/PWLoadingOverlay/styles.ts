@@ -26,4 +26,8 @@ export const useStyles = makeStyles(theme => ({
         width: 'auto',
         maxWidth: '80%',
     },
+    description: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
 }))

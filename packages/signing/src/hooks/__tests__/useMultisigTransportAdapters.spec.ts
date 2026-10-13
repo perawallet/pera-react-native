@@ -18,11 +18,24 @@ import {
     proposeSignRequestSchema,
     useDraftSignRequestStore,
 } from '@perawallet/wallet-core-multisig'
+import {
+    type ChainScope,
+    type PeraSignedTransaction,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { useMultisigTransportAdapters } from '../useMultisigTransportAdapters'
-import { draftProposeContexts } from '../../pipeline/draftProposeContexts'
+import type { DraftProposeContext } from '../../chain-adapter'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import {
+    multisigAccount,
+    registerTestMultisigAdapter,
+} from '../../__tests__/accounts'
 import { walletConnectHandoffs } from '../../pipeline/walletConnectHandoffs'
 import type { SigningResult } from '../../pipeline/types'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
+
+const TESTNET = scopeForLegacyNetwork('testnet')
 
 // Fake signed-transaction node. The transport reads only `txn` (passed to the
 // mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
@@ -37,22 +50,20 @@ const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
     addSignature: vi.fn(),
     useNetwork: vi.fn(),
-    encodeTransactionRaw: vi.fn(),
+    encodeUnsignedTransaction: vi.fn(),
     useAllAccounts: vi.fn(),
     useDeviceID: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => mocks.useNetwork(),
-    useTransactionEncoder: () => ({
-        encodeTransactionRaw: mocks.encodeTransactionRaw,
-    }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     useAllAccounts: () => mocks.useAllAccounts(),
-    isMultisigAccount: (a: { type?: string } | null | undefined) =>
-        a?.type === 'multisig',
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -139,23 +150,53 @@ describe('useMultisigTransportAdapters', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        registerTestMultisigAdapter()
         mocks.useAllAccounts.mockReturnValue([
-            {
-                type: 'multisig',
-                address: 'MSIG',
-                multisigDetails: {
-                    version: 1,
-                    threshold: 2,
-                    addresses: ['A', 'B'],
-                },
-            },
+            multisigAccount('MSIG', {
+                version: 1,
+                threshold: 2,
+                addresses: ['A', 'B'],
+            }),
         ])
         mocks.useDeviceID.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
-        mocks.encodeTransactionRaw.mockImplementation(
+        mocks.encodeUnsignedTransaction.mockImplementation(
             (txn: { tag: string }) =>
                 new Uint8Array([txn.tag === 'TXN_1' ? 0xa1 : 0xa2]),
         )
+        registerFakePlannerAdapter({
+            encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+        })
+    })
+
+    describe('getMsigMetadata', () => {
+        test('reads the stored parameters of the multisig at the address', () => {
+            mocks.useAllAccounts.mockReturnValue([
+                multisigAccount('MSIG', {
+                    version: 2,
+                    threshold: 1,
+                    addresses: ['A', 'B', 'C'],
+                }),
+            ])
+            const { result } = renderTransportFns()
+
+            expect(
+                result.current.adaptersFor(SCOPE).getMsigMetadata('MSIG'),
+            ).toEqual({
+                version: 2,
+                threshold: 1,
+                addresses: ['A', 'B', 'C'],
+            })
+        })
+
+        test('reports nothing for a multisig record that never stored its parameters', () => {
+            mocks.useAllAccounts.mockReturnValue([multisigAccount('MSIG')])
+            const { result } = renderTransportFns()
+
+            expect(
+                result.current.adaptersFor(SCOPE).getMsigMetadata('MSIG'),
+            ).toBeUndefined()
+        })
     })
 
     describe('proposeSignRequest', () => {
@@ -163,17 +204,19 @@ describe('useMultisigTransportAdapters', () => {
             mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
             const { result } = renderTransportFns()
 
-            const response = await result.current.proposeSignRequest({
-                multisigAddress: 'MSIG',
-                signedData: {
-                    type: 'transactions',
-                    signed: [fakeSigned('TXN_1', new Uint8Array([1]))],
-                },
-                signers: [
-                    { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
-                ],
-                type: 'async',
-            })
+            const response = await result.current
+                .adaptersFor(SCOPE)
+                .proposeSignRequest({
+                    multisigAddress: 'MSIG',
+                    signedData: {
+                        type: 'transactions',
+                        signed: [fakeSigned('TXN_1', new Uint8Array([1]))],
+                    },
+                    signers: [
+                        { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
+                    ],
+                    type: 'async',
+                })
 
             expect(mocks.proposeSignRequest).toHaveBeenCalledTimes(1)
             expect(mocks.addSignature).not.toHaveBeenCalled()
@@ -210,12 +253,14 @@ describe('useMultisigTransportAdapters', () => {
             const { result } = renderTransportFns()
             const { signedData, signers } = buildTxnSigningResult()
 
-            const response = await result.current.proposeSignRequest({
-                multisigAddress: 'MSIG',
-                signedData,
-                signers,
-                type: 'async',
-            })
+            const response = await result.current
+                .adaptersFor(SCOPE)
+                .proposeSignRequest({
+                    multisigAddress: 'MSIG',
+                    signedData,
+                    signers,
+                    type: 'async',
+                })
 
             // Propose carries proposer (signers[0]) only
             expect(mocks.proposeSignRequest).toHaveBeenCalledTimes(1)
@@ -258,7 +303,7 @@ describe('useMultisigTransportAdapters', () => {
             const { result } = renderTransportFns()
             const { signedData, signers } = buildTxnSigningResult()
 
-            await result.current.proposeSignRequest({
+            await result.current.adaptersFor(SCOPE).proposeSignRequest({
                 multisigAddress: 'MSIG',
                 signedData,
                 signers,
@@ -275,12 +320,14 @@ describe('useMultisigTransportAdapters', () => {
             const { result } = renderTransportFns()
             const { signedData, signers } = buildTxnSigningResult()
 
-            const response = await result.current.proposeSignRequest({
-                multisigAddress: 'MSIG',
-                signedData,
-                signers,
-                type: 'async',
-            })
+            const response = await result.current
+                .adaptersFor(SCOPE)
+                .proposeSignRequest({
+                    multisigAddress: 'MSIG',
+                    signedData,
+                    signers,
+                    type: 'async',
+                })
 
             // Propose succeeded; status falls back to propose's status when cosigns fail
             expect(response).toEqual({
@@ -302,7 +349,7 @@ describe('useMultisigTransportAdapters', () => {
             const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
             const { signedData, signers } = buildTxnSigningResult()
 
-            await result.current.proposeSignRequest({
+            await result.current.adaptersFor(SCOPE).proposeSignRequest({
                 multisigAddress: 'MSIG',
                 signedData,
                 signers,
@@ -313,7 +360,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-1' },
+                    { scope: TESTNET, signRequestId: 'sr-1' },
                 ],
                 // The adapter backfills `proposer_address` from the
                 // proposer we just sent in case the backend response omits
@@ -327,7 +374,7 @@ describe('useMultisigTransportAdapters', () => {
             const { result, queryClient } = renderTransportFns()
             const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
 
-            await result.current.proposeSignRequest({
+            await result.current.adaptersFor(SCOPE).proposeSignRequest({
                 multisigAddress: 'MSIG',
                 signedData: {
                     type: 'transactions',
@@ -343,7 +390,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-1' },
+                    { scope: TESTNET, signRequestId: 'sr-1' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -356,7 +403,7 @@ describe('useMultisigTransportAdapters', () => {
             const { result } = renderTransportFns()
 
             await expect(
-                result.current.proposeSignRequest({
+                result.current.adaptersFor(SCOPE).proposeSignRequest({
                     multisigAddress: 'MSIG',
                     signedData: {
                         type: 'arbitrary-data',
@@ -374,7 +421,7 @@ describe('useMultisigTransportAdapters', () => {
             const { result } = renderTransportFns()
 
             await expect(
-                result.current.proposeSignRequest({
+                result.current.adaptersFor(SCOPE).proposeSignRequest({
                     multisigAddress: 'MSIG',
                     signedData: { type: 'transactions', signed: [] },
                     signers: [],
@@ -389,7 +436,7 @@ describe('useMultisigTransportAdapters', () => {
             mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
             const { result } = renderTransportFns()
 
-            await result.current.proposeSignRequest({
+            await result.current.adaptersFor(SCOPE).proposeSignRequest({
                 multisigAddress: 'MSIG',
                 signedData: {
                     type: 'transactions',
@@ -413,13 +460,15 @@ describe('useMultisigTransportAdapters', () => {
             mocks.addSignature.mockResolvedValue(baseSignRequestResponse)
             const { result } = renderTransportFns()
 
-            const response = await result.current.addSignatures({
-                signRequestId: 'sr-42',
-                signers: [
-                    { address: 'A', signatures: ['c2lnQTA='] },
-                    { address: 'B', signatures: ['c2lnQjA='] },
-                ],
-            })
+            const response = await result.current
+                .adaptersFor(SCOPE)
+                .addSignatures({
+                    signRequestId: 'sr-42',
+                    signers: [
+                        { address: 'A', signatures: ['c2lnQTA='] },
+                        { address: 'B', signatures: ['c2lnQjA='] },
+                    ],
+                })
 
             expect(mocks.addSignature).toHaveBeenCalledTimes(1)
             const [network, signRequestId, responses] =
@@ -446,7 +495,7 @@ describe('useMultisigTransportAdapters', () => {
             const { result, queryClient } = renderTransportFns()
             const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
 
-            await result.current.addSignatures({
+            await result.current.adaptersFor(SCOPE).addSignatures({
                 signRequestId: 'sr-99',
                 signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
             })
@@ -456,7 +505,7 @@ describe('useMultisigTransportAdapters', () => {
                     'multisig',
                     'sign-request-detail',
                     {
-                        network: 'testnet',
+                        scope: TESTNET,
                         signRequestId: 'sr-99',
                     },
                 ],
@@ -476,7 +525,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-99' },
+                    { scope: TESTNET, signRequestId: 'sr-99' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -485,7 +534,7 @@ describe('useMultisigTransportAdapters', () => {
             )
             const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData')
 
-            await result.current.addSignatures({
+            await result.current.adaptersFor(SCOPE).addSignatures({
                 signRequestId: 'sr-99',
                 signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
             })
@@ -494,7 +543,7 @@ describe('useMultisigTransportAdapters', () => {
                 [
                     'multisig',
                     'sign-request-detail',
-                    { network: 'testnet', signRequestId: 'sr-99' },
+                    { scope: TESTNET, signRequestId: 'sr-99' },
                 ],
                 {
                     ...baseSignRequestResponse,
@@ -508,7 +557,7 @@ describe('useMultisigTransportAdapters', () => {
             const { result } = renderTransportFns()
 
             await expect(
-                result.current.addSignatures({
+                result.current.adaptersFor(SCOPE).addSignatures({
                     signRequestId: 'sr-x',
                     signers: [{ address: 'A', signatures: ['x'] }],
                 }),
@@ -530,10 +579,22 @@ describe('useMultisigTransportAdapters', () => {
                 proposeType,
             })
 
+        const draftProposeContexts = new Map<string, DraftProposeContext>()
+        let takeDraftProposeContext: ReturnType<typeof vi.fn>
+
         beforeEach(() => {
             useDraftSignRequestStore.getState().resetState()
             walletConnectHandoffs.__resetForTests()
-            draftProposeContexts.__resetForTests()
+            draftProposeContexts.clear()
+            takeDraftProposeContext = vi.fn((draftLocalId: string) => {
+                const context = draftProposeContexts.get(draftLocalId)
+                draftProposeContexts.delete(draftLocalId)
+                return context
+            })
+            registerFakePlannerAdapter({
+                takeDraftProposeContext,
+                encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+            })
         })
 
         test('registers the sync handoff under the real id and fires onProposed', async () => {
@@ -573,10 +634,12 @@ describe('useMultisigTransportAdapters', () => {
             })
             const { result } = renderTransportFns()
 
-            const response = await result.current.addSignatures({
-                signRequestId: draftId,
-                signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
-            })
+            const response = await result.current
+                .adaptersFor(SCOPE)
+                .addSignatures({
+                    signRequestId: draftId,
+                    signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
+                })
 
             expect(response).toEqual({
                 status: 'pending',
@@ -593,7 +656,10 @@ describe('useMultisigTransportAdapters', () => {
             expect(handoff?.expectedRawTransactionsBase64).toEqual(['cmF3MQ=='])
             // The hook's live device id wins; the stashed one is the fallback.
             expect(handoff?.deviceId).toBe('device-1')
-            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.scope).toEqual({
+                chainId: 'algorand',
+                networkId: 'testnet',
+            })
             expect(handoff?.sourceType).toBe('walletconnect')
             expect(handoff?.proposerAddress).toBe('A')
             expect(handoff?.callbacks?.approveSignedBytes).toBe(
@@ -608,6 +674,8 @@ describe('useMultisigTransportAdapters', () => {
                 rawTransactionsBase64: ['cmF3MQ=='],
             })
             // Consumed: a later cosign on the real id must not re-register.
+            expect(takeDraftProposeContext).toHaveBeenCalledTimes(1)
+            expect(takeDraftProposeContext).toHaveBeenCalledWith(draftId)
             expect(draftProposeContexts.get(draftId)).toBeUndefined()
         })
 
@@ -624,7 +692,7 @@ describe('useMultisigTransportAdapters', () => {
             })
             const { result } = renderTransportFns()
 
-            await result.current.addSignatures({
+            await result.current.adaptersFor(SCOPE).addSignatures({
                 signRequestId: draftId,
                 signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
             })
@@ -657,7 +725,7 @@ describe('useMultisigTransportAdapters', () => {
             const { result } = renderTransportFns()
 
             await expect(
-                result.current.addSignatures({
+                result.current.adaptersFor(SCOPE).addSignatures({
                     signRequestId: draftId,
                     signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
                 }),
@@ -683,10 +751,12 @@ describe('useMultisigTransportAdapters', () => {
             })
             const { result } = renderTransportFns()
 
-            const response = await result.current.addSignatures({
-                signRequestId: draftId,
-                signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
-            })
+            const response = await result.current
+                .adaptersFor(SCOPE)
+                .addSignatures({
+                    signRequestId: draftId,
+                    signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
+                })
 
             expect(response).toEqual({
                 status: 'pending',

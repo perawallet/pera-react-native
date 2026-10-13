@@ -46,6 +46,7 @@ export const useLedgerPairScreen = (): UseLedgerPairScreenResult => {
     }, [requestBottomSheet])
 
     const handleOpenSupport = useCallback(() => {
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- bundled translation string
         Linking.openURL(t('ledger.pair.support_url')).catch(() => {
             // Browser missing or URL unhandleable — silently no-op rather
             // than crashing with an unhandled promise rejection.

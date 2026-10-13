@@ -35,7 +35,7 @@ export const Arc60SigningScreen = () => {
         canConfirm,
         errorMessage,
         hasOriginMismatch,
-        isQuantumBlocked,
+        isSigningBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,
@@ -43,7 +43,7 @@ export const Arc60SigningScreen = () => {
 
     if (!request || !parsed) return null
 
-    if (isQuantumBlocked) {
+    if (isSigningBlocked) {
         return (
             <PWScreen
                 scroll='never'
@@ -128,7 +128,7 @@ export const Arc60SigningScreen = () => {
                             style={styles.originWarningText}
                         >
                             {t('signing.arc60_view.origin_mismatch', {
-                                domain: request.stdSigData.domain,
+                                domain: request.authData.domain,
                             })}
                         </PWText>
                     </PWView>

@@ -11,8 +11,13 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWButton, PWImage, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWImage,
+    PWLoadingIndicator,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import bootsplashLogo from '@assets/bootsplash/logo.png'
 import { SPINNER_COLOR, useStyles } from './styles'
@@ -43,8 +48,8 @@ export const MigrationSplashScreen = () => {
             </PWView>
             <PWView style={styles.footer}>
                 {status === 'running' && (
-                    <ActivityIndicator
-                        size='large'
+                    <PWLoadingIndicator
+                        size='lg'
                         color={SPINNER_COLOR}
                         testID='migration_splash_indicator'
                     />

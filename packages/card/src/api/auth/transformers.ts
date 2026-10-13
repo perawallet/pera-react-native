@@ -32,6 +32,7 @@ export const transformLoginResponse = (
     accessToken: response.accessToken ?? null,
     userId: response.userId ?? null,
     isOtpRequired: response.isOtpRequired ?? false,
+    phoneNumber: response.phoneNumber ?? null,
     phase: toEnumValueOrNull(OnboardingPhase, response.phase),
     verificationState: toEnumValueOrNull(
         VerificationState,

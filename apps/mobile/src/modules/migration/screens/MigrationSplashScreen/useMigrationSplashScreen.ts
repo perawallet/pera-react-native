@@ -16,6 +16,8 @@ import {
     useCreateAccount,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
@@ -38,10 +40,11 @@ export type UseMigrationSplashScreenResult = {
 }
 
 export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
-    const importAccount = useImportAccount()
-    const { createHdWalletAccountForSeed } = useCreateAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const importAccount = useImportAccount(scope)
+    const { createHdWalletAccountForSeed } = useCreateAccount(scope)
     const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
-    const markAccountBackedUp = useMarkMnemonicBackupComplete()
+    const markAccountBackedUp = useMarkMnemonicBackupComplete(scope.chainId)
     const { dismiss, setSkipped } = useNeedsMigration()
     const requestLock = useSecurityStore(state => state.requestLock)
 
@@ -78,6 +81,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
             let result: MigrationRunResult
             try {
                 result = await runMigration(getProvider().migration, {
+                    chainId: LEGACY_CHAIN_ID,
                     importAccount: importAccountRef.current,
                     createHdWalletAccount: createHdWalletAccountRef.current,
                     createHDWalletKey: createHDWalletKeyRef.current,

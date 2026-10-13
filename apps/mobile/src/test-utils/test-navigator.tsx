@@ -45,6 +45,7 @@ type NavigateAction = (name: string, params?: Record<string, unknown>) => void
 
 type NavigationApi = {
     navigate: NavigateAction
+    popTo: NavigateAction
     push: NavigateAction
     replace: NavigateAction
     goBack: () => void
@@ -92,6 +93,7 @@ const newRouteKey = (): string => `route-${++routeKeySeq}`
 
 const noopApi: NavigationApi = {
     navigate: () => {},
+    popTo: () => {},
     push: () => {},
     replace: () => {},
     goBack: () => {},
@@ -110,24 +112,51 @@ const noopApi: NavigationApi = {
 }
 
 const buildNavigationApi = (controller: StackController): NavigationApi => {
+    // React Navigation 7 `navigate` only reuses a route when it is the one
+    // already focused; anything else pushes. Going *back* to an earlier route
+    // is `popTo`. Getting this wrong here hides real bugs — a screen that
+    // navigates back gets pushed a second, freshly-mounted copy in the app.
     const navigate: NavigateAction = (name, params) => {
         controller.setStack(prev => {
-            // Production behavior: if `navigate` lands on a route already in
-            // the stack, it pops back to it instead of pushing a duplicate.
-            const existing = prev.findIndex(r => r.name === name)
-            if (existing !== -1) {
-                const trimmed = prev.slice(0, existing + 1)
-                const prevParams = trimmed[trimmed.length - 1].params
-                const merged = {
-                    ...trimmed[trimmed.length - 1],
-                    params:
-                        params || prevParams
-                            ? { ...prevParams, ...params }
-                            : undefined,
-                }
-                return [...trimmed.slice(0, -1), merged]
+            const current = prev[prev.length - 1]
+            if (current?.name !== name) {
+                return [...prev, { name, params, key: newRouteKey() }]
             }
-            return [...prev, { name, params, key: newRouteKey() }]
+            return [
+                ...prev.slice(0, -1),
+                {
+                    ...current,
+                    params:
+                        params || current.params
+                            ? { ...current.params, ...params }
+                            : undefined,
+                },
+            ]
+        })
+    }
+
+    const popTo: NavigateAction = (name, params) => {
+        controller.setStack(prev => {
+            const existing = prev.findLastIndex(r => r.name === name)
+            // Production falls back to replacing the current route when the
+            // target isn't in the stack.
+            if (existing === -1) {
+                return [
+                    ...prev.slice(0, -1),
+                    { name, params, key: newRouteKey() },
+                ]
+            }
+            const target = prev[existing]
+            return [
+                ...prev.slice(0, existing),
+                {
+                    ...target,
+                    params:
+                        params || target.params
+                            ? { ...target.params, ...params }
+                            : undefined,
+                },
+            ]
         })
     }
 
@@ -199,6 +228,7 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
 
     return {
         navigate,
+        popTo,
         push,
         replace,
         goBack,
@@ -287,6 +317,10 @@ export const createNavigationContainerRef = () => ({
 // to export the context — without it, the import is `undefined` and rendering
 // the bottom-sheet host throws.
 export const NavigationContainerRefContext = createContext<unknown>(null)
+
+// PWScreen reads this for its blur listener and skips it when unset, which
+// matches a screen the harness keeps focused.
+export const NavigationContext = createContext<unknown>(undefined)
 
 export const StackActions = {
     replace: (name: string, params?: Record<string, unknown>) => ({

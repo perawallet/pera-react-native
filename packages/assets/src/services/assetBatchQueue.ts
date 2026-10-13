@@ -11,8 +11,12 @@
  */
 
 import { BatchQueue } from '@perawallet/wallet-core-shared/queue'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import { fetchAndPersistAssets } from '../sync/asset-syncer'
+import {
+    parseScopeKey,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { fetchAndPersistAssets } from '../chain-adapter'
 import { getAssetsByIds } from '../db'
 import type { PeraAsset } from '../models'
 
@@ -22,15 +26,19 @@ const ASSET_BATCH_DELAY_MS = 100 // same value as NFD
  * On-demand asset batch queue. Used by `useSingleAssetDetailsQuery`'s DB-miss
  * path to coalesce concurrent asset lookups (e.g. a list mounting 30 rows
  * over a few render commits) into a single bulk-read HTTP call.
+ *
+ * Partitioned by the scope key, not a scope: partitions are Map keys, so a
+ * fresh scope object per enqueue would never batch.
  */
 export const assetBatchQueue = new BatchQueue<
     string,
     Nullable<PeraAsset>,
-    Network
->(async (assetIds, network) => {
-    await fetchAndPersistAssets(assetIds, network)
+    ChainScopeKey
+>(async (assetIds, scopeKey) => {
+    const scope = parseScopeKey(scopeKey)
+    await fetchAndPersistAssets(assetIds, scope)
 
-    const assets = await getAssetsByIds({ assetIds, network })
+    const assets = await getAssetsByIds({ assetIds, scope })
     const map = new Map<string, Nullable<PeraAsset>>()
     for (const asset of assets) {
         map.set(asset.assetId, asset)

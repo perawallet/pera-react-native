@@ -10,12 +10,15 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useEffect, useMemo, useRef } from 'react'
 import { BackHandler } from 'react-native'
 
 import {
-    AccountTypes,
+    chainAccountOf,
+    hardwareDetailsOf,
     isHardwareWalletAccount,
+    accountKindIdOf,
     resolveAuthAccount,
     useAccountBalancesInvalidator,
     useAllAccounts,
@@ -32,10 +35,17 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useLanguage } from '@hooks/useLanguage'
+import {
+    clearTabResumeIntent,
+    completeTabResume,
+    registerTabResumeIntent,
+} from '@utils/tabResumeIntent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 
 export type UseTransactionProcessingScreenResult = {
@@ -47,6 +57,7 @@ export type UseTransactionProcessingScreenResult = {
 
 export const useTransactionProcessingScreen =
     (): UseTransactionProcessingScreenResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -70,12 +81,20 @@ export const useTransactionProcessingScreen =
             return assets.get(selectedAssetId)
         }, [selectedAssetId, assets])
         const selectedAccount = useSelectedAccount()
+        const accountKindId = useMemo(
+            () =>
+                selectedAccount
+                    ? accountKindIdOf(selectedAccount, scope.chainId)
+                    : undefined,
+            [selectedAccount, scope.chainId],
+        )
+        const { t } = useLanguage()
         const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
 
-        const { execute } = useTransactionSendFlow()
+        const { execute } = useTransactionSendFlow(scope)
 
         // Multisig propose returns via the `proposed` transport result instead
         // of resolving the algod submission Promise — `execute()` never settles
@@ -126,6 +145,28 @@ export const useTransactionProcessingScreen =
                 arc59Summary,
             } as SendTransactionParams
 
+            // A Bluetooth Ledger in the extension popup can't sign; this lets
+            // the tab it opens reopen the send. Closing an account is left out:
+            // it should be a deliberate fresh start.
+            if (
+                selectedAccount &&
+                selectedAssetId &&
+                destination &&
+                amount &&
+                !isCloseAccount
+            ) {
+                registerTabResumeIntent({
+                    flow: 'send',
+                    accountAddress:
+                        chainAccountOf(selectedAccount, scope.chainId)
+                            ?.address ?? '',
+                    assetId: selectedAssetId,
+                    destination,
+                    amount: amount.toString(),
+                    note: note || undefined,
+                })
+            }
+
             execute({
                 params: sendParams,
             })
@@ -134,12 +175,15 @@ export const useTransactionProcessingScreen =
                         [AnalyticsMetadataKey.AssetId]: selectedAssetId ?? '',
                         [AnalyticsMetadataKey.Amount]: amount?.toNumber() ?? 0,
                         [AnalyticsMetadataKey.TransactionId]: txId,
-                        [AnalyticsMetadataKey.AccountType]:
-                            selectedAccount?.type,
+                        [AnalyticsMetadataKey.AccountType]: accountKindId,
                     })
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {
                         transactionId: txId,
+                    })
+                    completeTabResume({
+                        title: t('send_funds.success.title'),
+                        body: t('send_funds.success.subtitle'),
                     })
                 })
                 .catch(error => {
@@ -153,6 +197,7 @@ export const useTransactionProcessingScreen =
                     })
                     navigation.goBack()
                 })
+                .finally(clearTabResumeIntent)
 
             return () => subscription.remove()
             // Mount-only: this effect must submit exactly once. Do not add
@@ -167,17 +212,21 @@ export const useTransactionProcessingScreen =
         const signingAccount = useMemo(() => {
             if (!selectedAccount) return undefined
             try {
-                return resolveAuthAccount(selectedAccount, allAccounts)
+                return resolveAuthAccount(
+                    selectedAccount,
+                    allAccounts,
+                    scope.chainId,
+                )
             } catch {
                 return selectedAccount
             }
-        }, [selectedAccount, allAccounts])
+        }, [selectedAccount, allAccounts, scope.chainId])
 
-        const isHardwareSender = signingAccount?.type === AccountTypes.hardware
+        const isHardwareSender =
+            !!signingAccount && isHardwareWalletAccount(signingAccount)
         const hardwareDeviceName =
-            signingAccount && isHardwareWalletAccount(signingAccount)
-                ? (signingAccount.hardwareDetails.deviceName ?? null)
-                : null
+            (signingAccount && hardwareDetailsOf(signingAccount)?.deviceName) ??
+            null
 
         return { isHardwareSender, hardwareDeviceName }
     }

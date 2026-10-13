@@ -13,14 +13,21 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
+    addressOn,
     useAccountBalancesQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useRampPairsQuery,
+    rampTokenAssetId,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { isAlgoAssetName, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 
 export type OnrampSelectableToken = {
@@ -40,28 +47,30 @@ type UseOnrampPairSelectionContentResult = {
     handleTokenSelected: (token: RampToken) => void
 }
 
-// ALGO is stored as a holding row under asset id '0'; non-ALGO ramp tokens have
-// no real Algorand asset id, so their balance won't resolve (shown as unowned).
-const tokenAssetId = (token: RampToken): string =>
-    isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol) ? '0' : token.id
-
 export const useOnrampPairSelectionContent = ({
     variant,
 }: UseOnrampPairSelectionContentParams): UseOnrampPairSelectionContentResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { resolve } = useBottomSheetResult<string>()
+    const { network } = useNetwork()
     const { data: pairs, isLoading } = useRampPairsQuery()
     const selectedAccount = useSelectedAccount()
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
     const [searchFilter, setSearchFilter] = useState('')
 
+    const selectedAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
+
     const balanceMap = useMemo((): Map<string, Decimal> => {
-        if (!selectedAccount?.address) return new Map()
+        if (!selectedAddress) return new Map()
         const assetBalances =
-            accountBalances.get(selectedAccount.address)?.assetBalances ?? []
+            accountBalances.get(selectedAddress)?.assetBalances ?? []
         return new Map(assetBalances.map(item => [item.assetId, item.amount]))
-    }, [accountBalances, selectedAccount?.address])
+    }, [accountBalances, selectedAddress])
 
     const items = useMemo((): OnrampSelectableToken[] => {
         const seen = new Set<string>()
@@ -90,9 +99,10 @@ export const useOnrampPairSelectionContent = ({
 
         return sorted.map(token => ({
             token,
-            balance: balanceMap.get(tokenAssetId(token)) ?? null,
+            // A non-ALGO ramp token has no holding row, so it shows as unowned.
+            balance: balanceMap.get(rampTokenAssetId(token, network)) ?? null,
         }))
-    }, [pairs, variant, searchFilter, balanceMap])
+    }, [pairs, variant, searchFilter, balanceMap, network])
 
     const handleTokenSelected = useCallback(
         (token: RampToken) => {

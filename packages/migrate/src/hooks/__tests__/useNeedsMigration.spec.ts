@@ -245,6 +245,31 @@ describe('useNeedsMigration', () => {
         expect(isMigrationCompleteMock).toHaveBeenCalledTimes(1)
     })
 
+    // "Delete all data" and the duress wipe both run `clearAllStores()`,
+    // which resets this store back to `isChecking: true, hasStarted: false`
+    // under still-mounted subscribers. Without a re-check the gate stays shut
+    // for the rest of the session and everything gated on it never boots.
+    it('re-runs the check when the gate store is reset under a mounted subscriber', async () => {
+        hasLegacyDataMock.mockResolvedValue(true)
+        isMigrationCompleteMock.mockResolvedValue(false)
+
+        const { result } = renderHook(() => useNeedsMigration())
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        act(() => {
+            useMigrationGateStore.getState().resetState()
+        })
+
+        await waitFor(() => {
+            expect(hasLegacyDataMock).toHaveBeenCalledTimes(2)
+        })
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+    })
+
     it('needs migration when legacy data exists and a step is behind target', async () => {
         hasLegacyDataMock.mockResolvedValue(true)
         isMigrationCompleteMock.mockResolvedValue(true) // legacy sentinel set

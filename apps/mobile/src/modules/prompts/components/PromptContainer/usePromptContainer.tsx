@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { usePreferences } from '@perawallet/wallet-core-settings'
+import {
+    useAnalyticsConsent,
+    usePreferences,
+} from '@perawallet/wallet-core-settings'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useIsLockOverlayVisible } from '@modules/security'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
@@ -25,12 +28,13 @@ import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { useTermsAcceptance } from '@modules/onboarding/hooks/useTermsAcceptance'
 import {
+    useTermsAcceptance,
     TermsAcceptancePrompt,
     TERMS_ACCEPTANCE_PROMPT_ID,
-} from '@modules/onboarding/components/TermsAndConditionsSheet'
+} from '@modules/onboarding'
 import { UserPreferences } from '@constants/user-preferences'
+import { routeCapabilities } from '@routes/capabilities'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 import { PromptPriority } from '@modules/prompts/constants'
 import { usePromptStore } from '@modules/prompts/store'
@@ -46,6 +50,10 @@ import {
     BiometricsDisabledPrompt,
     BIOMETRICS_DISABLED_PROMPT_ID,
 } from '@modules/prompts/components/BiometricsDisabledPrompt'
+import {
+    AnalyticsConsentPrompt,
+    ANALYTICS_CONSENT_PROMPT_ID,
+} from '@modules/prompts/components/AnalyticsConsentPrompt'
 
 export type Prompt = {
     id: string
@@ -70,6 +78,8 @@ export type Prompt = {
      * a full-bleed prompt insets whatever chrome it needs itself.
      */
     isFullBleed?: boolean
+    /** Content-sized and anchored to the bottom, like a bottom sheet. */
+    isSheet?: boolean
     // Nullable: a prompt's own data can empty underneath it (a banner refetch
     // dropping the banner it was showing), and rendering nothing for that frame
     // while it asks to be dismissed beats asserting it cannot happen.
@@ -97,6 +107,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const bannerPrompt = useBannerPrompt()
     const legacyQuantumPrompt = useLegacyQuantumPrompt()
     const biometricsDisabledPrompt = useBiometricsDisabledPrompt()
+    const { consent: analyticsConsent } = useAnalyticsConsent()
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
     const dismissedIds = usePromptStore(state => state.dismissedIds)
     const dismiss = usePromptStore(state => state.dismiss)
@@ -117,6 +128,18 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 isDue: needsTermsAcceptance,
             },
             {
+                // A gate so it is answered rather than worked around; until it
+                // is, analytics stays off.
+                id: ANALYTICS_CONSENT_PROMPT_ID,
+                priority: PromptPriority.analyticsConsent,
+                isGate: true,
+                isSheet: true,
+                component: AnalyticsConsentPrompt,
+                isDue:
+                    routeCapabilities.analyticsConsent &&
+                    analyticsConsent === null,
+            },
+            {
                 // One entry, not one per auto-open mode: `force` and `select`
                 // are the same surface under different rules, so the rank and
                 // the gate flag follow the data rather than splitting the
@@ -135,7 +158,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 priority: PromptPriority.securityPinSetup,
                 isGate: false,
                 component: PinSecurityPrompt,
-                isDue: !getPreference(UserPreferences._securityPinSetupPrompt),
+                isDue:
+                    routeCapabilities.pin &&
+                    !getPreference(UserPreferences._securityPinSetupPrompt),
             },
             {
                 id: UserPreferences._legacyQuantumNoticePrompt,
@@ -160,6 +185,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
         ],
         [
             needsTermsAcceptance,
+            analyticsConsent,
             getPreference,
             bannerPrompt.isDue,
             bannerPrompt.isForced,

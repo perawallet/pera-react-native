@@ -11,10 +11,14 @@
  */
 
 import { useState } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useAgeGateStore } from '@perawallet/wallet-core-age-gate'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useAgeGateStore } from '@perawallet/wallet-core-device'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 
@@ -37,7 +41,11 @@ export const SettingsDeveloperManageCacheScreen = () => {
 
     const handleRefreshCache = async () => {
         setIsRefreshing(true)
-        const addresses = accounts?.map(account => account.address) ?? []
+        const addresses =
+            accounts?.flatMap(
+                account =>
+                    chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? [],
+            ) ?? []
         try {
             const syncService = getSyncService()
             await syncService.refreshAccounts(addresses, network)

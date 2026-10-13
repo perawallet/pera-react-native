@@ -10,78 +10,69 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    hasSigningKeys,
-    isHardwareWalletAccount,
-    isMultisigAccount,
+    chainAccountOf,
+    findAccountByAddressOn,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    SignableGroup,
-    SigningResult,
-    SourceCallbacks,
-    SourceMetadata,
+import {
+    ScopeChangedError,
+    transactionPlanners,
+    type ChainId,
+    type ChainScope,
+    type TransactionPlanner,
+    type UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    isUnsignedTransactionsData,
+    type SignableGroup,
+    type SigningResult,
+    type SourceCallbacks,
+    type SourceMetadata,
 } from '../pipeline/types'
 import {
     CannotSignError,
     HardwareWalletError,
+    InvalidSignableDataError,
     SigningError,
 } from '../pipeline/errors'
-import {
-    validateCosignSubsetIntegrity,
-    validateTransactionGroupIntegrity,
-} from '../utils/validateTransactionGroupIntegrity'
+import { plannerAdapterForScope } from '../chain-adapter'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
+import { resolveSignerCredential } from './utils/resolveSignerCredential'
 import type {
-    GroupSignerTypeMap,
-    ResolvedSignerType,
+    GroupSignerMap,
     SigningMachineContext,
     SigningMachineDeps,
     SigningMachineInput,
 } from './context'
-import type { SignRequest } from '../models'
+import type { SignRequest, UnsignedTransactionSignRequest } from '../models'
 import {
     isTransactionRequest,
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
+    isUnsignedTransaction,
+    isUnsignedTransactionRequest,
 } from '../models'
 
 /**
- * Routes on the AUTH account — whatever actually authorizes the signature once
- * {@link resolveSigningAccount} has applied the rekey/cosign rules, not the
- * sender. That also covers the externally-rekeyed multisig (one whose on-chain
- * auth is a standard/Ledger account we hold): the auth key signs, rather than
- * failing with NoLocalParticipantsError.
+ * Resolves each group's signer from the AUTH account, whatever authorizes the
+ * signature once {@link resolveSigningAccount} has applied the rekey/cosign
+ * rules, not the sender. That also covers the externally-rekeyed multisig (one
+ * whose on-chain auth is a standard/Ledger account we hold): the auth key
+ * signs, rather than failing with NoLocalParticipantsError.
  */
-const determineSignerType = (
-    signerAccount: WalletAccount,
-    authAccount: WalletAccount,
-): ResolvedSignerType => {
-    if (isMultisigAccount(authAccount)) {
-        return 'multisig'
-    }
-    if (isHardwareWalletAccount(authAccount)) {
-        return 'hardware'
-    }
-    if (hasSigningKeys(authAccount)) {
-        return 'localKey'
-    }
-    throw new CannotSignError(
-        signerAccount.address,
-        `No signing capability found for account type: ${authAccount.type}`,
-    )
-}
-
-/** Rekey and multisig-cosign handling live in {@link resolveSigningAccount}. */
-export const buildGroupSignerTypeMap = (
+export const buildGroupSignerMap = (
     groups: SignableGroup[],
     allAccounts: WalletAccount[],
-): GroupSignerTypeMap => {
-    const map: GroupSignerTypeMap = new Map()
+    chainId: ChainId,
+): GroupSignerMap => {
+    const map: GroupSignerMap = new Map()
     for (const group of groups) {
         if (map.has(group.signerAddress)) continue
-        const signerAccount = allAccounts.find(
-            a => a.address === group.signerAddress,
+        const signerAccount = findAccountByAddressOn(
+            allAccounts,
+            chainId,
+            group.signerAddress,
         )
         if (!signerAccount) {
             throw new CannotSignError(
@@ -89,15 +80,21 @@ export const buildGroupSignerTypeMap = (
                 'signer account not found in wallet',
             )
         }
-        const authAccount = resolveSigningAccount(
-            signerAccount,
-            group.source,
-            group.data.type,
-            allAccounts,
-        )
+        // A planner already names the key holder, so a rekey isn't followed twice.
+        const authAccount =
+            group.data.type === 'transactions' &&
+            isUnsignedTransactionsData(group.data)
+                ? signerAccount
+                : resolveSigningAccount(
+                      signerAccount,
+                      group.source,
+                      group.data.type,
+                      allAccounts,
+                      chainId,
+                  )
         map.set(
             group.signerAddress,
-            determineSignerType(signerAccount, authAccount),
+            resolveSignerCredential(authAccount, chainId),
         )
     }
     return map
@@ -147,7 +144,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
             }
         }
     } else if (
-        (isArbitraryDataRequest(request) || isArc60Request(request)) &&
+        (isArbitraryDataRequest(request) || isAuthDataRequest(request)) &&
         request.approve
     ) {
         const dataApprove = request.approve
@@ -164,8 +161,8 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                         signer,
                     })),
                 )
-            } else if (result.signedData.type === 'arc60') {
-                // ARC-60 produces a single signature; project the result
+            } else if (result.signedData.type === 'auth-data') {
+                // Auth-data signing produces a single signature; project the result
                 // through the same `[{ signature, signer }]` shape so the
                 // callback consumer (WalletConnect bridge) doesn't need to
                 // branch on the modality.
@@ -217,6 +214,79 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     }
 }
 
+const MIXED_SHAPES = 'the request mixes Algorand and chain-neutral transactions'
+
+/**
+ * Groups chain-neutral transactions by the signer the chain's planner reads off
+ * each one. As on the Algorand path, a transaction no wallet account signs is
+ * left out.
+ */
+const buildUnsignedTransactionGroups = (
+    request: UnsignedTransactionSignRequest,
+    allAccounts: WalletAccount[],
+    scope: ChainScope,
+    source: SourceMetadata,
+): SignableGroup[] => {
+    const planner = transactionPlanners.get(scope.chainId)
+
+    const bySigner = new Map<
+        string,
+        { txs: UnsignedTransaction[]; indices: number[] }
+    >()
+    for (const [i, tx] of request.txs.entries()) {
+        if (!isUnsignedTransaction(tx)) {
+            throw new InvalidSignableDataError(MIXED_SHAPES)
+        }
+        // Planned first: a planner refuses another chain's transaction.
+        const signers = new Set(planSigners(planner, tx))
+        // Built for another network than the chain's selected one, by a dApp
+        // or before the user switched.
+        if (tx.scope.networkId !== scope.networkId) {
+            throw new ScopeChangedError(tx.scope, scope)
+        }
+        // Keyed to the first key the wallet can sign with here, else the first
+        // it holds; the review lists every held signer.
+        const held = [...signers].flatMap(
+            signer =>
+                findAccountByAddressOn(allAccounts, scope.chainId, signer) ??
+                [],
+        )
+        const account =
+            held.find(candidate => candidate.custody.kind === 'local') ??
+            held[0]
+        if (!account) continue
+        // The wallet's spelling, so the group key and every later lookup agree.
+        const signerAddress = chainAccountOf(account, scope.chainId)?.address
+        if (!signerAddress) continue
+
+        const entry = bySigner.get(signerAddress) ?? { txs: [], indices: [] }
+        entry.txs.push(tx)
+        entry.indices.push(i)
+        bySigner.set(signerAddress, entry)
+    }
+
+    return [...bySigner.entries()].map(([signerAddress, { txs, indices }]) => ({
+        data: { type: 'transactions', transactions: txs, chainData: {} },
+        source,
+        signerAddress,
+        originalIndices: indices,
+    }))
+}
+
+// A payload the chain can't read is untrusted data, not an internal fault.
+const planSigners = (
+    planner: TransactionPlanner,
+    transaction: UnsignedTransaction,
+): string[] => {
+    try {
+        return planner.plan(transaction).map(entry => entry.signer)
+    } catch (error) {
+        throw new InvalidSignableDataError(
+            error instanceof Error ? error.message : String(error),
+        )
+    }
+}
+
 /**
  * Groups transactions by sender so each can be signed by the right account,
  * preserving positions in `originalIndices` for reassembly afterwards.
@@ -228,10 +298,26 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 const buildSignableGroups = (
     request: SignRequest,
     allAccounts: WalletAccount[],
+    scope: SigningMachineInput['scope'],
 ): SignableGroup[] => {
     const source = buildSourceMetadata(request)
 
+    if (
+        isTransactionRequest(request) &&
+        isUnsignedTransactionRequest(request)
+    ) {
+        return buildUnsignedTransactionGroups(
+            request,
+            allAccounts,
+            scope,
+            source,
+        )
+    }
+
     if (isTransactionRequest(request)) {
+        if (request.txs.some(isUnsignedTransaction)) {
+            throw new InvalidSignableDataError(MIXED_SHAPES)
+        }
         // Group integrity is checked over the full payload: sources that filter
         // `txs` supply the original via `groupContext`, others fall back to
         // `txs`.
@@ -241,13 +327,16 @@ const buildSignableGroups = (
         // skips the recompute; contiguity is still enforced, and full-group
         // integrity is verified on the submitter and by algod.
         const txsToValidate = request.groupContext ?? request.txs
-        if (request.sourceType === 'multisig-cosign') {
-            validateCosignSubsetIntegrity(txsToValidate)
-        } else {
-            validateTransactionGroupIntegrity(txsToValidate)
-        }
+        const planner = plannerAdapterForScope(scope)
+        planner.validateGroup(txsToValidate, {
+            isCosigner: request.sourceType === 'multisig-cosign',
+        })
 
-        const knownAddresses = new Set(allAccounts.map(a => a.address))
+        const knownAddresses = new Set(
+            allAccounts.flatMap(
+                a => chainAccountOf(a, scope.chainId)?.address ?? [],
+            ),
+        )
         const rawBytes = request.rawTransactionsBase64
 
         // Group transactions by sender, preserving original position
@@ -310,16 +399,16 @@ const buildSignableGroups = (
         ]
     }
 
-    if (isArc60Request(request)) {
+    if (isAuthDataRequest(request)) {
         return [
             {
                 data: {
-                    type: 'arc60',
-                    stdSigData: request.stdSigData,
+                    type: 'auth-data',
+                    authData: request.authData,
                     metadata: request.metadata,
                 },
                 source,
-                signerAddress: request.stdSigData.signer,
+                signerAddress: request.authData.signer,
             },
         ]
     }
@@ -334,11 +423,12 @@ const buildSignableGroups = (
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
     signArbitraryData: input.signArbitraryData,
-    signArc60: input.signArc60,
+    signAuthData: input.signAuthData,
     createTransport: input.createTransport,
-    network: input.network,
+    scope: input.scope,
     encodeTransaction: input.encodeTransaction,
     hardwareWalletRegistry: input.hardwareWalletRegistry,
+    keyStore: input.keyStore,
 })
 
 /**
@@ -351,7 +441,11 @@ export const resolveInitialContext = (
 ): SigningMachineContext => {
     const { request, allAccounts } = input
 
-    const signableGroups = buildSignableGroups(request, allAccounts)
+    const signableGroups = buildSignableGroups(
+        request,
+        allAccounts,
+        input.scope,
+    )
 
     if (signableGroups.length === 0) {
         throw new CannotSignError(
@@ -361,13 +455,14 @@ export const resolveInitialContext = (
     }
 
     const signerAddress = signableGroups[0].signerAddress
-    const groupSignerTypes = buildGroupSignerTypeMap(
+    const groupSigners = buildGroupSignerMap(
         signableGroups,
         allAccounts,
+        input.scope.chainId,
     )
 
-    const hasHardwareSigners = [...groupSignerTypes.values()].includes(
-        'hardware',
+    const hasHardwareSigners = [...groupSigners.values()].some(
+        signer => signer.custody === 'hardware',
     )
     if (hasHardwareSigners && !input.hardwareWalletRegistry) {
         throw new HardwareWalletError('registry_required')
@@ -377,8 +472,8 @@ export const resolveInitialContext = (
         request,
         allAccounts,
         signerAddress,
-        groupSignerTypes,
-        completedSignerTypes: [],
+        groupSigners,
+        completedCustodies: [],
         signableGroups,
         analyses: null,
         signingResults: null,
@@ -401,8 +496,8 @@ export const makeFailedContext = (
     request: input.request,
     allAccounts: input.allAccounts,
     signerAddress: null,
-    groupSignerTypes: null,
-    completedSignerTypes: [],
+    groupSigners: null,
+    completedCustodies: [],
     signableGroups: null,
     analyses: null,
     signingResults: null,

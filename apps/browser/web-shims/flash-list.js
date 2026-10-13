@@ -49,6 +49,13 @@
 //
 // Grid cells with numColumns > 1 are wrapped in fractional-width Views,
 // matching FlashList's native `boundedSize / maxColumns` parity (width not flex: 1).
+//
+// Single-column separators are drawn here, not by FlatList. FlashList gives
+// `ItemSeparatorComponent` both `leadingItem` and `trailingItem`, but FlatList
+// only passes `leadingItem`, so a separator that reads the next row (the
+// account History tab's) threw on the first pair of rows and took the whole
+// screen down. Each cell renders its own separator with the two neighbours,
+// which is what FlashList does too.
 import React, { forwardRef } from 'react'
 import { FlatList, View } from 'react-native'
 
@@ -65,23 +72,43 @@ export const FlashList = forwardRef((props, ref) => {
         ...flatListProps
     } = props
 
-    const numColumns = flatListProps.numColumns
-    const renderItem = flatListProps.renderItem
+    const { data, numColumns, renderItem, ItemSeparatorComponent } =
+        flatListProps
+    const drawsSeparators =
+        !(numColumns > 1) &&
+        ItemSeparatorComponent != null &&
+        !React.isValidElement(ItemSeparatorComponent)
 
     const wrappedRenderItem = React.useMemo(() => {
-        return numColumns > 1 && renderItem
-            ? info =>
-                  React.createElement(
-                      View,
-                      { style: { width: `${100 / numColumns}%` } },
-                      renderItem(info),
-                  )
-            : renderItem
-    }, [numColumns, renderItem])
+        if (!renderItem) return renderItem
+        if (numColumns > 1) {
+            return info =>
+                React.createElement(
+                    View,
+                    { style: { width: `${100 / numColumns}%` } },
+                    renderItem(info),
+                )
+        }
+        if (!drawsSeparators) return renderItem
+        return info => {
+            const content = renderItem(info)
+            if (!data || info.index >= data.length - 1) return content
+            return React.createElement(
+                React.Fragment,
+                null,
+                content,
+                React.createElement(ItemSeparatorComponent, {
+                    leadingItem: info.item,
+                    trailingItem: data[info.index + 1],
+                }),
+            )
+        }
+    }, [data, drawsSeparators, ItemSeparatorComponent, numColumns, renderItem])
 
     return React.createElement(FlatList, {
         onScrollToIndexFailed: noopOnScrollToIndexFailed,
         ...flatListProps,
+        ...(drawsSeparators ? { ItemSeparatorComponent: undefined } : {}),
         renderItem: wrappedRenderItem,
         ref,
     })

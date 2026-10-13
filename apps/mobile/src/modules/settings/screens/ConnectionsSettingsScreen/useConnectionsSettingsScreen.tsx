@@ -12,16 +12,13 @@
 
 import { useCallback, useMemo } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
-import { useErrorToast } from '@hooks/useErrorToast'
+import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
-import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
+import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import {
-    toComparableTime,
-    toUnifiedDappPermission,
-    toUnifiedWalletConnectConnection,
+    toUnifiedConnection,
     type UnifiedConnection,
     type UseConnectionsSettingsScreenResult,
 } from './connectionsSettingsHelpers'
@@ -35,62 +32,31 @@ export type {
 export const useConnectionsSettingsScreen =
     (): UseConnectionsSettingsScreenResult => {
         const { t } = useLanguage()
-        const { connections: walletConnectConnections, disconnect } =
-            useWalletConnectSessionsControl()
-        const { sites, isLoading, revoke } = useDappConnectionsStore()
+        // `handleRevoke` is fire-and-forget with its own toast, so it is wrapped in
+        // the confirmation sheet rather than handed to the row: a straight swap
+        // would make revoke a single unguarded tap.
+        const {
+            connections: connectionRows,
+            isHydrated,
+            handleRevoke: revokeConnection,
+        } = useConnectionSettingsList()
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
-        const { showError } = useErrorToast()
+        const canConnect = useCapability({ anyChain: 'dappConnect' })
 
-        const handleRevokeError = useCallback(
-            (error: unknown) => {
-                showError(error, t('common.error.title'))
-            },
-            [showError, t],
+        const connections = useMemo(
+            () =>
+                connectionRows
+                    .map(row => toUnifiedConnection(row, revokeConnection))
+                    .sort((a, b) => b.connectedAt - a.connectedAt),
+            [connectionRows, revokeConnection],
         )
-
-        const handleDisconnectError = useCallback(
-            (error: unknown) => {
-                showError(
-                    error,
-                    t('walletconnect.settings.disconnect_failed_title'),
-                )
-            },
-            [showError, t],
-        )
-
-        const connections = useMemo(() => {
-            const unified: UnifiedConnection[] = [
-                ...walletConnectConnections.map(connection =>
-                    toUnifiedWalletConnectConnection(
-                        connection,
-                        disconnect,
-                        handleDisconnectError,
-                        t('walletconnect.settings.unknown_peer'),
-                    ),
-                ),
-                ...sites.map(site =>
-                    toUnifiedDappPermission(site, revoke, handleRevokeError),
-                ),
-            ]
-            return unified.sort(
-                (a, b) =>
-                    toComparableTime(b.connectedAt) -
-                    toComparableTime(a.connectedAt),
-            )
-        }, [
-            walletConnectConnections,
-            disconnect,
-            sites,
-            revoke,
-            handleRevokeError,
-            handleDisconnectError,
-            t,
-        ])
 
         const confirmRevoke = useCallback(
             async (connection: UnifiedConnection) => {
-                const isWalletConnect = connection.kind === 'walletconnect'
+                // A dapp connection revokes a site's page-level access, not a
+                // paired WalletConnect session, so the copy differs.
+                const isWalletConnect = connection.kind !== 'dapp'
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
                         <ConfirmActionContent
@@ -145,9 +111,10 @@ export const useConnectionsSettingsScreen =
 
         return {
             connections,
-            isLoading,
+            isHydrated,
             handleRevoke,
             keyExtractor,
             scannerState,
+            canConnect,
         }
     }

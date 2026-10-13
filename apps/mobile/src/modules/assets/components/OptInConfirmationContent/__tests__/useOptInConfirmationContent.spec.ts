@@ -18,16 +18,24 @@ import { useOptInConfirmationContent } from '../useOptInConfirmationContent'
 const mockUseMinimumFeeConfig = vi.fn()
 const mockUseMinFeeForSender = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useMinFeeForSender: (address: string) => mockUseMinFeeForSender(address),
+    useMinFeeForSender: (address: string, chainId: string) =>
+        mockUseMinFeeForSender(address, chainId),
+}))
+
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    name: 'Algo',
+    unitName: 'ALGO',
+    decimals: 6,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { assetId: '0', name: 'Algo', unitName: 'ALGO', decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         new Decimal(value.toString()).div(new Decimal(10).pow(asset.decimals)),
 }))
@@ -61,7 +69,10 @@ describe('useOptInConfirmationContent', () => {
         const { result } = renderHook(() =>
             useOptInConfirmationContent('QUANTUM_SENDER'),
         )
-        expect(mockUseMinFeeForSender).toHaveBeenCalledWith('QUANTUM_SENDER')
+        expect(mockUseMinFeeForSender).toHaveBeenCalledWith(
+            'QUANTUM_SENDER',
+            'algorand',
+        )
         expect(result.current.resolvedFee.toString()).toBe('0.003')
     })
 

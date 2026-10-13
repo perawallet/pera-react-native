@@ -12,12 +12,27 @@
 
 import { useCallback } from 'react'
 import {
+    AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
+    CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardEscrowNotConfiguredError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
+    describeCardChainError,
     getCardApiError,
     type CardApiError,
 } from '@perawallet/wallet-core-card'
-import { isConnectivityError } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    isConnectivityError,
+    isPeraNetworkError,
+} from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardScope } from './useCardScope'
 
 export type CardErrorToastKeys = {
     /** i18n key for the toast title. */
@@ -34,12 +49,103 @@ export type CardErrorToastKeys = {
     shouldUseBackendMessage?: boolean
 }
 
+export type CardErrorCopy = { titleKey: string; bodyKey: string }
+
+// Direct Baanx/AB calls surface ky's TimeoutError; proxied ones arrive wrapped.
+const isTimeoutError = (error: unknown): boolean =>
+    (isPeraNetworkError(error) && error.kind === 'timeout') ||
+    (error instanceof Error && error.name === 'TimeoutError')
+
 /**
- * Returns a handler that surfaces a card API error as a toast — the backend's
- * message when present, falling back to a generic body. Shared by the card
- * flows so the message-resolution logic lives in one place; screens pass their
- * own keys to keep the per-flow wording. Callers that already resolved the
- * error (for a branch check) pass it as the second arg to avoid re-parsing.
+ * Copy for the failures the card flows can name precisely, from the typed
+ * errors the card package throws and the escrow codes it forwards. `null`
+ * means show nothing (the user cancelled a signing prompt); `undefined` means
+ * the caller's generic keys apply.
+ */
+export const resolveCardErrorCopy = (
+    error: unknown,
+    scope: ChainScope,
+    apiError?: CardApiError,
+): CardErrorCopy | null | undefined => {
+    if (error instanceof UserRejectedSigningError) return null
+    if (isTimeoutError(error)) {
+        return {
+            titleKey: 'errors.network.timeout.title',
+            bodyKey: 'errors.network.timeout.body',
+        }
+    }
+    if (error instanceof CardAccountLinkedElsewhereError) {
+        return {
+            titleKey: 'peraCard.setup_status.linked_elsewhere_error_title',
+            bodyKey: 'peraCard.setup_status.linked_elsewhere_error_body',
+        }
+    }
+    if (error instanceof CardCreateInProgressError) {
+        return {
+            titleKey: 'peraCard.setup_status.create_in_progress_title',
+            bodyKey: 'peraCard.setup_status.create_in_progress_body',
+        }
+    }
+    if (error instanceof CardSetupIncompleteError) {
+        return {
+            titleKey: 'peraCard.setup_status.setup_incomplete_error_title',
+            bodyKey: 'peraCard.setup_status.setup_incomplete_error_body',
+        }
+    }
+    if (error instanceof CardOwnershipProofRejectedError) {
+        return {
+            titleKey: 'peraCard.setup_status.create_card_account_error_title',
+            bodyKey: 'peraCard.setup_status.create_card_account_error_body',
+        }
+    }
+    if (error instanceof CardCreateUnavailableError) {
+        return {
+            titleKey: 'peraCard.setup_status.create_card_unavailable_title',
+            bodyKey: 'peraCard.setup_status.create_card_unavailable_body',
+        }
+    }
+    if (
+        error instanceof CardEscrowNotConfiguredError ||
+        error instanceof AutoDrawProgramUnverifiedError ||
+        error instanceof AutoDrawTealUnverifiedError
+    ) {
+        return {
+            titleKey: 'peraCard.account.auto_funding_unavailable_title',
+            bodyKey: 'peraCard.account.auto_funding_unavailable_body',
+        }
+    }
+    if (apiError?.code === 'CARD_OWNERSHIP_MISMATCH') {
+        return {
+            titleKey: 'peraCard.account.auto_funding_unavailable_title',
+            bodyKey: 'peraCard.account.auto_funding_unavailable_body',
+        }
+    }
+    if (apiError?.code === 'SIGNATURE_VERIFICATION_FAILED') {
+        return {
+            titleKey: 'peraCard.account.auto_funding_rejected_title',
+            bodyKey: 'peraCard.account.auto_funding_rejected_body',
+        }
+    }
+    // Every card chain call is paid by the linked account, whose spendable
+    // native balance is easily exhausted once it holds several assets. The
+    // chain names that case precisely; anything else it says is a raw dump
+    // the caller's own copy covers better.
+    if (
+        describeCardChainError(error, scope) === 'insufficient-native-balance'
+    ) {
+        return {
+            titleKey: 'peraCard.account.insufficient_algo_title',
+            bodyKey: 'peraCard.account.insufficient_algo_body',
+        }
+    }
+    return undefined
+}
+
+/**
+ * Returns a handler that surfaces a card error as a toast: precise copy for the
+ * failures `resolveCardErrorCopy` knows, otherwise the backend's message when
+ * present, otherwise the caller's generic keys. Callers that already resolved
+ * the error (for a branch check) pass it as the second arg to avoid re-parsing.
  */
 export const useCardErrorToast = ({
     titleKey = 'peraCard.account.error_title',
@@ -51,6 +157,7 @@ export const useCardErrorToast = ({
 ) => Promise<void>) => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const scope = useCardScope()
 
     return useCallback(
         async (error: unknown, resolvedApiError?: CardApiError) => {
@@ -61,13 +168,19 @@ export const useCardErrorToast = ({
                 )
                 return
             }
+            const apiError = resolvedApiError ?? (await getCardApiError(error))
+            const copy = resolveCardErrorCopy(error, scope, apiError)
+            if (copy === null) return
+            if (copy) {
+                errorToast(t(copy.titleKey), t(copy.bodyKey))
+                return
+            }
             if (!shouldUseBackendMessage) {
                 errorToast(t(titleKey), t(bodyKey))
                 return
             }
-            const apiError = resolvedApiError ?? (await getCardApiError(error))
             errorToast(t(titleKey), apiError.message ?? t(bodyKey))
         },
-        [errorToast, t, titleKey, bodyKey, shouldUseBackendMessage],
+        [errorToast, t, scope, titleKey, bodyKey, shouldUseBackendMessage],
     )
 }

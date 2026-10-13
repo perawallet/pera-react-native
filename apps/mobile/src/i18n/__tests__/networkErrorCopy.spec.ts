@@ -13,7 +13,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import { AlgodErrorCode } from '@perawallet/wallet-core-blockchain'
+import { AlgodErrorCode } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import en from '../locales/en.json'
 
 const errors = en.errors as Record<string, unknown>

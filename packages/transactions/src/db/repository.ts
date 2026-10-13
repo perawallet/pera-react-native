@@ -24,207 +24,42 @@ import {
     type SQL,
     type SQLWrapper,
 } from 'drizzle-orm'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import type {
-    TransactionHistoryItem,
-    TransactionBalanceImpact,
-    TransactionAssetSummary,
-    TransactionSwapGroupDetail,
-} from '../models/types'
-import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 import {
     isoDateToUnixSeconds,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
-import { ALGO_DECIMALS, resolveAssetFacts } from '../utils/algoAssetFacts'
-
-/**
- * Serializes balance impacts to JSON for persistence. The signed `amount`
- * Decimal is stored as a string so it round-trips without precision loss.
- */
-function serializeBalanceImpacts(
-    impacts: TransactionBalanceImpact[],
-): Nullable<string> {
-    if (impacts.length === 0) return null
-    return JSON.stringify(
-        impacts.map(impact => ({
-            assetId: impact.assetId,
-            unitName: impact.unitName,
-            fractionDecimals: impact.fractionDecimals,
-            amount: impact.amount.toString(),
-        })),
-    )
-}
-
-/**
- * Rehydrates persisted balance impacts, restoring `amount` to a Decimal.
- * Rows persisted before the balance-impacts column existed yield an empty list.
- */
-function deserializeBalanceImpacts(
-    json: Nullable<string>,
-): TransactionBalanceImpact[] {
-    if (!json) return []
-    const parsed = JSON.parse(json) as Array<{
-        assetId: string
-        unitName: string
-        fractionDecimals: number
-        amount: string
-    }>
-    return parsed.map(impact => {
-        const facts = resolveAssetFacts(impact.assetId, {
-            unitName: impact.unitName,
-            decimals: impact.fractionDecimals,
-        })
-
-        return {
-            assetId: impact.assetId,
-            unitName: facts.unitName,
-            fractionDecimals: facts.decimals,
-            amount: new Decimal(impact.amount),
-        }
-    })
-}
-
-/**
- * Rehydrates a persisted asset summary. The syncer only fetches transactions
- * newer than the newest cached one, so a row that captured the backend's
- * `asset(<id>)` placeholder is never revisited — ALGO's real facts have to be
- * restored on the way out instead.
- */
-function deserializeAsset(
-    json: Nullable<string>,
-): Nullable<TransactionAssetSummary> {
-    if (!json) return null
-    const parsed = JSON.parse(json) as TransactionAssetSummary
-    const facts = resolveAssetFacts(parsed.assetId, {
-        unitName: parsed.unitName,
-        decimals: parsed.decimals,
-    })
-
-    return { ...parsed, unitName: facts.unitName, decimals: facts.decimals }
-}
-
-/**
- * Rehydrates a persisted swap group detail. A cached row carrying no per-side
- * decimals falls back to 6 rather than 0, which would inflate its amounts by
- * six orders of magnitude.
- */
-function deserializeSwapGroupDetail(
-    json: Nullable<string>,
-): Nullable<TransactionSwapGroupDetail> {
-    if (!json) return null
-    const parsed = JSON.parse(json) as TransactionSwapGroupDetail
-    const assetIn = resolveAssetFacts(parsed.assetInId, {
-        unitName: parsed.assetInUnitName,
-        decimals: parsed.assetInDecimals ?? ALGO_DECIMALS,
-    })
-    const assetOut = resolveAssetFacts(parsed.assetOutId, {
-        unitName: parsed.assetOutUnitName,
-        decimals: parsed.assetOutDecimals ?? ALGO_DECIMALS,
-    })
-
-    return {
-        ...parsed,
-        assetInUnitName: assetIn.unitName,
-        assetInDecimals: assetIn.decimals,
-        assetOutUnitName: assetOut.unitName,
-        assetOutDecimals: assetOut.decimals,
-        amountIn: new Decimal(parsed.amountIn),
-        amountOut: new Decimal(parsed.amountOut),
-    }
-}
-
-function toDb(item: TransactionHistoryItem) {
-    return {
-        id: item.id,
-        txType: item.txType,
-        sender: item.sender,
-        receiver: item.receiver,
-        confirmedRound: item.confirmedRound,
-        roundTime: item.roundTime,
-        fee: item.fee,
-        groupId: item.groupId,
-        amount: item.amount,
-        closeTo: item.closeTo,
-        closeAmount: item.closeAmount,
-        applicationId: item.applicationId
-            ? new Decimal(item.applicationId)
-            : null,
-        innerTransactionCount: item.innerTransactionCount,
-        assetJson: item.asset ? JSON.stringify(item.asset) : null,
-        swapGroupDetailJson: item.swapGroupDetail
-            ? JSON.stringify(item.swapGroupDetail)
-            : null,
-        interpretedMeaningJson: item.interpretedMeaning
-            ? JSON.stringify(item.interpretedMeaning)
-            : null,
-        balanceImpactsJson: serializeBalanceImpacts(item.balanceImpacts),
-    }
-}
-
-function fromDb(row: {
-    id: string
-    txType: string
-    sender: string
-    receiver: Nullable<string>
-    confirmedRound: number
-    roundTime: number
-    fee: Decimal
-    groupId: Nullable<string>
-    amount: Nullable<Decimal>
-    closeTo: Nullable<string>
-    closeAmount: Nullable<Decimal>
-    applicationId: Nullable<Decimal>
-    innerTransactionCount: Nullable<number>
-    assetJson: Nullable<string>
-    swapGroupDetailJson: Nullable<string>
-    interpretedMeaningJson: Nullable<string>
-    balanceImpactsJson: Nullable<string>
-}): TransactionHistoryItem {
-    return {
-        id: row.id,
-        txType: row.txType as TransactionHistoryItem['txType'],
-        sender: row.sender,
-        receiver: row.receiver,
-        confirmedRound: row.confirmedRound,
-        roundTime: row.roundTime,
-        fee: row.fee,
-        groupId: row.groupId,
-        amount: row.amount,
-        closeTo: row.closeTo,
-        closeAmount: row.closeAmount,
-        applicationId: row.applicationId?.toString() ?? null,
-        innerTransactionCount: row.innerTransactionCount,
-        asset: deserializeAsset(row.assetJson),
-        swapGroupDetail: deserializeSwapGroupDetail(row.swapGroupDetailJson),
-        interpretedMeaning: row.interpretedMeaningJson
-            ? JSON.parse(row.interpretedMeaningJson)
-            : null,
-        balanceImpacts: deserializeBalanceImpacts(row.balanceImpactsJson),
-    }
-}
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { TransactionHistoryItem } from '../models/types'
+import { TransactionsSchema, AccountTransactionsSchema } from './schema'
+import { assetFactsResolverFor } from '../history-adapter'
+import { deserializeSwapGroupDetail, fromDb, toDb } from './mappers'
 
 type UpsertTransactionsParams = {
     db?: Database
     items: TransactionHistoryItem[]
     accountAddress: string
-    network: string
+    scope: ChainScope
 }
 
 export async function upsertTransactions({
     db = getDatabase(),
     items,
     accountAddress,
-    network,
+    scope,
 }: UpsertTransactionsParams): Promise<void> {
+    const network = toScopeKey(scope)
     if (items.length === 0) return
 
     const now = Date.now()
 
     for (const item of items) {
-        const row = toDb(item)
+        const row = toDb(item, scope)
 
         await db
             .insert(TransactionsSchema)
@@ -234,13 +69,14 @@ export async function upsertTransactions({
                 updatedAt: now,
             })
             .onConflictDoUpdate({
-                target: TransactionsSchema.id,
+                target: [TransactionsSchema.network, TransactionsSchema.id],
                 set: {
                     txType: row.txType,
                     sender: row.sender,
                     receiver: row.receiver,
                     confirmedRound: row.confirmedRound,
                     roundTime: row.roundTime,
+                    status: row.status,
                     fee: row.fee,
                     groupId: row.groupId,
                     amount: row.amount,
@@ -254,10 +90,19 @@ export async function upsertTransactions({
                     closeAmount: sql`COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount})`,
                     applicationId: row.applicationId,
                     innerTransactionCount: row.innerTransactionCount,
+                    // Shared row, per-account derivation (see closeAmount
+                    // above and deriveAssetSender): a perspective that can't
+                    // see the clawback must not erase one that could.
+                    assetSender: sql`COALESCE(${row.assetSender ?? null}, ${TransactionsSchema.assetSender})`,
                     assetJson: row.assetJson,
                     swapGroupDetailJson: row.swapGroupDetailJson,
                     interpretedMeaningJson: row.interpretedMeaningJson,
                     balanceImpactsJson: row.balanceImpactsJson,
+                    // Same merge rule as closeAmount. Reading the old column
+                    // also carries the sweep over for rows cached before
+                    // chain_data existed.
+                    chainData: sql`json_set(${row.chainData}, '$.algorand.closeAmount', COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount}))`,
+                    assetRef: row.assetRef,
                     updatedAt: now,
                 },
             })
@@ -277,10 +122,19 @@ export async function upsertTransactions({
                 accountAddress,
                 transactionId: item.id,
                 network,
-                assetId: assetId ? new Decimal(assetId) : null,
+                assetId: assetId || null,
                 roundTime: item.roundTime,
             })
-            .onConflictDoNothing()
+            // History sorts and pages on the link's time, so it follows a
+            // pending row to its confirmed time.
+            .onConflictDoUpdate({
+                target: [
+                    AccountTransactionsSchema.accountAddress,
+                    AccountTransactionsSchema.transactionId,
+                    AccountTransactionsSchema.network,
+                ],
+                set: { roundTime: item.roundTime },
+            })
             .run()
     }
 }
@@ -288,7 +142,7 @@ export async function upsertTransactions({
 type GetTransactionHistoryParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
     assetId?: string
     limit?: number
     /**
@@ -316,7 +170,7 @@ const jsonPathAsText = (column: SQLWrapper, path: string): SQL =>
  * Matching the indexed column alone hides every swap from an asset's history.
  */
 const involvesAsset = (assetId: string): SQL =>
-    sql`(${eq(AccountTransactionsSchema.assetId, new Decimal(assetId))}
+    sql`(${eq(AccountTransactionsSchema.assetId, assetId)}
         OR CASE WHEN json_valid(${TransactionsSchema.balanceImpactsJson})
             THEN EXISTS (
                 SELECT 1 FROM json_each(${TransactionsSchema.balanceImpactsJson})
@@ -329,13 +183,14 @@ const involvesAsset = (assetId: string): SQL =>
 export async function getTransactionHistory({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
     assetId,
     limit = 25,
     atOrBeforeRoundTime,
     afterTime,
     beforeTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
+    const network = toScopeKey(scope)
     const conditions = [
         eq(AccountTransactionsSchema.accountAddress, accountAddress),
         eq(AccountTransactionsSchema.network, network),
@@ -378,6 +233,7 @@ export async function getTransactionHistory({
             receiver: TransactionsSchema.receiver,
             confirmedRound: TransactionsSchema.confirmedRound,
             roundTime: TransactionsSchema.roundTime,
+            status: TransactionsSchema.status,
             fee: TransactionsSchema.fee,
             groupId: TransactionsSchema.groupId,
             amount: TransactionsSchema.amount,
@@ -385,6 +241,7 @@ export async function getTransactionHistory({
             closeAmount: TransactionsSchema.closeAmount,
             applicationId: TransactionsSchema.applicationId,
             innerTransactionCount: TransactionsSchema.innerTransactionCount,
+            assetSender: TransactionsSchema.assetSender,
             assetJson: TransactionsSchema.assetJson,
             swapGroupDetailJson: TransactionsSchema.swapGroupDetailJson,
             interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
@@ -409,12 +266,13 @@ export async function getTransactionHistory({
         .limit(limit)
         .all()
 
-    return rows.map(fromDb)
+    const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
+    return rows.map(row => fromDb(row, resolveAssetFacts))
 }
 
 type GetCloseRowsMissingCloseAmountParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     /** Bounded per pass — survivors keep matching and retry next sync. */
     limit?: number
 }
@@ -427,9 +285,10 @@ type GetCloseRowsMissingCloseAmountParams = {
  */
 export async function getCloseRowsMissingCloseAmount({
     db = getDatabase(),
-    network,
+    scope,
     limit = 20,
 }: GetCloseRowsMissingCloseAmountParams): Promise<Array<{ id: string }>> {
+    const network = toScopeKey(scope)
     return db
         .select({ id: TransactionsSchema.id })
         .from(TransactionsSchema)
@@ -446,7 +305,7 @@ export async function getCloseRowsMissingCloseAmount({
 
 type GetSwapRowsMissingAssetFactsParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     accountAddress: string
     limit?: number
 }
@@ -465,16 +324,18 @@ type GetSwapRowsMissingAssetFactsParams = {
  */
 export async function getSwapRowsMissingAssetFacts({
     db = getDatabase(),
-    network,
+    scope,
     accountAddress,
     limit = 20,
 }: GetSwapRowsMissingAssetFactsParams): Promise<
     Array<{ id: string; roundTime: number }>
 > {
+    const network = toScopeKey(scope)
     return db
         .select({
             id: TransactionsSchema.id,
-            roundTime: TransactionsSchema.roundTime,
+            // The NOT NULL filter below makes the narrowed type true.
+            roundTime: sql<number>`${TransactionsSchema.roundTime}`,
         })
         .from(TransactionsSchema)
         .innerJoin(
@@ -495,6 +356,8 @@ export async function getSwapRowsMissingAssetFacts({
                 eq(TransactionsSchema.network, network),
                 eq(AccountTransactionsSchema.accountAddress, accountAddress),
                 isNotNull(TransactionsSchema.swapGroupDetailJson),
+                // The refetch is windowed by round time.
+                isNotNull(TransactionsSchema.roundTime),
                 sql`json_extract(CASE WHEN json_valid(${TransactionsSchema.swapGroupDetailJson}) THEN ${TransactionsSchema.swapGroupDetailJson} END, '$.assetInDecimals') IS NULL`,
             ),
         )
@@ -504,7 +367,7 @@ export async function getSwapRowsMissingAssetFacts({
 
 type PersistResolvedSwapAssetFactsParams = {
     db?: Database
-    network: string
+    scope: ChainScope
     ids: string[]
 }
 
@@ -516,9 +379,11 @@ type PersistResolvedSwapAssetFactsParams = {
  */
 export async function persistResolvedSwapAssetFacts({
     db = getDatabase(),
-    network,
+    scope,
     ids,
 }: PersistResolvedSwapAssetFactsParams): Promise<void> {
+    const network = toScopeKey(scope)
+    const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
     for (const id of ids) {
         const [row] = await db
             .select({ json: TransactionsSchema.swapGroupDetailJson })
@@ -531,12 +396,20 @@ export async function persistResolvedSwapAssetFacts({
             )
             .all()
 
-        const resolved = deserializeSwapGroupDetail(row?.json ?? null)
+        const resolved = deserializeSwapGroupDetail(
+            row?.json ?? null,
+            resolveAssetFacts,
+        )
         if (!resolved) continue
 
         await db
             .update(TransactionsSchema)
-            .set({ swapGroupDetailJson: JSON.stringify(resolved) })
+            .set({
+                swapGroupDetailJson: JSON.stringify(resolved),
+                // json_set on a NULL document stays NULL, so rows cached
+                // before chain_data existed are left alone.
+                chainData: sql`json_set(${TransactionsSchema.chainData}, '$.algorand.swapGroupDetail', json(${JSON.stringify(resolved)}))`,
+            })
             .where(
                 and(
                     eq(TransactionsSchema.id, id),
@@ -550,19 +423,23 @@ export async function persistResolvedSwapAssetFacts({
 type UpdateTransactionCloseAmountParams = {
     db?: Database
     id: string
-    network: string
+    scope: ChainScope
     closeAmount: Decimal
 }
 
 export async function updateTransactionCloseAmount({
     db = getDatabase(),
     id,
-    network,
+    scope,
     closeAmount,
 }: UpdateTransactionCloseAmountParams): Promise<void> {
+    const network = toScopeKey(scope)
     await db
         .update(TransactionsSchema)
-        .set({ closeAmount })
+        .set({
+            closeAmount,
+            chainData: sql`json_set(${TransactionsSchema.chainData}, '$.algorand.closeAmount', ${closeAmount.toString()})`,
+        })
         .where(
             and(
                 eq(TransactionsSchema.id, id),
@@ -575,14 +452,15 @@ export async function updateTransactionCloseAmount({
 type GetLatestTransactionRoundTimeParams = {
     db?: Database
     accountAddress: string
-    network: string
+    scope: ChainScope
 }
 
 export async function getLatestTransactionRoundTime({
     db = getDatabase(),
     accountAddress,
-    network,
+    scope,
 }: GetLatestTransactionRoundTimeParams): Promise<Nullable<number>> {
+    const network = toScopeKey(scope)
     const rows = await db
         .select({
             maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,

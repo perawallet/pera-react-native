@@ -11,22 +11,22 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAccountFundedNetworks } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountFundedNetworksQueryKey } from './querykeys'
 
 export type UseAccountFundedNetworksResult = {
-    /** Networks whose persisted ALGO holding for this account is above zero. */
+    /** Networks whose persisted native-asset holding for this account is above zero. */
     fundedNetworks: string[]
-    /** True once any network shows a non-zero ALGO balance. */
+    /** True once any network shows a non-zero native balance. */
     isFunded: boolean
     isPending: boolean
     isError: boolean
 }
 
 /**
- * Whether an account holds ALGO on *any* network the wallet has synced, for
+ * Whether an account holds the native asset on *any* network the wallet has synced, for
  * decisions that outlive the network switcher — a key-loss warning, say.
  *
  * A single indexed SQL read on the holdings primary key, cheap enough for list
@@ -35,21 +35,21 @@ export type UseAccountFundedNetworksResult = {
  * polls the network in use.
  */
 export const useAccountFundedNetworksQuery = (
-    address?: string,
+    address: string | undefined,
+    scope: ChainScope,
 ): UseAccountFundedNetworksResult => {
-    const { network } = useNetwork()
-
     const query = useQuery({
-        queryKey: getAccountFundedNetworksQueryKey(address ?? '', network),
+        queryKey: getAccountFundedNetworksQueryKey(address ?? '', scope),
         enabled: !!address,
         staleTime: Infinity,
         // SQLite is the source of truth; run offline rather than pausing (see
         // useAccountSummaryQuery).
         networkMode: 'always',
         queryFn: async () => {
-            await ensureAccountFetched(address as string, network)
+            await ensureAccountFetched(address as string, scope)
             return getAccountFundedNetworks({
                 accountAddress: address as string,
+                chainId: scope.chainId,
             })
         },
     })

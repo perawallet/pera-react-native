@@ -23,8 +23,4 @@ export {
     setCardTransport,
     resetCardTransport,
 } from './registry'
-export { setRefreshHandler } from './default-transport'
-export {
-    CardEscrowNotConfiguredError,
-    resetEscrowClients,
-} from './escrow-client'
+export { setRefreshHandler, setSessionLostHandler } from './default-transport'

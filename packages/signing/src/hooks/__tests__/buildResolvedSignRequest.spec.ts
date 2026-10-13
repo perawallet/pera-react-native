@@ -13,12 +13,26 @@
 import { describe, it, expect } from 'vitest'
 import { buildResolvedSignRequest } from '../buildResolvedSignRequest'
 import type { SigningMachineContext } from '../../machine/context'
-import type { TransactionSignRequest, Arc60SignRequest } from '../../models'
+import type { TransactionSignRequest, AuthDataSignRequest } from '../../models'
+import {
+    TEST_CHAIN_ID,
+    algo25Account,
+    ledgerAccount,
+    multisigAccount,
+} from '../../__tests__/accounts'
+
+const ACCOUNT_BUILDERS = {
+    algo25: algo25Account,
+    hardware: ledgerAccount,
+    multisig: multisigAccount,
+}
 
 const makeAccount = (
     address: string,
-    type: 'algo25' | 'hardware' | 'multisig' = 'algo25',
-) => ({ address, type }) as any
+    type: keyof typeof ACCOUNT_BUILDERS = 'algo25',
+) => ACCOUNT_BUILDERS[type](address)
+
+const deps = { scope: { chainId: TEST_CHAIN_ID, networkId: 'mainnet' } }
 
 describe('buildResolvedSignRequest', () => {
     it('returns null when context has no signerAddress (failed pre-resolution)', () => {
@@ -29,7 +43,7 @@ describe('buildResolvedSignRequest', () => {
                 sourceType: 'local',
             } as TransactionSignRequest,
             allAccounts: [],
-            groupSignerTypes: null,
+            groupSigners: null,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
@@ -37,26 +51,30 @@ describe('buildResolvedSignRequest', () => {
         expect(result).toBeNull()
     })
 
-    it('resolves localKey signer for an algo25 account on a local tx', () => {
+    it('resolves a local signer for an algo25 account on a local tx', () => {
         const account = makeAccount('A123', 'algo25')
         const context = {
             signerAddress: 'A123',
             allAccounts: [account],
-            groupSignerTypes: new Map([['A123', 'localKey']]),
+            groupSigners: new Map([
+                ['A123', { custody: 'local', scheme: 'ed25519' }],
+            ]),
             request: {
                 id: 'r1',
                 type: 'transactions',
+                chainId: 'algorand',
                 sourceType: 'local',
                 transport: 'algod',
                 txs: [{}],
             } as TransactionSignRequest,
             signableGroups: [{ signerAddress: 'A123' }],
+            deps,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
 
         expect(result).not.toBeNull()
-        expect(result!.signerType).toBe('localKey')
+        expect(result!.signerType).toBe('local')
         expect(result!.signerAccount).toBe(account)
         expect(result!.source).toEqual({ kind: 'local', isInteractive: false })
         expect(result!.transport).toEqual({ kind: 'algod' })
@@ -73,10 +91,13 @@ describe('buildResolvedSignRequest', () => {
         const context = {
             signerAddress: 'A123',
             allAccounts: [account],
-            groupSignerTypes: new Map([['A123', 'multisig']]),
+            groupSigners: new Map([
+                ['A123', { custody: 'multisig', scheme: 'ed25519' }],
+            ]),
             request: {
                 id: 'r1',
                 type: 'transactions',
+                chainId: 'algorand',
                 sourceType: 'multisig-cosign',
                 transport: 'callback',
                 signRequestId: 'sr1',
@@ -84,6 +105,7 @@ describe('buildResolvedSignRequest', () => {
                 signerOverrides: new Map([[0, 'PARTICIPANT_ADDR']]),
             } as TransactionSignRequest,
             signableGroups: [{ signerAddress: 'A123' }],
+            deps,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
@@ -100,29 +122,33 @@ describe('buildResolvedSignRequest', () => {
         })
     })
 
-    it('parses arc60 payload once and exposes it on kind', () => {
+    it('parses auth-data payload once and exposes it on kind', () => {
         const account = makeAccount('A123', 'algo25')
-        const arc60Request = {
+        const authDataRequest = {
             id: 'r1',
-            type: 'arc60',
-            sourceType: 'arc60',
+            type: 'auth-data',
+            chainId: 'algorand',
+            sourceType: 'card',
             transport: 'callback',
-            stdSigData: { data: 'SGVsbG8=', signer: 'A123' },
+            authData: { data: 'SGVsbG8=', signer: 'A123' },
             metadata: { scope: 1, encoding: 'base64' },
-        } as unknown as Arc60SignRequest
+        } as unknown as AuthDataSignRequest
 
         const context = {
             signerAddress: 'A123',
             allAccounts: [account],
-            groupSignerTypes: new Map([['A123', 'localKey']]),
-            request: arc60Request,
+            groupSigners: new Map([
+                ['A123', { custody: 'local', scheme: 'ed25519' }],
+            ]),
+            request: authDataRequest,
             signableGroups: [{ signerAddress: 'A123' }],
+            deps,
         } as unknown as SigningMachineContext
 
         const result = buildResolvedSignRequest(context)
 
-        expect(result!.kind.type).toBe('arc60')
-        if (result!.kind.type === 'arc60') {
+        expect(result!.kind.type).toBe('auth-data')
+        if (result!.kind.type === 'auth-data') {
             expect(result!.kind.parsed).toBeDefined()
         }
     })

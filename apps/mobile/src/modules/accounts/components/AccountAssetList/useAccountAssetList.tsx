@@ -15,6 +15,7 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatListRef } from '@components/core'
 import {
+    addressOn,
     useAccountAssetsQuery,
     useCanSignWith,
     assetFromHoldingLiteRow,
@@ -29,12 +30,15 @@ import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
+import { AddAssetContent } from '@modules/assets'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
 import {
@@ -52,6 +56,7 @@ type UseAccountAssetListResult = {
     convertFiat: AssetFiatConverter
     isPending: boolean
     isReadOnly: boolean
+    canManageAssets: boolean
     hideZeroBalance: boolean
     searchFilter: string
     headerState: ModalState
@@ -65,6 +70,7 @@ type UseAccountAssetListResult = {
     getEmptyBody: () => string
     renderItemProps: {
         isReadOnly: boolean
+        canManageAssets: boolean
         goToAssetScreen: (item: AccountHoldingsLiteRow) => void
         handleOptOut: (item: AccountHoldingsLiteRow) => void
     }
@@ -81,6 +87,11 @@ export const useAccountAssetList = ({
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountAddress = addressOn(account, scope) ?? ''
+    const canManageAssets = useCapability({
+        chain: { chainId: scope.chainId, capability: 'manageAssets' },
+    })
     const { request: requestBottomSheet } = useBottomSheet()
 
     // Search is debounced locally and pushed into the DB query so pagination
@@ -104,7 +115,7 @@ export const useAccountAssetList = ({
         () => ({
             hideZeroBalance,
             hideNfts: !displayNfts,
-            hideOptedInNfts: !effectiveDisplayOptedInNfts,
+            hideZeroBalanceNfts: !effectiveDisplayOptedInNfts,
         }),
         [hideZeroBalance, displayNfts, effectiveDisplayOptedInNfts],
     )
@@ -113,7 +124,8 @@ export const useAccountAssetList = ({
     // rows; FlashList virtualizes rendering and the visible rows materialize
     // their own metadata lazily (see AssetListItemView).
     const { holdings, isPending, isPlaceholderData } = useAccountAssetsQuery(
-        account.address,
+        accountAddress,
+        scope,
         {
             filters: balanceFilters,
             sortMode: assetSortMode,
@@ -125,14 +137,14 @@ export const useAccountAssetList = ({
     // per-row render observer-free without precomputing all N holdings.
     const convertFiat = useAssetListFiatConverter()
 
-    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
+    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation(scope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     useEffect(() => {
         setSearchFilter('')
-    }, [account.address])
+    }, [accountAddress])
 
     const listRef = useRef<PWFlatListRef | null>(null)
 
@@ -144,7 +156,7 @@ export const useAccountAssetList = ({
     // the FlashList re-population that follows (with the sticky search bar at
     // index 0) pushes the list past the header; keying off the sort alone missed
     // the reset entirely whenever the rows hadn't arrived yet.
-    const viewRequestKey = `${account.address}|${assetSortMode}`
+    const viewRequestKey = `${accountAddress}|${assetSortMode}`
     const appliedViewRequestKeyRef = useRef(viewRequestKey)
     const hasRowsForRequest = holdings.length > 0 && !isPlaceholderData
 
@@ -165,18 +177,18 @@ export const useAccountAssetList = ({
                 offset: 0,
                 // Animate a re-sort of the list in front of you; an account
                 // switch is a new list and should just start at the top.
-                animated: appliedAddress === account.address,
+                animated: appliedAddress === accountAddress,
             })
         })
         return () => cancelAnimationFrame(frame)
-    }, [viewRequestKey, hasRowsForRequest, account.address])
+    }, [viewRequestKey, hasRowsForRequest, accountAddress])
 
-    const isReadOnly = !useCanSignWith(account)
+    const isReadOnly = !useCanSignWith(account, scope.chainId)
 
     const goToAssetScreen = useCallback(
         (item: AccountHoldingsLiteRow) => {
             headerState.open()
-            const assetInfo = assetFromHoldingLiteRow(item)
+            const assetInfo = assetFromHoldingLiteRow(item, scope.chainId)
             if (assetInfo && isCollectible(assetInfo)) {
                 navigation.navigate('CollectibleDetails', {
                     assetId: item.assetId,
@@ -187,7 +199,7 @@ export const useAccountAssetList = ({
                 })
             }
         },
-        [headerState, navigation],
+        [headerState, navigation, scope.chainId],
     )
 
     const handleOptOut = useCallback(
@@ -196,7 +208,7 @@ export const useAccountAssetList = ({
                 contents: (
                     <OptOutConfirmationContent
                         assetId={item.assetId}
-                        accountAddress={account.address}
+                        accountAddress={accountAddress}
                     />
                 ),
                 options: {
@@ -207,10 +219,10 @@ export const useAccountAssetList = ({
             })
             if (result !== 'confirm') return
 
-            const asset = assetFromHoldingLiteRow(item)
+            const asset = assetFromHoldingLiteRow(item, scope.chainId)
             try {
                 await optOut({
-                    sender: account.address,
+                    sender: accountAddress,
                     assetId: BigInt(item.assetId),
                     creator: asset?.creator.address,
                 })
@@ -226,7 +238,15 @@ export const useAccountAssetList = ({
                 showError(err, t('asset_opt_out.error'))
             }
         },
-        [requestBottomSheet, account.address, optOut, showToast, t, showError],
+        [
+            requestBottomSheet,
+            accountAddress,
+            optOut,
+            showToast,
+            t,
+            showError,
+            scope.chainId,
+        ],
     )
 
     const handleOpenAddAsset = useCallback(() => {
@@ -295,10 +315,11 @@ export const useAccountAssetList = ({
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
+            canManageAssets,
             goToAssetScreen,
             handleOptOut,
         }),
-        [isReadOnly, goToAssetScreen, handleOptOut],
+        [isReadOnly, canManageAssets, goToAssetScreen, handleOptOut],
     )
 
     return {
@@ -306,6 +327,7 @@ export const useAccountAssetList = ({
         convertFiat,
         isPending,
         isReadOnly,
+        canManageAssets,
         listRef,
         hideZeroBalance,
         searchFilter,

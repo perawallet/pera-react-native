@@ -16,9 +16,11 @@ import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
 } from '@perawallet/wallet-core-currencies'
-import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import {
-    isAlgoAssetId,
+    useIsNativeAssetId,
+    useAssetPricesQuery,
+} from '@perawallet/wallet-core-assets'
+import {
     isAlgoAssetName,
     type Maybe,
     type Nullable,
@@ -38,8 +40,9 @@ export const usePreferredAmount = (
 ): UsePreferredAmountResult => {
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency()
+    const isNativeAssetId = useIsNativeAssetId()
     const isPreferredAlgo = isAlgoAssetName(preferredCurrency)
-    const isSourceAlgo = isAlgoAssetId(sourceAssetId)
+    const isSourceAlgo = isNativeAssetId(sourceAssetId)
 
     const needsFallback = forceFallback || (isPreferredAlgo && isSourceAlgo)
 

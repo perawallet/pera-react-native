@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import * as Application from 'expo-application'
 import * as IntentLauncher from 'expo-intent-launcher'
 import { logger } from '@perawallet/wallet-core-shared'
+import { isAndroid } from '@utils/platform'
 
 // Android 14+ Credential Manager settings. Passing a `package:<id>` data URI
 // deep-links straight to this app's credential-provider entry. The native
@@ -33,7 +33,7 @@ const ACTION_CREDENTIAL_PROVIDER = 'android.settings.CREDENTIAL_PROVIDER'
 export const openCredentialProviderSettings = async (
     nativeFallback: () => Promise<boolean>,
 ): Promise<void> => {
-    if (Platform.OS === 'android' && Application.applicationId) {
+    if (isAndroid() && Application.applicationId) {
         try {
             await IntentLauncher.startActivityAsync(
                 ACTION_CREDENTIAL_PROVIDER,

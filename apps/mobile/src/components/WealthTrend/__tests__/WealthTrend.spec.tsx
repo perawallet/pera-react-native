@@ -68,11 +68,11 @@ describe('WealthTrend', () => {
             data: [
                 {
                     preferredValue: new Decimal(100),
-                    algoValue: new Decimal(100),
+                    nativeValue: new Decimal(100),
                 },
                 {
                     preferredValue: new Decimal(120),
-                    algoValue: new Decimal(120),
+                    nativeValue: new Decimal(120),
                 },
             ],
             isPending: false,
@@ -89,11 +89,11 @@ describe('WealthTrend', () => {
             data: [
                 {
                     preferredValue: new Decimal(100),
-                    algoValue: new Decimal(100),
+                    nativeValue: new Decimal(100),
                 },
                 {
                     preferredValue: new Decimal(120),
-                    algoValue: new Decimal(120),
+                    nativeValue: new Decimal(120),
                 },
             ],
             isPending: false,
@@ -109,9 +109,12 @@ describe('WealthTrend', () => {
             data: [
                 {
                     preferredValue: new Decimal(100),
-                    algoValue: new Decimal(100),
+                    nativeValue: new Decimal(100),
                 },
-                { preferredValue: new Decimal(80), algoValue: new Decimal(80) },
+                {
+                    preferredValue: new Decimal(80),
+                    nativeValue: new Decimal(80),
+                },
             ],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
@@ -131,11 +134,11 @@ describe('WealthTrend', () => {
             data: [
                 {
                     preferredValue: new Decimal(50),
-                    algoValue: new Decimal(100),
+                    nativeValue: new Decimal(100),
                 },
                 {
                     preferredValue: new Decimal(54),
-                    algoValue: new Decimal(100),
+                    nativeValue: new Decimal(100),
                 },
             ],
             isPending: false,
@@ -150,12 +153,14 @@ describe('WealthTrend', () => {
     })
 
     it('uses single account when account prop is provided', () => {
-        const mockAccount = { address: 'test-address' }
+        const mockAccount = {
+            chains: { algorand: { address: 'test-address' } },
+        }
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
                 {
                     preferredValue: new Decimal(100),
-                    algoValue: new Decimal(100),
+                    nativeValue: new Decimal(100),
                 },
             ],
             isPending: false,

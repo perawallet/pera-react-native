@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { Trans } from 'react-i18next'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { config } from '@perawallet/wallet-core-config'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
@@ -24,6 +24,7 @@ import { useStyles } from './styles'
 import { useUndoRekeyConfirmScreen } from './useUndoRekeyConfirmScreen'
 
 export const UndoRekeyConfirmScreen = () => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -79,7 +80,7 @@ export const UndoRekeyConfirmScreen = () => {
                             {t('rekey.undo.confirm.fee_label')}
                         </PWText>
                         <AssetAmount
-                            asset={ALGO_ASSET}
+                            asset={nativeAsset}
                             value={feeAlgos}
                             variant='bodyLarge'
                         />

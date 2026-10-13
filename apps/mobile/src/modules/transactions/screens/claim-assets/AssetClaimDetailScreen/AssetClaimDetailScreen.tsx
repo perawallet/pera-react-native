@@ -21,17 +21,19 @@ import {
 } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { CopyableText } from '@components/CopyableText'
-import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
+import { AssetIcon } from '@components/AssetIcon'
+import { AssetNameBadge } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAssetClaimDetailScreen } from './useAssetClaimDetailScreen'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { isCollectible } from '@perawallet/wallet-core-assets'
 import { EmptyView } from '@components/EmptyView'
+import { InfoCallout } from '@components/InfoCallout'
 
 export const AssetClaimDetailScreen = () => {
     const styles = useStyles()
@@ -40,7 +42,11 @@ export const AssetClaimDetailScreen = () => {
         request,
         amount,
         receiverAccount,
+        isClaimBlocked,
+        isRejectBlocked,
         handleClaim,
+        canBuy,
+        handleAddFunds,
         handleRejectPress,
         handleCopyAssetId,
     } = useAssetClaimDetailScreen()
@@ -81,16 +87,48 @@ export const AssetClaimDetailScreen = () => {
                             </PWView>
                         </>
                     )}
+                    {(isClaimBlocked || isRejectBlocked) && (
+                        <PWView style={styles.insufficientCallout}>
+                            <InfoCallout
+                                icon='warning'
+                                iconVariant='error'
+                                iconSize='sm'
+                                titleVariant='bodySemibold'
+                                title={t(
+                                    'messages.claim.insufficient_algo_title',
+                                )}
+                                body={t(
+                                    isClaimBlocked
+                                        ? 'messages.claim.insufficient_algo_claim'
+                                        : 'messages.claim.insufficient_algo_reject',
+                                )}
+                                testID='arc59_claim_insufficient_algo'
+                            />
+                            {canBuy && (
+                                <PWButton
+                                    variant='secondary'
+                                    title={t(
+                                        'messages.claim.insufficient_algo_cta',
+                                    )}
+                                    onPress={handleAddFunds}
+                                    style={styles.addFundsButton}
+                                    testID='arc59_claim_add_funds'
+                                />
+                            )}
+                        </PWView>
+                    )}
                     <PWView style={[styles.footer, CONFIRM_ACTION_LAYOUT]}>
                         <ConfirmAction
                             title={t('common.slide_to_confirm.label')}
                             onConfirm={handleClaim}
+                            isDisabled={isClaimBlocked}
                             testID='arc59_claim_confirm_slide'
                         />
                         <PWButton
                             variant='linkNeutral'
                             title={t('arc59.claim.reject')}
                             onPress={handleRejectPress}
+                            isDisabled={isRejectBlocked}
                         />
                     </PWView>
                 </>

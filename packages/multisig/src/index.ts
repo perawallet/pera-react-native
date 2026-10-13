@@ -13,6 +13,7 @@
 export const name = '@perawallet/wallet-core-multisig'
 
 export * from './api'
+export * from './chain-adapter'
 export * from './constants'
 export * from './errors'
 export * from './hooks'

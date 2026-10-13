@@ -40,6 +40,7 @@ vi.mock('../../../hooks/useBidaliClose', () => ({
 
 vi.mock('react-native', () => ({
     Linking: { openURL: vi.fn() },
+    Platform: { OS: 'ios' },
 }))
 
 vi.mock('react-native-webview', () => ({ default: {} }))
@@ -53,7 +54,13 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
-    isMainnet: (network: string) => network === 'mainnet',
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedChainMode: () => 'live',
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 const { accountBalancesMock } = vi.hoisted(() => ({
@@ -63,19 +70,28 @@ const { accountBalancesMock } = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: () => accountBalancesMock(),
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({ newGroup: () => ({}) }),
-    useNetwork: () => ({ network: 'mainnet' }),
-    displayUnitsToBaseUnits: () => ({ toFixed: () => '0' }),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({ decimals: 6 }))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET: { decimals: 6 },
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
+    useNativeAsset: () => NATIVE_ASSET,
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane.
-    getKnownAssetId: (key: string, network: string) =>
+    getKnownAssetId: (
+        key: string,
+        { networkId: network }: { networkId: string },
+    ) =>
         key === 'USDC'
             ? ({ mainnet: '31566704', testnet: '10458941' }[network] ?? null)
             : null,
@@ -85,17 +101,23 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: vi.fn() }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    generateOrderedUniqueId: () => 'id',
-    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const { displayUnitsToBaseUnits } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/unit-conversion')
+    >('@packages/shared/src/utils/unit-conversion')
+    return {
+        generateOrderedUniqueId: () => 'id',
+        logger: {
+            warn: vi.fn(),
+            error: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        },
+        displayUnitsToBaseUnits,
+    }
+})
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // The web platform's balance-stamping builder, standing in for the
 // extensionless './bidali-url' the hook actually imports — see the file
@@ -113,10 +135,11 @@ const VALID_ADDRESS =
 
 const mockAccount: WalletAccount = {
     id: 'bidali-webview-web-account',
-    address: VALID_ADDRESS,
+    chains: {
+        algorand: { address: VALID_ADDRESS, keyPairId: 'test-key-pair-id' },
+    },
     name: 'Test',
-    type: 'algo25',
-    keyPairId: 'test-key-pair-id',
+    custody: { kind: 'local', seed: null },
 }
 
 const balancesWith = (algo: string, usdc: string): AccountBalances =>
@@ -128,17 +151,20 @@ const balancesWith = (algo: string, usdc: string): AccountBalances =>
                     {
                         assetId: '0',
                         amount: new Decimal(algo),
-                        algoValue: new Decimal(algo),
-                        isFrozen: false,
+                        nativeValue: new Decimal(algo),
+                        fiatValue: null,
+                        restriction: null,
                     },
                     {
                         assetId: '31566704',
                         amount: new Decimal(usdc),
-                        algoValue: new Decimal(usdc),
-                        isFrozen: false,
+                        nativeValue: new Decimal(usdc),
+                        fiatValue: null,
+                        restriction: null,
                     },
                 ],
-                algoValue: new Decimal(algo),
+                nativeValue: new Decimal(algo),
+                fiatValue: null,
                 usdValue: new Decimal(0),
                 isPending: false,
                 isFetched: true,

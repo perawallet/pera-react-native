@@ -11,7 +11,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    queryKeyReferencesScope,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     getAccountCollectiblesLite,
     type AccountCollectibleLiteRow,
@@ -26,7 +29,7 @@ export type UseAccountCollectiblesQueryParams = {
     sortMode?: CollectibleSqlSortMode
     search?: string
     /** When false, collectibles the account holds none of are excluded. */
-    includeOptedInOnly?: boolean
+    includeZeroBalance?: boolean
     enabled?: boolean
 }
 
@@ -53,20 +56,19 @@ export type UseAccountCollectiblesQueryResult = {
  */
 export const useAccountCollectiblesQuery = (
     address: string | undefined,
+    scope: ChainScope,
     {
         sortMode,
         search,
-        includeOptedInOnly = true,
+        includeZeroBalance = true,
         enabled = true,
     }: UseAccountCollectiblesQueryParams = {},
 ): UseAccountCollectiblesQueryResult => {
-    const { network } = useNetwork()
-
     const query = useQuery({
-        queryKey: getAccountCollectiblesQueryKey(address ?? '', network, {
+        queryKey: getAccountCollectiblesQueryKey(address ?? '', scope, {
             sortMode,
             search,
-            includeOptedInOnly,
+            includeZeroBalance,
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
@@ -79,10 +81,10 @@ export const useAccountCollectiblesQuery = (
         // rather than someone else's.
         placeholderData: (previousRows, previousQuery) => {
             const previousParams = previousQuery?.queryKey[2] as
-                | { address?: string; network?: string }
+                | { address?: string }
                 | undefined
             return previousParams?.address === address &&
-                previousParams?.network === network
+                queryKeyReferencesScope(previousQuery?.queryKey ?? [], scope)
                 ? previousRows
                 : undefined
         },
@@ -93,13 +95,13 @@ export const useAccountCollectiblesQuery = (
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the summary query's fetch).
-            await ensureAccountFetched(address as string, network)
+            await ensureAccountFetched(address as string, scope)
             return getAccountCollectiblesLite({
                 accountAddress: address as string,
-                network,
+                scope,
                 sortMode,
                 search,
-                includeOptedInOnly,
+                includeZeroBalance,
             })
         },
     })

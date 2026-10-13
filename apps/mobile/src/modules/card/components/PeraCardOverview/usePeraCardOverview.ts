@@ -13,93 +13,154 @@
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
-    AUTO_FUNDING_PER_TX_LIMIT_USD,
+    getCardSettlementAssetId,
     DEFAULT_CARD_CURRENCY,
-    useCardExternalWalletsQuery,
-    useCardInternalWalletsQuery,
-    useCardStore,
+    CardWalletKind,
+    useCardWalletBalanceQuery,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
+import {
+    useAccountAssetBalanceQuery,
+    useSelectedAccountId,
+} from '@perawallet/wallet-core-accounts'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCardComingSoonToast, useIsCardAutoFundingActive } from '../../hooks'
+import { useLanguage } from '@hooks/useLanguage'
+import { useCapability } from '@hooks/useCapability'
+import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
+import { useCardScope } from '../../hooks/useCardScope'
+import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
+import {
+    useCardEscrowBalance,
+    useCardFundingAccount,
+    useIsCardAutoFundingActive,
+    useCardWithdraw,
+} from '../../hooks'
+// Imported directly (not via the hooks barrel) to avoid an import cycle: it
+// pulls in a sheet component that imports from that barrel.
+import { useOpenFundingTypeSheet } from '../../hooks/useOpenFundingTypeSheet'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
 } from '../../utils/cardTransactions'
 
-type PeraCardCredits = {
-    cashbacks: Decimal
+export type PeraCardCredits = {
+    rewards: Decimal
     refunds: Decimal
 }
 
 const ZERO_BALANCE = new Decimal(0)
 
+export type CardWithdrawState = 'idle' | 'waiting' | 'ready'
+
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
+    /** Localised "Auto/Manual Funding enabled" status shown under the balance. */
+    fundingTypeLabel: string
+    onChangeFundingType: () => void
     currency: string
     /** On-card balance, plus the linked account's balance when auto-funding. */
     balance: Decimal
-    /** Max a single purchase can draw: card balance + credits, plus (with
-     * auto-funding) min(per-tx limit, linked account balance). */
-    spendablePerTx: Decimal
     isBalanceLoading: boolean
     credits: PeraCardCredits
     transactionSections: CardTransactionSection[]
     isLoadingTransactions: boolean
+    /** Open timelocked withdrawal, if any; the overview hosts its Complete and Cancel steps. */
+    /** Idle opens the form; the other two lead to the open request. */
+    withdrawState: CardWithdrawState
     onWithdraw: () => void
     onAddFunds: () => void
-    onGetUsdc: () => void
+    /** Auto funding: top up the linked account itself, via the Fund tab. */
+    onFundLinkedAccount: () => void
+    /** Funding the linked account needs a swap or a purchase; with neither the button is removed. */
+    canFundLinkedAccount: boolean
     onShowAllTransactions: () => void
     onPressTransaction: (transactionId: string) => void
-    onCreditPress: () => void
+    onCreditPress: (kind: CardWalletKind) => void
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
+    const scope = useCardScope()
     // Reaches both the Home tab's card screens and the root-stack money flows,
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
-    const connectedAddress = useCardStore(
-        state => state.connectedFundingSourceAddress,
-    )
+    const nativeAsset = useNativeAsset()
+    const { t } = useLanguage()
     const isAutoFunding = useIsCardAutoFundingActive()
-    const { transactions, isLoading } = useCardTransactionsQuery()
+    const fundingTypeLabel = isAutoFunding
+        ? t('peraCard.account.funding_type_enabled_auto')
+        : t('peraCard.account.funding_type_enabled_manual')
+    const onChangeFundingType = useOpenFundingTypeSheet()
+    const canSwap = useCapability({ anyChain: 'swap' })
+    const canBuy = useCapability({ anyChain: 'onramp' })
+    const { transactions, isLoading } = useCardTransactionsQuery(scope)
 
     const transactionSections = useMemo(
         () => groupCardTransactionsByMonth(transactions),
         [transactions],
     )
 
-    const { usdcWallet, isLoading: isCardBalanceLoading } =
-        useCardInternalWalletsQuery()
-    const { delegatedWallet, isLoading: isLinkedBalanceLoading } =
-        useCardExternalWalletsQuery({ address: connectedAddress })
+    const { balance: cardBalance, isLoading: isCardBalanceLoading } =
+        useCardEscrowBalance()
+    // Auto funding never moves USDC onto the card: it is drawn from the linked
+    // account at spend time, so that account's own holding is the spendable
+    // figure. Reading it from the chain also keeps it right on platforms Baanx
+    // does not serve wallet balances to.
+    const fundingAccount = useCardFundingAccount()
+    const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
+    const { data: linkedUsdc, isPending: isLinkedBalancePending } =
+        useAccountAssetBalanceQuery(
+            isAutoFunding ? (fundingAccount ?? undefined) : undefined,
+            usdcAssetId ?? undefined,
+            scope,
+        )
+    const canReadLinkedBalance =
+        isAutoFunding && fundingAccount != null && usdcAssetId !== null
+    // Only whether the linked account holds ALGO matters: it decides whether
+    // Add Funds can swap into USDC or has to buy it.
+    const { data: linkedAlgo } = useAccountAssetBalanceQuery(
+        isAutoFunding ? (fundingAccount ?? undefined) : undefined,
+        nativeAsset.assetId,
+        scope,
+    )
+    const hasLinkedAlgo =
+        canReadLinkedBalance && (linkedAlgo?.amount.gt(0) ?? false)
+    const canSwapToUsdc = hasLinkedAlgo && canSwap
+    const canFundLinkedAccount = canSwapToUsdc || canBuy
 
-    // TODO(card): credits are stubbed — no Baanx API exposes them yet.
+    // Both live in their own Baanx wallets, null until something is credited.
+    const { wallet: rewardWallet } = useCardWalletBalanceQuery(
+        scope,
+        CardWalletKind.Reward,
+    )
+    const { wallet: creditWallet } = useCardWalletBalanceQuery(
+        scope,
+        CardWalletKind.Credit,
+    )
     const credits = useMemo<PeraCardCredits>(
-        () => ({ cashbacks: new Decimal(0), refunds: new Decimal(0) }),
-        [],
+        () => ({
+            rewards: rewardWallet?.balance ?? ZERO_BALANCE,
+            refunds: creditWallet?.balance ?? ZERO_BALANCE,
+        }),
+        [rewardWallet, creditWallet],
     )
 
-    const cardBalance = usdcWallet?.balance ?? ZERO_BALANCE
-    const linkedBalance = isAutoFunding
-        ? (delegatedWallet?.balance ?? ZERO_BALANCE)
+    const linkedBalance = canReadLinkedBalance
+        ? (linkedUsdc?.amount ?? ZERO_BALANCE)
         : ZERO_BALANCE
 
-    // Baanx enforces the delegation allowance per transaction; fall back to
-    // the app constant until the server reports one.
-    const perTxLimit = delegatedWallet?.allowance.gt(0)
-        ? delegatedWallet.allowance
-        : AUTO_FUNDING_PER_TX_LIMIT_USD
+    const balance = cardBalance.plus(linkedBalance)
 
-    const creditsTotal = credits.cashbacks.plus(credits.refunds)
-    const spendablePerTx = (
-        isAutoFunding ? Decimal.min(perTxLimit, linkedBalance) : ZERO_BALANCE
-    )
-        .plus(cardBalance)
-        .plus(creditsTotal)
-
-    const showComingSoon = useCardComingSoonToast()
+    const { setSelectedAccountId } = useSelectedAccountId()
+    const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
+        useCardWithdraw()
+    const withdrawState: CardWithdrawState =
+        pendingWithdrawal === null
+            ? 'idle'
+            : isWithdrawReady
+              ? 'ready'
+              : 'waiting'
 
     const onAddFunds = useCallback(() => {
         trackEvent(CardEvent.HomeAddFunds)
@@ -108,14 +169,41 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const onWithdraw = useCallback(() => {
         trackEvent(CardEvent.HomeWithdraw)
-        navigation.navigate('CardWithdraw')
-    }, [navigation])
+        // One request at a time: while one is open the button leads to it.
+        navigation.navigate(
+            pendingWithdrawal === null ? 'CardWithdraw' : 'CardWithdrawStatus',
+        )
+    }, [navigation, pendingWithdrawal])
 
-    const onGetUsdc = useCallback(() => {
-        // Still tracked while the flow is a coming-soon stub — demand signal.
+    const onFundLinkedAccount = useCallback(() => {
+        if (fundingAccount === null || !canFundLinkedAccount) return
         trackEvent(CardEvent.HomeGetUsdc)
-        showComingSoon()
-    }, [showComingSoon])
+        // Both tabs work on the selected account, so make it the linked one
+        // first or the USDC lands wherever the user last was.
+        setSelectedAccountId(fundingAccount.id)
+        if (canSwapToUsdc) {
+            navigation.navigate('TabBar', {
+                screen: 'Swap',
+                params: {
+                    assetInId: nativeAsset.assetId,
+                    assetOutId: usdcAssetId ?? undefined,
+                },
+            })
+            return
+        }
+        navigation.navigate('TabBar', {
+            screen: 'Fund',
+            params: { destinationTokenId: USDC_RAMP_TOKEN_ID },
+        })
+    }, [
+        fundingAccount,
+        canFundLinkedAccount,
+        canSwapToUsdc,
+        nativeAsset.assetId,
+        usdcAssetId,
+        setSelectedAccountId,
+        navigation,
+    ])
 
     const onShowAllTransactions = useCallback(() => {
         trackEvent(CardEvent.HomeShowAll)
@@ -129,21 +217,33 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [navigation],
     )
 
+    const onCreditPress = useCallback(
+        (kind: CardWalletKind) => {
+            trackEvent(CARD_WALLET_PRESENTATION[kind].homeEvent)
+            navigation.navigate('CardWalletBalance', { kind })
+        },
+        [navigation],
+    )
+
     return {
         isAutoFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         currency: DEFAULT_CARD_CURRENCY,
-        balance: cardBalance.plus(linkedBalance),
-        spendablePerTx,
+        balance,
         isBalanceLoading:
-            isCardBalanceLoading || (isAutoFunding && isLinkedBalanceLoading),
+            isCardBalanceLoading ||
+            (canReadLinkedBalance && isLinkedBalancePending),
         credits,
         transactionSections,
         isLoadingTransactions: isLoading,
+        withdrawState,
         onWithdraw,
         onAddFunds,
-        onGetUsdc,
+        onFundLinkedAccount,
+        canFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
-        onCreditPress: showComingSoon,
+        onCreditPress,
     }
 }

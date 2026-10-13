@@ -12,7 +12,7 @@
 
 /**
  * Web/extension twin of `saveImageToDevice` (same technique as
- * shareCsvFile.web.ts). There's no filesystem or MediaLibrary on the web —
+ * shareFile.web.ts). There's no filesystem or MediaLibrary on the web —
  * expo-media-library ships no web build at all, and expo-file-system's
  * File/Paths API is a native-only no-op stub there — so instead this fetches
  * the media bytes into a `Blob` and triggers a standard browser download via

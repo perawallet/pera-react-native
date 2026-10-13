@@ -12,15 +12,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { SwapChainAdapter } from '../../chain-adapter'
 import type { SwapHandoffRecord } from '../../models'
+import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
 import {
     settleCosignAttempt,
     useSwapCosignResolver,
 } from '../useSwapCosignResolver'
 
 const mocks = vi.hoisted(() => ({
-    useNetwork: vi.fn(),
-    useAlgorandClient: vi.fn(),
     useDeviceID: vi.fn(),
     decodeFromBase64: vi.fn(),
     loggerWarn: vi.fn(),
@@ -29,7 +33,6 @@ const mocks = vi.hoisted(() => ({
     getSignRequestsWithSignaturesQueryKey: vi.fn(),
     useMarkSignRequestsConfirmedMutation: vi.fn(),
     classifyHandoffPoll: vi.fn(),
-    submitRawSignedTransactionGroup: vi.fn(),
     useHandoffResolver: vi.fn(),
     resolveSwapHandoffOutcome: vi.fn(),
     useUpdateSwapStatusMutation: vi.fn(),
@@ -44,10 +47,6 @@ const mocks = vi.hoisted(() => ({
     handoffs: {} as Record<string, SwapHandoffRecord>,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mocks.useNetwork,
-    useAlgorandClient: mocks.useAlgorandClient,
-}))
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: mocks.useDeviceID,
 }))
@@ -65,7 +64,6 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 }))
 vi.mock('@perawallet/wallet-core-signing', () => ({
     classifyHandoffPoll: mocks.classifyHandoffPoll,
-    submitRawSignedTransactionGroup: mocks.submitRawSignedTransactionGroup,
     useHandoffResolver: mocks.useHandoffResolver,
     recordSubmissionAttempt: mocks.recordSubmissionAttempt,
     markSubmissionUnknown: mocks.markSubmissionUnknown,
@@ -93,14 +91,12 @@ vi.mock('../useUpdateSwapStatusMutation', () => ({
     useUpdateSwapStatusMutation: mocks.useUpdateSwapStatusMutation,
 }))
 
-const ALGORAND_CLIENT = { id: 'algod' }
-
 const makeRecord = (
     overrides: Partial<SwapHandoffRecord> = {},
 ): SwapHandoffRecord => ({
     swapIdStr: '42',
     signRequestId: 'req-1',
-    network: 'mainnet',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     multisigAddress: 'JOINT_ADDR',
     deviceId: 'device-1',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
@@ -114,21 +110,27 @@ const reportError = vi.fn()
 
 const render = (isAppActive = true) =>
     renderHook(props => useSwapCosignResolver(props), {
-        initialProps: { isAppActive, reportError },
+        initialProps: {
+            isAppActive,
+            reportError,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
+        },
     })
 
 // The config object the hook hands to the shared resolver core.
 type ResolverConfig = Parameters<typeof mocks.useHandoffResolver>[0]
 const config = (): ResolverConfig => mocks.useHandoffResolver.mock.calls[0][0]
 
+let submitSignedGroup: SwapChainAdapter['submitSignedGroup']
+
 beforeEach(() => {
     vi.clearAllMocks()
+    submitSignedGroup = vi.fn()
+    registerFakeSwapAdapter({ submitSignedGroup })
     mocks.handoffs = {}
-    mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-    mocks.useAlgorandClient.mockReturnValue(ALGORAND_CLIENT)
     mocks.useDeviceID.mockReturnValue('device-1')
     mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
-        (network: string, id: string) => ['msig', network, id],
+        (scope: ChainScope, id: string) => ['msig', scope, id],
     )
     mocks.useMarkSignRequestsConfirmedMutation.mockReturnValue({
         markConfirmed: mocks.markConfirmed,
@@ -141,8 +143,14 @@ beforeEach(() => {
 
 describe('swaps/useSwapCosignResolver', () => {
     it('drives the shared resolver over all handoffs, opting into the active-network filter', () => {
-        const onMainnet = makeRecord({ signRequestId: 'a', network: 'mainnet' })
-        const onTestnet = makeRecord({ signRequestId: 'b', network: 'testnet' })
+        const onMainnet = makeRecord({
+            signRequestId: 'a',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+        })
+        const onTestnet = makeRecord({
+            signRequestId: 'b',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+        })
         mocks.handoffs = { a: onMainnet, b: onTestnet }
 
         render()
@@ -156,14 +164,18 @@ describe('swaps/useSwapCosignResolver', () => {
         expect(cfg.keyOf(onMainnet)).toBe('a')
     })
 
-    it('builds a with-signatures poll keyed by network + id, gated on foreground and device id', () => {
+    it('builds a with-signatures poll keyed by scope + id, gated on foreground and device id', () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
 
         render()
 
         const descriptor = config().poll(handoff)
-        expect(descriptor.queryKey).toEqual(['msig', 'mainnet', 'req-1'])
+        expect(descriptor.queryKey).toEqual([
+            'msig',
+            scopeForLegacyNetwork('mainnet'),
+            'req-1',
+        ])
         expect(descriptor.enabled).toBe(true)
 
         descriptor.queryFn()
@@ -184,11 +196,9 @@ describe('swaps/useSwapCosignResolver', () => {
         expect(config().poll(handoff).enabled).toBe(false)
 
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-        mocks.useAlgorandClient.mockReturnValue(ALGORAND_CLIENT)
         mocks.useDeviceID.mockReturnValue(null)
         mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
-            (network: string, id: string) => ['msig', network, id],
+            (scope: ChainScope, id: string) => ['msig', scope, id],
         )
         mocks.useMarkSignRequestsConfirmedMutation.mockReturnValue({
             markConfirmed: vi.fn(),
@@ -209,6 +219,7 @@ describe('swaps/useSwapCosignResolver', () => {
 
         config().classify(detail, handoff)
         expect(mocks.classifyHandoffPoll).toHaveBeenCalledWith(detail, {
+            scope: handoff.scope,
             multisigAddress: 'JOINT_ADDR',
             msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
             expectedRawTransactionsBase64: ['cmF3'],
@@ -260,10 +271,10 @@ describe('swaps/useSwapCosignResolver', () => {
         )
     })
 
-    it('wires submitGroup through to the algod submission helper', async () => {
+    it("wires submitGroup through to the handoff network's chain adapter", async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        mocks.submitRawSignedTransactionGroup.mockResolvedValue(['txid'])
+        vi.mocked(submitSignedGroup).mockResolvedValue(['txid'])
 
         render()
 
@@ -274,8 +285,8 @@ describe('swaps/useSwapCosignResolver', () => {
 
         const bytes = [new Uint8Array([1])]
         await deps.submitGroup(bytes)
-        expect(mocks.submitRawSignedTransactionGroup).toHaveBeenCalledWith(
-            ALGORAND_CLIENT,
+        expect(submitSignedGroup).toHaveBeenCalledWith(
+            scopeForLegacyNetwork('mainnet'),
             bytes,
         )
     })
@@ -372,10 +383,11 @@ describe('swaps/useSwapCosignResolver', () => {
         render()
 
         expect(mocks.setSubmissionSettledHandler).toHaveBeenCalledWith(
+            'algorand',
             'cosign',
             expect.any(Function),
         )
-        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][1]
+        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][2]
 
         await handler(['txid-1'], 'mainnet', 'confirmed')
 
@@ -404,7 +416,7 @@ describe('swaps/useSwapCosignResolver', () => {
 
         render()
 
-        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][1]
+        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][2]
         await handler(['txid-1'], 'mainnet', 'failed')
 
         expect(mocks.updateSwapStatus).toHaveBeenCalledWith({
@@ -425,6 +437,7 @@ describe('swaps/useSwapCosignResolver', () => {
         view.unmount()
 
         expect(mocks.setSubmissionSettledHandler).toHaveBeenLastCalledWith(
+            'algorand',
             'cosign',
             null,
         )
@@ -516,7 +529,7 @@ describe('settleCosignAttempt', () => {
     it('ignores handoffs on other networks or without an intersecting submission', async () => {
         const otherNetwork = makeRecord({
             signRequestId: 'other-net',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             submission: { txIds: ['txid-1'], submittedAt: 2 },
         })
         const noSubmission = makeRecord({ signRequestId: 'no-sub' })

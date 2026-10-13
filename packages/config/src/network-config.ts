@@ -10,11 +10,18 @@
  limitations under the License
  */
 
+import {
+    scopeForLegacyNetwork,
+    type ChainId,
+    type ChainScope,
+    type NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import { UnconfiguredScopeError } from './errors'
 import { type Network, Networks } from './models/network'
 import { config } from './main'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
-type ChainConfig = {
+export type AlgorandChainConfig = {
     algodUrl: string
     indexerUrl: string
     genesisHash: string
@@ -25,43 +32,96 @@ type ChainConfig = {
     dispenserUrl: string
 }
 
+export type EthereumChainConfig = {
+    /** Public JSON-RPC endpoint; reads go direct, with no API key. */
+    rpcUrl: string
+}
+
+// Indexed by `C extends ChainId`, so a chain id without an entry stops
+// getChainConfig compiling.
+type ChainConfigByChain = {
+    algorand: AlgorandChainConfig
+    ethereum: EthereumChainConfig
+}
+
+export type ChainConfig = ChainConfigByChain[ChainId]
+
 /** Empty outside `PeraBackedNetwork`s — never borrowed from another network. */
-type PeraServices = {
+export type PeraServices = {
     backendUrl: string
     bidaliBaseUrl: string
     bidaliApiKey: string
     baanxBaseUrl: string
     baanxClientKey: string
     baanxTenantId: string
-    // SWAP POINT: AB escrow card service (card creation + delegated-LSig `/lsig`).
-    cardEscrowBaseUrl: string
-    cardEscrowAuthToken: string
-    cardW3CardAppId: string
-    cardKillswitchAppId: string
-    /**
-     * Lowercase hex SHA-256 of the compiled AutoDraw program, pinned per
-     * network. Lives beside the app IDs because it is derived from them — the
-     * compile is deterministic over (template, app IDs, genesis hash), so
-     * rotating either app ID invalidates this pin and both must move together.
-     * Build-time only, never remote config: a remotely-settable expected value
-     * would let whoever controls it approve any program the wallet is asked to
-     * sign.
-     */
-    cardAutoDrawProgramHash: string
-    cardUsdcAssetId: string
 }
 
-export type NetworkConfig = ChainConfig &
+export type NetworkConfig = AlgorandChainConfig &
     PeraServices & {
         network: Network
         isTestnet: boolean
         isMainnet: boolean
     }
 
+export const PERA_SERVICES = [
+    'accounts',
+    'assets',
+    'prices',
+    'history',
+    'devices',
+    'notifications',
+    'blockFollowing',
+] as const
+
+export type PeraService = (typeof PERA_SERVICES)[number]
+
+/** What a saved custom node supplies; its explorer and dispenser stay empty. */
+export type CustomNetworkEndpoints = Pick<
+    AlgorandChainConfig,
+    | 'algodUrl'
+    | 'indexerUrl'
+    | 'algodToken'
+    | 'indexerToken'
+    | 'genesisHash'
+    | 'genesisId'
+>
+
+/**
+ * The node as the user saved it; the tokens are optional there. Saved as a
+ * single unit, never merged: a half-updated config (new host, stale genesis
+ * hash) would fail every signing attempt with a confusing cross-network
+ * mismatch rather than anything pointing at the real cause.
+ */
+export type CustomNetworkConfig = Omit<
+    CustomNetworkEndpoints,
+    'algodToken' | 'indexerToken'
+> & {
+    algodToken?: string
+    indexerToken?: string
+}
+
+/** Persisted configs are untyped; one missing a required field is not a usable node. */
+export const isCustomNetworkConfig = (
+    value: unknown,
+): value is CustomNetworkConfig => {
+    if (typeof value !== 'object' || value === null) return false
+    const entry = value as Record<string, unknown>
+    return (
+        typeof entry.algodUrl === 'string' &&
+        typeof entry.indexerUrl === 'string' &&
+        typeof entry.genesisHash === 'string' &&
+        typeof entry.genesisId === 'string'
+    )
+}
+
+export type CustomNetworkSource = (
+    scope: ChainScope,
+) => CustomNetworkEndpoints | undefined
+
 export const isTestnet = (network: Network) => network === Networks.testnet
 export const isMainnet = (network: Network) => network === Networks.mainnet
 
-const chainConfigByNetwork: Record<Network, ChainConfig> = {
+const chainConfigByNetwork: Record<Network, AlgorandChainConfig> = {
     [Networks.mainnet]: {
         algodUrl: config.mainnetAlgodUrl,
         indexerUrl: config.mainnetIndexerUrl,
@@ -98,9 +158,10 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
     },
     [Networks.custom]: {
         // Deliberately all empty: `custom`'s real values live in the
-        // custom-network store, which `config` can't read — it's the leaf package
-        // and must stay free of store dependencies. The blockchain-layer
-        // resolvers overlay the store on top of this placeholder.
+        // custom-network store, which `config` can't read — it must stay free
+        // of store dependencies. The store's owner registers a
+        // `CustomNetworkSource`, and `getChainConfig` lays the saved node over
+        // this placeholder.
         //
         // explorerUrl and dispenserUrl stay empty for good: an arbitrary node has
         // no known explorer or faucet, and the existing gate already hides the
@@ -140,19 +201,12 @@ const EMPTY_PERA_SERVICES = {
     baanxBaseUrl: '',
     baanxClientKey: '',
     baanxTenantId: '',
-    cardEscrowBaseUrl: '',
-    cardEscrowAuthToken: '',
-    cardW3CardAppId: '',
-    cardKillswitchAppId: '',
-    cardAutoDrawProgramHash: '',
-    cardUsdcAssetId: '',
 } satisfies PeraServices
 
 /**
  * `Record<Network, …>`, not `Partial<…>` plus a fallback: a fifth network added
  * to the union fails TypeScript here until someone decides its Pera services,
- * rather than silently resolving to TestNet's deployment. Same reasoning as
- * `EXPECTED_CHAIN_ID_BY_NETWORK` in the walletconnect package.
+ * rather than silently resolving to TestNet's deployment.
  */
 const peraServicesByNetwork: Record<Network, PeraServices> = {
     [Networks.mainnet]: {
@@ -162,12 +216,6 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxBaseUrl: config.mainnetBaanxBaseUrl,
         baanxClientKey: config.mainnetBaanxClientKey,
         baanxTenantId: config.mainnetBaanxTenantId,
-        cardEscrowBaseUrl: config.mainnetCardEscrowBaseUrl,
-        cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
-        cardW3CardAppId: config.mainnetCardW3CardAppId,
-        cardKillswitchAppId: config.mainnetCardKillswitchAppId,
-        cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
-        cardUsdcAssetId: config.mainnetCardUsdcAssetId,
     },
     [Networks.testnet]: {
         backendUrl: config.testnetBackendUrl,
@@ -176,26 +224,200 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxBaseUrl: config.testnetBaanxBaseUrl,
         baanxClientKey: config.testnetBaanxClientKey,
         baanxTenantId: config.testnetBaanxTenantId,
-        cardEscrowBaseUrl: config.testnetCardEscrowBaseUrl,
-        cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
-        cardW3CardAppId: config.testnetCardW3CardAppId,
-        cardKillswitchAppId: config.testnetCardKillswitchAppId,
-        cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
-        cardUsdcAssetId: config.testnetCardUsdcAssetId,
     },
-    // No Pera deployment. Empty, never borrowed: createPeraClient turns an
-    // empty backendUrl into a thrown PeraServiceUnavailableError.
+    // No Pera deployment. Empty, never borrowed: the query client refuses a
+    // Pera request for a scope whose backendUrl is empty.
     [Networks.betanet]: EMPTY_PERA_SERVICES,
     [Networks.custom]: EMPTY_PERA_SERVICES,
 }
 
-export const getNetworkConfig = (network: Network): NetworkConfig => ({
-    network,
-    isMainnet: isMainnet(network),
-    isTestnet: isTestnet(network),
-    ...chainConfigByNetwork[network],
-    ...peraServicesByNetwork[network],
+/** `Record<Network, …>` for the same reason as the table above. */
+const peraServiceNamesByNetwork: Record<Network, readonly PeraService[]> = {
+    [Networks.mainnet]: PERA_SERVICES,
+    [Networks.testnet]: PERA_SERVICES,
+    [Networks.betanet]: [],
+    [Networks.custom]: [],
+}
+
+type ScopeConfigOf<C extends ChainId> = {
+    scope: ChainScope & { chainId: C }
+    /** Absent while the build carries no endpoint for the scope. */
+    chain: ChainConfigByChain[C] | undefined
+    peraServices: PeraServices
+    services: ReadonlySet<PeraService>
+    /** Whether a saved custom node overlays `chain`; its endpoints are Algorand's shape. */
+    acceptsCustomNode: boolean
+}
+
+type ScopeConfig = { [C in ChainId]: ScopeConfigOf<C> }[ChainId]
+
+const ALGORAND_SCOPE_CONFIGS: readonly ScopeConfigOf<'algorand'>[] =
+    Object.values(Networks).map(network => ({
+        scope: scopeForLegacyNetwork(network),
+        chain: chainConfigByNetwork[network],
+        peraServices: peraServicesByNetwork[network],
+        services: new Set(peraServiceNamesByNetwork[network]),
+        acceptsCustomNode: true,
+    }))
+
+const ethereumScopeConfig = (
+    networkId: NetworkId,
+    rpcUrl: string,
+    peraBackendUrl: string,
+    services: readonly PeraService[],
+): ScopeConfigOf<'ethereum'> => ({
+    scope: { chainId: 'ethereum', networkId },
+    chain: rpcUrl === '' ? undefined : { rpcUrl },
+    // An empty list empties backendUrl too: the query client refuses every Pera
+    // request for a scope without one, including requests that name no service.
+    peraServices: {
+        ...EMPTY_PERA_SERVICES,
+        backendUrl: services.length > 0 ? peraBackendUrl : '',
+    },
+    services: new Set(services),
+    acceptsCustomNode: false,
 })
+
+// The Pera backend serves Ethereum from the same host as the Algorand network
+// of the same tier.
+const ETHEREUM_SCOPE_CONFIGS: readonly ScopeConfigOf<'ethereum'>[] = [
+    ethereumScopeConfig(
+        'mainnet',
+        config.ethereumMainnetRpcUrl,
+        config.mainnetBackendUrl,
+        config.ethereumMainnetPeraServices,
+    ),
+    ethereumScopeConfig(
+        'sepolia',
+        config.ethereumSepoliaRpcUrl,
+        config.testnetBackendUrl,
+        config.ethereumSepoliaPeraServices,
+    ),
+]
+
+const SCOPE_CONFIGS: readonly ScopeConfig[] = [
+    ...ALGORAND_SCOPE_CONFIGS,
+    ...ETHEREUM_SCOPE_CONFIGS,
+]
+
+// Compared field by field, not through toScopeKey: that validates the chain id
+// against the compiled-in union and throws for a test's fixture chain, and
+// nothing here is persisted.
+const findRow = <R extends { scope: ChainScope }>(
+    rows: readonly R[],
+    scope: ChainScope,
+): R | undefined =>
+    rows.find(
+        row =>
+            row.scope.chainId === scope.chainId &&
+            row.scope.networkId === scope.networkId,
+    )
+
+const findScopeConfig = (scope: ChainScope): ScopeConfig | undefined =>
+    findRow(SCOPE_CONFIGS, scope)
+
+let customNetworkSource: CustomNetworkSource | undefined
+
+/**
+ * The saved custom node lives in a store `config` cannot import, so the
+ * store's owner registers a reader here. One slot; the returned function clears
+ * it only while it still holds this source, so a stale cleanup cannot drop a
+ * newer registration.
+ */
+export const registerCustomNetworkSource = (
+    source: CustomNetworkSource,
+): (() => void) => {
+    customNetworkSource = source
+    return () => {
+        if (customNetworkSource === source) {
+            customNetworkSource = undefined
+        }
+    }
+}
+
+export const configuredScopes = (): readonly ChainScope[] =>
+    SCOPE_CONFIGS.map(row => row.scope)
+
+/**
+ * Throws for a scope no row configures, rather than handing back empty
+ * endpoints that fail later somewhere unrelated.
+ */
+export const getChainConfig = <C extends ChainId>(
+    scope: ChainScope & { chainId: C },
+): ChainConfigByChain[C] => {
+    const row = findScopeConfig(scope)
+    if (row?.chain === undefined) {
+        throw new UnconfiguredScopeError(scope)
+    }
+    const chain = row.acceptsCustomNode
+        ? { ...row.chain, ...customNetworkSource?.(scope) }
+        : { ...row.chain }
+    // The row matched scope.chainId, so its config is C's.
+    return chain as ChainConfigByChain[C]
+}
+
+/** For Algorand-only code holding an arbitrary scope; any other chain throws. */
+export const getAlgorandChainConfig = (
+    scope: ChainScope,
+): AlgorandChainConfig => {
+    const row = findRow(ALGORAND_SCOPE_CONFIGS, scope)
+    if (row === undefined) {
+        throw new UnconfiguredScopeError(scope)
+    }
+    return getChainConfig(row.scope)
+}
+
+export const getPeraServicesConfig = (scope: ChainScope): PeraServices => ({
+    ...(findScopeConfig(scope)?.peraServices ?? EMPTY_PERA_SERVICES),
+})
+
+const NO_PERA_SERVICES: ReadonlySet<PeraService> = new Set()
+
+const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
+    findScopeConfig(scope)?.services ?? NO_PERA_SERVICES
+
+export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
+    new Set(servicesOf(scope))
+
+export const hasPeraService = (
+    scope: ChainScope,
+    service: PeraService,
+): boolean => servicesOf(scope).has(service)
+
+export const getNetworkConfig = (network: Network): NetworkConfig => {
+    const scope = scopeForLegacyNetwork(network)
+    return {
+        network,
+        isMainnet: isMainnet(network),
+        isTestnet: isTestnet(network),
+        ...getChainConfig(scope),
+        ...getPeraServicesConfig(scope),
+    }
+}
+
+const COMMERCE_HOST_PREFIX = 'commerce.'
+const GIFTCARDS_HOST_PREFIX = 'giftcards.'
+
+/**
+ * Origins an iframe mounted at `url` loads from: its own, plus the `giftcards.`
+ * twin a `commerce.` host 302s to (Bidali). The in-app bridge and the
+ * extension's frame-src both see the post-redirect origin, so they share this.
+ * Empty for a URL that doesn't parse.
+ */
+export const getIframeOrigins = (url: string): string[] => {
+    let parsed: URL
+    try {
+        parsed = new URL(url)
+    } catch {
+        return []
+    }
+    const origin = parsed.origin
+    if (!parsed.hostname.startsWith(COMMERCE_HOST_PREFIX)) return [origin]
+    parsed.hostname =
+        GIFTCARDS_HOST_PREFIX +
+        parsed.hostname.slice(COMMERCE_HOST_PREFIX.length)
+    return [origin, parsed.origin]
+}
 
 /**
  * ARC-59 inbox app id/address for `network`, or `null` where the inbox app is

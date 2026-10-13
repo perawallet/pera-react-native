@@ -16,6 +16,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { assertOnline, NoConnectionError } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandDeviceAdapter,
+} from '@test-utils/algorandAccountsAdapter'
+import { allCapabilities } from '@test-utils/chain-fixtures'
 
 const mocks = vi.hoisted(() => ({
     setAccountEnabled: vi.fn(),
@@ -36,8 +44,7 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 // The mobile-wide vitest setup mocks `@perawallet/wallet-core-accounts` with a
 // fixed empty-store double. This hook reads the real account list to build
 // the registration payload, so restore the actual implementation and only
-// override `useAllAccounts` — the rest (types, `buildDeviceAccountRegistrations`)
-// runs for real.
+// override `useAllAccounts`.
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -46,9 +53,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return { ...actual, useAllAccounts: () => mocks.accounts }
 })
 
-// Partial mock: `buildDeviceAccountRegistrations` (pulled in via the real
-// `@perawallet/wallet-core-accounts` above) needs the real `DeviceAccountTypes`
-// map, so only `useDevice` itself is overridden.
+// Partial mock: only `useDevice` itself is overridden, so
+// `buildDeviceAccountRegistrations` runs for real.
 vi.mock('@perawallet/wallet-core-device', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
@@ -69,9 +75,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // The real useErrorToast runs here (see above), and it appends a `Debug: …`
 // suffix to the body when config.debugEnabled is true. That flag comes from
@@ -80,6 +84,7 @@ vi.mock('@hooks/useLanguage', () => ({
 // deterministic regardless of local env.
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { debugEnabled: false },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 import {
@@ -87,16 +92,33 @@ import {
     clearAccountNotificationToggleGuardForTests,
 } from '../useAccountNotificationToggle'
 
-type SeedAccount = Pick<WalletAccount, 'id' | 'address' | 'type'> &
-    Partial<WalletAccount>
+type SeedAccount = Pick<WalletAccount, 'id' | 'custody'> & {
+    address: string
+    keyPairId?: string
+}
+
+const toWalletAccount = ({
+    address,
+    keyPairId,
+    ...account
+}: SeedAccount): WalletAccount => ({
+    ...account,
+    chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
+})
 
 const seedAccounts = (accounts: SeedAccount[]): void => {
-    mocks.accounts = accounts as WalletAccount[]
+    mocks.accounts = accounts.map(toWalletAccount)
 }
 
 describe('useAccountNotificationToggle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
+        registerAlgorandDeviceAdapter()
+        const { chains } = getProvider()
+        if (!chains.has(LEGACY_CHAIN_ID)) {
+            chains.register(algorandDescriptor, allCapabilities(true))
+        }
         mocks.registerDevice.mockResolvedValue({ createdNew: false })
         mocks.accounts = []
         mocks.disabledAccounts = []
@@ -110,7 +132,12 @@ describe('useAccountNotificationToggle', () => {
 
     it('applies the optimistic write and re-registers the device on success', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR1', type: 'algo25', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR1',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
         ])
 
         const { result } = renderHook(() => useAccountNotificationToggle())
@@ -130,6 +157,7 @@ describe('useAccountNotificationToggle', () => {
             {
                 address: 'ADDR1',
                 accountType: 'algo25',
+                rank: 3,
                 receiveNotifications: true,
             },
         ])
@@ -451,8 +479,18 @@ describe('useAccountNotificationToggle', () => {
     // with every account's flag inline, not just the one that changed.
     it('re-registers the device with the toggled flag applied', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
-            { id: '2', address: 'ADDR_B', type: 'quantum', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
+            {
+                id: '2',
+                address: 'ADDR_B',
+                custody: { kind: 'local', seed: 'quantum' },
+                keyPairId: 'kp',
+            },
         ])
 
         const { result } = renderHook(() => useAccountNotificationToggle())
@@ -465,11 +503,13 @@ describe('useAccountNotificationToggle', () => {
             {
                 address: 'ADDR_A',
                 accountType: 'algo25',
+                rank: 3,
                 receiveNotifications: false,
             },
             {
                 address: 'ADDR_B',
                 accountType: 'quantum',
+                rank: 6,
                 receiveNotifications: true,
             },
         ])
@@ -477,7 +517,12 @@ describe('useAccountNotificationToggle', () => {
 
     it('rolls the local preference back and shows an error when re-registration fails', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
         ])
         mocks.registerDevice.mockRejectedValueOnce(new Error('boom'))
 
@@ -502,7 +547,12 @@ describe('useAccountNotificationToggle', () => {
     // pre-muted account so the filter has something to actually remove.
     it('removes the address from the disabled set when re-enabling a muted account', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
         ])
         mocks.disabledAccounts = ['ADDR_A']
 
@@ -516,6 +566,7 @@ describe('useAccountNotificationToggle', () => {
             {
                 address: 'ADDR_A',
                 accountType: 'algo25',
+                rank: 3,
                 receiveNotifications: true,
             },
         ])
@@ -531,8 +582,18 @@ describe('useAccountNotificationToggle', () => {
     // "muted", receives pushes anyway, and the divergence survives a restart.
     it('preserves already-muted accounts when muting another one', async () => {
         seedAccounts([
-            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
-            { id: '2', address: 'ADDR_B', type: 'algo25', keyPairId: 'kp2' },
+            {
+                id: '1',
+                address: 'ADDR_A',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp',
+            },
+            {
+                id: '2',
+                address: 'ADDR_B',
+                custody: { kind: 'local', seed: null },
+                keyPairId: 'kp2',
+            },
         ])
         mocks.disabledAccounts = ['ADDR_B']
 
@@ -546,11 +607,13 @@ describe('useAccountNotificationToggle', () => {
             {
                 address: 'ADDR_A',
                 accountType: 'algo25',
+                rank: 3,
                 receiveNotifications: false,
             },
             {
                 address: 'ADDR_B',
                 accountType: 'algo25',
+                rank: 3,
                 receiveNotifications: false,
             },
         ])

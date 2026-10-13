@@ -10,24 +10,52 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    useQuery,
+    type FetchStatus,
+    type RefetchOptions,
+} from '@tanstack/react-query'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 import { getRampPairs } from '../api'
-import { ONRAMP_DESTINATION_TOKEN_IDS } from '../constants'
+import { rampAdapterFor } from '../chain-adapter'
 import type { RampPair } from '../models'
 import { onrampQueryKeys } from './querykeys'
 
+export type UseRampPairsQueryResult = {
+    data: RampPair[]
+    isLoading: boolean
+    isError: boolean
+    fetchStatus: FetchStatus
+    refetch: (options?: RefetchOptions) => unknown
+}
+
+// One stable empty array, so memos that depend on `data` don't re-run every render.
+const NO_RESULTS: RampPair[] = []
+
 export const useRampPairsQuery = (
     enabled: boolean = true,
-): UseQueryResult<RampPair[], Error> => {
-    const { network } = useNetwork()
+): UseRampPairsQueryResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
 
-    const destinationTokenIds = [...ONRAMP_DESTINATION_TOKEN_IDS]
+    const destinationTokenIds = [...rampAdapterFor(network).destinationTokenIds]
 
-    return useQuery({
-        queryKey: onrampQueryKeys.pairs(destinationTokenIds, network),
+    const query = useQuery({
+        queryKey: onrampQueryKeys.pairs(destinationTokenIds, scope),
         queryFn: () => getRampPairs(destinationTokenIds, network),
         enabled,
     })
+
+    return {
+        data: query.data ?? NO_RESULTS,
+        isLoading: query.isLoading,
+        isError: query.isError,
+        fetchStatus: query.fetchStatus,
+        refetch: query.refetch,
+    }
 }

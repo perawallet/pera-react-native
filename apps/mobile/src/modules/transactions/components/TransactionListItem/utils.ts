@@ -11,11 +11,9 @@
  */
 
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import {
-    getTransactionType,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+import { getTransactionType } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionIconType } from '@modules/algorand/icons'
 
 /**
  * Determines the icon type for a transaction based on its type and direction.
@@ -23,7 +21,7 @@ import type { TransactionIconType } from '@modules/transactions/components/Trans
 export const getTransactionIconType = (
     transaction: TransactionHistoryItem,
     isOutgoing: boolean,
-): TransactionIconType => {
+): AlgorandTransactionIconType => {
     // Swap transactions
     if (transaction.swapGroupDetail) return 'swap'
 

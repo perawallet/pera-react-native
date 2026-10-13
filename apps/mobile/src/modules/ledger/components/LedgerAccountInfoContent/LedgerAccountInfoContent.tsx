@@ -11,22 +11,43 @@
  */
 
 import { useCallback } from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
-import { ActivityIndicator } from 'react-native'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { PWView, PWText, PWButton, PWFlatList } from '@components/core'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import {
+    PWView,
+    PWText,
+    PWButton,
+    PWFlatList,
+    PWLoadingIndicator,
+} from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
+import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AccountAssetItemView } from '@modules/assets'
 import {
     useLedgerAccountInfoContent,
     type LedgerInfoListItem,
 } from './useLedgerAccountInfoContent'
 import { useStyles } from './styles'
+
+// This sheet is always about one connected Ledger, so a forced rekeyed state
+// is a rekey to hardware; the auth account isn't in the store to look up.
+const LEDGER_AUTH_ACCOUNT: HardwareWalletAccount = {
+    id: 'ledger-auth',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: '',
+            deviceName: '',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
+    chains: {},
+}
 
 export type LedgerAccountInfoContentProps = {
     address: string
@@ -39,6 +60,7 @@ export const LedgerAccountInfoContent = ({
     accountIndex,
     title,
 }: LedgerAccountInfoContentProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -72,23 +94,18 @@ export const LedgerAccountInfoContent = ({
                                 showAccountType
                                 iconProps={{
                                     displayState: item.displayStateOverride,
-                                    // This sheet is always about one connected
-                                    // Ledger, so a forced rekeyedSignable state
-                                    // is a rekey to hardware — say so, since the
-                                    // auth account isn't in the store to be
-                                    // looked up.
-                                    authType: AccountTypes.hardware,
+                                    authAccount: LEDGER_AUTH_ACCOUNT,
                                 }}
                             />
                             <PWView style={styles.balanceContainer}>
                                 <AssetAmount
-                                    asset={ALGO_ASSET}
+                                    asset={nativeAsset}
                                     value={item.algoBalance}
                                     density='compact'
                                     variant='bodyCompact'
                                 />
                                 <PreferredAmount
-                                    sourceAssetId={ALGO_ASSET_ID}
+                                    sourceAssetId={nativeAsset.assetId}
                                     sourceAmount={item.algoBalance}
                                     usdPrice={item.algoUsdPrice}
                                     density='compact'
@@ -129,7 +146,7 @@ export const LedgerAccountInfoContent = ({
                     )
                 }
 
-                case 'rekeyAddress': {
+                case 'authorityAccount': {
                     return (
                         <AccountDisplay
                             account={item.account}
@@ -138,14 +155,14 @@ export const LedgerAccountInfoContent = ({
                             style={styles.rekeyRow}
                             iconProps={{
                                 displayState: item.displayStateOverride,
-                                authType: AccountTypes.hardware,
+                                authAccount: LEDGER_AUTH_ACCOUNT,
                             }}
                         />
                     )
                 }
             }
         },
-        [styles],
+        [styles, nativeAsset],
     )
 
     return (
@@ -157,7 +174,7 @@ export const LedgerAccountInfoContent = ({
                     style={styles.centerState}
                     testID='ledger_account_info_loading'
                 >
-                    <ActivityIndicator />
+                    <PWLoadingIndicator />
                 </PWView>
             )}
 

@@ -14,13 +14,11 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     addressResponseSchema,
-    connectFundingSourceResponseSchema,
     consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     type AddressApiResponse,
-    type ConnectFundingSourceApiResponse,
     type ConsentApiResponse,
     type OnboardingDetailsApiResponse,
     type RegisterVerificationApiResponse,
@@ -130,22 +128,20 @@ export const mockSubmitAddress = ({
     )
 }
 
-// Connect Funds: the response is zod-parsed (we need the id), so the mock must
-// return a `{ fundingSourceId }` body — not the generic `{ success: true }`.
-export type MockConnectFundingSourceParams = {
-    response?: ConnectFundingSourceApiResponse
-    status?: number
-}
-export const mockConnectFundingSource = ({
-    response = { fundingSourceId: 'mock-funding-source-id' },
+export const mockSubmitMailingAddress = ({
+    response = {
+        accessToken: 'mock-access-token',
+        onboardingId: 'mock-onboarding-id',
+        user: { id: 'mock-user-id' },
+    },
     status = 200,
-}: MockConnectFundingSourceParams = {}): HttpHandler => {
+}: MockSubmitAddressParams = {}): HttpHandler => {
     validateMockResponse(
-        connectFundingSourceResponseSchema,
+        addressResponseSchema,
         response,
-        'mockConnectFundingSource',
+        'mockSubmitMailingAddress',
     )
-    return http.post('*/v1/card/funding-source', () =>
+    return http.post('*/v1/auth/register/mailing-address', () =>
         HttpResponse.json(response, { status }),
     )
 }

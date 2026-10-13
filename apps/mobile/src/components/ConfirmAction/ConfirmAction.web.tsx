@@ -11,6 +11,8 @@
  */
 
 import { PWTapToConfirm } from '@components/core/PWTapToConfirm'
+import { TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY } from '@constants/ui'
+import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { useLanguage } from '@hooks/useLanguage'
 import type { ConfirmActionProps } from './ConfirmAction'
 
@@ -19,14 +21,23 @@ import type { ConfirmActionProps } from './ConfirmAction'
 // hidden (routeCapabilities.confirmationModeSetting, capabilities.web.ts).
 // Callsite titles say "Slide To Confirm", which is wrong for a button —
 // substitute the tap copy instead of passing `title` through.
-export const ConfirmAction = ({ title: _, ...rest }: ConfirmActionProps) => {
+// Armed like any approval-window action (see useApprovalArming): on the
+// extension this control signs, and a page can open the window under the cursor.
+export const ConfirmAction = ({
+    title: _,
+    isDisabled = false,
+    ...rest
+}: ConfirmActionProps) => {
     const { t } = useLanguage()
+    const isArmed = useApprovalArming()
 
     return (
         <PWTapToConfirm
             title={t('common.tap_to_confirm.label')}
             armedTitle={t('common.tap_to_confirm.tap_again_label')}
             {...rest}
+            isDisabled={isDisabled || !isArmed}
+            minConfirmDelayMs={TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY}
         />
     )
 }

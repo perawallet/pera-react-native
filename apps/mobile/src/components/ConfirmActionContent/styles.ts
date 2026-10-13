@@ -24,14 +24,17 @@ export const useStyles = makeStyles(
             paddingBottom: hasActions ? theme.spacing.lg : bottomInset,
             alignItems: 'center',
         },
+        // In a content-sized sheet nothing else separates the icon from the top edge.
         icon: {
-            marginBottom: theme.spacing.lg,
+            marginTop: theme.spacing.xl,
+            marginBottom: theme.spacing.xl,
         },
         iconImage: {
             width: theme.spacing['4xl'],
             height: theme.spacing['4xl'],
             borderRadius: theme.spacing['4xl'],
-            marginBottom: theme.spacing.lg,
+            marginTop: theme.spacing.xl,
+            marginBottom: theme.spacing.xl,
         },
         title: {
             alignSelf: 'stretch',
@@ -43,6 +46,10 @@ export const useStyles = makeStyles(
             textAlign: isMessageCentered ? 'center' : 'left',
             padding: theme.spacing.xl,
             color: theme.colors.textGray,
+        },
+        content: {
+            alignSelf: 'stretch',
+            paddingHorizontal: theme.spacing.lg,
         },
         actions: {
             width: '100%',

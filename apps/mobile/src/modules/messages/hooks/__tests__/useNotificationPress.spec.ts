@@ -27,14 +27,14 @@ const mockNavigateToScreen = vi.fn()
 const mockRefetchInbox = vi.fn()
 const mockHandleInboxItemPress = vi.fn()
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         isValidDeepLink: mockIsValidDeepLink,
         handleDeepLink: mockHandleDeepLink,
     }),
 }))
 
-vi.mock('@hooks/deeplink/navigateToScreen', () => ({
+vi.mock('@modules/deeplink/navigateToScreen', () => ({
     navigateToScreen: (...args: unknown[]) => mockNavigateToScreen(...args),
 }))
 

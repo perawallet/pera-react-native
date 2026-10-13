@@ -11,20 +11,17 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import { CardWalletKind } from '@perawallet/wallet-core-card'
 import { PWIcon, PWListItemLayout, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'
+import type { PeraCardCredits } from './usePeraCardOverview'
 import { useStyles } from './styles'
-
-type PeraCardCredits = {
-    cashbacks: Decimal
-    refunds: Decimal
-}
 
 type PeraCardCreditsSectionProps = {
     credits: PeraCardCredits
     currency: string
-    onCreditPress: () => void
+    onCreditPress: (kind: CardWalletKind) => void
 }
 
 export const PeraCardCreditsSection = ({
@@ -46,13 +43,15 @@ export const PeraCardCreditsSection = ({
             </PWText>
             <PWView style={styles.rowGroup}>
                 <CreditRow
-                    label={t('peraCard.account.cashbacks')}
-                    amount={credits.cashbacks}
+                    kind={CardWalletKind.Reward}
+                    label={t('peraCard.account.rewards')}
+                    amount={credits.rewards}
                     currency={currency}
                     onPress={onCreditPress}
-                    testID='pera_card_cashbacks_row'
+                    testID='pera_card_rewards_row'
                 />
                 <CreditRow
+                    kind={CardWalletKind.Credit}
                     label={t('peraCard.account.refunds')}
                     amount={credits.refunds}
                     currency={currency}
@@ -65,14 +64,16 @@ export const PeraCardCreditsSection = ({
 }
 
 type CreditRowProps = {
+    kind: CardWalletKind
     label: string
     amount: Decimal
     currency: string
-    onPress: () => void
+    onPress: (kind: CardWalletKind) => void
     testID: string
 }
 
 const CreditRow = ({
+    kind,
     label,
     amount,
     currency,
@@ -84,7 +85,7 @@ const CreditRow = ({
     return (
         <PWListItemLayout
             style={styles.cardRow}
-            onPress={onPress}
+            onPress={() => onPress(kind)}
             testID={testID}
             right={
                 <PWView style={styles.rowRight}>

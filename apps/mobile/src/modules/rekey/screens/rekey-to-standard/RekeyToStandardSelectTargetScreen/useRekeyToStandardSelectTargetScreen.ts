@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    isEligibleRekeyTarget,
-    useAllAccounts,
+    AuthorityTargetCategories,
+    useAuthorityTargets,
     useFindAccountByAddress,
     type WalletAccount,
+    addressOn,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RekeyToStandardStackParamList } from '../../../routes/rekey-to-standard/types'
@@ -39,31 +42,28 @@ export const useRekeyToStandardSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const accounts = useAllAccounts()
-        const source = useFindAccountByAddress(sourceAddress)
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const source = useFindAccountByAddress(sourceAddress, scope)
 
-        const targets = useMemo(
-            () =>
-                accounts.filter(account =>
-                    isEligibleRekeyTarget(
-                        account,
-                        source ?? { address: sourceAddress },
-                    ),
-                ),
-            [accounts, source, sourceAddress],
+        const targets = useAuthorityTargets(
+            source,
+            AuthorityTargetCategories.standard,
+            scope,
         )
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {
+                const targetAddress = addressOn(target, scope)
+                if (!targetAddress) return
                 navigation.navigate('RekeyToStandard', {
                     screen: 'RekeyToStandardConfirm',
                     params: {
                         sourceAddress,
-                        targetAddress: target.address,
+                        targetAddress,
                     },
                 })
             },
-            [navigation, sourceAddress],
+            [navigation, scope, sourceAddress],
         )
 
         return {

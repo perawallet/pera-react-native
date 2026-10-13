@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export * from './components/ViewPassphraseFlow'
+export { useViewPassphraseFlow } from './components/ViewPassphraseFlow'
+export type { UseViewPassphraseFlowResult } from './components/ViewPassphraseFlow'

@@ -99,13 +99,13 @@ const CASES: Case[] = [
         screen: 'CardOnboardingAddress',
         step: OnboardingStep.Address,
     },
-    // The address form submits isSameMailingAddress: true, so it satisfies
-    // the mailing-address phase too.
+    // Baanx reports this phase only after an address posted with a separate
+    // mailing address, so the mailing step is what is owed.
     {
         phase: OnboardingPhase.MailingAddress,
         verificationState: VerificationState.Verified,
-        screen: 'CardOnboardingAddress',
-        step: OnboardingStep.Address,
+        screen: 'CardOnboardingMailingAddress',
+        step: OnboardingStep.MailingAddress,
     },
     // …but KYC still gates it (same as the address phases) — an un-done KYC
     // can't skip verification via the mailing-address phase.

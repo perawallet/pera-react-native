@@ -11,8 +11,11 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { CardSessionState } from '../models'
 
@@ -27,7 +30,7 @@ const initialState = {
 export const useCardSessionStore: UseBoundStore<
     WithPersist<StoreApi<CardSessionState>, unknown>
 > = create<CardSessionState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setAuthenticated: (isAuthenticated: boolean) =>
@@ -36,7 +39,7 @@ export const useCardSessionStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 isAuthenticated: state.isAuthenticated,

@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -36,13 +37,26 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
             ),
+            // Before the bare specifier: an alias key also prefix-matches its subpaths.
+            '@perawallet/wallet-extension-platform/test-utils': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/test-utils/index.ts',
+            ),
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
                 '../../extensions/platform/src/index.ts',
             ),
+            '@perawallet/wallet-core-signing/constants': path.resolve(
+                __dirname,
+                '../signing/src/constants.ts',
+            ),
             '@perawallet/wallet-core-signing': path.resolve(
                 __dirname,
                 '../signing/src/index.ts',
+            ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
             ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
@@ -52,9 +66,11 @@ export default defineConfig({
                 __dirname,
                 '../accounts/src/index.ts',
             ),
-            '@perawallet/wallet-core-blockchain': path.resolve(
+            // Source, not dist: the dist reaches a second getProvider()
+            // instance the mocks here never see.
+            '@perawallet/wallet-core-chain-shared': path.resolve(
                 __dirname,
-                '../blockchain/src/index.ts',
+                '../chain-shared/src/index.ts',
             ),
             '@perawallet/wallet-core-database/test-utils': path.resolve(
                 __dirname,
@@ -66,5 +82,4 @@ export default defineConfig({
             ),
         },
     },
-    ...poolConfig,
 })

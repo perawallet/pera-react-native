@@ -11,11 +11,15 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
-import { PWImage, PWSkeleton, PWText, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWImage,
+    PWSkeleton,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import { InfoButton } from '@components/InfoButton'
 import peraCardImage from '@assets/images/pera-card.png'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -29,15 +33,17 @@ type PeraCardBalanceSectionProps = {
     /** True while the balances are still being fetched. */
     isLoading: boolean
     currency: string
-    /** Max a single purchase can draw — shown under the balance. */
-    spendablePerTx: Decimal
+    /** Localised "Auto/Manual Funding enabled" status. */
+    fundingTypeLabel: string
+    onChangeFundingType: () => void
 }
 
 export const PeraCardBalanceSection = ({
     balance,
     isLoading,
     currency,
-    spendablePerTx,
+    fundingTypeLabel,
+    onChangeFundingType,
 }: PeraCardBalanceSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -74,48 +80,31 @@ export const PeraCardBalanceSection = ({
                 />
             )}
 
-            {!isLoading && (
-                <PWView style={styles.spendableRow}>
-                    <InfoButton
-                        title={t('peraCard.account.spendable_info_title')}
-                        trigger={
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                style={styles.fundingLabel}
-                                testID='pera_card_spendable_per_tx'
-                            >
-                                {t('peraCard.account.spendable_per_tx', {
-                                    // formatNumber returns {sign,integer,fraction};
-                                    // formatCurrency joins them into a string.
-                                    // showSymbol=false — the template appends {{currency}}.
-                                    amount: formatCurrency(
-                                        spendablePerTx,
-                                        spendablePerTx.isInteger() ? 0 : 2,
-                                        currency,
-                                        undefined,
-                                        false,
-                                    ),
-                                    currency,
-                                })}
-                            </PWText>
-                        }
+            <PWTouchableOpacity
+                onPress={onChangeFundingType}
+                hitSlop={8}
+                style={styles.fundingTypeRow}
+                testID='pera_card_overview_funding_type_row'
+            >
+                <PWView style={styles.fundingTypeLabelGroup}>
+                    <PWIcon
+                        name='buy-sell'
+                        size='sm'
+                        variant='secondary'
+                    />
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.balanceLabel}
                     >
-                        <PWText
-                            variant='body'
-                            weight={400}
-                        >
-                            {t('peraCard.account.spendable_info_body', {
-                                limit: formatCurrency(
-                                    AUTO_FUNDING_PER_TX_LIMIT_USD,
-                                    0,
-                                    'USD',
-                                ),
-                            })}
-                        </PWText>
-                    </InfoButton>
+                        {fundingTypeLabel}
+                    </PWText>
                 </PWView>
-            )}
+                <PWIcon
+                    name='chevron-right'
+                    size='sm'
+                    variant='secondary'
+                />
+            </PWTouchableOpacity>
         </PWView>
     )
 }

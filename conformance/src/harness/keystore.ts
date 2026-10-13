@@ -139,6 +139,17 @@ export const createMemoryDriver = (): KeyStoreDriver<void> => {
     }
 }
 
+const emptyStore = new Store<KeyStoreState>({ keys: [], status: 'idle' })
+let latestStore: Store<KeyStoreState> | undefined
+
+/**
+ * What the provider mock's `getKeystoreStore()` returns: app code that reads
+ * the live keystore (empty-signature fields) sees the suite's own keys. One
+ * keystore per suite, so "latest" is that suite's; empty until one exists.
+ */
+export const latestConformanceKeystoreStore = (): Store<KeyStoreState> =>
+    latestStore ?? emptyStore
+
 /**
  * The app's shipped keystore is built on the React Native Keychain/MMKV driver,
  * which cannot load in Node. Swapping in an in-memory driver keeps the same
@@ -154,6 +165,7 @@ export const createConformanceKeyStore =
             store,
         })
         await keyStore.ready
+        latestStore = store
 
         return Object.assign(keyStore, { store })
     }

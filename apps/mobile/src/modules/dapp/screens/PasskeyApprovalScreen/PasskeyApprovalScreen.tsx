@@ -31,6 +31,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
         rpId,
         userName,
         isBusy,
+        canApprove,
         error,
         approve,
         decline,
@@ -54,6 +55,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                 <PWText
                     variant='body'
                     style={styles.rpId}
+                    numberOfLines={1}
                     testID='dapp-passkey-rp-id'
                 >
                     {rpId}
@@ -62,6 +64,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                     <PWText
                         variant='body'
                         style={styles.userName}
+                        numberOfLines={1}
                         testID='dapp-passkey-user-name'
                     >
                         {userName}
@@ -92,7 +95,7 @@ export const PasskeyApprovalScreen = (): React.JSX.Element => {
                     onPress={() => void approve()}
                     style={styles.approveButton}
                     isLoading={isBusy}
-                    isDisabled={isBusy}
+                    isDisabled={!canApprove}
                     testID='dapp-passkey-approve'
                 />
             </PWView>

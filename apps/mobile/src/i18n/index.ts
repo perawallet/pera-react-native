@@ -49,7 +49,7 @@ void i18n.use(initReactI18next).init({
         escapeValue: false, // react already safes from xss
     },
     // Surfaces dynamically-built keys (e.g. t(`errors.algod.${code}.title`))
-    // that static lint can't see (tools/i18n-lint.cjs). __DEV__-only:
+    // that the i18n lint rules can't see. __DEV__-only:
     // production must not pay for the bookkeeping or warn on users' devices.
     saveMissing: __DEV__,
     missingKeyHandler: __DEV__
@@ -59,4 +59,4 @@ void i18n.use(initReactI18next).init({
         : undefined,
 })
 
-export default i18n
+export { i18n }

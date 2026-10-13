@@ -18,12 +18,18 @@ import {
     useOnramp,
     type RampPair,
 } from '@perawallet/wallet-core-onramp'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useRoute } from '@react-navigation/native'
 
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampScreen } from '../useOnrampScreen'
 
-vi.mock('@perawallet/wallet-core-onramp', () => ({
+vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
+    ...(await importOriginal()),
     useRampPairsQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),
     useOnramp: vi.fn(),
@@ -40,8 +46,16 @@ const setHasInternet = (hasInternet: boolean): void => {
 }
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccountAddress: vi.fn(),
+    useSelectedAccount: vi.fn(),
+    addressOn: (account: WalletAccount, scope: { chainId: ChainId }) =>
+        account.chains[scope.chainId]?.address,
 }))
+
+const accountAt = (address: string): WalletAccount => ({
+    id: address,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address } },
+})
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: vi.fn(),
@@ -136,16 +150,14 @@ const setupOnramp = (overrides: Partial<ReturnType<typeof useOnramp>> = {}) => {
 
 describe('useOnrampScreen', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         setHasInternet(true)
         vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
         vi.mocked(useRampRegionQuery).mockReturnValue({
             data: { countryCode: 'US', countryName: 'United States' },
         } as never)
-        vi.mocked(useSelectedAccountAddress).mockReturnValue({
-            selectedAccountAddress: 'ADDR',
-            setSelectedAccountAddress: vi.fn(),
-        })
+        vi.mocked(useSelectedAccount).mockReturnValue(accountAt('ADDR'))
         vi.mocked(useRampPairsQuery).mockReturnValue({
             data: PAIRS,
             isLoading: false,
@@ -158,6 +170,18 @@ describe('useOnrampScreen', () => {
 
         expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('ALGO')
         expect(mockSetSelectedSourceTokenId).not.toHaveBeenCalled()
+    })
+
+    it('defaults to ALGO listed under its on-chain id', () => {
+        const algoByAssetId = makePair('pair-c', 'USD', '0')
+        vi.mocked(useRampPairsQuery).mockReturnValue({
+            data: [PAIR_B, algoByAssetId],
+            isLoading: false,
+        } as never)
+
+        renderHook(() => useOnrampScreen())
+
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('0')
     })
 
     it('seeds the destination from the route destinationTokenId param', () => {

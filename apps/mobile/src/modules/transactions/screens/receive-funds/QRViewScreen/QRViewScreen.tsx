@@ -20,6 +20,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useQRViewScreen } from './useQRViewScreen'
 import { useStyles } from './styles'
@@ -33,6 +34,7 @@ export const QRViewScreen = () => {
     const { onFinished } = useReceiveFunds()
     const {
         account,
+        address,
         deeplink,
         canSelectAccount,
         handleBack,
@@ -52,7 +54,7 @@ export const QRViewScreen = () => {
                 variant='h3'
                 numberOfLines={1}
             >
-                {getAccountDisplayName(account)}
+                {getAccountDisplayName(account, LEGACY_CHAIN_ID)}
             </PWText>
         ) : (
             ''
@@ -110,12 +112,10 @@ export const QRViewScreen = () => {
                 </PWView>
                 <PWView style={styles.addressContainer}>
                     <CopyableText
-                        copyValue={account.address}
+                        copyValue={address}
                         style={styles.addressButton}
                     >
-                        <PWText style={styles.address}>
-                            {account.address}
-                        </PWText>
+                        <PWText style={styles.address}>{address}</PWText>
                     </CopyableText>
                 </PWView>
             </PWView>

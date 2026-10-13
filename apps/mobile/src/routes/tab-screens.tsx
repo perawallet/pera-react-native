@@ -13,12 +13,13 @@
 import type React from 'react'
 import { withAgeGate } from '@components/AgeGated'
 import { TabbarEvent } from '@analytics'
-import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
-import { OnrampScreen } from '@modules/onramp/screens/OnrampScreen'
-import { SwapScreen } from '@modules/swap/screens/SwapScreen'
-import { MenuScreen } from '@modules/menu/screens/MenuScreen'
+import { DiscoverScreen } from '@modules/discover/routes'
+import { OnrampScreen } from '@modules/onramp/routes'
+import { SwapScreen } from '@modules/swap/routes'
+import { MenuScreen } from '@modules/menu/routes'
 import { AccountStackNavigator } from '@modules/accounts/routes'
 import { headeredLayout, safeAreaLayout } from '@layouts/index'
+import type { CapabilityRequirement } from '@hooks/useCapability'
 import type { TabBarStackParamList } from './tab-types'
 
 // Age-gated at the navigator so the screens (and their side effects) only
@@ -42,6 +43,8 @@ export type TabScreenDescriptor = {
     layout?: TabScreenLayout
     options?: TabScreenOptions
     event: TabbarEvent
+    /** The tab is left out of the bar while this does not hold. */
+    requires?: CapabilityRequirement
 }
 
 export const tabScreens: TabScreenDescriptor[] = [
@@ -58,18 +61,23 @@ export const tabScreens: TabScreenDescriptor[] = [
         component: GatedDiscoverScreen as React.ComponentType,
         layout: headeredLayout,
         event: TabbarEvent.Discover,
+        requires: { platform: 'discoverTab', anyChain: 'discover' },
     },
     {
         name: 'Swap',
         component: GatedSwapScreen as React.ComponentType,
         layout: safeAreaLayout,
         event: TabbarEvent.Swap,
+        requires: { platform: 'swapTab', anyChain: 'swap' },
     },
     {
         name: 'Fund',
         component: GatedOnrampScreen as React.ComponentType,
         layout: headeredLayout,
         event: TabbarEvent.Fund,
+        // Fund stays visible when `onramp` is off: its screen shows the
+        // informational placeholder instead of the purchase flow.
+        requires: { platform: 'fundTab' },
     },
     {
         name: 'Menu',

@@ -11,14 +11,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
     accountsStoreMock: {
-        accounts: [] as Array<{
-            address: string
-            type?: string
-            rekeyAddress?: string
-        }>,
+        accounts: [] as WalletAccount[],
     },
     loggerMock: {
         error: vi.fn(),
@@ -30,56 +27,45 @@ const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: { getState: () => accountsStoreMock },
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
+    isDelegatedAccount: (account?: { authority?: string } | null) =>
+        !!account?.authority,
+    isWatchAccount: (account: { custody?: { kind?: string } }) =>
+        account.custody?.kind === 'watch',
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: loggerMock,
 }))
 
-vi.mock('../migrateLegacyAccount', () => ({
-    migrateLegacyAccount: vi.fn(),
-    classifyLegacyAccountRoute: vi.fn(() => 'algo25'),
-    isKeylessLegacyAccount: vi.fn(
-        (a: { type: string; joint: unknown; ledger: unknown }) =>
-            a.type === 'watch' || a.joint !== null || a.ledger !== null,
-    ),
-}))
-
 vi.mock('../accountStoreOps', () => ({
     addKeylessAccountToStore: vi.fn(),
     applyAllLegacyMetadata: vi.fn(),
     applyLegacyAccountOrder: vi.fn(),
-    applyRekeyAddressToStoreAccount: vi.fn(),
     markLegacyBackedUpAccounts: vi.fn(),
     removeAccountFromStore: vi.fn(),
+    migratedAddressOf: (account: WalletAccount) =>
+        account.chains.algorand?.address,
 }))
 
 import type {
     LegacyAccount,
     LegacyHDWallet,
 } from '@perawallet/wallet-extension-platform'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { migrationChainAdapters } from '../../chain-adapter'
 import { runMigrationLoop } from '../runMigrationLoop'
-import {
-    migrateLegacyAccount,
-    classifyLegacyAccountRoute,
-} from '../migrateLegacyAccount'
 import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
-    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
     removeAccountFromStore,
 } from '../accountStoreOps'
-import type { MigrationDeps } from '../types'
+import type { MigrationDeps, MigrationRunOptions } from '../types'
+
+const migrateLegacyAccount = vi.fn()
+const classifyLegacyAccountRoute = vi.fn()
+const recordLegacyAuthority = vi.fn()
 
 const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
     ({
@@ -89,26 +75,29 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
         preferredOrder: 0,
         isBackedUp: true,
         secretKey: new Uint8Array(32).fill(1),
-        hdWalletId: null,
+        hdSeedId: null,
         ledger: null,
         joint: null,
         authAddress: null,
         ...overrides,
     }) as LegacyAccount
 
-const watchAccount = (
-    address: string,
-): { address: string; type: string; rekeyAddress?: string } => ({
-    address,
-    type: 'watch',
+const idFor = (address: string) => `id-${address}`
+
+const algo25Account = (address: string): WalletAccount => ({
+    id: idFor(address),
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address, keyPairId: `kp-${address}` } },
 })
 
-const algo25Account = (address: string): { address: string; type: string } => ({
-    address,
-    type: 'algo25',
+const watchAccount = (address: string): WalletAccount => ({
+    id: idFor(address),
+    custody: { kind: 'watch' },
+    chains: { algorand: { address } },
 })
 
-const buildDeps = (): MigrationDeps => ({
+const buildDeps = (): MigrationRunOptions => ({
+    chainId: 'algorand',
     importAccount: vi.fn() as unknown as MigrationDeps['importAccount'],
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
@@ -119,37 +108,64 @@ const buildDeps = (): MigrationDeps => ({
 
 beforeEach(() => {
     accountsStoreMock.accounts = []
-    vi.mocked(migrateLegacyAccount).mockReset()
-    vi.mocked(classifyLegacyAccountRoute).mockReset()
+    migrationChainAdapters.reset()
+    migrationChainAdapters.register({
+        chainId: 'algorand',
+        migrateAccount: migrateLegacyAccount,
+        classifyAccountRoute: classifyLegacyAccountRoute,
+        recordLegacyAuthority,
+        isKeylessAccount: a =>
+            a.type === 'watch' || a.joint !== null || a.ledger !== null,
+    })
+    migrateLegacyAccount.mockReset()
+    classifyLegacyAccountRoute.mockReset()
     vi.mocked(applyAllLegacyMetadata).mockReset()
     vi.mocked(applyLegacyAccountOrder).mockReset()
     vi.mocked(markLegacyBackedUpAccounts).mockReset()
     vi.mocked(addKeylessAccountToStore).mockReset()
     vi.mocked(removeAccountFromStore).mockReset()
-    vi.mocked(applyRekeyAddressToStoreAccount).mockReset()
+    recordLegacyAuthority.mockReset()
     loggerMock.error.mockReset()
-    vi.mocked(classifyLegacyAccountRoute).mockReturnValue('algo25')
+    classifyLegacyAccountRoute.mockReturnValue('algo25')
 })
 
 describe('runMigrationLoop', () => {
+    it('throws before touching the store when no migration adapter is registered', async () => {
+        migrationChainAdapters.reset()
+        accountsStoreMock.accounts = [algo25Account('EXISTING')]
+
+        await expect(
+            runMigrationLoop({
+                ...buildDeps(),
+                accounts: [buildAccount()],
+                hdSeeds: [],
+            }),
+        ).rejects.toThrow(ChainAdapterNotRegisteredError)
+
+        expect(applyAllLegacyMetadata).not.toHaveBeenCalled()
+        expect(removeAccountFromStore).not.toHaveBeenCalled()
+        expect(addKeylessAccountToStore).not.toHaveBeenCalled()
+        expect(accountsStoreMock.accounts).toEqual([algo25Account('EXISTING')])
+    })
+
     it('returns an empty summary and still applies metadata + order when input is empty', async () => {
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(result).toEqual({ imported: 0, skipped: 0, failed: [] })
-        expect(applyAllLegacyMetadata).toHaveBeenCalledWith([])
-        expect(applyLegacyAccountOrder).toHaveBeenCalledWith([])
+        expect(applyAllLegacyMetadata).toHaveBeenCalledWith([], 'algorand')
+        expect(applyLegacyAccountOrder).toHaveBeenCalledWith([], 'algorand')
         expect(migrateLegacyAccount).not.toHaveBeenCalled()
     })
 
     it('skips accounts whose address is already in the wallet store', async () => {
-        accountsStoreMock.accounts = [{ address: 'ADDR_EXISTING' }]
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'ADDR_NEW',
-        } as never)
+        accountsStoreMock.accounts = [algo25Account('ADDR_EXISTING')]
+        migrateLegacyAccount.mockResolvedValue(
+            algo25Account('ADDR_NEW') as never,
+        )
 
         const result = await runMigrationLoop({
             ...buildDeps(),
@@ -157,7 +173,7 @@ describe('runMigrationLoop', () => {
                 buildAccount({ address: 'ADDR_EXISTING' }),
                 buildAccount({ address: 'ADDR_NEW' }),
             ],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(result.skipped).toBe(1)
@@ -167,67 +183,65 @@ describe('runMigrationLoop', () => {
 
     it('records imported accounts as MigratedAccountPair entries on the metadata batch', async () => {
         const legacy = buildAccount({ address: 'ADDR_NEW', name: 'N' })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'ADDR_NEW',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(
+            algo25Account('ADDR_NEW') as never,
+        )
 
         await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         const batch = vi.mocked(applyAllLegacyMetadata).mock.calls[0][0]
-        expect(batch).toEqual([{ created: { address: 'ADDR_NEW' }, legacy }])
+        expect(batch).toEqual([{ created: algo25Account('ADDR_NEW'), legacy }])
     })
 
     it('forwards the migrated pairs and the injected marker to markLegacyBackedUpAccounts', async () => {
         const legacy = buildAccount({ address: 'ADDR_NEW' })
         const markAccountBackedUp = vi.fn()
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'ADDR_NEW',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(
+            algo25Account('ADDR_NEW') as never,
+        )
 
         await runMigrationLoop({
             ...buildDeps(),
             markAccountBackedUp,
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(markLegacyBackedUpAccounts).toHaveBeenCalledWith(
-            [{ created: { address: 'ADDR_NEW' }, legacy }],
+            [{ created: algo25Account('ADDR_NEW'), legacy }],
             markAccountBackedUp,
         )
     })
 
-    it('passes hdWalletsById built from the input hd wallets to migrateLegacyAccount', async () => {
+    it('passes hdSeedsById built from the input hd wallets to migrateLegacyAccount', async () => {
         const hd: LegacyHDWallet = {
             walletId: 'wallet-1',
             name: null,
             entropy: new Uint8Array(32).fill(1),
             keys: [],
         }
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'ADDR',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(algo25Account('ADDR') as never)
 
         await runMigrationLoop({
             ...buildDeps(),
             accounts: [buildAccount()],
-            hdWallets: [hd],
+            hdSeeds: [hd],
         })
 
-        const args = vi.mocked(migrateLegacyAccount).mock.calls[0][0]
-        expect(args.hdWalletsById.get('wallet-1')).toBe(hd)
+        const args = migrateLegacyAccount.mock.calls[0][0]
+        expect(args.hdSeedsById.get('wallet-1')).toBe(hd)
         expect(args.importedHdRoots).toBeInstanceOf(Map)
         expect(args.importedHdRoots.size).toBe(0)
     })
 
     it('captures a failure and continues with the rest of the loop', async () => {
-        vi.mocked(migrateLegacyAccount)
+        migrateLegacyAccount
             .mockRejectedValueOnce(new Error('boom'))
-            .mockResolvedValueOnce({ address: 'ADDR_OK' } as never)
+            .mockResolvedValueOnce(algo25Account('ADDR_OK') as never)
 
         const result = await runMigrationLoop({
             ...buildDeps(),
@@ -235,7 +249,7 @@ describe('runMigrationLoop', () => {
                 buildAccount({ address: 'ADDR_FAIL', name: 'F' }),
                 buildAccount({ address: 'ADDR_OK', name: 'OK' }),
             ],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(result.imported).toBe(1)
@@ -253,24 +267,22 @@ describe('runMigrationLoop', () => {
     })
 
     it('formats non-Error throws via String() with route prefix', async () => {
-        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(
-            'kaboom' as unknown as Error,
-        )
-        vi.mocked(classifyLegacyAccountRoute).mockReturnValue('hd')
+        migrateLegacyAccount.mockRejectedValueOnce('kaboom' as unknown as Error)
+        classifyLegacyAccountRoute.mockReturnValue('hd')
 
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [buildAccount({ address: 'ADDR_BAD', name: 'X' })],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(result.failed[0].reason).toBe('[hd] Unknown: kaboom')
     })
 
     it('treats imports as deduplicated against later legacy entries that share the address', async () => {
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'ADDR_NEW',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(
+            algo25Account('ADDR_NEW') as never,
+        )
 
         const result = await runMigrationLoop({
             ...buildDeps(),
@@ -278,7 +290,7 @@ describe('runMigrationLoop', () => {
                 buildAccount({ address: 'ADDR_NEW' }),
                 buildAccount({ address: 'ADDR_NEW' }),
             ],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(result.imported).toBe(1)
@@ -288,9 +300,9 @@ describe('runMigrationLoop', () => {
 
     it('orders accounts as key-bearing → keyless independent → multisig', async () => {
         const order: string[] = []
-        vi.mocked(migrateLegacyAccount).mockImplementation(async args => {
+        migrateLegacyAccount.mockImplementation(async args => {
             order.push(args.account.address)
-            return { address: args.account.address } as never
+            return algo25Account(args.account.address) as never
         })
 
         const algo25 = buildAccount({
@@ -315,7 +327,7 @@ describe('runMigrationLoop', () => {
         await runMigrationLoop({
             ...buildDeps(),
             accounts: [joint, watch, algo25],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(order).toEqual(['ALGO25', 'WATCH', 'JOINT'])
@@ -326,24 +338,25 @@ describe('runMigrationLoop', () => {
             buildAccount({ address: 'A', preferredOrder: 0 }),
             buildAccount({ address: 'B', preferredOrder: 1 }),
         ]
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'X',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(algo25Account('X') as never)
 
         await runMigrationLoop({
             ...buildDeps(),
             accounts,
-            hdWallets: [],
+            hdSeeds: [],
         })
 
-        expect(applyLegacyAccountOrder).toHaveBeenCalledWith(accounts)
+        expect(applyLegacyAccountOrder).toHaveBeenCalledWith(
+            accounts,
+            'algorand',
+        )
     })
 
     it('records undecodable accounts as failures without invoking migrateLegacyAccount', async () => {
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [],
-            hdWallets: [],
+            hdSeeds: [],
             undecodableAccounts: [
                 {
                     address: 'ADDR_UNDECODABLE',
@@ -364,12 +377,12 @@ describe('runMigrationLoop', () => {
     })
 
     it('skips an undecodable account whose address is already in the wallet store', async () => {
-        accountsStoreMock.accounts = [{ address: 'ADDR_EXISTING' }]
+        accountsStoreMock.accounts = [algo25Account('ADDR_EXISTING')]
 
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [],
-            hdWallets: [],
+            hdSeeds: [],
             undecodableAccounts: [
                 { address: 'ADDR_EXISTING', name: 'Already', error: 'boom' },
             ],
@@ -387,26 +400,28 @@ describe('runMigrationLoop', () => {
             secretKey: new Uint8Array(64),
             authAddress: null,
         })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'UPGRADEME',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(
+            algo25Account('UPGRADEME') as never,
+        )
 
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(migrateLegacyAccount).toHaveBeenCalledOnce()
         expect(result.imported).toBe(1)
-        expect(removeAccountFromStore).toHaveBeenCalledWith('UPGRADEME')
-        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+        expect(removeAccountFromStore).toHaveBeenCalledWith(idFor('UPGRADEME'))
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
         expect(
-            accountsStoreMock.accounts.filter(a => a.address === 'UPGRADEME'),
+            accountsStoreMock.accounts.filter(
+                a => a.chains.algorand?.address === 'UPGRADEME',
+            ),
         ).toHaveLength(1)
     })
 
-    it('mirrors the legacy authAddress onto a key-bearing import that lacks it', async () => {
+    it('records the legacy authAddress for a key-bearing import that lacks it', async () => {
         accountsStoreMock.accounts = [watchAccount('UPGRADEME')]
         const legacy = buildAccount({
             address: 'UPGRADEME',
@@ -414,42 +429,39 @@ describe('runMigrationLoop', () => {
             secretKey: new Uint8Array(64).fill(3),
             authAddress: 'AUTH',
         })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'UPGRADEME',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(
+            algo25Account('UPGRADEME') as never,
+        )
 
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(result.imported).toBe(1)
-        expect(applyRekeyAddressToStoreAccount).toHaveBeenCalledWith(
-            'UPGRADEME',
-            'AUTH',
-        )
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(legacy)
     })
 
-    it('leaves rekeyAddress alone when the import already carries the mirror', async () => {
+    it('leaves the authority alone when the import already carries it', async () => {
         const legacy = buildAccount({
             address: 'WATCHED',
             type: 'watch',
             secretKey: null,
             authAddress: 'AUTH',
         })
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'WATCHED',
-            rekeyAddress: 'AUTH',
+        migrateLegacyAccount.mockResolvedValue({
+            ...watchAccount('WATCHED'),
+            authority: 'AUTH',
         } as never)
 
         await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
-        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
     })
 
     it('restores the removed watch account when the reconciling reimport throws', async () => {
@@ -461,17 +473,15 @@ describe('runMigrationLoop', () => {
             secretKey: new Uint8Array(64).fill(2),
             authAddress: null,
         })
-        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(
-            new Error('kms exploded'),
-        )
+        migrateLegacyAccount.mockRejectedValueOnce(new Error('kms exploded'))
 
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
-        expect(removeAccountFromStore).toHaveBeenCalledWith('RECONCILE')
+        expect(removeAccountFromStore).toHaveBeenCalledWith(idFor('RECONCILE'))
         // The visible watch account must be re-added before the failure is
         // recorded, so a transient import error never orphans the user's account.
         expect(addKeylessAccountToStore).toHaveBeenCalledWith(watch)
@@ -487,12 +497,12 @@ describe('runMigrationLoop', () => {
 
     it('does not re-add anything when a non-reconciling import throws', async () => {
         const legacy = buildAccount({ address: 'FRESH', name: 'F' })
-        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(new Error('boom'))
+        migrateLegacyAccount.mockRejectedValueOnce(new Error('boom'))
 
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(addKeylessAccountToStore).not.toHaveBeenCalled()
@@ -500,21 +510,19 @@ describe('runMigrationLoop', () => {
     })
 
     it('skips applyLegacyAccountOrder on an accounts-v2 re-run to preserve user reordering', async () => {
-        vi.mocked(migrateLegacyAccount).mockResolvedValue({
-            address: 'X',
-        } as never)
+        migrateLegacyAccount.mockResolvedValue(algo25Account('X') as never)
 
         await runMigrationLoop({
             ...buildDeps(),
             accounts: [buildAccount({ address: 'A', preferredOrder: 0 })],
-            hdWallets: [],
+            hdSeeds: [],
             isRerun: true,
         })
 
         expect(applyLegacyAccountOrder).not.toHaveBeenCalled()
     })
 
-    it('backfills rekeyAddress on an existing watch account without reimporting', async () => {
+    it('backfills the authority on an existing watch account without reimporting', async () => {
         accountsStoreMock.accounts = [watchAccount('REKEYED')]
         const legacy = buildAccount({
             address: 'REKEYED',
@@ -526,16 +534,13 @@ describe('runMigrationLoop', () => {
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(migrateLegacyAccount).not.toHaveBeenCalled()
         expect(result.skipped).toBe(1)
         expect(removeAccountFromStore).not.toHaveBeenCalled()
-        expect(applyRekeyAddressToStoreAccount).toHaveBeenCalledWith(
-            'REKEYED',
-            'AUTH',
-        )
+        expect(recordLegacyAuthority).toHaveBeenCalledWith(legacy)
     })
 
     it('still plain-skips existing non-watch accounts', async () => {
@@ -545,12 +550,12 @@ describe('runMigrationLoop', () => {
         const result = await runMigrationLoop({
             ...buildDeps(),
             accounts: [legacy],
-            hdWallets: [],
+            hdSeeds: [],
         })
 
         expect(result.skipped).toBe(1)
         expect(migrateLegacyAccount).not.toHaveBeenCalled()
         expect(removeAccountFromStore).not.toHaveBeenCalled()
-        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+        expect(recordLegacyAuthority).not.toHaveBeenCalled()
     })
 })

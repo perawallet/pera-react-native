@@ -12,27 +12,12 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
-            formats: ['es'],
-            fileName: 'index',
-        },
-        rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                '@tanstack/react-query',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-provider',
-                'ky',
-                'zod',
-            ],
-        },
-    },
-})
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: 'index',
+    }),
+)

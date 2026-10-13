@@ -20,6 +20,7 @@ import type {
     XoQuote,
     RampOrder,
 } from '@perawallet/wallet-core-onramp'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampForm } from '../useOnrampForm'
 import { OnrampTermsContent } from '../../OnrampTermsContent'
 
@@ -53,9 +54,11 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     >('@perawallet/wallet-core-onramp')
     return {
         ...actual,
+        useEnsureRampDestination: () => ({
+            ensureCanReceive: mockEnsureOptIn,
+        }),
         useCreateRampQuoteMutation: () => ({ mutateAsync: mockCreateQuote }),
         useCreateRampOrderMutation: () => ({ mutateAsync: mockCreateOrder }),
-        useEnsureDestinationOptIn: () => ({ ensureOptIn: mockEnsureOptIn }),
         useOnramp: () => ({
             senderAddress: mockSenderAddress,
             setSenderAddress: mockSetSenderAddress,
@@ -65,16 +68,30 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccountAddress: () => ({
-        selectedAccountAddress: mockSelectedAccountAddress,
-    }),
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    // Real enums (models/accounts has no runtime imports): components reached
+    // through module barrels read them at import time.
+    ...(await vi.importActual<object>(
+        '@packages/accounts/src/models/accounts',
+    )),
+    useSelectedAccount: () => selectedAccountMock(),
     useAccountsStore: {
-        getState: () => ({
-            selectedAccountAddress: mockSelectedAccountAddress,
-        }),
+        getState: () => ({ getSelectedAccount: () => selectedAccountMock() }),
     },
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
 }))
+
+const selectedAccountMock = () =>
+    mockSelectedAccountAddress === null
+        ? null
+        : {
+              id: 'selected',
+              custody: { kind: 'watch' },
+              chains: { algorand: { address: mockSelectedAccountAddress } },
+          }
 
 // The order-review sheet (imported transitively by the form hook) pulls in
 // AddressDisplay → AccountIcon → the full accounts module, which this hook
@@ -84,14 +101,22 @@ vi.mock('@components/AddressDisplay', () => ({
     AddressDisplay: () => null,
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    unitName: 'ALGO',
+    decimals: 6,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
     // this stub can never route a consumer past a `=== null` guard.
-    getKnownAssetId: (_key: string, network: string) =>
-        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
+    getKnownAssetId: (
+        _key: string,
+        { networkId: network }: { networkId: string },
+    ) => ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
     // Imported at module scope by OptInConfirmationContent (rendered via the
     // confirm-opt-in sheet the form hook now requests).
-    ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+    useNativeAsset: () => NATIVE_ASSET,
     toWholeUnits: (value: number) => value,
     useAssetsQuery: () => ({ data: undefined }),
     // Imported at module scope by buildAccountBalanceFromRampToken, reached via
@@ -109,7 +134,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
@@ -124,8 +152,13 @@ vi.mock('@hooks/useToast', () => ({
 
 // Shadow the webview barrel so its transitive `AccountTypes` import (via
 // usePeraWebviewInterface) doesn't load against the partial accounts mock.
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
     useWebView: () => ({ pushWebView: vi.fn(), removeWebView: vi.fn() }),
+    openValidatedBrowserUrl: (
+        await vi.importActual<typeof import('@modules/webview/hooks/handlers')>(
+            '@modules/webview/hooks/handlers',
+        )
+    ).openValidatedBrowserUrl,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -257,6 +290,7 @@ const belowMinQuoteError = buildBelowMinQuoteError(
 
 describe('useOnrampForm', () => {
     beforeEach(() => {
+        registerAlgorandRampAdapter()
         vi.clearAllMocks()
         vi.useFakeTimers()
         vi.spyOn(Linking, 'openURL').mockImplementation(mockOpenURL)
@@ -551,7 +585,7 @@ describe('useOnrampForm', () => {
         expect(result.current.limits?.max).toBeNull()
     })
 
-    it('falls back to the flattened message when the limits are unparseable', async () => {
+    it('shows localized below-minimum copy, not backend prose, when the limits are unparseable', async () => {
         // The apostrophe corrupts the single-quote normalisation.
         mockCreateQuote.mockRejectedValue(
             buildBelowMinQuoteError("{'message': 'isn't parseable'}"),
@@ -563,7 +597,29 @@ describe('useOnrampForm', () => {
         })
 
         expect(result.current.limits).toBeNull()
-        expect(result.current.errorMessage).toBe('Amount is too low.')
+        expect(result.current.errorMessage).toBe(
+            'onramp.form.amount_below_min_unknown',
+        )
+    })
+
+    it('shows localized copy when the backend sends a non-numeric limit', async () => {
+        // The TRY pair returns the literal word "for" as the limit, in the
+        // prose as well as in min_amount.
+        mockCreateQuote.mockRejectedValue(
+            buildBelowMinQuoteError(
+                "{'message': 'Source amount is below the minimum allowed, which is for.', 'min_amount': 'for'}",
+            ),
+        )
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(result.current.limits).toBeNull()
+        expect(result.current.errorMessage).toBe(
+            'onramp.form.amount_below_min_unknown',
+        )
     })
 
     it('clears Meld limits when the pair changes', async () => {

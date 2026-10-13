@@ -16,7 +16,7 @@ import {
     getInfosForServiceUuid,
 } from '@ledgerhq/devices'
 import { StatusCodes } from '@ledgerhq/errors'
-import type { HardwareWalletAppVersion } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletAppVersion } from '@perawallet/wallet-extension-hardware-wallet'
 import type { LedgerDeviceModel } from './types'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -49,29 +49,39 @@ export const resolveDeviceModel = (
     return 'nanoX'
 }
 
-/** Full path: 44'/283'/{accountIndex}'/0/0 — the device derives internally. */
-export const ALGORAND_BIP44_PREFIX = "44'/283'"
+/** USB product IDs (vendor 0x2C97) from https://developers.ledger.com. */
+const USB_PRODUCT_ID_MODELS: ReadonlyMap<number, LedgerDeviceModel> = new Map([
+    [0x00_01, 'nanoS'],
+    [0x00_04, 'nanoX'],
+    [0x40_11, 'nanoSPlus'],
+    [0x60_11, 'stax'],
+    [0x70_11, 'flex'],
+])
+
+/** Shown in place of a model for an unrecognized USB product ID. */
+export const UNKNOWN_USB_LEDGER_MODEL = 'ledger'
+
+export const resolveUsbDeviceModel = (
+    productId: Nullable<number> | undefined,
+): LedgerDeviceModel | typeof UNKNOWN_USB_LEDGER_MODEL =>
+    (typeof productId === 'number'
+        ? USB_PRODUCT_ID_MODELS.get(productId)
+        : undefined) ?? UNKNOWN_USB_LEDGER_MODEL
 
 /**
- * The `m/` prefix is mandatory: `ledger-algorand-js`'s `serializePath` rejects
- * bare `44'/283'/…` paths with 'Path should start with "m/"'.
+ * Standard codes from @ledgerhq/errors. An app's own non-standard codes belong
+ * to its driver, via `LedgerAppProfile`.
  */
-export const buildLedgerAccountPath = (accountIndex: number): string =>
-    `m/${ALGORAND_BIP44_PREFIX}/${accountIndex}'/0/0`
-
-/** Standard codes from @ledgerhq/errors, plus the Algorand app's own 0x6986. */
 export const LEDGER_STATUS_CODES = {
     SUCCESS: StatusCodes.OK,
-    /** Non-standard; Algorand app v2.0.7+. */
-    USER_REJECTED: 0x69_86,
-    USER_REJECTED_LEGACY: StatusCodes.CONDITIONS_OF_USE_NOT_SATISFIED,
+    USER_REJECTED: StatusCodes.CONDITIONS_OF_USE_NOT_SATISFIED,
     APP_NOT_OPEN: StatusCodes.CLA_NOT_SUPPORTED,
     LOCKED_DEVICE: StatusCodes.LOCKED_DEVICE,
     /**
-     * The app understood the CLA but not the instruction — the installed
-     * Algorand app predates the feature being invoked. This is the only
-     * version signal the device volunteers, so it stands in for a firmware /
-     * app-version check we cannot otherwise perform.
+     * The app understood the CLA but not the instruction — the installed app
+     * predates the feature being invoked. This is the only version signal the
+     * device volunteers, so it stands in for a firmware / app-version check we
+     * cannot otherwise perform.
      */
     INSTRUCTION_NOT_SUPPORTED: StatusCodes.INS_NOT_SUPPORTED,
 } as const
@@ -89,7 +99,7 @@ export const LEDGER_SCAN_TIMEOUT_MS = 30_000
 
 /**
  * A backstop against a silently-dropped BLE link, NOT a bound on reading time —
- * scrolling a multi-screen ARC-60 payload easily exceeds 30s, and cutting that
+ * scrolling a multi-screen arbitrary-data payload easily exceeds 30s, and cutting that
  * off tears down the signing sheet while the device is still prompting.
  */
 export const LEDGER_CONFIRMATION_TIMEOUT_MS = 300_000
@@ -100,19 +110,6 @@ export const LEDGER_CONFIRMATION_TIMEOUT_MS = 300_000
  * reproducibly fired mid-pairing, leaving the user with no UI.
  */
 export const LEDGER_CONNECTION_TIMEOUT_MS = 20_000
-
-/**
- * First app version shipping SIGN_ARBITRARY (0x10), required for ARC-60.
- *
- * NOTE: unverified against the Ledger changelog / a physical device. The gate
- * is a UX nicety — if this is too low, the on-device error fallback (mapped to
- * `app_outdated`) is the backstop.
- */
-export const MIN_ARBITRARY_SIGN_APP_VERSION: HardwareWalletAppVersion = {
-    major: 2,
-    minor: 0,
-    patch: 0,
-}
 
 export const isAppVersionAtLeast = (
     actual: HardwareWalletAppVersion,

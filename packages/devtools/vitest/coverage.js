@@ -11,7 +11,6 @@ export const coverageConfig = {
         'src/**/__tests__/**',
         'src/**/__mocks__/**',
         'src/**/__fixtures__/**',
-        'src/**/*.test.{ts,tsx}',
         'src/**/*.spec.{ts,tsx}',
         'src/**/index.ts',
         'src/**/constants.ts',

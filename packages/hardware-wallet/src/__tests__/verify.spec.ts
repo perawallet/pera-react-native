@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { verifyAddress } from '../verify'
-import type { HardwareWalletTransport } from '../types'
+import type { HardwareWalletTransport } from '@perawallet/wallet-extension-hardware-wallet'
 
 const makeAccount = (index: number) => ({
     address: `ADDR_${index}`,

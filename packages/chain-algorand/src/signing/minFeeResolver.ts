@@ -1,0 +1,48 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    getSignerFor,
+    usesNonPrimaryScheme,
+} from '@perawallet/wallet-core-accounts'
+import { calculateMinTxnFee } from '../blockchain'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
+import type { ResolveMinFeeForSenderParams } from '@perawallet/wallet-core-signing'
+
+/**
+ * Resolves the minimum fee in µAlgo a transaction sent by `senderAddress`
+ * must carry, accounting for post-quantum signers.
+ *
+ * The effective signer is resolved via `getSignerFor`, so a rekeyed sender
+ * pays according to the scheme its auth account signs with. Senders not in the wallet or
+ * without a resolvable signer (watch accounts, missing auth) fall back to
+ * the non-quantum base fee.
+ *
+ * Congestion guard: the base is `max(suggestedMinFee, configMinTxnFee)` and
+ * the PQ multiplier is applied at most once, to that max — when algod's
+ * suggested minimum already exceeds the configured base (congestion
+ * pricing), the higher value is multiplied rather than stacking premiums.
+ */
+export const resolveMinFeeForSender = ({
+    senderAddress,
+    accounts,
+    suggestedMinFee,
+    configMinTxnFee,
+    pqMultiplier,
+}: ResolveMinFeeForSenderParams): bigint => {
+    const baseMinFee =
+        suggestedMinFee > configMinTxnFee ? suggestedMinFee : configMinTxnFee
+    const signer = getSignerFor(senderAddress, accounts, ALGORAND_CHAIN_ID)
+    const isPQSigner =
+        signer !== null && usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
+    return calculateMinTxnFee({ baseMinFee, isPQSigner, pqMultiplier })
+}

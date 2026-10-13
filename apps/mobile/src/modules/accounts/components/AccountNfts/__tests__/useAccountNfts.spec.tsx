@@ -15,6 +15,8 @@ import type { MutableRefObject } from 'react'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import type { PWFlatListRef } from '@components/core'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useAccountNfts } from '../useAccountNfts'
 
 const mockNavigate = vi.fn()
@@ -50,16 +52,21 @@ vi.mock('@perawallet/wallet-core-background', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        useNetwork: () => ({ network: 'mainnet' }),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
@@ -74,7 +81,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 const mockUseSelectedAccount = vi.fn()
 const mockUseAccountCollectiblesQuery = vi.fn()
 const mockUseCanSignWith = vi.fn()
-const mockUseAccountOptInRoundsQuery = vi.fn()
+const mockUseHoldingAcquisitionOrderQuery = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -88,8 +95,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountCollectiblesQuery: (...args: unknown[]) =>
             mockUseAccountCollectiblesQuery(...args),
         useCanSignWith: (...args: unknown[]) => mockUseCanSignWith(...args),
-        useAccountOptInRoundsQuery: (...args: unknown[]) =>
-            mockUseAccountOptInRoundsQuery(...args),
+        useHoldingAcquisitionOrderQuery: (...args: unknown[]) =>
+            mockUseHoldingAcquisitionOrderQuery(...args),
     }
 })
 
@@ -121,7 +128,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 
 // Filtering, searching and ordering now happen in SQL — see the
 // `getAccountCollectiblesLite` suite in the accounts package for those. These
-// tests cover what the hook still owns: query wiring and the opt-in-round sort.
+// tests cover what the hook still owns: query wiring and the acquisition-order sort.
 const makeRow = (assetId: string, title: string) => ({
     assetId,
     amount: new Decimal(1),
@@ -163,12 +170,17 @@ const flushFrame = async () => {
 }
 
 describe('useAccountNfts', () => {
+    const ACCOUNT_ADDRESS =
+        'ACCOUNT_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAA'
     const mockAccount = {
-        address: 'ACCOUNT_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        id: 'account',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: ACCOUNT_ADDRESS } },
     }
 
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         mockNavigate.mockReset()
         mockRefreshAccounts.mockResolvedValue(undefined)
         mockSortMode = 'titleAsc'
@@ -176,8 +188,8 @@ describe('useAccountNfts', () => {
         mockShowOptedIn = false
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseAccountOptInRoundsQuery.mockReturnValue({
-            optInRounds: new Map<string, number>(),
+        mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
+            acquisitionOrder: new Map<string, number>(),
             isPending: false,
         })
         mockUseAccountCollectiblesQuery.mockReturnValue({
@@ -191,10 +203,11 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 expect.objectContaining({
                     sortMode: 'titleAsc',
-                    includeOptedInOnly: false,
+                    includeZeroBalance: false,
                 }),
             )
         })
@@ -204,8 +217,9 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                mockAccount.address,
-                expect.objectContaining({ includeOptedInOnly: true }),
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
+                expect.objectContaining({ includeZeroBalance: true }),
             )
         })
 
@@ -217,7 +231,8 @@ describe('useAccountNfts', () => {
             })
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenLastCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 expect.objectContaining({ search: 'cool' }),
             )
         })
@@ -228,22 +243,27 @@ describe('useAccountNfts', () => {
             renderHook(() => useAccountNfts())
 
             expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                mockAccount.address,
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 expect.objectContaining({ sortMode: undefined }),
             )
         })
 
-        it('enables the opt-in rounds query only for the recentlyAdded mode', () => {
+        it('enables the acquisition order query only for the recentlyAdded mode', () => {
             renderHook(() => useAccountNfts())
-            expect(mockUseAccountOptInRoundsQuery).toHaveBeenCalledWith(
-                mockAccount.address,
+            expect(mockUseHoldingAcquisitionOrderQuery).toHaveBeenCalledWith(
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 false,
             )
 
             mockSortMode = 'recentlyAdded'
             renderHook(() => useAccountNfts())
-            expect(mockUseAccountOptInRoundsQuery).toHaveBeenLastCalledWith(
-                mockAccount.address,
+            expect(
+                mockUseHoldingAcquisitionOrderQuery,
+            ).toHaveBeenLastCalledWith(
+                ACCOUNT_ADDRESS,
+                expect.objectContaining({ chainId: 'algorand' }),
                 true,
             )
         })
@@ -264,9 +284,9 @@ describe('useAccountNfts', () => {
             mockSortMode = 'recentlyAdded'
         })
 
-        it('puts the most recently opted-in collectible first', () => {
-            mockUseAccountOptInRoundsQuery.mockReturnValue({
-                optInRounds: new Map([
+        it('puts the most recently acquired collectible first', () => {
+            mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
+                acquisitionOrder: new Map([
                     ['100', 10],
                     ['200', 99],
                 ]),
@@ -281,9 +301,9 @@ describe('useAccountNfts', () => {
             ])
         })
 
-        it('floats collectibles with no known opt-in round above the rest', () => {
-            mockUseAccountOptInRoundsQuery.mockReturnValue({
-                optInRounds: new Map([['200', 5]]),
+        it('floats collectibles with no known acquisition order above the rest', () => {
+            mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
+                acquisitionOrder: new Map([['200', 5]]),
                 isPending: false,
             })
 
@@ -298,7 +318,7 @@ describe('useAccountNfts', () => {
         // QA regression: an NFT opted into seconds ago is already a
         // holding row (SQLite mirrors algod) but the lagging indexer has no
         // round for it yet. It must lead the list instantly, not sink.
-        it('puts a fresh opt-in the indexer does not know yet on top', () => {
+        it('puts a fresh acquisition the chain does not know yet on top', () => {
             mockUseAccountCollectiblesQuery.mockReturnValue({
                 collectibles: [
                     makeRow('900', 'Fresh Mint'),
@@ -307,8 +327,8 @@ describe('useAccountNfts', () => {
                 ],
                 isPending: false,
             })
-            mockUseAccountOptInRoundsQuery.mockReturnValue({
-                optInRounds: new Map([
+            mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
+                acquisitionOrder: new Map([
                     ['100', 50],
                     ['200', 99],
                 ]),
@@ -325,8 +345,8 @@ describe('useAccountNfts', () => {
         })
 
         it('keeps the SQL order for collectibles that tie', () => {
-            mockUseAccountOptInRoundsQuery.mockReturnValue({
-                optInRounds: new Map<string, number>(),
+            mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
+                acquisitionOrder: new Map<string, number>(),
                 isPending: false,
             })
 
@@ -474,13 +494,13 @@ describe('useAccountNfts', () => {
 
         // recentlyAdded is ordered by a separate indexer query, so its rows land
         // before the rounds that order them: the map arriving is a reorder too.
-        it('scrolls to the top once the opt-in rounds reorder recentlyAdded', async () => {
+        it('scrolls to the top once the acquisition order reorders recentlyAdded', async () => {
             mockSortMode = 'recentlyAdded'
             const { result, rerender } = renderHook(() => useAccountNfts())
             const scrollToOffset = attachListRef(result.current.flatListRef)
 
-            mockUseAccountOptInRoundsQuery.mockReturnValue({
-                optInRounds: new Map([
+            mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
+                acquisitionOrder: new Map([
                     ['100', 10],
                     ['200', 99],
                 ]),
@@ -601,7 +621,7 @@ describe('useAccountNfts', () => {
             })
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
-                [mockAccount.address],
+                [ACCOUNT_ADDRESS],
                 'mainnet',
             )
             expect(mockInvalidateQueries).not.toHaveBeenCalled()
@@ -627,6 +647,14 @@ describe('useAccountNfts', () => {
     })
 
     describe('canOptIn', () => {
+        it('returns false for a signing account while manageAssets is off', () => {
+            mockUseCanSignWith.mockReturnValue(true)
+            setCapabilityOverrides({ manageAssets: false })
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.canOptIn).toBe(false)
+        })
+
         it('returns true for signing accounts', () => {
             mockUseCanSignWith.mockReturnValue(true)
             const { result } = renderHook(() => useAccountNfts())

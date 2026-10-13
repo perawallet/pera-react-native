@@ -17,10 +17,11 @@ import { AssetSelector } from '@components/AssetSelector'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
-import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
+import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 type SwapAmountSectionPayProps = {
     variant: 'pay'
@@ -54,10 +55,11 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const receiveProps = variant === 'receive' ? props : undefined
 
     const { t } = useLanguage()
+    const isNativeAssetId = useIsNativeAssetId()
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const isAlgo = isAlgoAssetId(assetId)
+    const isAlgo = isNativeAssetId(assetId)
     const isLoading = receiveProps?.isLoading ?? false
     const onAmountChange = payProps?.onAmountChange
     const isLocalCurrencyInput = payProps?.isLocalCurrencyInput ?? false

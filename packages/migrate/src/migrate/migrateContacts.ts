@@ -26,7 +26,11 @@ export const migrateContacts = (
 ): ContactMigrationResult => {
     const store = useContactsStore.getState()
     const existingByAddress = new Map(
-        store.contacts.map(c => [c.address.toLowerCase(), c] as const),
+        store.contacts.flatMap(c =>
+            c.addresses.algorand
+                ? [[c.addresses.algorand.toLowerCase(), c] as const]
+                : [],
+        ),
     )
 
     const next: Contact[] = [...store.contacts]
@@ -49,6 +53,6 @@ export const migrateContacts = (
 
 const toContact = (legacy: LegacyContact): Contact => ({
     name: legacy.name,
-    address: legacy.address,
+    addresses: { algorand: legacy.address },
     image: legacy.avatar ?? undefined,
 })

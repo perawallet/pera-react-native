@@ -17,6 +17,7 @@ import { Platform } from 'react-native'
 const requestEnable = vi.fn()
 const openSettings = vi.fn()
 const openLocationSettings = vi.fn()
+const openWalletInTab = vi.fn()
 
 vi.mock('../useBluetoothState', () => ({
     useBluetoothState: () => ({
@@ -38,6 +39,10 @@ vi.mock('../useBlePermissions', () => ({
     }),
 }))
 
+vi.mock('../useLedgerExpandedTabHandoff', () => ({
+    useLedgerExpandedTabHandoff: () => ({ openWalletInTab }),
+}))
+
 import { useLedgerErrorAction } from '../useLedgerErrorAction'
 
 describe('useLedgerErrorAction', () => {
@@ -45,8 +50,20 @@ describe('useLedgerErrorAction', () => {
         requestEnable.mockReset()
         openSettings.mockReset()
         openLocationSettings.mockReset()
+        openWalletInTab.mockReset()
+        openWalletInTab.mockResolvedValue(undefined)
         requestEnable.mockResolvedValue(true)
         Platform.OS = 'android'
+    })
+
+    it('opens the wallet in a tab for a picker the current window cannot host', () => {
+        const { result } = renderHook(() => useLedgerErrorAction())
+
+        result.current.runAction('open_in_tab')
+
+        expect(openWalletInTab).toHaveBeenCalledOnce()
+        expect(openSettings).not.toHaveBeenCalled()
+        expect(requestEnable).not.toHaveBeenCalled()
     })
 
     it('asks the OS to turn Bluetooth on without leaving the app on Android', async () => {

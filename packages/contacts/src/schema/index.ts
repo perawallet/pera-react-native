@@ -11,15 +11,22 @@
  */
 
 import { z } from 'zod'
+import {
+    isValidAlgorandAddress,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import type { Contact } from '../models'
 
 export const contactSchema = z.object({
     id: z.string().optional(),
     name: z
         .string('Please enter a valid name')
         .min(1, { message: 'Please enter a valid name' }),
+    // Checksum validation (not just shape) is what catches address typos;
+    // a name attached to a mistyped address defeats the contact feature.
     address: z
         .string('Please enter a valid Algorand address')
-        .regex(new RegExp('^[a-zA-Z0-9]{58}$'), {
+        .refine(isValidAlgorandAddress, {
             message: 'Please enter a valid Algorand address',
         }),
     //TODO we can probably do better with the NFD regex
@@ -30,4 +37,25 @@ export const contactSchema = z.object({
         })
         .optional(),
     image: z.string().optional(),
+})
+
+export type ContactFormValues = z.infer<typeof contactSchema>
+
+// The form's single address field is the Algorand entry.
+export const contactToFormValues = ({
+    addresses,
+    ...rest
+}: Contact): ContactFormValues => ({
+    ...rest,
+    address: addresses.algorand ?? '',
+})
+
+/** Every other field comes from the form; `existing` only contributes the
+ *  addresses of families the form doesn't edit. */
+export const contactFromFormValues = (
+    { address, ...rest }: ContactFormValues,
+    existing?: Nullable<Contact>,
+): Contact => ({
+    ...rest,
+    addresses: { ...existing?.addresses, algorand: address },
 })

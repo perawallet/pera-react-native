@@ -38,6 +38,14 @@ unlocked. A profile written before this layout reaches that state only at its fi
 new build, when the re-seal sweep runs. It never goes into `keyValueStorage`, a Zustand store, or
 React state that outlives the operation.
 
+That covers signing key material. WalletConnect v1's session key is a bridge secret rather than a
+signing key, and on the extension it lives in `keyValueStorage`: the offscreen document revives
+sockets before the vault is unlocked, so it has no key source to seal one under (native keeps it in
+the keystore). Reading it lets an attacker read and inject that dApp session's bridge traffic; it
+signs nothing. WalletConnect v2's keychain (pairing and session symKeys, the client seed) is the
+same class of secret and lives in `keyValueStorage` on native as well, under the `wc2:` prefix,
+because WalletKit persists it as one row on every change. See [Connections](CONNECTIONS.md).
+
 Validate user input and API responses before acting on them. Keep secrets in `.env`, not in source.
 
 ## Known limitation: changing the vault password does not rotate the key
@@ -53,7 +61,8 @@ blob likewise keeps wrapping the unchanged key.
 
 Rotation — a fresh master key, every record re-sealed under it, both blobs re-wrapped — would close
 that case. It is not built. Until it is, the remedy for a leaked password is to move the funds to a
-new wallet.
+new wallet. "Delete all data" destroys the vault (both blobs and the session key), so a wallet
+created after it is sealed under a fresh master key; one created alongside the old vault is not.
 
 What the vault defends: a cold attacker holding a copy of the browser profile and no password (an
 infostealer, a backup, a shared machine). Only Argon2id's cost stands between them and the material.

@@ -10,16 +10,26 @@
  limitations under the License
  */
 
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
+export type ContactAddresses = Partial<Record<ChainFamily, string>>
+
+/** Identifies one contact: an address is unique within its family. */
+export type ContactRef = {
+    family: ChainFamily
+    address: string
+}
+
 /**
- * `address` is the primary key. Two contacts cannot share the same
- * address — `addContact` and `editContact` enforce this and throw
- * `DuplicateAddressError`.
+ * Two contacts cannot hold the same address under the same family;
+ * `addContact` and `editContact` enforce this and throw
+ * `DuplicateAddressError`. The same string under different families is
+ * allowed.
  */
 export type Contact = {
     name: string
-    address: string
+    addresses: ContactAddresses
     image?: string
     nfd?: string
 }
@@ -29,17 +39,19 @@ export type ContactsState = BaseStoreState & {
     selectedContact: Nullable<Contact>
     setSelectedContact: (contact: Nullable<Contact>) => void
     /**
-     * Insert a new contact. Throws `DuplicateAddressError` if a contact
-     * already exists at `contact.address`.
+     * Insert a new contact; returns false, adding nothing, when it holds no
+     * address. Throws `DuplicateAddressError` if another contact already
+     * holds one of its addresses in the same family.
      */
     addContact: (contact: Contact) => boolean
     /**
-     * Update the row at `previousAddress` with `contact`. Replaces the
-     * row regardless of which fields changed. Throws
-     * `DuplicateAddressError` if `contact.address` differs from
-     * `previousAddress` and is already used by another contact, and
-     * `ContactNotFoundError` if no contact exists at `previousAddress`.
+     * Replace the row `previous` identifies with `contact`, regardless of
+     * which fields changed; returns false, changing nothing, when `contact`
+     * holds no address. Throws `DuplicateAddressError` if another
+     * contact holds one of `contact`'s addresses in the same family, and
+     * `ContactNotFoundError` if no contact matches `previous`.
      */
-    editContact: (previousAddress: string, contact: Contact) => boolean
+    editContact: (previous: ContactRef, contact: Contact) => boolean
+    /** Removes the row sharing any family address with `contact`. */
     deleteContact: (contact: Contact) => boolean
 }

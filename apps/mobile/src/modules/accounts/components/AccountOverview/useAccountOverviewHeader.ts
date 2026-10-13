@@ -13,19 +13,22 @@
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
+    addressOn,
     type AccountBalanceHistoryItem,
     useAccountSummaryQuery,
     useAllAccounts,
     useCanSignWith,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewHeaderResult = {
-    portfolioAlgoValue: Decimal
+    portfolioNativeValue: Decimal
     /** `null` while the preferred-currency rate is unresolved — renders as a placeholder, not 0. */
     portfolioPreferredValue: Nullable<Decimal>
     /** False while held assets are still enriching — the total is still settling. */
@@ -45,21 +48,22 @@ export type UseAccountOverviewHeaderResult = {
 export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency()
-    const canSign = useCanSignWith(account)
+    const canSign = useCanSignWith(account, scope.chainId)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
     const {
-        algoAmount,
-        portfolioAlgoValue,
+        nativeAmount,
+        portfolioNativeValue,
         portfolioUsdValue,
         isComplete,
         isPending,
-    } = useAccountSummaryQuery(account?.address)
+    } = useAccountSummaryQuery(addressOn(account, scope), scope)
     const allAccounts = useAllAccounts()
-    // Show the "get started" empty state only for a lone account with no ALGO
+    // Show the "get started" empty state only for a lone account with no native balance
     // (a brand-new wallet). Any funded account, or any account in a multi-
     // account wallet, shows its balance (even 0) — gated on data, not value.
-    const isOnlyEmptyAccount = allAccounts.length <= 1 && algoAmount.isZero()
+    const isOnlyEmptyAccount = allAccounts.length <= 1 && nativeAmount.isZero()
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
         [usdToPreferred, portfolioUsdValue],
@@ -85,7 +89,7 @@ export const useAccountOverviewHeader = (
     )
 
     return {
-        portfolioAlgoValue,
+        portfolioNativeValue,
         portfolioPreferredValue,
         isBalanceComplete: isComplete,
         isPending,

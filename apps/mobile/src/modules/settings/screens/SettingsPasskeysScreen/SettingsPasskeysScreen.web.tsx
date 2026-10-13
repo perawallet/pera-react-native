@@ -118,14 +118,6 @@ export const SettingsPasskeyScreen = () => {
                         testID='settings_passkeys_hd_wallet_notice'
                     />
                 )}
-                {screen.notice === 'biometric' && (
-                    <InfoCallout
-                        title={t('settings.passkeys.biometric_warning_title')}
-                        body={t('settings.passkeys.biometric_warning_body')}
-                        style={styles.notice}
-                        testID='settings_passkeys_biometric_notice'
-                    />
-                )}
                 {content}
                 <QRScannerView
                     isVisible={screen.isScannerVisible}

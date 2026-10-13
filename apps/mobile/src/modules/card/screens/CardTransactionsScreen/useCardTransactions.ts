@@ -13,14 +13,26 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useCardTransactionsQuery } from '@perawallet/wallet-core-card'
+import {
+    StatementFormat,
+    useCardTransactionsQuery,
+    useExportCardStatementMutation,
+} from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
-import { useCardComingSoonToast } from '../../hooks'
+import { shareFile } from '@utils/shareFile'
+import { useCardScope } from '../../hooks/useCardScope'
+import { useCardErrorToast } from '../../hooks'
 import type { PeraCardAccountStackParamList } from '../../routes/types'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
 } from '../../utils/cardTransactions'
+
+const PDF_MIME_TYPE = 'application/pdf'
+
+// Dated so the share sheet's suggested name tells statements apart.
+const buildStatementFilename = (): string =>
+    `pera-card-statement-${new Date().toISOString().slice(0, 10)}.pdf`
 
 type UseCardTransactionsResult = {
     sections: CardTransactionSection[]
@@ -31,10 +43,12 @@ type UseCardTransactionsResult = {
     handleLoadMore: () => void
     handleRetry: () => void
     onExport: () => void
+    isExporting: boolean
     onPressTransaction: (id: string) => void
 }
 
 export const useCardTransactions = (): UseCardTransactionsResult => {
+    const scope = useCardScope()
     const navigation =
         useNavigation<
             NativeStackNavigationProp<PeraCardAccountStackParamList>
@@ -47,8 +61,14 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
         hasNextPage,
         fetchNextPage,
         refetch,
-    } = useCardTransactionsQuery()
-    const showComingSoon = useCardComingSoonToast()
+    } = useCardTransactionsQuery(scope)
+    const { mutateAsync: exportStatement, isPending: isExporting } =
+        useExportCardStatementMutation(scope)
+    const showExportError = useCardErrorToast({
+        titleKey: 'peraCard.transactions.export_error_title',
+        bodyKey: 'peraCard.transactions.export_error_body',
+        shouldUseBackendMessage: false,
+    })
 
     const sections = useMemo(
         () => groupCardTransactionsByMonth(transactions),
@@ -64,6 +84,24 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
     const handleRetry = useCallback(() => {
         void refetch()
     }, [refetch])
+
+    const onExport = useCallback(() => {
+        if (isExporting) return
+        trackEvent(CardEvent.TransactionsExport)
+        const run = async () => {
+            try {
+                const statement = await exportStatement({
+                    format: StatementFormat.Pdf,
+                })
+                await shareFile(buildStatementFilename(), statement.bytes, {
+                    mimeType: PDF_MIME_TYPE,
+                })
+            } catch (error) {
+                void showExportError(error)
+            }
+        }
+        void run()
+    }, [isExporting, exportStatement, showExportError])
 
     const onPressTransaction = useCallback(
         (id: string) => {
@@ -81,8 +119,8 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
         isEmpty: !isLoading && transactions.length === 0,
         handleLoadMore,
         handleRetry,
-        // TODO(card): wire to exportCardStatement + a share sheet; stubbed for now.
-        onExport: showComingSoon,
+        onExport,
+        isExporting,
         onPressTransaction,
     }
 }

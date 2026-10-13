@@ -13,7 +13,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useRekeyToStandardConfirmScreen } from '../useRekeyToStandardConfirmScreen'
+import {
+    useAccountChainStateStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -58,12 +66,20 @@ vi.mock('@modules/webview', () => ({
 }))
 
 const mockSourceAccount = {
-    address: 'SRC',
+    chains: { algorand: { address: 'SRC' } },
     name: 'Source',
-    rekeyAddress: undefined as string | undefined,
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
 }
-const mockTargetAccount = { address: 'TGT', name: 'Target' }
-const mockAuthAccount = { address: 'AUTH', name: 'Auth' }
+const mockTargetAccount = {
+    chains: { algorand: { address: 'TGT' } },
+    name: 'Target',
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
+}
+const mockAuthAccount = {
+    chains: { algorand: { address: 'AUTH' } },
+    name: 'Auth',
+    custody: { kind: 'local', seed: null } as WalletAccount['custody'],
+}
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -109,8 +125,9 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 describe('useRekeyToStandardConfirmScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
-        mockSourceAccount.rekeyAddress = undefined
+        useAccountChainStateStore.getState().resetState()
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
     })
@@ -143,7 +160,7 @@ describe('useRekeyToStandardConfirmScreen', () => {
     })
 
     it('handleConfirmPress requests the warning sheet without submitting when source has a previous rekey', async () => {
-        mockSourceAccount.rekeyAddress = 'AUTH'
+        seedAuthority('SRC', 'AUTH')
         mockRequestBottomSheet.mockReturnValueOnce(new Promise(() => {}))
         const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
 
@@ -156,7 +173,7 @@ describe('useRekeyToStandardConfirmScreen', () => {
     })
 
     it('submits after the warning sheet resolves with true', async () => {
-        mockSourceAccount.rekeyAddress = 'AUTH'
+        seedAuthority('SRC', 'AUTH')
         mockRequestBottomSheet.mockResolvedValueOnce(true)
         mockSubmitAsync.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
@@ -171,7 +188,7 @@ describe('useRekeyToStandardConfirmScreen', () => {
     })
 
     it('does not submit when the warning sheet resolves with false', async () => {
-        mockSourceAccount.rekeyAddress = 'AUTH'
+        seedAuthority('SRC', 'AUTH')
         mockRequestBottomSheet.mockResolvedValueOnce(false)
         const { result } = renderHook(() => useRekeyToStandardConfirmScreen())
 

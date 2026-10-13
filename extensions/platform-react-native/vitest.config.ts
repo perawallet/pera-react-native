@@ -17,6 +17,7 @@ import path from 'path'
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -31,5 +32,4 @@ export default defineConfig({
         },
         conditions: ['default'],
     },
-    ...poolConfig,
 })

@@ -10,11 +10,14 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type React from 'react'
 import type { createNativeStackNavigator } from '@react-navigation/native-stack'
 
-import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
+import { AccountErrorBoundary } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import type { CapabilityRequirement } from '@hooks/useCapability'
+import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
 import { fullScreenLayout } from '@layouts/index'
 
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen'
@@ -32,6 +35,12 @@ import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResu
 import { PeraWebImportInfoScreen } from '@modules/onboarding/screens/PeraWebImportInfoScreen'
 import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
 import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
+import {
+    CloudBackupRestorePassphraseScreen,
+    CloudBackupRestoreEncryptionKeyScreen,
+    CloudBackupRestoreScanScreen,
+} from '@modules/cloud-backup/routes'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import {
     LedgerInstructionsScreen,
     LedgerPairScreen,
@@ -114,6 +123,27 @@ const PeraWebImportLoadingScreenWithErrorBoundary = withAccountErrorBoundary(
 const PeraWebImportResultScreenWithErrorBoundary = withAccountErrorBoundary(
     PeraWebImportResultScreen,
 )
+const CloudBackupRestorePassphraseScreenWithErrorBoundary =
+    withAccountErrorBoundary(CloudBackupRestorePassphraseScreen)
+
+// The restore screens are shared with the cloud-backup stack, whose
+// `CloudBackupOverview` exit does not exist here; a restore reached from the
+// import flow ends like every other import.
+const CloudBackupRestoreEncryptionKeyRoute = () => {
+    const { exitAccountFlow } = useExitAccountFlow()
+    return <CloudBackupRestoreEncryptionKeyScreen onDone={exitAccountFlow} />
+}
+
+const CloudBackupRestoreScanRoute = () => {
+    const { exitAccountFlow } = useExitAccountFlow()
+    return <CloudBackupRestoreScanScreen onDone={exitAccountFlow} />
+}
+
+const CloudBackupRestoreEncryptionKeyScreenWithErrorBoundary =
+    withAccountErrorBoundary(CloudBackupRestoreEncryptionKeyRoute)
+const CloudBackupRestoreScanScreenWithErrorBoundary = withAccountErrorBoundary(
+    CloudBackupRestoreScanRoute,
+)
 
 /**
  * Names of every screen registered by `renderImportFlowScreens`. Used by the
@@ -142,6 +172,9 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'PeraWebImportInfo',
     'PeraWebImportLoading',
     'PeraWebImportResult',
+    'CloudBackupRestorePassphrase',
+    'CloudBackupRestoreEncryptionKey',
+    'CloudBackupRestoreScan',
 ] as const satisfies ReadonlyArray<keyof ImportFlowParamList>
 
 export type ImportFlowStack = ReturnType<
@@ -156,9 +189,12 @@ export type ImportFlowStack = ReturnType<
  * `createNativeStackNavigator` is invariant in its `ParamList`, so call sites
  * must use `Stack as unknown as ImportFlowStack` until that ever becomes
  * covariant — see the call sites in `./index.tsx` and `./add-account.tsx`.
+ * A screen whose capability is off isn't registered, so no entry point reaches it.
  */
 export const renderImportFlowScreens = (
     Stack: ImportFlowStack,
+    isAllowed: (requirement: CapabilityRequirement) => boolean,
+    chainId: ChainId,
 ): React.ReactNode => (
     <>
         <Stack.Screen
@@ -192,21 +228,27 @@ export const renderImportFlowScreens = (
             options={{ title: '' }}
             component={ImportSelectAddressesScreenWithErrorBoundary}
         />
-        <Stack.Screen
-            name='ImportRekeyedAddresses'
-            options={{ title: '' }}
-            component={ImportRekeyedAddressesScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='LedgerPair'
-            options={{ title: '' }}
-            component={LedgerPairScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='LedgerInstructions'
-            options={{ title: '' }}
-            component={LedgerInstructionsScreenWithErrorBoundary}
-        />
+        {isAllowed(rekeyRequirementFor(chainId)) && (
+            <Stack.Screen
+                name='ImportRekeyedAddresses'
+                options={{ title: '' }}
+                component={ImportRekeyedAddressesScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'ledger' }) && (
+            <Stack.Screen
+                name='LedgerPair'
+                options={{ title: '' }}
+                component={LedgerPairScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'ledger' }) && (
+            <Stack.Screen
+                name='LedgerInstructions'
+                options={{ title: '' }}
+                component={LedgerInstructionsScreenWithErrorBoundary}
+            />
+        )}
         <Stack.Screen
             name='LedgerScan'
             options={{ title: '' }}
@@ -233,32 +275,42 @@ export const renderImportFlowScreens = (
             options={{ title: '' }}
             component={LedgerTroubleshootingScreenWithErrorBoundary}
         />
-        <Stack.Screen
-            name='AsbImportInfo'
-            options={{ title: '' }}
-            component={AsbImportInfoScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportBackup'
-            options={{ title: '' }}
-            component={AsbImportBackupScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportKey'
-            options={{ title: '' }}
-            component={AsbImportKeyScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportSelectAccounts'
-            options={{ title: '' }}
-            component={AsbImportSelectAccountsScreenWithErrorBoundary}
-        />
-        <Stack.Screen
-            name='AsbImportResult'
-            options={{ headerShown: false }}
-            layout={fullScreenLayout}
-            component={AsbImportResultScreenWithErrorBoundary}
-        />
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportInfo'
+                options={{ title: '' }}
+                component={AsbImportInfoScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportBackup'
+                options={{ title: '' }}
+                component={AsbImportBackupScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportKey'
+                options={{ title: '' }}
+                component={AsbImportKeyScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportSelectAccounts'
+                options={{ title: '' }}
+                component={AsbImportSelectAccountsScreenWithErrorBoundary}
+            />
+        )}
+        {isAllowed({ anyChain: 'secureBackup' }) && (
+            <Stack.Screen
+                name='AsbImportResult'
+                options={{ headerShown: false }}
+                layout={fullScreenLayout}
+                component={AsbImportResultScreenWithErrorBoundary}
+            />
+        )}
         <Stack.Screen
             name='PeraWebImportInfo'
             options={{ title: '' }}
@@ -275,6 +327,21 @@ export const renderImportFlowScreens = (
             options={{ headerShown: false }}
             layout={fullScreenLayout}
             component={PeraWebImportResultScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestorePassphrase'
+            options={{ title: '' }}
+            component={CloudBackupRestorePassphraseScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestoreEncryptionKey'
+            options={{ title: '' }}
+            component={CloudBackupRestoreEncryptionKeyScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestoreScan'
+            options={{ title: '' }}
+            component={CloudBackupRestoreScanScreenWithErrorBoundary}
         />
     </>
 )

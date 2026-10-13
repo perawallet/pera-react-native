@@ -11,85 +11,161 @@
  */
 
 import {
-    AccountTypes,
-    type HDWalletAccount,
+    hasCustody,
+    hdIndexOf,
+    standaloneSecretOf,
+    type ChainAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { backupAdapterFor } from '../../chain-adapter'
 import {
+    accountRecordIdentity,
+    accountRecordItemKey,
+    secretsItemKey,
     BackupAccountType,
     BackupItemType,
+    type AccountRecordPayload,
     type SecretsBackupPayload,
 } from '../models'
-import { serializeAccountItems } from './serializeAccountItems'
+import type { ItemKeyHasher } from '../crypto/itemKeyHash'
+import { buildAccountRecord, hasBackupChains } from './serializeAccountItems'
 import type {
     SerializedAccount,
     SerializedItem,
     SerializeHdResolver,
     SerializeMnemonicResolver,
+    SerializePrivateKeyResolver,
 } from './types'
 
 type Deps = {
+    /** The scope chain, whose backup adapter files a recovery phrase. */
+    chainId: ChainId
     updatedAt: number
+    hashAddress: ItemKeyHasher
     /** Omitted/null => the account is skipped rather than backed up without
      *  its secret. */
     resolveMnemonic?: SerializeMnemonicResolver
     /** Resolves HD seed/derived material; omitted/null => HD account skipped. */
     resolveHd?: SerializeHdResolver
+    /** Reads a private-key account's key; omitted/null => the account is skipped. */
+    resolvePrivateKey?: SerializePrivateKeyResolver
 }
 
-/** Imperative (non-hook) account serializer for the background manager. Both
+const recordItem = (
+    payload: AccountRecordPayload,
+    hashAddress: ItemKeyHasher,
+): SerializedItem => ({
+    key: accountRecordItemKey(hashAddress(accountRecordIdentity(payload))),
+    type: BackupItemType.ACCOUNT,
+    payload,
+})
+
+const secretsItem = (
+    payload: SecretsBackupPayload,
+    hashAddress: ItemKeyHasher,
+): SerializedItem => ({
+    key: secretsItemKey(hashAddress(payload.address)),
+    type: BackupItemType.ACCOUNT,
+    payload,
+})
+
+/** Imperative (non-hook) account serializer for the background manager. The
  *  secret resolvers are injected because reading key material is hook-bound in
- *  the KMS; secret-less types => address-only. */
+ *  the KMS; secret-less accounts => record only. */
 export const serializeAccountForBackup = async (
     account: WalletAccount,
-    { updatedAt, resolveMnemonic, resolveHd }: Deps,
+    {
+        chainId,
+        updatedAt,
+        hashAddress,
+        resolveMnemonic,
+        resolveHd,
+        resolvePrivateKey,
+    }: Deps,
 ): Promise<SerializedAccount | null> => {
-    if (account.type === AccountTypes.hdWallet) {
-        return serializeHdAccount(account, updatedAt, resolveHd)
+    // Checked first: reading a seed or key is KMS work and can prompt.
+    if (!hasBackupChains(account)) return null
+
+    if (hasCustody(account, 'local') && hdIndexOf(account)) {
+        if (!resolveHd) return null
+        const resolved = await resolveHd(account)
+        if (!resolved) return null
+        const payload = buildAccountRecord(account, {
+            updatedAt,
+            hd: {
+                seedFirstDerivedAddress: resolved.seedFirstDerivedAddress,
+                publicKeyHex: resolved.publicKeyHex,
+            },
+        })
+        if (!payload) return null
+        // One per seed, filed under the seed's first address; every account of
+        // the seed emits it and the keyed dedupe downstream keeps one.
+        const seedSecret = secretsItem(
+            {
+                type: BackupAccountType.hdSeed,
+                seed: resolved.seedHex,
+                entropy: resolved.entropyHex,
+                address: resolved.seedFirstDerivedAddress,
+            },
+            hashAddress,
+        )
+        return {
+            record: recordItem(payload, hashAddress),
+            secrets: null,
+            extraItems: [seedSecret],
+        }
     }
 
-    let secrets: SecretsBackupPayload | null = null
-    if (
-        account.type === AccountTypes.algo25 ||
-        account.type === AccountTypes.quantum
-    ) {
+    const payload = buildAccountRecord(account, { updatedAt })
+    if (!payload) return null
+    if (!hasCustody(account, 'local')) {
+        return { record: recordItem(payload, hashAddress), secrets: null }
+    }
+
+    let secrets: SecretsBackupPayload | null
+    if (standaloneSecretOf(account) === 'privateKey') {
+        secrets = await privateKeySecrets(account, resolvePrivateKey)
+    } else {
         if (!resolveMnemonic) return null
         const mnemonic = await resolveMnemonic(account)
         if (!mnemonic) return null
-        secrets = { type: account.type, mnemonic }
+        secrets = backupAdapterFor(chainId).serializeMnemonicSecret(
+            account,
+            mnemonic,
+        )
     }
-    return serializeAccountItems(account, { updatedAt, secrets })
+    return secrets
+        ? {
+              record: recordItem(payload, hashAddress),
+              secrets: secretsItem(secrets, hashAddress),
+          }
+        : null
 }
 
-/** HD child -> hdWallet address item; the seed rides as a shared hdSeed secret
- *  at secrets/<seedFirstDerivedAddress> (deduped by buildLocalItems). */
-const serializeHdAccount = async (
-    account: HDWalletAccount,
-    updatedAt: number,
-    resolveHd?: SerializeHdResolver,
-): Promise<SerializedAccount | null> => {
-    if (!resolveHd) return null
-    const resolved = await resolveHd(account)
-    if (!resolved) return null
-
-    const base = serializeAccountItems(account, {
-        updatedAt,
-        secrets: null,
-        hd: {
-            seedFirstDerivedAddress: resolved.seedFirstDerivedAddress,
-            publicKeyHex: resolved.publicKeyHex,
-        },
-    })
-    if (!base) return null
-
-    const seedSecret: SerializedItem = {
-        key: `secrets/${resolved.seedFirstDerivedAddress}`,
-        type: BackupItemType.ACCOUNT,
-        payload: {
-            type: BackupAccountType.hdSeed,
-            seed: resolved.seedHex,
-            entropy: resolved.entropyHex,
-        },
+/** The key is hex-encoded the moment it is read and the bytes are zeroed
+ *  whatever happens next. A private-key account holds its key on one chain. */
+const privateKeySecrets = async (
+    account: WalletAccount,
+    resolvePrivateKey?: SerializePrivateKeyResolver,
+): Promise<SecretsBackupPayload | null> => {
+    const held = (
+        Object.entries(account.chains) as [ChainId, ChainAccount | undefined][]
+    ).find(([, entry]) => entry?.keyPairId)
+    if (!held || !resolvePrivateKey) return null
+    const [chain, entry] = held as [ChainId, ChainAccount]
+    const keyBytes = await resolvePrivateKey(chain, entry.keyPairId as string)
+    if (!keyBytes) return null
+    try {
+        return {
+            type: BackupAccountType.standaloneKey,
+            chain,
+            address: entry.address,
+            privateKey: bytesToHex(keyBytes),
+        }
+    } finally {
+        zeroBytes(keyBytes)
     }
-    return { ...base, extraItems: [seedSecret] }
 }

@@ -14,53 +14,11 @@ While iterating: run only the individual test file(s) you're touching, and move 
 
 ## Architecture
 
-- **UI layer** (`apps/mobile`): Components, screens, navigation, styling, gestures
-- **Logic layer** (`packages/*`): Data fetching, Zustand stores, business rules, API clients, crypto
-- **State**: Zustand for client state, TanStack Query for server state
-- **Platform layer** (`extensions/*`): storage, keystore, Ledger and device adapters, reached from packages via `getProvider()`
+The platform layer (`extensions/*`: storage, keystore, Ledger and device adapters) is reached from `packages/*` via `getProvider()`.
 
-## Styling (CRITICAL)
+Component, styling and folder conventions for the app live in `apps/mobile/CLAUDE.md`.
 
-**ALWAYS** use `makeStyles` from `@rneui/themed`. **NEVER** use `StyleSheet.create`.
-
-- Use theme tokens only (`theme.colors.*`, `theme.spacing.*`, `theme.borders.*`). No hardcoded colors or values
-- No inline styles; all styles go in `styles.ts` next to the component
-- Export `useStyles` hook from `styles.ts`
-
-## Components (CRITICAL)
-
-### PW-Prefix Wrapper Requirement
-
-All external components (from `@rneui/themed`, `react-native`, third-party) **MUST** be wrapped in `PW`-prefixed components before use. These live in `apps/mobile/src/components/core/PW[Name]/`.
-
-**ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`
-
-Exceptions: `ActivityIndicator`, basic layout primitives used only inside PW components.
-
-### Component Locations
-
-| Type            | Location                                           | Prefix          |
-| --------------- | -------------------------------------------------- | --------------- |
-| Design system   | `apps/mobile/src/components/core/PW[Name]/`        | `PW`            |
-| Shared          | `apps/mobile/src/components/[Name]/`               | None            |
-| Module-specific | `apps/mobile/src/modules/[mod]/components/[Name]/` | None            |
-| Screen          | `apps/mobile/src/modules/[mod]/screens/[Name]/`    | `Screen` suffix |
-
-### Folder Structure (Required)
-
-```
-ComponentName/              # PascalCase
-├── ComponentName.tsx       # Named export only (no default exports)
-├── styles.ts               # makeStyles
-├── index.ts                # Barrel: export { ComponentName } and type
-├── __tests__/
-│   └── ComponentName.spec.tsx
-└── SubComponent.tsx        # NOT re-exported, used only by parent
-```
-
-Folder naming: component folders = `PascalCase`, grouping/utility folders = `kebab-case`.
-
-If creating a core component, update `apps/mobile/src/components/core/index.ts` barrel.
+New lint rules: per-file syntax over linted source goes in oxlint (built-in, or the `pera` plugin in `packages/devtools/oxlint/`); anything needing tests/tooling coverage, other files' content or cross-file facts goes in lanekeep (`lanekeep/README.md`).
 
 ## Hooks (CRITICAL)
 
@@ -96,17 +54,18 @@ Always use the **named import** (`{ Decimal }`), never the default import. Alway
 
 ### Boundary Rules
 
-| Boundary                   | From            | To                 | How                                                                                       |
-| -------------------------- | --------------- | ------------------ | ----------------------------------------------------------------------------------------- |
-| API response → app         | `string` (JSON) | `Decimal`          | Wrap in `new Decimal(...)` in transformer functions                                       |
-| AlgoKit/blockchain → app   | `bigint`        | `Decimal`          | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                  |
-| App → display              | `Decimal`       | formatted `string` | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                 |
-| App → transaction building | `Decimal`       | `bigint`           | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain` |
-| App → database             | `Decimal`       | `TEXT`             | Automatic via `decimalColumn`, no manual conversion needed                                |
+| Boundary                   | From                   | To                        | How                                                                                                                            |
+| -------------------------- | ---------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| API response → app         | `string` (JSON)        | `Decimal`                 | Wrap in `new Decimal(...)` in transformer functions                                                                            |
+| AlgoKit/blockchain → app   | `bigint`               | `Decimal`                 | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                                                       |
+| Chain contract → app       | `Decimal` (base units) | `Decimal` (display units) | `baseUnitsToDisplayUnits()` / `toDecimalUnits()` at the UI or persistence edge; chain-contract types never carry display units |
+| App → display              | `Decimal`              | formatted `string`        | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                                                      |
+| App → transaction building | `Decimal`              | `bigint`                  | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-shared`                                          |
+| App → database             | `Decimal`              | `TEXT`                    | Automatic via `decimalColumn`, no manual conversion needed                                                                     |
 
 ### Conversion Utilities
 
-Canonical conversion helpers live in `@perawallet/wallet-core-blockchain` (`baseUnitsToDisplayUnits`, `displayUnitsToBaseUnits`, `toBigInt`, `microAlgosToAlgos`, `algosToMicroAlgosBigInt`), with asset-aware wrappers `toWholeUnits`/`toDecimalUnits` in `@perawallet/wallet-core-assets`.
+Canonical conversion helpers live in `@perawallet/wallet-core-shared` (`baseUnitsToDisplayUnits`, `displayUnitsToBaseUnits`, `toBigInt`, `microAlgosToAlgos`, `algosToMicroAlgosBigInt`), with asset-aware wrappers `toWholeUnits`/`toDecimalUnits` in `@perawallet/wallet-core-assets`.
 
 ### Rules
 
@@ -161,7 +120,8 @@ Keep JSDoc on exported package APIs where it earns its place (units, constraints
 ## Documentation (CRITICAL)
 
 The same rule as comments, one level up: **record the decision and the reason, never the journey.**
-`pnpm lint:docs` enforces the mechanical half of this and runs in pre-push.
+`pnpm lint:docs` (Markdown, shell, YAML) and the lanekeep rule `pera/no-work-item-refs` (code
+comments, in `pnpm lint`) enforce the mechanical half of this.
 
 **Never write, in a doc or a comment:**
 
@@ -231,7 +191,7 @@ See `docs/TESTING.md` for the integration test harness, MSW handler factories, a
 
 ## Translations
 
-Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pnpm run lint:i18n` enforces **bidirectional** key parity against `en.json`, so an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps, such as Turkish suffixes never attaching to a `{{placeholder}}`.
+Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pera/locale-key-parity` (in `pnpm lint`) enforces **bidirectional** key parity against `en.json`, so an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps, such as Turkish suffixes never attaching to a `{{placeholder}}`.
 
 ## Work Completion
 

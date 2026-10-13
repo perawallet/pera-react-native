@@ -12,38 +12,54 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
-import { getNetworkConfig, isMainnet } from '@perawallet/wallet-core-config'
-import type {
-    AccountBalances,
-    WalletAccount,
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import {
+    chainAccountOf,
+    type AccountBalances,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     isValidAlgorandAddress,
     useAlgorandClient,
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import {
+    getKnownAssetId,
+    isNativeAssetId,
+    useNativeAsset,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainMode,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     useNetwork,
-    displayUnitsToBaseUnits,
-} from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET, getKnownAssetId } from '@perawallet/wallet-core-assets'
+    useSelectedChainMode,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useSigningRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
-    isAlgoAssetId,
-    ALGO_ASSET_ID,
     generateOrderedUniqueId,
     logger,
     type Optional,
     type Nullable,
-    type Network,
+    displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
 import { Decimal } from 'decimal.js'
 import { sendBidaliEvent } from './bidali-events'
 
-const SUPPORTED_CURRENCIES = ['algorand', 'usdcalgorand']
-const SUPPORTED_CURRENCIES_JSON = JSON.stringify(SUPPORTED_CURRENCIES)
+// The one copy: web stamps it onto the iframe URL for the browser's content script.
+export const BIDALI_PAYMENT_CURRENCIES: readonly string[] = [
+    'algorand',
+    'usdcalgorand',
+]
+const BIDALI_PAYMENT_CURRENCIES_JSON = JSON.stringify(BIDALI_PAYMENT_CURRENCIES)
 
 type CurrencyInfo = {
     assetId: string
@@ -52,20 +68,24 @@ type CurrencyInfo = {
 
 const getCurrencyInfo = (
     protocol: string,
-    network: Network,
+    scope: ChainScope,
+    nativeAsset: PeraAsset,
 ): Nullable<CurrencyInfo> => {
     switch (protocol) {
         case 'algorand': {
-            return { assetId: ALGO_ASSET_ID, decimals: ALGO_ASSET.decimals }
+            return {
+                assetId: nativeAsset.assetId,
+                decimals: nativeAsset.decimals,
+            }
         }
         case 'testusdcalgorand':
         case 'usdcalgorand': {
-            const assetId = getKnownAssetId('USDC', network)
+            const assetId = getKnownAssetId('USDC', scope)
             if (assetId === null) return null
 
             return {
                 assetId,
-                decimals: ALGO_ASSET.decimals, //USDC has same number of decimals as algo
+                decimals: nativeAsset.decimals, //USDC has same number of decimals as algo
             }
         }
         default: {
@@ -81,26 +101,28 @@ const getCurrencyInfo = (
 export const computeBidaliBalances = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
-    network: Network,
+    scope: ChainScope,
+    chainMode: ChainMode,
 ): Record<string, string> => {
-    const balance = balances.get(account?.address ?? '')
+    const balance = balances.get(
+        (account && chainAccountOf(account, scope.chainId)?.address) ?? '',
+    )
 
     const algoBalance = balance?.assetBalances.find(a =>
-        isAlgoAssetId(a.assetId),
+        isNativeAssetId(scope.chainId, a.assetId),
     )?.amount
     // A null id (no known USDC on this network) simply never matches an
     // asset id here — the existing "user holds no USDC" path. No branch
     // needed.
     const usdcBalance = balance?.assetBalances.find(
-        a => a.assetId === getKnownAssetId('USDC', network),
+        a => a.assetId === getKnownAssetId('USDC', scope),
     )?.amount
 
-    // Bidali only has mainnet and testnet catalogues; everything that is not
-    // mainnet uses the testnet one.
-    const isMainnetCatalogue = isMainnet(network)
+    // Bidali only has live and test catalogues; every developer mode uses the test one.
+    const isLiveCatalogue = chainMode === 'live'
     return {
         algorand: algoBalance?.toString() ?? '0',
-        [isMainnetCatalogue ? 'usdcalgorand' : 'testusdcalgorand']:
+        [isLiveCatalogue ? 'usdcalgorand' : 'testusdcalgorand']:
             usdcBalance?.toString() ?? '0',
     }
 }
@@ -121,7 +143,7 @@ const buildBidaliProviderJS = (apiKey: string, balances: string): string => {
             window.bidaliProvider = {
                 key: '${apiKey}',
                 name: 'perawallet',
-                paymentCurrencies: ${SUPPORTED_CURRENCIES_JSON},
+                paymentCurrencies: ${BIDALI_PAYMENT_CURRENCIES_JSON},
                 balances: ${balances},
 
                 onPaymentRequest: function(req) {
@@ -175,26 +197,37 @@ export const useBidaliTransport = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network } = useNetwork()
+    const chainMode = useSelectedChainMode(scope.chainId)
+    const nativeAsset = useNativeAsset()
     const { t } = useLanguage()
     const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
     const webviewRef = useRef<Nullable<WebView>>(null)
 
     const providerJS = useMemo(() => {
-        const balanceMap = computeBidaliBalances(account, balances, network)
+        const balanceMap = computeBidaliBalances(
+            account,
+            balances,
+            scope,
+            chainMode,
+        )
 
         return buildBidaliProviderJS(
             getNetworkConfig(network).bidaliApiKey,
             JSON.stringify(balanceMap),
         )
-    }, [network, account, balances])
+    }, [network, chainMode, account, balances, scope])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
             const { address, amount, protocol, extraId } = params
 
-            if (!account) {
+            const sender = account
+                ? chainAccountOf(account, scope.chainId)?.address
+                : undefined
+            if (!sender) {
                 logger.warn('Bidali: no selected account')
                 return
             }
@@ -228,7 +261,7 @@ export const useBidaliTransport = (
                 return
             }
 
-            const currencyInfo = getCurrencyInfo(protocol, network)
+            const currencyInfo = getCurrencyInfo(protocol, scope, nativeAsset)
             if (!currencyInfo) {
                 logger.warn('Bidali: unsupported protocol', { protocol })
                 return
@@ -239,7 +272,6 @@ export const useBidaliTransport = (
                     ? extraId
                     : undefined
 
-            const sender = account.address
             const baseAmount = BigInt(
                 displayUnitsToBaseUnits(amount, currencyInfo.decimals).toFixed(
                     0,
@@ -249,7 +281,7 @@ export const useBidaliTransport = (
             try {
                 const composer = algokit.newGroup()
 
-                if (isAlgoAssetId(currencyInfo.assetId)) {
+                if (currencyInfo.assetId === nativeAsset.assetId) {
                     composer.addPayment({
                         sender,
                         receiver: address,
@@ -271,6 +303,7 @@ export const useBidaliTransport = (
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
+                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'gift-card',
                     txs: built.transactions,
@@ -296,7 +329,7 @@ export const useBidaliTransport = (
                 sendBidaliEvent(webviewRef, 'paymentCancelled')
             }
         },
-        [account, network, algokit, addSignRequest, t],
+        [account, network, nativeAsset, algokit, addSignRequest, t, scope],
     )
 
     const handleOpenUrl = useCallback((params: Record<string, unknown>) => {
@@ -311,6 +344,7 @@ export const useBidaliTransport = (
             return
         }
 
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- http(s) check above
         void Linking.openURL(url)
     }, [])
 

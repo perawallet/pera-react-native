@@ -11,16 +11,19 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import type {
+    Arc0001ResolveResult,
+    Arc0001SignTxnsRequest,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
-    resolveArc0001SignTxnRequest,
-    type Arc0001ResolveResult,
-    type Arc0001SignTxnsRequest,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    isMultisigAccount,
+    addressOn,
+    hasCustody,
     useAllAccounts,
     useSigningAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { plannerAdapterForScope } from '../chain-adapter'
 
 export type Arc0001ResolverOptions = {
     authorizedAddresses?: Set<string>
@@ -32,28 +35,43 @@ export type UseArc0001ResolverResult = (
     options?: Arc0001ResolverOptions,
 ) => Arc0001ResolveResult
 
-// Binds `signableAddresses` from the wallet so transports can't forget
-// it. Non-React callers can use `resolveArc0001SignTxnRequest` directly.
-export const useArc0001Resolver = (): UseArc0001ResolverResult => {
-    const signingAccounts = useSigningAccounts()
+const addressesOn = (
+    accounts: readonly WalletAccount[],
+    scope: ChainScope,
+): Set<string> =>
+    new Set(
+        accounts.flatMap(account => {
+            const address = addressOn(account, scope)
+            return address === undefined ? [] : [address]
+        }),
+    )
+
+// Binds `signableAddresses` from the wallet so transports can't forget it.
+export const useArc0001Resolver = (
+    scope: ChainScope,
+): UseArc0001ResolverResult => {
+    const signingAccounts = useSigningAccounts(scope.chainId)
     const allAccounts = useAllAccounts()
     const signableAddresses = useMemo(
-        () => new Set(signingAccounts.map(a => a.address)),
-        [signingAccounts],
+        () => addressesOn(signingAccounts, scope),
+        [signingAccounts, scope],
     )
     const multisigAddresses = useMemo(
         () =>
-            new Set(allAccounts.filter(isMultisigAccount).map(a => a.address)),
-        [allAccounts],
+            addressesOn(
+                allAccounts.filter(a => hasCustody(a, 'multisig')),
+                scope,
+            ),
+        [allAccounts, scope],
     )
     return useCallback(
         (request, options = {}) =>
-            resolveArc0001SignTxnRequest(request, {
+            plannerAdapterForScope(scope).resolveDappRequest(request, {
                 signableAddresses,
                 multisigAddresses,
                 authorizedAddresses: options.authorizedAddresses,
                 maxTransactions: options.maxTransactions,
             }),
-        [signableAddresses, multisigAddresses],
+        [scope, signableAddresses, multisigAddresses],
     )
 }

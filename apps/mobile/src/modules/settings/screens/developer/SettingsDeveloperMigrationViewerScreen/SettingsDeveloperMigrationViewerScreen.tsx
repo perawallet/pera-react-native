@@ -197,7 +197,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                     accounts={data.accounts}
                     rn={rn}
                 />
-                <HDWalletsSection hdWallets={data.hdWallets} />
+                <HDWalletsSection hdSeeds={data.hdSeeds} />
                 <ContactsSection
                     contacts={data.contacts}
                     rn={rn}

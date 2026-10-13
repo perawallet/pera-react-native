@@ -1,0 +1,133 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { vi } from 'vitest'
+import { Decimal } from 'decimal.js'
+import { Transaction, computeGroupID } from 'algosdk'
+import {
+    scopeForLegacyNetwork,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
+
+import {
+    plannerChainAdapters,
+    type AssignFeeToGroup,
+    type FetchSuggestedMinFee,
+    type PlannerChainAdapter,
+} from '../chain-adapter'
+import { InvalidSignableDataError } from '../pipeline/errors'
+
+const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
+
+const notStubbed = (member: string) => () => {
+    throw new Error(`fake planner: ${member} is not stubbed`)
+}
+
+// Recomputes each group partition's id, which keeps a stale group refused in
+// the machine's own specs without the real Algorand validator.
+const recomputeGroupIds = (transactions: PeraTransaction[]): void => {
+    const partitions = new Map<string, PeraTransaction[]>()
+    for (const tx of transactions) {
+        if (!tx.group) continue
+        const key = bytesToHex(tx.group)
+        partitions.set(key, [...(partitions.get(key) ?? []), tx])
+    }
+    for (const txs of partitions.values()) {
+        const ungrouped = txs.map(tx => {
+            const clone = Transaction.fromEncodingData(tx.toEncodingData())
+            clone.group = undefined
+            return clone
+        })
+        if (!bytesEqual(computeGroupID(ungrouped), txs[0].group!)) {
+            throw new InvalidSignableDataError(
+                'group ID does not match the transactions provided',
+            )
+        }
+    }
+}
+
+// Module-level so its identity is stable across renders, as the real hook's
+// `useCallback` result is.
+const passThroughAssignFee: AssignFeeToGroup = async ({ transactions }) => ({
+    transactions,
+    adjustments: [],
+})
+
+export const fakePlannerAdapter = (
+    overrides: Partial<PlannerChainAdapter> = {},
+): PlannerChainAdapter => ({
+    chainId: scopeForLegacyNetwork('mainnet').chainId,
+    resolveDappRequest: vi.fn(notStubbed('resolveDappRequest')),
+    enqueueDappRequest: vi.fn(notStubbed('enqueueDappRequest')),
+    minFeeForSender: vi.fn(() => 0n),
+    useFeeConfig: vi.fn(() => ({
+        minTxnFee: 0n,
+        pqMultiplier: 1n,
+        assetOptInMinBalance: 0n,
+    })),
+    useSuggestedMinFeeQuery: vi.fn(() => ({
+        suggestedMinFee: undefined,
+        isPending: true,
+        isError: false,
+    })),
+    useFetchSuggestedMinFee: vi.fn(() => fetchZeroMinFee),
+    useMinFeeForSender: vi.fn(() => ({ minFee: undefined, isPending: false })),
+    useAssignFeeToGroup: vi.fn(() => passThroughAssignFee),
+    encodeUnsignedTransaction: vi.fn(() => new Uint8Array()),
+    reviewGroupFees: vi.fn(() => ({
+        totalFee: new Decimal(0),
+        highFeeWarning: null,
+    })),
+    computeBalanceImpact: vi.fn(() => ({
+        deltas: [],
+        totalFeeMicroAlgos: 0n,
+        hasCloseRemainder: false,
+        closedAssetIds: [],
+        createdAssets: [],
+    })),
+    needsSimulation: vi.fn(() => false),
+    simulateGroup: vi.fn(async () => []),
+    programPayload: vi.fn((program: Uint8Array) => program),
+    encodeProgramAccount: vi.fn((program: Uint8Array) => program),
+    validateGroup: vi.fn((transactions, { isCosigner }) => {
+        if (!isCosigner) recomputeGroupIds(transactions)
+    }),
+    mergeSigningResults: vi.fn(results => results[0]),
+    assembleSignedTransaction: vi.fn((txn, signature) => ({
+        txn,
+        sig: signature?.sig,
+    })),
+    createMultisigStrategy: vi.fn(notStubbed('createMultisigStrategy')),
+    signMultisigGroups: vi.fn(notStubbed('signMultisigGroups')),
+    createMultisigProposeTransport: vi.fn(
+        notStubbed('createMultisigProposeTransport'),
+    ),
+    createMultisigCosignTransport: vi.fn(
+        notStubbed('createMultisigCosignTransport'),
+    ),
+    takeDraftProposeContext: vi.fn(() => undefined),
+    classifyHandoffPoll: vi.fn(notStubbed('classifyHandoffPoll')),
+    resolveHandoffOutcome: vi.fn(notStubbed('resolveHandoffOutcome')),
+    completeMultisigHandoff: vi.fn(notStubbed('completeMultisigHandoff')),
+    isSignRequestMultisigUnsignable: vi.fn(() => false),
+    ...overrides,
+})
+
+export const registerFakePlannerAdapter = (
+    overrides: Partial<PlannerChainAdapter> = {},
+): PlannerChainAdapter => {
+    const adapter = fakePlannerAdapter(overrides)
+    plannerChainAdapters.reset()
+    plannerChainAdapters.register(adapter)
+    return adapter
+}

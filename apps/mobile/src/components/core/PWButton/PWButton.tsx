@@ -21,12 +21,12 @@ import {
 } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import {
-    ActivityIndicator,
     type StyleProp,
     type TouchableOpacityProps,
     type ViewStyle,
 } from 'react-native'
 import { getTestProps } from '@utils/test-id-helper'
+import { PWLoadingIndicator } from '@components/core/PWLoadingIndicator'
 
 export type PWButtonProps = TouchableOpacityProps & {
     variant:
@@ -142,9 +142,9 @@ export const PWButton = ({
 
             {isLoading && (
                 <PWView style={styles.loadingContainer}>
-                    <ActivityIndicator
+                    <PWLoadingIndicator
                         testID='activity-indicator'
-                        size='small'
+                        size='sm'
                         color={styles.loadingStyle.color}
                     />
                 </PWView>

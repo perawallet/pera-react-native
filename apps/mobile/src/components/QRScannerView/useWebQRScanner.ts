@@ -66,15 +66,21 @@ export type UseWebQRScannerOptions = {
      * stays in a dormant, paste-only state. Used in the popup surface: the
      * `getUserMedia` permission prompt is a focus-stealing OS dialog, and
      * Chrome tears down the 360x600 toolbar popup the instant it loses
-     * focus (see `extensions/platform-chrome/src/navigation.ts`). Defaults
+     * focus (see `packages/browser-runtime/src/navigation.ts`). Defaults
      * to `true`.
      */
     autoStart?: boolean
 }
 
+// 'unsupported' can't change on retry (no getUserMedia or no QR-capable
+// BarcodeDetector); 'blocked' and 'unavailable' can, once the user allows the
+// camera or frees it from another app.
+export type WebCameraError = 'unsupported' | 'blocked' | 'unavailable'
+
 export type UseWebQRScannerResult = {
     isCameraActive: boolean
     hasCameraError: boolean
+    cameraError: WebCameraError | null
     videoRef: React.RefObject<HTMLVideoElement | null>
     pastedValue: string
     setPastedValue: (value: string) => void
@@ -107,7 +113,7 @@ export const useWebQRScanner = (
     onResultRef.current = onResult
 
     const [isCameraActive, setIsCameraActive] = useState(false)
-    const [hasCameraError, setHasCameraError] = useState(false)
+    const [cameraError, setCameraError] = useState<WebCameraError | null>(null)
     const [pastedValue, setPastedValue] = useState('')
 
     const stopStream = useCallback(() => {
@@ -137,7 +143,7 @@ export const useWebQRScanner = (
                 !navigator.mediaDevices?.getUserMedia ||
                 !BarcodeDetectorImpl
             ) {
-                setHasCameraError(true)
+                setCameraError('unsupported')
                 return
             }
 
@@ -200,7 +206,12 @@ export const useWebQRScanner = (
                         error,
                     })
                     if (cancelled) return
-                    setHasCameraError(true)
+                    setCameraError(
+                        error instanceof DOMException &&
+                            error.name === 'NotAllowedError'
+                            ? 'blocked'
+                            : 'unavailable',
+                    )
                 })
         }
 
@@ -220,7 +231,8 @@ export const useWebQRScanner = (
 
     return {
         isCameraActive,
-        hasCameraError,
+        hasCameraError: cameraError !== null,
+        cameraError,
         videoRef,
         pastedValue,
         setPastedValue,

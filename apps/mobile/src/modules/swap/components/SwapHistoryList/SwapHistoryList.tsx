@@ -11,9 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
@@ -34,7 +32,6 @@ export const SwapHistoryList = ({
 }: SwapHistoryListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { theme } = useTheme()
 
     const {
         swaps,
@@ -107,9 +104,7 @@ export const SwapHistoryList = ({
                 ListFooterComponent={
                     isFetchingNextPage ? (
                         <PWView style={styles.footer}>
-                            <ActivityIndicator
-                                color={theme.colors.linkPrimary}
-                            />
+                            <PWLoadingIndicator />
                         </PWView>
                     ) : null
                 }

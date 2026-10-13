@@ -20,7 +20,7 @@ import {
 const consumeInitialExpandedFlowMock = vi.fn()
 const setIsOnboardingMock = vi.fn()
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     consumeInitialExpandedFlow: () => consumeInitialExpandedFlowMock(),
 }))
 
@@ -47,15 +47,18 @@ describe('useExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
-    it('navigates to BackupWallet when the flow is backup-wallet', () => {
-        consumeInitialExpandedFlowMock.mockReturnValue('backup-wallet')
+    it('hands the resume flow to onResume instead of navigating', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('resume')
         const navigate = vi.fn()
-        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+        const onResume = vi.fn()
+        const { result } = renderHook(() =>
+            useExpandedFlowNavigation(navigate, onResume),
+        )
 
         result.current()
 
-        expect(navigate).toHaveBeenCalledWith('BackupWallet')
-        expect(navigate).toHaveBeenCalledTimes(1)
+        expect(onResume).toHaveBeenCalledOnce()
+        expect(navigate).not.toHaveBeenCalled()
     })
 
     it('navigates to ScanQR when the flow is scan', () => {
@@ -132,6 +135,57 @@ describe('useExpandedFlowNavigation', () => {
         })
         expect(navigate).toHaveBeenCalledTimes(1)
     })
+
+    it('deep-links into the cloud backup restore scan when the flow is backup-restore-scan', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('backup-restore-scan')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('Settings', {
+            screen: 'CloudBackupSettings',
+            params: { screen: 'CloudBackupRestoreScan' },
+        })
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('deep-links into cloud backup setup over the backup home when the flow is backup-setup', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('backup-setup')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('Settings', {
+            screen: 'CloudBackupSettings',
+            params: { screen: 'CloudBackupSetup', initial: false },
+        })
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens import options with the scanner up when the flow is recover-qr', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('recover-qr')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'ImportAccountOptions',
+            params: { isScannerOpen: true },
+        })
+    })
+
+    it('navigates to CameraAccess when the flow is camera-access', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('camera-access')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('CameraAccess')
+    })
 })
 
 describe('useOnboardingExpandedFlowNavigation', () => {
@@ -169,6 +223,34 @@ describe('useOnboardingExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
+    it('navigates to CloudBackupRestoreScan for backup-restore-scan', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('backup-restore-scan')
+        const navigate = vi.fn()
+        const { result } = renderHook(() =>
+            useOnboardingExpandedFlowNavigation(navigate),
+        )
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('CloudBackupRestoreScan')
+        expect(setIsOnboardingMock).toHaveBeenCalledWith(true)
+    })
+
+    it('opens import options with the scanner up for recover-qr', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('recover-qr')
+        const navigate = vi.fn()
+        const { result } = renderHook(() =>
+            useOnboardingExpandedFlowNavigation(navigate),
+        )
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('ImportAccountOptions', {
+            isScannerOpen: true,
+        })
+        expect(setIsOnboardingMock).toHaveBeenCalledWith(true)
+    })
+
     // Without this the imported account makes `useShowOnboarding` false and the
     // shell swaps the onboarding stack for the main one mid-flow.
     it('pins the shell to onboarding before navigating', () => {
@@ -182,7 +264,7 @@ describe('useOnboardingExpandedFlowNavigation', () => {
         expect(setIsOnboardingMock).toHaveBeenCalledWith(true)
     })
 
-    it.each(['add-account', 'backup-wallet', 'scan', null, 'evil'])(
+    it.each(['add-account', 'scan', 'camera-access', null, 'evil'])(
         'ignores %s, which has no onboarding-stack destination',
         flow => {
             consumeInitialExpandedFlowMock.mockReturnValue(flow)

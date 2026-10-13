@@ -18,7 +18,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { AccountAssetItemView } from '@modules/assets/components'
+import { AccountAssetItemView } from '@modules/assets'
 
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -65,8 +65,9 @@ export const SwapToAssetItemView = ({
             assetId: dexAsset.assetId,
             asset,
             amount: balance ?? new Decimal(0),
-            algoValue: new Decimal(0),
-            isFrozen: false,
+            nativeValue: new Decimal(0),
+            fiatValue: null,
+            restriction: null,
         }
     }, [dexAsset, balance])
 

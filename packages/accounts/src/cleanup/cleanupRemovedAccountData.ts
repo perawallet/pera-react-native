@@ -11,14 +11,24 @@
  */
 
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { runAccountCleanups } from '@perawallet/wallet-core-shared'
-import { deleteAssets, deleteAssetPrices } from '@perawallet/wallet-core-assets'
+import {
+    InvalidScopeKeyError,
+    scopeFromNetworkColumn,
+} from '@perawallet/wallet-core-chain-contract'
+import { logger, runAccountCleanups } from '@perawallet/wallet-core-shared'
+import {
+    deleteAssets,
+    deleteAssetPrices,
+    isNativeAssetId,
+} from '@perawallet/wallet-core-assets'
 import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
-    deleteAccountBalance,
+    deleteAccountChainState,
     getAllHeldAssetIdsForNetwork,
 } from '../db'
+import { useAccountChainStateStore } from '../store/accountChainState'
+import { useAccountsStore } from '../store/store'
 
 export type CleanupRemovedAccountDataParams = {
     db?: Database
@@ -33,8 +43,8 @@ export type CleanupRemovedAccountDataResult = {
 }
 
 /**
- * Removes an account's holdings and balance rows, prunes any assets and prices
- * no remaining account holds or is opted into, then runs any account-cleanup
+ * Removes an account's holdings and chain-state rows, prunes any assets and prices
+ * no remaining account holds, then runs any account-cleanup
  * handlers other packages registered (e.g. transaction-row pruning).
  * Idempotent — safe for an address with no data.
  */
@@ -53,19 +63,44 @@ export async function cleanupRemovedAccountData({
     }
 
     await deleteAllAssetHoldingsForAccount({ db, accountAddress })
-    await deleteAccountBalance({ db, accountAddress })
+    await deleteAccountChainState({ db, accountAddress })
+    useAccountChainStateStore
+        .getState()
+        .removeAccountChainStates(accountAddress)
+    useAccountsStore.getState().forgetAuthorities(accountAddress)
 
     const prunedAssetIdsByNetwork: Record<string, string[]> = {}
 
     for (const [network, hadIds] of hadByNetwork) {
+        let scope
+        try {
+            scope = scopeFromNetworkColumn(network)
+        } catch (error) {
+            // The account's rows are already gone, so an unreadable network
+            // must not stop the other networks' pruning or the registered cleanups.
+            if (!(error instanceof InvalidScopeKeyError)) throw error
+            logger.warn('Skipping orphan pruning for an unknown network', {
+                network,
+            })
+            continue
+        }
         const remaining = new Set(
-            await getAllHeldAssetIdsForNetwork({ db, network }),
+            await getAllHeldAssetIdsForNetwork({ db, scope }),
         )
-        const orphans = [...hadIds].filter(id => !remaining.has(id))
+        // The native asset is a holding row like any other, so it looks
+        // orphaned once the last account holding it is gone — but its metadata
+        // is a local constant seeded per network at bootstrap and nothing
+        // re-seeds it mid-session (the asset syncer skips it). Pruning it
+        // leaves every later native-asset read without decimals, which
+        // skeletons the asset row and strands Send on a spinner until the next
+        // cold start.
+        const orphans = [...hadIds].filter(
+            id => !remaining.has(id) && !isNativeAssetId(scope.chainId, id),
+        )
         if (orphans.length === 0) continue
 
-        await deleteAssets({ db, assetIds: orphans, network })
-        await deleteAssetPrices({ db, assetIds: orphans, network })
+        await deleteAssets({ db, assetIds: orphans, scope })
+        await deleteAssetPrices({ db, assetIds: orphans, scope })
         prunedAssetIdsByNetwork[network] = orphans
     }
 

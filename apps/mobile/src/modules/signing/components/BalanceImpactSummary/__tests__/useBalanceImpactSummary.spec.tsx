@@ -13,13 +13,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useImpactTransactions } from '@perawallet/wallet-core-signing'
+import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useBalanceImpactSummary } from '../useBalanceImpactSummary'
 
 // Keep computeBalanceImpact real; only stub the data-source hook.
@@ -30,10 +31,18 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
     useImpactTransactions: vi.fn(),
 }))
 
+const NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: '0',
+    name: 'Algo',
+    unitName: 'ALGO',
+    decimals: 6,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-assets')
     >()),
+    useNativeAsset: () => NATIVE_ASSET,
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
 }))
@@ -56,6 +65,14 @@ const NFT: PeraAsset = {
             collection: { name: 'Cool Collection' },
         },
     },
+}
+
+// An edition of 500: a collectible, but not a one-of-one.
+const EDITION: PeraAsset = {
+    ...NFT,
+    assetId: '200',
+    name: 'Edition',
+    totalSupply: new Decimal(500),
 }
 
 const spendAlgo = {
@@ -100,6 +117,16 @@ const mint = (
         },
     }) as unknown as PeraDisplayableTransaction
 
+const receiveEdition = {
+    sender: OTHER,
+    fee: 1000n,
+    assetTransferTransaction: {
+        assetId: 200n,
+        amount: 5n,
+        receiver: USER,
+    },
+} as unknown as PeraDisplayableTransaction
+
 const mockTransactions = (
     transactions: PeraDisplayableTransaction[],
     isSimulating = false,
@@ -114,8 +141,12 @@ const mockTransactions = (
 }
 
 beforeEach(() => {
+    registerAlgorandPlannerAdapter()
     vi.mocked(useAssetsQuery).mockReturnValue({
-        data: new Map([['100', NFT]]),
+        data: new Map([
+            ['100', NFT],
+            ['200', EDITION],
+        ]),
         isPending: false,
         isFetched: true,
         isRefetching: false,
@@ -164,6 +195,18 @@ describe('useBalanceImpactSummary', () => {
         expect(nft.isCollectible).toBe(true)
         expect(nft.collectibleTitle).toBe('Cool NFT #1')
         expect(nft.collectibleSubtitle).toBe('Cool Collection · 100')
+        expect(nft.isPureCollectible).toBe(true)
+    })
+
+    it('keeps the amount on a collectible that is not a one-of-one', () => {
+        mockTransactions([receiveEdition])
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        const edition = result.current.receive[0]
+        expect(edition.isCollectible).toBe(true)
+        expect(edition.isPureCollectible).toBe(false)
+        expect(edition.amount.toString()).toBe('5')
     })
 
     it('passes through the simulation-in-progress flag', () => {

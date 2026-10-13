@@ -10,30 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
-
-// The blockchain barrel pulls native deps (react-native-mmkv) that don't load
-// under node, so it can't be imported for real here. Delegate to algosdk
-// directly rather than a shape regex: a base32-shaped string with a bad
-// checksum is exactly what this filter must reject, and a regex mock would
-// wave it through (making the assertion below vacuous).
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const { decodeAddress } = await import('algosdk')
-    return {
-        isValidAlgorandAddress: (address?: string) => {
-            if (!address) return false
-            try {
-                decodeAddress(address)
-                return true
-            } catch {
-                return false
-            }
-        },
-    }
-})
-
+import { beforeEach, describe, expect, it } from 'vitest'
 import { transformSearchResults } from '../mappers'
 import type { NfdSearchApiResponse } from '../schema'
+import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const validAddress =
     'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
@@ -50,16 +30,20 @@ const searchResponse = (
 })
 
 describe('transformSearchResults', () => {
-    it('drops results whose backend-asserted address is not a valid Algorand address', () => {
+    beforeEach(() => {
+        registerFakeNameServiceAdapter({
+            isValidAddress: address => address === validAddress,
+        })
+    })
+
+    it("drops results whose backend-asserted address the chain's adapter rejects", () => {
         const result = transformSearchResults(
             searchResponse([
                 { name: 'alice.algo', address: validAddress },
                 { name: 'attacker.algo', address: 'not-a-real-address' },
                 { name: 'garbage.algo', address: '' },
-                // Right length and alphabet, wrong checksum — the case a
-                // shape-only check would let through.
-                { name: 'checksum.algo', address: 'A'.repeat(58) },
             ]),
+            'mainnet',
         )
 
         expect(result).toHaveLength(1)
@@ -73,6 +57,7 @@ describe('transformSearchResults', () => {
     it('passes a valid backend result through unchanged', () => {
         const result = transformSearchResults(
             searchResponse([{ name: 'bob.algo', address: validAddress }]),
+            'mainnet',
         )
 
         expect(result).toHaveLength(1)

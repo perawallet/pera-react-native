@@ -4,6 +4,7 @@
 
 import { defineRule } from 'lanekeep'
 import { EN_JSON, flattenLocale, isStringLeaf } from '../shared/locale.js'
+import { productionSource } from '../shared/scope.js'
 
 export default defineRule({
     id: 'pera/error-message-key-exists',
@@ -17,7 +18,7 @@ export default defineRule({
             good: "{ messageKey: 'common.back_online' }",
         },
     },
-    gates: { fileContains: ['messageKey'] },
+    gates: productionSource({ fileContains: ['messageKey'] }),
     // Only a string-literal value is statically resolvable. Shorthand
     // `{ messageKey }` has no value node to read, and a variable or template
     // literal cannot be resolved syntactically; the runtime missingKeyHandler

@@ -12,36 +12,38 @@
 
 import { createElement, type ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import {
     onlineManager,
     QueryClient,
     QueryClientProvider,
 } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     useAssetOptInMutation,
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../useAssetOptInMutation'
+import { sendFlowChainAdapters } from '../../chain-adapter'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
 
 const mockSubmit = vi.fn()
-const mockAccountInformation = vi.fn()
+const mockAccountState = vi.fn()
 const mockBuild = vi.fn()
-const mockNewGroup = vi.fn(() => ({
-    addAssetOptIn: vi.fn().mockReturnThis(),
-    build: mockBuild,
-}))
 const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
 const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
-const mockUseMinimumFeeConfig = vi.fn()
+const mockUseFeeConfig = vi.fn()
 const mockAssignFeeToGroup = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: mockAssignFeeToGroup,
@@ -49,6 +51,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchOnChainAccountState: (...args: unknown[]) => mockAccountState(...args),
     insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
     invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
         mockInvalidate(...args),
@@ -59,29 +62,35 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         mockFetchAndPersistAssets(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
-    useAlgorandClient: () => ({
-        client: {
-            algod: {
-                accountInformation: () => ({ do: mockAccountInformation }),
-            },
-        },
-        newGroup: mockNewGroup,
-    }),
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
+
+/** Base-unit (microAlgo) inputs, shaped as the on-chain read returns them. */
+const accountState = (
+    balance: bigint,
+    minBalance: bigint,
+    heldAssetIds: bigint[] = [],
+) => ({
+    nativeBalanceBaseUnits: new Decimal(balance.toString()),
+    reserveBalance: new Decimal(minBalance.toString()),
+    holdings: heldAssetIds.map(assetId => ({
+        assetId: String(assetId),
+        amount: new Decimal(0),
+        isFrozen: false,
+    })),
+})
 
 describe('useAssetOptInMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAccountInformation.mockResolvedValue({
-            amount: 1000000n,
-            minBalance: 100000n,
-            assets: [],
-        })
-        mockBuild.mockResolvedValue({
-            transactions: [{ txn: { sender: 'SENDER', fee: 1000n } }],
+        mockAccountState.mockResolvedValue(accountState(1000000n, 100000n))
+        mockBuild.mockResolvedValue([{ sender: 'SENDER', fee: 1000n }])
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            assetHolding: { buildOptInTxs: mockBuild, buildOptOutTxs: vi.fn() },
         })
         // Default: pass-through, which is what the calculator does for a
         // non-quantum sender.
@@ -92,16 +101,15 @@ describe('useAssetOptInMutation', () => {
             }),
         )
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetMbr: 100000n,
-            baseAccountMbr: 100000n,
+            assetOptInMinBalance: 100000n,
         })
     })
 
-    it('builds an opt-in via composer and submits via the pipeline helper', async () => {
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+    it('builds an opt-in through the chain adapter and submits via the pipeline helper', async () => {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -113,7 +121,11 @@ describe('useAssetOptInMutation', () => {
             expect(res.txIds).toEqual(['tx1'])
         })
 
-        expect(mockNewGroup).toHaveBeenCalledTimes(1)
+        expect(mockBuild).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            sender: 'SENDER',
+            assetId: 12345n,
+        })
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [{ sender: 'SENDER', fee: 1000n }],
@@ -122,12 +134,12 @@ describe('useAssetOptInMutation', () => {
         expect(mockInsertAssetHolding).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetId: '12345',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
-        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
-            ['12345'],
-            'testnet',
-        )
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['12345'], {
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         // The scoped invalidation is what refreshes every staleTime-Infinity
         // account read (balances, holdings page, NFT gallery sort caches).
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
@@ -137,13 +149,11 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('throws AlreadyOptedInError without calling the pipeline', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 1000000n,
-            minBalance: 100000n,
-            assets: [{ assetId: 12345n }],
-        })
+        mockAccountState.mockResolvedValueOnce(
+            accountState(1000000n, 100000n, [12345n]),
+        )
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -154,16 +164,15 @@ describe('useAssetOptInMutation', () => {
         })
 
         expect(mockSubmit).not.toHaveBeenCalled()
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(AlreadyOptedInError)
+        expect(result.current.isLoading).toBe(false)
     })
 
     it('throws InsufficientBalanceForOptInError without calling the pipeline', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 1n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValueOnce(accountState(1n, 100000n))
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -176,23 +185,36 @@ describe('useAssetOptInMutation', () => {
         expect(mockSubmit).not.toHaveBeenCalled()
     })
 
+    it('reports the ALGO shortfall so the toast can say how much is missing', async () => {
+        // 100000 minBalance + 100000 assetOptInMinBalance + 1000 fee = 201000 needed;
+        // 100000 held leaves 101000 microAlgos short.
+        mockAccountState.mockResolvedValueOnce(accountState(100000n, 100000n))
+
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await expect(
+                result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
+            ).rejects.toMatchObject({
+                metadata: { params: { shortfall: '0.101' } },
+            })
+        })
+    })
+
     it('balance check follows the remote-config asset MBR', async () => {
         // Non-default asset MBR (200000). Balance 250000 clears the old
         // threshold (100000 + 100000 + 1000 = 201000) but not the new one
         // (100000 + 200000 + 1000 = 301000), so the opt-in must be rejected.
-        mockUseMinimumFeeConfig.mockReturnValue({
+        mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetMbr: 200000n,
-            baseAccountMbr: 100000n,
+            assetOptInMinBalance: 200000n,
         })
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 250000n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValueOnce(accountState(250000n, 100000n))
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -210,7 +232,7 @@ describe('useAssetOptInMutation', () => {
     it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
         const built = { sender: 'SENDER', fee: 1000n }
         const raised = { sender: 'SENDER', fee: 3000n }
-        mockBuild.mockResolvedValueOnce({ transactions: [{ txn: built }] })
+        mockBuild.mockResolvedValueOnce([built])
         mockAssignFeeToGroup.mockResolvedValueOnce({
             transactions: [raised],
             adjustments: [
@@ -223,7 +245,7 @@ describe('useAssetOptInMutation', () => {
             ],
         })
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -240,7 +262,7 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('balance check uses the raised PQ fee, not the base minimum', async () => {
-        // 100000 minBalance + 100000 assetMbr leaves 2000 spare. That clears a
+        // 100000 minBalance + 100000 assetOptInMinBalance leaves 2000 spare. That clears a
         // 1000 base fee but not the 3000 a quantum signer actually pays, so the
         // opt-in must be rejected before anything is signed.
         mockAssignFeeToGroup.mockResolvedValueOnce({
@@ -254,13 +276,9 @@ describe('useAssetOptInMutation', () => {
                 },
             ],
         })
-        mockAccountInformation.mockResolvedValueOnce({
-            amount: 202000n,
-            minBalance: 100000n,
-            assets: [],
-        })
+        mockAccountState.mockResolvedValueOnce(accountState(202000n, 100000n))
 
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
 
@@ -275,7 +293,7 @@ describe('useAssetOptInMutation', () => {
 
     it('does not run post-submit work when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
-        const { result } = renderHook(() => useAssetOptInMutation(), {
+        const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
             wrapper,
         })
         await act(async () => {
@@ -293,7 +311,7 @@ describe('useAssetOptInMutation', () => {
 
         it('throws NoConnectionError before any algod call when offline', async () => {
             onlineManager.setOnline(false)
-            const { result } = renderHook(() => useAssetOptInMutation(), {
+            const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
                 wrapper,
             })
 
@@ -306,7 +324,7 @@ describe('useAssetOptInMutation', () => {
                 ).rejects.toBeInstanceOf(NoConnectionError)
             })
 
-            expect(mockAccountInformation).not.toHaveBeenCalled()
+            expect(mockAccountState).not.toHaveBeenCalled()
             expect(mockBuild).not.toHaveBeenCalled()
         })
     })

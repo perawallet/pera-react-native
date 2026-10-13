@@ -11,6 +11,7 @@
  */
 
 import { createHash } from 'crypto'
+import nacl from 'tweetnacl'
 import { ALGO25_SEED_LENGTH } from '../constants'
 import {
     BITS_PER_BYTE,
@@ -66,7 +67,7 @@ const toUint11Array = (bytes: Uint8Array): number[] => {
  * words from the little-endian-packed seed plus a 25th checksum word taken from
  * the first 11-bit group of `SHA-512/256(seed)`. Byte-identical to
  * `mnemonicWordsToIndices(mnemonicFromSeed(seed).split(' '))` — equivalence
- * guard in `__tests__/algo25-indices.test.ts`.
+ * guard in `packages/chain-algorand/src/accounts/__tests__/algo25-encoding.spec.ts`.
  */
 export const algo25SeedToIndices = (seed: Uint8Array): Uint16Array => {
     if (seed.length !== ALGO25_SEED_LENGTH) {
@@ -80,8 +81,8 @@ export const algo25SeedToIndices = (seed: Uint8Array): Uint16Array => {
 /**
  * Inverse of `algo25SeedToIndices`: recovers the 32-byte seed from 25 wordlist
  * indices, verifying the 25th checksum word. The index-native counterpart to
- * algosdk's `seedFromMnemonic` (equivalence guard in
- * `__tests__/algo25-indices.test.ts`), so the phrase never has to exist as a
+ * the Algorand SDK's `seedFromMnemonic` (equivalence guard in
+ * `packages/chain-algorand/src/accounts/__tests__/algo25-encoding.spec.ts`), so the phrase never has to exist as a
  * string to be turned back into key material.
  *
  * Throws on a checksum mismatch or unpackable indices; every intermediate
@@ -131,4 +132,15 @@ export const indicesToAlgo25Seed = (indices: Uint16Array): Uint8Array => {
         throw new Error('Invalid algo25 mnemonic checksum')
     }
     return seed
+}
+
+/**
+ * The Ed25519 public key an algo25 seed signs with, derived in memory without
+ * minting a keystore entry, for probing whether the account exists on chain.
+ * The caller owns zeroing `seed`.
+ */
+export const algo25PublicKeyFromSeed = (seed: Uint8Array): Uint8Array => {
+    const { publicKey, secretKey } = nacl.sign.keyPair.fromSeed(seed)
+    zeroBytes(secretKey)
+    return publicKey
 }

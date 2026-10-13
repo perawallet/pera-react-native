@@ -25,10 +25,11 @@ let mockAssetsQueryResult: {
     isError: boolean
 }
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'testnet' }),
-    displayUnitsToBaseUnits: (amount: Decimal, decimals: number) =>
-        amount.mul(new Decimal(10).pow(decimals)),
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({

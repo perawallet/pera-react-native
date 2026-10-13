@@ -10,134 +10,52 @@
  limitations under the License
  */
 
-import { describe, expect, test } from 'vitest'
-import {
-    ALGORAND_COIN_TYPE,
-    assertAlgorandBip44PathMatches,
-    hdPathMatchesDetails,
-    InvalidBip44PathError,
-    parseAlgorandBip44Path,
-} from '../bip44'
-import { DerivationTypes, type HDWalletDetails } from '../models'
+import { describe, expect, it } from 'vitest'
+import { assertBip44PathMatches, parseBip44Path } from '../bip44'
 
-const details: HDWalletDetails = {
-    account: 0,
-    change: 0,
-    keyIndex: 3,
-    derivationType: DerivationTypes.Peikert,
-}
-
-describe('parseAlgorandBip44Path', () => {
-    test('parses a canonical Algorand BIP44 path with apostrophe hardening', () => {
-        expect(parseAlgorandBip44Path("m/44'/283'/0'/0/3")).toEqual({
-            account: 0,
-            change: 0,
-            keyIndex: 3,
-        })
-    })
-
-    test('accepts the `h` hardened marker', () => {
-        expect(parseAlgorandBip44Path('m/44h/283h/7h/1/9')).toEqual({
-            account: 7,
-            change: 1,
-            keyIndex: 9,
-        })
-    })
-
-    test('accepts the leading `m/` being omitted', () => {
-        expect(parseAlgorandBip44Path("44'/283'/2'/0/0")).toEqual({
+describe('parseBip44Path', () => {
+    it.each([
+        ["m/44'/60'/2'/0/7"],
+        ['44h/60h/2h/0/7'],
+        [" m/44' / 60' /2'/0/ 7 "],
+    ])('reads the coordinates of %j', path => {
+        expect(parseBip44Path(path, 60)).toEqual({
             account: 2,
             change: 0,
-            keyIndex: 0,
+            keyIndex: 7,
         })
     })
 
-    test('rejects paths with the wrong segment count', () => {
-        expect(() => parseAlgorandBip44Path("m/44'/283'/0'")).toThrow(
-            InvalidBip44PathError,
-        )
-    })
-
-    test('rejects paths with a non-44 purpose', () => {
-        expect(() => parseAlgorandBip44Path("m/49'/283'/0'/0/0")).toThrow(
-            InvalidBip44PathError,
-        )
-    })
-
-    test('rejects paths with a non-Algorand coin type', () => {
-        expect(() => parseAlgorandBip44Path("m/44'/60'/0'/0/0")).toThrow(
-            InvalidBip44PathError,
-        )
-    })
-
-    test('rejects paths where the account segment is not hardened', () => {
-        expect(() => parseAlgorandBip44Path("m/44'/283'/0/0/0")).toThrow(
-            InvalidBip44PathError,
-        )
-    })
-
-    test('rejects paths with non-integer segments', () => {
-        expect(() => parseAlgorandBip44Path("m/44'/283'/foo'/0/0")).toThrow(
-            InvalidBip44PathError,
-        )
-    })
-
-    test('exposes the malformed reason on the thrown error', () => {
-        try {
-            parseAlgorandBip44Path('garbage')
-        } catch (error) {
-            expect(error).toBeInstanceOf(InvalidBip44PathError)
-            expect((error as InvalidBip44PathError).reason).toBe('malformed')
-        }
-    })
-})
-
-describe('hdPathMatchesDetails', () => {
-    test('returns true for a matching path', () => {
-        expect(hdPathMatchesDetails("m/44'/283'/0'/0/3", details)).toBe(true)
-    })
-
-    test('returns false for a mismatching keyIndex', () => {
-        expect(hdPathMatchesDetails("m/44'/283'/0'/0/99", details)).toBe(false)
-    })
-
-    test('propagates malformed-path errors', () => {
-        expect(() => hdPathMatchesDetails('bad', details)).toThrow(
-            InvalidBip44PathError,
+    it.each([
+        ["m/44'/283'/2'/0/7", 'another coin type'],
+        ["m/44'/60'/0x2'/0/7", 'a non-decimal index'],
+        ["m/44'/60'/2'/0/7/", 'a trailing slash'],
+        ["m/44'/60'/2'/0h/7", 'a hardened change'],
+    ])('rejects %s (%s) as malformed', path => {
+        expect(() => parseBip44Path(path, 60)).toThrow(
+            expect.objectContaining({ reason: 'malformed', hdPath: path }),
         )
     })
 })
 
-describe('assertAlgorandBip44PathMatches', () => {
-    test('does not throw on match', () => {
+describe('assertBip44PathMatches', () => {
+    it('rejects a path at other coordinates as a mismatch', () => {
         expect(() =>
-            assertAlgorandBip44PathMatches("m/44'/283'/0'/0/3", details),
-        ).not.toThrow()
+            assertBip44PathMatches(
+                "m/44'/60'/2'/0/8",
+                { account: 2, keyIndex: 7 },
+                60,
+            ),
+        ).toThrow(expect.objectContaining({ reason: 'mismatch' }))
     })
 
-    test('throws mismatch error when coordinates differ', () => {
-        try {
-            assertAlgorandBip44PathMatches("m/44'/283'/0'/0/99", details)
-            throw new Error('expected throw')
-        } catch (error) {
-            expect(error).toBeInstanceOf(InvalidBip44PathError)
-            expect((error as InvalidBip44PathError).reason).toBe('mismatch')
-        }
-    })
-
-    test('throws malformed error for invalid paths', () => {
-        try {
-            assertAlgorandBip44PathMatches('nope', details)
-            throw new Error('expected throw')
-        } catch (error) {
-            expect(error).toBeInstanceOf(InvalidBip44PathError)
-            expect((error as InvalidBip44PathError).reason).toBe('malformed')
-        }
-    })
-})
-
-describe('ALGORAND_COIN_TYPE', () => {
-    test('equals the SLIP-0044 constant', () => {
-        expect(ALGORAND_COIN_TYPE).toBe(283)
+    it('rejects a path on the internal chain as a mismatch', () => {
+        expect(() =>
+            assertBip44PathMatches(
+                "m/44'/60'/2'/1/7",
+                { account: 2, keyIndex: 7 },
+                60,
+            ),
+        ).toThrow(expect.objectContaining({ reason: 'mismatch' }))
     })
 })

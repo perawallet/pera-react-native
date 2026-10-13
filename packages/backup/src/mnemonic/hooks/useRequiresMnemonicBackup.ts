@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useMnemonicBackupStore } from '../store'
 import { getMnemonicBackupKeyId } from '../utils'
 
@@ -20,12 +21,13 @@ import { getMnemonicBackupKeyId } from '../utils'
 // false, so consumers don't have to re-check the account type themselves.
 export const useRequiresMnemonicBackup = (
     account: WalletAccount | null | undefined,
+    chainId: ChainId,
 ): boolean => {
     const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
 
     if (!account) return false
 
-    const keyId = getMnemonicBackupKeyId(account)
+    const keyId = getMnemonicBackupKeyId(account, chainId)
     if (keyId === null) return false
 
     return !backedUpKeyIds[keyId]

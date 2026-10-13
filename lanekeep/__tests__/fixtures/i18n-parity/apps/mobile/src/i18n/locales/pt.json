@@ -1,0 +1,10 @@
+{
+    "common": {
+        "ok": "OK",
+        "ok_zero": "Nada",
+        "items_zero": "Nenhum item",
+        "items_one": "{{count}} item",
+        "items_other": "{{count}} itens"
+    },
+    "gone": "Sumiu"
+}

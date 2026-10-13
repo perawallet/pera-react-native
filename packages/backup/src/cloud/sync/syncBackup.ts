@@ -10,24 +10,63 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
-import {
-    batchUpsertItems,
-    deleteItem,
-    fetchDelta,
-    fetchManifest,
-    readItems,
-} from '../api'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
+import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import type { SyncState } from '../models'
+import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
-import { buildLocalItems } from './buildLocalItems'
+import { buildLocalContactItems } from './buildLocalContactItems'
+import {
+    buildLocalItems,
+    refreshRecordsForPush,
+    withTrackedRecords,
+} from './buildLocalItems'
+import { buildLocalPasskeyItems } from './buildLocalPasskeyItems'
 import { pushDirty } from './pushDirty'
+import { readableBackupChains } from './backupChains'
+import { isImportRetryDue } from './importRetry'
+import {
+    fetchDeltaOrRebuild,
+    unreadAccountDeltas,
+    withAccountRecordsUnread,
+} from './rebuildFromManifest'
 import { reconcile } from './reconcile'
-import type { SyncEngineDeps } from './types'
+import { reconcileLocalSettings } from './reconcileSettings'
+import { BackupSyncAbortedError } from './types'
+import type { LocalItem, LocalSnapshot, SyncEngineDeps } from './types'
+
+const abortIfStopped = (deps: SyncEngineDeps): void => {
+    if (deps.isAborted()) throw new BackupSyncAbortedError()
+}
+
+const sameChains = (
+    stored: readonly string[] | undefined,
+    current: readonly string[],
+): boolean =>
+    (stored ?? []).length === current.length &&
+    current.every((chainId, index) => stored?.[index] === chainId)
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
+
+/** A registered backup has no manifest until its first item lands, so the very
+ *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
+ *  a wiped backup fails with 401 instead — a 404 can only mean "still empty".
+ *  Warns because that is only true once: a 404 that keeps coming back leaves
+ *  `lastKnownBackupHash` pinned, which silently disables the short-circuit
+ *  below and makes every sync a full delta + read + push. */
+const fetchManifestOrNull = async (
+    deps: SyncEngineDeps,
+): Promise<Manifest | null> => {
+    try {
+        return await fetchManifest(deps.network, deps.backupId, deps.deviceId)
+    } catch (error) {
+        if (!isNotFoundError(error)) throw error
+        logger.warn('syncBackup: no manifest, treating backup as empty')
+        return null
+    }
+}
 
 /** Full pull + push. `now` is injected for deterministic tests. Throws on a hard
  *  network/transport failure (caller records FAILED + backs off); on success the
@@ -38,60 +77,123 @@ export const syncBackup = async (
     now: number = Date.now(),
 ): Promise<SyncState> => {
     // 1. Reconcile local first so the short-circuit below is accurate.
-    const local = await buildLocalItems(
-        deps.listAccounts(),
-        deps.serializeAccount,
-    )
-    if (local.skipped > 0) {
+    const accounts = await buildLocalItems(deps.listAccounts(), account => {
+        abortIfStopped(deps)
+        return deps.serializeAccount(account)
+    })
+    if (accounts.skipped > 0) {
         logger.warn('syncBackup: accounts skipped, deletions deferred', {
-            skipped: local.skipped,
+            skipped: accounts.skipped,
         })
     }
-    let next = reconcile(state, local, now)
+    // Outside the catch below, which would swallow the abort: the sweep reads
+    // every owning seed's entropy.
+    abortIfStopped(deps)
+    // A KMS/biometric failure here must not block accounts and contacts from
+    // pushing; reconcile treats a missing item as "not yet re-derived", never
+    // as a delete, so skipping passkeys for this cycle is safe.
+    const passkeys = await deps.listPasskeys().catch(error => {
+        logger.warn('syncBackup: listPasskeys failed, skipping passkeys', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return []
+    })
+    let passkeyItems: LocalItem[]
+    try {
+        passkeyItems = buildLocalPasskeyItems(passkeys, now, deps.hashAddress)
+    } finally {
+        for (const passkey of passkeys) zeroBytes(passkey.privateKey)
+    }
+    const otherItems = [
+        ...buildLocalContactItems(deps.listContacts(), now, deps.hashAddress),
+        ...passkeyItems,
+    ]
+    const local: LocalSnapshot = {
+        items: [...withTrackedRecords(accounts.items, state), ...otherItems],
+        // Account-only: a contact cannot fail to serialize, and a credential
+        // that could not be re-derived never reaches this list.
+        skipped: accounts.skipped,
+    }
+    let next = reconcileLocalSettings(reconcile(state, local, now), deps, now)
 
     // 2. Manifest short-circuit.
-    const manifest = await fetchManifest(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
+    const manifest = await fetchManifestOrNull(deps)
+
+    /* A legacy backup's payloads still decrypt, so syncing would import every
+     * item and push the same accounts back under hashed keys, doubling it. */
+    const legacyKeyCount = Object.keys(manifest?.items ?? {}).filter(
+        isLegacyItemKey,
+    ).length
+    if (legacyKeyCount > 0) {
+        logger.warn(
+            'syncBackup: backup uses legacy address keys, refusing to sync',
+            { legacyKeyCount },
+        )
+        // The reconciled state is dropped, not returned: committing it would
+        // track every local item as dirty work this backup can never accept.
+        return { ...state, lastSyncResult: 'FAILED' }
+    }
+
+    // Re-read what no delta will mention again: everything skipped, once a
+    // chain this client could not read becomes readable, or else a failed
+    // import that still has attempts left.
+    const readableChains = readableBackupChains()
+    const hasNewChains = !sameChains(next.readableChains, readableChains)
+    if (hasNewChains)
+        next = { ...withAccountRecordsUnread(next), readableChains }
+    const unread = unreadAccountDeltas(
+        next,
+        hasNewChains ? undefined : isImportRetryDue,
     )
+
     if (
+        manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&
-        !hasPendingWork(next)
+        !hasPendingWork(next) &&
+        unread.length === 0
     ) {
         return { ...next, lastSyncedAt: now, lastSyncResult: 'SUCCESS' }
     }
 
     // 3-4. Fetch + apply remote deltas.
-    const deltas = await fetchDelta(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        next.lastSyncedSeq,
+    const { deltas: fetchedDeltas } = await fetchDeltaOrRebuild(
+        deps,
+        next,
+        async () => manifest,
     )
+    abortIfStopped(deps)
     next = await applyDeltas({
         state: next,
-        deltas,
+        deltas: [...unread, ...fetchedDeltas],
         deps: {
             network: deps.network,
             backupId: deps.backupId,
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
+            importContacts: deps.importContacts,
+            importPasskeys: deps.importPasskeys,
+            importSettings: deps.importSettings,
             readItems,
             decrypt: decryptItemPayload,
         },
     })
 
+    // Baselines what the import just wrote, so it is not pushed back as an edit.
+    next = reconcileLocalSettings(next, deps, now)
+
     // 5. Push local changes (use the freshly-built local items).
+    abortIfStopped(deps)
+    const refreshed = refreshRecordsForPush(next, accounts.items)
     next = await pushDirty({
-        state: next,
-        localItems: local.items,
+        state: refreshed.state,
+        localItems: [...refreshed.items, ...otherItems],
         deps: {
             network: deps.network,
             backupId: deps.backupId,
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
+            isAborted: deps.isAborted,
             batchUpsertItems,
             deleteItem,
         },
@@ -100,8 +202,9 @@ export const syncBackup = async (
     // 6. Advance pointers + mark success.
     return {
         ...next,
-        lastKnownBackupHash: manifest.backupGlobalHash,
-        lastSyncedSeq: Math.max(next.lastSyncedSeq, manifest.lastSeq),
+        lastKnownBackupHash:
+            manifest?.backupGlobalHash ?? next.lastKnownBackupHash,
+        lastSyncedSeq: Math.max(next.lastSyncedSeq, manifest?.lastSeq ?? 0),
         lastSyncedAt: now,
         lastSyncResult: 'SUCCESS',
     }

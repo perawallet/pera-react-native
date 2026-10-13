@@ -22,13 +22,11 @@ import type {
  * module surface that the service consumes. Declared as a structural type so
  * tests can inject a mock without depending on the native module at all.
  *
- * The native surface is **platform-dependent**: several methods
- * (`getStoredCredentials`, `refreshCredentialIdentities`,
- * `replaceCredentialIdentities`, `getDiagnostics`) are
- * implemented on iOS only — on Android the credential provider reads MMKV
- * directly so they're simply not registered. Every call therefore goes
- * through {@link PasskeyAutofillService.invoke} which no-ops when the method
- * is absent rather than throwing `undefined is not a function`.
+ * Both platforms register every method below in the pinned native package;
+ * {@link PasskeyAutofillService.invoke} still no-ops a missing one so an older
+ * native build degrades instead of throwing `undefined is not a function`. On
+ * Android `refreshCredentialIdentities` is a no-op (there is no identity store
+ * to fill), and `getStoredCredentials` lists the `k/` metadata records.
  */
 export interface PasskeyAutofillNativeAPI {
     setMasterKey(secret: Uint8Array): Promise<void>
@@ -157,7 +155,7 @@ export class PasskeyAutofillService {
         )
     }
 
-    /** iOS-only — no-ops on Android, where the provider reads MMKV directly. */
+    /** A no-op on Android, which has no identity store to fill. */
     refreshCredentialIdentities(): Promise<void> {
         return this.invoke('refreshCredentialIdentities', [], undefined)
     }

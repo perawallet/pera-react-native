@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import {
-    useMutation,
-    useQueryClient,
-    type UseMutationResult,
-} from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Network } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { AddSignatureRequest } from '../api/schema'
 import type { ProposeSignRequestResponse } from '../api/schema'
@@ -30,23 +27,40 @@ type AddSignatureMutationInput = {
     responses: AddSignatureRequest[]
 }
 
+export type UseAddSignatureMutationResult = {
+    data: ProposeSignRequestResponse | undefined
+    error: Nullable<Error>
+    isError: boolean
+    isIdle: boolean
+    isSuccess: boolean
+    mutate: (params: AddSignatureMutationInput) => void
+}
+
 export const useAddSignatureMutation = ({
     network,
     signRequestId,
-}: UseAddSignatureMutationParams): UseMutationResult<
-    ProposeSignRequestResponse,
-    Error,
-    AddSignatureMutationInput
-> => {
+}: UseAddSignatureMutationParams): UseAddSignatureMutationResult => {
     const rqClient = useQueryClient()
 
-    return useMutation({
+    const mutation = useMutation({
         mutationFn: ({ responses }: AddSignatureMutationInput) =>
             addSignature(network, signRequestId, responses),
         onSuccess: () => {
             void rqClient.invalidateQueries({
-                queryKey: getSignRequestDetailQueryKey(network, signRequestId),
+                queryKey: getSignRequestDetailQueryKey(
+                    scopeForLegacyNetwork(network),
+                    signRequestId,
+                ),
             })
         },
     })
+
+    return {
+        data: mutation.data,
+        error: mutation.error,
+        isError: mutation.isError,
+        isIdle: mutation.isIdle,
+        isSuccess: mutation.isSuccess,
+        mutate: mutation.mutate,
+    }
 }

@@ -14,12 +14,19 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
-    useAccountsStore,
-    useSetAccounts,
-    useSelectedAccountAddress,
-    AccountTypes,
+    buildAccount,
+    chainAccountOf,
+    findAccountByAddressOn,
+    hardwareDetailsOf,
     type HardwareWalletDetails,
+    isHardwareWalletAccount,
+    isLedgerAccount,
+    isWatchAccount,
     type LedgerSelectableAccount,
+    recordAuthority,
+    useAccountsStore,
+    useSelectedAccountId,
+    useSetAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
@@ -34,26 +41,25 @@ import {
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import {
-    generateOrderedUniqueId,
-    type AppError,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import {
+    type AddAccountStackParamList,
     useExitAccountFlow,
     useShouldPlayConfetti,
-} from '@modules/onboarding/hooks'
+} from '@modules/onboarding'
 import {
     deserializeSelectableAccount,
     getLedgerErrorPreset,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
 import { WatchAccountUpgradeSheet } from '@modules/ledger/components/WatchAccountUpgradeSheet'
+import { useLedgerExpandedTabHandoff } from '@modules/ledger/hooks'
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 
@@ -66,6 +72,11 @@ type UseLedgerVerifyScreenResult = {
     handleAdd: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
+    /** Set once accounts are added in a Ledger pairing tab, which then shows a result screen. */
+    isAddedInHandoffTab: boolean
+    handleDone: () => void
+    /** Closes a Ledger pairing tab; undefined anywhere else. */
+    handleCancel: (() => void) | undefined
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -91,11 +102,13 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     )
     const { t } = useLanguage()
     const { setAccounts } = useSetAccounts()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { exitAccountFlow } = useExitAccountFlow()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { request: requestBottomSheet } = useBottomSheet()
     const navigation = useAppNavigation()
+    const { isHandoffTab, closeHandoffTab } = useLedgerExpandedTabHandoff()
+    const [isAddedInHandoffTab, setIsAddedInHandoffTab] = useState(false)
 
     const verifyTargets = useMemo<HardwareWalletDerivedAccount[]>(() => {
         const byIndex = new Map<number, HardwareWalletDerivedAccount>()
@@ -202,27 +215,35 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
 
     const runAdd = useCallback(async () => {
         const current = useAccountsStore.getState().accounts
-        const byAddress = new Map(current.map(a => [a.address, a]))
+        const byAddress = new Map(
+            current.flatMap(account => {
+                const address = chainAccountOf(
+                    account,
+                    LEGACY_CHAIN_ID,
+                )?.address
+                return address === undefined ? [] : [[address, account]]
+            }),
+        )
         const added = new Set<string>()
         const batch: WalletAccount[] = []
+        const authorities: Array<{
+            address: string
+            authorityAddress: string
+        }> = []
         const upgrades: Array<{
+            id: string
             address: string
             details: HardwareWalletDetails
         }> = []
         const rebinds: Array<{
-            address: string
+            id: string
             details: HardwareWalletDetails
         }> = []
 
         // Default names number on from the ledger accounts already in the
         // wallet ("Ledger 3" after two prior imports) — count-based, so
         // renames/removals can repeat a number; names are not unique.
-        let nextDefaultNameNumber =
-            current.filter(
-                a =>
-                    a.type === AccountTypes.hardware &&
-                    a.hardwareDetails.manufacturer === 'ledger',
-            ).length + 1
+        let nextDefaultNameNumber = current.filter(isLedgerAccount).length + 1
 
         const detailsFor = (
             acc: HardwareWalletDerivedAccount,
@@ -239,39 +260,42 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             if (added.has(acc.address)) return
             const collision = byAddress.get(acc.address)
             if (collision) {
-                if (collision.type === AccountTypes.watch) {
+                if (isWatchAccount(collision)) {
                     if (!upgrades.some(u => u.address === acc.address)) {
                         upgrades.push({
+                            id: collision.id,
                             address: acc.address,
                             details: detailsFor(acc),
                         })
                     }
                 } else if (
-                    collision.type === AccountTypes.hardware &&
-                    (collision.hardwareDetails.deviceId !== deviceId ||
-                        collision.hardwareDetails.transportType !==
+                    isHardwareWalletAccount(collision) &&
+                    (hardwareDetailsOf(collision)?.deviceId !== deviceId ||
+                        hardwareDetailsOf(collision)?.transportType !==
                             transportType)
                 ) {
                     // Same address under a different stored device id — the
                     // OS forgot/re-paired or the device was replaced from the
                     // same seed. The address match proves the same key.
                     rebinds.push({
-                        address: acc.address,
+                        id: collision.id,
                         details: detailsFor(acc),
                     })
                 }
                 return
             }
             added.add(acc.address)
-            batch.push({
-                id: generateOrderedUniqueId(),
-                name: t('ledger.default_account_name', {
-                    number: nextDefaultNameNumber++,
+            const { accountIndex, ...device } = detailsFor(acc)
+            batch.push(
+                buildAccount({
+                    name: t('ledger.default_account_name', {
+                        number: nextDefaultNameNumber++,
+                    }),
+                    custody: { kind: 'hardware', device, accountIndex },
+                    chainId: LEGACY_CHAIN_ID,
+                    chains: { [LEGACY_CHAIN_ID]: { address: acc.address } },
                 }),
-                type: AccountTypes.hardware,
-                address: acc.address,
-                hardwareDetails: detailsFor(acc),
-            })
+            )
         }
 
         for (const sel of selectedAccounts) {
@@ -284,12 +308,12 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 // account. A watch auth always queues an upgrade above, so a
                 // present-but-watch auth can no longer slip through into an
                 // unsignable pair.
-                const authAddress = sel.authAccount.address
+                const authorityAddress = sel.authAccount.address
+                const presentAuth = byAddress.get(authorityAddress)
                 const authPresent =
-                    added.has(authAddress) ||
-                    upgrades.some(u => u.address === authAddress) ||
-                    (byAddress.has(authAddress) &&
-                        byAddress.get(authAddress)?.type !== AccountTypes.watch)
+                    added.has(authorityAddress) ||
+                    upgrades.some(u => u.address === authorityAddress) ||
+                    (presentAuth !== undefined && !isWatchAccount(presentAuth))
                 if (
                     authPresent &&
                     isValidAlgorandAddress(sel.address) &&
@@ -300,11 +324,18 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     // Every account carries a unique `id`; dedup within this
                     // import still keys on `address` (see `addHardware` above)
                     // because all account kinds today are on-chain.
-                    batch.push({
-                        id: generateOrderedUniqueId(),
-                        type: AccountTypes.watch,
+                    batch.push(
+                        buildAccount({
+                            custody: { kind: 'watch' },
+                            chainId: LEGACY_CHAIN_ID,
+                            chains: {
+                                [LEGACY_CHAIN_ID]: { address: sel.address },
+                            },
+                        }),
+                    )
+                    authorities.push({
                         address: sel.address,
-                        rekeyAddress: sel.authAccount.address,
+                        authorityAddress,
                     })
                 }
             }
@@ -332,15 +363,16 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
 
         const store = useAccountsStore.getState()
         for (const upgrade of upgrades) {
-            store.upgradeWatchAccountToHardware(
-                upgrade.address,
-                upgrade.details,
-            )
+            store.upgradeWatchAccountToHardware(upgrade.id, upgrade.details)
         }
         for (const rebind of rebinds) {
-            store.updateHardwareDetails(rebind.address, rebind.details)
+            store.updateHardwareDetails(rebind.id, rebind.details)
         }
         if (batch.length > 0) {
+            const scope = getSelectedScope(LEGACY_CHAIN_ID)
+            for (const { address, authorityAddress } of authorities) {
+                recordAuthority(scope, address, authorityAddress)
+            }
             setAccounts([...useAccountsStore.getState().accounts, ...batch])
         }
 
@@ -353,10 +385,21 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         const firstDerived = selectedAccounts.find(s => s.kind === 'derived')
         const selectedAddress =
             firstDerived?.account.address ??
-            batch[0]?.address ??
+            (batch[0] && chainAccountOf(batch[0], LEGACY_CHAIN_ID)?.address) ??
             upgrades[0]?.address
-        if (selectedAddress) {
-            setSelectedAccountAddress(selectedAddress)
+        const selected = selectedAddress
+            ? findAccountByAddressOn(
+                  useAccountsStore.getState().accounts,
+                  LEGACY_CHAIN_ID,
+                  selectedAddress,
+              )
+            : undefined
+        if (selected) {
+            setSelectedAccountId(selected.id)
+        }
+        if (isHandoffTab) {
+            setIsAddedInHandoffTab(true)
+            return
         }
         setShouldPlayConfetti(true)
         exitAccountFlow()
@@ -367,9 +410,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         selectedAccounts,
         requestBottomSheet,
         setAccounts,
-        setSelectedAccountAddress,
+        setSelectedAccountId,
         setShouldPlayConfetti,
         exitAccountFlow,
+        isHandoffTab,
         t,
     ])
 
@@ -390,6 +434,10 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const handleTroubleshoot = useCallback(() => {
         navigation.navigate('LedgerTroubleshooting')
     }, [navigation])
+
+    const handleDone = useCallback(() => {
+        void closeHandoffTab()
+    }, [closeHandoffTab])
 
     const errorPreset = useMemo(
         () =>
@@ -412,6 +460,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         handleAdd,
         handleRetry,
         handleTroubleshoot,
+        isAddedInHandoffTab,
+        handleDone,
+        handleCancel: isHandoffTab ? handleDone : undefined,
         t,
     }
 }

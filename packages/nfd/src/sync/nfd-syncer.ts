@@ -10,14 +10,15 @@
  limitations under the License
  */
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     mapWithConcurrency,
     partition,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { fetchNfdBulkRead } from '../api'
+import { nameServiceAdapterFor } from '../chain-adapter'
 import {
     NFD_BULK_CHUNK_SIZE,
     NFD_BULK_CONCURRENCY,
@@ -43,14 +44,16 @@ export async function fetchAndPersistNfds(
     // every requested address commits as a fresh negative-cache row for no reason.
     if (!isPeraBackedNetwork(network)) return
 
+    const scope = scopeForLegacyNetwork(network)
+    const adapter = nameServiceAdapterFor(scope)
     const dedup = Array.from(
-        new Set(addresses.filter(addr => isValidAlgorandAddress(addr))),
+        new Set(addresses.filter(addr => adapter.isValidAddress(addr))),
     )
     if (dedup.length === 0) return
 
     const toFetch = await getStaleOrMissingAddresses({
         addresses: dedup,
-        network,
+        scope,
         ttlMs: NFD_CACHE_TTL_MS,
     })
     if (toFetch.length === 0) return
@@ -75,6 +78,6 @@ export async function fetchAndPersistNfds(
             name: hitMap.get(address) ?? null,
         }))
 
-        await upsertNfdEntries({ network, entries })
+        await upsertNfdEntries({ scope, entries })
     })
 }

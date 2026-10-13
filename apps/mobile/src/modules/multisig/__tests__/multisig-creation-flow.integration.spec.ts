@@ -17,15 +17,16 @@ import { useCreateMultisigScreen } from '../screens/CreateMultisigScreen/useCrea
 import { useSetThresholdScreen } from '../screens/SetThresholdScreen/useSetThresholdScreen'
 import { useNameMultisigScreen } from '../screens/NameMultisigScreen/useNameMultisigScreen'
 import { useMultisigCreationStore } from '../hooks/useMultisigCreation'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockPush = vi.fn()
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
-const mockSetSelectedAccountAddress = vi.fn()
+const mockSetSelectedAccountId = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockErrorToast = vi.fn()
-const mockGenerateMultisigAddress = vi.fn(
+const mockDeriveMultisigAddress = vi.fn(
     (_version: number, _threshold: number, _addresses: string[]) =>
         'NEW_MULTISIG_ADDR',
 )
@@ -87,43 +88,56 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
-        useSelectedAccountAddress: () => ({
-            selectedAccountAddress: null,
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        useSelectedAccountId: () => ({
+            selectedAccountId: null,
+            setSelectedAccountId: mockSetSelectedAccountId,
         }),
         useAccountsStore: (selector: (state: unknown) => unknown) =>
             selector({ setAccounts: mockSetAccounts }),
     }
 })
 
-vi.mock('@perawallet/wallet-core-multisig', () => ({
+vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-multisig')
+    >()),
     useCreateMultisigAccountMutation: () => ({
         mutateAsync: mockMutateAsync,
     }),
+    multisigAdapterFor: () => ({
+        chainId: 'algorand',
+        deriveAddress: ({
+            version,
+            threshold,
+            addresses,
+        }: {
+            version: number
+            threshold: number
+            addresses: string[]
+        }) => mockDeriveMultisigAddress(version, threshold, addresses),
+    }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
-    return {
-        ...actual,
-        generateMultisigAddress: (v: number, t: number, addrs: string[]) =>
-            mockGenerateMultisigAddress(v, t, addrs),
-        useNetwork: () => ({ network: 'mainnet' }),
-    }
-})
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
-    DeviceAccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -160,6 +174,7 @@ vi.mock('react-i18next', async () => {
 
 describe('multisig creation flow', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
         vi.clearAllMocks()
         vi.stubGlobal(
             'requestAnimationFrame',
@@ -167,7 +182,7 @@ describe('multisig creation flow', () => {
         )
         mockUseAllAccounts.mockReturnValue([])
         mockMutateAsync.mockResolvedValue(undefined)
-        mockGenerateMultisigAddress.mockReturnValue('NEW_MULTISIG_ADDR')
+        mockDeriveMultisigAddress.mockReturnValue('NEW_MULTISIG_ADDR')
         useMultisigCreationStore.getState().resetState()
     })
 
@@ -218,24 +233,31 @@ describe('multisig creation flow', () => {
             participant_addresses: ['ADDR_A', 'ADDR_B'],
             device_id: 'device-id',
         })
-        expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(1, 2, [
+        expect(mockDeriveMultisigAddress).toHaveBeenCalledWith(1, 2, [
             'ADDR_A',
             'ADDR_B',
         ])
         expect(mockSetAccounts).toHaveBeenCalledWith([
             expect.objectContaining({
-                type: 'multisig',
-                address: 'NEW_MULTISIG_ADDR',
-                name: 'Shared Account #1',
-                multisigDetails: {
-                    threshold: 2,
-                    addresses: ['ADDR_A', 'ADDR_B'],
-                    version: 1,
+                custody: { kind: 'multisig' },
+                chains: {
+                    algorand: {
+                        address: 'NEW_MULTISIG_ADDR',
+                        native: {
+                            family: 'algorand',
+                            multisig: {
+                                threshold: 2,
+                                addresses: ['ADDR_A', 'ADDR_B'],
+                                version: 1,
+                            },
+                        },
+                    },
                 },
+                name: 'Shared Account #1',
             }),
         ])
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'NEW_MULTISIG_ADDR',
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+            mockSetAccounts.mock.calls[0][0].at(-1).id,
         )
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockExitAccountFlow).toHaveBeenCalled()
@@ -246,7 +268,11 @@ describe('multisig creation flow', () => {
 
     it('allows finishing with a name already used by another account', async () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'EXISTING', name: 'My Wallet' } as WalletAccount,
+            {
+                chains: { algorand: { address: 'EXISTING' } },
+                name: 'My Wallet',
+                custody: { kind: 'watch' },
+            } as WalletAccount,
         ])
 
         const createHook = renderHook(() => useCreateMultisigScreen())

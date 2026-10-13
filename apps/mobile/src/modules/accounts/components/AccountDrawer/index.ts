@@ -20,6 +20,7 @@ export {
 } from './AccountDrawerContext'
 export type { AccountDrawerContextValue } from './AccountDrawerContext'
 export {
+    useCardPicker,
     usePortfolioPicker,
     useSigningPicker,
     type AccountPickerKind,

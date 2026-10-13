@@ -14,7 +14,10 @@ export {
     requestChallenge,
     attestDevice,
     verifyIntegrityToken,
+    enrolDevice,
     type RequestChallengeParams,
     type AttestDeviceParams,
     type VerifyIntegrityTokenParams,
+    type EnrolDeviceParams,
 } from './endpoints'
+export { readIntegrityErrorCode } from './errors'

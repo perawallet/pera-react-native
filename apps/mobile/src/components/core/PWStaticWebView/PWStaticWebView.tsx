@@ -11,10 +11,10 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
 import { WebView, type WebViewProps } from 'react-native-webview'
 import { useStyles } from './styles'
 import type { PWStaticWebViewSource } from './PWStaticWebView.types'
+import { PWLoadingIndicator } from '../PWLoadingIndicator'
 
 export type PWStaticWebViewProps = {
     source: PWStaticWebViewSource
@@ -45,7 +45,7 @@ export const PWStaticWebView = ({
         <WebView
             source={source}
             nestedScrollEnabled
-            renderLoading={renderLoading ?? (() => <ActivityIndicator />)}
+            renderLoading={renderLoading ?? (() => <PWLoadingIndicator />)}
             style={[styles.webView, style]}
             {...rest}
         />

@@ -10,20 +10,22 @@
  limitations under the License
  */
 
+import { findAccountByAddressOn } from '@perawallet/wallet-core-accounts'
 import type { SigningMachineContext } from '../machine/context'
 import {
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
     isTransactionRequest,
 } from '../models'
 import { isInteractiveSource } from '../pipeline/types'
-import { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
+import { messageSignerChainAdapters } from '../message-signer'
 import type {
     ResolvedSignRequest,
     ResolvedRequestKind,
     SourceKind,
     TransportKind,
 } from './types'
+import { chainIdOfSignRequest } from '../models/chain'
 
 const resolveSourceKind = (sourceType: string | undefined): SourceKind =>
     (sourceType ?? 'local') as SourceKind
@@ -61,13 +63,15 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
         }
     }
 
-    if (isArc60Request(req)) {
+    if (isAuthDataRequest(req)) {
         return {
-            type: 'arc60',
-            parsed: parseArc60ForDisplay(
-                req.stdSigData.data,
-                req.metadata.encoding,
-            ),
+            type: 'auth-data',
+            parsed: messageSignerChainAdapters
+                .get(chainIdOfSignRequest(req))
+                .parseAuthDataForDisplay(
+                    req.authData.data,
+                    req.metadata.encoding,
+                ),
         }
     }
 
@@ -79,20 +83,24 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
 export const buildResolvedSignRequest = (
     context: SigningMachineContext,
 ): ResolvedSignRequest | null => {
-    const { signerAddress, allAccounts, groupSignerTypes } = context
+    const { signerAddress, allAccounts, groupSigners } = context
 
-    if (!signerAddress || !groupSignerTypes) return null
+    if (!signerAddress || !groupSigners) return null
 
-    const signerType = groupSignerTypes.get(signerAddress)
+    const signerType = groupSigners.get(signerAddress)?.custody
     if (!signerType) return null
 
-    const signerAccount = allAccounts.find(a => a.address === signerAddress)
+    const signerAccount = findAccountByAddressOn(
+        allAccounts,
+        context.deps.scope.chainId,
+        signerAddress,
+    )
     if (!signerAccount) return null
 
     return {
         signerType,
         signerAccount,
-        groupSignerTypes,
+        groupSigners,
         source: {
             kind: resolveSourceKind(context.request.sourceType),
             isInteractive: isInteractiveSource(context.request.sourceType),

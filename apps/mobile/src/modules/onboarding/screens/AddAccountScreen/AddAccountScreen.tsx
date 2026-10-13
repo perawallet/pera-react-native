@@ -28,7 +28,7 @@ import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
-import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
+import { MultisigIntroductionDialog } from '@modules/multisig'
 import type { AccountOption } from '@modules/onboarding/types'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'

@@ -12,11 +12,15 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import {
-    useAlgorandClient,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import {
     addSignature,
     getSignRequestsWithSignatures,
@@ -30,11 +34,11 @@ import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     setSubmissionSettledHandler,
-    submitRawSignedTransactionGroup,
     useHandoffResolver,
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '../api'
+import { submitCosignedSwapGroup } from '../chain-adapter'
 import type { SwapHandoffRecord } from '../models'
 import { useSwapHandoffStore } from '../store'
 import { resolveSwapHandoffOutcome } from '../utils'
@@ -42,9 +46,8 @@ import { useUpdateSwapStatusMutation } from './useUpdateSwapStatusMutation'
 
 /** Stable accessors (module-level so the core's filter memo isn't busted). */
 const handoffKey = (handoff: SwapHandoffRecord): string => handoff.signRequestId
-const handoffNetwork = (
-    handoff: SwapHandoffRecord,
-): SwapHandoffRecord['network'] => handoff.network
+const handoffNetwork = (handoff: SwapHandoffRecord): Network =>
+    legacyNetworkOf(handoff.scope)
 
 const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
     const expiresAt = new Date(detail.expected_expire_datetime).getTime()
@@ -56,7 +59,7 @@ const handoffRegisteredAt = (handoff: SwapHandoffRecord): number =>
 
 export type SettleCosignAttemptDeps = {
     markConfirmed: (input: {
-        network: SwapHandoffRecord['network']
+        network: Network
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>
@@ -83,7 +86,7 @@ export const settleCosignAttempt = async (
     const settled = new Set(txIds)
     const matching = Object.values(handoffs).filter(
         handoff =>
-            handoff.network === network &&
+            handoffNetwork(handoff) === network &&
             (handoff.submission?.txIds.some(id => settled.has(id)) ?? false),
     )
 
@@ -92,7 +95,7 @@ export const settleCosignAttempt = async (
             await runBestEffort(
                 () =>
                     deps.markConfirmed({
-                        network: record.network,
+                        network: handoffNetwork(record),
                         deviceId: record.deviceId,
                         signRequestIds: [record.signRequestId],
                     }),
@@ -156,6 +159,8 @@ export type UseSwapCosignResolverArgs = {
      * (e.g. the error-toast dispatcher) so this hook stays free of UI deps.
      */
     reportError: (error: unknown) => void
+    /** The scope swaps run on: its network gates submission, its chain settles it. */
+    scope: ChainScope
 }
 
 /**
@@ -177,10 +182,10 @@ export type UseSwapCosignResolverArgs = {
 export const useSwapCosignResolver = ({
     isAppActive,
     reportError,
+    scope,
 }: UseSwapCosignResolverArgs): void => {
-    const { network } = useNetwork()
+    const network = legacyNetworkOf(scope)
     const deviceId = useDeviceID(network)
-    const algorandClient = useAlgorandClient()
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
 
@@ -195,11 +200,11 @@ export const useSwapCosignResolver = ({
     const poll = useCallback(
         (handoff: SwapHandoffRecord) => ({
             queryKey: getSignRequestsWithSignaturesQueryKey(
-                handoff.network,
+                handoff.scope,
                 handoff.signRequestId,
             ),
             queryFn: () =>
-                getSignRequestsWithSignatures(handoff.network, {
+                getSignRequestsWithSignatures(handoffNetwork(handoff), {
                     device_id: deviceId ?? '',
                     proposed_sign_request_ids: [handoff.signRequestId],
                 }),
@@ -225,6 +230,7 @@ export const useSwapCosignResolver = ({
                 })
             }
             return classifyHandoffPoll(detail, {
+                scope: handoff.scope,
                 multisigAddress: handoff.multisigAddress,
                 msigMetadata: handoff.msigMetadata,
                 expectedRawTransactionsBase64:
@@ -251,7 +257,7 @@ export const useSwapCosignResolver = ({
                 record: handoff,
                 deps: {
                     submitGroup: bytes =>
-                        submitRawSignedTransactionGroup(algorandClient, bytes),
+                        submitCosignedSwapGroup(handoff.scope, bytes),
                     markSubmitted: txIds =>
                         markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,
@@ -265,13 +271,17 @@ export const useSwapCosignResolver = ({
                     // the device id isn't ready.
                     declineSignRequest: async (signRequestId: string) => {
                         if (!proposerAddress || !deviceId) return
-                        await addSignature(handoff.network, signRequestId, [
-                            {
-                                address: proposerAddress,
-                                response: 'declined',
-                                device_id: deviceId,
-                            },
-                        ])
+                        await addSignature(
+                            handoffNetwork(handoff),
+                            signRequestId,
+                            [
+                                {
+                                    address: proposerAddress,
+                                    response: 'declined',
+                                    device_id: deviceId,
+                                },
+                            ],
+                        )
                     },
                     recordSubmissionAttempt: params =>
                         recordSubmissionAttempt(params),
@@ -282,7 +292,6 @@ export const useSwapCosignResolver = ({
             })
         },
         [
-            algorandClient,
             deviceId,
             updateSwapStatus,
             markConfirmed,
@@ -293,17 +302,20 @@ export const useSwapCosignResolver = ({
     )
 
     useEffect(() => {
-        setSubmissionSettledHandler('cosign', (txIds, network, status) =>
-            settleCosignAttempt(
-                useSwapHandoffStore.getState().handoffs,
-                txIds,
-                network,
-                status,
-                { markConfirmed, updateSwapStatus, removeHandoff },
-            ),
+        setSubmissionSettledHandler(
+            scope.chainId,
+            'cosign',
+            (txIds, network, status) =>
+                settleCosignAttempt(
+                    useSwapHandoffStore.getState().handoffs,
+                    txIds,
+                    network,
+                    status,
+                    { markConfirmed, updateSwapStatus, removeHandoff },
+                ),
         )
-        return () => setSubmissionSettledHandler('cosign', null)
-    }, [markConfirmed, updateSwapStatus, removeHandoff])
+        return () => setSubmissionSettledHandler(scope.chainId, 'cosign', null)
+    }, [scope.chainId, markConfirmed, updateSwapStatus, removeHandoff])
 
     useHandoffResolver<
         SwapHandoffRecord,

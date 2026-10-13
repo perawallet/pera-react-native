@@ -66,6 +66,7 @@ export type StakingProjectsI18nConfig = z.infer<
 >
 
 const stakingProjectTvlSchema = z.object({
+    // Base units of the chain's native asset, despite the backend's name.
     tvl_in_algo: z.string().nullable(),
     tvl_in_usd: z.string().nullable(),
 })

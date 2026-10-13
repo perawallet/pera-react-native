@@ -19,6 +19,7 @@ describe('useLedgerExpandedTabHandoff (native default)', () => {
         const { result } = renderHook(() => useLedgerExpandedTabHandoff())
 
         expect(result.current.isPopupSurface).toBe(false)
+        expect(result.current.isHandoffTab).toBe(false)
         await expect(
             result.current.openLedgerExpandedTab('usb'),
         ).resolves.toBeUndefined()

@@ -247,7 +247,7 @@ export const formatPercentage = (
 export const formatDatetime = (
     datetime?: string | Date,
     locale: string = getActiveLocale(),
-    style: 'short' | 'medium' | 'long' = 'long',
+    style: 'short' | 'medium' | 'long' = 'medium',
     part: 'both' | 'date' | 'time' = 'both',
 ) => {
     if (!datetime) {

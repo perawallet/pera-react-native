@@ -11,17 +11,17 @@
  */
 
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
-import { useLanguage } from '@hooks/useLanguage'
-import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     formatNumber,
     LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
+import { useStyles } from './styles'
+import { useTheme } from '@rneui/themed'
+import { useLanguage } from '@hooks/useLanguage'
+import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
 
 type WarningItemProps = {
     warning: TransactionWarning
@@ -80,6 +80,7 @@ export const WarningItem = ({
     showDivider,
     isGroup,
 }: WarningItemProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -106,8 +107,11 @@ export const WarningItem = ({
                             <PWText style={styles.warningMessage}>
                                 {t('transactions.warning.high_fee_warning', {
                                     fee: formatNumber(
-                                        microAlgosToAlgos(warning.totalFee),
-                                        ALGO_ASSET.decimals,
+                                        baseUnitsToDisplayUnits(
+                                            warning.totalFee,
+                                            nativeAsset.decimals,
+                                        ),
+                                        nativeAsset.decimals,
                                     ),
                                 })}
                             </PWText>

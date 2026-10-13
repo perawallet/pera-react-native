@@ -21,6 +21,10 @@ import {
     InvalidSendParamsError,
     AssetFrozenError,
     RekeyError,
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+    NonZeroBalanceError,
+    CreatorCannotOptOutError,
 } from '../errors'
 
 describe('TransactionError', () => {
@@ -160,6 +164,40 @@ describe('AssetFrozenError', () => {
     })
 })
 
+describe('asset holding errors', () => {
+    it.each([
+        [
+            'AlreadyOptedInError',
+            new AlreadyOptedInError(),
+            'errors.transaction.already_opted_in',
+        ],
+        [
+            'InsufficientBalanceForOptInError',
+            new InsufficientBalanceForOptInError('0.1'),
+            'errors.transaction.insufficient_balance_for_opt_in',
+        ],
+        [
+            'NonZeroBalanceError',
+            new NonZeroBalanceError(),
+            'errors.transaction.non_zero_balance_opt_out',
+        ],
+        [
+            'CreatorCannotOptOutError',
+            new CreatorCannotOptOutError(),
+            'errors.transaction.creator_cannot_opt_out',
+        ],
+    ])('%s declares its own user-facing copy', (_, error, base) => {
+        expect(error.metadata.titleKey).toBe(`${base}.title`)
+        expect(error.metadata.messageKey).toBe(`${base}.body`)
+    })
+
+    it('carries the ALGO shortfall for interpolation', () => {
+        const error = new InsufficientBalanceForOptInError('0.101')
+
+        expect(error.metadata.params).toEqual({ shortfall: '0.101' })
+    })
+})
+
 describe('RekeyError', () => {
     it('tags the failed stage as the reason', () => {
         const error = new RekeyError('submission_failed')
@@ -188,5 +226,24 @@ describe('RekeyError', () => {
 
         expect(error.originalError).toBeInstanceOf(Error)
         expect(error.originalError?.message).toBe('something broke')
+    })
+
+    it('is an AppError with no user-facing key, so callers keep owning the copy', () => {
+        const error = new RekeyError('submission_failed')
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.message).toBe('Rekey failed: submission_failed')
+        expect(error.metadata).toMatchObject({
+            category: ErrorCategory.TRANSACTIONS,
+            severity: ErrorSeverity.MEDIUM,
+            retryable: false,
+        })
+        expect(error.metadata.messageKey).toBeUndefined()
+    })
+
+    it('treats a user rejection as low severity', () => {
+        expect(new RekeyError('user_rejected').metadata.severity).toBe(
+            ErrorSeverity.LOW,
+        )
     })
 })

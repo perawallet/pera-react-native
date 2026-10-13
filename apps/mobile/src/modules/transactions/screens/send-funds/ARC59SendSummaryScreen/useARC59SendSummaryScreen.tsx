@@ -17,17 +17,16 @@ import {
     getArc59SignedFundingAmount,
     useArc59SendSummaryQuery,
     type Arc59SendSummaryResponse,
-} from '@perawallet/wallet-core-asa-inbox'
+} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
-    useAccountInformationQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    ALGO_ASSET,
+    useNativeAsset,
     type PeraAsset,
     toWholeUnits,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     ALGO_ASSET_NAME,
     formatCurrency,
@@ -36,8 +35,8 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useWebView } from '@modules/webview/hooks'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useWebView } from '@modules/webview'
+import { useSendFunds, useSenderBalances } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
@@ -64,6 +63,7 @@ type UseARC59SendSummaryScreenResult = {
 
 export const useARC59SendSummaryScreen =
     (): UseARC59SendSummaryScreenResult => {
+        const nativeAsset = useNativeAsset()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const { selectedAssetId, destination, amount, setArc59Summary } =
@@ -85,12 +85,11 @@ export const useARC59SendSummaryScreen =
         // distinguishes "have a summary" from "don't", so collapse to undefined.
         const summary = summaryData ?? undefined
 
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { data: asset, isLoading: assetLoading } =
-            useSingleAssetDetailsQuery(assetId)
+            useSingleAssetDetailsQuery(assetId, scope)
 
-        const { data: accountInfo } = useAccountInformationQuery(
-            selectedAccount?.address ?? '',
-        )
+        const accountInfo = useSenderBalances(selectedAccount)
 
         const isLoading = summaryLoading || assetLoading
         const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage
@@ -104,16 +103,19 @@ export const useARC59SendSummaryScreen =
             const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
 
             if (availableAlgo < requiredMicroAlgo) {
-                const requiredAlgo = toWholeUnits(requiredMicroAlgo, ALGO_ASSET)
+                const requiredAlgo = toWholeUnits(
+                    requiredMicroAlgo,
+                    nativeAsset,
+                )
                 navigation.replace('InsufficientBalance', {
                     requiredBalance: formatCurrency(
                         requiredAlgo,
-                        ALGO_ASSET.decimals,
+                        nativeAsset.decimals,
                         ALGO_ASSET_NAME,
                     ),
                 })
             }
-        }, [summary, accountInfo, navigation])
+        }, [summary, accountInfo, navigation, nativeAsset])
 
         useEffect(() => {
             if (summary) {
@@ -122,7 +124,7 @@ export const useARC59SendSummaryScreen =
         }, [summary, setArc59Summary])
 
         const fee = summary
-            ? toWholeUnits(getArc59SignedFundingAmount(summary), ALGO_ASSET)
+            ? toWholeUnits(getArc59SignedFundingAmount(summary), nativeAsset)
             : null
 
         const [isProcessing, setIsProcessing] = useState(false)

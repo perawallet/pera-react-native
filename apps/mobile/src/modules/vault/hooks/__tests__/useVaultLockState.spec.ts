@@ -84,6 +84,33 @@ describe('useVaultLockState', () => {
         expect(result.current.isUnlocked).toBe(false)
     })
 
+    it('reports the vault uninitialized when a lock follows its destruction', async () => {
+        mocks.isUnlocked.mockResolvedValue(true)
+        const { result } = renderHook(() => useVaultLockState())
+        await waitFor(() => expect(result.current.isUnlocked).toBe(true))
+
+        mocks.isVaultInitialized.mockResolvedValue(false)
+        act(() => {
+            for (const listener of mocks.listeners) listener(false)
+        })
+
+        await waitFor(() => expect(result.current.isInitialized).toBe(false))
+        expect(result.current.isUnlocked).toBe(false)
+    })
+
+    it('stays initialized on an ordinary lock', async () => {
+        mocks.isUnlocked.mockResolvedValue(true)
+        const { result } = renderHook(() => useVaultLockState())
+        await waitFor(() => expect(result.current.isUnlocked).toBe(true))
+
+        await act(async () => {
+            for (const listener of mocks.listeners) listener(false)
+        })
+
+        expect(mocks.isVaultInitialized).toHaveBeenCalledTimes(2)
+        expect(result.current.isInitialized).toBe(true)
+    })
+
     it('unsubscribes on unmount', async () => {
         const { result, unmount } = renderHook(() => useVaultLockState())
         await waitFor(() => expect(result.current.isUnlocked).not.toBeNull())

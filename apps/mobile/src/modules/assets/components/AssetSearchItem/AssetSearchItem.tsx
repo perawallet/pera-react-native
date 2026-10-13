@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWIcon, PWView } from '@components/core'
+import { PWIcon, PWLoadingIndicator, PWView } from '@components/core'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 // Import the leaf directly (not the AssetItem barrel) so the search row doesn't
 // drag in AccountAssetItemView -> CollectibleListItem -> CollectibleThumbnail.
@@ -36,7 +35,7 @@ export const AssetSearchItem = ({
     const action = (
         <PWView style={styles.actionButton}>
             {isOptingIn ? (
-                <ActivityIndicator size='small' />
+                <PWLoadingIndicator size='sm' />
             ) : isOptedIn ? (
                 <PWIcon
                     name='check'

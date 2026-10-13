@@ -22,17 +22,24 @@ export {
     useCardAddAccount,
     type UseCardAddAccountResult,
 } from './useCardAddAccount'
-export { useCardComingSoonToast } from './useCardComingSoonToast'
+export {
+    useCardManualDeposit,
+    CardEscrowUnavailableError,
+    type CardManualDepositParams,
+    type UseCardManualDepositResult,
+} from './useCardManualDeposit'
+export {
+    useCardEscrowBalance,
+    type UseCardEscrowBalanceResult,
+} from './useCardEscrowBalance'
+export { useCardFundingAccount } from './useCardFundingAccount'
+export { useCardScope } from './useCardScope'
 export { useCardConfirmMutation } from './useCardConfirmMutation'
 export { useCardErrorToast, type CardErrorToastKeys } from './useCardErrorToast'
 export {
     useCardFreezeAction,
     type CardFreezeOutcome,
 } from './useCardFreezeAction'
-export {
-    useCardFundingDelegation,
-    type UseCardFundingDelegationResult,
-} from './useCardFundingDelegation'
 export {
     useAuthorizeCardDelegation,
     type UseAuthorizeCardDelegationResult,
@@ -59,6 +66,9 @@ export {
     type UseAutoDrawSwitchResult,
 } from './useAutoDrawSwitch'
 export { useOpenCardSupport } from './useOpenCardSupport'
+export { useCardSessionGuard } from './useCardSessionGuard'
+export { useCardOwnerAccount } from './useCardOwnerAccount'
+export { useCardWithdraw, type UseCardWithdrawResult } from './useCardWithdraw'
 // useReportSuspiciousFlow is intentionally NOT re-exported here: it is a flow
 // orchestrator that imports the report sheet components, and those components
 // import hooks from this barrel — routing it through here closes an import

@@ -4,6 +4,7 @@
 
 import { defineRule } from 'lanekeep'
 import type { Node, RuleContext } from 'lanekeep'
+import { productionSource } from '../shared/scope.js'
 
 // Walking outward stops at these: a function boundary means the toast is no
 // longer lexically inside the handler, even if the handler encloses it.
@@ -54,11 +55,11 @@ export default defineRule({
             good: 'catch (error) { showError(error, t) }',
         },
     },
-    gates: {
+    gates: productionSource({
         fileContains: ['showToast'],
         // The hook is the one place allowed to build the error toast itself.
         pathNotMatches: ['apps/mobile/src/hooks/useErrorToast.ts'],
-    },
+    }),
     query: `
         (call_expression
           function: (identifier) @fn

@@ -19,10 +19,10 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
   },
@@ -33,6 +33,7 @@
     "msw": "catalog:",
     "@types/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:"
+    "@testing-library/react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

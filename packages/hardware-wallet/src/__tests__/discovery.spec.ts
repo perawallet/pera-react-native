@@ -23,7 +23,7 @@ import {
     DEFAULT_MAX_ACCOUNT_SCAN_INDEX,
     DEFAULT_ONCHAIN_ACCOUNT_SCAN_GAP,
 } from '../constants'
-import type { HardwareWalletTransport } from '../types'
+import type { HardwareWalletTransport } from '@perawallet/wallet-extension-hardware-wallet'
 
 const makeAccount = (index: number) => ({
     address: `ADDR_${index}`,

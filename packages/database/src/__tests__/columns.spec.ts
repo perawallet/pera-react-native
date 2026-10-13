@@ -15,7 +15,13 @@ import { Decimal } from 'decimal.js'
 import { eq, sql } from 'drizzle-orm'
 import { sqliteTable, text, primaryKey } from 'drizzle-orm/sqlite-core'
 import { createTestDatabase } from '../test-utils'
-import { decimalColumn, decimalSum, decimalMax, decimalMin } from '../columns'
+import {
+    decimalColumn,
+    decimalJsonColumn,
+    decimalSum,
+    decimalMax,
+    decimalMin,
+} from '../columns'
 import type { Database } from '../database'
 
 const TestSchema = sqliteTable('test_decimals', {
@@ -256,5 +262,90 @@ describe('decimalMin', () => {
 
         expect(rows[0].min).toBeInstanceOf(Decimal)
         expect(rows[0].min.toString()).toBe('100')
+    })
+})
+
+type JsonPayload = {
+    kind: string
+    amount?: Decimal
+    nested?: { fees: Decimal[]; label: string }
+}
+
+const JsonSchema = sqliteTable('test_json', {
+    id: text('id').primaryKey(),
+    payload: decimalJsonColumn<JsonPayload>('payload').notNull(),
+})
+
+describe('decimalJsonColumn', () => {
+    let db: Database
+    let teardown: () => void
+
+    afterEach(() => {
+        teardown?.()
+    })
+
+    const setup = async () => {
+        const result = createTestDatabase()
+        db = result.db
+        teardown = result.teardown
+        await db.run(
+            sql`CREATE TABLE test_json (id TEXT PRIMARY KEY, payload TEXT NOT NULL)`,
+        )
+    }
+
+    const readPayload = async () => {
+        const rows = await db
+            .select({ payload: JsonSchema.payload })
+            .from(JsonSchema)
+            .where(eq(JsonSchema.id, '1'))
+            .all()
+        return rows[0].payload
+    }
+
+    it('rebuilds Decimals at any depth with full precision', async () => {
+        await setup()
+        const payload: JsonPayload = {
+            kind: 'a',
+            amount: new Decimal('18446744073709551615.000000000001'),
+            nested: {
+                fees: [new Decimal('0.001'), new Decimal(0)],
+                label: 'x',
+            },
+        }
+
+        await db.insert(JsonSchema).values({ id: '1', payload }).run()
+        const read = await readPayload()
+
+        expect(read).toEqual(payload)
+        expect(read.amount).toBeInstanceOf(Decimal)
+        expect(read.nested?.fees[0]).toBeInstanceOf(Decimal)
+    })
+
+    it('leaves numeric-looking strings as strings', async () => {
+        await setup()
+
+        await db
+            .insert(JsonSchema)
+            .values({ id: '1', payload: { kind: '100' } })
+            .run()
+
+        expect(await readPayload()).toEqual({ kind: '100' })
+    })
+
+    it('stores each Decimal under a tag rather than as a bare string', async () => {
+        await setup()
+
+        await db
+            .insert(JsonSchema)
+            .values({ id: '1', payload: { kind: 'a', amount: new Decimal(5) } })
+            .run()
+        const [[raw]] = await db.values<[string]>(
+            sql`SELECT payload FROM test_json`,
+        )
+
+        expect(JSON.parse(raw)).toEqual({
+            kind: 'a',
+            amount: { $decimal: '5' },
+        })
     })
 })

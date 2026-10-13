@@ -1,0 +1,99 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { fetchAlgorandAccountState } from './account-state'
+import { fetchAlgorandChangeSignal } from './change-signal'
+import {
+    summarizeAlgorandChainState,
+    toAlgorandChainState,
+} from './chain-state'
+import { assertAlgorandBip44PathMatches } from './bip44'
+import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
+import { hdDerivedKeyId } from './hd-derivation'
+import {
+    algorandAccountExists,
+    checkAlgorandActivity,
+    createXHDGetPublicKey,
+} from './discovery'
+import { fetchAssetOptInRounds } from './information'
+import { describeAlgorandHolding } from './holdings'
+import {
+    fetchAlgorandHoldingBalanceHistory,
+    fetchAlgorandPortfolioHistory,
+} from './portfolio-history'
+import { algorandNetworkOf } from '../legacy-network'
+import { algorandAuthority } from './authority'
+import { decodeAlgorandLegacyAuthority } from './legacy-authority'
+import { decodeAlgorandLegacyRecord } from './legacy-record'
+import { algorandDuplicateRank, algorandLocalKeyKinds } from './local-key-kinds'
+import { algorandMultisigNative } from './multisig-native'
+import { withStoredQuantumPublicKey } from './quantumPublicKeyBackfill'
+import { algorandSingleKeyAccounts } from './single-key-accounts'
+import {
+    getAlgorandAuthAccount,
+    resolveAlgorandSigner,
+} from './signer-resolution'
+import { accountType, algorandKindIdOf } from './vocabulary'
+
+export const algorandAccountsAdapter: AccountsChainAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    fetchAccountState: (address, scope, hint) =>
+        fetchAlgorandAccountState(address, algorandNetworkOf(scope), hint),
+    fetchChangeSignal: (addresses, scope, cursor) =>
+        fetchAlgorandChangeSignal(addresses, algorandNetworkOf(scope), cursor),
+    toChainState: toAlgorandChainState,
+    summarizeChainState: summarizeAlgorandChainState,
+    // Algorand's opt-in round orders the collectibles gallery.
+    fetchHoldingAcquisitionOrder: (address, scope) =>
+        fetchAssetOptInRounds(address, algorandNetworkOf(scope)),
+    describeHolding: describeAlgorandHolding,
+    fetchPortfolioHistory: (addresses, period, scope) =>
+        fetchAlgorandPortfolioHistory(
+            addresses,
+            period,
+            algorandNetworkOf(scope),
+        ),
+    fetchHoldingBalanceHistory: (address, assetId, period, currency, scope) =>
+        fetchAlgorandHoldingBalanceHistory(
+            address,
+            assetId,
+            period,
+            currency,
+            algorandNetworkOf(scope),
+        ),
+    accountExists: (address, scope) =>
+        algorandAccountExists(address, algorandNetworkOf(scope)),
+    checkActivity: (addresses, scope) =>
+        checkAlgorandActivity(addresses, algorandNetworkOf(scope)),
+    createPublicKeyGetter: createXHDGetPublicKey,
+    hdKeyPairId: (seedKeyId, { account, keyIndex }) =>
+        hdDerivedKeyId(
+            seedKeyId,
+            account,
+            keyIndex,
+            ALGORAND_HD_DERIVATION_TYPE,
+        ),
+    assertHdPathMatches: assertAlgorandBip44PathMatches,
+    localKeyKinds: algorandLocalKeyKinds,
+    duplicateRank: algorandDuplicateRank,
+    kindIdOf: account => algorandKindIdOf(accountType(account)),
+    decodeLegacyRecord: decodeAlgorandLegacyRecord,
+    decodeLegacyAuthority: decodeAlgorandLegacyAuthority,
+    multisigNative: algorandMultisigNative,
+    singleKeyAccounts: algorandSingleKeyAccounts,
+    authority: algorandAuthority,
+    resolveSigner: resolveAlgorandSigner,
+    getAuthAccount: getAlgorandAuthAccount,
+    backfillRecord: withStoredQuantumPublicKey,
+}

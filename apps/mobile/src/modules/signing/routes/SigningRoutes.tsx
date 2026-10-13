@@ -26,7 +26,7 @@ import {
     Arc60SigningScreen,
     Arc60SigningDetailsScreen,
 } from '@modules/signing/screens'
-import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
+import { SettingsSecurityScreen } from '@modules/security/routes'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { useStyles } from './styles'
 import { bottomSheetLayout } from '@layouts/index'
@@ -44,7 +44,7 @@ const useInitialRouteConfig = (): InitialRouteConfig | null => {
         case 'arbitrary-data': {
             return { initialRoute: 'ArbitraryDataSigning' }
         }
-        case 'arc60': {
+        case 'auth-data': {
             return { initialRoute: 'Arc60Signing' }
         }
         case 'transactions': {

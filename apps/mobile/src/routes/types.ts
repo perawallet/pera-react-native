@@ -14,34 +14,37 @@ import type { NavigatorScreenParams } from '@react-navigation/native'
 import type {
     OnboardingStackParamList,
     AddAccountStackParamList,
-} from '@modules/onboarding/routes/types'
+} from '@modules/onboarding'
 import type { TabBarStackParamList } from '@routes/tabbar'
-import type { SettingsStackParamsList } from '@modules/settings/routes'
-import type { ContactsStackParamsList } from '@modules/contacts/routes'
-import type { AccountStackParamsList } from '@modules/accounts/routes/types'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { SettingsStackParamsList } from '@modules/settings'
+import type { ContactsStackParamsList } from '@modules/contacts'
+import type { AccountStackParamsList } from '@modules/accounts'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import type { MessagesStackParamList } from '@modules/messages/routes'
+import type { MessagesStackParamList } from '@modules/messages'
 import type { MultisigStackParamList } from '@modules/multisig'
 import type {
     PeraCardStackParamList,
     CardOnboardingStackParamList,
     PeraCardFlowParamList,
 } from '@modules/card'
-import type { BackupStackParamList } from '@modules/backup/routes/types'
+import type { BackupStackParamList } from '@modules/backup'
 import type { SearchStackParamsList } from '@modules/search'
-import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger'
-import type { RekeyToQuantumStackParamList } from '@modules/rekey/routes/rekey-to-quantum'
-import type { RekeyToSharedStackParamList } from '@modules/rekey/routes/rekey-to-shared'
-import type { RekeyToStandardStackParamList } from '@modules/rekey/routes/rekey-to-standard'
-import type { RescanRekeyedStackParamList } from '@modules/rekey/routes/rescan-rekeyed'
-import type { UndoRekeyStackParamList } from '@modules/rekey/routes/undo-rekey'
+import type {
+    RekeyToLedgerStackParamList,
+    RekeyToQuantumStackParamList,
+    RekeyToSharedStackParamList,
+    RekeyToStandardStackParamList,
+    RescanRekeyedStackParamList,
+    UndoRekeyStackParamList,
+} from '@modules/rekey'
 
 export type RootStackParamList = {
     MigrationSplash: undefined
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
     TabBar: NavigatorScreenParams<TabBarStackParamList>
     ScanQR: undefined
+    CameraAccess: undefined
     AddAccount: NavigatorScreenParams<AddAccountStackParamList>
     Messages: NavigatorScreenParams<MessagesStackParamList>
     Settings: NavigatorScreenParams<SettingsStackParamsList>
@@ -66,7 +69,7 @@ export type RootStackParamList = {
     }
     TransactionDetails: {
         transactionId?: string
-        transaction?: PeraDisplayableTransaction
+        transaction?: TransactionNative
         /**
          * The SQLite history row the user tapped. Lets the screen render
          * offline from local data while the indexer fetch (enrichment)

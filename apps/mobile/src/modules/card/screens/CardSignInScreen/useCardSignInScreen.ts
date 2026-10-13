@@ -15,20 +15,30 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     getCardApiError,
+    isInvalidCredentialsError,
     isInvalidInputError,
     signInSchema,
     useCardLoginMutation,
     useCardStore,
+    useRestoreEscrowCardMutation,
     useSendLoginOtpMutation,
     type SignInFormValues,
 } from '@perawallet/wallet-core-card'
+import {
+    useAllAccounts,
+    chainAccountOf,
+} from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCountdown } from '@hooks/useCountdown'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardStackParamList } from '../../routes/types'
+import { maskPhoneNumber } from '../../utils/phone'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import { getOnboardingResumeRoute } from './getOnboardingResumeRoute'
 
@@ -42,6 +52,8 @@ export type UseCardSignInScreenResult = {
     isSubmitting: boolean
     /** When true, login returned `isOtpRequired`; reveal the 2FA code input. */
     isOtpRequired: boolean
+    /** Masked destination of the code, or null when Baanx did not name one. */
+    otpPhone: Nullable<string>
     otpCode: string
     onChangeOtp: (text: string) => void
     isOtpValid: boolean
@@ -60,11 +72,14 @@ export type UseCardSignInScreenResult = {
 }
 
 export const useCardSignInScreen = (): UseCardSignInScreenResult => {
+    const scope = useCardScope()
     const { t } = useLanguage()
     const { errorToast, successToast } = useToast()
     const navigation = useAppNavigation()
-    const login = useCardLoginMutation()
-    const sendOtp = useSendLoginOtpMutation()
+    const login = useCardLoginMutation(scope)
+    const sendOtp = useSendLoginOtpMutation(scope)
+    const restoreEscrowCard = useRestoreEscrowCardMutation(scope)
+    const accounts = useAllAccounts()
 
     const {
         control,
@@ -87,6 +102,9 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     }, [route.params?.email, setValue])
 
     const [isOtpRequired, setIsOtpRequired] = useState(false)
+    // Where Baanx says it sent the code. Only the login response carries it, so
+    // it has to be held from that call through to the OTP step.
+    const [otpPhone, setOtpPhone] = useState<Nullable<string>>(null)
     // `userId` from the login attempt that required 2FA — /v1/auth/login/otp
     // is keyed on it for both the initial send and resends.
     const [otpUserId, setOtpUserId] = useState<string | null>(null)
@@ -126,6 +144,8 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         [sendOtpAsync, restart, errorToast, t],
     )
 
+    const restoreEscrowCardAsync = restoreEscrowCard.mutateAsync
+
     // The login call handles both passes: the first (no `otp`) may come back
     // `isOtpRequired`, which triggers the OTP send and reveals the code input;
     // the second carries the code and completes the OAuth exchange. The session
@@ -154,6 +174,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     }
                     setIsOtpRequired(true)
                     setOtpUserId(result.userId)
+                    setOtpPhone(maskPhoneNumber(result.phoneNumber))
                     requestOtpCode(result.userId)
                     return
                 }
@@ -168,7 +189,36 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                         t('peraCard.sign_in.success_title'),
                         t('peraCard.sign_in.success_body'),
                     )
-                    navigation.navigate('TabBar', { screen: 'Home' })
+                    // Registration complete is not setup complete: the
+                    // on-chain card is created only through the checklist's
+                    // signing steps, which a returning account may never have
+                    // run (e.g. registration finished on a call whose response
+                    // was lost). Without an escrow card, resume the checklist
+                    // so the card gets created and bound, unless the backend
+                    // already holds one made on another device.
+                    const hasEscrowCard =
+                        useCardStore.getState().escrowCardAddress !== null ||
+                        (await restoreEscrowCardAsync(
+                            accounts.flatMap(
+                                account =>
+                                    chainAccountOf(account, LEGACY_CHAIN_ID)
+                                        ?.address ?? [],
+                            ),
+                        ).catch(() => null)) !== null
+                    if (!hasEscrowCard) {
+                        navigation.navigate('PeraCard', {
+                            screen: 'CardOnboarding',
+                            params: {
+                                screen: 'CardOnboardingStatus',
+                                params: {},
+                            },
+                        })
+                        return
+                    }
+                    navigation.navigate('TabBar', {
+                        screen: 'Home',
+                        params: { screen: 'PeraCardAccount' },
+                    })
                     return
                 }
 
@@ -219,9 +269,9 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     )
                     return
                 }
-                // A rejected credentials submission: 401/400/422 is a wrong
-                // email or password, shown inline on the password field.
-                if (apiError.status === 401 || isInvalidInputError(apiError)) {
+                // A rejected credentials submission is shown inline on the
+                // password field.
+                if (isInvalidCredentialsError(apiError)) {
                     setError('password', {
                         type: 'server',
                         message: t('peraCard.sign_in.invalid_credentials'),
@@ -236,6 +286,8 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         },
         [
             login,
+            restoreEscrowCardAsync,
+            accounts,
             navigation,
             setError,
             errorToast,
@@ -286,8 +338,9 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         control,
         errors,
         isValid,
-        isSubmitting: login.isPending,
+        isSubmitting: login.isPending || restoreEscrowCard.isPending,
         isOtpRequired,
+        otpPhone,
         otpCode,
         onChangeOtp,
         isOtpValid: otpCode.trim().length === CARD_VERIFICATION_CODE_LENGTH,

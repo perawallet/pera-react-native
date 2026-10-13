@@ -12,10 +12,12 @@
 
 import { useEffect, useState } from 'react'
 import {
+    chainAccountOf,
     useAccountsStore,
     type AccountSortMode,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetPreferencesStore,
     useCollectiblePreferencesStore,
@@ -30,6 +32,8 @@ import {
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
+    deviceIdFor,
+    deviceIdOriginFor,
     useDeviceStore,
     type DeviceIdOrigin,
 } from '@perawallet/wallet-core-device'
@@ -175,19 +179,32 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
             swapTermsAccepted: !!preferences['swap-introduction-seen'],
         },
         auth,
-        accountsByAddress: new Map(accounts.map(a => [a.address, a] as const)),
+        accountsByAddress: new Map(
+            accounts.flatMap(a => {
+                const address = chainAccountOf(a, LEGACY_CHAIN_ID)?.address
+                return address === undefined ? [] : [[address, a] as const]
+            }),
+        ),
         manualAccountOrder,
         contactsByAddress: new Map(
-            contacts.map(c => [c.address.toLowerCase(), c] as const),
+            contacts.flatMap(c =>
+                c.addresses.algorand
+                    ? [[c.addresses.algorand.toLowerCase(), c] as const]
+                    : [],
+            ),
         ),
         notificationDisabledAccounts: new Set(notificationDisabled),
         deviceIDs: {
-            mainnet: deviceIDs.get(Networks.mainnet) ?? null,
-            testnet: deviceIDs.get(Networks.testnet) ?? null,
+            mainnet: deviceIdFor({ deviceIDs }, Networks.mainnet),
+            testnet: deviceIdFor({ deviceIDs }, Networks.testnet),
         },
         deviceIdOrigins: {
-            mainnet: deviceIdOrigins[Networks.mainnet] ?? null,
-            testnet: deviceIdOrigins[Networks.testnet] ?? null,
+            mainnet:
+                deviceIdOriginFor({ deviceIdOrigins }, Networks.mainnet) ??
+                null,
+            testnet:
+                deviceIdOriginFor({ deviceIdOrigins }, Networks.testnet) ??
+                null,
         },
         legacyStash,
     }

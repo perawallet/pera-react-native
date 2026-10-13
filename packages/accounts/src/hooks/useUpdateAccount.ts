@@ -20,7 +20,7 @@ export const useUpdateAccount = () => {
         // Read fresh copy of accounts to avoid stale captures.
         const currentAccounts = useAccountsStore.getState().accounts
         const updated = currentAccounts.map(a =>
-            a.address === account.address ? account : a,
+            a.id === account.id ? account : a,
         )
         setAccounts(updated)
     }

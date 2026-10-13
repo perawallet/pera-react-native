@@ -12,20 +12,26 @@
 
 import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import { decimalColumn } from '@perawallet/wallet-core-database'
+import type {
+    AccountChainState,
+    ChainHoldingNative,
+    ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    decimalColumn,
+    decimalJsonColumn,
+} from '@perawallet/wallet-core-database'
 
 export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
     {
         accountAddress: text('account_address').notNull(),
-        assetId: decimalColumn('asset_id').notNull(),
-        network: text('network').notNull(),
+        assetId: text('asset_id').notNull(),
+        network: text('network').notNull().$type<ChainScopeKey>(),
         /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),
-        /** Holding-level freeze from algod — frozen assets can't be transferred. */
-        isFrozen: integer('is_frozen', { mode: 'boolean' })
-            .notNull()
-            .default(false),
+        /** The chain's own data about the holding; null when it has none. */
+        native: decimalJsonColumn<ChainHoldingNative>('native'),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [
@@ -35,28 +41,14 @@ export const AccountAssetHoldingsSchema = sqliteTable(
     ],
 )
 
-export const AccountBalancesSchema = sqliteTable(
-    'account_balances',
+export const AccountChainStateSchema = sqliteTable(
+    'account_chain_state',
     {
         accountAddress: text('account_address').notNull(),
-        network: text('network').notNull(),
-        /** ALGO balance in display units (ALGOs, not microAlgos) */
-        algoBalance: decimalColumn('algo_balance')
-            .notNull()
-            .default(new Decimal(0)),
-        totalAssetsOptedIn: integer('total_assets_opted_in')
-            .notNull()
-            .default(0),
-        totalCreatedAssets: integer('total_created_assets')
-            .notNull()
-            .default(0),
-        totalAppsOptedIn: integer('total_apps_opted_in').notNull().default(0),
-        /** Minimum balance in display units (ALGOs, not microAlgos) */
-        minBalance: decimalColumn('min_balance')
-            .notNull()
-            .default(new Decimal(0)),
-        status: text('status').notNull().default('Offline'),
-        authAddress: text('auth_address'),
+        network: text('network').notNull().$type<ChainScopeKey>(),
+        /** Base units of the chain's native asset. */
+        nativeBalance: decimalColumn('native_balance').notNull(),
+        chainData: decimalJsonColumn<AccountChainState>('chain_data').notNull(),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [

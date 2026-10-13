@@ -14,18 +14,22 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import { routeCapabilities } from '@routes/capabilities'
+import { useCapability } from '@hooks/useCapability'
 
 /**
  * Bidali gift cards are hidden everywhere — no dev/staging fallback — until
  * Firebase Remote Config explicitly enables them, because the provider is
- * currently unavailable. Also folds in the static routeCapabilities.giftCards
- * platform gate so callers have a single check.
+ * currently unavailable. Also folds in the platform gate and the `giftCards`
+ * chain capability so callers have a single check.
  */
 export const useIsGiftCardsEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
+    const isGiftCardsAvailable = useCapability({
+        platform: 'giftCards',
+        anyChain: 'giftCards',
+    })
     return (
-        routeCapabilities.giftCards &&
+        isGiftCardsAvailable &&
         remoteConfig.getBooleanValue(RemoteConfigKeys.enable_gift_cards, false)
     )
 }

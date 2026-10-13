@@ -14,22 +14,36 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import type { Decimal } from 'decimal.js'
 
+/** What a chain restricts about a holding, in terms every chain shares. */
+export const HoldingRestrictions = {
+    /** The holding can neither send nor receive. */
+    transferBlocked: 'transferBlocked',
+} as const
+
+export type HoldingRestriction =
+    (typeof HoldingRestrictions)[keyof typeof HoldingRestrictions]
+
 export type AssetWithAccountBalance = {
     assetId: string
     asset?: PeraAsset
     /** Asset amount in display units (divided by 10^decimals) */
     amount: Decimal
-    /** Value of this holding in ALGOs (display units) */
-    algoValue: Decimal
+    /** Value of this holding in the chain's native asset (display units) */
+    nativeValue: Decimal
     /** USD price per whole unit of the asset, joined from the DB read. */
     usdPrice?: Decimal
-    /** Holding-level freeze from algod — frozen assets can't be transferred. */
-    isFrozen: boolean
+    /**
+     * Holding value in USD (display units); `null` when the asset has no known
+     * USD price or its decimals haven't synced, so it is unknown, not 0.
+     */
+    fiatValue: Nullable<Decimal>
+    /** `null` when the chain places no restriction on the holding. */
+    restriction: Nullable<HoldingRestriction>
 }
 
 export type AccountBalancesWithTotals = {
     accountBalances: AccountBalances
-    portfolioAlgoValue: Decimal
+    portfolioNativeValue: Decimal
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -39,9 +53,14 @@ export type AccountBalancesWithTotals = {
 
 export type AccountBalance = {
     assetBalances: AssetWithAccountBalance[]
-    algoValue: Decimal
+    nativeValue: Decimal
     /** Total value of the account's holdings in USD (display units). */
     usdValue: Decimal
+    /**
+     * Account value in USD (display units); `null` when the native asset is
+     * held but unpriced. A non-native holding without a price adds nothing.
+     */
+    fiatValue: Nullable<Decimal>
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -51,41 +70,28 @@ export type AccountBalance = {
 export type AccountBalances = Map<string, AccountBalance>
 
 /**
- * Per-address ALGO-denominated values — the minimal shape balance-ranking
- * consumers (e.g. `useSortedAccounts`) need. Structural on purpose: both the
- * full `AccountBalances` map and `useAccountValueTotalsQuery`'s cheap totals
- * map satisfy it.
+ * Per-address values in the chain's native asset — the minimal shape
+ * balance-ranking consumers (e.g. `useSortedAccounts`) need. Structural on
+ * purpose: both the full `AccountBalances` map and
+ * `useAccountValueTotalsQuery`'s cheap totals map satisfy it.
  */
-export type AccountAlgoValues = Map<string, Pick<AccountBalance, 'algoValue'>>
+export type AccountNativeValues = Map<
+    string,
+    Pick<AccountBalance, 'nativeValue'>
+>
 
-export type AccountBalanceResponse = {
-    results: AccountAssetBalanceResponse[]
-}
-
-export type AccountAssetBalanceResponse = {
-    asset_id: string
-    amount: string
-    fraction_decimals: number
-    balance_usd_value: string
-}
+/**
+ * Per-address fiat values for ranking and summing across chains;
+ * `AccountBalances` and `AccountValueTotalsMap` both satisfy it.
+ */
+export type AccountFiatValues = Map<string, Pick<AccountBalance, 'fiatValue'>>
 
 export type AccountBalanceHistoryItem = {
     datetime: Date
     /** `null` when the preferred-currency rate is unresolved — not 0. */
     preferredValue: Nullable<Decimal>
-    algoValue: Decimal
-    round: number
-}
-
-export type AccountBalanceHistoryResponseItem = {
-    datetime: string
-    usd_value: string
-    algo_value: string
-    round: number
-}
-
-export type AccountBalanceHistoryResponse = {
-    results: AccountBalanceHistoryResponseItem[]
+    /** Display units of the chain's native asset. */
+    nativeValue: Decimal
 }
 
 export type AccountAssetBalanceHistoryItem = {
@@ -94,19 +100,4 @@ export type AccountAssetBalanceHistoryItem = {
     amount: Decimal
     /** `null` when the preferred-currency rate is unresolved — not 0. */
     preferredValue: Nullable<Decimal>
-    round: number
-}
-
-export type AccountAssetsBalanceHistory = AccountAssetBalanceHistoryItem[]
-
-export type AccountAssetBalanceHistoryResponseItem = {
-    datetime: string
-    /** Asset amount in display units — this endpoint has no algo_value field */
-    amount: string
-    usd_value: string
-    round: number
-}
-
-export type AccountAssetBalanceHistoryResponse = {
-    results: AccountAssetBalanceHistoryResponseItem[]
 }

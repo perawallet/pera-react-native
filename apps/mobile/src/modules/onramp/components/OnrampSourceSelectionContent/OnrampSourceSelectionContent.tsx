@@ -11,9 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
 import {
     PWIcon,
+    PWLoadingIndicator,
     PWScrollView,
     PWText,
     PWTouchableOpacity,
@@ -87,7 +87,7 @@ export const OnrampSourceSelectionContent = () => {
             <PWView style={styles.body}>
                 {isLoading ? (
                     <PWView style={styles.centered}>
-                        <ActivityIndicator />
+                        <PWLoadingIndicator />
                     </PWView>
                 ) : (
                     <PWScrollView

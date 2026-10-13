@@ -17,7 +17,7 @@
 // SigningContext.selectCredential. Resolves the sheet with the chosen keyId,
 // or dismisses (null), which the core treats as a decline.
 //
-// Deliberately shaped like EnableRequestScreen's account list — the same
+// Deliberately shaped like WcConnectScreen's account list — the same
 // "which of your identities does this site get" question, so it should look
 // like the same decision.
 import React from 'react'

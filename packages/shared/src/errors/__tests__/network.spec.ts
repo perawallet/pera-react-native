@@ -12,10 +12,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { HTTPError, NetworkError, TimeoutError } from 'ky'
-import { AppError, ErrorCategory } from '../base'
+import { AppError, ErrorCategory, ErrorSeverity } from '../base'
 import { isExpectedError } from '../expected'
-import { NoConnectionError } from '../network-validation'
 import {
+    NoConnectionError,
     PeraNetworkError,
     getNetworkErrorMessageKeys,
     isConnectivityError,
@@ -313,5 +313,25 @@ describe('expected-error classification', () => {
 
     it.each(['client', 'unknown'] as const)('%s is not expected', kind => {
         expect(isExpectedError(new PeraNetworkError(kind))).toBe(false)
+    })
+})
+
+describe('NoConnectionError', () => {
+    it('carries reportable, retryable network metadata', () => {
+        const error = new NoConnectionError()
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.message).toBe('No network connection found')
+        expect(error.metadata).toMatchObject({
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.NETWORK,
+            recoverable: true,
+            retryable: true,
+        })
+        expect(isExpectedError(error)).toBe(false)
+    })
+
+    it('is not a PeraNetworkError, so typed-kind consumers skip it', () => {
+        expect(isPeraNetworkError(new NoConnectionError())).toBe(false)
     })
 })

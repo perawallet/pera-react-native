@@ -11,16 +11,20 @@
  */
 
 import { useCallback, useState } from 'react'
-import { Linking } from 'react-native'
 import type { Decimal } from 'decimal.js'
 import {
-    useSelectedAccountAddress,
+    addressOn,
     useAccountsStore,
+    useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useCreateRampOrderMutation,
-    useEnsureDestinationOptIn,
+    useEnsureRampDestination,
     useOnramp,
     toOnrampUserMessage,
     parseRampAmount,
@@ -34,9 +38,10 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { openValidatedBrowserUrl } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { OptInConfirmationContent } from '@modules/assets'
 import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'
 import { OnrampTermsContent } from '../OnrampTermsContent'
 import {
@@ -78,13 +83,17 @@ export const useOnrampConfirm = ({
 }: UseOnrampConfirmParams): UseOnrampConfirmResult => {
     const { t } = useLanguage()
     const { network } = useNetwork()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
     const { senderAddress } = useOnramp()
     const { request: requestBottomSheet } = useBottomSheet()
     const { errorToast } = useToast()
     const { isTermsAccepted, markTermsAccepted } = useOnrampTerms()
     const { mutateAsync: createOrder } = useCreateRampOrderMutation()
-    const { ensureOptIn } = useEnsureDestinationOptIn()
+    const { ensureCanReceive } = useEnsureRampDestination(network)
 
     const [isConfirming, setIsConfirming] = useState(false)
 
@@ -117,13 +126,17 @@ export const useOnrampConfirm = ({
         try {
             // v2 safety: re-read the selected account at call time in case it
             // changed (or was removed) since the form first rendered.
+            const currentAccount = useAccountsStore
+                .getState()
+                .getSelectedAccount()
             const currentAddress =
-                useAccountsStore.getState().selectedAccountAddress ??
-                selectedAccountAddress
+                (currentAccount
+                    ? addressOn(currentAccount, scope)
+                    : undefined) ?? selectedAccountAddress
 
             const destinationAssetId = resolveDestinationAssetId(
                 selectedPair,
-                network,
+                scope,
             )
 
             // No known USDC id on this network — the destination asset is
@@ -137,7 +150,7 @@ export const useOnrampConfirm = ({
             // confirms it via the standard opt-in sheet — with a 0 fee when
             // the opt-in is sponsored (fee-delegated). Declining cancels the
             // whole order quietly.
-            const optInConfirmed = await ensureOptIn({
+            const optInConfirmed = await ensureCanReceive({
                 address: currentAddress,
                 destinationAssetId,
                 confirmOptIn: async ({ assetId, isSponsored }) => {
@@ -174,7 +187,7 @@ export const useOnrampConfirm = ({
                 // in-app webview — the webview blocks some of the provider
                 // payment flows (matching the web app, which opens the system
                 // browser here).
-                void Linking.openURL(order.widgetUrl)
+                openValidatedBrowserUrl(order.widgetUrl)
             } else {
                 // A freshly-placed XO order is a pending history entry — render
                 // the shared order-details sheet (titled "Swap Review").
@@ -221,12 +234,12 @@ export const useOnrampConfirm = ({
         sourceAmount,
         destinationAmount,
         selectedAccountAddress,
-        network,
+        scope,
         isMeld,
         senderAddress,
         isTermsAccepted,
         markTermsAccepted,
-        ensureOptIn,
+        ensureCanReceive,
         createOrder,
         requestBottomSheet,
         errorToast,

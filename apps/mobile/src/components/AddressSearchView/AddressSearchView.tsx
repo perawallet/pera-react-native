@@ -11,9 +11,21 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
-import type { AccountType } from '@perawallet/wallet-core-accounts'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainFamily,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    PWIcon,
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { SearchableList } from '@components/SearchableList'
@@ -29,8 +41,11 @@ import {
 
 export type AddressSearchViewProps = {
     onSelected: (address: string, nfdName?: string) => void
+    /** See {@link UseAddressSearchViewProps.chainFamily}. */
+    chainFamily: ChainFamily
     excludeAddress?: string
-    excludeTypes?: AccountType[]
+    /** Only accounts passing this predicate are offered. */
+    accountFilter?: (account: WalletAccount) => boolean
     showAllContactsWhenEmpty?: boolean
     inBottomSheet?: boolean
     showAccountBalance?: boolean
@@ -41,8 +56,9 @@ export type AddressSearchViewProps = {
 
 export const AddressSearchView = ({
     onSelected,
+    chainFamily,
     excludeAddress,
-    excludeTypes,
+    accountFilter,
     showAllContactsWhenEmpty,
     inBottomSheet,
     showAccountBalance = false,
@@ -53,8 +69,9 @@ export const AddressSearchView = ({
     const { t } = useLanguage()
     const { value, setValue, matchingItems, hasResults, isNfdLoading } =
         useAddressSearchView({
+            chainFamily,
             excludeAddress,
-            excludeTypes,
+            accountFilter,
             showAllContactsWhenEmpty,
             showClipboardPaste,
         })
@@ -78,10 +95,10 @@ export const AddressSearchView = ({
                 case 'contact': {
                     return (
                         <PWTouchableOpacity
-                            onPress={() => onSelected(item.contact.address)}
+                            onPress={() => onSelected(item.address)}
                         >
                             <AddressDisplay
-                                address={item.contact.address}
+                                address={item.address}
                                 showCopy={false}
                                 style={styles.accountDisplay}
                             />
@@ -89,10 +106,13 @@ export const AddressSearchView = ({
                     )
                 }
                 case 'account': {
+                    const address =
+                        chainAccountOf(item.account, LEGACY_CHAIN_ID)
+                            ?.address ?? ''
                     return (
                         <PWTouchableOpacity
-                            onPress={() => onSelected(item.account.address)}
-                            testID={`account_result_row_${item.account.address}`}
+                            onPress={() => onSelected(address)}
+                            testID={`account_result_row_${address}`}
                         >
                             <AccountResultRow
                                 account={item.account}
@@ -190,7 +210,7 @@ export const AddressSearchView = ({
 
     const listEmptyComponent = isNfdLoading ? (
         <PWView style={styles.loadingContainer}>
-            <ActivityIndicator />
+            <PWLoadingIndicator />
         </PWView>
     ) : (
         emptyComponent()

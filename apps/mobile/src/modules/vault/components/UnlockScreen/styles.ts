@@ -36,6 +36,22 @@ export const useStyles = makeStyles(theme => ({
     errorText: {
         color: theme.colors.negative,
     },
+    acknowledgeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    checkboxContainer: {
+        padding: 0,
+        margin: 0,
+        marginLeft: 0,
+        marginRight: 0,
+        backgroundColor: 'transparent',
+    },
+    acknowledgeText: {
+        flex: 1,
+        color: theme.colors.textMain,
+    },
     unlockButton: {
         marginTop: theme.spacing.md,
     },

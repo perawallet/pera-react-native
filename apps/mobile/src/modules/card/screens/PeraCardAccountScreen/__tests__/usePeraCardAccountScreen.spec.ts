@@ -10,15 +10,24 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
+import { act, renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockState = vi.hoisted(() => ({
     connectedAddress: null as string | null,
-    accounts: [] as Array<{ address: string; name?: string }>,
+    accounts: [] as Array<{
+        chains: { algorand: { address: string } }
+        name?: string
+    }>,
 }))
-const mockInfoToast = vi.fn()
 const mockNavigate = vi.fn()
+const { mockPublishPickerKind, mockCardPicker, mockSessionGuard } = vi.hoisted(
+    () => ({
+        mockPublishPickerKind: vi.fn(),
+        mockCardPicker: { showSearch: true, onSelected: vi.fn() },
+        mockSessionGuard: vi.fn(),
+    }),
+)
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -45,13 +54,17 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        infoToast: mockInfoToast,
-        errorToast: vi.fn(),
-        successToast: vi.fn(),
-        showToast: vi.fn(),
-    }),
+// The switcher on this screen is the shared drawer, so what the screen owns is
+// publishing its kind; the picker's own behaviour is covered by its spec.
+vi.mock('@modules/accounts/components/AccountDrawer', () => ({
+    useCardPicker: () => mockCardPicker,
+    useAccountDrawerPickerKind: mockPublishPickerKind,
+}))
+
+// The guard's own redirect behaviour is covered by its spec; here only the
+// fact that the dashboard shell mounts it matters.
+vi.mock('../../../hooks/useCardSessionGuard', () => ({
+    useCardSessionGuard: mockSessionGuard,
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -82,7 +95,9 @@ describe('usePeraCardAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockState.connectedAddress = null
-        mockState.accounts = [{ address: 'ADDR_A', name: 'Main' }]
+        mockState.accounts = [
+            { chains: { algorand: { address: 'ADDR_A' } }, name: 'Main' },
+        ]
     })
 
     it('exposes the Pera Card title for the selection trigger', () => {
@@ -123,24 +138,37 @@ describe('usePeraCardAccountScreen', () => {
         )
     })
 
-    it('returns to the wallet home when a wallet account is selected', () => {
-        const { result } = renderHook(() => usePeraCardAccountScreen())
+    // The drawer ignores props on the trigger, so publishing the kind is the
+    // only thing that makes picking an account leave this screen.
+    it('publishes the card picker kind to the shared drawer', () => {
+        renderHook(() => usePeraCardAccountScreen())
 
-        result.current.onSelectAccount()
-
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
-            screen: 'Home',
-            params: { screen: 'AccountDetails' },
-        })
+        expect(mockPublishPickerKind).toHaveBeenCalledWith('card')
     })
 
-    it('header actions surface the coming-soon toast', () => {
+    it('hands the card picker to the trigger for the bottom-sheet fallback', () => {
         const { result } = renderHook(() => usePeraCardAccountScreen())
 
-        result.current.onMore()
-        result.current.onScan()
-        result.current.onInbox()
+        expect(result.current.accountPicker).toBe(mockCardPicker)
+    })
 
-        expect(mockInfoToast).toHaveBeenCalledTimes(3)
+    it('opens the QR scanner from the header and closes it again', () => {
+        const { result } = renderHook(() => usePeraCardAccountScreen())
+        expect(result.current.isScannerVisible).toBe(false)
+
+        act(() => result.current.onScan())
+        expect(result.current.isScannerVisible).toBe(true)
+
+        act(() => result.current.onScannerClose())
+        expect(result.current.isScannerVisible).toBe(false)
+    })
+
+    // Every Baanx query on this screen 401s once the token dies, so the shell
+    // must watch the session instead of rendering persisted card state over
+    // empty data.
+    it('mounts the session guard', () => {
+        renderHook(() => usePeraCardAccountScreen())
+
+        expect(mockSessionGuard).toHaveBeenCalled()
     })
 })

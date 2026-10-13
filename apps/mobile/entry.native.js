@@ -20,6 +20,12 @@
 // Crypto and other polyfills
 import './shim'
 
+// After the shim: quick-crypto's `getRandomValues` is already installed, so
+// the compat's own `react-native-get-random-values` sees it and stands down.
+// Installs `global.NetInfo`, which is what gives WalletConnect v2 an
+// immediate reconnect on a connectivity edge instead of the 5 s heartbeat.
+import '@walletconnect/react-native-compat'
+
 // Development tooling
 import './src/wdyr'
 
@@ -29,6 +35,11 @@ import 'fast-text-encoding'
 // Expo registration (replaces AppRegistry.registerComponent)
 import { registerRootComponent } from 'expo'
 import { App } from './src/App'
+// Imports are hoisted, so every module above has evaluated by the time this
+// runs; the call, not the import's position, is what orders startup.
+import { initRuntime } from './src/bootstrap/preReact'
+
+initRuntime()
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,

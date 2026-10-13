@@ -23,16 +23,19 @@ export const PeraCardOverview = () => {
     const styles = useStyles()
     const {
         isAutoFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         currency,
         balance,
-        spendablePerTx,
         isBalanceLoading,
         credits,
         transactionSections,
         isLoadingTransactions,
+        withdrawState,
         onWithdraw,
         onAddFunds,
-        onGetUsdc,
+        onFundLinkedAccount,
+        canFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,
@@ -46,23 +49,24 @@ export const PeraCardOverview = () => {
                 balance={balance}
                 isLoading={isBalanceLoading}
                 currency={currency}
-                spendablePerTx={spendablePerTx}
+                fundingTypeLabel={fundingTypeLabel}
+                onChangeFundingType={onChangeFundingType}
             />
 
             <PeraCardActionButtons
                 isAutoFunding={isAutoFunding}
+                withdrawState={withdrawState}
                 onWithdraw={onWithdraw}
                 onAddFunds={onAddFunds}
-                onGetUsdc={onGetUsdc}
+                onFundLinkedAccount={onFundLinkedAccount}
+                canFundLinkedAccount={canFundLinkedAccount}
             />
 
-            {isAutoFunding && (
-                <PeraCardCreditsSection
-                    credits={credits}
-                    currency={currency}
-                    onCreditPress={onCreditPress}
-                />
-            )}
+            <PeraCardCreditsSection
+                credits={credits}
+                currency={currency}
+                onCreditPress={onCreditPress}
+            />
 
             <PeraCardTransactionsSection
                 sections={transactionSections}

@@ -10,14 +10,40 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AppError } from '@perawallet/wallet-core-shared'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
+import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
+import {
+    makeUnsignedTransaction,
+    registerFakeTransactionPlanner,
+} from '../../__tests__/transactions'
+import { SIGNING_KEY_DOMAIN } from '../../constants'
+import {
+    fakeReviewerAdapter,
+    registerFakeReviewerAdapter,
+} from '../../__tests__/fakeReviewerAdapter'
+import {
+    plannerChainAdapters,
+    reviewerChainAdapters,
+} from '../../chain-adapter'
+import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { signingMachine } from '../signingMachine'
-import { SubmissionError } from '../../pipeline/errors'
+import { analyzerActor } from '../actors/analyzerActor'
+import {
+    GenesisHashMismatchError,
+    ReviewRequiredError,
+    SubmissionError,
+} from '../../pipeline/errors'
 import type { SigningMachineInput } from '../context'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    algo25Account,
+    ledgerAccount,
+    multisigAccount,
+} from '../../__tests__/accounts'
 import type {
     SignableAnalysis,
     SigningResult,
@@ -28,11 +54,7 @@ import type { TransactionSignRequest } from '../../models'
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
-const mockAlgo25Account: WalletAccount = {
-    type: 'algo25',
-    address: MOCK_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const mockAlgo25Account = algo25Account(MOCK_ADDRESS, { keyPairId: 'key-1' })
 
 const mockTx = {
     sender: { toString: () => MOCK_ADDRESS },
@@ -49,7 +71,6 @@ const mockRequest: TransactionSignRequest = {
 
 const mockAnalysis: SignableAnalysis = {
     totalFees: 1000n,
-    transactionSummaries: [],
     warnings: [],
     signableAddresses: [MOCK_ADDRESS],
     riskLevel: 'low',
@@ -68,7 +89,7 @@ const mockTransportResult: TransportResult = {
 const mockDeps = {
     signTransactions: vi.fn(),
     signArbitraryData: vi.fn(),
-    signArc60: vi.fn(),
+    signAuthData: vi.fn(),
     encodeSignedTransactions: vi
         .fn()
         .mockReturnValue([new Uint8Array([1, 2, 3])]),
@@ -83,7 +104,7 @@ const mockDeps = {
     },
     proposeSignRequest: vi.fn(),
     addSignatures: vi.fn(),
-    network: 'mainnet' as never,
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
 }
 
 const makeInput = (
@@ -119,7 +140,7 @@ describe('signingMachine', () => {
         vi.clearAllMocks()
     })
 
-    it('reaches completed for a localKey account via algod', async () => {
+    it('reaches completed for a local-key account via algod', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
@@ -352,15 +373,16 @@ describe('signingMachine', () => {
         expect(state.context.error?.message).toMatch(/network error/)
     })
 
-    it('resolves signerAddress and groupSignerTypes in context', async () => {
+    it('resolves signerAddress and groupSigners in context', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
         const state = await waitFor(actor, s => s.matches('awaiting_user'))
         expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
-        expect(state.context.groupSignerTypes?.get(MOCK_ADDRESS)).toBe(
-            'localKey',
-        )
+        expect(state.context.groupSigners?.get(MOCK_ADDRESS)).toEqual({
+            custody: 'local',
+            scheme: 'ed25519',
+        })
     })
 
     it('stores analyses in context after validating', async () => {
@@ -400,9 +422,10 @@ describe('signingMachine', () => {
 
         // signerAddress should be the override (user), not the contract sender
         expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
-        expect(state.context.groupSignerTypes?.get(MOCK_ADDRESS)).toBe(
-            'localKey',
-        )
+        expect(state.context.groupSigners?.get(MOCK_ADDRESS)).toEqual({
+            custody: 'local',
+            scheme: 'ed25519',
+        })
         // The group should use the overridden address
         expect(state.context.signableGroups?.[0]?.signerAddress).toBe(
             MOCK_ADDRESS,
@@ -501,14 +524,11 @@ describe('signingMachine', () => {
         expect(state.context.error?.message).toMatch(/no signable/i)
     })
 
-    it('signs groups sequentially for a mixed localKey + multisig request', async () => {
+    it('signs groups sequentially for a mixed local + multisig request', async () => {
         const MULTISIG_ADDRESS =
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
 
-        const mockMultisigAccount: WalletAccount = {
-            type: 'multisig',
-            address: MULTISIG_ADDRESS,
-        } as unknown as WalletAccount
+        const mockMultisigAccount = multisigAccount(MULTISIG_ADDRESS)
 
         const mockTxFromMultisig = {
             sender: { toString: () => MULTISIG_ADDRESS },
@@ -580,7 +600,7 @@ describe('signingMachine', () => {
 
         const state = await waitFor(actor, s => s.matches('completed'))
 
-        // localKeySignerActor received only the localKey group
+        // localKeySignerActor received only the local group
         expect(capturedLocalKeyGroups).toHaveLength(1)
         expect(capturedLocalKeyGroups[0]?.signerAddress).toBe(MOCK_ADDRESS)
 
@@ -593,8 +613,8 @@ describe('signingMachine', () => {
         expect(state.context.signingResults).toEqual(
             expect.arrayContaining([localKeyResult, multisigResult]),
         )
-        expect(state.context.completedSignerTypes).toEqual(
-            expect.arrayContaining(['localKey', 'multisig']),
+        expect(state.context.completedCustodies).toEqual(
+            expect.arrayContaining(['local', 'multisig']),
         )
     })
 
@@ -626,6 +646,7 @@ describe('signingMachine', () => {
             })
 
         it('times out a hung transport and routes to failed, RETRY re-enters transporting', async () => {
+            const broadcaster = registerFakeBroadcaster()
             const actor = createActor(makeHangingTransportMachine(50), {
                 input: makeInput(),
             })
@@ -639,6 +660,12 @@ describe('signingMachine', () => {
                 timeout: 1000,
             })
             expect(failed.context.failedDuringState).toBe('transporting')
+            expect(broadcaster.submitTimeoutError).toHaveBeenCalledWith(
+                config.signingTransportTimeout,
+            )
+            expect(failed.context.error).toBe(
+                vi.mocked(broadcaster.submitTimeoutError).mock.results[0].value,
+            )
 
             // canRetryTransporting must hold → RETRY returns to transporting.
             actor.send({ type: 'RETRY' })
@@ -688,7 +715,9 @@ describe('signingMachine', () => {
                     new SubmissionError(
                         ['TXID'],
                         'unknown-outcome',
-                        new AlgodError('network_unavailable', {}),
+                        Object.assign(new Error('offline'), {
+                            code: 'network_unavailable',
+                        }),
                     ),
                 )
                 .mockResolvedValueOnce({ txIds: ['TXID'] })
@@ -751,17 +780,7 @@ describe('signingMachine', () => {
         const HW_ADDRESS =
             'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
 
-        const hwAccount = {
-            type: 'hardware',
-            address: HW_ADDRESS,
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'device-1',
-                deviceName: 'Nano X',
-                accountIndex: 0,
-                transportType: 'ble',
-            },
-        } as unknown as WalletAccount
+        const hwAccount = ledgerAccount(HW_ADDRESS)
 
         const hwTx = {
             sender: { toString: () => HW_ADDRESS },
@@ -904,7 +923,7 @@ describe('signingMachine', () => {
 
             const state = await waitFor(actor, s => s.matches('completed'))
             expect(state.context.signingResults).toEqual([hwResult])
-            expect(state.context.completedSignerTypes).toContain('hardware')
+            expect(state.context.completedCustodies).toContain('hardware')
         })
 
         it('hardware child rejected → machine reaches rejected state', async () => {
@@ -958,6 +977,181 @@ describe('signingMachine', () => {
             const state = await waitFor(actor, s => s.matches('failed'))
             expect(state.context.error).toBe(cause)
             expect(state.context.failedDuringState).toBe('signing')
+        })
+    })
+
+    describe('on a chain other than Algorand', () => {
+        const SECOND_CHAIN_ID: ChainId = 'ethereum'
+        const secondScope = { chainId: SECOND_CHAIN_ID, networkId: 'mainnet' }
+
+        beforeAll(() => registerAlgorandRulesAs(SECOND_CHAIN_ID))
+
+        const secondChainAccount = {
+            ...mockAlgo25Account,
+            chains: {
+                [SECOND_CHAIN_ID]: {
+                    address: MOCK_ADDRESS,
+                    keyPairId: 'key-1',
+                },
+            },
+        } as WalletAccount
+        const secondChainInput = (): SigningMachineInput =>
+            makeInput({ scope: secondScope, allAccounts: [secondChainAccount] })
+
+        const secondDecode = vi.fn()
+        const secondAutoApproveLocal = vi.fn()
+
+        // The real analyzer, so the machine resolves the reviewer itself.
+        const realAnalyzerMachine = mockedMachine.provide({
+            actors: { analyzerActor },
+        })
+
+        beforeEach(() => {
+            secondDecode.mockReset().mockResolvedValue({
+                totalFees: 7n,
+                signableAddresses: [MOCK_ADDRESS],
+            })
+            secondAutoApproveLocal.mockReset().mockReturnValue(true)
+            // Algorand's reviewer refuses every request, so reaching it fails.
+            registerFakeReviewerAdapter({
+                decoder: {
+                    decode: vi.fn(async () => {
+                        throw new GenesisHashMismatchError(
+                            'mainnet',
+                            0,
+                            'EXPECTED',
+                            'ACTUAL',
+                        )
+                    }),
+                },
+            })
+            reviewerChainAdapters.register(
+                fakeReviewerAdapter({
+                    chainId: SECOND_CHAIN_ID,
+                    decoder: { decode: secondDecode },
+                    policy: { autoApproveLocal: secondAutoApproveLocal },
+                }),
+            )
+            // The Algorand-shaped requests here validate through the chain's
+            // Algorand planner.
+            plannerChainAdapters.register(
+                fakePlannerAdapter({ chainId: SECOND_CHAIN_ID }),
+            )
+            registerFakeTransactionPlanner()
+        })
+
+        it("reviews the request with its own chain's reviewer", async () => {
+            const actor = createActor(realAnalyzerMachine, {
+                input: secondChainInput(),
+            })
+            actor.start()
+
+            const state = await waitFor(actor, s => s.matches('awaiting_user'))
+
+            expect(state.context.analyses?.map(a => a.totalFees)).toEqual([7n])
+        })
+
+        it("refuses a local request its chain's policy won't sign unreviewed", async () => {
+            secondAutoApproveLocal.mockReturnValue(false)
+
+            const actor = createActor(realAnalyzerMachine, {
+                input: secondChainInput(),
+            })
+            actor.start()
+
+            const state = await waitFor(actor, s => s.matches('failed'))
+
+            expect(state.context.error).toBeInstanceOf(ReviewRequiredError)
+            expect(state.can({ type: 'RETRY' })).toBe(false)
+        })
+
+        it("plans, signs and assembles a chain-neutral request through its chain's planner", async () => {
+            const transaction = makeUnsignedTransaction(
+                MOCK_ADDRESS,
+                secondScope,
+            )
+            const keyStore = {
+                sign: vi.fn(async (_keyPairId: string, payload: Uint8Array) =>
+                    payload.map(byte => byte ^ 0xff),
+                ),
+            }
+            // Only delivery is stubbed: review, signing and assembly are real.
+            const machine = signingMachine.provide({
+                actors: {
+                    transportActor: fromPromise(
+                        async (): Promise<TransportResult> =>
+                            mockTransportResult,
+                    ),
+                },
+            })
+            const actor = createActor(machine, {
+                input: {
+                    ...secondChainInput(),
+                    keyStore,
+                    request: { ...mockRequest, txs: [transaction] },
+                },
+            })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+            const state = await waitFor(actor, s => s.matches('completed'))
+
+            expect(state.context.signableGroups).toEqual([
+                expect.objectContaining({
+                    data: {
+                        type: 'transactions',
+                        transactions: [transaction],
+                        chainData: {},
+                    },
+                    signerAddress: MOCK_ADDRESS,
+                }),
+            ])
+            expect(secondDecode).toHaveBeenCalledWith(
+                state.context.signableGroups?.[0],
+                expect.anything(),
+            )
+            const planned = new Uint8Array(
+                new TextEncoder().encode(MOCK_ADDRESS),
+            )
+            expect(keyStore.sign).toHaveBeenCalledExactlyOnceWith(
+                'key-1',
+                planned,
+                SIGNING_KEY_DOMAIN,
+            )
+            expect(state.context.signingResults).toEqual([
+                {
+                    signedData: {
+                        type: 'signed-transactions',
+                        signed: [
+                            {
+                                scope: secondScope,
+                                id: `signed-by-${MOCK_ADDRESS}`,
+                                bytes: planned.map(byte => byte ^ 0xff),
+                            },
+                        ],
+                    },
+                    signers: [{ address: MOCK_ADDRESS }],
+                    originalIndices: [0],
+                },
+            ])
+            expect(state.context.transportResult).toEqual(mockTransportResult)
+        })
+
+        it('leaves a request a review screen shows to the user, whatever the policy', async () => {
+            secondAutoApproveLocal.mockReturnValue(false)
+
+            const actor = createActor(realAnalyzerMachine, {
+                input: {
+                    ...secondChainInput(),
+                    request: { ...mockRequest, sourceType: 'walletconnect' },
+                },
+            })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+
+            expect(secondAutoApproveLocal).not.toHaveBeenCalled()
         })
     })
 })

@@ -18,17 +18,19 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    CardAccountLinkedElsewhereError,
     FundingType,
     isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
     useCardStore,
+    useFundingAddressLinkMutation,
     useOnboardingKycPoll,
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import {
     isLedgerAccount,
     useAllAccounts,
-    useSelectedAccountAddress,
+    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -36,6 +38,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import {
     canAutoFund,
     useCardFundingSourcePicker,
+    useCardErrorToast,
     useCardOnboardingLogout,
     useEscrowCardCreation,
     useOpenCardSupport,
@@ -45,7 +48,12 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardScope } from '../../hooks/useCardScope'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
+import {
+    cardAccountAddressOf,
+    findCardAccount,
+} from '../../utils/cardAccountAddress'
 
 /**
  * The "Submit Your Documents" checklist row's visual state.
@@ -138,6 +146,7 @@ export type UseCardOnboardingStatusScreenResult = {
 
 export const useCardOnboardingStatusScreen =
     (): UseCardOnboardingStatusScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -152,7 +161,7 @@ export const useCardOnboardingStatusScreen =
             isLoading,
             hasPollTimedOut,
             restartPolling,
-        } = useOnboardingKycPoll()
+        } = useOnboardingKycPoll(scope)
 
         // The address step sets Completed, so it doubles as the "details done"
         // signal that unlocks the Connect Funds step — and as proof documents
@@ -194,9 +203,8 @@ export const useCardOnboardingStatusScreen =
 
         const accounts = useAllAccounts()
         const connectedAccount = useMemo<Optional<WalletAccount>>(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
-            [accounts, connectedAddress],
+            () => findCardAccount(accounts, connectedAddress, scope.chainId),
+            [accounts, connectedAddress, scope.chainId],
         )
 
         // Funding type is chosen locally and committed by the creation of an lsig.
@@ -233,7 +241,10 @@ export const useCardOnboardingStatusScreen =
                 >
             >()
         const { setParams } = stackNavigation
-        const { selectedAccountAddress } = useSelectedAccountAddress()
+        const selectedAccount = useSelectedAccount()
+        const selectedAccountAddress = selectedAccount
+            ? cardAccountAddressOf(selectedAccount, scope.chainId)
+            : undefined
 
         useEffect(() => {
             if (
@@ -289,11 +300,20 @@ export const useCardOnboardingStatusScreen =
             navigation.navigate('CardOnboardingPersonalDetails')
         }, [isKycSubmitted, handleVerifyIdentity, navigation])
 
-        // Onboarding creation always needs a signature, so only offer accounts
-        // that can sign (excludes Ledger, which is otherwise fundable).
+        // Creation always needs the ownership-proof signature, so only offer
+        // accounts that can produce one.
+        const offerSigningCapable = useCallback(
+            (account: WalletAccount) =>
+                isSigningCapableFundingSource(account, scope),
+            [scope],
+        )
         const { pickFundingSource } = useCardFundingSourcePicker({
-            accountFilter: isSigningCapableFundingSource,
+            accountFilter: offerSigningCapable,
         })
+        const { checkFundingAddress } = useFundingAddressLinkMutation(scope)
+        // Same copy the post-signature failure shows, resolved from the same
+        // error type rather than restating its keys here.
+        const showCardError = useCardErrorToast()
         const handleConnectAccount = useCallback(
             (source: 'connect' | 'change') => {
                 trackEvent(
@@ -303,29 +323,51 @@ export const useCardOnboardingStatusScreen =
                 )
                 void (async () => {
                     const account = await pickFundingSource()
-                    if (!account) return
+                    const address = account
+                        ? cardAccountAddressOf(account, scope.chainId)
+                        : undefined
+                    if (address === undefined) return
+                    // Ask before the ownership signature whether the backend
+                    // would even accept this address: creation links it to the
+                    // Baanx user and refuses one held by someone else, which
+                    // the user would otherwise hit three prompts later. An
+                    // unanswerable preflight is not a refusal, so only an
+                    // explicit `linked_to_other` stops the connect.
+                    const link = await checkFundingAddress(address).catch(
+                        () => null,
+                    )
+                    if (link?.state === 'linked_to_other') {
+                        await showCardError(
+                            new CardAccountLinkedElsewhereError(),
+                        )
+                        return
+                    }
                     trackEvent(CardEvent.CreateVerifyAccountSelect)
                     // Purely local, the card gets created and linked to this account by the Pera backend
                     useCardStore
                         .getState()
-                        .setConnectedFundingSourceAddress(account.address)
+                        .setConnectedFundingSourceAddress(address)
                 })()
             },
-            [pickFundingSource],
+            [
+                pickFundingSource,
+                checkFundingAddress,
+                showCardError,
+                scope.chainId,
+            ],
         )
 
         // Only `canCreateCard` is needed here — the actual creation sequence
         // (sign → create → optional LSig) now runs on CardCreateSigningScreen.
         const { canCreateCard } = useEscrowCardCreation()
         const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
-        // Auto availability keys off the auto-funding capability (LSig signing),
-        // NOT card creation: Ledger will create cards once ARC-60 lands but can
-        // never sign the AutoDraw LSig, so Auto must stay disabled for it.
+        // Auto availability keys off LSig signing, NOT card creation: a Ledger
+        // creates a card but can never sign the AutoDraw LSig.
         const isConnectedLedger =
             connectedAccount != null && isLedgerAccount(connectedAccount)
         const isAutoFundingUnavailable =
             !isAutoFundingEnabled ||
-            (connectedAccount != null && !canAutoFund(connectedAccount))
+            (connectedAccount != null && !canAutoFund(connectedAccount, scope))
 
         // A connected account that can't sign an LSig (e.g. Ledger) can't use Auto, so
         // fall back to Manual. Without this the Auto option stays selected but

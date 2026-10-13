@@ -19,8 +19,29 @@ import {
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
 import { SEND_TRANSACTION_SOURCE } from '@perawallet/wallet-core-transactions'
-import { useWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
+import { useConnectionsStore } from '@perawallet/wallet-core-connections'
+import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import { useSigningCompletedDriver } from '../useSigningCompletedDriver'
+
+/**
+ * Seeds the UI-facing connections mirror the driver reads the origin off —
+ * `transportId` is the `Connection.id` the handler stamped on the request.
+ */
+const seedConnection = (id: string, origin?: ConnectionOrigin): void => {
+    useConnectionsStore.getState().setConnections([
+        {
+            id,
+            kind: 'walletconnect-v1',
+            name: 'dApp',
+            peer: { name: 'dApp' },
+            accounts: [],
+            status: 'active',
+            createdAt: 0,
+            lastActiveAt: 0,
+            ...(origin ? { origin } : {}),
+        },
+    ])
+}
 
 const { requestBottomSheetMock } = vi.hoisted(() => ({
     requestBottomSheetMock: vi.fn().mockResolvedValue(undefined),
@@ -40,7 +61,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 type BuildOpts = {
-    type?: 'transactions' | 'arbitrary-data' | 'arc60'
+    type?: 'transactions' | 'arbitrary-data' | 'auth-data'
     name?: string
     id?: string
     transportId?: string
@@ -111,9 +132,9 @@ describe('useSigningCompletedDriver', () => {
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
-    it('does not open the sheet for arc60 signing', () => {
+    it('does not open the sheet for auth-data signing', () => {
         renderHook(() => useSigningCompletedDriver())
-        publishCompleted(buildRequest('arc60', { type: 'arc60' }))
+        publishCompleted(buildRequest('card', { type: 'auth-data' }))
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
@@ -136,11 +157,11 @@ describe('useSigningCompletedDriver', () => {
 
     describe('return-to-dapp hand-off', () => {
         beforeEach(() => {
-            useWalletConnectStore.getState().pruneDappOrigins([])
+            useConnectionsStore.getState().resetState()
         })
 
         it('passes the session origin to the sheet for a browser-initiated WC session', () => {
-            useWalletConnectStore.getState().setDappOrigin('wc-client-9', {
+            seedConnection('wc-client-9', {
                 source: 'external-browser',
                 browserName: 'Chrome',
             })
@@ -188,9 +209,7 @@ describe('useSigningCompletedDriver', () => {
         })
 
         it('suppresses the sheet for WC sessions paired inside the in-app browser', () => {
-            useWalletConnectStore.getState().setDappOrigin('wc-client-9', {
-                source: 'in-app',
-            })
+            seedConnection('wc-client-9', { source: 'in-app' })
             renderHook(() => useSigningCompletedDriver())
 
             publishCompleted(
@@ -201,9 +220,7 @@ describe('useSigningCompletedDriver', () => {
         })
 
         it('shows the sheet without a hand-off for qr-paired sessions', () => {
-            useWalletConnectStore.getState().setDappOrigin('wc-client-9', {
-                source: 'qr',
-            })
+            seedConnection('wc-client-9', { source: 'qr' })
             renderHook(() => useSigningCompletedDriver())
 
             publishCompleted(

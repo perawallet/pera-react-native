@@ -1,0 +1,105 @@
+/*
+ * Copyright (c) Pera Wallet. All rights reserved.
+ */
+
+import { describe, expect, it } from 'vitest'
+import { CHAIN_IDS } from '../../packages/chain-contract/src/models/identity.js'
+import { CHAIN_IDS as RULE_CHAIN_IDS } from '../rules/no-chain-identity-in-shared-packages.js'
+import { locations, runRule } from './helpers.js'
+
+const RULE = 'lanekeep/rules/no-chain-identity-in-shared-packages.ts'
+const FIXTURES =
+    'lanekeep/__tests__/fixtures/{packages/*/src,apps/mobile/src/**}/chain-identity.*.ts'
+
+// Debt the chain-split moves out of shared packages. Remove an entry when its
+// line goes; flip the rule to `error` when the list is empty.
+const KNOWN_OFFENDERS: readonly string[] = [
+    "packages/walletconnect/src/shared/deeplink.ts: `'algorand'` is a chain id literal in a shared package",
+]
+
+describe('pera/no-chain-identity-in-shared-packages', () => {
+    it('reports branches on chainId/family and chain id literals', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v => v.file.endsWith('chain-identity.bad.ts')),
+            ),
+        ).toEqual([
+            'chain-identity.bad.ts:8',
+            'chain-identity.bad.ts:14',
+            'chain-identity.bad.ts:17',
+            'chain-identity.bad.ts:18',
+            'chain-identity.bad.ts:19',
+            'chain-identity.bad.ts:20',
+        ])
+    })
+
+    it('ignores calls, comments, look-alike strings, object keys and other props', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            found.filter(v => v.file.endsWith('chain-identity.good.ts')),
+        ).toEqual([])
+    })
+
+    it('scans the product packages that stay generic', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v => v.file.endsWith('chain-identity.product.ts')),
+            ),
+        ).toEqual(['chain-identity.product.ts:8'])
+    })
+
+    it('scans the foundation packages every feature builds on', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v =>
+                    v.file.endsWith('chain-identity.foundation.ts'),
+                ),
+            ),
+        ).toEqual([
+            'chain-identity.foundation.ts:7',
+            'chain-identity.foundation.ts:7',
+        ])
+    })
+
+    it('leaves packages outside the shared list alone', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            found.filter(v => v.file.endsWith('chain-identity.outside.ts')),
+        ).toEqual([])
+    })
+
+    it('reports chain ids an app compares, not ones it pins', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            found
+                .filter(v => v.file.endsWith('chain-identity.app.ts'))
+                .map(v => `${v.line}: ${v.message}`),
+        ).toEqual([
+            "6: `'algorand'` is compared as a chain id in app code",
+            "7: `'ethereum'` is compared as a chain id in app code",
+            '8: `scope.chainId === x` branches on chain identity in app code',
+            "11: `'algorand'` is compared as a chain id in app code",
+        ])
+    })
+
+    it('bans every ChainId', () => {
+        expect(RULE_CHAIN_IDS).toEqual(CHAIN_IDS)
+    })
+
+    it('reports exactly the known offenders across the real packages and apps', async () => {
+        const found = await runRule(RULE, '{packages,apps}/*/src/**/*.{ts,tsx}')
+
+        expect(found.map(v => `${v.file}: ${v.message}`)).toEqual(
+            KNOWN_OFFENDERS,
+        )
+    })
+})

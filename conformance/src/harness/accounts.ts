@@ -17,30 +17,32 @@ import {
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
 import algosdk from 'algosdk'
+import nacl from 'tweetnacl'
 
 // Deep imports rather than the package barrel on purpose: the barrel pulls
 // in every accounts hook (multisig, staking, currencies), none of which is
-// reachable from a Node suite. `models/accounts` and `bip44` have no
-// dependencies beyond types and one error class.
-import {
-    AccountTypes,
-    DerivationTypes,
-    type Algo25Account,
-    type HDWalletAccount,
-    type HDWalletDetails,
-    type MultiSigAccount,
-    type QuantumAccount,
-    type WalletAccount,
+// reachable from a Node suite. `models/accounts` has no dependencies beyond
+// types.
+import type {
+    MultiSigAccount,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts/models/accounts'
-import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-accounts/bip44'
-import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
-import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain/utils/addresses'
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain/utils/multisig'
+import type { HdIndex } from '@perawallet/wallet-core-accounts/models/credentials'
+import { buildAccount } from '@perawallet/wallet-core-accounts/credentials/buildAccount'
+import { algorandAddressCodec } from '@perawallet/wallet-core-chain-algorand/accounts/address-codec'
+import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-chain-algorand/accounts/bip44'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain/pq/derivation'
+import { deriveQuantumAddress } from '@perawallet/wallet-core-chain-algorand/blockchain/pq/quantumAdapter'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/addresses'
+import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig/address'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
+import { Networks } from '@perawallet/wallet-core-config/models/network'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
-import { algo25SeedToAddress } from '@perawallet/wallet-core-kms/utils'
 
 export type ConformanceAccountKind = 'algo25' | 'hd' | 'quantum'
 
@@ -54,7 +56,7 @@ export type ConformanceAccount = {
     /**
      * The app's own account model for this key. Suites hand this to real app
      * code (`signTransactionsWithLocalKey`, `resolveSigningAccount`,
-     * `buildGroupSignerTypeMap`) rather than to a harness stand-in, so the
+     * `buildGroupSignerMap`) rather than to a harness stand-in, so the
      * type-dispatch those functions perform is the dispatch under test.
      */
     walletAccount: WalletAccount
@@ -72,7 +74,7 @@ export type ConformanceMultisigAccount = {
 const HD_ACCOUNT = 0
 
 // BIP44 Algorand address path (coin type 283), byte-for-byte the app's
-// `buildAddressPath` in packages/kms/src/hooks/useHDWallet.ts. That one is
+// `buildAddressPath` in packages/chain-algorand/src/accounts/hd-derivation.ts. That one is
 // module-private, so the path is rebuilt here and then checked against the
 // app's own parser below rather than trusted.
 export const buildHdAddressPath = (account: number, keyIndex: number): string =>
@@ -115,9 +117,16 @@ export const createAlgo25Account = async (
     const seed = algosdk.seedFromMnemonic(mnemonic)
     await importSeed(keyStore, `${id}-seed`, seed, 'algo25')
 
-    // The app's own seed→address derivation, so a change to it fails here
-    // rather than agreeing with a harness copy of the old behaviour.
-    const address = algo25SeedToAddress(seed)
+    // The app's own address encoding, so a change to it fails here rather
+    // than agreeing with a harness copy of the old behaviour.
+    const signPair = nacl.sign.keyPair.fromSeed(seed)
+    const publicKey = new Uint8Array(signPair.publicKey)
+    signPair.secretKey.fill(0)
+    // LocalNet is the app's custom network, as the submission suite models it.
+    const address = algorandAddressCodec.fromPublicKey(publicKey, {
+        scheme: 'ed25519',
+        networkId: scopeForLegacyNetwork(Networks.custom).networkId,
+    })
     const keyId = await keyStore.import(
         {
             id: `${id}-sign`,
@@ -127,7 +136,7 @@ export const createAlgo25Account = async (
             keyUsages: ['sign', 'verify'],
             // The 32-byte Ed25519 seed, not the 64-byte expanded secret key.
             privateKey: Uint8Array.from(seed),
-            publicKey: algosdk.Address.fromString(address).publicKey,
+            publicKey,
             metadata: { parentKeyId: `${id}-seed` },
         },
         'raw',
@@ -139,12 +148,12 @@ export const createAlgo25Account = async (
         mnemonic,
         keyId,
         kind: 'algo25',
-        walletAccount: {
+        walletAccount: buildAccount({
             id,
-            type: AccountTypes.algo25,
-            address,
-            keyPairId: keyId,
-        } satisfies Algo25Account,
+            custody: { kind: 'local', seed: null },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+        }),
     }
 }
 
@@ -182,12 +191,12 @@ export const createQuantumAccount = async (
         mnemonic,
         keyId,
         kind: 'quantum',
-        walletAccount: {
+        walletAccount: buildAccount({
             id,
-            type: AccountTypes.quantum,
-            address,
-            keyPairId: keyId,
-        } satisfies QuantumAccount,
+            custody: { kind: 'local', seed: 'quantum' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+        }),
     }
 }
 
@@ -239,16 +248,11 @@ export const createHdAccount = async (
     )
     prepared.rootKey.fill(0)
 
-    const hdWalletDetails: HDWalletDetails = {
-        account: HD_ACCOUNT,
-        change: 0,
-        keyIndex: index,
-        derivationType: DerivationTypes.Peikert,
-    }
+    const hdIndex: HdIndex = { account: HD_ACCOUNT, keyIndex: index }
     const path = buildHdAddressPath(HD_ACCOUNT, index)
     // The app's own BIP44 parser is the judge of whether the path this harness
     // built is the path the app would have derived at these coordinates.
-    assertAlgorandBip44PathMatches(path, hdWalletDetails)
+    assertAlgorandBip44PathMatches(path, hdIndex)
 
     const keyId = await keyStore.deriveFromSeed(rootKeyId, path, {
         id: `${id}-idx${index}`,
@@ -275,13 +279,16 @@ export const createHdAccount = async (
         mnemonic: resolvedMnemonic,
         keyId,
         kind: 'hd',
-        walletAccount: {
+        walletAccount: buildAccount({
             id,
-            type: AccountTypes.hdWallet,
-            address,
-            keyPairId: keyId,
-            hdWalletDetails,
-        } satisfies HDWalletAccount,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: hdIndex,
+            },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+        }),
     }
 }
 
@@ -304,12 +311,20 @@ export const createMultisigAccount = (
         members,
         threshold,
         version,
-        walletAccount: {
+        walletAccount: buildAccount({
             id: address,
-            type: AccountTypes.multisig,
-            address,
-            multisigDetails: { threshold, addresses, version },
-        } satisfies MultiSigAccount,
+            custody: { kind: 'multisig' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: {
+                [LEGACY_CHAIN_ID]: {
+                    address,
+                    native: {
+                        family: 'algorand',
+                        multisig: { version, threshold, addresses },
+                    },
+                },
+            },
+        }),
     }
 }
 

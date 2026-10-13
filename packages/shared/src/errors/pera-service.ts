@@ -10,12 +10,18 @@
  limitations under the License
  */
 
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { PeraService } from '@perawallet/wallet-core-config'
 import type { Network } from '../models/base-types'
 import { AppError, ErrorCategory, ErrorSeverity } from './base'
 
 /**
- * Thrown when a request targets a Pera backend service on a network that has
- * no Pera deployment (betanet, custom).
+ * Thrown when a `backend: 'pera'` request targets a scope with no Pera
+ * deployment (betanet, a custom node), or names a Pera service the scope's
+ * configuration does not list.
  *
  * Deliberately NOT retryable: unlike a `PeraNetworkError` outage, retrying can
  * never succeed, so React Query must fail fast rather than burn its budget.
@@ -28,20 +34,31 @@ import { AppError, ErrorCategory, ErrorSeverity } from './base'
  * relative URL with a bare `TypeError` first.
  */
 export class PeraServiceUnavailableError extends AppError {
-    public readonly network: Network
+    public readonly scope: ChainScope
+    public readonly service: PeraService | undefined
 
-    constructor(network: Network) {
-        super(`Pera services are not deployed for ${network}`, {
-            severity: ErrorSeverity.LOW,
-            category: ErrorCategory.NETWORK,
-            retryable: false,
-            recoverable: false,
-            messageKey: 'errors.pera_service.unavailable',
-            // Log context only — the copy deliberately says "this network"
-            // rather than naming it, since the network is an internal concept.
-            params: { network },
-        })
-        this.network = network
+    /** A `Network` target is a legacy Algorand network. */
+    constructor(target: ChainScope | Network, service?: PeraService) {
+        const scope =
+            typeof target === 'string' ? scopeForLegacyNetwork(target) : target
+        // Plain interpolation, not toScopeKey: building this error must never throw.
+        const scopeKey = `${scope.chainId}/${scope.networkId}`
+        super(
+            `Pera services are not deployed for ${scopeKey}` +
+                (service === undefined ? '' : ` (service: ${service})`),
+            {
+                severity: ErrorSeverity.LOW,
+                category: ErrorCategory.NETWORK,
+                retryable: false,
+                recoverable: false,
+                messageKey: 'errors.pera_service.unavailable',
+                // Log context only — the copy deliberately says "this network"
+                // rather than naming it, since the scope is an internal concept.
+                params: { scope: scopeKey, service },
+            },
+        )
+        this.scope = scope
+        this.service = service
     }
 }
 

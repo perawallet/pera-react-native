@@ -11,8 +11,10 @@
  */
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
+import { accountKindIdOf } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     MigrationDataSection,
     useExpandableState,
@@ -28,7 +30,8 @@ const getDisplayType = (account: LegacyAccount): string => {
     if (account.type === 'watch') return 'watch'
     if (account.joint !== null) return 'multisig'
     if (account.ledger !== null) return 'hardware'
-    if (account.hdWalletId !== null) return 'hdWallet'
+    if (account.hdSeedId !== null) return 'hd'
+    // lanekeep-ignore-next-line pera/no-algorand-account-vocabulary reason: labels a legacy native-app record in the developer migration viewer, which shows that app's own vocabulary
     return 'algo25'
 }
 
@@ -125,9 +128,9 @@ const AccountCard = ({
                         const rnAccount = rn.accountsByAddress.get(
                             account.address,
                         )
-                        const rnOrderIndex = rn.manualAccountOrder.indexOf(
-                            account.address,
-                        )
+                        const rnOrderIndex = rnAccount
+                            ? rn.manualAccountOrder.indexOf(rnAccount.id)
+                            : -1
                         return (
                             <>
                                 <MigrationDataRow
@@ -149,7 +152,14 @@ const AccountCard = ({
                                 <LegacyVsRnRow
                                     label='type'
                                     legacyValue={account.type}
-                                    rnValue={rnAccount?.type ?? '(missing)'}
+                                    rnValue={
+                                        rnAccount
+                                            ? accountKindIdOf(
+                                                  rnAccount,
+                                                  LEGACY_CHAIN_ID,
+                                              )
+                                            : '(missing)'
+                                    }
                                 />
                                 <LegacyVsRnRow
                                     label='preferredOrder'
@@ -172,8 +182,8 @@ const AccountCard = ({
                         value={account.secretKey}
                     />
                     <MigrationDataRow
-                        label='hdWalletId'
-                        value={account.hdWalletId}
+                        label='hdSeedId'
+                        value={account.hdSeedId}
                     />
 
                     {account.ledger && (

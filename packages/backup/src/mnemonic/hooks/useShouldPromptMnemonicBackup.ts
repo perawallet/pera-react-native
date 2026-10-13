@@ -10,9 +10,12 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
+    chainAccountOf,
     useAccountFundedNetworksQuery,
-    useAccountsRekeyedTo,
+    useAccountsDelegatedTo,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
@@ -21,16 +24,31 @@ import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
 // badge), so they can never disagree.
 export const useShouldPromptMnemonicBackup = (
     account: WalletAccount | null | undefined,
+    scope: ChainScope,
 ): boolean => {
-    const requiresBackup = useRequiresMnemonicBackup(account)
+    const requiresBackup = useRequiresMnemonicBackup(account, scope.chainId)
     // Funding on ANY network counts, not just the one currently selected: the
     // passphrase is the same secret whichever chain the balance sits on, and a
     // warning that disappears on a network switch teaches the wrong lesson.
-    const { isFunded } = useAccountFundedNetworksQuery(account?.address)
-    const rekeyedToThisAccount = useAccountsRekeyedTo(account?.address)
+    const address = account
+        ? chainAccountOf(account, scope.chainId)?.address
+        : undefined
+    const { isFunded } = useAccountFundedNetworksQuery(address, scope)
+    const delegatedToThisAccount = useAccountsDelegatedTo(
+        address,
+        scope.chainId,
+    )
+    const canBackUpMnemonic = useChainCapability(
+        scope.chainId,
+        'mnemonicBackup',
+    )
 
     // An unfunded account still holds the keys for anything rekeyed to it, so
     // losing its passphrase strands those accounts — funding is not the only
     // reason to prompt.
-    return requiresBackup && (isFunded || rekeyedToThisAccount.length > 0)
+    return (
+        canBackUpMnemonic &&
+        requiresBackup &&
+        (isFunded || delegatedToThisAccount.length > 0)
+    )
 }

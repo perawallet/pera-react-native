@@ -13,13 +13,15 @@
 import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import {
-    clearCustomNetworkCache,
     fetchGenesisFromNode,
     getCustomNetworkConfig,
-    shouldClearCustomCache,
-    useCustomNetworkStore,
+    setCustomNetwork,
     type CustomNetworkConfig,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import {
+    clearCustomNetworkCache,
+    shouldClearCustomCache,
+} from '@perawallet/wallet-core-chain-shared'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
@@ -35,7 +37,7 @@ export type CustomNetworkSheetErrors = {
     genesisHash?: boolean
     /**
      * Required even though signing compares only `genesisHash`: the extension
-     * advertises `genesisId` to every dApp over ARC-0027, and
+     * advertises `genesisId` to every connected dApp, and
      * `fetchGenesisFromNode` defaults it to `''` when a node omits it — so
      * without this a "valid" config can carry an empty chain name.
      */
@@ -190,7 +192,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             await clearCustomNetworkCache(queryClient)
         }
 
-        useCustomNetworkStore.getState().setCustomNetwork(next)
+        setCustomNetwork(next)
 
         await switchNetwork(Networks.custom)
         try {

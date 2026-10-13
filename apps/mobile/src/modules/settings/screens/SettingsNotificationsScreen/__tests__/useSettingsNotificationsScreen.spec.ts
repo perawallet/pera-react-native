@@ -25,6 +25,10 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
     useAllAccounts: vi.fn(() => []),
 }))
 
@@ -62,6 +66,7 @@ const isPushSupported = vi.fn(() => true)
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         pushNotification: { isSupported: isPushSupported },
+        chains: { has: () => false },
     }),
 }))
 
@@ -89,6 +94,19 @@ describe('useSettingsNotificationsScreen', () => {
         expect(result.current.isPushSupported).toBe(false)
     })
 
+    it('passes the push-service availability through', () => {
+        vi.mocked(useSystemNotificationPermission).mockReturnValueOnce({
+            isEnabled: false,
+            isLoading: false,
+            isPushServiceUnavailable: true,
+            openSettings: vi.fn(),
+        } as any)
+
+        const { result } = renderHook(() => useSettingsNotificationsScreen())
+
+        expect(result.current.isPushServiceUnavailable).toBe(true)
+    })
+
     it('calls openSettings when handleSystemNotificationToggle is called', () => {
         const openSettings = vi.fn()
         vi.mocked(useSystemNotificationPermission).mockReturnValueOnce({
@@ -108,7 +126,10 @@ describe('useSettingsNotificationsScreen', () => {
 
     it('delegates the toggle to useAccountNotificationToggle', async () => {
         mocks.toggleAccountNotification.mockResolvedValue(true)
-        const mockAccount = { id: '1', address: 'ADDR1' }
+        const mockAccount = {
+            id: '1',
+            chains: { algorand: { address: 'ADDR1' } },
+        }
 
         const { result } = renderHook(() => useSettingsNotificationsScreen())
 
@@ -130,7 +151,10 @@ describe('useSettingsNotificationsScreen', () => {
     it('still delegates while offline rather than swallowing the toggle', async () => {
         onlineManager.setOnline(false)
         mocks.toggleAccountNotification.mockResolvedValue(false)
-        const mockAccount = { id: '1', address: 'ADDR1' }
+        const mockAccount = {
+            id: '1',
+            chains: { algorand: { address: 'ADDR1' } },
+        }
 
         const { result } = renderHook(() => useSettingsNotificationsScreen())
 

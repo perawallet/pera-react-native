@@ -13,8 +13,9 @@
 // ISOLATED-world half of the Bidali gift-card bridge — see webview-relay.ts
 // for the shared implementation this pair delegates to, and for why sharing
 // the Discover-named constants across disjoint-origin pairs is safe.
+import { BIDALI_BALANCES_PARAM } from './bidali-params'
 import { runWebviewRelay } from './webview-relay'
 
-runWebviewRelay()
+runWebviewRelay([BIDALI_BALANCES_PARAM])
 
 export {}

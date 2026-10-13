@@ -20,7 +20,6 @@ export type {
 export * from './pera-provider'
 export * from './context'
 export * from './singleton'
-export * from './test-platform'
 export {
     PASSKEY_MAIN_KEY_SCHEME,
     passkeyMainKeyId,
@@ -30,6 +29,12 @@ export {
     type EngineKeySource,
 } from './keystore/engineKeySource'
 export type { ResealReport } from './keystore/resealTypes'
+/**
+ * The `SubtleCrypto` the keystore engine runs on. Packages that seal records
+ * for the native keystore take it from here rather than importing
+ * react-native-quick-crypto themselves.
+ */
+export { subtle as keystoreSubtle } from './keystore/subtle'
 export {
     readKeystoreMigrationLedger,
     resetKeystoreMigrationModule,
@@ -39,3 +44,7 @@ export {
     UPSTREAM_KEYSTORE_MODULE_ID,
     type KeystoreMigrationModuleDescriptor,
 } from './keystore/keystoreMigrationModules'
+export { hasKeyMaterial, writePasskeyCredential } from './keystore/maintenance'
+export { isPasskeyCredentialType } from './keystore/passkeyCredentials/passkeyCredentialTypes'
+export type { FlatProviderCredential } from './keystore/passkeyCredentials/splitProviderCredential'
+export type { PasskeySplitResult } from './keystore/passkeyCredentials/splitFlatPasskeyCredentials'

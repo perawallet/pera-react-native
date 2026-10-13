@@ -10,14 +10,6 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
-
-/** Destination token IDs supported by the onramp (ALGO and USDC on Algorand). */
-export const ONRAMP_DESTINATION_TOKEN_IDS = [
-    ALGO_ASSET_NAME,
-    'USDC_ALGORAND',
-] as const
-
 export const ANDROID_EXCLUDED_PAYMENT_METHODS = ['APPLE_PAY'] as const
 
 export const IOS_EXCLUDED_PAYMENT_METHODS = ['GOOGLE_PAY'] as const

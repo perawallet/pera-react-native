@@ -11,223 +11,130 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { renderHook } from '@testing-library/react'
+import type {
+    MessageRequest,
+    SigningRequest,
+} from '@perawallet/wallet-core-chain-contract'
+import { algo25Account } from '../../__tests__/accounts'
+import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
+import { messageSignerChainAdapters } from '../../message-signer'
+import { CannotSignError } from '../../pipeline/errors'
 import { useArbitraryDataSigner } from '../useArbitraryDataSigner'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockSignDataWithKey = vi.fn()
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<object>()),
     useKMS: () => ({
-        signDataWithKey: (...args: any[]) => mockSignDataWithKey(...args),
+        signDataWithKey: (...args: unknown[]) => mockSignDataWithKey(...args),
     }),
 }))
 
-let mockAccounts: WalletAccount[] = []
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    useAllAccounts: () => [],
+}))
 
-vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-accounts',
-    )
-    return {
-        ...actual,
-        useAccountsStore: (selector: any) =>
-            selector({ accounts: mockAccounts }),
-    }
-})
+const account = algo25Account('ADDR', { keyPairId: 'key-1' })
 
-vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-shared',
-    )
-    return {
-        ...actual,
-        decodeFromBase64: (s: string) => new TextEncoder().encode(s),
-    }
-})
-
-const hdAccount = {
-    address: 'HD_ADDR',
-    keyPairId: 'key-hd-child',
-    type: 'hdWallet',
-    hdWalletDetails: {
-        account: 0,
-        change: 0,
-        keyIndex: 1,
-        derivationType: 9,
+const planFor = vi.fn((request: MessageRequest): SigningRequest[] => [
+    {
+        requestIndex: 0,
+        signer: request.signer,
+        scheme: 'ed25519',
+        payload: new TextEncoder().encode(
+            (request.payload as { data: string }).data,
+        ),
     },
-} as unknown as WalletAccount
-
-const algo25Account = {
-    address: 'ALGO25_ADDR',
-    keyPairId: 'key-algo25-ed25519',
-    type: 'algo25',
-} as unknown as WalletAccount
+])
 
 describe('useArbitraryDataSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAccounts = []
-        mockSignDataWithKey.mockResolvedValue([new Uint8Array([9, 8, 7])])
+        mockSignDataWithKey.mockImplementation(
+            async (_key, _domain, payloads: Uint8Array[]) =>
+                payloads.map((_, index) => new Uint8Array([index + 1])),
+        )
     })
 
-    describe('HD wallet account', () => {
-        test('signs with the account child id and MX-prefixed bytes', async () => {
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await act(async () => {
-                await result.current.signArbitraryData(hdAccount, 'hello')
-            })
-
-            expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
-            const [childId, domain, items] = mockSignDataWithKey.mock.calls[0]
-
-            expect(childId).toBe('key-hd-child')
-            expect(domain).toBe('pera.accounts')
-            expect(items).toHaveLength(1)
-
-            const dataArg = items[0] as Uint8Array
-            expect(dataArg[0]).toBe('M'.charCodeAt(0))
-            expect(dataArg[1]).toBe('X'.charCodeAt(0))
+    test('plans one arbitrary-data request per item, naming the account, and returns the signatures in order', async () => {
+        const adapter = registerFakeMessageSignerAdapter({
+            plan: planFor,
+            assemble: vi.fn((request, signatures) => ({
+                scope: request.scope,
+                signature: signatures[0],
+            })),
         })
+        const { result } = renderHook(() => useArbitraryDataSigner())
 
-        test('signs each item in an array of data', async () => {
-            mockSignDataWithKey.mockResolvedValue([
-                new Uint8Array([1]),
-                new Uint8Array([2]),
-                new Uint8Array([3]),
-            ])
+        const signatures = await result.current.signArbitraryData(
+            'algorand',
+            account,
+            ['a', 'b'],
+        )
+        await result.current.signArbitraryData('algorand', account, 'single')
 
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await act(async () => {
-                await result.current.signArbitraryData(hdAccount, [
-                    'item1',
-                    'item2',
-                    'item3',
-                ])
-            })
-
-            const [, , items] = mockSignDataWithKey.mock.calls[0]
-            expect(items).toHaveLength(3)
-        })
-
-        test('returns signatures from the kms call', async () => {
-            const expectedSig = new Uint8Array([42, 43, 44])
-            mockSignDataWithKey.mockResolvedValue([expectedSig])
-
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            let sigs: Optional<Uint8Array[]>
-            await act(async () => {
-                sigs = await result.current.signArbitraryData(
-                    hdAccount,
-                    'hello',
-                )
-            })
-
-            expect(sigs).toEqual([expectedSig])
-        })
+        expect(signatures).toEqual([new Uint8Array([1]), new Uint8Array([2])])
+        expect(adapter.plan).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({
+                method: 'arbitrary-data',
+                signer: 'ADDR',
+                payload: { data: 'a' },
+            }),
+            { account, accounts: [] },
+        )
+        expect(adapter.plan).toHaveBeenNthCalledWith(
+            3,
+            expect.objectContaining({ payload: { data: 'single' } }),
+            expect.anything(),
+        )
     })
 
-    describe('Algo25 account', () => {
-        test('signs with the account child id and MX-prefixed bytes', async () => {
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await act(async () => {
-                await result.current.signArbitraryData(algo25Account, 'hello')
-            })
-
-            expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
-            const [childId, domain, items] = mockSignDataWithKey.mock.calls[0]
-            expect(childId).toBe('key-algo25-ed25519')
-            expect(domain).toBe('pera.accounts')
-
-            const dataArg = items[0] as Uint8Array
-            expect(dataArg[0]).toBe('M'.charCodeAt(0))
-            expect(dataArg[1]).toBe('X'.charCodeAt(0))
+    test('signs every payload in one KMS call under the signing key domain', async () => {
+        registerFakeMessageSignerAdapter({
+            plan: planFor,
+            assemble: vi.fn((request, signatures) => ({
+                scope: request.scope,
+                signature: signatures[0],
+            })),
         })
+        const { result } = renderHook(() => useArbitraryDataSigner())
+
+        await result.current.signArbitraryData('algorand', account, ['a', 'b'])
+
+        expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
+        expect(mockSignDataWithKey).toHaveBeenCalledWith(
+            'key-1',
+            'pera.accounts',
+            [new TextEncoder().encode('a'), new TextEncoder().encode('b')],
+        )
     })
 
-    describe('rekeyed accounts', () => {
-        test("signs with the requested account's OWN key even when rekeyed", async () => {
-            // The dApp verifies the signature against the requested address's
-            // own pubkey, so we use the account's own keypair — never the
-            // auth chain.
-            const original = {
-                ...algo25Account,
-                address: 'ORIGINAL_ADDR',
-                rekeyAddress: 'AUTH_ADDR',
-            } as unknown as WalletAccount
+    test('refuses and never touches the KMS when no message signer is registered', async () => {
+        messageSignerChainAdapters.reset()
+        const { result } = renderHook(() => useArbitraryDataSigner())
 
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await act(async () => {
-                await result.current.signArbitraryData(original, 'hello')
-            })
-
-            const [childId] = mockSignDataWithKey.mock.calls[0]
-            expect(childId).toBe('key-algo25-ed25519')
-        })
-
-        test('rejects a watch-rekeyed account even when the auth has keys', async () => {
-            const watchSource = {
-                address: 'WATCH_ADDR',
-                type: 'watch',
-                rekeyAddress: 'AUTH_ADDR',
-            } as unknown as WalletAccount
-
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await expect(
-                act(async () => {
-                    await result.current.signArbitraryData(watchSource, 'hello')
-                }),
-            ).rejects.toThrow(/Cannot sign arbitrary data/)
-        })
+        await expect(
+            result.current.signArbitraryData('algorand', account, 'x'),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
 
-    describe('unsupported account type', () => {
-        test('rejects watch accounts', async () => {
-            const watchAccount = {
-                address: 'WATCH_ADDR',
-                type: 'watch',
-            } as unknown as WalletAccount
+    test('refuses an account with no address on the chain before reaching the signer', async () => {
+        const plan = vi.fn()
+        registerFakeMessageSignerAdapter({ plan })
+        const { result } = renderHook(() => useArbitraryDataSigner())
 
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await expect(
-                act(async () => {
-                    await result.current.signArbitraryData(
-                        watchAccount,
-                        'hello',
-                    )
-                }),
-            ).rejects.toThrow(/Cannot sign arbitrary data/)
-        })
-
-        test('rejects hardware wallet accounts', async () => {
-            const hwAccount = {
-                address: 'HW_ADDR',
-                type: 'hardware',
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'd',
-                    deviceName: 'L',
-                    accountIndex: 0,
-                    transportType: 'ble',
-                },
-            } as unknown as WalletAccount
-
-            const { result } = renderHook(() => useArbitraryDataSigner())
-
-            await expect(
-                act(async () => {
-                    await result.current.signArbitraryData(hwAccount, 'hello')
-                }),
-            ).rejects.toThrow(/Cannot sign arbitrary data/)
-        })
+        await expect(
+            result.current.signArbitraryData(
+                'algorand',
+                { ...account, chains: {} },
+                'x',
+            ),
+        ).rejects.toBeInstanceOf(CannotSignError)
+        expect(plan).not.toHaveBeenCalled()
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
 })

@@ -1,0 +1,217 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { toError } from '@perawallet/wallet-core-shared'
+import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
+import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
+import {
+    isExternalCallbackSource,
+    TransportError,
+    walletConnectHandoffs,
+    type CreateDraftSignRequestFn,
+    type DataTransport,
+    type GetDeviceIdFn,
+    type GetMsigMetadataFn,
+    type MsigMetadata,
+    type ProposeSignRequestFn,
+    type SigningResult,
+    type SourceMetadata,
+    type TransportResult,
+} from '@perawallet/wallet-core-signing'
+import { draftProposeContexts } from './draftProposeContexts'
+
+/**
+ * Two flows:
+ * - **In-app**: `type: 'async'` — the backend collects signatures and
+ * eventually broadcasts.
+ * - **External handoff**: `type: 'sync'` — the backend collects signatures but
+ * the WALLET delivers the assembled bytes to the dApp. The transport
+ * registers a pending handoff in {@link walletConnectHandoffs}, and an
+ * app-side resolver polls for threshold-met and fires the callback.
+ *
+ *
+ * `capturedScope` is re-checked with `assertScopeUnchanged` before the backend
+ * record is created.
+ */
+export const createMultisigProposeTransport = (
+    proposeSignRequest: ProposeSignRequestFn,
+    capturedScope: ChainScope,
+    getMsigMetadata: GetMsigMetadataFn,
+    getDeviceId: GetDeviceIdFn,
+    createDraftSignRequest?: CreateDraftSignRequestFn,
+): DataTransport => {
+    return {
+        send: async (
+            result: SigningResult,
+            source: SourceMetadata,
+            multisigAddress?: string,
+        ): Promise<TransportResult> => {
+            if (!multisigAddress) {
+                throw new TransportError(
+                    'Multisig address is required for multisig propose transport',
+                )
+            }
+
+            assertScopeUnchanged(capturedScope)
+
+            const isExternal = isExternalCallbackSource(source.type)
+            // `transportOptions.multisig.proposeMode` lets a local caller opt
+            // into the sync protocol (backend collects sigs but does NOT
+            // broadcast). Used by shared-account swaps: the proposer's device
+            // assembles + submits. Falls back to the source-derived default.
+            const proposeType: MultisigProposeMode =
+                source.transportOptions?.multisig?.proposeMode ??
+                (isExternal ? 'sync' : 'async')
+
+            // Handoff preconditions are validated BEFORE anything is created
+            // (backend record or local draft): failing after the create would
+            // orphan a live backend sign-request with no handoff registered
+            // (so the resolver's cancel-on-failure never sees it), a retry
+            // would then create a duplicate, and a draft whose bootstrap can
+            // never deliver would strand a sync record at `ready` forever.
+            let msig: MsigMetadata | undefined
+            let deviceId: string | undefined
+            if (isExternal) {
+                msig = getMsigMetadata(multisigAddress)
+                if (!msig) {
+                    // A programmer error — the multisig should be locally
+                    // known by now — so surface it to the peer and fail the
+                    // transport rather than assembling without metadata.
+                    // Non-retryable: retrying cannot make it known.
+                    const err = new Error(
+                        `Multisig metadata not found for address ${multisigAddress}`,
+                    )
+                    void source.callbacks?.error?.(err).catch(() => {})
+                    throw new TransportError(err.message, err, {
+                        retryable: false,
+                    })
+                }
+                deviceId = getDeviceId()
+                if (!deviceId) {
+                    // Transient (device re-registration / network switch), so
+                    // retryable — and the peer is NOT notified: erroring the
+                    // request would kill the very request a successful Retry
+                    // still needs to deliver to.
+                    throw new TransportError(
+                        'Device id not available; cannot register WC handoff',
+                    )
+                }
+            }
+
+            // An empty `signers` array is how `multisigSignerActor` signals a
+            // hardware-only proposer. Create a local draft instead of calling
+            // the backend; the first per-row Sign bootstraps the real propose.
+            if (result.signers.length === 0) {
+                if (!createDraftSignRequest) {
+                    throw new TransportError(
+                        'Multisig propose received empty signers but no draft creator was provided',
+                    )
+                }
+                if (result.signedData.type !== 'transactions') {
+                    throw new TransportError(
+                        'Deferred propose is only supported for transaction signing',
+                    )
+                }
+                const draftLocalId = createDraftSignRequest({
+                    multisigAddress,
+                    signedTransactions: result.signedData.signed,
+                    proposeType,
+                    source,
+                })
+                // No backend record exists yet, so the sync-flow delivery
+                // wiring (handoff registration, onProposed) can't attach here.
+                // Stash the source and the validated preconditions so the
+                // bootstrap propose can wire delivery under the real id;
+                // without this a sync record is stranded at `ready` forever.
+                draftProposeContexts.set(draftLocalId, {
+                    source,
+                    msigMetadata: msig,
+                    deviceId,
+                })
+                // Reuse the existing `'proposed'` transport result so the
+                // app-side listener (`useMultisigProposeListener`) opens the
+                // pending sheet without needing a new event type.
+                return {
+                    type: 'proposed',
+                    signRequestId: draftLocalId,
+                    status: 'pending',
+                    sourceType: source.type,
+                }
+            }
+
+            try {
+                const response = await proposeSignRequest({
+                    multisigAddress,
+                    signedData: result.signedData,
+                    signers: result.signers,
+                    type: proposeType,
+                })
+
+                // The resolver delivers the assembled bytes once threshold is
+                // met, choosing between `approveSignedBytes`, `error`, and
+                // `softReject` (decline / expired) at terminal status.
+                if (isExternal && msig && deviceId) {
+                    walletConnectHandoffs.register({
+                        signRequestId: response.signRequestId,
+                        multisigAddress,
+                        msigMetadata: msig,
+                        expectedRawTransactionsBase64:
+                            response.rawTransactionsBase64,
+                        deviceId,
+                        scope: capturedScope,
+                        sourceType: source.type,
+                        registeredAt: Date.now(),
+                        proposerAddress: response.proposerAddress,
+                        // Live-session delivery (any source). Dropped when the
+                        // store persists; a resumed WC handoff falls back to
+                        // `recovery` below.
+                        callbacks: {
+                            approveSignedBytes:
+                                source.callbacks?.approveSignedBytes,
+                            error: source.callbacks?.error,
+                            reject: source.callbacks?.reject,
+                        },
+                        // WalletConnect-only serializable delivery context (undefined
+                        // for webview/deeplink/injected). Drives post-kill recovery.
+                        recovery: source.handoffDelivery,
+                    })
+                }
+
+                // Hands back the backend id and the exact bytes sent so the
+                // caller can finish the flow at threshold. Best-effort: a throw
+                // here must not fail a propose that already succeeded.
+                try {
+                    await source.callbacks?.onProposed?.({
+                        signRequestId: response.signRequestId,
+                        status: response.status,
+                        rawTransactionsBase64: response.rawTransactionsBase64,
+                    })
+                } catch {
+                    // Swallowed: the backend record exists; the resolver can
+                    // still finish from a persisted handoff if one was written.
+                }
+
+                return {
+                    type: 'proposed',
+                    signRequestId: response.signRequestId,
+                    status: response.status,
+                    sourceType: source.type,
+                }
+            } catch (error) {
+                if (error instanceof TransportError) throw error
+                const err = toError(error)
+                throw new TransportError(err.message, err)
+            }
+        },
+    }
+}

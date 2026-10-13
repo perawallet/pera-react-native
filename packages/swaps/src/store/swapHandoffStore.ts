@@ -11,8 +11,15 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    isLegacyNetwork,
+    scopeFromNetworkColumn,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { SwapHandoffRecord, SwapHandoffState } from '../models'
 
@@ -20,6 +27,34 @@ const STORE_NAME = 'swap-handoff-store'
 
 const initialState = {
     handoffs: {} as Record<string, SwapHandoffRecord>,
+}
+
+type PersistedSwapHandoffs = { handoffs: Record<string, SwapHandoffRecord> }
+
+type PersistedV1Record = Omit<SwapHandoffRecord, 'scope'> & {
+    network?: unknown
+}
+
+/**
+ * v1 records carried a bare `network`; v2 carries a ChainScope. A record whose
+ * network this build doesn't know is dropped: replaying it under a guessed
+ * scope would submit, and possibly decline, on the wrong chain.
+ */
+export const migrateSwapHandoffState = (
+    persistedState: unknown,
+    version: number,
+): PersistedSwapHandoffs => {
+    let state = (persistedState ?? {}) as { handoffs?: Record<string, unknown> }
+    if (version < 2) {
+        const handoffs: Record<string, SwapHandoffRecord> = {}
+        for (const [id, value] of Object.entries(state.handoffs ?? {})) {
+            const { network, ...record } = value as PersistedV1Record
+            if (!isLegacyNetwork(network)) continue
+            handoffs[id] = { ...record, scope: scopeFromNetworkColumn(network) }
+        }
+        state = { ...state, handoffs }
+    }
+    return { handoffs: {}, ...state } as PersistedSwapHandoffs
 }
 
 /**
@@ -34,7 +69,7 @@ const initialState = {
 export const useSwapHandoffStore: UseBoundStore<
     WithPersist<StoreApi<SwapHandoffState>, unknown>
 > = create<SwapHandoffState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             registerHandoff: (record: SwapHandoffRecord) =>
@@ -69,8 +104,9 @@ export const useSwapHandoffStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            storage: () => getProvider().keyValueStorage,
+            version: 2,
+            migrate: migrateSwapHandoffState,
             partialize: state => ({ handoffs: state.handoffs }),
         },
     ),

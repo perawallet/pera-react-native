@@ -11,6 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /** Maps directly to the transaction types returned by the API. */
@@ -33,6 +34,15 @@ export const TransactionTypes = {
 
 export type TransactionType =
     (typeof TransactionTypes)[keyof typeof TransactionTypes]
+
+export type TransactionHistoryStatus = TransactionRecord['status']
+
+export const TransactionHistoryStatuses = {
+    PENDING: 'pending',
+    CONFIRMED: 'confirmed',
+    FAILED: 'failed',
+    REPLACED: 'replaced',
+} as const satisfies Record<string, TransactionHistoryStatus>
 
 /** Aggregate details for a DEX swap, whose transactions are grouped. */
 export interface TransactionSwapGroupDetail {
@@ -87,9 +97,17 @@ export interface TransactionHistoryItem {
     id: string
     txType: TransactionType
     sender: string
+    /**
+     * The account debited by an asset transfer (`asnd`); null unless the
+     * transfer is a clawback, where `sender` is the authority instead.
+     */
+    assetSender: Nullable<string>
     /** Null for transaction types that have no receiver. */
     receiver: Nullable<string>
-    confirmedRound: number
+    /** Absent until the transaction is in a block. */
+    confirmedRound?: number
+    /** Absent reads as confirmed. */
+    status?: TransactionHistoryStatus
     /** Unix seconds. */
     roundTime: number
     /** Only present for DEX swaps. */

@@ -11,13 +11,20 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    type ChainScope,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { acquireCardSessionTokens, loginRequest } from '../api/auth'
 import { fetchOnboardingDetails } from '../api/onboarding'
+import {
+    OnboardingStep,
+    type CardSessionTokens,
+    type LoginResult,
+} from '../models'
 import { setCardSession } from '../session'
 import { useCardStore } from '../store'
-import type { CardSessionTokens, LoginResult } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type CardLoginParams = {
@@ -40,8 +47,10 @@ export type UseCardLoginMutationResult = CardMutationResult<
     CardLoginData
 >
 
-export const useCardLoginMutation = (): UseCardLoginMutationResult => {
-    const { network } = useNetwork()
+export const useCardLoginMutation = (
+    scope: ChainScope,
+): UseCardLoginMutationResult => {
+    const network = legacyNetworkOf(scope)
 
     const mutation = useMutation<CardLoginData, Error, CardLoginParams>({
         mutationFn: async params => {
@@ -95,6 +104,15 @@ export const useCardLoginMutation = (): UseCardLoginMutationResult => {
             // unfinished.
             if (result.tokens) {
                 await setCardSession(result.tokens)
+                if (result.userId !== null) {
+                    useCardStore.getState().adoptCardUser(result.userId)
+                }
+                // Baanx only issues an access token once registration is done,
+                // so the details step is complete even if this device never saw
+                // the address response.
+                useCardStore
+                    .getState()
+                    .setOnboardingStep(OnboardingStep.Completed)
                 return
             }
             // Mid-onboarding: bridge userId -> onboardingId so the resumed

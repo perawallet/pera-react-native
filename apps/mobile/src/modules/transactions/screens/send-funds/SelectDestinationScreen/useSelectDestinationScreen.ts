@@ -12,13 +12,18 @@
 
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useCallback, useEffect, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import { useNavigationState, useRoute } from '@react-navigation/native'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 
 export const useSelectDestinationScreen = () => {
     const { destination, onFinished } = useSendFunds()
-    const navigation = useNavigation()
+    const route = useRoute()
+    const rootRouteKey = useNavigationState(state => state.routes[0]?.key)
     const selectedAccount = useSelectedAccount()
     const {
         selectedAsset,
@@ -60,21 +65,83 @@ export const useSelectDestinationScreen = () => {
         resolveDestination,
     ])
 
-    // The send sheet deliberately disables swipe- and backdrop-dismissal, so
-    // every screen that can be the flow's *initial* route must offer its own
-    // way out. A pure-NFT transfer skips the amount step, leaving this screen
-    // as the stack root with nothing beneath it — `canGoBack()` is false and
-    // the default header back button never renders, which is exactly what
-    // stranded the sheet. Surface a close that tears the flow down; when this
-    // screen was pushed instead (canGoBack), the back button already handles it.
-    const canClose = !navigation.canGoBack()
+    // The send sheet blocks swipe/backdrop dismissal, so the flow's root screen
+    // must offer its own way out (a pure-NFT send starts here). Root-ness comes
+    // from this route's position, not `canGoBack()`: that answers for the whole
+    // stack, and picking a receiver re-renders this screen while the next one
+    // is already on top, so it read true, dropped the close, and popping back
+    // (which re-renders nothing) stranded the sheet.
+    const canClose = route.key === rootRouteKey
     const handleClose = useCallback(() => onFinished?.(), [onFinished])
+
+    // A name's address comes from Pera's backend. It only becomes the
+    // destination once the chain itself vouches for it; nothing here
+    // trusts the search result or a cache.
+    const { network } = useNetwork()
+    const { showToast } = useToast()
+    const { t } = useLanguage()
+    const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
+    const verificationRef = useRef<AbortController | null>(null)
+    useEffect(() => () => verificationRef.current?.abort(), [])
+
+    const verifyThenResolve = useCallback(
+        async (address: string, name: string) => {
+            verificationRef.current?.abort()
+            const controller = new AbortController()
+            verificationRef.current = controller
+            setIsVerifyingNfd(true)
+            try {
+                const verification = await verifyNameAddress({
+                    name,
+                    address,
+                    network,
+                    signal: controller.signal,
+                })
+                if (verification === 'verified') {
+                    resolveDestination(address)
+                    return
+                }
+                showToast({
+                    title: t(
+                        verification === 'mismatch'
+                            ? 'send_funds.destination.nfd_mismatch_title'
+                            : 'send_funds.destination.nfd_unavailable_title',
+                        { name },
+                    ),
+                    body: t(
+                        verification === 'mismatch'
+                            ? 'send_funds.destination.nfd_mismatch_body'
+                            : 'send_funds.destination.nfd_unavailable_body',
+                        { name },
+                    ),
+                    type: 'error',
+                })
+            } catch (error) {
+                if (controller.signal.aborted) return
+                throw error
+            } finally {
+                if (!controller.signal.aborted) setIsVerifyingNfd(false)
+            }
+        },
+        [network, resolveDestination, showToast, t],
+    )
+
+    const handleSelected = useCallback(
+        (address: string, nfdName?: string) => {
+            if (nfdName) {
+                void verifyThenResolve(address, nfdName)
+                return
+            }
+            resolveDestination(address)
+        },
+        [verifyThenResolve, resolveDestination],
+    )
 
     return {
         selectedAsset,
         selectedAccount,
-        handleSelected: resolveDestination,
-        isCheckingExternalOptIn: isResolvingDestination,
+        handleSelected,
+        isCheckingExternalOptIn: isResolvingDestination || isVerifyingNfd,
         isAutoAdvancing,
         canClose,
         onClose: handleClose,

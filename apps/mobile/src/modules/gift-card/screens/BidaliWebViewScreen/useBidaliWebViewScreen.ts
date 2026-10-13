@@ -13,20 +13,26 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    useNetwork,
+    useSelectedChainMode,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 // Imported from the handlers file directly (not the module barrel) so this
 // hook doesn't drag the whole webview stack into its dependency graph.
-import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
+import { isTrustedWebviewOrigin } from '@modules/webview'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
 import {
+    BIDALI_PAYMENT_CURRENCIES,
     useBidaliTransport,
     computeBidaliBalances,
 } from '../../hooks/useBidaliTransport'
 import { buildBidaliUrl } from './bidali-url'
 import type WebView from 'react-native-webview'
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseBidaliWebViewScreenResult = {
@@ -39,12 +45,15 @@ type UseBidaliWebViewScreenResult = {
 }
 
 export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAccount } = useBidali()
     const onClose = useBidaliClose()
     const { network } = useNetwork()
+    const chainMode = useSelectedChainMode(scope.chainId)
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
         !!selectedAccount,
     )
 
@@ -62,7 +71,12 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     // page and the callbacks it assigned. Staleness within a session is
     // accepted; native is unaffected since its builder ignores this.
     const [frozenBalances] = useState(() =>
-        computeBidaliBalances(selectedAccount, accountBalances, network),
+        computeBidaliBalances(
+            selectedAccount,
+            accountBalances,
+            scope,
+            chainMode,
+        ),
     )
 
     const url = useMemo(() => {
@@ -71,6 +85,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
             baseUrl: networkConfig.bidaliBaseUrl,
             apiKey: networkConfig.bidaliApiKey,
             balances: frozenBalances,
+            paymentCurrencies: BIDALI_PAYMENT_CURRENCIES,
         })
     }, [network, frozenBalances])
 
@@ -83,6 +98,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
         (request: ShouldStartLoadRequest): boolean => {
             if (isTrustedWebviewOrigin(request.url, [url])) return true
             if (/^https?:/i.test(request.url)) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- http(s) check above, native webview only
                 void Linking.openURL(request.url)
             }
             return false

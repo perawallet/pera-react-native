@@ -1,0 +1,107 @@
+<!--
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+-->
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>window.pera e2e</title>
+    </head>
+    <body>
+        <!-- Real buttons: connect needs transient user activation, which only a
+             trusted click supplies. The spec clicks these rather than calling
+             the provider from page.evaluate. -->
+        <button id="connect" data-testid="connect">connect</button>
+        <button id="sign" data-testid="sign">sign</button>
+        <button id="addresses" data-testid="addresses">addresses</button>
+        <button id="disconnect" data-testid="disconnect">disconnect</button>
+        <pre id="connect-result"></pre>
+        <pre id="connect-error"></pre>
+        <pre id="load-connect-error"></pre>
+        <pre id="sign-result"></pre>
+        <pre id="sign-error"></pre>
+        <pre id="addresses-result"></pre>
+        <pre id="events"></pre>
+        <script>
+            var write = function (id, value) {
+                document.getElementById(id).textContent =
+                    typeof value === 'string' ? value : JSON.stringify(value)
+            }
+            var describeError = function (error) {
+                return JSON.stringify({
+                    code: error && error.code,
+                    message: error && error.message,
+                })
+            }
+            window.__txn = null
+            document.getElementById('connect').onclick = function () {
+                write('connect-result', '')
+                write('connect-error', '')
+                window.pera.connect({ name: 'E2E dApp' }).then(
+                    function (result) {
+                        write('connect-result', result)
+                    },
+                    function (error) {
+                        write('connect-error', describeError(error))
+                    },
+                )
+            }
+            document.getElementById('sign').onclick = function () {
+                write('sign-result', '')
+                write('sign-error', '')
+                window.pera.signTransactions([{ txn: window.__txn }]).then(
+                    function (result) {
+                        write('sign-result', result)
+                    },
+                    function (error) {
+                        write('sign-error', describeError(error))
+                    },
+                )
+            }
+            document.getElementById('addresses').onclick = function () {
+                write('addresses-result', '')
+                window.pera.getAddresses().then(
+                    function (result) {
+                        write('addresses-result', result)
+                    },
+                    function (error) {
+                        write('addresses-result', describeError(error))
+                    },
+                )
+            }
+            document.getElementById('disconnect').onclick = function () {
+                window.pera.disconnect()
+            }
+            window.addEventListener('load', function () {
+                // The only reliable no-activation call site available to the
+                // spec: Playwright's page.evaluate runs with userGesture set,
+                // so a connect() driven from the test harness carries a
+                // gesture the product would honour.
+                window.pera.connect().then(
+                    function (result) {
+                        write('load-connect-error', 'RESOLVED ' + JSON.stringify(result))
+                    },
+                    function (error) {
+                        write('load-connect-error', describeError(error))
+                    },
+                )
+                window.pera.on('disconnect', function () {
+                    document.getElementById('events').textContent +=
+                        'disconnect;'
+                })
+                window.pera.on('networkChanged', function (params) {
+                    document.getElementById('events').textContent +=
+                        'networkChanged:' + params.network + ';'
+                })
+            })
+        </script>
+    </body>
+</html>

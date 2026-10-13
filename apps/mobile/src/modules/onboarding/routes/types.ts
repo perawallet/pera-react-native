@@ -11,10 +11,9 @@
  */
 
 import type {
+    LocalAccount,
+    LocalKeySeed,
     WalletAccount,
-    HDWalletAccount,
-    ImportAccountType,
-    DerivationType,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -57,18 +56,17 @@ export type SearchAccountsParams =
     | {
           mode: 'import'
           walletKeyId: string
-          derivationType: DerivationType
       }
 
 export type ImportSelectAddressesParams =
     | {
           mode?: 'existing'
-          accounts: HDWalletAccount[]
+          accounts: LocalAccount[]
       }
     | {
           mode: 'import'
           walletKeyId: string
-          accounts: HDWalletAccount[]
+          accounts: LocalAccount[]
       }
 
 /**
@@ -78,7 +76,8 @@ export type ImportSelectAddressesParams =
  * via `renderImportFlowScreens` (see `./shared-screens.tsx`).
  */
 export type ImportFlowParamList = {
-    ImportAccountOptions: undefined
+    /** `isScannerOpen`: the extension popup handed its QR scan off to this tab. */
+    ImportAccountOptions: Optional<{ isScannerOpen?: boolean }>
     NameAccount: Optional<{
         account?: WalletAccount
         /** Override the post-naming destination (defaults to exit-to-Home). */
@@ -88,11 +87,12 @@ export type ImportFlowParamList = {
     ImportRekeyedAddresses: {
         accounts: WalletAccount[]
     }
+    // `null` is the chain's standalone kind.
     ImportInfo: {
-        accountType: ImportAccountType
+        accountType: LocalKeySeed
     }
     ImportAccount: {
-        accountType: ImportAccountType
+        accountType: LocalKeySeed
     }
     SearchAccounts: SearchAccountsParams
     LedgerPair: undefined
@@ -132,6 +132,9 @@ export type ImportFlowParamList = {
         skippedDuplicateCount: number
         failedCount: number
     }
+    CloudBackupRestorePassphrase: undefined
+    CloudBackupRestoreEncryptionKey: undefined
+    CloudBackupRestoreScan: undefined
 }
 
 export type OnboardingStackParamList = ImportFlowParamList & {

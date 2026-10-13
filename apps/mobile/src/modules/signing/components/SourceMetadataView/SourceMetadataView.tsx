@@ -14,7 +14,7 @@ import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
 import { useSourceMetadataView } from './useSourceMetadataView'
-import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
+import { ProjectVerificationIcon } from '@modules/projects'
 
 export type SourceMetadataViewProps = {
     metadata: SignRequestSource
@@ -28,8 +28,13 @@ export const SourceMetadataView = ({
 }: SourceMetadataViewProps) => {
     const styles = useStyles()
 
-    const { displayIcon, displayName, verificationTier, handlePressUrl } =
-        useSourceMetadataView(metadata, verifiedOrigin)
+    const {
+        displayIcon,
+        displayName,
+        verificationTier,
+        requestOriginLabel,
+        handlePressUrl,
+    } = useSourceMetadataView(metadata, verifiedOrigin)
 
     return (
         <PWView style={styles.container}>
@@ -68,6 +73,15 @@ export const SourceMetadataView = ({
                         onPress={handlePressUrl}
                         title={metadata.url}
                     />
+                )}
+                {!!requestOriginLabel && (
+                    <PWText
+                        variant='caption'
+                        style={styles.requestOrigin}
+                        testID='source_metadata_request_origin'
+                    >
+                        {requestOriginLabel}
+                    </PWText>
                 )}
             </PWView>
         </PWView>

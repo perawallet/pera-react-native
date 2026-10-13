@@ -19,11 +19,16 @@ import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { UseQueryResult } from '@tanstack/react-query'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
+        account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
@@ -32,6 +37,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     return {
         ...actual,
         useSingleAssetDetailsQuery: vi.fn(),
+        useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
     }
 })
 
@@ -65,8 +71,10 @@ const createPaymentTx = (
 describe('useTransactionAmounts', () => {
     beforeEach(() => {
         vi.mocked(useSelectedAccount).mockReturnValue({
-            address: USER_ADDRESS,
-        } as ReturnType<typeof useSelectedAccount>)
+            id: 'acc-1',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: USER_ADDRESS } },
+        })
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: undefined,
         } as UseQueryResult<PeraAsset, Error>)
@@ -245,5 +253,67 @@ describe('useTransactionAmounts', () => {
         const { result } = renderHook(() => useTransactionAmounts(tx))
 
         expect(result.current.amounts[0].value.toString()).toBe('6638534')
+    })
+})
+
+describe('useTransactionAmounts — clawback', () => {
+    it('signs a seized holding as outgoing for the drained account', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: 'CLAWBACK_AUTHORITY',
+            assetSender: USER_ADDRESS,
+            receiver: OTHER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 0,
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('-')
+    })
+
+    it('keeps the authority from reading a clawback to someone else as a credit', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: USER_ADDRESS,
+            assetSender: 'DRAINED_HOLDER',
+            receiver: OTHER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 0,
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('-')
+    })
+
+    it('credits the authority when it claws the holding back to itself', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: USER_ADDRESS,
+            assetSender: 'DRAINED_HOLDER',
+            receiver: USER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 0,
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('+')
     })
 })

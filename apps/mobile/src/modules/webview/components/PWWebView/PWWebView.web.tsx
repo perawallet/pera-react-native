@@ -23,7 +23,7 @@
 //
 // The usePeraWebviewInterface registry handles every op unchanged. Only
 // pushWebView is intercepted — dapps open in real tabs, where the injected
-// ARC-0027 provider supplies connect/sign, so there's no nested viewer.
+// window.pera bridge supplies connect/sign, so there's no nested viewer.
 // walletConnect falls through to the registry, which pairs via the offscreen
 // host; that approval opens as its own window, not a sheet in this tree.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -31,7 +31,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import {
     createDiscoverBridgeHost,
     openExternalTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { PWView } from '@components/core/PWView'
 import { PWButton } from '@components/core/PWButton'
 import { EmptyView } from '@components/EmptyView/EmptyView'
@@ -82,6 +82,7 @@ const DISCONNECT_QUIET_WINDOW_MS = 10_000
 const IFrame = 'iframe' as unknown as React.ComponentType<{
     src: string
     sandbox?: string
+    referrerPolicy?: 'no-referrer'
     title: string
     style?: Record<string, string | number>
     // Coarse load signals — a cross-origin frame exposes nothing finer.
@@ -325,6 +326,12 @@ export const PWWebView = ({
                 key={`${bridgeToken}:${reloadNonce}`}
                 src={src}
                 sandbox='allow-same-origin allow-scripts allow-forms allow-popups'
+                // Otherwise the frame's load request names the embedding
+                // extension page (its origin carries the extension id). A
+                // native webview's first load sends no Referer either. The
+                // token in the src is scrubbed by the content-script relay.
+                referrerPolicy='no-referrer'
+                // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the frame's name for assistive tech, not visible copy
                 title='pera-webview'
                 onLoad={handleLoad}
                 onError={handleError}

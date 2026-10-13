@@ -16,9 +16,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { OfflineTolerantView } from '../OfflineTolerantView'
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const Children = () => <Text>children-content</Text>
 

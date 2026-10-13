@@ -65,7 +65,7 @@ describe('useContactForm', () => {
     it('seeds initial values from the provided contact', () => {
         const contact: Contact = {
             name: 'Alice',
-            address: 'ALICE123',
+            addresses: { algorand: 'ALICE123' },
         }
         const { result } = renderHook(() => useContactForm(contact))
         expect(result.current.rawAddressInput).toBe('ALICE123')

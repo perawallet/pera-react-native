@@ -11,14 +11,13 @@
  */
 
 import { useMemo } from 'react'
-import { isAlgoAssetId, ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useQuery } from '@tanstack/react-query'
 import {
-    ALGO_ASSET,
     useAssetsQuery,
+    useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAllHeldAssetIdsForNetwork } from '../db'
 import { getOwnedAssetIdsQueryKey } from './querykeys'
 
@@ -38,36 +37,39 @@ export type UseOwnedAssetsResult = {
 }
 
 export const useOwnedAssets = (
+    scope: ChainScope,
     options?: UseOwnedAssetsOptions,
 ): UseOwnedAssetsResult => {
     const enabled = options?.enabled ?? true
-    const { network } = useNetwork()
+    const nativeAsset = useNativeAsset()
 
     const { data: ownedAssetIds = [], isLoading: isIdsLoading } = useQuery({
-        queryKey: getOwnedAssetIdsQueryKey(network),
-        queryFn: () => getAllHeldAssetIdsForNetwork({ network }),
+        queryKey: getOwnedAssetIdsQueryKey(scope),
+        queryFn: () => getAllHeldAssetIdsForNetwork({ scope }),
         enabled,
         staleTime: OWNED_ASSET_IDS_STALE_TIME_MS,
     })
 
-    // ALGO isn't stored in the holdings table (it lives on the account balance
-    // row), but it is seeded into the assets metadata DB on bootstrap — so we
-    // include its ID here to pick up DB-backed peraMetadata (e.g. isFavorited).
-    // The constant only acts as a pre-seed fallback.
+    // The native id is added explicitly rather than relied on from the
+    // holdings rows: an account still syncing has none yet, and the id is what
+    // picks up the DB-backed peraMetadata (e.g. isFavorited). The adapter's
+    // record is only a pre-seed fallback.
     const { data: assetsMap, isPending: isAssetsPending } = useAssetsQuery([
-        ALGO_ASSET_ID,
+        nativeAsset.assetId,
         ...ownedAssetIds,
     ])
 
     const assets = useMemo<PeraAsset[]>(() => {
-        const list: PeraAsset[] = [assetsMap.get(ALGO_ASSET_ID) ?? ALGO_ASSET]
+        const list: PeraAsset[] = [
+            assetsMap.get(nativeAsset.assetId) ?? nativeAsset,
+        ]
         for (const id of ownedAssetIds) {
-            if (isAlgoAssetId(id)) continue
+            if (id === nativeAsset.assetId) continue
             const asset = assetsMap.get(id)
             if (asset) list.push(asset)
         }
         return list
-    }, [ownedAssetIds, assetsMap])
+    }, [ownedAssetIds, assetsMap, nativeAsset])
 
     return {
         assets,

@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { createElement, useCallback, useEffect, useRef, useState } from 'react'
+import {
+    createElement,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -19,7 +26,9 @@ import {
     isDuplicateError,
     isoDateToDob,
     OnboardingNotVerifiedError,
-    personalDetailsSchema,
+    createPersonalDetailsSchema,
+    ssnToApi,
+    US_ISO,
     useCardStore,
     useOnboardingDetailsQuery,
     useOnboardingKycGate,
@@ -37,6 +46,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingPersonalDetailsScreenResult = {
     control: Control<PersonalDetailsFormValues>
@@ -54,14 +64,25 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
      * this step, so the form is replaced by the "finish verifying" view.
      */
     isKycRequired: boolean
+    /**
+     * The onboarding record hasn't answered yet. The form waits for it so a
+     * late prefill can't land on top of what the user already typed.
+     */
+    isRecordLoading: boolean
+    /** Baanx requires an SSN from US residents, so the field shows only for them. */
+    isUsResident: boolean
     /** Sends the user back to the identity-verification step. */
     handleVerifyIdentity: () => void
     handleSelectNationality: () => void
+    selectedBirthCountry: Optional<SupportedCountry>
+    isBirthCountryLocked: boolean
+    handleSelectBirthCountry: () => void
     handleConfirm: () => void
 }
 
 export const useCardOnboardingPersonalDetailsScreen =
     (): UseCardOnboardingPersonalDetailsScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -80,21 +101,28 @@ export const useCardOnboardingPersonalDetailsScreen =
         const { request } = useBottomSheet()
         const onboardingId = useCardStore(state => state.onboardingId)
         const countryIso = useCardStore(state => state.countryIso)
-        const submitPersonalDetails = useSubmitPersonalDetailsMutation()
-        const { data: settings } = useRegistrationSettingsQuery()
+        const isUsResident = countryIso === US_ISO
+        const personalDetailsSchema = useMemo(
+            () => createPersonalDetailsSchema({ isUsResident }),
+            [isUsResident],
+        )
+        const submitPersonalDetails = useSubmitPersonalDetailsMutation(scope)
+        const { data: settings } = useRegistrationSettingsQuery(scope)
         // On resume the onboarding record already holds the user's details, so
         // we prefill them and lock the fields the server has confirmed.
-        const { data: onboardingDetails } = useOnboardingDetailsQuery({
-            onboardingId,
-        })
+        const { data: onboardingDetails, isLoading: isRecordLoading } =
+            useOnboardingDetailsQuery(scope, { onboardingId })
 
         const isFirstNameLocked = Boolean(onboardingDetails?.firstName)
         const isLastNameLocked = Boolean(onboardingDetails?.lastName)
         const isDateOfBirthLocked = Boolean(onboardingDetails?.dateOfBirth)
 
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate({
-            onboardingId,
-        })
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate(
+            scope,
+            {
+                onboardingId,
+            },
+        )
 
         const handleVerifyIdentity = useCallback(() => {
             navigation.navigate('CardOnboardingVerification')
@@ -118,6 +146,16 @@ export const useCardOnboardingPersonalDetailsScreen =
         const [selectedNationality, setSelectedNationality] =
             useState<Optional<SupportedCountry>>(undefined)
         const hasPreselected = useRef(false)
+        const serverBirthCountry = onboardingDetails?.countryOfBirth ?? null
+        const serverBirthCountryEntry = serverBirthCountry
+            ? settings?.countries.find(
+                  country => country.iso3166alpha2 === serverBirthCountry,
+              )
+            : undefined
+        const isBirthCountryLocked = Boolean(serverBirthCountryEntry)
+        const [selectedBirthCountry, setSelectedBirthCountry] =
+            useState<Optional<SupportedCountry>>(undefined)
+        const hasPreselectedBirth = useRef(false)
         const hasPrefilled = useRef(false)
 
         const {
@@ -133,6 +171,8 @@ export const useCardOnboardingPersonalDetailsScreen =
                 lastName: '',
                 dateOfBirth: '',
                 countryOfNationality: '',
+                countryOfBirth: '',
+                ssn: '',
             },
         })
 
@@ -184,6 +224,32 @@ export const useCardOnboardingPersonalDetailsScreen =
             selectedNationality,
             setValue,
         ])
+        // Baanx requires the birth country for EU/UK residents. Preselect it
+        // from the residence country like nationality, so the common case
+        // needs no extra tap and the field stays editable for the rest.
+        useEffect(() => {
+            if (hasPreselectedBirth.current || selectedBirthCountry) return
+            if (!settings?.countries.length) return
+            const match =
+                serverBirthCountryEntry ??
+                (countryIso
+                    ? settings.countries.find(
+                          country => country.iso3166alpha2 === countryIso,
+                      )
+                    : undefined)
+            if (!match) return
+            hasPreselectedBirth.current = true
+            setSelectedBirthCountry(match)
+            setValue('countryOfBirth', match.iso3166alpha2, {
+                shouldValidate: true,
+            })
+        }, [
+            serverBirthCountryEntry,
+            countryIso,
+            settings,
+            selectedBirthCountry,
+            setValue,
+        ])
 
         const handleSelectNationality = useCallback(() => {
             const openPicker = async () => {
@@ -207,12 +273,38 @@ export const useCardOnboardingPersonalDetailsScreen =
             void openPicker()
         }, [request, setValue, t])
 
+        const handleSelectBirthCountry = useCallback(() => {
+            const openPicker = async () => {
+                const country = await request<SupportedCountry>({
+                    contents: createElement(CardCountryPickerContent, {
+                        title: t(
+                            'peraCard.personal_details.birth_country_picker_title',
+                        ),
+                    }),
+
+                    options: { size: 'full', autoCreateContainer: false },
+                })
+
+                if (country) {
+                    setSelectedBirthCountry(country)
+
+                    setValue('countryOfBirth', country.iso3166alpha2, {
+                        shouldValidate: true,
+                    })
+                }
+            }
+
+            void openPicker()
+        }, [request, setValue, t])
+
         const submitDetails = handleSubmit(
             async ({
                 firstName,
                 lastName,
                 dateOfBirth,
                 countryOfNationality,
+                countryOfBirth,
+                ssn,
             }) => {
                 // Set by email/verify; if missing, re-verify rather than submit
                 // an empty onboarding id.
@@ -225,14 +317,14 @@ export const useCardOnboardingPersonalDetailsScreen =
                     return
                 }
                 try {
-                    // TODO(card): confirm whether Baanx requires `ssn` for US
-                    // residents — no SSN field is collected yet.
                     await submitPersonalDetails.mutateAsync({
                         onboardingId,
                         firstName,
                         lastName,
                         dateOfBirth: dobToIsoDate(dateOfBirth),
                         countryOfNationality,
+                        countryOfBirth,
+                        ssn: isUsResident ? ssnToApi(ssn) : undefined,
                     })
                     navigation.navigate('CardOnboardingAddress')
                 } catch (error) {
@@ -274,8 +366,13 @@ export const useCardOnboardingPersonalDetailsScreen =
             isDateOfBirthLocked,
             isNationalityLocked,
             isKycRequired,
+            isRecordLoading,
+            isUsResident,
             handleVerifyIdentity,
             handleSelectNationality,
+            selectedBirthCountry,
+            isBirthCountryLocked,
+            handleSelectBirthCountry,
             handleConfirm,
         }
     }

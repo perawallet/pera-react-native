@@ -15,12 +15,15 @@ import { runTour } from './utils/runTour'
 import { runTourStep } from './utils/runTourStep'
 
 /**
- * Side-effect module, imported once from App.tsx and nowhere else.
+ * Called once from the startup init (`bootstrap/preReact.ts`), and imported
+ * nowhere else.
  *
  * This is the only place the tour driver is pulled into the graph, which is
  * what keeps it out of the deeplink handler's imports (see registry.ts) and
  * makes it the single module metro.config.js has to swap to detach the driver.
- * App.tsx is a safe import site precisely because nothing in the gallery
- * catalog imports back up to it.
+ * The startup init is a safe import site precisely because nothing in the
+ * gallery catalog imports back up to it.
  */
-registerLocaleTourRunner({ runTour, runTourStep })
+export const registerLocaleTour = (): void => {
+    registerLocaleTourRunner({ runTour, runTourStep })
+}

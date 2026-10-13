@@ -13,4 +13,6 @@
 export type SwapScreenParams = {
     assetInId?: string
     assetOutId?: string
+    /** Pay-asset display units, for a swap a browser tab resumes from the popup. */
+    payAmount?: string
 }

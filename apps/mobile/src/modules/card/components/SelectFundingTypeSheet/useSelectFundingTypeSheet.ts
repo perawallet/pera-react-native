@@ -16,7 +16,8 @@ import {
     isLedgerAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import { describeError, logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -28,6 +29,8 @@ import {
     useAutoDrawSwitch,
     useCardErrorToast,
 } from '../../hooks'
+import { findCardAccount } from '../../utils/cardAccountAddress'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseSelectFundingTypeSheetResult = {
     selectedType: FundingType
@@ -55,7 +58,8 @@ export const useSelectFundingTypeSheet =
         const { successToast } = useToast()
         const { resolve, dismiss } = useBottomSheetResult<'applied'>()
         const showError = useCardErrorToast()
-        const { network } = useNetwork()
+        const scope = useCardScope()
+        const network = legacyNetworkOf(scope)
 
         const storedType = useCardStore(state => state.selectedFundingType)
         const connectedAddress = useCardStore(
@@ -66,9 +70,8 @@ export const useSelectFundingTypeSheet =
         const escrowCardNetwork = useCardStore(state => state.escrowCardNetwork)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () =>
-                accounts.find(account => account.address === connectedAddress),
-            [accounts, connectedAddress],
+            () => findCardAccount(accounts, connectedAddress, scope.chainId),
+            [accounts, connectedAddress, scope.chainId],
         )
 
         // The switch acts on the card created for THIS account on THIS network
@@ -112,7 +115,12 @@ export const useSelectFundingTypeSheet =
         // alone can't block a double-tap during that window.
         const isApplyingRef = useRef(false)
         const apply = useCallback(async () => {
-            if (isPending || isApplyingRef.current) return
+            // Every exit below says why: a tap that silently does nothing reads
+            // as a dead button, and these were the hardest failures to diagnose.
+            if (isPending || isApplyingRef.current) {
+                logger.info('Funding type switch ignored: already applying')
+                return
+            }
             const currentType =
                 useCardStore.getState().selectedFundingType ??
                 FundingType.Manual
@@ -120,10 +128,16 @@ export const useSelectFundingTypeSheet =
             // successful switch, so a failed prior Auto leaves it Manual and
             // re-selecting Auto is a real change (recovery).
             if (selectedType === currentType) {
+                logger.info(
+                    `Funding type switch skipped: already ${currentType}`,
+                )
                 dismiss()
                 return
             }
             if (!connectedAccount) {
+                logger.info(
+                    'Funding type switch blocked: no connected funding account',
+                )
                 await showError(null)
                 return
             }
@@ -135,6 +149,9 @@ export const useSelectFundingTypeSheet =
                     // there is nothing to enable. (Manual's kill() acts on the
                     // sender's own box, so it needs no card address.)
                     if (!cardAddress) {
+                        logger.info(
+                            'Funding type switch blocked: no escrow card for this account and network',
+                        )
                         await showError(null)
                         return
                     }
@@ -143,10 +160,20 @@ export const useSelectFundingTypeSheet =
                         connectedAccount,
                         account => enableAutoDraw(account, cardAddress),
                     )
-                    if (!authorized) return
+                    if (!authorized) {
+                        logger.info(
+                            'Funding type switch cancelled at the authorization gate',
+                        )
+                        return
+                    }
                 } else {
                     // Manual revoke signs an on-chain kill() — gate on PIN.
-                    if (!(await requirePinVerification())) return
+                    if (!(await requirePinVerification())) {
+                        logger.info(
+                            'Funding type switch cancelled at the PIN gate',
+                        )
+                        return
+                    }
                     await disableAutoDraw(connectedAccount)
                 }
                 useCardStore.getState().setSelectedFundingType(selectedType)
@@ -156,6 +183,10 @@ export const useSelectFundingTypeSheet =
                 )
                 resolve('applied')
             } catch (error) {
+                logger.error(
+                    `Funding type switch failed: ${describeError(error)}`,
+                    { error },
+                )
                 await showError(error)
             } finally {
                 isApplyingRef.current = false

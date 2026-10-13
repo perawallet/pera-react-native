@@ -93,6 +93,49 @@ describe('ConfirmActionContent', () => {
         await expect(promise).resolves.toBe('delete')
     })
 
+    it('does not resolve while the confirm button is disabled', async () => {
+        const promise = useBottomSheetStore
+            .getState()
+            .request<boolean>({ id: 'sheet-1', contents: null })
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent
+                    {...baseProps}
+                    isConfirmDisabled
+                >
+                    <PWText>I understand</PWText>
+                </ConfirmActionContent>
+            </BottomSheetIdContext.Provider>,
+        )
+
+        expect(screen.getByText('I understand')).toBeTruthy()
+        fireEvent.click(screen.getByText(baseProps.confirmLabel))
+
+        useBottomSheetStore.getState().remove('sheet-1')
+        await expect(promise).resolves.toBeUndefined()
+    })
+
+    it('does not resolve any action while one is pending', async () => {
+        const promise = useBottomSheetStore
+            .getState()
+            .request<boolean | string>({ id: 'sheet-1', contents: null })
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent
+                    {...baseProps}
+                    tertiaryLabel='Keep'
+                    tertiaryValue='keep'
+                    pendingAction='confirm'
+                />
+            </BottomSheetIdContext.Provider>,
+        )
+
+        fireEvent.click(screen.getByText('Keep'))
+
+        useBottomSheetStore.getState().remove('sheet-1')
+        await expect(promise).resolves.toBeUndefined()
+    })
+
     it('renders the source image instead of the vector icon when iconUrl is set', () => {
         render(
             <BottomSheetIdContext.Provider value='sheet-1'>

@@ -16,6 +16,7 @@ import {
     AsbImportError,
     parseBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -77,7 +78,10 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     const tryLoad = useCallback(
         (rawContents: string, fileName: string) => {
             try {
-                const envelope = parseBackupEnvelope(rawContents)
+                const envelope = parseBackupEnvelope(
+                    rawContents,
+                    LEGACY_CHAIN_ID,
+                )
                 setEnvelope(envelope)
                 setLoadedFile({ name: fileName, contents: rawContents })
             } catch (e) {

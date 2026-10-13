@@ -1,0 +1,371 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { Key } from '@algorandfoundation/keystore-core'
+import { handOffSecret, zeroBytes } from '@perawallet/wallet-core-kms'
+import {
+    bytesEqual,
+    concatBytes,
+    decodeFromBase64,
+    encodeToBase64,
+    logger,
+} from '@perawallet/wallet-core-shared'
+import { toDerivationUserHandle } from '../authenticator/authenticator'
+import { b64urlToBytes } from '../authenticator/wire'
+import { splitP256PublicKey } from '../authenticator/webauthn-structures'
+import {
+    derivePasskeyCredential,
+    derivePasskeyMainKey,
+    p256PrivateKeyToSpkiDer,
+    p256RawPublicKeyToSpkiDer,
+} from '../crypto/derivePasskeyCredential'
+import { isMigrationFlagged, isPasskeyKey, normalizeTimestamp } from './passkey'
+
+/** Suffix `passkeyMainKeyId` appends to a seed key id. Restated rather than
+ *  imported so this module stays out of the provider's dependency graph. */
+const PASSKEY_MAIN_KEY_SUFFIX = '-passkey-main'
+
+export const passkeyMainKeyIdFromSeedKeyId = (seedKeyId: string): string =>
+    `${seedKeyId}${PASSKEY_MAIN_KEY_SUFFIX}`
+
+export const seedKeyIdFromPasskeyMainKeyId = (
+    mainKeyId: string,
+): string | null => {
+    if (!mainKeyId.endsWith(PASSKEY_MAIN_KEY_SUFFIX)) return null
+    const seedKeyId = mainKeyId.slice(0, -PASSKEY_MAIN_KEY_SUFFIX.length)
+    return seedKeyId.length > 0 ? seedKeyId : null
+}
+
+export type PasskeyBackupInputs = {
+    credentialId: string
+    origin: string
+    /** The exact string that reproduced this credential. Replayed, never
+     *  rebuilt. Absent when the record carries none and no seed re-derived it. */
+    identity?: string
+    /** The derivation counter (`metadata.counter`), NOT the WebAuthn signature counter. */
+    counter?: number
+    /** Base64 of the 91-byte SPKI DER, computed from `privateKey` — never an
+     *  echo of whatever the record stored. */
+    publicKeySpkiDer: string
+    /** Set only when the private key was re-derived from this seed. */
+    seedKeyId?: string
+    userId?: string
+    userName?: string
+    displayName?: string
+    /** Unix ms; 0 when the record never stored one. */
+    createdAt: number
+    /** Raw 32-byte P-256 scalar. The caller owns it and must zero it. */
+    privateKey: Uint8Array
+}
+
+const readString = (
+    metadata: Record<string, unknown>,
+    field: string,
+): string | undefined =>
+    typeof metadata[field] === 'string'
+        ? (metadata[field] as string)
+        : undefined
+
+/**
+ * `userHandle`/`userId` travel as base64-encoded bytes on iOS-written
+ * records. Decoding and running them through `toDerivationUserHandle`
+ * reproduces exactly what iOS fed into derivation (utf8 text, or its
+ * base64url form when the bytes aren't valid utf8) — the extension never
+ * calls `toDerivationUserHandle`; `keystore-signer.ts` just lowercases the
+ * plain string it's given. A value that isn't valid base64 yields no decoded
+ * candidate — the raw form is still tried on its own.
+ */
+const decodedBase64Candidate = (value: string): string | undefined => {
+    try {
+        return toDerivationUserHandle(decodeFromBase64(value))
+    } catch {
+        return undefined
+    }
+}
+
+/**
+ * Every identity string a known writer could have derived from. iOS derives
+ * from the user-handle bytes via `toDerivationUserHandle` (utf8, else
+ * base64url) lowercased, but stores the bytes standard-base64 under both
+ * `userHandle` and `userId` (`PasskeyCredentialStore.swift`'s
+ * `saveKeystoreCredential`) — not the derivation input. The engine
+ * (`keystore-signer.ts`) stores the already-lowercased derivation identity
+ * verbatim under `userHandle` instead. So each field is tried both raw and
+ * decoded; no stored field says which writer wrote it, and the public-key
+ * comparison arbitrates instead of a version tag.
+ */
+export const identityCandidates = (
+    metadata: Record<string, unknown>,
+): string[] => {
+    const userHandle = readString(metadata, 'userHandle')
+    const userId = readString(metadata, 'userId')
+
+    // A record written by restore carries the string that already proved this
+    // credential. It is the answer, not a guess, so it goes first and is used
+    // verbatim — the guesses below are lowercased, which would corrupt it.
+    const proven = readString(metadata, 'identity')
+
+    const raw = [
+        userHandle,
+        userHandle != null ? decodedBase64Candidate(userHandle) : undefined,
+        readString(metadata, 'userName'),
+        userId,
+        userId != null ? decodedBase64Candidate(userId) : undefined,
+    ]
+    const seen = new Set<string>()
+    if (proven != null && proven.length > 0) seen.add(proven)
+    for (const value of raw) {
+        if (value == null || value.length === 0) continue
+        seen.add(value.toLowerCase())
+    }
+    return [...seen]
+}
+
+const PASSKEY_KEY_TYPE = 'hd-derived-p256'
+const SPKI_DER_LENGTH = 91
+
+/**
+ * Writers disagree on the stored public-key encoding: `keystore-core`'s own
+ * domain-key derivation (the extension's path, via `deriveDomainKey`) stores
+ * the raw 64-byte point (`getPurePKBytes`, no `0x04` prefix), while iOS and
+ * Android store 91-byte SPKI DER. Normalise to SPKI DER — the form
+ * `derivePasskeyCredential` produces — before comparing. Throws on an input
+ * that is neither shape; callers catch.
+ */
+export const passkeyPublicKeyToSpkiDer = (
+    publicKey: Uint8Array,
+): Uint8Array => {
+    if (publicKey.length === SPKI_DER_LENGTH) return publicKey
+    const { x, y } = splitP256PublicKey(publicKey)
+    return p256RawPublicKeyToSpkiDer(concatBytes(x, y))
+}
+
+/** Android's provider keeps `user.name` under `userHandle`, because its picker
+ *  labels credentials by it, and stores no `userName`; iOS keeps the opaque
+ *  user id in both fields. Without this a restored Android credential is
+ *  labelled with its base64 user id. */
+const userNameOf = (metadata: Record<string, unknown>): string | undefined => {
+    const userName = readString(metadata, 'userName')
+    if (userName) return userName
+    const userHandle = readString(metadata, 'userHandle')
+    return userHandle && userHandle !== readString(metadata, 'userId')
+        ? userHandle
+        : undefined
+}
+
+/** The extension writes no `userId`, only `user.id` as base64url
+ *  `userHandleOriginal`. Restated in standard base64, the alphabet iOS writes
+ *  and Android's restore converts from, so every restore answers the relying
+ *  party with its own user id. */
+const userIdOf = (metadata: Record<string, unknown>): string | undefined => {
+    const userId = readString(metadata, 'userId')
+    if (userId) return userId
+    const original = readString(metadata, 'userHandleOriginal')
+    if (!original) return undefined
+    try {
+        return encodeToBase64(b64urlToBytes(original))
+    } catch {
+        return undefined
+    }
+}
+
+/** Unix ms, or 0 when the record never stored one. Not the clock: `createdAt`
+ *  is in the backup item's content hash, so a fresh value on every sweep would
+ *  re-push the credential on every sync. */
+const createdAtOf = (metadata: Record<string, unknown>): number =>
+    normalizeTimestamp(
+        typeof metadata.createdAt === 'number'
+            ? (metadata.createdAt as number)
+            : undefined,
+    ) ?? 0
+
+/** `null` when the key does not produce the record's public key. Takes
+ *  ownership of `privateKey`: it is returned inside the inputs, or zeroed. */
+export const storedPasskeyBackupInputs = (
+    key: Key,
+    privateKey: Uint8Array,
+): PasskeyBackupInputs | null => {
+    const metadata = (key.metadata ?? {}) as Record<string, unknown>
+    const origin = readString(metadata, 'origin')
+    if (
+        !isPasskeyKey(key) ||
+        isMigrationFlagged(metadata) ||
+        !origin ||
+        !key.publicKey
+    ) {
+        zeroBytes(privateKey)
+        return null
+    }
+
+    let publicKeySpkiDer: Uint8Array
+    try {
+        publicKeySpkiDer = p256PrivateKeyToSpkiDer(privateKey)
+        if (
+            !bytesEqual(
+                publicKeySpkiDer,
+                passkeyPublicKeyToSpkiDer(key.publicKey),
+            )
+        ) {
+            throw new Error('public key mismatch')
+        }
+    } catch {
+        logger.warn(
+            'storedPasskeyBackupInputs: stored private key does not match the public key',
+            { origin },
+        )
+        zeroBytes(privateKey)
+        return null
+    }
+
+    return {
+        credentialId: key.id,
+        origin,
+        identity: readString(metadata, 'identity'),
+        counter:
+            typeof metadata.counter === 'number'
+                ? (metadata.counter as number)
+                : undefined,
+        publicKeySpkiDer: encodeToBase64(publicKeySpkiDer),
+        userId: userIdOf(metadata),
+        userName: userNameOf(metadata),
+        displayName: readString(metadata, 'displayName'),
+        createdAt: createdAtOf(metadata),
+        privateKey,
+    }
+}
+
+/**
+ * A credential's backup inputs, or `null` when this device cannot reproduce it.
+ * Reproducibility is proven here rather than inferred: the derived public key
+ * must equal the one the record already holds, which is also what lets restore
+ * treat a later mismatch as corruption instead of a wrong guess.
+ */
+export const passkeyBackupInputs = async (
+    key: Key,
+    resolveSeedEntropy: (seedKeyId: string) => Promise<Uint8Array | null>,
+    subtle?: SubtleCrypto,
+    /** Shared across a sweep so a user's credentials, which cluster on one
+     *  seed, pay one 210,000-iteration PBKDF2 between them rather than one
+     *  each. Holds promises, not keys: a sweep runs its credentials
+     *  concurrently, so caching only resolved values would still start every
+     *  derivation. A cached key outlives this call, so it is the sweep's to
+     *  zero, not this function's. */
+    mainKeyCache?: Map<string, Promise<Uint8Array | null>>,
+): Promise<PasskeyBackupInputs | null> => {
+    if (key.type !== PASSKEY_KEY_TYPE) return null
+
+    const metadata = (key.metadata ?? {}) as Record<string, unknown>
+    if (isMigrationFlagged(metadata)) return null
+
+    const origin = readString(metadata, 'origin')
+    const parentKeyId = readString(metadata, 'parentKeyId')
+    const storedPublicKey = key.publicKey
+    // A credential the legacy importer wrote (`writeNativePasskeyEntry`
+    // without a `parentKeyId`) is excluded here rather than by name: it's
+    // derived from a mnemonic string, not seed entropy, and feeds `userName`
+    // verbatim without lowercasing, so it could never be reproduced by this
+    // function even if it did carry a parent key id.
+    if (!origin || !parentKeyId || !storedPublicKey) return null
+
+    const seedKeyId = seedKeyIdFromPasskeyMainKeyId(parentKeyId)
+    if (seedKeyId === null) return null
+
+    let storedSpkiDer: Uint8Array
+    try {
+        storedSpkiDer = passkeyPublicKeyToSpkiDer(storedPublicKey)
+    } catch {
+        // Neither 64/65 nor 91 bytes: a writer this module doesn't know
+        // about. Unlike "no candidate matched", this path leaves no other
+        // evidence, so it's logged even though it's not thrown.
+        logger.warn(
+            'passkeyBackupInputs: stored public key is not a recognised length',
+            { origin, storedPublicKeyLength: storedPublicKey.length },
+        )
+        return null
+    }
+
+    // `entropy` is owned by `resolveSeedEntropy`'s caller, not by this
+    // function — it's zeroed (or not) at that buffer's own lifetime, e.g.
+    // `withSecret`'s `finally`. Only a main key this call derives itself and
+    // each `derived.privateKey` are this function's to zero.
+    const entropy = await resolveSeedEntropy(seedKeyId)
+    if (entropy == null) return null
+
+    // The derivation counter `keystore-core` writes, NOT the WebAuthn
+    // signature counter (`metadata.count`, which iOS/Android bump on every
+    // assertion and never feed into derivation).
+    const counter =
+        typeof metadata.counter === 'number' ? (metadata.counter as number) : 0
+
+    let ownedMainKey: Uint8Array | null = null
+    let mainKey: Uint8Array
+    if (mainKeyCache) {
+        if (!mainKeyCache.has(seedKeyId)) {
+            mainKeyCache.set(
+                seedKeyId,
+                handOffSecret(derivePasskeyMainKey(entropy, subtle)).catch(
+                    () => null,
+                ),
+            )
+        }
+        const cached = await mainKeyCache.get(seedKeyId)!
+        if (cached === null) return null
+        mainKey = cached
+    } else {
+        ownedMainKey = await derivePasskeyMainKey(entropy, subtle)
+        mainKey = ownedMainKey
+    }
+
+    try {
+        for (const identity of identityCandidates(metadata)) {
+            const derived = await derivePasskeyCredential({
+                mainKey,
+                origin,
+                identity,
+                counter,
+            })
+            try {
+                if (!bytesEqual(derived.publicKeySpkiDer, storedSpkiDer))
+                    continue
+
+                return {
+                    credentialId: key.id,
+                    origin,
+                    identity,
+                    counter,
+                    publicKeySpkiDer: encodeToBase64(derived.publicKeySpkiDer),
+                    seedKeyId,
+                    userId: userIdOf(metadata),
+                    userName: userNameOf(metadata),
+                    displayName: readString(metadata, 'displayName'),
+                    createdAt: createdAtOf(metadata),
+                    // A copy, so the derived buffer is zeroed on every path
+                    // below and the caller owns exactly what it receives.
+                    privateKey: Uint8Array.from(derived.privateKey),
+                }
+            } finally {
+                zeroBytes(derived.privateKey)
+            }
+        }
+
+        // Not an error: a credential from a writer whose identity rule is not
+        // in the candidate list is excluded rather than mis-derived. Logged
+        // with the origin so a systematic gap is diagnosable.
+        logger.warn(
+            'passkeyBackupInputs: no candidate reproduced the credential',
+            { origin },
+        )
+        return null
+    } finally {
+        zeroBytes(ownedMainKey)
+    }
+}

@@ -1,0 +1,64 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { PWView, type PWInputRef } from '@components/core'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+import { PassphraseWordInput } from './PassphraseWordInput'
+import { useStyles } from './styles'
+
+type PassphraseColumnProps = {
+    words: string[]
+    /** Index in the whole phrase of this column's first word. */
+    startIndex: number
+    lastIndex: number
+    focused: number | null
+    onChangeWord: (value: string, index: number) => void
+    onFocusWord: (index: number) => void
+    onSubmitWord: (index: number) => void
+    refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
+}
+
+export const PassphraseColumn = ({
+    words,
+    startIndex,
+    lastIndex,
+    focused,
+    onChangeWord,
+    onFocusWord,
+    onSubmitWord,
+    refCallbacks,
+}: PassphraseColumnProps) => {
+    const styles = useStyles()
+
+    return (
+        <PWView style={styles.column}>
+            {words.map((word, offset) => {
+                const index = startIndex + offset
+                return (
+                    <PassphraseWordInput
+                        key={index}
+                        index={index}
+                        value={word}
+                        isFocused={focused === index}
+                        isLast={index === lastIndex}
+                        autoFocus={index === 0}
+                        onChangeWord={onChangeWord}
+                        onFocusWord={onFocusWord}
+                        onSubmitWord={onSubmitWord}
+                        inputRef={refCallbacks[index]}
+                    />
+                )
+            })}
+        </PWView>
+    )
+}

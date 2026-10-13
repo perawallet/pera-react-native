@@ -16,12 +16,12 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import {
     computeBalanceImpacts,
     type IndexerTransactionLike,
-} from '@perawallet/wallet-core-transactions/api/history/indexer/balance-impacts'
+} from '@perawallet/wallet-core-chain-algorand/transactions/history/indexer/balance-impacts'
 import {
     collectAssetIds,
     transformIndexerTransactions,
     type AssetLookup,
-} from '@perawallet/wallet-core-transactions/api/history/indexer/transformers'
+} from '@perawallet/wallet-core-chain-algorand/transactions/history/indexer/transformers'
 
 import {
     createAlgo25Account,

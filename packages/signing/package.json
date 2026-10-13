@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./constants": {
+      "types": "./dist/constants.d.ts",
+      "default": "./dist/constants.js"
     }
   },
   "scripts": {
@@ -18,30 +22,25 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "catalog:",
-    "algosdk": "catalog:",
     "@babel/runtime": "catalog:",
-    "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
+    "@perawallet/wallet-core-chain-shared": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-ledger": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-device": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
-    "canonify": "^2.1.1",
     "decimal.js": "catalog:",
     "drizzle-orm": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "xstate": "catalog:",
-    "@xstate/react": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
   },
@@ -52,6 +51,7 @@
     "@types/react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "react-dom": "catalog:"
   }
 }

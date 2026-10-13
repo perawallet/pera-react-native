@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { AppState } from 'react-native'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
@@ -23,6 +24,7 @@ import {
     type UsePasskeyMigrationBannerResult,
 } from '../../components/PasskeyMigrationBanner'
 import { openCredentialProviderSettings } from './openCredentialProviderSettings'
+import { useRemoveFromBackupChoice } from './useRemoveFromBackupChoice'
 import {
     usePasskeyAutofillStatus,
     usePasskeysQuery,
@@ -79,7 +81,9 @@ export type UseSettingsPasskeysScreenResult = {
      * Whether to offer the QR scanner entry point. Hidden while the screen is
      * still resolving (loading) or errored, when there's no HD wallet to derive
      * from, and when the device has no screen lock (no strong biometric and no
-     * device credential) — in each case a scan would just dead-end.
+     * device credential) — in each case a scan would just dead-end. Also
+     * hidden while `liquidAuth` is off: existing passkeys stay manageable,
+     * but no new one is registered from here.
      */
     canScan: boolean
     isScannerVisible: boolean
@@ -101,6 +105,8 @@ export const useSettingsPasskeysScreen =
         const { showError } = useErrorToast()
         const { t } = useLanguage()
         const scanner = useModalState()
+        const canUseLiquidAuth = useCapability({ anyChain: 'liquidAuth' })
+        const resolveBackupChoice = useRemoveFromBackupChoice()
 
         // Re-check provider + biometric status when the app returns to the
         // foreground — covers the user enabling Pera as the credential provider
@@ -137,6 +143,7 @@ export const useSettingsPasskeysScreen =
                     options: { size: 'auto', enablePanDownToClose: true },
                 })
                 if (!confirmed) return
+                if (!(await resolveBackupChoice(passkey))) return
                 try {
                     await removePasskey(passkey)
                     trackEvent(PasskeysEvent.Deleted)
@@ -146,7 +153,7 @@ export const useSettingsPasskeysScreen =
                     showError(error, t('settings.passkeys.error_title'))
                 }
             },
-            [request, removePasskey, showError, t],
+            [request, resolveBackupChoice, removePasskey, showError, t],
         )
 
         const onOpenProviderSettings = useCallback(async () => {
@@ -210,6 +217,7 @@ export const useSettingsPasskeysScreen =
             canRemove,
             migration,
             canScan:
+                canUseLiquidAuth &&
                 state !== 'loading' &&
                 state !== 'error' &&
                 hasHDWallet &&

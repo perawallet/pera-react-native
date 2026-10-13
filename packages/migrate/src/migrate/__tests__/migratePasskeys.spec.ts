@@ -11,6 +11,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 const {
     keystoreState,
@@ -25,7 +27,7 @@ const {
     platformMock,
 } = vi.hoisted(() => ({
     keystoreState: { keys: [] as Array<Record<string, unknown>> },
-    accountsState: { accounts: [] as Array<Record<string, unknown>> },
+    accountsState: { accounts: [] as WalletAccount[] },
     loggerMock: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
     deriveMainKeyMock: vi.fn(),
     deriveCredentialMock: vi.fn(),
@@ -36,14 +38,20 @@ const {
     platformMock: { OS: 'android' as 'android' | 'ios' },
 }))
 
-vi.mock('react-native', () => ({ Platform: platformMock }))
-
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: keystoreState }),
+    getProvider: () => ({
+        deviceInfo: { getDevicePlatform: () => platformMock.OS },
+    }),
 }))
 
+// The real accessors pull in modules this spec stubs, so mirror them.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: { getState: () => accountsState },
+    chainAccountOf: (account: WalletAccount, chainId: ChainId) =>
+        account.chains[chainId],
+    signingKeyOn: (account: WalletAccount, chainId: ChainId) =>
+        account.chains[chainId]?.keyPairId,
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -99,7 +107,7 @@ vi.mock('../passkeys/deriveLegacyPasskeyCredential', async importActual => ({
 // Fully mocked — the real module imports react-native-keystore (native MMKV).
 // createNativePasskeyWriter returns the per-write spy (with a dispose spy
 // attached) so the batch shares one writer.
-vi.mock('../passkeys/writeNativePasskeyEntry', () => ({
+vi.mock('@perawallet/wallet-core-passkeys', () => ({
     nativePasskeyEntryExists: entryExistsMock,
     createNativePasskeyWriter: () =>
         Object.assign(writeEntryMock, { dispose: disposeMock }),
@@ -148,7 +156,19 @@ beforeEach(() => {
     disposeMock.mockReset()
     entropyToMnemonicMock.mockReset().mockReturnValue('test mnemonic phrase')
 
-    accountsState.accounts = [{ address: ADDRESS, keyPairId: DERIVED_KEY_ID }]
+    accountsState.accounts = [
+        {
+            id: 'account-1',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: {
+                algorand: { address: ADDRESS, keyPairId: DERIVED_KEY_ID },
+            },
+        },
+    ]
     keystoreState.keys = [
         { id: SEED_ID, type: 'seed', metadata: { scheme: 'bip39' } },
         {
@@ -166,7 +186,7 @@ beforeEach(() => {
 
 describe('migratePasskeys', () => {
     it('writes a native credential when the derived id matches the legacy id', async () => {
-        const result = await migratePasskeys([buildPasskey()])
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 1, skipped: 0 })
         // dp256 derives against the full WebAuthn origin, not the bare host.
@@ -194,7 +214,7 @@ describe('migratePasskeys', () => {
         const derived = derivedFor(ID_BYTES)
         deriveCredentialMock.mockResolvedValueOnce(derived)
 
-        await migratePasskeys([buildPasskey()])
+        await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(derived.privateKey.every(byte => byte === 0)).toBe(true)
     })
@@ -205,7 +225,7 @@ describe('migratePasskeys', () => {
         const derived = derivedFor(new Uint8Array(32).fill(0xaa))
         deriveCredentialMock.mockResolvedValueOnce(derived)
 
-        const result = await migratePasskeys([buildPasskey()])
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(writeEntryMock).not.toHaveBeenCalled()
@@ -213,7 +233,7 @@ describe('migratePasskeys', () => {
     })
 
     it('disposes the writer (wiping the master key) after the batch', async () => {
-        await migratePasskeys([buildPasskey()])
+        await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(disposeMock).toHaveBeenCalledTimes(1)
     })
@@ -222,7 +242,7 @@ describe('migratePasskeys', () => {
         const mainKey = new Uint8Array(64).fill(9)
         deriveMainKeyMock.mockResolvedValueOnce(mainKey)
 
-        await migratePasskeys([buildPasskey()])
+        await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(mainKey.every(byte => byte === 0)).toBe(true)
     })
@@ -230,16 +250,17 @@ describe('migratePasskeys', () => {
     it('disposes the writer even when a write throws', async () => {
         writeEntryMock.mockRejectedValueOnce(new Error('mmkv write failed'))
 
-        const result = await migratePasskeys([buildPasskey()])
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(disposeMock).toHaveBeenCalledTimes(1)
     })
 
     it('does not double-prefix a siteUrl that already has a scheme', async () => {
-        await migratePasskeys([
-            buildPasskey({ siteUrl: 'https://webauthn.io' }),
-        ])
+        await migratePasskeys(
+            [buildPasskey({ siteUrl: 'https://webauthn.io' })],
+            'algorand',
+        )
 
         expect(deriveCredentialMock).toHaveBeenCalledWith(
             expect.objectContaining({ origin: 'https://webauthn.io' }),
@@ -247,7 +268,10 @@ describe('migratePasskeys', () => {
     })
 
     it('Android: derives with the https origin and the spki-der id basis', async () => {
-        await migratePasskeys([buildPasskey({ siteUrl: 'webauthn.io' })])
+        await migratePasskeys(
+            [buildPasskey({ siteUrl: 'webauthn.io' })],
+            'algorand',
+        )
 
         expect(deriveCredentialMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -260,7 +284,10 @@ describe('migratePasskeys', () => {
     it('iOS: derives with the verbatim origin and the raw-point id basis', async () => {
         platformMock.OS = 'ios'
 
-        await migratePasskeys([buildPasskey({ siteUrl: 'webauthn.io' })])
+        await migratePasskeys(
+            [buildPasskey({ siteUrl: 'webauthn.io' })],
+            'algorand',
+        )
 
         expect(deriveCredentialMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -272,7 +299,7 @@ describe('migratePasskeys', () => {
     })
 
     it('returns zero and writes nothing for an empty list', async () => {
-        const result = await migratePasskeys([])
+        const result = await migratePasskeys([], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 0 })
         expect(writeEntryMock).not.toHaveBeenCalled()
@@ -281,7 +308,7 @@ describe('migratePasskeys', () => {
     it('skips (without deriving) a credential already in the keystore', async () => {
         entryExistsMock.mockReturnValue(true)
 
-        const result = await migratePasskeys([buildPasskey()])
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(deriveCredentialMock).not.toHaveBeenCalled()
@@ -289,16 +316,20 @@ describe('migratePasskeys', () => {
     })
 
     it('skips a passkey missing the userName derivation input', async () => {
-        const result = await migratePasskeys([buildPasskey({ userName: null })])
+        const result = await migratePasskeys(
+            [buildPasskey({ userName: null })],
+            'algorand',
+        )
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(writeEntryMock).not.toHaveBeenCalled()
     })
 
     it('skips a passkey with an unreadable credentialId', async () => {
-        const result = await migratePasskeys([
-            buildPasskey({ credentialId: 'not-a-32-byte-id' }),
-        ])
+        const result = await migratePasskeys(
+            [buildPasskey({ credentialId: 'not-a-32-byte-id' })],
+            'algorand',
+        )
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(writeEntryMock).not.toHaveBeenCalled()
@@ -306,9 +337,10 @@ describe('migratePasskeys', () => {
     })
 
     it('skips (without deriving) a passkey whose account did not migrate', async () => {
-        const result = await migratePasskeys([
-            buildPasskey({ address: 'UNKNOWN_ADDR' }),
-        ])
+        const result = await migratePasskeys(
+            [buildPasskey({ address: 'UNKNOWN_ADDR' })],
+            'algorand',
+        )
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(deriveCredentialMock).not.toHaveBeenCalled()
@@ -324,7 +356,7 @@ describe('migratePasskeys', () => {
             { id: DERIVED_KEY_ID, type: 'private-key', metadata: {} },
         ]
 
-        const result = await migratePasskeys([buildPasskey()])
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(deriveCredentialMock).not.toHaveBeenCalled()
@@ -345,7 +377,7 @@ describe('migratePasskeys', () => {
             },
         ]
 
-        const result = await migratePasskeys([buildPasskey()])
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(deriveCredentialMock).not.toHaveBeenCalled()
@@ -358,7 +390,7 @@ describe('migratePasskeys', () => {
             derivedFor(new Uint8Array(32).fill(0xff)),
         )
 
-        const result = await migratePasskeys([buildPasskey()])
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
         expect(writeEntryMock).not.toHaveBeenCalled()
@@ -366,7 +398,10 @@ describe('migratePasskeys', () => {
     })
 
     it('does not write the same credential twice within one batch', async () => {
-        const result = await migratePasskeys([buildPasskey(), buildPasskey()])
+        const result = await migratePasskeys(
+            [buildPasskey(), buildPasskey()],
+            'algorand',
+        )
 
         expect(result).toEqual({ imported: 1, skipped: 1 })
         expect(writeEntryMock).toHaveBeenCalledTimes(1)
@@ -381,16 +416,19 @@ describe('migratePasskeys', () => {
             derivedFor(origin === 'https://a.example' ? idA : idB),
         )
 
-        const result = await migratePasskeys([
-            buildPasskey({
-                siteUrl: 'a.example',
-                credentialId: Buffer.from(idA).toString('base64'),
-            }),
-            buildPasskey({
-                siteUrl: 'b.example',
-                credentialId: Buffer.from(idB).toString('base64'),
-            }),
-        ])
+        const result = await migratePasskeys(
+            [
+                buildPasskey({
+                    siteUrl: 'a.example',
+                    credentialId: Buffer.from(idA).toString('base64'),
+                }),
+                buildPasskey({
+                    siteUrl: 'b.example',
+                    credentialId: Buffer.from(idB).toString('base64'),
+                }),
+            ],
+            'algorand',
+        )
 
         expect(result).toEqual({ imported: 2, skipped: 0 })
         expect(deriveMainKeyMock).toHaveBeenCalledTimes(1)
@@ -406,23 +444,26 @@ describe('migratePasskeys', () => {
             .mockRejectedValueOnce(new Error('mmkv busy'))
             .mockResolvedValueOnce(undefined)
 
-        const result = await migratePasskeys([
-            buildPasskey({
-                siteUrl: 'fail.example',
-                credentialId: CRED_ID_B64,
-            }),
-            buildPasskey({
-                siteUrl: 'ok.example',
-                credentialId: Buffer.from(idB).toString('base64'),
-            }),
-        ])
+        const result = await migratePasskeys(
+            [
+                buildPasskey({
+                    siteUrl: 'fail.example',
+                    credentialId: CRED_ID_B64,
+                }),
+                buildPasskey({
+                    siteUrl: 'ok.example',
+                    credentialId: Buffer.from(idB).toString('base64'),
+                }),
+            ],
+            'algorand',
+        )
 
         expect(result).toEqual({ imported: 1, skipped: 1 })
         expect(loggerMock.error).toHaveBeenCalled()
     })
 
     it('passes an empty userId and warns when the legacy passkey has no user.id', async () => {
-        await migratePasskeys([buildPasskey({ userHandle: null })])
+        await migratePasskeys([buildPasskey({ userHandle: null })], 'algorand')
 
         expect(writeEntryMock).toHaveBeenCalledWith(
             expect.objectContaining({ userId: '' }),

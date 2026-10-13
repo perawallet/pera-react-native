@@ -16,6 +16,7 @@ export interface MultiSigAccount {
     customId: string
     createdAt: Date
     address: string
+    /** Chain-encoded: Algorand's msig version, hashed into `address`. */
     version: number
     threshold: number
     participantAddresses: string[]
@@ -55,7 +56,9 @@ export interface SignerResponse {
 
 export interface TransactionList {
     id: string
+    /** Chain-encoded: base64 of each unsigned transaction's canonical msgpack. */
     rawTransactions: string[]
+    /** Chain-encoded: the Algorand round window shared by the list. */
     firstValidBlock: number
     lastValidBlock: number
     expectedExpireDatetime: Date

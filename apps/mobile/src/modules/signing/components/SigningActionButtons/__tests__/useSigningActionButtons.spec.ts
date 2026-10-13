@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
-    getRekeyedUnsignableReason,
+    getDelegatedUnsignableReason,
     isSignRequestMultisigUnsignable,
     useSigningPipeline,
     useSigningRequest,
@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
     isSignRequestMultisigUnsignable: vi.fn(() => false),
-    getRekeyedUnsignableReason: vi.fn(() => null),
+    getDelegatedUnsignableReason: vi.fn(() => null),
     isExternalCallbackSource: vi.fn(
         (sourceType?: string) =>
             sourceType === 'walletconnect' ||
@@ -62,14 +62,16 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // The global setup stubs toAlgodError to always return unknown_node_error;
 // the classification cases below need the real parser.
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal =>
-    importOriginal<typeof import('@perawallet/wallet-core-blockchain')>(),
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal =>
+        importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >(),
 )
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -124,7 +126,7 @@ describe('useSigningActionButtons', () => {
         // clearAllMocks keeps implementations — pin the gates back to their
         // permissive defaults so cases from one describe can't leak.
         ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(false)
-        ;(getRekeyedUnsignableReason as Mock).mockReturnValue(null)
+        ;(getDelegatedUnsignableReason as Mock).mockReturnValue(null)
         mockGetPreference.mockReturnValue(undefined)
         mockConfirmQuantumDappUsage.mockResolvedValue('continue')
         setupPipeline()
@@ -322,7 +324,7 @@ describe('useSigningActionButtons', () => {
 
         it('calls showError when the resolved signer is a local key over algod', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'algod' },
                 kind: { type: 'transactions' },
             })
@@ -341,7 +343,7 @@ describe('useSigningActionButtons', () => {
 
         it('classifies a recognized algod rejection into a typed AlgodError', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'algod' },
                 kind: { type: 'transactions' },
             })
@@ -370,7 +372,7 @@ describe('useSigningActionButtons', () => {
 
         it('passes an unrecognized error through unchanged', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'algod' },
                 kind: { type: 'transactions' },
             })
@@ -394,7 +396,7 @@ describe('useSigningActionButtons', () => {
 
         it('skips showError when transport is not algod (existing behavior preserved)', () => {
             setupPipelineCapturingHandler({
-                signerType: 'localKey',
+                signerType: 'local',
                 transport: { kind: 'callback' },
                 kind: { type: 'transactions' },
             })
@@ -573,7 +575,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('blocks a sender rekeyed to an address outside the wallet', () => {
-            ;(getRekeyedUnsignableReason as Mock).mockReturnValue({
+            ;(getDelegatedUnsignableReason as Mock).mockReturnValue({
                 kind: 'authMissing',
                 senderAddress: 'SND',
                 authAddress: 'AUTH',
@@ -594,7 +596,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('blocks a sender rekeyed to a watch-only account', () => {
-            ;(getRekeyedUnsignableReason as Mock).mockReturnValue({
+            ;(getDelegatedUnsignableReason as Mock).mockReturnValue({
                 kind: 'authIsWatch',
                 senderAddress: 'SND',
                 authAddress: 'AUTH',
@@ -615,7 +617,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('shows no notice for a signable sender', () => {
-            ;(getRekeyedUnsignableReason as Mock).mockReturnValue(null)
+            ;(getDelegatedUnsignableReason as Mock).mockReturnValue(null)
 
             const { result } = renderHook(() => useSigningActionButtons())
 

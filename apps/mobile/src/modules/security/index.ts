@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-export { PinEntry, type PinEntryProps } from './components/PinEntry'
+export {
+    PinEntry,
+    type PinEntryProps,
+    usePinEntry,
+} from './components/PinEntry'
 export {
     PinEditView,
     type PinEditViewProps,
@@ -28,3 +32,4 @@ export {
 // the natural place to ask. The file itself lives under @hooks so
 // @components/core can read it without pulling this module's persisted stores.
 export { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
+export type { PinConfirmedResult } from './components/PinEditView/usePinEditView'

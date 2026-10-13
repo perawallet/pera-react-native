@@ -21,7 +21,7 @@ import {
 } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import type { StakingProject } from '../../models'
 import { StakingTypeBadge } from '../StakingTypeBadge'
 import { useStyles } from './styles'
@@ -37,6 +37,7 @@ export const StakingProjectCard = ({
     isLast = false,
     onPress,
 }: StakingProjectCardProps) => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles({ isLast })
     const { usdToPreferred } = useCurrency()
 
@@ -81,7 +82,7 @@ export const StakingProjectCard = ({
                     {project.description}
                 </PWText>
 
-                {project.tvlInAlgo.gt(0) && (
+                {project.tvlInNative.gt(0) && (
                     <PWView style={styles.tvlRow}>
                         <PWIcon
                             name='locked'
@@ -90,8 +91,8 @@ export const StakingProjectCard = ({
                         <PWText style={styles.tvlLabel}>TVL</PWText>
                         <PWView style={styles.tvlValueContainer}>
                             <AssetAmount
-                                asset={ALGO_ASSET}
-                                value={project.tvlInAlgo}
+                                asset={nativeAsset}
+                                value={project.tvlInNative}
                                 density='compact'
                                 truncateToUnits
                                 showSymbol

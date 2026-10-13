@@ -11,9 +11,9 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { BiometricsDisabledReason, SecurityState } from '../models'
 import {
+    guardedPersist,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -31,6 +31,8 @@ const initialState = {
     isBiometricsEnabled: false,
     biometricsDisabledReason: null,
     acknowledgedBiometricsDisabledReason: null,
+    biometricUnwrapFailures: 0,
+    isBiometricRearmPending: false,
 }
 
 // `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
@@ -51,23 +53,41 @@ const sanitizeAutoLockStartedAt = (value: unknown): Nullable<number> => {
     return value
 }
 
+// A Record rather than a list so adding a reason without listing it here is a
+// type error: a reason missing from this map is silently dropped on restart.
+const DISABLED_REASONS: Record<BiometricsDisabledReason, true> = {
+    'enrollment-changed': true,
+    'weak-biometric': true,
+    'not-available': true,
+    'rebind-required': true,
+}
+
 // Drives copy in a sheet, so an unrecognized persisted value has no safe
 // rendering — drop it and simply don't offer the prompt.
 const sanitizeDisabledReason = (
     value: unknown,
 ): Nullable<BiometricsDisabledReason> =>
-    value === 'enrollment-changed' ||
-    value === 'weak-biometric' ||
-    value === 'not-available'
-        ? value
+    typeof value === 'string' &&
+    Object.prototype.hasOwnProperty.call(DISABLED_REASONS, value)
+        ? (value as BiometricsDisabledReason)
         : null
+
+// A tampered count only moves the drop earlier or later; zero changes nothing.
+const sanitizeUnwrapFailures = (value: unknown): number =>
+    typeof value === 'number' && Number.isInteger(value) && value >= 0
+        ? value
+        : 0
 
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>
 > = create<SecurityState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
+            // Fails closed until AutoLockGuard's listener writes the real
+            // value; `resetState` keeps the `false` above, since by then the
+            // guard is mounted and settled.
+            isAppLockActive: true,
             incrementFailedAttempts: () =>
                 set(state => ({
                     failedAttempts: state.failedAttempts + 1,
@@ -93,33 +113,48 @@ export const useSecurityStore: UseBoundStore<
             setAcknowledgedBiometricsDisabledReason: (
                 reason: Nullable<BiometricsDisabledReason>,
             ) => set({ acknowledgedBiometricsDisabledReason: reason }),
+            setBiometricUnwrapFailures: (count: number) =>
+                set({ biometricUnwrapFailures: count }),
+            setBiometricRearmPending: (pending: boolean) =>
+                set({ isBiometricRearmPending: pending }),
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 autoLockStartedAt: state.autoLockStartedAt,
                 biometricsDisabledReason: state.biometricsDisabledReason,
                 acknowledgedBiometricsDisabledReason:
                     state.acknowledgedBiometricsDisabledReason,
+                biometricUnwrapFailures: state.biometricUnwrapFailures,
+                isBiometricRearmPending: state.isBiometricRearmPending,
             }),
-            merge: (persisted, current) => ({
-                ...current,
-                autoLockStartedAt: sanitizeAutoLockStartedAt(
-                    (persisted as Partial<SecurityState> | undefined)
-                        ?.autoLockStartedAt,
-                ),
-                biometricsDisabledReason: sanitizeDisabledReason(
-                    (persisted as Partial<SecurityState> | undefined)
-                        ?.biometricsDisabledReason,
-                ),
-                acknowledgedBiometricsDisabledReason: sanitizeDisabledReason(
-                    (persisted as Partial<SecurityState> | undefined)
-                        ?.acknowledgedBiometricsDisabledReason,
-                ),
-            }),
+            merge: (persisted, current) => {
+                const stored = persisted as Partial<SecurityState> | undefined
+                return {
+                    ...current,
+                    autoLockStartedAt: sanitizeAutoLockStartedAt(
+                        stored?.autoLockStartedAt,
+                    ),
+                    biometricsDisabledReason: sanitizeDisabledReason(
+                        stored?.biometricsDisabledReason,
+                    ),
+                    acknowledgedBiometricsDisabledReason:
+                        sanitizeDisabledReason(
+                            stored?.acknowledgedBiometricsDisabledReason,
+                        ),
+                    biometricUnwrapFailures: sanitizeUnwrapFailures(
+                        stored?.biometricUnwrapFailures,
+                    ),
+                    // A forged true lets one biometric ceremony re-arm with no
+                    // PIN (`recoverPendingRearm`). Accepted so users who forgot
+                    // their PIN keep biometric unlock across the upgrade.
+                    isBiometricRearmPending:
+                        stored?.isBiometricRearmPending === true,
+                }
+            },
         },
     ),
 )

@@ -12,13 +12,14 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // The global setup stubs shared with a partial surface; restore the real
 // encoding helpers the injected signers use.
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-shared')),
 }))
@@ -57,24 +58,40 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
 }))
 
 import { useEscrowCardCreation } from '../useEscrowCardCreation'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const localKeyAccount: WalletAccount = {
     id: 'a1',
-    type: AccountTypes.algo25,
-    address: 'FUNDINGADDR',
-    keyPairId: 'kp1',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'FUNDINGADDR', keyPairId: 'kp1' } },
 } as WalletAccount
 
 const ledgerAccount: WalletAccount = {
     id: 'a2',
-    type: AccountTypes.hardware,
-    address: 'LEDGERADDR',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
+    chains: { algorand: { address: 'LEDGERADDR' } },
+} as WalletAccount
+
+const watchAccount: WalletAccount = {
+    id: 'a3',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'WATCHADDR' } },
 } as WalletAccount
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockSignOwnershipAsync.mockImplementation(async ({ signArc60 }) => {
-        const signature = await signArc60('data', {
+    mockSignOwnershipAsync.mockImplementation(async ({ signAuthData }) => {
+        const signature = await signAuthData('data', {
             scope: 1,
             encoding: 'base64',
         })
@@ -86,12 +103,39 @@ beforeEach(() => {
     mockCreateAndApproveAsync.mockResolvedValue({ cardAddress: 'CARD1' })
 })
 
+beforeEach(() => {
+    registerAlgorandAccountsAdapter()
+    registerAlgorandCardAdapter()
+})
+
 describe('useEscrowCardCreation', () => {
-    it('canCreateCard is true only for local-key accounts', () => {
+    it('canCreateCard accepts local-key and Ledger accounts', () => {
         const { result } = renderHook(() => useEscrowCardCreation())
 
         expect(result.current.canCreateCard(localKeyAccount)).toBe(true)
-        expect(result.current.canCreateCard(ledgerAccount)).toBe(false)
+        expect(result.current.canCreateCard(ledgerAccount)).toBe(true)
+    })
+
+    it('canCreateCard rejects an account that holds no key of its own', () => {
+        const { result } = renderHook(() => useEscrowCardCreation())
+
+        expect(result.current.canCreateCard(watchAccount)).toBe(false)
+    })
+
+    it('signOwnership enqueues an arc60 request for a Ledger account', async () => {
+        mockAddSignRequest.mockImplementation(request => {
+            request.approve([
+                { signature: new Uint8Array([4, 5, 6]), signer: 'LEDGERADDR' },
+            ])
+        })
+        const { result } = renderHook(() => useEscrowCardCreation())
+
+        const proof = await result.current.signOwnership(ledgerAccount)
+
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'auth-data', sourceType: 'card' }),
+        )
+        expect(proof.signature).toBe('4,5,6')
     })
 
     it('signOwnership enqueues an interactive arc60 request and resolves with the signature', async () => {
@@ -106,10 +150,10 @@ describe('useEscrowCardCreation', () => {
 
         expect(mockAddSignRequest).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: 'arc60',
+                type: 'auth-data',
                 transport: 'callback',
-                sourceType: 'arc60',
-                stdSigData: 'data',
+                sourceType: 'card',
+                authData: 'data',
                 metadata: { scope: 1, encoding: 'base64' },
             }),
         )
@@ -141,7 +185,7 @@ describe('useEscrowCardCreation', () => {
     it('throws before enqueuing any request for a non-signing account', async () => {
         const { result } = renderHook(() => useEscrowCardCreation())
 
-        expect(() => result.current.signOwnership(ledgerAccount)).toThrow()
+        expect(() => result.current.signOwnership(watchAccount)).toThrow()
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })
 
@@ -150,6 +194,7 @@ describe('useEscrowCardCreation', () => {
         const proof = {
             signData: { data: 'd', authenticatorData: 'a' },
             signature: 's',
+            delegationToken: 'ABC_tok',
         }
 
         await result.current.createAndApprove(localKeyAccount, proof)

@@ -57,6 +57,15 @@ describe('useBiometricsDisabledPrompt', () => {
         expect(result.current.reason).toBe('enrollment-changed')
     })
 
+    it('is due, with the reason, when the binding needs to be re-armed', () => {
+        biometricsState.disabledReason = 'rebind-required'
+
+        const { result } = renderHook(() => useBiometricsDisabledPrompt())
+
+        expect(result.current.isDue).toBe(true)
+        expect(result.current.reason).toBe('rebind-required')
+    })
+
     it('re-enables biometrics with an OS prompt', async () => {
         const { result } = renderHook(() => useBiometricsDisabledPrompt())
 

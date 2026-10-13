@@ -37,10 +37,7 @@ describe('verifyLedgerAddress', () => {
     it('throws LedgerUserRejectedError when user rejects on device', async () => {
         const transport: LedgerTransport = {
             getAddress: vi.fn(async () => {
-                const error = new Error('rejected')
-                ;(error as unknown as { statusCode: number }).statusCode =
-                    0x6986
-                throw error
+                throw new LedgerUserRejectedError()
             }),
             signTransaction: vi.fn(),
             disconnect: vi.fn(),

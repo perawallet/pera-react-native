@@ -12,13 +12,9 @@
 
 export {
     fetchDelegationToken,
-    fetchDelegationProgram,
     fetchExternalWallets,
-    postAlgorandDelegationApproval,
+    postDelegationApproval,
+    postCardDelegation,
     type DelegationRequestParams,
-    type PostAlgorandDelegationApprovalParams,
+    type PostDelegationApprovalParams,
 } from './endpoints'
-export {
-    verifyDelegationProgram,
-    DelegationProgramUnverifiedError,
-} from './verify'

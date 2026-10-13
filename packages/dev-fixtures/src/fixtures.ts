@@ -12,7 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 
-import type { Algo25Account } from '@perawallet/wallet-core-accounts'
+import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ASAInbox } from '@perawallet/wallet-core-messages'
@@ -27,11 +27,12 @@ export const MOCK_GROUP_ID = 'mockGroupId000000000000000000000000000000000'
 export const MOCK_TX_ID =
     'MOCKTXID0000000000000000000000000000000000000000000000'
 
-export const mockAlgo25Account: Algo25Account = {
+export const mockAlgo25Account: LocalAccount = {
     id: 'mock-algo25',
-    type: 'algo25',
-    address: MOCK_ADDRESS,
-    keyPairId: 'mock-keypair-algo25',
+    custody: { kind: 'local', seed: null },
+    chains: {
+        algorand: { address: MOCK_ADDRESS, keyPairId: 'mock-keypair-algo25' },
+    },
     name: 'Mock Algo25 account',
 }
 
@@ -76,7 +77,7 @@ const MOCK_CONTACT_SPECS: Array<{ name: string; nfd?: string }> = [
 export const mockContacts: Contact[] = MOCK_CONTACT_SPECS.map(
     (spec, index) => ({
         name: spec.name,
-        address: mockContactAddress(index),
+        addresses: { algorand: mockContactAddress(index) },
         ...(spec.nfd ? { nfd: spec.nfd } : {}),
     }),
 )
@@ -235,6 +236,7 @@ export const mockTransaction: TransactionHistoryItem = {
     id: MOCK_TX_ID,
     txType: 'pay',
     sender: MOCK_ADDRESS,
+    assetSender: null,
     receiver: MOCK_ADDRESS_2,
     confirmedRound: 40_000_000,
     roundTime: Math.floor(Date.now() / 1000) - 300,

@@ -13,10 +13,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountTypeInfo } from '../useAccountTypeInfo'
-import type {
-    RekeyTransition,
-    WalletAccount,
+import {
+    useAccountChainStateStore,
+    useAccountsStore,
+    type DelegateTransition,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
+import {
+    accountForType,
+    type AlgorandAccountKind,
+} from '@test-utils/accountCustody'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -48,10 +58,11 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         quantumAccountSupportUrl:
             'https://support.perawallet.app/en/article/create-or-upgrade-to-a-quantum-account-on-pera-wallet-19d53rn/',
     },
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 const mockUseCanSignWith = vi.fn<() => boolean>()
-const mockUseRekeyTransition = vi.fn<() => RekeyTransition | null>()
+const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -60,31 +71,60 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useCanSignWith: () => mockUseCanSignWith(),
-        useRekeyTransition: () => mockUseRekeyTransition(),
+        useDelegatedTransition: () => mockUseDelegatedTransition(),
     }
 })
 
+const PARTICIPANT = accountForType('standalone', 'PARTICIPANT_ADDR')
+
 const accountOfType = (
-    type: WalletAccount['type'],
-    rekeyAddress?: string,
-): WalletAccount =>
-    ({
-        type,
-        address: `${type.toUpperCase()}_ADDR`,
-        keyPairId: 'key-1',
-        rekeyAddress,
-    }) as WalletAccount
+    type: AlgorandAccountKind,
+    authority?: string,
+): WalletAccount => {
+    const account = accountForType(type)
+    const address = account.chains.algorand?.address ?? ''
+    if (authority) seedAuthority(address, authority)
+    if (type !== 'multisig') return account
+    return {
+        ...account,
+        chains: {
+            algorand: {
+                address,
+                native: {
+                    family: 'algorand',
+                    multisig: {
+                        version: 1,
+                        threshold: 1,
+                        addresses: ['PARTICIPANT_ADDR', 'OTHER_ADDR'],
+                    },
+                },
+            },
+        },
+    }
+}
+
+const transition = (
+    from: AlgorandAccountKind,
+    to: AlgorandAccountKind,
+): DelegateTransition => ({
+    from: accountForType(from),
+    to: accountForType(to),
+})
 
 describe('useAccountTypeInfo', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
+        // A held participant makes the multisig fixtures signable.
+        useAccountsStore.setState({ accounts: [PARTICIPANT] })
     })
 
     it('resolves algo25 account type', () => {
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25') }),
+            useAccountTypeInfo({ account: accountOfType('standalone') }),
         )
 
         expect(result.current.title).toBe('account_type_info.standard_title')
@@ -128,6 +168,7 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves an unsignable multisig account as No Auth', () => {
         mockUseCanSignWith.mockReturnValue(false)
+        useAccountsStore.setState({ accounts: [] })
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('multisig') }),
         )
@@ -140,9 +181,11 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves signable rekeyed account without a known auth as generic rekeyed', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+            useAccountTypeInfo({
+                account: accountOfType('standalone', 'AUTH'),
+            }),
         )
 
         expect(result.current.title).toBe(
@@ -155,10 +198,9 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves a rekey to a Ledger auth account with the split signer title', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue({
-            from: 'watch',
-            to: 'hardware',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('watch', 'hardware'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('watch', 'AUTH') }),
         )
@@ -174,10 +216,9 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves a shared-to-shared rekey with the shared description', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue({
-            from: 'multisig',
-            to: 'multisig',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('multisig', 'multisig'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('multisig', 'AUTH') }),
         )
@@ -189,10 +230,9 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves a ledger-to-ledger rekey with the ledger-to-ledger description', () => {
         mockUseCanSignWith.mockReturnValue(true)
-        mockUseRekeyTransition.mockReturnValue({
-            from: 'hardware',
-            to: 'hardware',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('hardware', 'hardware'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('hardware', 'AUTH') }),
         )
@@ -204,9 +244,11 @@ describe('useAccountTypeInfo', () => {
 
     it('resolves an unsignable rekeyed account as No Auth', () => {
         mockUseCanSignWith.mockReturnValue(false)
-        mockUseRekeyTransition.mockReturnValue(null)
+        mockUseDelegatedTransition.mockReturnValue(null)
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+            useAccountTypeInfo({
+                account: accountOfType('standalone', 'AUTH'),
+            }),
         )
 
         expect(result.current.title).toBe('account_type_info.no_auth_title')
@@ -236,7 +278,7 @@ describe('useAccountTypeInfo', () => {
 
     it('opens webview with support URL when learn more is pressed', () => {
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25') }),
+            useAccountTypeInfo({ account: accountOfType('standalone') }),
         )
 
         act(() => {
@@ -277,12 +319,13 @@ describe('useAccountTypeInfo', () => {
     })
 
     it('opens webview with the quantum article when learn more is pressed for an account rekeyed to quantum', () => {
-        mockUseRekeyTransition.mockReturnValue({
-            from: 'algo25',
-            to: 'quantum',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('standalone', 'quantum'),
+        )
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+            useAccountTypeInfo({
+                account: accountOfType('standalone', 'AUTH'),
+            }),
         )
 
         act(() => {
@@ -295,10 +338,9 @@ describe('useAccountTypeInfo', () => {
     })
 
     it('opens webview with the quantum article when learn more is pressed for a Ledger account rekeyed to quantum', () => {
-        mockUseRekeyTransition.mockReturnValue({
-            from: 'hardware',
-            to: 'quantum',
-        })
+        mockUseDelegatedTransition.mockReturnValue(
+            transition('hardware', 'quantum'),
+        )
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('hardware', 'AUTH') }),
         )

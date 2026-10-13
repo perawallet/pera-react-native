@@ -10,26 +10,31 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-    isRekeyedAccount,
+    isDelegatedAccount,
     useAccountAssetBalanceQuery,
     useAccountBalancesQuery,
-    useAccountInformationQuery,
     useSelectedAccount,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import { useSendFunds } from '@modules/transactions/hooks'
-import { useSendDestinationRouter } from '../useSendDestinationRouter'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import {
-    ALGO_ASSET,
+    useIsNativeAssetId,
+    useNativeAsset,
     isCollectible,
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
+import type { Maybe } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useSendFunds, useSenderBalances } from '@modules/transactions/hooks'
+import { useSendDestinationRouter } from '../useSendDestinationRouter'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -37,20 +42,29 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { isAlgoAssetId, type Maybe } from '@perawallet/wallet-core-shared'
+
+type CloseAccountChoice = 'close' | 'keepOpen'
 
 export const useInputScreen = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset()
+    const isNativeAssetId = useIsNativeAssetId()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
+    const selectedAddress = selectedAccount
+        ? chainAccountOf(selectedAccount, scope.chainId)?.address
+        : undefined
     const {
         selectedAssetId,
         amount,
         pendingAmountBaseUnits,
         destination,
+        shouldContinueToConfirm,
         setAmount,
         setPendingAmountBaseUnits,
         setIsCloseAccount,
+        setShouldContinueToConfirm,
     } = useSendFunds()
     const {
         resolveDestination,
@@ -99,6 +113,7 @@ export const useInputScreen = () => {
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
+        scope,
     )
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -134,98 +149,136 @@ export const useInputScreen = () => {
     // and this is the same resolver the confirmation screen displays from —
     // any amount derived here must reserve the fee the transaction will
     // actually carry, not the base one.
-    const { minFee } = useMinFeeForSender(selectedAccount?.address)
-    const { data: accountInformation } = useAccountInformationQuery(
-        selectedAccount?.address ?? '',
-    )
+    const { minFee } = useMinFeeForSender(selectedAddress, scope.chainId)
+    const { baseAccountMbr } = useMinimumFeeConfig()
+    const accountInformation = useSenderBalances(selectedAccount)
     const { data: accountAssetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         selectedAssetId,
+        scope,
     )
 
     const tokenBalance = useMemo(() => {
-        if (!selectedAccount) {
+        if (!selectedAddress) {
             return null
         }
         const assetToUse = accountBalances
-            ?.get(selectedAccount.address)
+            ?.get(selectedAddress)
             ?.assetBalances?.find(b => b.assetId === selectedAssetId)
         const assetAmount = assetToUse?.amount ?? new Decimal(0)
         return assetAmount
-    }, [accountBalances, selectedAssetId, selectedAccount])
+    }, [accountBalances, selectedAssetId, selectedAddress])
 
     const maxAmount = useMemo(() => {
-        if (isAlgoAssetId(selectedAssetId)) {
+        if (isNativeAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             )
             const minBalance = toWholeUnits(
                 accountInformation?.minBalance ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             )
-            const fee = toWholeUnits(minFee ?? 0n, ALGO_ASSET)
+            const fee = toWholeUnits(minFee ?? 0n, nativeAsset)
             return Decimal.max(balance.sub(minBalance).sub(fee), new Decimal(0))
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, minFee, accountInformation, tokenBalance])
+    }, [
+        isNativeAssetId,
+        selectedAssetId,
+        minFee,
+        accountInformation,
+        tokenBalance,
+        nativeAsset,
+    ])
 
     const totalBalance = useMemo(() => {
-        if (isAlgoAssetId(selectedAssetId)) {
+        if (isNativeAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             )
             return Decimal.max(balance, new Decimal(0))
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, accountInformation, tokenBalance])
+    }, [
+        isNativeAssetId,
+        selectedAssetId,
+        accountInformation,
+        tokenBalance,
+        nativeAsset,
+    ])
+
+    // A close-out leaves nothing behind: everything moves except the fee that
+    // pays for the closing transaction.
+    const closeAmount = useMemo(
+        () =>
+            Decimal.max(
+                totalBalance.sub(toWholeUnits(minFee ?? 0n, nativeAsset)),
+                new Decimal(0),
+            ),
+        [totalBalance, minFee, nativeAsset],
+    )
 
     const minBalanceDisplay = useMemo(() => {
-        if (isAlgoAssetId(selectedAssetId)) {
+        if (isNativeAssetId(selectedAssetId)) {
             return toWholeUnits(
                 accountInformation?.minBalance ?? 0n,
-                ALGO_ASSET,
+                nativeAsset,
             ).toString()
         }
         return '0'
-    }, [selectedAssetId, accountInformation])
+    }, [isNativeAssetId, selectedAssetId, accountInformation, nativeAsset])
 
     // A rekeyed account can never close out or spend below its minimum
     // balance — the rekey would be lost and the account left unusable. So
     // MAX is the spendable amount, and the close-account path is suppressed.
     const isRekeyedSender = selectedAccount
-        ? isRekeyedAccount(selectedAccount)
+        ? isDelegatedAccount(selectedAccount, scope.chainId)
         : false
 
     const setMax = useCallback(() => {
         setValueAndRef((isRekeyedSender ? maxAmount : totalBalance).toString())
     }, [isRekeyedSender, maxAmount, totalBalance, setValueAndRef])
 
-    const hasNoOptedInAssets = useMemo(() => {
+    // An unraised minimum balance is what makes the close possible: the ASA
+    // list alone misses app opt-ins, created assets and boxes, each of which
+    // the node would reject the close-out for.
+    const canCloseAccount = useMemo(() => {
         return (
-            isAlgoAssetId(selectedAssetId) &&
-            (accountInformation?.assets?.length ?? 0) === 0
+            isNativeAssetId(selectedAssetId) &&
+            !accountInformation?.hasOptedInAssets &&
+            (accountInformation?.minBalance ?? 0n) <= baseAccountMbr
         )
-    }, [selectedAssetId, accountInformation?.assets])
+    }, [isNativeAssetId, selectedAssetId, accountInformation, baseAccountMbr])
 
-    const requestCloseAccountConfirm = useCallback(async () => {
-        return requestBottomSheet<boolean>({
+    // Keeping the account open is the primary choice: some exchanges reject
+    // incoming payments that carry a close-remainder-to.
+    const requestCloseAccountChoice = useCallback(async () => {
+        return requestBottomSheet<CloseAccountChoice>({
             contents: (
-                <ConfirmActionContent
+                <ConfirmActionContent<CloseAccountChoice>
                     icon='warning'
                     iconVariant='error'
                     title={t('send_funds.close_account.title')}
-                    message={t('send_funds.close_account.body')}
-                    confirmLabel={t('send_funds.close_account.confirm')}
+                    message={t('send_funds.close_account.body', {
+                        minBalance: minBalanceDisplay,
+                    })}
+                    confirmLabel={t('send_funds.close_account.keep_open')}
+                    confirmValue='keepOpen'
                     cancelLabel={t('common.cancel.label')}
+                    tertiaryLabel={t('send_funds.close_account.confirm')}
+                    tertiaryValue='close'
+                    tertiaryVariant='destructiveLight'
+                    confirmTestID='close_account_keep_open_button'
+                    tertiaryTestID='close_account_confirm_button'
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         })
-    }, [requestBottomSheet, t])
+    }, [requestBottomSheet, t, minBalanceDisplay])
 
     const requestInsufficientBalanceConfirm = useCallback(async () => {
         return requestBottomSheet<boolean>({
@@ -283,26 +336,32 @@ export const useInputScreen = () => {
     }, [requestBottomSheet, t, minBalanceDisplay, styles.confirmMessage])
 
     const confirmCloseAccount = useCallback(() => {
-        const fee = toWholeUnits(minFee ?? 0n, ALGO_ASSET)
-        const closeAmount = Decimal.max(totalBalance.sub(fee), new Decimal(0))
         setIsCloseAccount(true)
         setAmount(closeAmount)
         setValueAndRef(closeAmount.toString())
         proceedToDestination()
     }, [
-        totalBalance,
-        minFee,
+        closeAmount,
         proceedToDestination,
         setAmount,
         setIsCloseAccount,
         setValueAndRef,
     ])
 
+    // Resets the close flag too: coming back from a confirmed close and
+    // picking the min-balance path would otherwise still send a close-out.
     const continuePastMbr = useCallback(() => {
+        setIsCloseAccount(false)
         setAmount(maxAmount)
         setValueAndRef(maxAmount.toString())
         proceedToDestination()
-    }, [maxAmount, proceedToDestination, setAmount, setValueAndRef])
+    }, [
+        maxAmount,
+        proceedToDestination,
+        setAmount,
+        setIsCloseAccount,
+        setValueAndRef,
+    ])
 
     const handleNext = useCallback(async () => {
         const amountValue = value ? new Decimal(value) : null
@@ -310,7 +369,7 @@ export const useInputScreen = () => {
         // sync pings). Zero stays rejected for ASAs, where the destination
         // router could misroute a 0 send into the Express/ARC-59 opt-in
         // flows that cost the sender real ALGO.
-        const isZeroAllowed = isAlgoAssetId(selectedAssetId)
+        const isZeroAllowed = isNativeAssetId(selectedAssetId)
         if (
             !amountValue ||
             amountValue.lt(0) ||
@@ -351,10 +410,12 @@ export const useInputScreen = () => {
                 if (confirmed) {
                     continuePastMbr()
                 }
-            } else if (hasNoOptedInAssets) {
-                const confirmed = await requestCloseAccountConfirm()
-                if (confirmed) {
+            } else if (canCloseAccount) {
+                const choice = await requestCloseAccountChoice()
+                if (choice === 'close') {
                     confirmCloseAccount()
+                } else if (choice === 'keepOpen') {
+                    continuePastMbr()
                 }
             } else {
                 const confirmed = await requestInsufficientBalanceConfirm()
@@ -369,6 +430,7 @@ export const useInputScreen = () => {
         setAmount(amountValue)
         proceedToDestination()
     }, [
+        isNativeAssetId,
         value,
         selectedAssetId,
         maxAmount,
@@ -376,15 +438,39 @@ export const useInputScreen = () => {
         proceedToDestination,
         showToast,
         t,
-        hasNoOptedInAssets,
+        canCloseAccount,
         isRekeyedSender,
         setIsCloseAccount,
         setAmount,
-        requestCloseAccountConfirm,
+        requestCloseAccountChoice,
         requestInsufficientBalanceConfirm,
         requestRekeyedMinBalanceConfirm,
         confirmCloseAccount,
         continuePastMbr,
+    ])
+
+    // Next checks the amount against these balances; pressing it before they
+    // load would reject a valid amount as exceeding a zero balance.
+    const canCheckAmount =
+        !!asset &&
+        !!accountInformation &&
+        minFee !== undefined &&
+        (isNativeAssetId(selectedAssetId) ||
+            (!!selectedAddress && !!accountBalances?.get(selectedAddress)))
+
+    // A resumed send (see `shouldContinueToConfirm`) runs the user's own Next,
+    // so every check a real tap makes still applies on the way to confirm.
+    useEffect(() => {
+        if (!shouldContinueToConfirm || !canCheckAmount || !isDestinationReady)
+            return
+        setShouldContinueToConfirm(false)
+        void handleNext()
+    }, [
+        shouldContinueToConfirm,
+        canCheckAmount,
+        isDestinationReady,
+        setShouldContinueToConfirm,
+        handleNext,
     ])
 
     const isCollectibleAsset = useMemo(
@@ -434,6 +520,33 @@ export const useInputScreen = () => {
         [setValueAndRef],
     )
 
+    // A pasted amount replaces the current one, but only when it reads one way:
+    // digits with at most one '.' or ',' and no more decimals than the asset
+    // has. Anything else (letters, "1,234.56", "1.2.3") is dropped, never guessed.
+    const handlePaste = useCallback(
+        (text: string) => {
+            const match = /^(\d*)(?:[.,](\d*))?$/.exec(text.trim())
+            if (!match || !/\d/.test(text)) return
+            const [, whole, fraction] = match
+            const decimals = assetDecimalsRef.current
+            if (fraction !== undefined && decimals === 0) return
+            if (
+                fraction !== undefined &&
+                decimals != null &&
+                fraction.length > decimals
+            ) {
+                return
+            }
+            const integerPart = (whole || '0').replace(/^0+(?=\d)/, '')
+            setValueAndRef(
+                fraction === undefined
+                    ? integerPart
+                    : `${integerPart}.${fraction}`,
+            )
+        },
+        [setValueAndRef],
+    )
+
     return {
         asset,
         accountAssetBalance,
@@ -443,6 +556,7 @@ export const useInputScreen = () => {
         setMax,
         handleNext,
         handleKey,
+        handlePaste,
         // True while a deeplink-prefilled external receiver's opt-in status is
         // being resolved on-chain after the user confirms the amount — the
         // screen shows a spinner until the router navigates onward.

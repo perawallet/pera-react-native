@@ -11,5 +11,11 @@
  */
 
 export * from './draftStore'
+export * from './resolveBackupDeviceId'
 export * from './store'
+export { useBackupSyncActivityStore } from './syncActivityStore'
 export { useBackupSyncStateStore } from './syncStateStore'
+export { useProvenPasskeysStore } from './provenPasskeysStore'
+export type { ProvenPasskeysStore } from './provenPasskeysStore'
+export { useCloudBackupRestoreProgressStore } from './restoreProgressStore'
+export type { CloudBackupRestoreProgressStore } from './restoreProgressStore'

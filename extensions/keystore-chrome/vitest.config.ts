@@ -16,12 +16,12 @@ import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
-        // Argon2id is deliberately expensive and vault.test.ts asserts the
+        // Argon2id is deliberately expensive and vault.spec.ts asserts the
         // pinned cost, so the budget moves instead: the throttling spec chains
         // 11 derivations, ~32s under full-suite contention.
         testTimeout: 120_000,
         hookTimeout: 30_000,
     },
-    ...poolConfig,
 })

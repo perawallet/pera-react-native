@@ -10,244 +10,116 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
-    resolveSignerFor,
+    getAuthAccount,
+    getDelegatedAccount,
+    resolveAuthAccount,
     resolveSignerForAccount,
-    isRekeyedUnsignable,
-    isMultisigUnsignable,
-    canInitiateRekey,
-} from '../utils'
-import { AccountTypes, type WalletAccount } from '../models'
+} from '../signer-resolution'
+import { DelegationTargetNotFoundError } from '../errors'
+import type { WalletAccount } from '../models'
+import { useAccountChainStateStore } from '../store'
+import { testAccount } from './accountFactory'
+import {
+    FAKE_CHAIN_ID,
+    MAINNET_SCOPE,
+    TESTNET_SCOPE,
+    fakeAccountsChain,
+    registerFakeAccountsChain,
+    seedAuthority,
+} from './fakeAccountsChain'
 
-const algo25 = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        type: AccountTypes.algo25,
-        address,
-        keyPairId: `kp-${address}`,
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    }) as WalletAccount
-
-const watch = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        type: AccountTypes.watch,
-        address,
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    }) as WalletAccount
-
-const hardware = (address: string): WalletAccount =>
-    ({ type: AccountTypes.hardware, address }) as WalletAccount
-
-const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
-    ({
-        type: AccountTypes.quantum,
-        address,
-        keyPairId: `kp-${address}`,
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    }) as WalletAccount
-
-const multisig = (
+const account = (
     address: string,
-    participantAddresses: string[],
-    rekeyAddress?: string,
-): WalletAccount =>
-    ({
-        type: AccountTypes.multisig,
-        address,
-        multisigDetails: {
-            threshold: 2,
-            addresses: participantAddresses,
-            version: 1,
-        },
-        ...(rekeyAddress ? { rekeyAddress } : {}),
-    }) as WalletAccount
+    extra: Partial<WalletAccount> = {},
+): WalletAccount => testAccount('local', address, { id: address, ...extra })
 
-describe('resolveSignerForAccount — tagged resolution', () => {
-    it('kind="ok" for a standard account holding its own key', () => {
-        const account = algo25('A')
-        expect(resolveSignerForAccount(account, [account])).toEqual({
-            kind: 'ok',
-            signer: account,
-        })
-    })
+beforeEach(() => {
+    registerFakeAccountsChain()
+    useAccountChainStateStore.getState().resetState()
+    useNetworkStore.getState().setNetwork('mainnet')
+})
 
-    it('kind="watch" for a non-rekeyed watch account', () => {
-        const account = watch('A')
-        expect(resolveSignerForAccount(account, [account])).toEqual({
+describe('signer resolution', () => {
+    it('routes to the adapter registered for the chain asked about', () => {
+        const a = account('A')
+        const accounts = [a]
+        const { adapter } = fakeAccountsChain()
+        vi.mocked(adapter.resolveSigner).mockReturnValue({
             kind: 'watch',
-            account,
+            account: a,
         })
-    })
 
-    it('kind="authMissing" when the rekey target is not held locally', () => {
-        const account = watch('A', 'GONE')
-        expect(resolveSignerForAccount(account, [account])).toEqual({
-            kind: 'authMissing',
-            account,
-            authAddress: 'GONE',
+        expect(resolveSignerForAccount(a, accounts, FAKE_CHAIN_ID)).toEqual({
+            kind: 'watch',
+            account: a,
         })
-    })
-
-    it('kind="authIsWatch" when the auth account cannot sign directly', () => {
-        const auth = watch('W')
-        const account = watch('A', 'W')
-        expect(resolveSignerForAccount(account, [account, auth])).toEqual({
-            kind: 'authIsWatch',
-            account,
-            auth,
-        })
-    })
-
-    it('kind="ok" with the auth as signer when rekeyed to a signable account', () => {
-        const auth = algo25('S')
-        const account = watch('A', 'S')
-        expect(resolveSignerForAccount(account, [account, auth])).toEqual({
-            kind: 'ok',
-            signer: auth,
-        })
-    })
-
-    it('kind="ok" when rekeyed to a multisig with a local signable participant', () => {
-        const participant = algo25('P1')
-        const auth = multisig('MS', ['P1', 'P2'])
-        const account = watch('A', 'MS')
-        expect(
-            resolveSignerForAccount(account, [account, auth, participant]),
-        ).toEqual({ kind: 'ok', signer: auth })
-    })
-
-    it('kind="authNoLocalParticipant" when rekeyed to an unsignable multisig', () => {
-        const auth = multisig('MS', ['P1', 'P2'])
-        const account = watch('A', 'MS')
-        expect(resolveSignerForAccount(account, [account, auth])).toEqual({
-            kind: 'authNoLocalParticipant',
-            account,
-            auth,
-        })
-    })
-
-    it('kind="ok" for a multisig with a local signable participant', () => {
-        const participant = hardware('P1')
-        const account = multisig('MS', ['P1', 'P2'])
-        expect(
-            resolveSignerForAccount(account, [account, participant]),
-        ).toEqual({ kind: 'ok', signer: account })
-    })
-
-    it('kind="ok" for a quantum account holding its own key', () => {
-        const account = quantum('F')
-        expect(resolveSignerForAccount(account, [account])).toEqual({
-            kind: 'ok',
-            signer: account,
-        })
-    })
-
-    it('kind="ok" with a quantum auth as signer for a rekeyed account', () => {
-        const auth = quantum('FAUTH')
-        const account = watch('A', 'FAUTH')
-        expect(resolveSignerForAccount(account, [account, auth])).toEqual({
-            kind: 'ok',
-            signer: auth,
-        })
-    })
-
-    it('kind="noLocalParticipant" when a multisig\'s only held participant is quantum (Ed25519-only protocol)', () => {
-        const participant = quantum('F1')
-        const account = multisig('M', ['F1', 'P2'])
-        expect(
-            resolveSignerForAccount(account, [account, participant]),
-        ).toEqual({ kind: 'noLocalParticipant', account })
-    })
-
-    it('kind="noLocalParticipant" for a multisig with no local signable participant', () => {
-        const account = multisig('MS', ['P1', 'P2'])
-        expect(resolveSignerForAccount(account, [account])).toEqual({
-            kind: 'noLocalParticipant',
-            account,
-        })
-    })
-})
-
-describe('resolveSignerFor — by address', () => {
-    it('kind="accountNotFound" when the address is not in the wallet', () => {
-        expect(resolveSignerFor('Z', [algo25('A')])).toEqual({
-            kind: 'accountNotFound',
-        })
-    })
-
-    it('delegates to resolveSignerForAccount for a known address', () => {
-        const account = algo25('A')
-        expect(resolveSignerFor('A', [account])).toEqual({
-            kind: 'ok',
-            signer: account,
-        })
-    })
-})
-
-describe('isRekeyedUnsignable', () => {
-    it('false for a non-rekeyed account', () => {
-        const account = algo25('A')
-        expect(isRekeyedUnsignable(account, [account])).toBe(false)
-    })
-
-    it('false when rekeyed to a signable auth account', () => {
-        const auth = algo25('S')
-        const account = watch('A', 'S')
-        expect(isRekeyedUnsignable(account, [account, auth])).toBe(false)
-    })
-
-    it('true when rekeyed to a watch auth account', () => {
-        const auth = watch('W')
-        const account = watch('A', 'W')
-        expect(isRekeyedUnsignable(account, [account, auth])).toBe(true)
-    })
-
-    it('true when the rekey target is missing locally', () => {
-        const account = watch('A', 'GONE')
-        expect(isRekeyedUnsignable(account, [account])).toBe(true)
-    })
-
-    it('true when rekeyed to a multisig with no local signable participant', () => {
-        const auth = multisig('MS', ['P1', 'P2'])
-        const account = watch('A', 'MS')
-        expect(isRekeyedUnsignable(account, [account, auth])).toBe(true)
-    })
-})
-
-describe('isMultisigUnsignable', () => {
-    it('false for a non-multisig account', () => {
-        const account = algo25('A')
-        expect(isMultisigUnsignable(account, [account])).toBe(false)
-    })
-
-    it('false for a multisig with a local signable participant', () => {
-        const participant = algo25('P1')
-        const account = multisig('MS', ['P1', 'P2'])
-        expect(isMultisigUnsignable(account, [account, participant])).toBe(
-            false,
+        expect(adapter.resolveSigner).toHaveBeenCalledWith(
+            a,
+            accounts,
+            MAINNET_SCOPE,
         )
     })
 
-    it('true for a multisig with no local signable participant', () => {
-        const account = multisig('MS', ['P1', 'P2'])
-        expect(isMultisigUnsignable(account, [account])).toBe(true)
-    })
-})
+    it('asks the adapter on the selected network', () => {
+        const a = account('A')
+        const { adapter } = fakeAccountsChain()
+        useNetworkStore.getState().setNetwork('testnet')
 
-describe('canInitiateRekey', () => {
-    it('true for a signable standard account', () => {
-        const account = algo25('A')
-        expect(canInitiateRekey(account, [account])).toBe(true)
+        getAuthAccount(a, [a], FAKE_CHAIN_ID)
+        resolveSignerForAccount(a, [a], FAKE_CHAIN_ID)
+
+        expect(adapter.getAuthAccount).toHaveBeenCalledWith(
+            a,
+            [a],
+            TESTNET_SCOPE,
+        )
+        expect(adapter.resolveSigner).toHaveBeenCalledWith(
+            a,
+            [a],
+            TESTNET_SCOPE,
+        )
     })
 
-    it('false for a watch account', () => {
-        const account = watch('A')
-        expect(canInitiateRekey(account, [account])).toBe(false)
+    it("returns the chain's auth account, and derives the rest from it", () => {
+        const auth = account('S')
+        const a = account('A')
+        seedAuthority('A', 'S')
+        const { adapter } = fakeAccountsChain()
+        vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
+
+        expect(getAuthAccount(a, [a, auth], FAKE_CHAIN_ID)).toBe(auth)
+        expect(resolveAuthAccount(a, [a, auth], FAKE_CHAIN_ID)).toBe(auth)
+        expect(getDelegatedAccount('A', [a, auth], FAKE_CHAIN_ID)).toBe(auth)
     })
 
-    it('true for a watch account rekeyed to a signable auth (auth chain signs the rekey)', () => {
-        const auth = algo25('S')
-        const account = watch('A', 'S')
-        expect(canInitiateRekey(account, [account, auth])).toBe(true)
+    it('throws DelegationTargetNotFoundError when the chain finds no auth account', () => {
+        const a = account('A')
+        seedAuthority('A', 'GONE')
+        vi.mocked(fakeAccountsChain().adapter.getAuthAccount).mockReturnValue(
+            null,
+        )
+
+        expect(() => resolveAuthAccount(a, [a], FAKE_CHAIN_ID)).toThrow(
+            expect.objectContaining({
+                metadata: expect.objectContaining({
+                    params: { authorityAddress: 'GONE' },
+                }),
+            }),
+        )
+        expect(() => resolveAuthAccount(a, [a], FAKE_CHAIN_ID)).toThrow(
+            DelegationTargetNotFoundError,
+        )
+    })
+
+    it('throws for a chain with no registered adapter', () => {
+        const a = account('A')
+
+        expect(() =>
+            resolveSignerForAccount(a, [a], 'nowhere' as typeof FAKE_CHAIN_ID),
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 })

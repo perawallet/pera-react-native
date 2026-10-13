@@ -12,11 +12,18 @@
 
 import { describe, it, expect } from 'vitest'
 import {
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedTransaction,
+} from '../../__tests__/transactions'
+import {
     isTransactionRequest,
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
+    isUnsignedTransaction,
+    isUnsignedTransactionRequest,
 } from '../guards'
-import type { SignRequest } from '../index'
+import type { SignRequest, TransactionSignRequest } from '../index'
 
 const base = { id: 'req-1', transport: 'algod' as const }
 
@@ -32,10 +39,10 @@ const arbitraryDataRequest = {
     data: [],
 } as unknown as SignRequest
 
-const arc60Request = {
+const authDataRequest = {
     ...base,
-    type: 'arc60',
-    stdSigData: {},
+    type: 'auth-data',
+    authData: {},
     metadata: {},
 } as unknown as SignRequest
 
@@ -43,7 +50,7 @@ describe('isTransactionRequest', () => {
     it('returns true only for a transactions request carrying `txs`', () => {
         expect(isTransactionRequest(transactionRequest)).toBe(true)
         expect(isTransactionRequest(arbitraryDataRequest)).toBe(false)
-        expect(isTransactionRequest(arc60Request)).toBe(false)
+        expect(isTransactionRequest(authDataRequest)).toBe(false)
     })
 
     it('returns false when type matches but the `txs` discriminant is absent', () => {
@@ -60,7 +67,7 @@ describe('isArbitraryDataRequest', () => {
     it('returns true only for an arbitrary-data request carrying `data`', () => {
         expect(isArbitraryDataRequest(arbitraryDataRequest)).toBe(true)
         expect(isArbitraryDataRequest(transactionRequest)).toBe(false)
-        expect(isArbitraryDataRequest(arc60Request)).toBe(false)
+        expect(isArbitraryDataRequest(authDataRequest)).toBe(false)
     })
 
     it('returns false when type matches but the `data` discriminant is absent', () => {
@@ -73,16 +80,39 @@ describe('isArbitraryDataRequest', () => {
     })
 })
 
-describe('isArc60Request', () => {
-    it('returns true only for an arc60 request carrying `stdSigData`', () => {
-        expect(isArc60Request(arc60Request)).toBe(true)
-        expect(isArc60Request(transactionRequest)).toBe(false)
-        expect(isArc60Request(arbitraryDataRequest)).toBe(false)
+describe('isAuthDataRequest', () => {
+    it('returns true only for an auth-data request carrying `authData`', () => {
+        expect(isAuthDataRequest(authDataRequest)).toBe(true)
+        expect(isAuthDataRequest(transactionRequest)).toBe(false)
+        expect(isAuthDataRequest(arbitraryDataRequest)).toBe(false)
     })
 
-    it('returns false when type matches but the `stdSigData` discriminant is absent', () => {
-        const malformed = { ...base, type: 'arc60' } as unknown as SignRequest
+    it('returns false when type matches but the `authData` discriminant is absent', () => {
+        const malformed = {
+            ...base,
+            type: 'auth-data',
+        } as unknown as SignRequest
 
-        expect(isArc60Request(malformed)).toBe(false)
+        expect(isAuthDataRequest(malformed)).toBe(false)
+    })
+})
+
+describe('isUnsignedTransactionRequest', () => {
+    const algorandTx = makeTestPaymentTx(makeTestAddress(1), {
+        receiver: makeTestAddress(2),
+    })
+    const neutralTx = makeUnsignedTransaction('0xFROM')
+    const withTxs = (txs: TransactionSignRequest['txs']) =>
+        ({ ...base, type: 'transactions', txs }) as TransactionSignRequest
+
+    it('tells a chain-neutral transaction from an Algorand one', () => {
+        expect(isUnsignedTransaction(neutralTx)).toBe(true)
+        expect(isUnsignedTransaction(algorandTx)).toBe(false)
+    })
+
+    it('holds only for a request carrying chain-neutral transactions', () => {
+        expect(isUnsignedTransactionRequest(withTxs([neutralTx]))).toBe(true)
+        expect(isUnsignedTransactionRequest(withTxs([algorandTx]))).toBe(false)
+        expect(isUnsignedTransactionRequest(withTxs([]))).toBe(false)
     })
 })

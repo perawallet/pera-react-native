@@ -11,10 +11,12 @@
  */
 
 import { useCallback } from 'react'
+import { useCapability } from '@hooks/useCapability'
 import { useModalState } from '@hooks/useModalState'
 import { trackEvent, MenuEvent } from '@analytics'
 
 type UseMenuScreenResult = {
+    canStake: boolean
     isScannerVisible: boolean
     openScanner: () => void
     closeScanner: () => void
@@ -22,6 +24,10 @@ type UseMenuScreenResult = {
 
 export const useMenuScreen = (): UseMenuScreenResult => {
     const scanner = useModalState()
+    const canStake = useCapability({
+        platform: 'staking',
+        anyChain: 'staking',
+    })
     const { open } = scanner
 
     const openScanner = useCallback(() => {
@@ -30,6 +36,7 @@ export const useMenuScreen = (): UseMenuScreenResult => {
     }, [open])
 
     return {
+        canStake,
         isScannerVisible: scanner.isOpen,
         openScanner,
         closeScanner: scanner.close,

@@ -11,8 +11,11 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     type Network,
     logger,
@@ -58,7 +61,10 @@ export const useToggleAssetPriceAlertMutation =
     (): UseToggleAssetPriceAlertMutationResult => {
         const queryClient = useQueryClient()
         const { network } = useNetwork()
-        const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+        const isUnavailableOnNetwork = !useChainCapability(
+            scopeForLegacyNetwork(network).chainId,
+            'priceAlerts',
+        )
 
         const mutation = useMutation<
             ToggleStatusResponse,
@@ -73,13 +79,14 @@ export const useToggleAssetPriceAlertMutation =
             // the DB must already hold the new value or the refetch will clobber
             // the optimistic state.
             onMutate: async variables => {
+                const scope = scopeForLegacyNetwork(variables.network)
                 const queryKey = getAssetDetailsQueryKey(
                     variables.assetID,
-                    variables.network,
+                    scope,
                 )
                 const remoteQueryKey = getRemoteAssetDetailsQueryKey(
                     variables.assetID,
-                    variables.network,
+                    scope,
                 )
                 await queryClient.cancelQueries({ queryKey })
                 await queryClient.cancelQueries({ queryKey: remoteQueryKey })
@@ -94,7 +101,7 @@ export const useToggleAssetPriceAlertMutation =
 
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
-                    network: variables.network,
+                    scope,
                     updates: { isPriceAlertEnabled: variables.enabled },
                 })
 
@@ -131,9 +138,10 @@ export const useToggleAssetPriceAlertMutation =
             },
             onError: async (error, variables, context) => {
                 if (context) {
+                    const scope = scopeForLegacyNetwork(variables.network)
                     await updateAssetPeraMetadata({
                         assetId: variables.assetID,
-                        network: variables.network,
+                        scope,
                         updates: {
                             isPriceAlertEnabled:
                                 context.previousIsPriceAlertEnabled,
@@ -141,10 +149,7 @@ export const useToggleAssetPriceAlertMutation =
                     })
                     if (context.previousData) {
                         queryClient.setQueryData(
-                            getAssetDetailsQueryKey(
-                                variables.assetID,
-                                variables.network,
-                            ),
+                            getAssetDetailsQueryKey(variables.assetID, scope),
                             context.previousData,
                         )
                     }
@@ -152,7 +157,7 @@ export const useToggleAssetPriceAlertMutation =
                         queryClient.setQueryData(
                             getRemoteAssetDetailsQueryKey(
                                 variables.assetID,
-                                variables.network,
+                                scope,
                             ),
                             context.previousRemoteData,
                         )

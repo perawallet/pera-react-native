@@ -18,6 +18,7 @@ import {
     addressSchema,
     getCardApiError,
     isDuplicateError,
+    isUserAlreadyCreatedError,
     OnboardingNotVerifiedError,
     useCardStore,
     useLinkConsentMutation,
@@ -36,13 +37,14 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
 import { useCardErrorToast } from '@modules/card/hooks'
-import { useWebView } from '@modules/webview'
+import { useWebView, withLanguageParam } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useCardScope } from '../../hooks/useCardScope'
 
 /** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */
 const US_ISO = 'US'
@@ -54,8 +56,13 @@ export type UseCardOnboardingAddressScreenResult = {
     isValid: boolean
     isSubmitting: boolean
     selectedCountry: Optional<SupportedCountry>
+    /** Display-only once the residence from the email step is known. */
+    isCountryLocked: boolean
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
+    /** US residents only: unticked means a separate mailing address follows. */
+    isSameMailingAddress: boolean
+    handleToggleSameMailingAddress: () => void
     cardTermsAccepted: boolean
     platformTermsAccepted: boolean
     /**
@@ -86,7 +93,8 @@ export type UseCardOnboardingAddressScreenResult = {
 
 export const useCardOnboardingAddressScreen =
     (): UseCardOnboardingAddressScreenResult => {
-        const { t } = useLanguage()
+        const scope = useCardScope()
+        const { t, currentLanguage } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast, infoToast } = useToast()
         const showError = useCardErrorToast({
@@ -106,9 +114,12 @@ export const useCardOnboardingAddressScreen =
         const onboardingId = useCardStore(state => state.onboardingId)
         // Baanx refuses this step on an unverified record just like the
         // personal-details step, so it shares the same gate.
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate({
-            onboardingId,
-        })
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate(
+            scope,
+            {
+                onboardingId,
+            },
+        )
 
         const handleVerifyIdentity = useCallback(() => {
             navigation.navigate('CardOnboardingVerification')
@@ -131,16 +142,17 @@ export const useCardOnboardingAddressScreen =
                 useCardStore.getState()
             return marketing === null || sms === null
         })
-        const submitAddress = useSubmitAddressMutation()
-        const submitConsent = useSubmitConsentMutation()
-        const linkConsent = useLinkConsentMutation()
-        const { data: settings } = useRegistrationSettingsQuery()
+        const submitAddress = useSubmitAddressMutation(scope)
+        const submitConsent = useSubmitConsentMutation(scope)
+        const linkConsent = useLinkConsentMutation(scope)
+        const { data: settings } = useRegistrationSettingsQuery(scope)
 
         const [selectedCountry, setSelectedCountry] =
             useState<Optional<SupportedCountry>>(undefined)
         const [selectedUsState, setSelectedUsState] =
             useState<Optional<SupportedUsState>>(undefined)
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
+        const [isSameMailingAddress, setIsSameMailingAddress] = useState(true)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
         const hasPreselected = useRef(false)
@@ -171,9 +183,13 @@ export const useCardOnboardingAddressScreen =
         // GET /v1/auth/settings); Pera's terms page is the fallback. Fully
         // optional-chained so a settings shape without the links block can't
         // crash the render.
+        const platformTermsUrl = withLanguageParam(
+            config.termsOfServiceUrl,
+            currentLanguage,
+        )
         const cardTermsUrl =
             settings?.termsAndConditionsUrls?.[isUsResident ? 'us' : 'intl'] ??
-            config.termsOfServiceUrl
+            platformTermsUrl
 
         // Prefill the residence country chosen earlier in the flow, once settings
         // load. One-shot; matches it against the supported list for the flag/name.
@@ -198,9 +214,10 @@ export const useCardOnboardingAddressScreen =
             if (isUsResident) void trigger('usState')
         }, [isUsResident, trigger])
 
-        // TODO(card): confirm whether residence is editable here — Baanx already
-        // received the country at email/verify, and this pick (even a
-        // canSignUp:false country) only updates local state.
+        // Baanx fixed the residence at the email step and the address call
+        // carries no country, so the picker is only offered when nothing was
+        // stored (a resumed session that skipped that step).
+        const isCountryLocked = !!residenceCountryIso
         const handleSelectCountry = useCallback(() => {
             const openPicker = async () => {
                 const country = await request<SupportedCountry>({
@@ -248,6 +265,10 @@ export const useCardOnboardingAddressScreen =
             () => setPlatformTermsAccepted(previous => !previous),
             [],
         )
+        const handleToggleSameMailingAddress = useCallback(
+            () => setIsSameMailingAddress(previous => !previous),
+            [],
+        )
 
         const handleToggleMarketing = useCallback(
             () => setAllowMarketing(!(allowMarketing ?? false)),
@@ -260,6 +281,7 @@ export const useCardOnboardingAddressScreen =
 
         const handleOpenCardTerms = useCallback(() => {
             if (!routeCapabilities.inAppWebView) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config
                 void Linking.openURL(cardTermsUrl)
                 return
             }
@@ -268,11 +290,12 @@ export const useCardOnboardingAddressScreen =
         const handleOpenPlatformTerms = useCallback(() => {
             // Checkbox 2 is Pera's own Terms & Conditions.
             if (!routeCapabilities.inAppWebView) {
-                void Linking.openURL(config.termsOfServiceUrl)
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config plus a lang param
+                void Linking.openURL(platformTermsUrl)
                 return
             }
-            pushWebView({ url: config.termsOfServiceUrl, id: 'platform-terms' })
-        }, [pushWebView])
+            pushWebView({ url: platformTermsUrl, id: 'platform-terms' })
+        }, [pushWebView, platformTermsUrl])
 
         const submitAddressForm = handleSubmit(async values => {
             // Re-collected SMS consent gates Continue; guard here too so no
@@ -294,8 +317,11 @@ export const useCardOnboardingAddressScreen =
                 addressLine1: values.addressLine1,
                 city: values.city,
                 zip: values.zip,
-                // No separate mailing address is collected; residence is used.
-                isSameMailingAddress: true,
+                // Only US residents may ship the card elsewhere, so the toggle
+                // is offered to them alone.
+                isSameMailingAddress: isUsResident
+                    ? isSameMailingAddress
+                    : true,
                 ...(values.addressLine2
                     ? { addressLine2: values.addressLine2 }
                     : {}),
@@ -319,7 +345,8 @@ export const useCardOnboardingAddressScreen =
                     allowMarketing: allowMarketing ?? false,
                     allowSms: allowSms ?? false,
                 })
-                const { userId } = await submitAddress.mutateAsync(address)
+                const { userId, accessToken } =
+                    await submitAddress.mutateAsync(address)
                 // Link best-effort: registration is already finalized (the
                 // address mutation committed the session + marked the step
                 // Completed), so a link hiccup must not strand a registered user
@@ -335,9 +362,14 @@ export const useCardOnboardingAddressScreen =
                         })
                         .catch(() => undefined)
                 }
-                // Registration is done — hand back to the setup checklist, where
-                // Connect Funds is now the live step.
-                navigation.navigate('CardOnboardingStatus')
+                // No token means the mailing address is still owed and Baanx
+                // issues the token on that step. Otherwise registration is done
+                // and the setup checklist takes over at Connect Funds.
+                navigation.navigate(
+                    accessToken === null
+                        ? 'CardOnboardingMailingAddress'
+                        : 'CardOnboardingStatus',
+                )
             } catch (error) {
                 // Checked before getCardApiError: the typed error carries no
                 // body, so it would otherwise fall through to the generic
@@ -355,7 +387,10 @@ export const useCardOnboardingAddressScreen =
                 // user with locked steps and 401s. Otherwise prefer Baanx's
                 // own message so the real reason shows.
                 const apiError = await getCardApiError(error)
-                if (isDuplicateError(apiError)) {
+                if (
+                    isDuplicateError(apiError) ||
+                    isUserAlreadyCreatedError(apiError)
+                ) {
                     infoToast(
                         t('peraCard.address.already_registered_title'),
                         t('peraCard.address.already_registered_body'),
@@ -387,8 +422,11 @@ export const useCardOnboardingAddressScreen =
                 submitConsent.isPending ||
                 linkConsent.isPending,
             selectedCountry,
+            isCountryLocked,
             isUsResident,
             selectedUsState,
+            isSameMailingAddress,
+            handleToggleSameMailingAddress,
             cardTermsAccepted,
             platformTermsAccepted,
             showsConsentOptIns,

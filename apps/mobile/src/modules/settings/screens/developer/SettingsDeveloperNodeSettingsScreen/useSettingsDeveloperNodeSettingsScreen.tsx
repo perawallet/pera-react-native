@@ -12,67 +12,149 @@
 
 import { useCallback, useMemo } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useSwitchNetwork } from '@perawallet/wallet-core-device'
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import {
+    CUSTOM_NETWORK_ID,
+    LEGACY_CHAIN_ID,
+    type ChainId,
+    type NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    selectChainNetworkId,
+    useAnyEnabledChainHasCapability,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CustomNetworkSheet } from './CustomNetworkSheet'
+import { isCustomNetworkOffered } from './isCustomNetworkOffered'
 
-export type NetworkRow = {
-    network: Network
-    labelKey: string
+export type NodeSettingsNetworkRow = {
+    networkId: NetworkId
+    label: string
+    isDefault: boolean
     isSelected: boolean
 }
 
-// Static keys: pnpm lint:i18n cannot verify an interpolated key.
-const LABEL_KEYS: Record<Network, string> = {
-    [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
-    [Networks.testnet]: 'settings.developer.node_settings.testnet_label',
-    [Networks.betanet]: 'settings.developer.node_settings.betanet_label',
-    [Networks.custom]: 'settings.developer.node_settings.custom_label',
+export type NodeSettingsChainSection = {
+    chainId: ChainId
+    chainName: string
+    networks: NodeSettingsNetworkRow[]
 }
 
-// Explicit display order: MainNet first. Object.values(Networks) follows the
-// declaration order in packages/config, which is testnet-first, and a screen's
-// row order should not be hostage to an unrelated object literal's ordering.
-const NETWORK_DISPLAY_ORDER: Network[] = [
-    Networks.mainnet,
-    Networks.testnet,
-    Networks.betanet,
-    Networks.custom,
-]
-
 type UseSettingsDeveloperNodeSettingsScreenResult = {
-    networks: NetworkRow[]
-    selectNetwork: (network: Network) => Promise<void>
-    /** Non-MainNet networks are not fully supported — see the screen's callout. */
-    isNonMainnetWarningVisible: boolean
+    isDeveloperMode: boolean
+    setDeveloperMode: (isEnabled: boolean) => void
+    /** Empty in live mode, where every chain is on its main network. */
+    chainSections: NodeSettingsChainSection[]
+    selectNetwork: (chainId: ChainId, networkId: NetworkId) => Promise<void>
+}
+
+const restartSync = () => {
+    try {
+        // Invalidation is owned by the shell's network effect;
+        // calling it here too would double-refetch every query.
+        getSyncService().restart()
+    } catch {
+        // SyncService not yet initialized
+    }
 }
 
 export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
-        const { network: activeNetwork } = useNetwork()
-        const { switchNetwork } = useSwitchNetwork()
+        const { t } = useLanguage()
         const { request } = useBottomSheet()
+        const mode = useNetworkStore(state => state.mode)
+        const selectedNetworkByChain = useNetworkStore(
+            state => state.selectedNetworkByChain,
+        )
+        const customNetworksByChain = useNetworkStore(
+            state => state.customNetworksByChain,
+        )
+        const setMode = useNetworkStore(state => state.setMode)
+        const selectNetworkInStore = useNetworkStore(
+            state => state.selectNetwork,
+        )
+        const hasCustomNetworks =
+            useAnyEnabledChainHasCapability('customNetworks')
+        const isDeveloperMode = mode === 'developer'
 
-        const networks = useMemo(
-            () =>
-                NETWORK_DISPLAY_ORDER.map<NetworkRow>(network => ({
-                    network,
-                    labelKey: LABEL_KEYS[network],
-                    isSelected: network === activeNetwork,
-                })),
-            [activeNetwork],
+        const chainSections = useMemo<NodeSettingsChainSection[]>(() => {
+            if (!isDeveloperMode) {
+                return []
+            }
+            const { chains } = getProvider()
+            const selection = {
+                mode,
+                selectedNetworkByChain,
+                customNetworksByChain,
+            }
+            return chains.list().map(descriptor => {
+                const selectedId = selectChainNetworkId(
+                    selection,
+                    descriptor.id,
+                )
+                const networks = descriptor.networks
+                    .filter(
+                        network =>
+                            network.tier === 'testnet' &&
+                            network.status === 'active',
+                    )
+                    .map<NodeSettingsNetworkRow>(network => ({
+                        networkId: network.id,
+                        label: network.isDefaultForTier
+                            ? t(
+                                  'settings.developer.node_settings.default_network_label',
+                                  { network: network.displayName },
+                              )
+                            : network.displayName,
+                        isDefault: network.isDefaultForTier,
+                        isSelected: network.id === selectedId,
+                    }))
+                // ponytail: the sheet configures the legacy chain's single custom slot; give it a chainId when a second chain adds custom networks.
+                if (
+                    descriptor.id === LEGACY_CHAIN_ID &&
+                    hasCustomNetworks &&
+                    chains.capabilities(descriptor.id).customNetworks &&
+                    isCustomNetworkOffered()
+                ) {
+                    networks.push({
+                        networkId: CUSTOM_NETWORK_ID,
+                        label: t(
+                            'settings.developer.node_settings.custom_label',
+                        ),
+                        isDefault: false,
+                        isSelected: selectedId === CUSTOM_NETWORK_ID,
+                    })
+                }
+                return {
+                    chainId: descriptor.id,
+                    chainName: descriptor.displayName,
+                    networks,
+                }
+            })
+        }, [
+            isDeveloperMode,
+            mode,
+            selectedNetworkByChain,
+            customNetworksByChain,
+            hasCustomNetworks,
+            t,
+        ])
+
+        const setDeveloperMode = useCallback(
+            (isEnabled: boolean) => {
+                setMode(isEnabled ? 'developer' : 'live')
+                restartSync()
+            },
+            [setMode],
         )
 
         const selectNetwork = useCallback(
-            async (network: Network) => {
-                // Custom has no baked endpoints to switch to — tapping it
-                // opens the config sheet instead, which is the only path
-                // that can ever commit `custom` as the active network (see
-                // useCustomNetworkSheet's handleSave). This never switches.
-                // The sheet owns its own commit, so the result is ignored.
-                if (network === Networks.custom) {
+            async (chainId: ChainId, networkId: NetworkId) => {
+                // Custom has no baked endpoints: the sheet is the only path
+                // that commits it (see useCustomNetworkSheet's handleSave).
+                if (networkId === CUSTOM_NETWORK_ID) {
                     await request({
                         contents: <CustomNetworkSheet />,
                         options: { size: 'modal', autoCreateContainer: false },
@@ -80,23 +162,16 @@ export const useSettingsDeveloperNodeSettingsScreen =
                     return
                 }
 
-                // Offline-safe local write; device registration is deferred
-                // (see useSwitchNetwork). Nothing to toast about.
-                await switchNetwork(network)
-                try {
-                    // Invalidation is owned by RootComponent's network effect —
-                    // calling it here too would double-refetch every mounted query.
-                    getSyncService().restart()
-                } catch {
-                    // SyncService not yet initialized
-                }
+                selectNetworkInStore(chainId, networkId)
+                restartSync()
             },
-            [switchNetwork, request],
+            [request, selectNetworkInStore],
         )
 
         return {
-            networks,
+            isDeveloperMode,
+            setDeveloperMode,
+            chainSections,
             selectNetwork,
-            isNonMainnetWarningVisible: activeNetwork !== Networks.mainnet,
         }
     }

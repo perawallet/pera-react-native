@@ -62,11 +62,14 @@ vi.mock('../migrateSwaps', () => ({
 }))
 
 vi.mock('../migrateWalletConnect', () => ({
-    migrateWalletConnect: vi.fn(() => ({ imported: 0, skipped: 0 })),
+    migrateWalletConnect: vi.fn(async () => ({ imported: 0, skipped: 0 })),
 }))
 
 import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
-import { runExtrasMigration } from '../runExtrasMigration'
+import {
+    runExtrasMigration,
+    type ExtrasMigrationOptions,
+} from '../runExtrasMigration'
 import { migrateAuth } from '../migrateAuth'
 import { migrateContacts } from '../migrateContacts'
 import { migrateDeviceIdentifiers } from '../migrateDevice'
@@ -86,7 +89,7 @@ const buildData = (
         preferences: { rawFlags: {} } as never,
         auth: { pin: null } as never,
         accounts: [],
-        hdWallets: [],
+        hdSeeds: [],
         contacts: [],
         notificationFilters: ['MUTED_ADDR'],
         walletConnectV1: [],
@@ -98,6 +101,8 @@ const buildData = (
         dismissedBanners: { bannerIds: [] },
         ...overrides,
     }) as LegacyMigrationData
+
+const OPTIONS: ExtrasMigrationOptions = { chainId: 'algorand' }
 
 beforeEach(() => {
     vi.mocked(migrateAuth).mockClear()
@@ -122,14 +127,17 @@ beforeEach(() => {
     vi.mocked(migrateStashed).mockReturnValue({
         walletConnectHistoryBlobStashed: true,
     })
-    vi.mocked(migrateWalletConnect).mockReturnValue({ imported: 0, skipped: 0 })
+    vi.mocked(migrateWalletConnect).mockResolvedValue({
+        imported: 0,
+        skipped: 0,
+    })
 })
 
 describe('runExtrasMigration > happy path', () => {
     it('returns an aggregated all-success result when every step succeeds', async () => {
         const data = buildData()
 
-        const result = await runExtrasMigration(data)
+        const result = await runExtrasMigration(data, OPTIONS)
 
         expect(result).toEqual({
             preferences: true,
@@ -151,7 +159,7 @@ describe('runExtrasMigration > happy path', () => {
 
     it('passes preferences into both migratePreferences and migrateSwaps', async () => {
         const preferences = { rawFlags: {}, marker: 'p' } as never
-        await runExtrasMigration(buildData({ preferences }))
+        await runExtrasMigration(buildData({ preferences }), OPTIONS)
 
         expect(migratePreferences).toHaveBeenCalledWith(preferences)
         expect(migrateSwaps).toHaveBeenCalledWith(preferences)
@@ -159,7 +167,7 @@ describe('runExtrasMigration > happy path', () => {
 
     it('passes the legacy payload arrays/objects to their step handlers', async () => {
         const data = buildData()
-        await runExtrasMigration(data)
+        await runExtrasMigration(data, OPTIONS)
 
         expect(migrateDeviceIdentifiers).toHaveBeenCalledWith(
             data.deviceIdentifiers,
@@ -169,10 +177,22 @@ describe('runExtrasMigration > happy path', () => {
             data.notificationFilters,
         )
         expect(migrateAuth).toHaveBeenCalledWith(data.auth, data.preferences)
-        expect(migratePasskeys).toHaveBeenCalledWith(data.passkeys)
+        expect(migratePasskeys).toHaveBeenCalledWith(data.passkeys, 'algorand')
         expect(migrateStashed).toHaveBeenCalledWith({
             walletConnectHistoryBlob: data.walletConnectHistoryBlob,
         })
+    })
+
+    it("migrates the chain-scoped steps onto the caller's chain", async () => {
+        const data = buildData()
+        await runExtrasMigration(data, { chainId: 'ethereum' })
+
+        expect(migratePasskeys).toHaveBeenCalledWith(data.passkeys, 'ethereum')
+        expect(migrateWalletConnect).toHaveBeenCalledWith(
+            data.walletConnectV1,
+            'ethereum',
+            { sessionKeys: undefined },
+        )
     })
 })
 
@@ -182,7 +202,7 @@ describe('runExtrasMigration > step failures', () => {
             throw new Error('prefs broke')
         })
 
-        const result = await runExtrasMigration(buildData())
+        const result = await runExtrasMigration(buildData(), OPTIONS)
 
         expect(result.preferences).toBe(false)
         expect(result.failed).toEqual([
@@ -196,7 +216,7 @@ describe('runExtrasMigration > step failures', () => {
     it('captures an async auth step failure', async () => {
         vi.mocked(migrateAuth).mockRejectedValueOnce(new Error('auth broke'))
 
-        const result = await runExtrasMigration(buildData())
+        const result = await runExtrasMigration(buildData(), OPTIONS)
 
         expect(result.failed).toEqual([{ step: 'auth', reason: 'auth broke' }])
         expect(result.auth.pinMigrated).toBe(false)
@@ -208,7 +228,7 @@ describe('runExtrasMigration > step failures', () => {
             throw 'string failure'
         })
 
-        const result = await runExtrasMigration(buildData())
+        const result = await runExtrasMigration(buildData(), OPTIONS)
 
         expect(result.failed).toEqual([
             { step: 'swaps', reason: 'string failure' },
@@ -220,7 +240,7 @@ describe('runExtrasMigration > step failures', () => {
             throw new Error('contacts broke')
         })
 
-        await runExtrasMigration(buildData())
+        await runExtrasMigration(buildData(), OPTIONS)
 
         expect(loggerMock.error).toHaveBeenCalledWith(
             'Legacy contacts migration failed',
@@ -236,7 +256,7 @@ describe('runExtrasMigration > step failures', () => {
             throw new Error('c')
         })
 
-        const result = await runExtrasMigration(buildData())
+        const result = await runExtrasMigration(buildData(), OPTIONS)
 
         expect(result.failed.map(f => f.step)).toEqual([
             'preferences',
@@ -247,7 +267,7 @@ describe('runExtrasMigration > step failures', () => {
 
 describe('runExtrasMigration > walletConnect step', () => {
     it('runs the walletConnect step and propagates counts', async () => {
-        vi.mocked(migrateWalletConnect).mockReturnValue({
+        vi.mocked(migrateWalletConnect).mockResolvedValue({
             imported: 2,
             skipped: 1,
         })
@@ -281,11 +301,37 @@ describe('runExtrasMigration > walletConnect step', () => {
             },
         ]
         const data = buildData({ walletConnectV1: sessions })
-        const result = await runExtrasMigration(data)
+        const result = await runExtrasMigration(data, OPTIONS)
 
-        expect(vi.mocked(migrateWalletConnect)).toHaveBeenCalledWith(sessions)
+        expect(vi.mocked(migrateWalletConnect)).toHaveBeenCalledWith(
+            sessions,
+            'algorand',
+            { sessionKeys: undefined },
+        )
         expect(result.walletConnect).toEqual({ imported: 2, skipped: 1 })
         expect(result.failed).toEqual([])
+    })
+
+    it('forwards the injected session-key store to the walletConnect step', async () => {
+        const walletConnectSessionKeys = {
+            commit: vi.fn(),
+            has: vi.fn(),
+            read: vi.fn(),
+            remove: vi.fn(),
+        }
+        const data = buildData()
+
+        await runExtrasMigration(data, {
+            ...OPTIONS,
+            steps: ['walletConnect'],
+            walletConnectSessionKeys,
+        })
+
+        expect(vi.mocked(migrateWalletConnect)).toHaveBeenCalledWith(
+            data.walletConnectV1,
+            'algorand',
+            { sessionKeys: walletConnectSessionKeys },
+        )
     })
 
     it('records a walletConnect failure without breaking other steps', async () => {
@@ -293,7 +339,7 @@ describe('runExtrasMigration > walletConnect step', () => {
             throw new Error('boom')
         })
 
-        const result = await runExtrasMigration(buildData())
+        const result = await runExtrasMigration(buildData(), OPTIONS)
 
         expect(result.walletConnect).toEqual({ imported: 0, skipped: 0 })
         expect(result.failed.map(f => f.step)).toContain('walletConnect')
@@ -308,7 +354,7 @@ describe('runExtrasMigration > passkeys step', () => {
             skipped: 1,
         })
 
-        const result = await runExtrasMigration(buildData())
+        const result = await runExtrasMigration(buildData(), OPTIONS)
 
         expect(result.passkeys).toEqual({ imported: 3, skipped: 1 })
         expect(result.failed).toEqual([])
@@ -317,7 +363,7 @@ describe('runExtrasMigration > passkeys step', () => {
     it('records a passkeys failure without breaking later steps', async () => {
         vi.mocked(migratePasskeys).mockRejectedValueOnce(new Error('boom'))
 
-        const result = await runExtrasMigration(buildData())
+        const result = await runExtrasMigration(buildData(), OPTIONS)
 
         expect(result.passkeys).toEqual({ imported: 0, skipped: 0 })
         expect(result.failed.map(f => f.step)).toContain('passkeys')
@@ -328,7 +374,10 @@ describe('runExtrasMigration > passkeys step', () => {
 describe('runExtrasMigration > step filtering', () => {
     it('runs only the requested steps when a filter is provided', async () => {
         const data = buildData()
-        const result = await runExtrasMigration(data, ['deviceIdentifiers'])
+        const result = await runExtrasMigration(data, {
+            ...OPTIONS,
+            steps: ['deviceIdentifiers'],
+        })
 
         expect(migrateDeviceIdentifiers).toHaveBeenCalledOnce()
         expect(migratePreferences).not.toHaveBeenCalled()
@@ -339,7 +388,7 @@ describe('runExtrasMigration > step filtering', () => {
 
     it('runs every step when no filter is provided (back-compat)', async () => {
         const data = buildData()
-        await runExtrasMigration(data)
+        await runExtrasMigration(data, OPTIONS)
         expect(migratePreferences).toHaveBeenCalledOnce()
         expect(migrateDeviceIdentifiers).toHaveBeenCalledOnce()
     })

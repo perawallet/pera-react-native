@@ -12,7 +12,10 @@
 
 import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { ConfirmActionLayout } from './ConfirmActionLayout'
+import {
+    ConfirmActionLayout,
+    type ConfirmActionPending,
+} from './ConfirmActionLayout'
 
 import type { ReactNode } from 'react'
 
@@ -36,9 +39,13 @@ export type ConfirmActionContentProps<TResult = boolean> = {
     cancelVariant?: PWButtonProps['variant']
     tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
+    isConfirmDisabled?: boolean
+    pendingAction?: ConfirmActionPending
+    children?: ReactNode
     testID?: string
     confirmTestID?: string
     cancelTestID?: string
+    tertiaryTestID?: string
 }
 
 export const ConfirmActionContent = <TResult = boolean,>({
@@ -60,9 +67,13 @@ export const ConfirmActionContent = <TResult = boolean,>({
     cancelVariant = 'secondary',
     tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
+    isConfirmDisabled,
+    pendingAction,
+    children,
     testID,
     confirmTestID,
     cancelTestID,
+    tertiaryTestID,
 }: ConfirmActionContentProps<TResult>) => {
     const { resolve, dismiss } = useBottomSheetResult<TResult>()
 
@@ -87,9 +98,14 @@ export const ConfirmActionContent = <TResult = boolean,>({
             cancelVariant={cancelVariant}
             tertiaryVariant={tertiaryVariant}
             buttonPaddingStyle={buttonPaddingStyle}
+            isConfirmDisabled={isConfirmDisabled}
+            pendingAction={pendingAction}
             testID={testID}
             confirmTestID={confirmTestID}
             cancelTestID={cancelTestID}
-        />
+            tertiaryTestID={tertiaryTestID}
+        >
+            {children}
+        </ConfirmActionLayout>
     )
 }

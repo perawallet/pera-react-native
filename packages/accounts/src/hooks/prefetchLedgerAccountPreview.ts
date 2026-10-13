@@ -11,14 +11,13 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
-import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import type { Network } from '@perawallet/wallet-core-shared'
-import { fetchRekeyedAddresses } from '../account-discovery'
-import { fetchOnChainAccountInformation } from './endpoints'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { fetchDelegatedAddresses } from '../chain-adapter'
 import {
-    getOnChainAccountInformationQueryKey,
-    getRekeyedAddressesQueryKey,
+    getOnChainAccountStateQueryKey,
+    getDelegatedAddressesQueryKey,
 } from './querykeys'
+import { fetchOnChainAccountState } from './useOnChainAccountStateQuery'
 
 /**
  * Best-effort warm-up of the two address-bound network queries the Ledger
@@ -27,20 +26,19 @@ import {
  */
 export const prefetchLedgerAccountPreview = async (
     queryClient: QueryClient,
-    algokit: AlgorandClient,
     address: string,
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> => {
     if (!address) return
 
     await Promise.allSettled([
         queryClient.prefetchQuery({
-            queryKey: getOnChainAccountInformationQueryKey(address, network),
-            queryFn: () => fetchOnChainAccountInformation(algokit, address),
+            queryKey: getOnChainAccountStateQueryKey(address, scope),
+            queryFn: () => fetchOnChainAccountState(address, scope),
         }),
         queryClient.prefetchQuery({
-            queryKey: getRekeyedAddressesQueryKey(address, network),
-            queryFn: () => fetchRekeyedAddresses(address, network),
+            queryKey: getDelegatedAddressesQueryKey(address, scope),
+            queryFn: () => fetchDelegatedAddresses(address, scope),
         }),
     ])
 }

@@ -12,8 +12,9 @@
 
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useSeedSwapRouteAssets } from '../useSeedSwapRouteAssets'
+
+const NATIVE_ASSET_ID = '0'
 
 const OUT_ID = '31566704'
 const IN_ID = '887406851'
@@ -25,14 +26,19 @@ const mockUseSingleAssetDetailsQuery = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getAssetsQueryKey: (assetIDs: string[], network: string) => [
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
+    getAssetsQueryKey: (assetIDs: string[], scope: { networkId: string }) => [
         'assets',
-        { assetIDs, network },
+        { assetIDs, network: scope.networkId },
     ],
     useSingleAssetDetailsQuery: mockUseSingleAssetDetailsQuery,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
@@ -80,10 +86,15 @@ describe('useSeedSwapRouteAssets', () => {
     })
 
     it('does not fetch or seed when the output asset is ALGO', () => {
-        renderHook(() => useSeedSwapRouteAssets({ assetOutId: ALGO_ASSET_ID }))
+        renderHook(() =>
+            useSeedSwapRouteAssets({ assetOutId: NATIVE_ASSET_ID }),
+        )
 
         // An ALGO route id is passed through as '' — the disabled sentinel.
-        expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith('')
+        expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith('', {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockSetQueryData).not.toHaveBeenCalled()
     })
 

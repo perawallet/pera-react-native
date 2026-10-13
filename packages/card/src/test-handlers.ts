@@ -73,32 +73,24 @@ export {
 export type { MockListCardTransactionsParams } from './api/transactions/msw-handlers'
 
 export {
-    mockGetInternalWallets,
-    mockWithdrawFromWallet,
-} from './api/wallet/msw-handlers'
-export type { MockGetInternalWalletsParams } from './api/wallet/msw-handlers'
+    mockGetWalletBalance,
+    mockGetWalletHistory,
+    mockWithdrawWalletBalance,
+} from './api/wallet-balance/msw-handlers'
+export type {
+    MockGetWalletBalanceParams,
+    MockGetWalletHistoryParams,
+    MockWithdrawWalletBalanceParams,
+} from './api/wallet-balance/msw-handlers'
 
 export {
     mockGetDelegationToken,
-    mockGetDelegationProgram,
-    mockPostAlgorandDelegationApproval,
     mockGetExternalWallets,
 } from './api/delegation/msw-handlers'
 export type {
     MockGetDelegationTokenParams,
-    MockGetDelegationProgramParams,
-    MockPostAlgorandDelegationApprovalParams,
     MockGetExternalWalletsParams,
 } from './api/delegation/msw-handlers'
-
-export {
-    mockApproveEscrowCard,
-    mockPostDelegatorLsig,
-} from './api/escrow/msw-handlers'
-export type {
-    MockApproveEscrowCardParams,
-    MockPostDelegatorLsigParams,
-} from './api/escrow/msw-handlers'
 
 export { mockCreateCard } from './api/card-creation/msw-handlers'
 export type { MockCreateCardParams } from './api/card-creation/msw-handlers'
@@ -110,13 +102,12 @@ export {
     mockVerifyPhone,
     mockSubmitPersonalDetails,
     mockSubmitAddress,
+    mockSubmitMailingAddress,
     mockSubmitOnboardingConsent,
     mockLinkOnboardingConsent,
-    mockConnectFundingSource,
     mockGetRegistrationSettings,
 } from './api/onboarding/msw-handlers'
 export type {
-    MockConnectFundingSourceParams,
     MockGetRegistrationSettingsParams,
     MockSubmitOnboardingConsentParams,
     MockLinkOnboardingConsentParams,

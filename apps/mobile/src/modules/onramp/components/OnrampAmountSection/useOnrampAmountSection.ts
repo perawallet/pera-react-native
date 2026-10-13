@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     DEFAULT_MAX_FRACTION_DIGITS,
     getMaxFractionDigits,
@@ -99,10 +99,11 @@ export const useOnrampAmountSection = ({
     isLoading = false,
     onAmountChange,
 }: UseOnrampAmountSectionParams): UseOnrampAmountSectionResult => {
+    const nativeAsset = useNativeAsset()
     const isPay = variant === 'pay'
 
     const { preferredCurrency } = useCurrency()
-    const shouldUseUsdFallback = preferredCurrency === ALGO_ASSET.unitName
+    const shouldUseUsdFallback = preferredCurrency === nativeAsset.unitName
 
     // Pay holds a raw string; receive holds a Decimal. Split them out once so
     // the input value and the formatted receive value are each well-typed.

@@ -13,16 +13,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const PIN_KEY = 'pera.pinCode'
-const BIO_KEY = 'pera.biometricPinCode'
+const BIO_KEY = 'pera.biometricUnlockToken'
 
-const { commitSecretMock, withSecretMock } = vi.hoisted(() => ({
+const { commitSecretMock, withSecretMock, biometricsMock } = vi.hoisted(() => ({
     commitSecretMock: vi.fn(),
     withSecretMock: vi.fn(),
+    biometricsMock: { armBiometricBinding: vi.fn() },
 }))
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     PIN_RECORD_KEY_ID: 'pera.pinCode',
-    BIOMETRIC_BLOB_KEY_ID: 'pera.biometricPinCode',
+    BIOMETRIC_BLOB_KEY_ID: 'pera.biometricUnlockToken',
+    BIOMETRIC_TOKEN_HASH_METADATA_KEY: 'biometricTokenHash',
     createPinRecord: vi.fn(async (pin: string) => ({
         version: 1,
         salt: 'salt-' + pin,
@@ -33,11 +35,20 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     serializePinRecord: vi.fn(
         (r: unknown) => `serialized:${JSON.stringify(r)}`,
     ),
+    encodeBiometricBlob: vi.fn((blob: string) =>
+        new TextEncoder().encode(blob),
+    ),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret: commitSecretMock,
     withSecret: withSecretMock,
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        biometrics: biometricsMock,
+    }),
 }))
 
 import {
@@ -71,8 +82,10 @@ beforeEach(() => {
     vi.mocked(serializePinRecord).mockClear()
     commitSecretMock.mockReset()
     withSecretMock.mockReset()
+    biometricsMock.armBiometricBinding.mockReset()
     withSecretMock.mockResolvedValue(null)
     commitSecretMock.mockResolvedValue(undefined)
+    biometricsMock.armBiometricBinding.mockResolvedValue(null)
 })
 
 describe('migrateAuth', () => {
@@ -163,16 +176,23 @@ describe('migrateAuth', () => {
         expect(recordArg.lockoutEndTime).toBeNull()
     })
 
-    it('writes the serialized pin record to the biometric blob when biometricEnabled is true', async () => {
-        const pinBytes = encodePin('2468')
-        const auth: LegacyAuth = { pin: pinBytes }
+    it('arms an OS-bound binding instead of copying the PIN record', async () => {
+        biometricsMock.armBiometricBinding.mockResolvedValue({
+            blob: 'ct',
+            tokenHash: 'abc',
+        })
+        const auth: LegacyAuth = { pin: encodePin('2468') }
         const preferences = buildPreferences({ biometricEnabled: true })
 
         const result = await migrateAuth(auth, preferences)
 
         expect(result.biometricMigrated).toBe(true)
+        expect(biometricsMock.armBiometricBinding).toHaveBeenCalled()
         const bioWrite = commitCallFor(BIO_KEY)
-        expect(bioWrite?.[0].bytes).toContain('serialized:')
+        // `instanceof Uint8Array` is unreliable under jsdom, whose realm has
+        // its own Uint8Array constructor; ArrayBuffer.isView is realm-agnostic.
+        expect(ArrayBuffer.isView(bioWrite?.[0].bytes)).toBe(true)
+        expect(bioWrite?.[0].metadata).toEqual({ biometricTokenHash: 'abc' })
     })
 
     it('skips the biometric write when biometricEnabled is not true', async () => {
@@ -182,6 +202,18 @@ describe('migrateAuth', () => {
             auth,
             buildPreferences({ biometricEnabled: null }),
         )
+
+        expect(result.biometricMigrated).toBe(false)
+        expect(biometricsMock.armBiometricBinding).not.toHaveBeenCalled()
+        expect(commitCallFor(BIO_KEY)).toBeUndefined()
+    })
+
+    it('leaves biometrics off when no key can be created', async () => {
+        biometricsMock.armBiometricBinding.mockResolvedValue(null)
+        const auth: LegacyAuth = { pin: encodePin('1357') }
+        const preferences = buildPreferences({ biometricEnabled: true })
+
+        const result = await migrateAuth(auth, preferences)
 
         expect(result.biometricMigrated).toBe(false)
         expect(commitCallFor(BIO_KEY)).toBeUndefined()

@@ -1,0 +1,871 @@
+diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
+index 63bb99a7240aeea37547f5842bec90abd748b309..bc9ba2c15ad61751da8bdc480408e4d29ea9785a 100644
+--- a/android/src/main/AndroidManifest.xml
++++ b/android/src/main/AndroidManifest.xml
+@@ -4,8 +4,19 @@
+     <!-- Refreshes Google's privileged-browser allowlist (PrivilegedBrowserAllowlist). -->
+     <uses-permission android:name="android.permission.INTERNET"/>
+     <application>
++        <!--
++          PERA LOCAL PATCH: register the credential provider under the legacy
++          native app's fully-qualified class name. Android's Credential Manager
++          persists the user's enabled provider as ComponentName =
++          package/serviceClass. The package (com.algorand.android) is unchanged
++          across the native -> RN upgrade, so keeping the legacy service class
++          name makes the OS treat this as the same provider and carry the
++          enablement over instead of silently dropping it. The class below is a
++          thin subclass of PasskeyAutofillCredentialProviderService. Keep this in
++          sync with the ComponentName checked in ReactNativePasskeyAutofillModule.
++        -->
+         <service
+-            android:name=".service.PasskeyAutofillCredentialProviderService"
++            android:name="com.algorand.android.credentials.passkeys.ui.PasskeyProviderService"
+             android:enabled="true"
+             android:exported="true"
+             android:label="@string/passkey_autofill_label"
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
+index 9ef8371e77ab492558db5bfc048557edc669c813..527f7ddd299026751e39aced06f692607ff13f8c 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
+@@ -46,6 +46,7 @@ class CreatePasskeyActivity : AppCompatActivity() {
+ 
+     companion object {
+         const val TAG = "CreatePasskeyActivity"
++        private const val COSE_ALGORITHM_ES256 = -7
+     }
+ 
+     private var origin: String = "unknown-origin" // Derivation origin (rpId or hash)
+@@ -417,6 +418,14 @@ class CreatePasskeyActivity : AppCompatActivity() {
+             // android:apk-key-hash: identity. This is independent of `origin`,
+             // which stays the derivation origin (rpId) so keys re-derive stably.
+             val responseOrigin = privilegedOrigin ?: credentialRepository.getOrigin(req.callingAppInfo)
++            // PERA LOCAL PATCH: an allow-listed browser has already committed to its
++            // own clientDataJSON, so honour its clientDataHash; a clientDataJSON we
++            // build cannot match a hash the browser computed over its own. Any other
++            // caller's hash is ignored, since it would stand in for client data
++            // nobody verified.
++            val systemClientDataHash = privilegedOrigin?.let {
++                (req.callingRequest as? CreatePublicKeyCredentialRequest)?.clientDataHash
++            }
+             val response = AuthenticatorAttestationResponse(
+                 requestOptions = requestOptions,
+                 credentialId = credentialId,
+@@ -426,7 +435,8 @@ class CreatePasskeyActivity : AppCompatActivity() {
+                 uv = verification.verified,
+                 be = true,
+                 bs = true,
+-                packageName = req.callingAppInfo.packageName
++                packageName = req.callingAppInfo.packageName,
++                clientDataHash = systemClientDataHash
+             )
+ 
+             val fidoCredential = FidoPublicKeyCredential(
+@@ -439,30 +449,35 @@ class CreatePasskeyActivity : AppCompatActivity() {
+             val fullJson = JSONObject(fidoCredential.json())
+             val respJson = fullJson.getJSONObject("response")
+ 
+-            // Ensure compact clientDataJSON for registration too
+-            val sanitizedOrigin = responseOrigin.replace(Regex("/$"), "")
+-            val challenge = if (requestJson.has("publicKey")) {
+-                requestJson.getJSONObject("publicKey").getString("challenge")
+-            } else {
+-                requestJson.getString("challenge")
+-            }
++            // A supplied clientDataHash means the caller owns the client data, so
++            // AndroidX leaves clientDataJSON out of the response. Re-adding ours
++            // would contradict the hash the caller signs against.
++            if (systemClientDataHash == null) {
++                // Ensure compact clientDataJSON for registration too
++                val sanitizedOrigin = responseOrigin.replace(Regex("/$"), "")
++                val challenge = if (requestJson.has("publicKey")) {
++                    requestJson.getJSONObject("publicKey").getString("challenge")
++                } else {
++                    requestJson.getString("challenge")
++                }
+ 
+-            PasskeyLog.d(TAG, "Building clientDataJSON")
+-            val clientDataJSONString = if (sanitizedOrigin.startsWith("https://") || sanitizedOrigin.startsWith("http://")) {
+-                "{\"type\":\"webauthn.create\",\"challenge\":\"$challenge\",\"origin\":\"$sanitizedOrigin\",\"crossOrigin\":false}"
+-            } else {
+-                val json = JSONObject()
+-                json.put("type", "webauthn.create")
+-                json.put("challenge", challenge)
+-                json.put("origin", sanitizedOrigin)
+-                json.put("crossOrigin", false)
+-                if (sanitizedOrigin.startsWith("android:apk-key-hash:")) {
+-                    json.put("androidPackageName", req.callingAppInfo.packageName)
++                PasskeyLog.d(TAG, "Building clientDataJSON")
++                val clientDataJSONString = if (sanitizedOrigin.startsWith("https://") || sanitizedOrigin.startsWith("http://")) {
++                    "{\"type\":\"webauthn.create\",\"challenge\":\"$challenge\",\"origin\":\"$sanitizedOrigin\",\"crossOrigin\":false}"
++                } else {
++                    val json = JSONObject()
++                    json.put("type", "webauthn.create")
++                    json.put("challenge", challenge)
++                    json.put("origin", sanitizedOrigin)
++                    json.put("crossOrigin", false)
++                    if (sanitizedOrigin.startsWith("android:apk-key-hash:")) {
++                        json.put("androidPackageName", req.callingAppInfo.packageName)
++                    }
++                    json.toString()
+                 }
+-                json.toString()
++                val clientDataJSONb64 = AndroidBase64.encodeToString(clientDataJSONString.toByteArray(), AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP or AndroidBase64.NO_PADDING)
++                respJson.put("clientDataJSON", clientDataJSONb64)
+             }
+-            val clientDataJSONb64 = AndroidBase64.encodeToString(clientDataJSONString.toByteArray(), AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP or AndroidBase64.NO_PADDING)
+-            respJson.put("clientDataJSON", clientDataJSONb64)
+ 
+             WebAuthn.configuredAaguid(this@CreatePasskeyActivity)?.let { aaguid ->
+                 try {
+@@ -473,6 +488,30 @@ class CreatePasskeyActivity : AppCompatActivity() {
+                 }
+             }
+ 
++            // PERA LOCAL PATCH: AndroidX emits only clientDataJSON / attestationObject /
++            // transports, but RegistrationResponseJSON also requires authenticatorData and
++            // publicKeyAlgorithm. Chrome parses the response against that shape and rejects the
++            // WHOLE registration when they are missing — "MojoClassFromJSON failed to convert
++            // JSON: field missing or invalid: publicKeyAlgorithm" — surfacing to the page as an
++            // opaque NotReadableError. Added after the AAGUID splice so the standalone
++            // authenticatorData is the same bytes as the one inside the attestationObject.
++            respJson.put(
++                "authenticatorData",
++                WebAuthn.extractAuthData(respJson.getString("attestationObject")),
++            )
++            // createDomainKeyPair (dP256) only ever produces P-256, so the credential is ES256
++            // regardless of what pubKeyCredParams asked for.
++            respJson.put("publicKeyAlgorithm", COSE_ALGORITHM_ES256)
++            // SPKI DER, which is what the JSON form of publicKey expects — not the COSE encoding
++            // that goes inside attestedCredentialData.
++            respJson.put(
++                "publicKey",
++                AndroidBase64.encodeToString(
++                    keyPair.public.encoded,
++                    AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP or AndroidBase64.NO_PADDING,
++                ),
++            )
++
+             // WebAuthn `prf` extension (hmac-secret).
+             // On registration we advertise `enabled = true` whenever the RP
+             // asked for the extension, signalling that the credential can be
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
+index c0b23c0c1c5de2e32ed94b442125c56f7660b347..87e6ace83bfc2a83369842fdac27d69ae2b25c20 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
+@@ -4,7 +4,10 @@ import expo.modules.kotlin.exception.CodedException
+ import expo.modules.kotlin.modules.Module
+ import expo.modules.kotlin.modules.ModuleDefinition
+ import co.algorand.passkeyautofill.credentials.CredentialRepository
+-import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
++// PERA LOCAL PATCH: check the legacy-named subclass so the ComponentName built
++// below matches the native app's persisted credential-provider selection. See
++// the shim class + module AndroidManifest patch notes.
++import com.algorand.android.credentials.passkeys.ui.PasskeyProviderService
+ import android.content.ComponentName
+ import android.content.Context
+ import android.content.Intent
+@@ -143,14 +146,6 @@ class ReactNativePasskeyAutofillModule : Module() {
+       // No-op: see comment above.
+     }
+ 
+-    // NoOp on Android. The iOS implementation returns credentials stored in
+-    // the shared App Group keychain used by the AutoFill extension. On
+-    // Android, credentials are managed by the CredentialProviderService and
+-    // are not exposed back to JS through this module.
+-    AsyncFunction("getStoredCredentials") {
+-      emptyList<Map<String, Any?>>()
+-    }
+-
+     // NoOp on Android. iOS exposes diagnostics from the shared App Group
+     // store; there is no equivalent on Android yet.
+     AsyncFunction("getDiagnostics") {
+@@ -172,14 +167,13 @@ class ReactNativePasskeyAutofillModule : Module() {
+     AsyncFunction("getStoredCredentials") {
+       val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
+         ?: return@AsyncFunction emptyList<Map<String, Any>>()
++      // PERA LOCAL PATCH: maps the key-free summary; JS never read `publicKey` or `derivationScheme`.
+       credentialRepository.getAllCredentials(context).map { credential ->
+         mapOf(
+           "credentialId" to credential.credentialId,
+           "relyingPartyIdentifier" to credential.origin,
+           "userName" to credential.userHandle,
+           "userHandle" to credential.userHandle,
+-          "publicKey" to credential.publicKey,
+-          "derivationScheme" to credential.derivationScheme,
+         )
+       }
+     }
+@@ -194,7 +188,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+   }
+ 
+   /**
+-   * Returns `true` when this app's [PasskeyAutofillCredentialProviderService]
++   * Returns `true` when this app's [PasskeyProviderService]
+    * is registered as an active credential provider for the current user.
+    *
+    * On API 34+ (UpsideDownCake) we use the official
+@@ -209,7 +203,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+   private fun isProviderEnabled(context: Context): Boolean {
+     val component = ComponentName(
+       context.packageName,
+-      PasskeyAutofillCredentialProviderService::class.java.name,
++      PasskeyProviderService::class.java.name,
+     )
+     val expected = component.flattenToString()
+ 
+@@ -260,7 +254,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     // Manager screen isn't a directly launchable activity.
+     val component = ComponentName(
+       context.packageName,
+-      PasskeyAutofillCredentialProviderService::class.java.name,
++      PasskeyProviderService::class.java.name,
+     ).flattenToString()
+     val intents = listOf(
+       // Preferred: Credential Manager provider settings, deep-linked to our row.
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt b/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt
+index 0ba3046c9820bdc7cda11d2e0f279fedd99156af..f7dcd2a16813e82293becfc15514fe2cbf63e69b 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt
+@@ -56,6 +56,19 @@ object WebAuthn {
+         return Base64.encodeToString(bytes, BASE64_FLAGS)
+     }
+ 
++    /**
++     * PERA LOCAL PATCH — the raw authenticatorData inside [attestationObjectB64Url], base64url.
++     *
++     * RegistrationResponseJSON carries authenticatorData as its own field, but AndroidX only ever
++     * emits it nested in the attestationObject. Slicing it back out keeps the two views of the same
++     * bytes in step; rebuilding it separately would let them drift.
++     */
++    fun extractAuthData(attestationObjectB64Url: String): String {
++        val bytes = Base64.decode(attestationObjectB64Url, BASE64_FLAGS)
++        val (start, length) = findAuthData(bytes)
++        return Base64.encodeToString(bytes, start, length, BASE64_FLAGS)
++    }
++
+     private fun uuidToBytes(uuid: UUID): ByteArray =
+         ByteBuffer.allocate(AAGUID_LENGTH)
+             .putLong(uuid.mostSignificantBits)
+@@ -68,7 +81,10 @@ object WebAuthn {
+         var pos = 0
+     }
+ 
+-    private fun findAuthDataContentStart(buf: ByteArray): Int {
++    private fun findAuthDataContentStart(buf: ByteArray): Int = findAuthData(buf).first
++
++    /** (offset, length) of the authData byte-string contents inside [buf]. */
++    private fun findAuthData(buf: ByteArray): Pair<Int, Int> {
+         val c = Cursor(buf)
+         val (major, count) = readHead(c)
+         require(major == 5) { "attestationObject is not a CBOR map" }
+@@ -79,7 +95,7 @@ object WebAuthn {
+                 require(valueMajor == 2) { "authData is not a CBOR byte string" }
+                 val start = c.pos
+                 c.pos += valueLen.toInt()
+-                return start
++                return Pair(start, valueLen.toInt())
+             }
+             skipItem(c)
+         }
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
+index e1b86733f4537225cfb079a594c10b28308762bf..a42f220881e4e6b1592f8b7e609411cbeae02610 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/Credential.kt
+@@ -8,10 +8,10 @@ data class Credential(
+     val publicKey: String,
+     /**
+      * Base64 private material, or `""` when the credential was read without
+-     * it. Only `CredentialRepository.getCredential` fills this, for the one
+-     * credential the user selected; enumeration and metadata lookups leave it
+-     * empty, and a split-layout record never carries material at all (its key
+-     * is re-derived from the parent on demand).
++     * it. Only `CredentialRepository.getCredential` fills this, from the
++     * credential's sealed `m/` record, for the one credential the user
++     * selected; metadata lookups leave it empty, and so does a credential with
++     * no stored material (its key is re-derived from the parent on demand).
+      */
+     val privateKey: String,
+     val count: Int,
+@@ -37,4 +37,20 @@ data class Credential(
+      * unchanged.
+      */
+     val derivationVersion: Int = PasskeyDerivation.VERSION_LEGACY_LABEL,
++)
++
++/**
++ * PERA LOCAL PATCH — listing hands the chooser metadata only, never private material.
++ *
++ * What the credential chooser needs to offer a credential, and nothing more.
++ * Enumeration runs before the user has picked or verified anything, so it
++ * never carries private material. [biometricIv] is the GCM IV of a
++ * biometric-wrapped key, needed to build the entry's decrypt `CryptoObject`;
++ * it is not secret.
++ */
++data class CredentialSummary(
++    val credentialId: String,
++    val origin: String,
++    val userHandle: String,
++    val biometricIv: String? = null,
+ )
+\ No newline at end of file
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
+index fab158d8d072a437ce1518e038cf2479664018a6..3b6743afa2419473f41347e4d7a9ab988e1cec4b 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
+@@ -144,20 +144,18 @@ interface CredentialRepository {
+      */
+     fun getCredentialMetadata(context: Context, credentialId: ByteArray): Credential?
+ 
+-    /** First stored credential for `origin`, metadata only (see [getAllCredentials]). */
+-    fun getCredentialByOrigin(context: Context, origin: String): Credential?
+-
+     /**
+-     * Every credential this module owns, METADATA ONLY: `privateKey` is empty
+-     * on each. Enumeration runs before the user has picked a credential or
+-     * verified anything (the Credential Provider service builds the chooser
+-     * from it), so no private scalar is copied into an immutable string for
+-     * records the user may never select. A legacy flat record still has to be
+-     * opened to read its metadata — that is the record format — but its
+-     * material is not decoded. Load exactly one credential's key afterwards
++     * PERA LOCAL PATCH — listing must not decrypt anything before the user picks a credential.
++     *
++     * Every credential this module owns, as the chooser needs it and nothing
++     * more. Enumeration runs before the user has picked a credential or
++     * verified anything, so it reads only the plaintext `k/` metadata records:
++     * no master key, no decryption, no private material. A credential still
++     * stored as a legacy flat record is not listed until the wallet has moved
++     * it into the split layout. Load exactly one credential's key afterwards
+      * with [getCredential] / [getKeyPair].
+      */
+-    fun getAllCredentials(context: Context): List<Credential>
++    fun getAllCredentials(context: Context): List<CredentialSummary>
+     fun getPublicKeyFromKeyPair(keyPair: KeyPair?): ByteArray
+     fun sign(keyPair: KeyPair, payload: ByteArray): ByteArray
+     /**
+@@ -287,35 +285,25 @@ class Repository() : CredentialRepository {
+         return MMKV.mmkvWithID(CredentialRepository.PASSKEY_AUTOFILL_MMKV_ID, MMKV.MULTI_PROCESS_MODE)
+     }
+ 
++    // PERA LOCAL PATCH: writes plaintext `k/` plus sealed `m/`, so listing never needs to decrypt.
+     override fun saveCredential(context: Context, credential: Credential, biometricCipher: Cipher?) {
+         PasskeyLog.d(CredentialRepository.TAG, "saveCredential started")
+         val mmkv = getPasskeysMMKV(context)
+-        
+-        // 1. Create KeyData matching @algorandfoundation/keystore
+-        val keyData = JSONObject()
+-        keyData.put("id", credential.credentialId)
+-        keyData.put("type", "hd-derived-p256")
+-        keyData.put("algorithm", "P256")
+-        keyData.put("extractable", false)
+-        keyData.put("keyUsages", JSONArray(listOf("sign")))
+-        keyData.put("name", "Passkey: ${credential.origin}")
+-        
+-        val privateKeyBytes = AndroidBase64.decode(credential.privateKey, AndroidBase64.DEFAULT)
+-        if (biometricCipher != null) {
+-            PasskeyLog.d(CredentialRepository.TAG, "Using biometricCipher for encryption")
+-            val encryptedBytes = biometricCipher.doFinal(privateKeyBytes)
+-            val encJson = JSONObject()
+-            encJson.put("iv", AndroidBase64.encodeToString(biometricCipher.iv, AndroidBase64.NO_WRAP))
+-            encJson.put("data", AndroidBase64.encodeToString(encryptedBytes, AndroidBase64.NO_WRAP))
+-            keyData.put("privateKeyEnc", encJson)
+-        } else {
+-            PasskeyLog.d(CredentialRepository.TAG, "No biometricCipher, saving privateKey in plain (base64 in JSON)")
+-            keyData.put("privateKey", JSONArray(privateKeyBytes.map { it.toInt() and 0xFF }))
+-        }
++        // No unsealed fallback: without the master key nothing is written and
++        // creation aborts.
++        val masterKey = getMasterKey(context) ?: throw MasterKeyUnavailableException()
++
++        // The plaintext half, in the keystore's `k/` shape: everything the
++        // chooser lists, and no private material.
++        val record = JSONObject()
++        record.put("id", credential.credentialId)
++        record.put("type", "hd-derived-p256")
++        record.put("algorithm", "P256")
++        record.put("extractable", false)
++        record.put("keyUsages", JSONArray(listOf("sign")))
++        record.put("name", "Passkey: ${credential.origin}")
++        record.put("publicKey", KeystoreRecords.wrapBytes(AndroidBase64.decode(credential.publicKey, AndroidBase64.DEFAULT)))
+ 
+-        keyData.put("publicKey", JSONArray(AndroidBase64.decode(credential.publicKey, AndroidBase64.DEFAULT).map { it.toInt() and 0xFF }))
+-        
+-        // Custom fields for our use
+         val metadata = JSONObject()
+         metadata.put("origin", credential.origin)
+         metadata.put("userHandle", credential.userHandle)
+@@ -327,122 +315,69 @@ class Repository() : CredentialRepository {
+         credential.parentKeyId?.let { metadata.put("parentKeyId", it) }
+         credential.derivationScheme?.let { metadata.put("scheme", it) }
+         metadata.put("derivationVersion", credential.derivationVersion)
+-        keyData.put("metadata", metadata)
++        record.put("metadata", metadata)
+ 
+-        // 2. Encode matching react-native-keystore's encode()
+-        val jsonString = keyData.toString()
+-        val base64urlJson = AndroidBase64.encodeToString(jsonString.toByteArray(Charsets.UTF_8), AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP)
+-
+-        // 3. Seal matching react-native-keystore's commit(). There is deliberately
+-        // no unsealed fallback: without the master key the record — which carries
+-        // the P-256 private key — is not written at all and creation aborts.
+-        val masterKey = getMasterKey(context) ?: throw MasterKeyUnavailableException()
+-        val sealed = KeystoreRecords.sealEnvelope(masterKey, base64urlJson)
+-        check(mmkv.encode(credential.credentialId, sealed)) {
+-            "Failed to write sealed credential record for ${credential.origin}"
++        val materialKey = KeystoreRecords.materialKey(credential.credentialId)
++        val privateKeyBytes = AndroidBase64.decode(credential.privateKey, AndroidBase64.DEFAULT)
++        var material: ByteArray? = null
++        try {
++            material = if (biometricCipher != null) {
++                PasskeyLog.d(CredentialRepository.TAG, "Using biometricCipher for encryption")
++                // Only the IV goes into plaintext; the ciphertext is sealed in `m/`.
++                record.put("privateKeyEnc", JSONObject().put("iv", AndroidBase64.encodeToString(biometricCipher.iv, AndroidBase64.NO_WRAP)))
++                biometricCipher.doFinal(privateKeyBytes)
++            } else {
++                privateKeyBytes
++            }
++            check(mmkv.encode(materialKey, KeystoreRecords.sealMaterial(masterKey, material))) {
++                "Failed to write sealed credential material for ${credential.origin}"
++            }
++        } finally {
++            // Also on a throwing `doFinal` (e.g. "user not authenticated"),
++            // which the create flow answers by prompting and calling again.
++            privateKeyBytes.fill(0)
++            material?.fill(0)
++        }
++        // `k/` last: it is what makes the credential visible to the chooser.
++        if (!mmkv.encode(KeystoreRecords.metadataKey(credential.credentialId), record.toString())) {
++            mmkv.removeValueForKey(materialKey)
++            throw IllegalStateException("Failed to write credential metadata for ${credential.origin}")
+         }
+     }
+ 
+-    override fun getAllCredentials(context: Context): List<Credential> {
++    // PERA LOCAL PATCH: lists plaintext `k/` records only, so no envelope is opened before selection.
++    override fun getAllCredentials(context: Context): List<CredentialSummary> {
+         val mmkv = getPasskeysMMKV(context)
+         val allKeys = mmkv.allKeys() ?: return emptyList()
+-        val credentials = mutableListOf<Credential>()
+-
+-        // Only the legacy layout needs the master key to be readable at all; in
+-        // the split layout the metadata half is plaintext, so the AutoFill list
+-        // can be built before the wallet has shared anything.
+-        val masterKey = getMasterKey(context)
++        val summaries = mutableListOf<CredentialSummary>()
+ 
++        // Only the plaintext `k/` half is read: listing never needs the master
++        // key, and a credential still stored flat is not offered until the
++        // wallet has moved it into the split layout.
+         for (key in allKeys) {
+-            // Material is picked up through its own metadata record, never alone.
+-            if (key.startsWith(KeystoreRecords.MATERIAL_PREFIX)) continue
+-
+-            if (key.startsWith(KeystoreRecords.METADATA_PREFIX)) {
+-                val plaintext = mmkv.decodeString(key) ?: continue
+-                try {
+-                    val json = JSONObject(plaintext)
+-                    if (!KeystoreRecords.isPasskeyRecordType(json.optString("type", ""))) continue
+-                    credentialFromMetadataRecord(json)?.let { credentials.add(it) }
+-                } catch (e: Exception) {
+-                    continue
+-                }
+-                continue
+-            }
+-
+-            if (masterKey == null) continue
+-            val payload = mmkv.decodeString(key) ?: continue
++            if (!key.startsWith(KeystoreRecords.METADATA_PREFIX)) continue
++            val plaintext = mmkv.decodeString(key) ?: continue
+             try {
+-                val json = KeystoreRecords.decodeLegacyRecord(payload, masterKey)
+-                // Only treat entries as passkey credentials that match p256
+-                if (!KeystoreRecords.isPasskeyRecordType(json.optString("type", ""))) {
+-                    continue
++                val json = JSONObject(plaintext)
++                if (!KeystoreRecords.isPasskeyRecordType(json.optString("type", ""))) continue
++                credentialFromMetadataRecord(json)?.let {
++                    summaries.add(CredentialSummary(it.credentialId, it.origin, it.userHandle, it.biometricIv))
+                 }
+-                // Enumeration: metadata only, the material stays undecoded.
+-                credentialFromLegacyRecord(json, biometricCipher = null, includeMaterial = false)
+-                    ?.let { credentials.add(it) }
+             } catch (e: Exception) {
+-                // Not a JSON or not a credential or decryption failed, skip
+                 continue
+             }
+         }
+-        return credentials
++        return summaries
+     }
+ 
+     /**
+-     * Builds a [Credential] from a decoded legacy flat record (`KeyData` JSON).
++     * PERA LOCAL PATCH — the biometric IV lives in plaintext `k/`, so the chooser can build its `CryptoObject`.
+      *
+-     * @param includeMaterial whether to materialise the private key. `false`
+-     *   for enumeration and pre-signing lookups; `true` only for the single
+-     *   credential the user selected and verified for.
+-     * @param biometricCipher opens a biometric-wrapped `privateKeyEnc` when
+-     *   material is requested and the record carries one.
+-     */
+-    private fun credentialFromLegacyRecord(
+-        json: JSONObject,
+-        biometricCipher: Cipher?,
+-        includeMaterial: Boolean,
+-    ): Credential? {
+-        if (!json.has("id") || !(json.has("origin") || json.has("metadata"))) return null
+-        val metadata = json.optJSONObject("metadata")
+-        val encJson = json.optJSONObject("privateKeyEnc")
+-
+-        val privateKey = when {
+-            !includeMaterial -> ""
+-            encJson != null && biometricCipher != null -> {
+-                PasskeyLog.d(CredentialRepository.TAG, "Decrypting privateKey with biometricCipher")
+-                val data = AndroidBase64.decode(encJson.getString("data"), AndroidBase64.DEFAULT)
+-                AndroidBase64.encodeToString(biometricCipher.doFinal(data), AndroidBase64.DEFAULT)
+-            }
+-            json.has("privateKey") ->
+-                AndroidBase64.encodeToString(jsonArrayToByteArray(json.getJSONArray("privateKey")), AndroidBase64.DEFAULT)
+-            else -> {
+-                PasskeyLog.w(CredentialRepository.TAG, "No privateKey found in JSON")
+-                ""
+-            }
+-        }
+-
+-        return Credential(
+-            credentialId = json.getString("id"),
+-            origin = metadata?.optString("origin") ?: json.optString("origin", ""),
+-            userHandle = metadata?.optString("userHandle") ?: json.optString("userHandle", ""),
+-            userId = metadata?.optString("userId") ?: json.optString("userId", ""),
+-            publicKey = AndroidBase64.encodeToString(jsonArrayToByteArray(json.getJSONArray("publicKey")), AndroidBase64.DEFAULT),
+-            privateKey = privateKey,
+-            count = metadata?.optInt("count") ?: json.optInt("count", 0),
+-            biometricIv = encJson?.optString("iv"),
+-            parentKeyId = metadata?.optString("parentKeyId").takeUnless { it.isNullOrEmpty() },
+-            derivationScheme = metadata?.optString("scheme").takeUnless { it.isNullOrEmpty() },
+-            derivationVersion = metadata?.optInt("derivationVersion", PasskeyDerivation.VERSION_LEGACY_LABEL)
+-                ?: PasskeyDerivation.VERSION_LEGACY_LABEL,
+-        )
+-    }
+-
+-    /**
+-     * Builds a [Credential] from a split-layout `k/<id>` metadata record.
+-     *
+-     * These carry no material: a domain key is defined by its parent plus its
+-     * domain descriptor, so the private key is re-derived on demand (see
+-     * [getKeyPair]) rather than stored twice.
++     * Builds a [Credential] from a split-layout `k/<id>` metadata record,
++     * without private material. The material, when the credential has any,
++     * sits sealed in `m/<id>` and is opened only by [readCredential] for the
++     * credential the user selected; without it the key is re-derived (see
++     * [getKeyPair]).
+      */
+     private fun credentialFromMetadataRecord(json: JSONObject): Credential? {
+         val id = json.optString("id").takeUnless { it.isEmpty() } ?: return null
+@@ -457,20 +392,13 @@ class Repository() : CredentialRepository {
+             publicKey = AndroidBase64.encodeToString(publicKey, AndroidBase64.DEFAULT),
+             privateKey = "",
+             count = metadata.optInt("count", 0),
++            biometricIv = json.optJSONObject("privateKeyEnc")?.optString("iv")?.takeUnless { it.isEmpty() },
+             parentKeyId = metadata.optString("parentKeyId").takeUnless { it.isEmpty() },
+             derivationScheme = metadata.optString("scheme").takeUnless { it.isEmpty() },
+             derivationVersion = metadata.optInt("derivationVersion", PasskeyDerivation.VERSION_LEGACY_LABEL),
+         )
+     }
+ 
+-    private fun jsonArrayToByteArray(array: JSONArray): ByteArray {
+-        val bytes = ByteArray(array.length())
+-        for (i in 0 until array.length()) {
+-            bytes[i] = array.getInt(i).toByte()
+-        }
+-        return bytes
+-    }
+-
+     override fun generateCredentialId(keyPair: KeyPair): ByteArray {
+         val publicKeyBytes = keyPair.public.encoded
+         val messageDigest = MessageDigest.getInstance("SHA-256")
+@@ -483,6 +411,7 @@ class Repository() : CredentialRepository {
+     override fun getCredentialMetadata(context: Context, credentialId: ByteArray): Credential? =
+         readCredential(context, credentialId, biometricCipher = null, includeMaterial = false)
+ 
++    // PERA LOCAL PATCH: reads `k/` only, and opens `m/` for the one credential the user selected.
+     private fun readCredential(
+         context: Context,
+         credentialId: ByteArray,
+@@ -493,38 +422,59 @@ class Repository() : CredentialRepository {
+         PasskeyLog.d(CredentialRepository.TAG, "readCredential started (includeMaterial=$includeMaterial)")
+         val mmkv = getPasskeysMMKV(context)
+ 
+-        // Split layout first: its metadata half is plaintext, so it reads without
+-        // the master key. The id is base64 and has historically been written in
+-        // several encodings, hence the candidates.
++        // The id is base64 and has historically been written in several
++        // encodings, hence the candidates.
+         for (candidate in credentialIdCandidates(id)) {
+             val plaintext = mmkv.decodeString(KeystoreRecords.metadataKey(candidate)) ?: continue
+-            try {
+-                credentialFromMetadataRecord(JSONObject(plaintext))?.let { return it }
++            val credential = try {
++                credentialFromMetadataRecord(JSONObject(plaintext))
++            } catch (e: Exception) {
++                // Class name only: an org.json exception quotes the record it failed on.
++                PasskeyLog.w(CredentialRepository.TAG, "Unreadable metadata record for a credential id candidate (${e.javaClass.simpleName})")
++                null
++            } ?: continue
++            if (!includeMaterial) return credential
++            return try {
++                credential.copy(privateKey = readCredentialMaterial(context, candidate, credential.biometricIv, biometricCipher))
+             } catch (e: Exception) {
+-                PasskeyLog.w(CredentialRepository.TAG, "Unreadable metadata record for a credential id candidate", e)
++                // A key that will not open signs nothing: the assertion fails
++                // rather than falling back to re-derivation.
++                PasskeyLog.w(CredentialRepository.TAG, "Credential material could not be opened (${e.javaClass.simpleName})")
++                null
+             }
+         }
++        PasskeyLog.w(CredentialRepository.TAG, "No metadata record found for credential id")
++        return null
++    }
+ 
+-        val payload = mmkv.decodeString(id) ?: run {
+-            PasskeyLog.w(CredentialRepository.TAG, "No payload found for credential id")
+-            return null
+-        }
+-        val masterKey = getMasterKey(context) ?: run {
+-            PasskeyLog.e(CredentialRepository.TAG, "Master key not found")
+-            return null
+-        }
++    /**
++     * PERA LOCAL PATCH — the only place a credential's sealed material is opened.
++     *
++     * Opens `m/<id>` for the one credential the user selected, unwrapping it
++     * with [biometricCipher] when the record is biometric-wrapped. Returns
++     * `""` when there is no stored material, or when a wrapped record is read
++     * without a cipher: [getKeyPair] then re-derives the key. A cipher that
++     * fails to unwrap throws.
++     */
++    private fun readCredentialMaterial(
++        context: Context,
++        id: String,
++        biometricIv: String?,
++        biometricCipher: Cipher?,
++    ): String {
++        val sealed = getPasskeysMMKV(context).decodeString(KeystoreRecords.materialKey(id)) ?: return ""
++        if (biometricIv != null && biometricCipher == null) return ""
++        val masterKey = getMasterKey(context) ?: throw MasterKeyUnavailableException()
++        val opened = KeystoreRecords.openMaterial(masterKey, sealed)
++        val key = if (biometricIv != null && biometricCipher != null) biometricCipher.doFinal(opened) else opened
+         return try {
+-            val json = KeystoreRecords.decodeLegacyRecord(payload, masterKey)
+-            credentialFromLegacyRecord(json, biometricCipher, includeMaterial)
+-        } catch (e: Exception) {
+-            null
++            AndroidBase64.encodeToString(key, AndroidBase64.DEFAULT)
++        } finally {
++            opened.fill(0)
++            key.fill(0)
+         }
+     }
+ 
+-    override fun getCredentialByOrigin(context: Context, origin: String): Credential? {
+-        return getAllCredentials(context).find { it.origin == origin }
+-    }
+-
+     fun getKeyPairFromCredential(credential: Credential): KeyPair? {
+         if (credential.privateKey.isEmpty()) return null
+         val publicKeyBytes = AndroidBase64.decode(credential.publicKey, AndroidBase64.DEFAULT)
+@@ -598,8 +548,8 @@ class Repository() : CredentialRepository {
+ 
+         // A credential the wallet derived itself carries no material at all (a
+         // domain key is metadata plus a public key: it is re-derivable by
+-        // definition), and neither does one whose biometric-wrapped material we
+-        // could not open. Re-derive from the parent it is pinned to.
++        // definition), and neither does a biometric-wrapped one read without a
++        // cipher. Re-derive from the parent it is pinned to.
+         if (credential.origin.isEmpty() || credential.userHandle.isEmpty()) return null
+         return try {
+             createDomainKeyPair(
+@@ -741,47 +691,6 @@ class Repository() : CredentialRepository {
+         (resolveParentSecret(context) as? ParentSecretResult.Available)?.secret?.bytes
+ 
+ 
+-    private fun decodeKeyData(payload: String, masterKey: ByteArray?): JSONObject {
+-        try {
+-            // Check if it's the old encrypted format (starts with { and has iv, tag, content)
+-            if (payload.startsWith("{")) {
+-                val json = JSONObject(payload)
+-                if (json.has("iv") && json.has("tag") && json.has("content")) {
+-                    if (masterKey == null) throw IllegalStateException("Master key required for legacy decryption")
+-
+-                    val iv = AndroidBase64.decode(json.getString("iv"), AndroidBase64.DEFAULT)
+-                    val tag = AndroidBase64.decode(json.getString("tag"), AndroidBase64.DEFAULT)
+-                    val content = AndroidBase64.decode(json.getString("content"), AndroidBase64.DEFAULT)
+-
+-                    val keySpec = javax.crypto.spec.SecretKeySpec(masterKey, "AES")
+-                    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+-                    val gcmSpec = GCMParameterSpec(128, iv)
+-                    cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec)
+-
+-                    val combined = content + tag
+-                    val decryptedBytes = cipher.doFinal(combined)
+-                    val decryptedString = String(decryptedBytes, Charsets.UTF_8)
+-
+-                    // The decrypted bytes are base64url encoded JSON
+-                    val decodedJsonBytes = try {
+-                        AndroidBase64.decode(decryptedString, AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP)
+-                    } catch (e: Exception) {
+-                        decryptedString.toByteArray(Charsets.UTF_8)
+-                    }
+-                    return JSONObject(String(decodedJsonBytes, Charsets.UTF_8))
+-                }
+-                return json
+-            }
+-
+-            // New format: base64url encoded JSON (MMKV handles the encryption/decryption of this string)
+-            val decodedBytes = AndroidBase64.decode(payload, AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP)
+-            return JSONObject(String(decodedBytes, Charsets.UTF_8))
+-        } catch (e: Exception) {
+-            PasskeyLog.e(CredentialRepository.TAG, "Failed to decode payload", e)
+-            throw e
+-        }
+-    }
+-
+     override fun saveMasterKey(context: Context, secret: ByteArray) {
+         // Reject a key that could never seal anything BEFORE touching storage, so
+         // a bad key does not replace a working one.
+@@ -952,26 +861,28 @@ class Repository() : CredentialRepository {
+         }
+     }
+ 
++    // PERA LOCAL PATCH: counts a use in plaintext `k/`, with no decrypt.
+     override fun recordCredentialUsage(context: Context, credentialId: ByteArray) {
+         val id = AndroidBase64.encodeToString(credentialId, AndroidBase64.DEFAULT).trim()
+         try {
+             val mmkv = getPasskeysMMKV(context)
+-            val payload = mmkv.decodeString(id) ?: return
+-            val masterKey = getMasterKey(context) ?: return
+-
+-            val json = KeystoreRecords.decodeLegacyRecord(payload, masterKey)
+-            val metadata = json.optJSONObject("metadata") ?: JSONObject()
+-            metadata.put("lastUsedAt", System.currentTimeMillis())
+-            metadata.put("count", metadata.optInt("count", 0) + 1)
+-            json.put("metadata", metadata)
+-
+-            val base64urlJson = AndroidBase64.encodeToString(
+-                json.toString().toByteArray(Charsets.UTF_8),
+-                AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP,
+-            )
+-            mmkv.encode(id, KeystoreRecords.sealEnvelope(masterKey, base64urlJson))
++            // Plaintext read-modify-write of `k/`: counting a use needs no key.
++            for (candidate in credentialIdCandidates(id)) {
++                val key = KeystoreRecords.metadataKey(candidate)
++                val plaintext = mmkv.decodeString(key) ?: continue
++                val json = JSONObject(plaintext)
++                // `k/` is shared with the wallet's own keys; count only a passkey.
++                if (!KeystoreRecords.isPasskeyRecordType(json.optString("type", ""))) continue
++                val metadata = json.optJSONObject("metadata") ?: JSONObject()
++                metadata.put("lastUsedAt", System.currentTimeMillis())
++                metadata.put("count", metadata.optInt("count", 0) + 1)
++                json.put("metadata", metadata)
++                mmkv.encode(key, json.toString())
++                return
++            }
+         } catch (e: Exception) {
+-            PasskeyLog.e(CredentialRepository.TAG, "Failed to record credential usage", e)
++            // Class name only: an org.json exception quotes the record it failed on.
++            PasskeyLog.e(CredentialRepository.TAG, "Failed to record credential usage (${e.javaClass.simpleName})")
+         }
+     }
+ 
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
+index 3256e6d20df3e978e4d08e2e52fc118da45c4415..5c93a71a8cbed4b48a2e1f173a3c7fc62ac620f7 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
+@@ -39,8 +39,12 @@ import kotlinx.coroutines.*
+ import org.json.JSONArray
+ import org.json.JSONObject
+ 
++// PERA LOCAL PATCH: `open` so the legacy-named subclass
++// (com.algorand.android.credentials.passkeys.ui.PasskeyProviderService) can
++// extend it and be registered under the native app's ComponentName. See patch
++// notes in ReactNativePasskeyAutofillModule and the module AndroidManifest.
+ @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+-class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
++open class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+     private val credentialRepository = CredentialRepository()
+     private val job = SupervisorJob()
+     private val scope = CoroutineScope(Dispatchers.IO + job)
+diff --git a/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f7063f3b6b8
+--- /dev/null
++++ b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
+@@ -0,0 +1,25 @@
++package com.algorand.android.credentials.passkeys.ui
++
++import android.os.Build
++import androidx.annotation.RequiresApi
++import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
++
++/**
++ * PERA LOCAL PATCH — migration compatibility shim.
++ *
++ * The legacy native pera-android app registered its Credential Manager provider
++ * as `com.algorand.android/com.algorand.android.credentials.passkeys.ui.PasskeyProviderService`.
++ * Android persists the user's enabled provider by that exact ComponentName, so
++ * after the in-place native -> RN upgrade the provider selection is only
++ * retained if a service still resolves at this fully-qualified name.
++ *
++ * This subclass adds no behaviour; it exists purely so the manifest can declare
++ * the legacy ComponentName while all logic stays in the upstream base class.
++ * `ReactNativePasskeyAutofillModule` checks this same class for its
++ * `isProviderActive` / `openProviderSettings` ComponentName.
++ *
++ * Remove this shim (and the accompanying module patch) only once every user has
++ * migrated off the legacy native app.
++ */
++@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
++class PasskeyProviderService : PasskeyAutofillCredentialProviderService()
+diff --git a/app.plugin.js b/app.plugin.js
+index eff2a3e9241eca0e3f586cc30ac94c29bf1fcd33..7a383e0a6a205972adcf6be56d6a9116a54eb5ab 100644
+--- a/app.plugin.js
++++ b/app.plugin.js
+@@ -192,7 +192,7 @@ const extensionInfoPlist = ({
+ ${aaguid ? `  <key>ReactNativePasskeyAutofillAAGUID</key>\n  <string>${aaguid}</string>\n` : ""}  <key>${IOS_BIOMETRIC_INFO_PLIST_KEY}</key>
+   <string>${biometricRequirement}</string>
+   <key>NSFaceIDUsageDescription</key>
+-  <string>Rocca uses Face ID to create and use passkeys.</string>
++  <string>${label} uses Face ID to create and use passkeys.</string>
+   <key>NSExtension</key>
+   <dict>
+     <key>ASCredentialProviderExtensionSupportedDomains</key>
+diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
+index 3c5ca74b8705ad37700082da41b8fbad77bcb7de..8705f749d09f31920e0fd4aece960ca3c9758062 100644
+--- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
++++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
+@@ -149,7 +149,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     do {
+       guard let store else {
+         self.store?.appendDiagnostic("missing wallet root-key state")
+-        showFailure("Wallet root key is not available. Open Rocca Wallet once, unlock it, then try again.")
++        showFailure("Wallet root key is not available. Open Pera Wallet once, unlock it, then try again.")
+         return
+       }
+ 
+@@ -316,7 +316,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     }
+ 
+     store?.appendDiagnostic("evaluatePolicy assertion start")
+-    context.evaluatePolicy(policy, localizedReason: "Use passkeys with Rocca Wallet") { [weak self] success, authenticationError in
++    context.evaluatePolicy(policy, localizedReason: "Use passkeys with Pera Wallet") { [weak self] success, authenticationError in
+       DispatchQueue.main.async {
+         guard let self else {
+           return
+@@ -414,7 +414,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     }
+ 
+     store?.appendDiagnostic("evaluatePolicy start")
+-    context.evaluatePolicy(policy, localizedReason: "Create passkeys with Rocca Wallet") { [weak self] success, authenticationError in
++    context.evaluatePolicy(policy, localizedReason: "Create passkeys with Pera Wallet") { [weak self] success, authenticationError in
+       DispatchQueue.main.async {
+         guard let self else {
+           return

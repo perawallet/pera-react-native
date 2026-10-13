@@ -12,10 +12,20 @@
 
 import type { z } from 'zod'
 import {
+    accountRecordPayloadSchema,
     addressBackupPayloadSchema,
+    contactBackupPayloadSchema,
+    passkeyBackupPayloadSchema,
+    passkeySecretsBackupPayloadSchema,
     secretsBackupPayloadSchema,
+    settingsBackupPayloadSchema,
+    type AccountRecordPayload,
     type AddressBackupPayload,
+    type ContactBackupPayload,
+    type PasskeyBackupPayload,
+    type PasskeySecretsBackupPayload,
     type SecretsBackupPayload,
+    type SettingsBackupPayload,
 } from '../models'
 
 export class BackupPayloadParseError extends Error {
@@ -52,5 +62,22 @@ const parsePayload = <T>(
 export const parseAddressPayload = (raw: string): AddressBackupPayload =>
     parsePayload(addressBackupPayloadSchema, raw, 'account')
 
+export const parseAccountRecordPayload = (raw: string): AccountRecordPayload =>
+    parsePayload(accountRecordPayloadSchema, raw, 'account record')
+
 export const parseSecretsPayload = (raw: string): SecretsBackupPayload =>
     parsePayload(secretsBackupPayloadSchema, raw, 'secrets')
+
+export const parseContactPayload = (raw: string): ContactBackupPayload =>
+    parsePayload(contactBackupPayloadSchema, raw, 'contact')
+
+export const parsePasskeyPayload = (raw: string): PasskeyBackupPayload =>
+    parsePayload(passkeyBackupPayloadSchema, raw, 'passkey')
+
+export const parsePasskeySecretsPayload = (
+    raw: string,
+): PasskeySecretsBackupPayload =>
+    parsePayload(passkeySecretsBackupPayloadSchema, raw, 'passkey secrets')
+
+export const parseSettingsPayload = (raw: string): SettingsBackupPayload =>
+    parsePayload(settingsBackupPayloadSchema, raw, 'settings')

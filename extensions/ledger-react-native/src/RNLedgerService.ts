@@ -12,23 +12,22 @@
 
 import { requireOptionalNativeModule } from 'expo'
 import { Platform, PermissionsAndroid } from 'react-native'
-import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { HardwareWalletAdapterState } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletAdapterState } from '@perawallet/wallet-extension-hardware-wallet'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
-import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
     LedgerTransportProvider,
     LedgerTransport,
     LedgerDevice,
 } from '@perawallet/wallet-extension-ledger-shared'
 import {
-    classifyLedgerError,
     LedgerBluetoothDisabledError,
     LedgerPermissionDeniedError,
+    resolveDeviceModel,
 } from '@perawallet/wallet-extension-ledger-shared'
-import { resolveDeviceModel } from '@perawallet/wallet-extension-ledger-shared'
-import { createLedgerTransportWrapper } from '@perawallet/wallet-extension-ledger-shared'
+import { classifyBleLedgerError } from './classifyBleLedgerError'
 
 /** Unrecognized values fall back to `unknown`. */
 const BLE_STATE_MAP: Record<string, HardwareWalletAdapterState> = {
@@ -157,7 +156,7 @@ const hasBlePermissions = async (): Promise<boolean> => {
 /**
  * React Native implementation of HardwareWalletService for Ledger BLE.
  * Uses @ledgerhq/react-native-hw-transport-ble for BLE communication
- * and @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
+ * and the registered Ledger app driver for the chain app's APDU commands.
  */
 export class RNLedgerService implements HardwareWalletService {
     manufacturer = 'ledger' as const
@@ -204,7 +203,7 @@ export class RNLedgerService implements HardwareWalletService {
                     },
                     error: (err: unknown) => {
                         if (onError) {
-                            onError(classifyLedgerError(err))
+                            onError(classifyBleLedgerError(err))
                         }
                     },
                     complete: () => {},
@@ -214,6 +213,9 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<LedgerTransport> {
+                // Resolved at connect, not when the transport registers: the
+                // chain package registers its driver after the transports.
+                const appDriver = ledgerAppDriverRegistry.resolve()
                 // Reads the observed adapter state, NOT
                 // `TransportBLE.isSupported()` — that only reports whether the
                 // native module is linked and resolves true regardless of radio
@@ -242,13 +244,9 @@ export class RNLedgerService implements HardwareWalletService {
                 // the transport triggers the OS pairing prompt on demand.
                 try {
                     const bleTransport = await TransportBLE.open(deviceId)
-                    const algorandApp = new AlgorandApp(bleTransport)
-                    return createLedgerTransportWrapper(
-                        bleTransport,
-                        algorandApp,
-                    )
+                    return appDriver.open(bleTransport, classifyBleLedgerError)
                 } catch (error) {
-                    throw classifyLedgerError(error)
+                    throw classifyBleLedgerError(error)
                 }
             },
 

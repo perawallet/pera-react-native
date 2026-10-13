@@ -11,24 +11,19 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchDistinctPairsHistory } from '../api'
 import { swapQueryKeys } from './querykeys'
 
 export const useDistinctPairsHistoryQuery = (
     address: string,
+    scope: ChainScope,
     statuses?: string,
     enabled: boolean = true,
 ) => {
-    const { network } = useNetwork()
-
     return useQuery({
-        queryKey: swapQueryKeys.distinctPairsHistory(
-            address,
-            statuses,
-            network,
-        ),
-        queryFn: () => fetchDistinctPairsHistory(address, network, statuses),
+        queryKey: swapQueryKeys.distinctPairsHistory(address, statuses, scope),
+        queryFn: () => fetchDistinctPairsHistory(address, scope, statuses),
         enabled,
     })
 }

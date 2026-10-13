@@ -14,8 +14,3 @@ export {
     mockTransactionsCsv,
     type MockTransactionsCsvParams,
 } from './api/csv-export/msw-handlers'
-
-export {
-    mockTransactionHistory,
-    type MockTransactionHistoryParams,
-} from './api/history/msw-handlers'

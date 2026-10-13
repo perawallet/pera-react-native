@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWLoadingIndicator,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { MultisigInfoCard } from '@components/MultisigInfoCard'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -71,7 +77,7 @@ export const ImportSharedAccountScreen = () => {
                 testID='import-shared-account-screen'
             >
                 <PWView style={styles.centerState}>
-                    <ActivityIndicator />
+                    <PWLoadingIndicator />
                     <PWText style={styles.stateBody}>
                         {t('multisig.import.loading')}
                     </PWText>

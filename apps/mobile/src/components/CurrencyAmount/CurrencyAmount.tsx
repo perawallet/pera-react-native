@@ -16,7 +16,6 @@ import { useMemo } from 'react'
 import {
     formatCurrency,
     formatRawNumberInput,
-    isAlgoAssetId,
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -31,6 +30,7 @@ import {
 } from '@theme/typography'
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { resolvePrecision, type PrecisionVariant } from './precision'
+import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 const ALGO_SYMBOL = '¦'
 
@@ -96,6 +96,7 @@ export type CurrencyAmountProps = {
 
 export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const themeStyle = useStyles(props)
+    const isNativeAssetId = useIsNativeAssetId()
     const {
         currency,
         assetId,
@@ -123,7 +124,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
 
     // Identity comes from the asset id alone; `currency` never earns the glyph.
     const isAssetMode = assetId != null
-    const isAlgo = isAlgoAssetId(assetId)
+    const isAlgo = isNativeAssetId(assetId)
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
     const { currentLanguage } = useLanguage()

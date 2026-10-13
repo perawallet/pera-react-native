@@ -213,6 +213,9 @@ platform :ios do
       clean: clean
     )
 
+    # ci/jobs/ios.sh passes this while CI_UPLOADS_ENABLED is off: a signed IPA, nothing uploaded.
+    next if options[:skip_upload].to_s == "true"
+
     # Upload every dSYM the archive produced — not only the app zip gym
     # exports — so React Native / Hermes-VM crash frames symbolicate too, not
     # just native ones. RN 0.86's prebuilt hermesvm.xcframework ships no dSYM

@@ -15,28 +15,27 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 
-const ALGO_ASSET = { assetId: 0, name: 'Algorand', unitName: 'ALGO' }
-
 const mocks = vi.hoisted(() => ({
     useAssetsQuery: vi.fn(),
     getAllHeldAssetIdsForNetwork: vi.fn(),
+    nativeAsset: { assetId: 0, name: 'Algorand', unitName: 'ALGO' },
 }))
+
+const ALGO_ASSET = mocks.nativeAsset
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: 0,
-    ALGO_ASSET: { assetId: 0, name: 'Algorand', unitName: 'ALGO' },
+    useNativeAsset: () => mocks.nativeAsset,
     useAssetsQuery: mocks.useAssetsQuery,
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('../../db', () => ({
     getAllHeldAssetIdsForNetwork: mocks.getAllHeldAssetIdsForNetwork,
 }))
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useOwnedAssets } from '../useOwnedAssets'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const USDC = { assetId: 31566704, name: 'USD Coin', unitName: 'USDC' }
 
@@ -71,7 +70,7 @@ describe('useOwnedAssets', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useOwnedAssets(), {
+        const { result } = renderHook(() => useOwnedAssets(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -88,7 +87,7 @@ describe('useOwnedAssets', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useOwnedAssets(), {
+        const { result } = renderHook(() => useOwnedAssets(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -109,7 +108,7 @@ describe('useOwnedAssets', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useOwnedAssets(), {
+        const { result } = renderHook(() => useOwnedAssets(SCOPE), {
             wrapper: createWrapper(),
         })
 
@@ -119,7 +118,7 @@ describe('useOwnedAssets', () => {
 
     it('does not query held ids and is not loading when disabled', () => {
         const { result } = renderHook(
-            () => useOwnedAssets({ enabled: false }),
+            () => useOwnedAssets(SCOPE, { enabled: false }),
             {
                 wrapper: createWrapper(),
             },

@@ -34,6 +34,8 @@ import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
 
+export type ConfirmActionPending = 'confirm' | 'cancel' | 'tertiary'
+
 export type ConfirmActionLayoutProps = {
     icon?: IconName
     iconVariant?: PWIconVariant
@@ -52,9 +54,13 @@ export type ConfirmActionLayoutProps = {
     cancelVariant?: PWButtonProps['variant']
     tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
+    isConfirmDisabled?: boolean
+    pendingAction?: ConfirmActionPending
+    children?: ReactNode
     testID?: string
     confirmTestID?: string
     cancelTestID?: string
+    tertiaryTestID?: string
 }
 
 export const ConfirmActionLayout = ({
@@ -74,10 +80,15 @@ export const ConfirmActionLayout = ({
     cancelVariant = 'secondary',
     tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
+    isConfirmDisabled,
+    pendingAction,
+    children,
     testID,
     confirmTestID,
     cancelTestID,
+    tertiaryTestID,
 }: ConfirmActionLayoutProps) => {
+    const isPending = pendingAction !== undefined
     const insets = useSafeAreaInsets()
     const styles = useStyles({
         bottomInset: insets.bottom,
@@ -124,11 +135,14 @@ export const ConfirmActionLayout = ({
             ) : (
                 !!message && <PWView style={styles.message}>{message}</PWView>
             )}
+            {!!children && <PWView style={styles.content}>{children}</PWView>}
             {!!confirmLabel && (
                 <PWView style={styles.actions}>
                     <PWButton
                         variant={confirmVariant}
                         title={confirmLabel}
+                        isDisabled={isConfirmDisabled || isPending}
+                        isLoading={pendingAction === 'confirm'}
                         onPress={onConfirm}
                         paddingStyle={buttonPaddingStyle}
                         testID={confirmTestID}
@@ -137,6 +151,8 @@ export const ConfirmActionLayout = ({
                         <PWButton
                             variant={cancelVariant}
                             title={cancelLabel}
+                            isDisabled={isPending}
+                            isLoading={pendingAction === 'cancel'}
                             onPress={onCancel}
                             paddingStyle={buttonPaddingStyle}
                             testID={cancelTestID}
@@ -146,8 +162,11 @@ export const ConfirmActionLayout = ({
                         <PWButton
                             variant={tertiaryVariant}
                             title={tertiaryLabel}
+                            isDisabled={isPending}
+                            isLoading={pendingAction === 'tertiary'}
                             onPress={onTertiary}
                             paddingStyle={buttonPaddingStyle}
+                            testID={tertiaryTestID}
                         />
                     )}
                 </PWView>

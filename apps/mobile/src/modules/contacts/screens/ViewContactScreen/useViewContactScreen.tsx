@@ -22,6 +22,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 
 export type UseViewContactScreenResult = {
     selectedContact: Maybe<Contact>
+    address: string
     nfdName: Optional<string>
     openQR: () => void
     goToEdit: () => void
@@ -33,10 +34,11 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
 
-    const { data: nfdNames } = useNfdForAddressQuery(
-        selectedContact?.address ?? '',
-        { enabled: !!selectedContact?.address },
-    )
+    const address = selectedContact?.addresses.algorand ?? ''
+
+    const { data: nfdNames } = useNfdForAddressQuery(address, {
+        enabled: !!address,
+    })
     const nfdName = nfdNames?.at(0)?.name
 
     const openQR = useCallback(() => {
@@ -56,15 +58,16 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
         try {
             await shareText({
                 title: selectedContact.name,
-                message: selectedContact.address,
+                message: address,
             })
         } catch {
             // User cancelled — ignore.
         }
-    }, [selectedContact])
+    }, [selectedContact, address])
 
     return {
         selectedContact,
+        address,
         nfdName,
         openQR,
         goToEdit,

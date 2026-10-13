@@ -20,9 +20,7 @@ import type {
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const makeDevice = (
     overrides: { name?: string; transportType?: LedgerTransportType } = {},
@@ -57,7 +55,8 @@ describe('LedgerDeviceItem', () => {
             />,
         )
 
-        expect(screen.getByText('ledger.scan.transport_ble')).toBeTruthy()
+        // PWChip upper-cases its title.
+        expect(screen.getByText('LEDGER.SCAN.TRANSPORT_BLE')).toBeTruthy()
     })
 
     it('shows a USB badge for a USB device', () => {
@@ -68,7 +67,7 @@ describe('LedgerDeviceItem', () => {
             />,
         )
 
-        expect(screen.getByText('ledger.scan.transport_usb')).toBeTruthy()
+        expect(screen.getByText('LEDGER.SCAN.TRANSPORT_USB')).toBeTruthy()
     })
 
     it('reports the pressed device', () => {

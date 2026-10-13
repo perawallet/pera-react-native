@@ -31,7 +31,7 @@ const apiAsset = (
 
 describe('transformDexSwapAsset', () => {
     it('maps snake_case API fields to the camelCase domain shape', () => {
-        expect(transformDexSwapAsset(apiAsset())).toEqual({
+        expect(transformDexSwapAsset(apiAsset(), 'native')).toEqual({
             assetId: '31566704',
             logo: 'https://cdn/usdc.png',
             name: 'USD Coin',
@@ -43,15 +43,16 @@ describe('transformDexSwapAsset', () => {
         })
     })
 
-    it('defaults a missing asset_id to "0" (ALGO sentinel)', () => {
+    it("defaults a missing asset_id to the chain's native asset id", () => {
         expect(
-            transformDexSwapAsset(apiAsset({ asset_id: null })).assetId,
-        ).toBe('0')
+            transformDexSwapAsset(apiAsset({ asset_id: null }), 'native')
+                .assetId,
+        ).toBe('native')
     })
 
     it('normalizes a null logo to undefined', () => {
         expect(
-            transformDexSwapAsset(apiAsset({ logo: null })).logo,
+            transformDexSwapAsset(apiAsset({ logo: null }), 'native').logo,
         ).toBeUndefined()
     })
 })

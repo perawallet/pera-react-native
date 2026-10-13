@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useAccountHoldingsInvalidator } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,

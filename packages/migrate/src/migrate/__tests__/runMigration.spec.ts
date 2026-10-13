@@ -11,19 +11,19 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Platform } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyMigrationData,
     MigrationService,
     MigrationStepVersions,
 } from '@perawallet/wallet-extension-platform'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const emptyLegacyData = (): LegacyMigrationData =>
     ({
         auth: { pin: null },
         accounts: [],
-        hdWallets: [],
+        hdSeeds: [],
     }) as unknown as LegacyMigrationData
 
 import { runMigration } from '../runMigration'
@@ -33,7 +33,7 @@ import {
     ALL_MIGRATION_STEPS,
     MIGRATION_STEP_TARGET_VERSIONS,
 } from '../stepVersions'
-import type { MigrationDeps } from '../types'
+import type { MigrationDeps, MigrationRunOptions } from '../types'
 
 vi.mock('../runMigrationLoop', () => ({ runMigrationLoop: vi.fn() }))
 vi.mock('../runExtrasMigration', () => ({ runExtrasMigration: vi.fn() }))
@@ -53,8 +53,6 @@ const buildMigrationService = (overrides: Partial<MigrationService> = {}) => {
         markMigrationComplete: vi.fn().mockResolvedValue(undefined),
         clearMigrationComplete: vi.fn().mockResolvedValue(undefined),
         getMigrationPlans: vi.fn().mockResolvedValue([]),
-        simulateLegacyDatabase: vi.fn().mockResolvedValue(undefined),
-        simulatePreSixxAccounts: vi.fn().mockResolvedValue(undefined),
         resetLegacyData: vi.fn().mockResolvedValue(undefined),
         getCompletedStepVersions: vi
             .fn()
@@ -69,7 +67,8 @@ const buildMigrationService = (overrides: Partial<MigrationService> = {}) => {
     return service
 }
 
-const buildDeps = (): MigrationDeps => ({
+const buildDeps = (): MigrationRunOptions => ({
+    chainId: 'algorand',
     importAccount: vi.fn() as unknown as MigrationDeps['importAccount'],
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
@@ -223,8 +222,8 @@ describe('runMigration', () => {
     it('sets the sentinel only when both phases succeed', async () => {
         const migration = buildMigrationService()
         const platformSpy = vi
-            .spyOn(Platform, 'OS', 'get')
-            .mockReturnValue('ios' as typeof Platform.OS)
+            .spyOn(getProvider().deviceInfo, 'getDevicePlatform')
+            .mockReturnValue('ios')
 
         const result = await runMigration(migration, buildDeps())
 
@@ -240,7 +239,24 @@ describe('runMigration', () => {
         platformSpy.mockRestore()
     })
 
-    it('passes accounts + hdWallets + deps into runMigrationLoop', async () => {
+    it.each(['android', 'web'] as const)(
+        'records android as the source platform on %s',
+        async platform => {
+            const migration = buildMigrationService()
+            const platformSpy = vi
+                .spyOn(getProvider().deviceInfo, 'getDevicePlatform')
+                .mockReturnValue(platform)
+
+            await runMigration(migration, buildDeps())
+
+            expect(migration.markMigrationComplete).toHaveBeenCalledWith(
+                'android',
+            )
+            platformSpy.mockRestore()
+        },
+    )
+
+    it('passes accounts + hdSeeds + deps into runMigrationLoop', async () => {
         const data: LegacyMigrationData = emptyLegacyData()
         const migration = buildMigrationService({
             getLegacyData: vi.fn().mockResolvedValue(data),
@@ -251,8 +267,9 @@ describe('runMigration', () => {
 
         expect(mockedRunMigrationLoop).toHaveBeenCalledWith({
             accounts: data.accounts,
-            hdWallets: data.hdWallets,
+            hdSeeds: data.hdSeeds,
             isRerun: false,
+            chainId: 'algorand',
             importAccount: deps.importAccount,
             createHdWalletAccount: deps.createHdWalletAccount,
             createHDWalletKey: deps.createHDWalletKey,
@@ -322,9 +339,36 @@ describe('step-version orchestration', () => {
         expect(mockedRunMigrationLoop).not.toHaveBeenCalled()
         expect(mockedRunExtrasMigration).toHaveBeenCalledWith(
             expect.anything(),
-            ['deviceIdentifiers'],
+            {
+                chainId: 'algorand',
+                steps: ['deviceIdentifiers'],
+                walletConnectSessionKeys: undefined,
+            },
         )
         expect(result.completed).toBe(true)
+    })
+
+    it('hands the WalletConnect session-key store to the extras step, not the account loop', async () => {
+        const walletConnectSessionKeys = {
+            commit: vi.fn(),
+            has: vi.fn(),
+            read: vi.fn(),
+            remove: vi.fn(),
+        }
+
+        await runMigration(buildMigrationService(), {
+            ...buildDeps(),
+            walletConnectSessionKeys,
+        })
+
+        expect(mockedRunExtrasMigration).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ walletConnectSessionKeys }),
+        )
+        expect(mockedRunMigrationLoop).toHaveBeenCalledTimes(1)
+        expect(mockedRunMigrationLoop.mock.calls[0][0]).not.toHaveProperty(
+            'walletConnectSessionKeys',
+        )
     })
 
     it('records versions for succeeded steps even when another step fails', async () => {

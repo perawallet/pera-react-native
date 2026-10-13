@@ -12,8 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { Dialog } from '@rneui/themed'
-import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
-import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
 import {
     PWButton,
@@ -25,24 +24,28 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
+import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
+import { ConnectionSettingsItem } from '@modules/settings/components/ConnectionSettingsItem'
+import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import { useStyles } from './styles'
 
-const renderItem = ({ item }: { item: WalletConnectConnection }) => {
-    return <WalletConnectSessionItem session={item} />
-}
+const renderItem = ({ item }: { item: ConnectionSettingsRow }) => (
+    <ConnectionSettingsItem connection={item} />
+)
 
 export const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
-    // main's error surfacing, kept; this branch's connector-free hook, kept —
-    // no UI surface may own a WC connector on the extension.
+    // No UI surface may own a WC connector on the extension.
     const { showError } = useErrorToast()
-    const { connections, deleteAllSessions } = useWalletConnectSessionsControl()
+    const { connections, isHydrated, revokeAll, keyExtractor } =
+        useConnectionSettingsList()
     const scannerState = useModalState()
+    // Existing sessions stay listed and revocable while dappConnect is off; only a new one is refused.
+    const canConnect = useCapability({ anyChain: 'dappConnect' })
     const deleteState = useModalState()
     const styles = useStyles()
     const [isLoading, setIsLoading] = useState(false)
@@ -50,7 +53,7 @@ export const SettingsWalletConnectScreen = () => {
     useNavigationHeader({
         title: t('settings.main.wallet_connect_title'),
         right:
-            connections.length > 0 ? (
+            canConnect && connections.length > 0 ? (
                 <PWView testID='wallet_connect_qr_scanner_button'>
                     <PWIcon
                         name='camera'
@@ -62,22 +65,17 @@ export const SettingsWalletConnectScreen = () => {
 
     const handleDeleteAll = useCallback(() => {
         setIsLoading(true)
-        void deleteAllSessions()
+        void revokeAll()
             .catch((error: unknown) => {
-                // Partial failure is possible: sessions that were killed stay
-                // killed, but the store may be stale afterwards — an
-                // already-killed session can reappear in the list. Cause:
-                // `useWalletConnect.deleteAllSessions` runs `Promise.all` over
-                // `disconnect()` calls that each filter one shared stale
-                // closure, so the last resolver wins. Known follow-up work,
-                // out of scope here — report, don't roll back.
+                // Partial failure is possible: `registry.disconnectAll` settles every
+                // peer independently, so surviving rows stay on screen. Report; don't roll back.
                 showError(error, t('common.error.title'))
             })
             .finally(() => {
                 setIsLoading(false)
                 deleteState.close()
             })
-    }, [deleteAllSessions, deleteState, showError, t])
+    }, [revokeAll, deleteState, showError, t])
 
     return (
         <PWScreen
@@ -87,26 +85,32 @@ export const SettingsWalletConnectScreen = () => {
             <PWFlatList
                 contentContainerStyle={styles.listContainer}
                 data={connections}
+                keyExtractor={keyExtractor}
                 renderItem={renderItem}
                 ListEmptyComponent={
                     <EmptyView
                         style={styles.emptyView}
                         icon='wallet-connect'
+                        isLoading={!isHydrated}
                         title={t('walletconnect.settings.empty_title')}
                         body={t('walletconnect.settings.empty_body')}
                         button={
-                            <PWButton
-                                title={t('walletconnect.settings.empty_button')}
-                                variant='primary'
-                                onPress={scannerState.open}
-                                testID='wallet_connect_connect_button'
-                            />
+                            canConnect ? (
+                                <PWButton
+                                    title={t(
+                                        'walletconnect.settings.empty_button',
+                                    )}
+                                    variant='primary'
+                                    onPress={scannerState.open}
+                                    testID='wallet_connect_connect_button'
+                                />
+                            ) : undefined
                         }
                     />
                 }
                 ListFooterComponentStyle={styles.listFooter}
                 ListFooterComponent={
-                    connections.length > 0 ? (
+                    canConnect && connections.length > 0 ? (
                         <PWButton
                             title={t('walletconnect.settings.clear_all')}
                             variant='secondary'

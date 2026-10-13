@@ -13,64 +13,66 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { splitLocalUnsignedSigners } from '../splitLocalUnsignedSigners'
 
 const algo25 = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
-    address,
-    keyPairId: `kp-${address}`,
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const hardware = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
-    type: AccountTypes.hardware,
-    address,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'dev-1',
-        deviceName: 'Ledger Nano X',
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'dev-1',
+            deviceName: 'Ledger Nano X',
+            transportType: 'ble',
+        },
         accountIndex: 0,
-        transportType: 'ble',
     },
+    chains: { algorand: { address } },
 })
 
 describe('splitLocalUnsignedSigners', () => {
     it('returns empty groups when given an empty list', () => {
-        expect(splitLocalUnsignedSigners([])).toEqual({
+        expect(splitLocalUnsignedSigners([], 'algorand')).toEqual({
             localKey: [],
             hardware: new Set(),
         })
     })
 
     it('places local-key accounts in localKey and hardware accounts in hardware (by address)', () => {
-        const result = splitLocalUnsignedSigners([
-            algo25('A'),
-            hardware('L1'),
-            algo25('B'),
-            hardware('L2'),
-        ])
+        const result = splitLocalUnsignedSigners(
+            [algo25('A'), hardware('L1'), algo25('B'), hardware('L2')],
+            'algorand',
+        )
 
-        expect(result.localKey.map(a => a.address)).toEqual(['A', 'B'])
+        expect(result.localKey.map(a => a.chains.algorand?.address)).toEqual([
+            'A',
+            'B',
+        ])
         expect(result.hardware).toEqual(new Set(['L1', 'L2']))
     })
 
     it('preserves the input order within localKey', () => {
-        const result = splitLocalUnsignedSigners([
-            algo25('B'),
-            algo25('A'),
-            algo25('C'),
-        ])
+        const result = splitLocalUnsignedSigners(
+            [algo25('B'), algo25('A'), algo25('C')],
+            'algorand',
+        )
 
-        expect(result.localKey.map(a => a.address)).toEqual(['B', 'A', 'C'])
+        expect(result.localKey.map(a => a.chains.algorand?.address)).toEqual([
+            'B',
+            'A',
+            'C',
+        ])
     })
 
     it('returns only-hardware result when no local-key accounts are present', () => {
-        const result = splitLocalUnsignedSigners([hardware('L')])
+        const result = splitLocalUnsignedSigners([hardware('L')], 'algorand')
 
         expect(result.localKey).toEqual([])
         expect(result.hardware).toEqual(new Set(['L']))

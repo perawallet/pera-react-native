@@ -28,7 +28,10 @@ vi.mock('@react-navigation/native', async () => {
 
 const mockMutateAsync = vi.fn()
 const mockSetOnboardingStep = vi.fn()
+// Default: the account already created its on-chain card, so a token lands on Home.
+const mockEscrowCardAddress: { value: string | null } = { value: 'ESCROW_CARD' }
 const mockSendOtpMutateAsync = vi.fn()
+const mockRestoreMutateAsync = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -50,7 +53,19 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             getState: () => ({
                 contactVerificationId: 'mock-contact-id',
                 setOnboardingStep: mockSetOnboardingStep,
+                escrowCardAddress: mockEscrowCardAddress.value,
             }),
+        }),
+        useRestoreEscrowCardMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mockRestoreMutateAsync,
+            isPending: false,
+            isError: false,
+            isSuccess: false,
+            isPaused: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
         }),
         useSendLoginOtpMutation: () => ({
             mutate: vi.fn(),
@@ -65,7 +80,21 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => [
+        { chains: { algorand: { address: 'ACCOUNT_A' } } },
+        { chains: { algorand: { address: 'ACCOUNT_B' } } },
+    ],
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
@@ -86,9 +115,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardSignInScreen } from '../useCardSignInScreen'
 
@@ -157,6 +184,131 @@ describe('useCardSignInScreen', () => {
         })
 
         expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.RecoverSignIn)
+    })
+
+    it('lands a fully set-up account (token + escrow card) on the wallet home', async () => {
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'PeraCardAccount' },
+        })
+        expect(mockRestoreMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('resumes the setup checklist when the account has a token but no on-chain card yet', async () => {
+        // Registration complete is not setup complete: without an escrow card
+        // the signing steps never ran, and only the checklist can start them.
+        mockEscrowCardAddress.value = null
+        mockRestoreMutateAsync.mockResolvedValue(null)
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'CardOnboarding',
+            params: { screen: 'CardOnboardingStatus', params: {} },
+        })
+        expect(mockNavigate).not.toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'PeraCardAccount' },
+        })
+        mockEscrowCardAddress.value = 'ESCROW_CARD'
+    })
+
+    it('lands on the wallet home when the backend holds a card made on another device', async () => {
+        mockEscrowCardAddress.value = null
+        mockRestoreMutateAsync.mockResolvedValue('RESTORED_CARD')
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockRestoreMutateAsync).toHaveBeenCalledWith([
+            'ACCOUNT_A',
+            'ACCOUNT_B',
+        ])
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'PeraCardAccount' },
+        })
+        mockEscrowCardAddress.value = 'ESCROW_CARD'
+    })
+
+    it('falls back to the setup checklist when the card lookup fails', async () => {
+        mockEscrowCardAddress.value = null
+        mockRestoreMutateAsync.mockRejectedValue(new Error('network'))
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'CardOnboarding',
+            params: { screen: 'CardOnboardingStatus', params: {} },
+        })
+        expect(mockErrorToast).not.toHaveBeenCalled()
+        mockEscrowCardAddress.value = 'ESCROW_CARD'
     })
 
     it('keeps the OTP submit gated until the code is complete', () => {
@@ -267,6 +419,46 @@ describe('useCardSignInScreen', () => {
                 'peraCard.sign_in.error_body',
             )
             expect(mockNavigate).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('OTP destination hint', () => {
+        const signInRequiringOtp = async (phoneNumber: unknown) => {
+            mockMutateAsync.mockResolvedValue({
+                accessToken: null,
+                userId: 'user-1',
+                isOtpRequired: true,
+                phoneNumber,
+                phase: null,
+                verificationState: null,
+                isLinked: true,
+            })
+            const { result } = renderHook(() => useCardSignInScreen())
+            act(() => {
+                Object.assign(result.current.control._formValues, {
+                    email: 'user@example.com',
+                    password: 'hunter2hunter22!',
+                })
+            })
+            await act(async () => {
+                result.current.handleSignIn()
+            })
+            return result
+        }
+
+        it('masks the number Baanx sent the code to', async () => {
+            const result = await signInRequiringOtp('+905551234567')
+
+            expect(result.current.isOtpRequired).toBe(true)
+            expect(result.current.otpPhone).toBe('••••4567')
+        })
+
+        // Without a destination the screen falls back to copy that does not
+        // name one, so null has to reach it rather than an empty string.
+        it('is null when login names no destination', async () => {
+            const result = await signInRequiringOtp(null)
+
+            expect(result.current.otpPhone).toBeNull()
         })
     })
 

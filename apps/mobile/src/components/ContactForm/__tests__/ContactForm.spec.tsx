@@ -136,7 +136,8 @@ describe('ContactForm', () => {
                 onPickImage={onPickImage}
             />,
         )
-        fireEvent.click(screen.getByTestId('PWTouchableOpacity'))
+        // The avatar's badge icon sits inside the touchable.
+        fireEvent.click(screen.getByTestId('icon-plus'))
         expect(onPickImage).toHaveBeenCalledTimes(1)
     })
 

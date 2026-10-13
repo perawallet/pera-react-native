@@ -11,7 +11,12 @@
  */
 
 import { useEffect, useState } from 'react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    custodyOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     mnemonicIndexToWord,
     pickDistinctIndexes,
@@ -48,7 +53,11 @@ export const useRandomMnemonicForAddress = (
     })
 
     useEffect(() => {
-        if (!address || !account || account.address !== address) {
+        if (
+            !address ||
+            !account ||
+            chainAccountOf(account, LEGACY_CHAIN_ID)?.address !== address
+        ) {
             setState({
                 picks: null,
                 error: new Error('Account not found'),
@@ -80,7 +89,7 @@ export const useRandomMnemonicForAddress = (
                 logger.error(
                     'BackupVerification: failed to sample mnemonic words',
                     {
-                        accountType: account.type,
+                        custody: custodyOf(account).kind,
                         error: err instanceof Error ? err.message : String(err),
                         stack: err instanceof Error ? err.stack : undefined,
                     },

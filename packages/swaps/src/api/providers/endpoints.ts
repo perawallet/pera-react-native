@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     providersResponseSchema,
@@ -17,6 +21,7 @@ import {
     type ProvidersApiResponse,
     type TopPairsApiResponse,
 } from './schema'
+import { swapAdapterFor } from '../../chain-adapter'
 import { transformProviderItem, transformTopPairItem } from './transformers'
 
 export const fetchProviders = async (network: Network) => {
@@ -31,15 +36,16 @@ export const fetchProviders = async (network: Network) => {
     return parsed.results.map(transformProviderItem)
 }
 
-export const fetchTopPairs = async (network: Network, limit?: number) => {
+export const fetchTopPairs = async (scope: ChainScope, limit?: number) => {
     const response = await queryClient<TopPairsApiResponse>({
         backend: 'pera',
-        network,
+        network: legacyNetworkOf(scope),
         method: 'GET',
         url: `/v2/dex-swap/top-pairs/`,
         params: limit !== undefined ? { limit } : undefined,
     })
 
     const parsed = topPairsResponseSchema.parse(response.data)
-    return parsed.results.map(transformTopPairItem)
+    const { nativeAssetId } = swapAdapterFor(scope)
+    return parsed.results.map(pair => transformTopPairItem(pair, nativeAssetId))
 }

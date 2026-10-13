@@ -19,7 +19,6 @@ import {
 
 import React, { useCallback, useEffect, useState } from 'react'
 import {
-    ActivityIndicator,
     type ImageSourcePropType,
     type StyleProp,
     type ImageStyle,
@@ -29,6 +28,7 @@ import {
 
 import { useStyles } from './styles'
 import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
+import { PWLoadingIndicator } from '../PWLoadingIndicator'
 
 export type PWImageProps = {
     source: ImageSource | ImageSourcePropType
@@ -146,7 +146,7 @@ export const PWImage = ({
             />
             {showLoadingIndicator && isLoading && (
                 <View style={styles.loadingOverlay}>
-                    {PlaceholderContent ?? <ActivityIndicator />}
+                    {PlaceholderContent ?? <PWLoadingIndicator />}
                 </View>
             )}
         </View>

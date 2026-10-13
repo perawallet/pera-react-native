@@ -64,6 +64,12 @@ export type CardUxState = BaseStoreState & {
     /** Persisted so the card-creation step can read it. */
     selectedFundingType: Nullable<FundingType>
     /**
+     * Baanx user the persisted setup state (funding selection + escrow card)
+     * belongs to. The store is per device; a different user signing in must
+     * not inherit another user's card.
+     */
+    cardUserId: Nullable<string>
+    /**
      * Persisted, and left intact by `resetOnboardingProgress`, so a retry
      * reuses the created card instead of creating a second one. Reuse is scoped
      * to BOTH {@link escrowCardOwner} and {@link escrowCardNetwork}.
@@ -98,6 +104,12 @@ export type CardUxState = BaseStoreState & {
     setAllowMarketing: (allowMarketing: boolean) => void
     setAllowSms: (allowSms: boolean) => void
     setConnectedFundingSourceAddress: (address: Nullable<string>) => void
+    /**
+     * Records the Baanx user the device's setup state belongs to. When it
+     * differs from the previous owner (including an unknown one), the funding
+     * selection and escrow card are cleared first.
+     */
+    adoptCardUser: (userId: string) => void
     setSelectedFundingType: (type: Nullable<FundingType>) => void
     /** Records (or clears, with null) the escrow card, its owner, network, and txId. */
     setEscrowCard: (
@@ -108,6 +120,16 @@ export type CardUxState = BaseStoreState & {
             txId: string
         }>,
     ) => void
+    /**
+     * Adopts a card the backend already holds for this user (created on
+     * another device or install), and its owner as the funding source. No
+     * txId is known, and approval is assumed, so creation never re-runs.
+     */
+    restoreEscrowCard: (card: {
+        cardAddress: string
+        ownerAddress: string
+        network: Network
+    }) => void
     /** Marks the current escrow card as approved by AB. */
     markEscrowCardApproved: () => void
     setCardSnapshot: (snapshot: {

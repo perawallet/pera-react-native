@@ -11,7 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import { logger } from '@perawallet/wallet-core-shared'
+import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import {
     UpsertResult,
     type BatchUpsertRequest,
@@ -20,6 +20,10 @@ import {
 } from '../api'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import {
+    isAccountKey,
+    isContactItemKey,
+    isPasskeyItemKey,
+    isSettingsItemKey,
     BackupItemStatus,
     type BackupId,
     type BackupItemKey,
@@ -28,7 +32,14 @@ import {
     type SyncState,
 } from '../models'
 import { canonicalJson } from './canonicalize'
+import { settingsDocumentToPayload } from './settingsDocument'
+import { BackupPushIncompleteError, BackupSyncAbortedError } from './types'
 import type { LocalItem } from './types'
+
+/** The server writes a batch item by item under the backup's write lock, so an
+ *  unbounded batch holds it past the client timeout and blocks every other
+ *  write, the backup delete included. */
+const UPSERT_BATCH_SIZE = 25
 
 export type PushDirtyDeps = {
     network: Network
@@ -47,18 +58,74 @@ export type PushDirtyDeps = {
         deviceId: DeviceId,
         key: BackupItemKey,
     ) => Promise<DeleteItemResponse>
+    /** Checked before each delete, which stops further deletes, and before
+     *  each upload batch, which drops it even when the stop lands during the
+     *  last delete. */
+    isAborted: () => boolean
 }
 
-/** Inject the LWW timestamp into the address payload before encrypting. */
+type DeleteItemDeps<TResponse> = Pick<
+    PushDirtyDeps,
+    'network' | 'backupId' | 'deviceId'
+> & {
+    deleteItem: (
+        network: Network,
+        backupId: BackupId,
+        deviceId: DeviceId,
+        key: BackupItemKey,
+    ) => Promise<TResponse>
+}
+
+/** The server's response, or `null` when it no longer holds the key. It
+ *  answers 404 for a key absent from its manifest, such as one that never
+ *  finished uploading, and that delete is done: retrying it can only 404 again. */
+export const deleteItemIfPresent = async <TResponse>(
+    deps: DeleteItemDeps<TResponse>,
+    key: BackupItemKey,
+): Promise<TResponse | null> => {
+    try {
+        return await deps.deleteItem(
+            deps.network,
+            deps.backupId,
+            deps.deviceId,
+            key,
+        )
+    } catch (error) {
+        if (isNotFoundError(error)) return null
+        throw error
+    }
+}
+
+/** Inject the LWW timestamp into payloads that carry one before encrypting.
+ *  Secrets have no `updatedAt` field, so they are deliberately left alone. */
 const withUpdatedAt = (
     item: LocalItem,
     updatedAt: number | null | undefined,
 ): string => {
+    const carriesUpdatedAt =
+        isAccountKey(item.key) ||
+        isContactItemKey(item.key) ||
+        isPasskeyItemKey(item.key)
     const payload =
-        item.key.startsWith('accounts/') && updatedAt != null
+        carriesUpdatedAt && updatedAt != null
             ? { ...(item.payload as Record<string, unknown>), updatedAt }
             : item.payload
     return canonicalJson(payload)
+}
+
+/** Null when there is nothing to send: a local item that is not on this
+ *  device right now, or a settings item never reconciled. */
+const plaintextFor = (
+    key: BackupItemKey,
+    tracked: SyncItemState,
+    local: LocalItem | undefined,
+): string | null => {
+    if (isSettingsItemKey(key)) {
+        return tracked.settingsFields
+            ? canonicalJson(settingsDocumentToPayload(tracked.settingsFields))
+            : null
+    }
+    return local ? withUpdatedAt(local, tracked.localUpdatedAt) : null
 }
 
 export const pushDirty = async ({
@@ -71,21 +138,32 @@ export const pushDirty = async ({
     deps: PushDirtyDeps
 }): Promise<SyncState> => {
     const items: Record<string, SyncItemState> = { ...state.items }
-    let lastSyncedSeq = state.lastSyncedSeq
+    const ownSeqs: number[] = []
+    const settled = (): SyncState => ({
+        ...state,
+        items,
+        lastSyncedSeq: advanceOverOwnWrites(state.lastSyncedSeq, ownSeqs),
+    })
     const localByKey = new Map(localItems.map(i => [i.key, i]))
 
     // 1. Process pending-delete keys first.
     for (const [key, item] of Object.entries(items)) {
         if (!item.pendingDelete) continue
+        if (deps.isAborted()) throw new BackupSyncAbortedError()
         try {
-            const res = await deps.deleteItem(
-                deps.network,
-                deps.backupId,
-                deps.deviceId,
-                key,
-            )
-            lastSyncedSeq = Math.max(lastSyncedSeq, res.seq)
-            delete items[key]
+            const res = await deleteItemIfPresent(deps, key)
+            if (res !== null) ownSeqs.push(res.seq)
+            // Tombstone rather than drop: if another device backs this account
+            // up again, the returning delta must read as "the user removed
+            // this here" and go to review, not as a brand-new item to import.
+            items[key] = {
+                ...item,
+                status: BackupItemStatus.IGNORED,
+                isDirty: false,
+                pendingDelete: false,
+                localContentHash: null,
+                localUpdatedAt: null,
+            }
         } catch (error) {
             logger.warn('pushDirty: delete failed', {
                 key,
@@ -104,9 +182,8 @@ export const pushDirty = async ({
 
     const entries = dirtyKeys
         .map(key => {
-            const local = localByKey.get(key)
-            if (!local) return null
-            const plaintext = withUpdatedAt(local, items[key].localUpdatedAt)
+            const plaintext = plaintextFor(key, items[key], localByKey.get(key))
+            if (plaintext === null) return null
             const payload = encryptItemPayload(plaintext, {
                 encryptionKey: deps.encryptionKey,
                 backupId: deps.backupId,
@@ -114,7 +191,7 @@ export const pushDirty = async ({
             })
             return {
                 key,
-                type: local.type,
+                type: items[key].type,
                 expected_ver: items[key].baseVer,
                 status: items[key].status,
                 payload,
@@ -122,18 +199,46 @@ export const pushDirty = async ({
         })
         .filter((e): e is NonNullable<typeof e> => e !== null)
 
-    if (entries.length === 0) return { ...state, items, lastSyncedSeq }
+    for (let i = 0; i < entries.length; i += UPSERT_BATCH_SIZE) {
+        if (deps.isAborted()) throw new BackupSyncAbortedError()
+        let response: BatchUpsertResponse
+        try {
+            response = await deps.batchUpsertItems(
+                deps.network,
+                deps.backupId,
+                deps.deviceId,
+                {
+                    device_id: deps.deviceId,
+                    items: entries.slice(i, i + UPSERT_BATCH_SIZE),
+                },
+            )
+        } catch (error) {
+            throw new BackupPushIncompleteError(settled(), error)
+        }
+        ownSeqs.push(...applyUpsertResults(items, response))
+    }
 
-    const response = await deps.batchUpsertItems(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        {
-            device_id: deps.deviceId,
-            items: entries,
-        },
-    )
+    return settled()
+}
 
+/** The cursor moves over our own writes only while they follow on from it. A
+ *  gap is another device's write landing between our requests, and the next
+ *  delta fetch has to start before it or that write is never pulled. */
+const advanceOverOwnWrites = (cursor: number, ownSeqs: number[]): number => {
+    let next = cursor
+    for (const seq of [...ownSeqs].sort((a, b) => a - b)) {
+        if (seq === next + 1) next = seq
+        else if (seq > next + 1) break
+    }
+    return next
+}
+
+/** Mutates `items` in place. */
+const applyUpsertResults = (
+    items: Record<string, SyncItemState>,
+    response: BatchUpsertResponse,
+): number[] => {
+    const seqs: number[] = []
     for (const result of response.results) {
         const existing = items[result.key]
         if (!existing) continue
@@ -145,8 +250,7 @@ export const pushDirty = async ({
                 isDirty: false,
                 localUpdatedAt: null,
             }
-            if (result.seq != null)
-                lastSyncedSeq = Math.max(lastSyncedSeq, result.seq)
+            if (result.seq != null) seqs.push(result.seq)
         } else if (result.result === UpsertResult.VERSION_CONFLICT) {
             // Keep the item dirty and DELIBERATELY leave `lastRemoteHash` stale.
             // The next sync's applyDeltas compares the delta hash against this
@@ -162,6 +266,5 @@ export const pushDirty = async ({
             }
         }
     }
-
-    return { ...state, items, lastSyncedSeq }
+    return seqs
 }

@@ -17,7 +17,9 @@ export type PWStaticWebViewSource =
 export type PWStaticWebViewProps = {
     /** Bundled HTML (with an optional base URL) or a remote URL. */
     source: PWStaticWebViewSource
-    // Web adapter ignores every WebView-specific prop; consumers pass them
+    onLoad?: () => void
+    onError?: () => void
+    // Web adapter ignores every other WebView-specific prop; consumers pass them
     // for native. Keep the index signature out — the native file intersects
     // with WebViewProps itself.
 }

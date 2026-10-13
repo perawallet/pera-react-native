@@ -13,6 +13,8 @@
 import type { MessagesStackParamList } from '@modules/messages/routes'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useCallback, useMemo, useState } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useInboxQuery, useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
@@ -22,12 +24,13 @@ export const useMessagesScreen = () => {
     const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()
 
     const initialTab = route.params?.initialTab
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         hasUnreadInboxItems,
         hasUnreadNotifications,
         isUnavailableOnNetwork,
-    } = useInboxStatus()
-    const { data: inboxItems } = useInboxQuery()
+    } = useInboxStatus(scope)
+    const { data: inboxItems } = useInboxQuery(scope)
 
     // Decided once at mount: the navigator only reads initialRouteName on its
     // first render, and the inbox query is subscribed session-long via

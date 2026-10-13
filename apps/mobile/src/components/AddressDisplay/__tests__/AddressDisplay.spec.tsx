@@ -23,20 +23,22 @@ const mockUseAllAccounts = vi.fn(() => [] as unknown[])
 const mockFindContacts = vi.fn(() => [] as unknown[])
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
+    useAccountPresentation: () => null,
     useAllAccounts: () => mockUseAllAccounts(),
     useCanSignWith: () => true,
-    useRekeyAccount: () => null,
+    useDelegatedAccount: () => null,
     useSignerFor: () => null,
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
     isMultisigAccount: () => false,
-    isRekeyedAccount: (account: { rekeyAddress?: string } | null | undefined) =>
-        !!account?.rekeyAddress,
+    useAuthorityOf: () => null,
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -267,7 +269,13 @@ describe('AddressDisplay', () => {
 
         it('renders the truncated address when the address matches a local account', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    name: 'My Wallet',
+                    chains: { algorand: { address } },
+                    custody: { kind: 'watch' },
+                },
+            ])
 
             render(
                 <AddressDisplay
@@ -303,7 +311,13 @@ describe('AddressDisplay', () => {
 
         it('prefers the truncated address over NFD and contact matches for a local account', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
-            mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    name: 'My Wallet',
+                    chains: { algorand: { address } },
+                    custody: { kind: 'watch' },
+                },
+            ])
             mockUseNfdForAddress.mockReturnValue({
                 data: [{ name: 'alice.algo' }],
                 isPending: false,

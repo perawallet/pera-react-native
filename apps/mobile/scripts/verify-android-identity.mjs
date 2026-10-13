@@ -26,12 +26,13 @@ const androidRoot = join(mobileRoot, 'android')
 
 const APP_ID = 'com.algorand.android'
 
-// the committed versionCode floor. Prebuild here runs without
-// BUILD_NUMBER, so the merged manifest versionCode must equal exactly the base.
-const { versionCodeBase } = JSON.parse(
+// The committed versionCode floor and marketing version. Prebuild here runs
+// without BUILD_NUMBER and APP_VERSION, so the merged manifest must carry
+// exactly the base and package.json's pre-suffix version.
+const { version, versionCodeBase } = JSON.parse(
     readFileSync(join(mobileRoot, 'package.json'), 'utf8'),
 )
-const EXPECTED_VERSION_NAME = '7.0.0'
+const EXPECTED_VERSION_NAME = version.split('-')[0]
 
 const failures = []
 const assert = (condition, message) => {
@@ -47,6 +48,10 @@ const env = {
     APP_ENV: 'production',
     PASSKEY_AUTOFILL_SITE: 'https://perawallet.app',
 }
+// The release workflow exports both before this runs, and either would move the
+// values asserted below off their committed floor.
+delete env.BUILD_NUMBER
+delete env.APP_VERSION
 const run = (cmd, args, cwd) =>
     execFileSync(cmd, args, { cwd, stdio: 'inherit', env })
 

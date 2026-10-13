@@ -411,7 +411,6 @@ test('add account navigates in-place instead of opening a new tab', async () => 
     await expect(
         popupPage.getByTestId('add_account_import_button'),
     ).toBeVisible({ timeout: 20_000 })
-    await expect(popupPage.getByTestId('expanded-redirect')).toHaveCount(0)
 
     // No new tab was spawned by the navigation.
     expect(context.pages().length).toBe(tabsBefore)

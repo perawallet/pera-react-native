@@ -19,8 +19,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const nav = vi.hoisted(() => {
     const listeners = new Map<string, () => void>()
     const navigate = vi.fn()
+    const goBack = vi.fn()
     return {
         navigate,
+        goBack,
         addListener: (event: string, cb: () => void) => {
             listeners.set(event, cb)
             return () => listeners.delete(event)
@@ -29,6 +31,7 @@ const nav = vi.hoisted(() => {
         reset: () => {
             listeners.clear()
             navigate.mockClear()
+            goBack.mockClear()
         },
     }
 })
@@ -42,7 +45,13 @@ const executeWithMnemonic = vi.hoisted(() =>
         return Promise.resolve()
     }),
 )
-const checkPinEnabled = vi.hoisted(() => vi.fn(() => Promise.resolve(false)))
+const requirePinVerification = vi.hoisted(() =>
+    vi.fn(() => Promise.resolve(true)),
+)
+
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({ requirePinVerification }),
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => nav,
@@ -51,7 +60,20 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: (selector: (state: unknown) => unknown) =>
-        selector({ accounts: [{ address: 'ADDR' }] }),
+        selector({
+            accounts: [
+                {
+                    id: 'account-1',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'ADDR' } },
+                },
+            ],
+        }),
+    findAddressHolder: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        scope: { chainId: string },
+        address: string,
+    ) => accounts.find(a => a.chains[scope.chainId]?.address === address),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -60,11 +82,10 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-security', () => ({
-    usePinCode: () => ({ checkPinEnabled }),
-}))
-
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
@@ -77,6 +98,40 @@ import { useBackupReminderMnemonicScreen } from '../useBackupReminderMnemonicScr
 describe('useBackupReminderMnemonicScreen', () => {
     beforeEach(() => {
         nav.reset()
+        executeWithMnemonic.mockClear()
+        requirePinVerification.mockResolvedValue(true)
+    })
+
+    it('does not fetch the mnemonic until the PIN or password prompt verifies', async () => {
+        let resolvePrompt: (isVerified: boolean) => void = () => {}
+        requirePinVerification.mockReturnValue(
+            new Promise<boolean>(resolve => {
+                resolvePrompt = resolve
+            }),
+        )
+
+        const { result } = renderHook(() => useBackupReminderMnemonicScreen())
+
+        expect(requirePinVerification).toHaveBeenCalledTimes(1)
+        expect(result.current.isPinGateResolved).toBe(false)
+        expect(executeWithMnemonic).not.toHaveBeenCalled()
+
+        await act(async () => {
+            resolvePrompt(true)
+        })
+
+        await waitFor(() => expect(result.current.wordIndices).not.toBeNull())
+        expect(executeWithMnemonic).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves the screen without revealing when the prompt is dismissed', async () => {
+        requirePinVerification.mockResolvedValue(false)
+
+        const { result } = renderHook(() => useBackupReminderMnemonicScreen())
+
+        await waitFor(() => expect(nav.goBack).toHaveBeenCalledTimes(1))
+        expect(result.current.isPinGateResolved).toBe(false)
+        expect(executeWithMnemonic).not.toHaveBeenCalled()
     })
 
     it('re-reveals the mnemonic when the user returns from the verification screen', async () => {
@@ -101,5 +156,34 @@ describe('useBackupReminderMnemonicScreen', () => {
         expect(Array.from(result.current.wordIndices ?? [])).toEqual([
             10, 20, 30,
         ])
+    })
+
+    it('zeroes the retained buffer when the screen unmounts', async () => {
+        const { result, unmount } = renderHook(() =>
+            useBackupReminderMnemonicScreen(),
+        )
+
+        await waitFor(() => expect(result.current.wordIndices).not.toBeNull())
+        const retained = result.current.wordIndices!
+
+        unmount()
+
+        // Routing this wipe through a setState updater silently skipped it:
+        // React does not invoke updaters on an unmounted fiber.
+        expect(Array.from(retained)).toEqual([0, 0, 0])
+    })
+
+    it('zeroes the previous buffer when a re-fetch replaces it', async () => {
+        const { result } = renderHook(() => useBackupReminderMnemonicScreen())
+
+        await waitFor(() => expect(result.current.wordIndices).not.toBeNull())
+        const first = result.current.wordIndices!
+
+        act(() => {
+            nav.fireFocus()
+        })
+        await waitFor(() => expect(result.current.wordIndices).not.toBe(first))
+
+        expect(Array.from(first)).toEqual([0, 0, 0])
     })
 })

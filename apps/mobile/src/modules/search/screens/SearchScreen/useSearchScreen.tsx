@@ -11,23 +11,48 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import { useWindowDimensions } from 'react-native'
 import {
     type WalletAccount,
+    findAccountByAddressOn,
+    useAllAccounts,
     useResolveAssetHolderAddress,
-    useSelectedAccountAddress,
+    useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import {
     SEARCH_SCOPES,
     useGlobalSearch,
     type SearchScope,
 } from '@perawallet/wallet-core-search'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SearchFilterContent } from '../../components/SearchFilterContent'
 
-const DEFAULT_SECTION_LIMIT = 5
+const MIN_SECTION_LIMIT = 5
+// Result rows render ~56pt at fontScale 1. Sizing against the whole window
+// rather than the measured list overshoots slightly, which is the point: the
+// results should reach past the fold instead of stopping short of it.
+const ESTIMATED_ROW_HEIGHT = 56
+
+const allocateSectionLimits = (counts: number[], budget: number): number[] => {
+    const limits = counts.map(() => 0)
+    let remaining = budget
+    while (remaining > 0 && limits.some((limit, i) => limit < counts[i])) {
+        for (let i = 0; i < counts.length && remaining > 0; i++) {
+            if (limits[i] < counts[i]) {
+                limits[i]++
+                remaining--
+            }
+        }
+    }
+    return limits.map((limit, i) =>
+        Math.min(counts[i], Math.max(limit, MIN_SECTION_LIMIT)),
+    )
+}
 
 export type SearchRow =
     | { type: 'section_header'; kind: SearchScope; key: string }
@@ -63,6 +88,7 @@ type SectionConfig = {
 }
 
 export const useSearchScreen = (): UseSearchScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const [scopes, setScopes] = useState<SearchScope[]>([...SEARCH_SCOPES])
     const toggleScope = useCallback((scope: SearchScope) => {
         setScopes(prev =>
@@ -72,13 +98,15 @@ export const useSearchScreen = (): UseSearchScreenResult => {
         )
     }, [])
     const { value, setValue, results, hasResults, isLoading } = useGlobalSearch(
+        scope,
         {
             scopes,
         },
     )
     const navigation = useAppNavigation()
-    const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const resolveAssetHolderAddress = useResolveAssetHolderAddress()
+    const { setSelectedAccountId } = useSelectedAccountId()
+    const accounts = useAllAccounts()
+    const resolveAssetHolderAddress = useResolveAssetHolderAddress(scope)
     const { setSelectedContact } = useContacts()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -106,6 +134,11 @@ export const useSearchScreen = (): UseSearchScreenResult => {
         setExpandedSections(prev => ({ ...prev, [kind]: true }))
     }, [])
 
+    const { height: windowHeight, fontScale = 1 } = useWindowDimensions()
+    const rowBudget = Math.ceil(
+        windowHeight / (ESTIMATED_ROW_HEIGHT * fontScale),
+    )
+
     const rows = useMemo<SearchRow[]>(() => {
         const sections: SectionConfig[] = [
             {
@@ -114,7 +147,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 toRow: (account: WalletAccount) => ({
                     type: 'account',
                     account,
-                    key: `account-${account.address}`,
+                    key: `account-${account.id}`,
                 }),
             },
             {
@@ -123,7 +156,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 toRow: (contact: Contact) => ({
                     type: 'contact',
                     contact,
-                    key: `contact-${contact.address}`,
+                    key: `contact-${contact.addresses.algorand}`,
                 }),
             },
             {
@@ -137,9 +170,14 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             },
         ]
 
+        const limits = allocateSectionLimits(
+            sections.map(section => section.items.length),
+            rowBudget,
+        )
+
         const out: SearchRow[] = []
-        for (const section of sections) {
-            if (section.items.length === 0) continue
+        sections.forEach((section, index) => {
+            if (section.items.length === 0) return
 
             out.push({
                 type: 'section_header',
@@ -150,7 +188,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             const isExpanded = expandedSections[section.kind]
             const visible = isExpanded
                 ? section.items
-                : section.items.slice(0, DEFAULT_SECTION_LIMIT)
+                : section.items.slice(0, limits[index])
 
             for (const item of visible) {
                 out.push((section.toRow as (i: unknown) => SearchRow)(item))
@@ -165,20 +203,20 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                     key: `show-more-${section.kind}`,
                 })
             }
-        }
+        })
 
         return out
-    }, [results, expandedSections])
+    }, [results, expandedSections, rowBudget])
 
     const onAccountPress = useCallback(
         (account: WalletAccount) => {
-            setSelectedAccountAddress(account.address)
+            setSelectedAccountId(account.id)
             navigation.navigate('TabBar', {
                 screen: 'Home',
                 params: { screen: 'AccountDetails' },
             })
         },
-        [navigation, setSelectedAccountAddress],
+        [navigation, setSelectedAccountId],
     )
 
     const onContactPress = useCallback(
@@ -196,8 +234,11 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             // and opt-out — so hand the selection to the real holder first or
             // the asset gets attributed to the account searched from.
             const holderAddress = await resolveAssetHolderAddress(asset.assetId)
-            if (holderAddress) {
-                setSelectedAccountAddress(holderAddress)
+            const holder = holderAddress
+                ? findAccountByAddressOn(accounts, scope.chainId, holderAddress)
+                : undefined
+            if (holder) {
+                setSelectedAccountId(holder.id)
             }
 
             navigation.navigate('TabBar', {
@@ -210,7 +251,13 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 },
             })
         },
-        [navigation, resolveAssetHolderAddress, setSelectedAccountAddress],
+        [
+            accounts,
+            navigation,
+            resolveAssetHolderAddress,
+            setSelectedAccountId,
+            scope.chainId,
+        ],
     )
 
     return {

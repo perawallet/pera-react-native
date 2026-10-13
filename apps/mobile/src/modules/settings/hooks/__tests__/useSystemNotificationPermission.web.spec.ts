@@ -14,8 +14,18 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
 const openExternalTabMock = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExternalTab: openExternalTabMock,
+}))
+
+const pushTokenState = vi.hoisted(() => ({
+    pushToken: 'fcm-token' as string | null,
+}))
+vi.mock('@perawallet/wallet-core-device', () => ({
+    usePushToken: () => ({
+        pushToken: pushTokenState.pushToken,
+        setPushToken: vi.fn(),
+    }),
 }))
 
 import { useSystemNotificationPermission } from '../useSystemNotificationPermission.web'
@@ -29,6 +39,7 @@ const setPermission = (permission: string): void => {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    pushTokenState.pushToken = 'fcm-token'
 })
 
 describe('useSystemNotificationPermission (web)', () => {
@@ -51,6 +62,41 @@ describe('useSystemNotificationPermission (web)', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.isEnabled).toBe(false)
+    })
+
+    // The manifest auto-grants the permission, so it alone would show the
+    // switch on in browsers whose push service refuses a token (Brave's
+    // default), where nothing is ever delivered.
+    it('reports disabled and flags the push service when granted without a token', async () => {
+        setPermission('granted')
+        pushTokenState.pushToken = null
+
+        const { result } = renderHook(() => useSystemNotificationPermission())
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.isEnabled).toBe(false)
+        expect(result.current.isPushServiceUnavailable).toBe(true)
+    })
+
+    it('does not flag the push service when a token exists', async () => {
+        setPermission('granted')
+
+        const { result } = renderHook(() => useSystemNotificationPermission())
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.isPushServiceUnavailable).toBe(false)
+    })
+
+    // Denied permission is its own, already-actionable state: the switch opens
+    // the notification settings, so the push-service hint would mislead.
+    it('does not flag the push service when permission is denied', async () => {
+        setPermission('denied')
+        pushTokenState.pushToken = null
+
+        const { result } = renderHook(() => useSystemNotificationPermission())
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.isPushServiceUnavailable).toBe(false)
     })
 
     it('re-reads the permission when the surface becomes visible again', async () => {

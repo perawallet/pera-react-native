@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { OnboardingStep, VerificationState } from '../models'
 import { useCardStore } from '../store'
@@ -59,9 +60,10 @@ export type UseOnboardingKycPollResult = {
  * "Invalid onboarding ID" from then on and the KYC decision must be tracked
  * via the authenticated user record instead.
  */
-export const useOnboardingKycPoll = ({
-    enabled = true,
-}: UseOnboardingKycPollOptions = {}): UseOnboardingKycPollResult => {
+export const useOnboardingKycPoll = (
+    scope: ChainScope,
+    { enabled = true }: UseOnboardingKycPollOptions = {},
+): UseOnboardingKycPollResult => {
     const onboardingId = useCardStore(state => state.onboardingId)
     const isRegistrationComplete = useCardStore(
         state => state.onboardingStep === OnboardingStep.Completed,
@@ -69,7 +71,7 @@ export const useOnboardingKycPoll = ({
     const [hasPollTimedOut, setHasPollTimedOut] = useState(false)
 
     const { data, isLoading, refetch, dataUpdatedAt, errorUpdatedAt } =
-        useOnboardingDetailsQuery({
+        useOnboardingDetailsQuery(scope, {
             onboardingId,
             enabled: enabled && !isRegistrationComplete,
             // Function form so polling stops on the very fetch that lands a

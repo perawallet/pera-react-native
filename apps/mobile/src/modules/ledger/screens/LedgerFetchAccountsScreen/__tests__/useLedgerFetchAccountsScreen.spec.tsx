@@ -43,9 +43,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -69,9 +67,18 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     fetchAccountExists: vi.fn().mockResolvedValue(true),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-blockchain')
+        typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))

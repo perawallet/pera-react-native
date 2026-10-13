@@ -12,24 +12,46 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { BackupItemType } from '../../models'
-import { buildLocalItems } from '../buildLocalItems'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import {
+    BackupItemType,
+    accountRecordItemKey,
+    createEmptySyncState,
+    secretsItemKey,
+    type AccountRecordPayload,
+    type SyncItemState,
+} from '../../models'
+import { buildLocalItems, withTrackedRecords } from '../buildLocalItems'
 import { contentHash, canonicalJson } from '../canonicalize'
 import type { SerializedAccount } from '../types'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+
+const watchRecord = (
+    chains: AccountRecordPayload['chains'],
+): AccountRecordPayload => ({
+    formatVersion: 2,
+    customName: null,
+    updatedAt: 5,
+    chains,
+})
 
 const fakeSerialize = async (account: {
     address?: string
 }): Promise<SerializedAccount | null> => {
     if (!account.address) return null
     return {
-        address: {
-            key: `accounts/${account.address}`,
+        record: {
+            key: accountRecordItemKey(hashAddress(account.address)),
             type: BackupItemType.ACCOUNT,
-            payload: {
-                type: 'watch',
-                address: account.address,
-                updatedAt: 5,
-            } as never,
+            payload: watchRecord([
+                { chain: 'algorand', type: 'watch', address: account.address },
+                {
+                    chain: 'ethereum',
+                    type: 'watch',
+                    address: `0x${account.address}`,
+                },
+            ]),
         },
         secrets: null,
     }
@@ -41,13 +63,27 @@ describe('buildLocalItems', () => {
             [{ address: 'A' } as never],
             fakeSerialize,
         )
+
+        const { updatedAt: _updatedAt, ...content } = watchRecord([
+            { chain: 'algorand', type: 'watch', address: 'A' },
+            { chain: 'ethereum', type: 'watch', address: '0xA' },
+        ])
         expect(items).toHaveLength(1)
         expect(skipped).toBe(0)
-        expect(items[0].key).toBe('accounts/A')
-        const expected = contentHash(
-            canonicalJson({ type: 'watch', address: 'A' }),
+        expect(items[0].contentHash).toBe(contentHash(canonicalJson(content)))
+    })
+
+    it('caches a record by its first address and every chain address', async () => {
+        const { items } = await buildLocalItems(
+            [{ address: 'A' } as never],
+            fakeSerialize,
         )
-        expect(items[0].contentHash).toBe(expected)
+
+        expect(items[0]).toMatchObject({
+            address: 'A',
+            addresses: ['A', '0xA'],
+            accountType: 'watch',
+        })
     })
 
     it('counts accounts the serializer returns null for instead of silently dropping them', async () => {
@@ -60,38 +96,77 @@ describe('buildLocalItems', () => {
     })
 
     it('emits extraItems and dedupes a shared key across HD children', async () => {
+        const seedSecret = {
+            key: secretsItemKey(hashAddress('SEED')),
+            type: BackupItemType.ACCOUNT,
+            payload: {
+                type: 'hdSeed',
+                seed: 's',
+                entropy: 'e',
+                address: 'SEED',
+            },
+        } as const
         const serialize = async (account: { address?: string }) => {
-            if (!account.address) return null
-            const seedSecret = {
-                key: 'secrets/A',
-                type: BackupItemType.ACCOUNT,
-                payload: { type: 'hdSeed', seed: 's', entropy: 'e' },
-            }
-            return {
-                address: {
-                    key: `accounts/${account.address}`,
-                    type: BackupItemType.ACCOUNT,
-                    payload: {
-                        type: 'hdWallet',
-                        address: account.address,
-                        seedFirstDerivedAddress: 'A',
-                        publicKey: 'pp',
-                        account: 0,
-                        change: 0,
-                        keyIndex: account.address === 'A' ? 0 : 1,
-                        derivationType: 9,
-                        updatedAt: 5,
-                    },
-                },
-                secrets: null,
-                extraItems: [seedSecret],
-            }
+            const serialized = await fakeSerialize(account)
+            return serialized && { ...serialized, extraItems: [seedSecret] }
         }
+
         const { items } = await buildLocalItems(
             [{ address: 'A' }, { address: 'B' }] as never,
-            serialize as never,
+            serialize,
         )
-        const keys = items.map(i => i.key).sort()
-        expect(keys).toEqual(['accounts/A', 'accounts/B', 'secrets/A'])
+
+        expect(items.map(item => item.key).sort()).toEqual(
+            [
+                accountRecordItemKey(hashAddress('A')),
+                accountRecordItemKey(hashAddress('B')),
+                secretsItemKey(hashAddress('SEED')),
+            ].sort(),
+        )
+    })
+})
+
+describe('withTrackedRecords', () => {
+    const localItems = async () =>
+        (await buildLocalItems([{ address: 'A' } as never], fakeSerialize))
+            .items
+
+    const trackedWith = (record: Record<string, unknown>) => {
+        const state = createEmptySyncState('b')
+        state.items[accountRecordItemKey(hashAddress('A'))] = {
+            record,
+        } as SyncItemState
+        return state
+    }
+
+    it('writes back a chain the account lacks here, and rehashes', async () => {
+        const [local] = await localItems()
+        const remote = {
+            ...watchRecord([
+                { chain: 'solana', type: 'watch', address: 'SOL' },
+            ]),
+            futureField: 1,
+        }
+
+        const [merged] = withTrackedRecords([local], trackedWith(remote))
+
+        expect(merged.payload).toMatchObject({
+            futureField: 1,
+            chains: [
+                { chain: 'algorand', address: 'A' },
+                { chain: 'ethereum', address: '0xA' },
+                { chain: 'solana', address: 'SOL' },
+            ],
+        })
+        expect(merged.addresses).toEqual(['A', '0xA', 'SOL'])
+        expect(merged.contentHash).not.toBe(local.contentHash)
+    })
+
+    it('leaves an item with no tracked record as built', async () => {
+        const [local] = await localItems()
+
+        expect(withTrackedRecords([local], createEmptySyncState('b'))).toEqual([
+            local,
+        ])
     })
 })

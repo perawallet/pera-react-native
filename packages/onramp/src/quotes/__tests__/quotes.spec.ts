@@ -15,19 +15,22 @@ import { Decimal } from 'decimal.js'
 
 import type { MeldQuote, XoQuote } from '../../models'
 import {
+    filterQuotesByPaymentMethod,
     parseRampAmount,
     pickBestQuote,
     quoteDestinationAmount,
+    quoteDestinationValueInUsd,
     sortQuotesByDestinationDesc,
 } from '..'
 
 const buildMeldQuote = (
     quoteId: string,
     destinationAmount: number,
+    paymentMethodId = 'CARD',
 ): MeldQuote => ({
     kind: 'meld',
     quoteId,
-    paymentMethod: { id: 'CARD', logo: null, name: 'Card' },
+    paymentMethod: { id: paymentMethodId, logo: null, name: paymentMethodId },
     sourceAmount: new Decimal(100),
     destinationAmount: new Decimal(destinationAmount),
     sourceCurrencyCode: 'USD',
@@ -125,5 +128,63 @@ describe('sortQuotesByDestinationDesc', () => {
             'meld-low',
         ])
         expect(quotes[0]?.quoteId).toBe('meld-low')
+    })
+})
+
+describe('filterQuotesByPaymentMethod', () => {
+    it('keeps only the quotes offering that payment method', () => {
+        const quotes = [
+            buildMeldQuote('card-a', 10, 'CREDIT_DEBIT_CARD'),
+            buildMeldQuote('apple-a', 11, 'APPLE_PAY'),
+            buildMeldQuote('card-b', 12, 'CREDIT_DEBIT_CARD'),
+        ]
+
+        const filtered = filterQuotesByPaymentMethod(
+            quotes,
+            'CREDIT_DEBIT_CARD',
+        )
+
+        expect(filtered.map(quote => quote.quoteId)).toEqual([
+            'card-a',
+            'card-b',
+        ])
+    })
+
+    it('returns every quote when no payment method is selected', () => {
+        const quotes = [
+            buildMeldQuote('card-a', 10, 'CREDIT_DEBIT_CARD'),
+            buildMeldQuote('apple-a', 11, 'APPLE_PAY'),
+        ]
+
+        expect(filterQuotesByPaymentMethod(quotes, null)).toHaveLength(2)
+    })
+})
+
+describe('quoteDestinationValueInUsd', () => {
+    it('prices the Meld destination amount at the token USD price', () => {
+        const quote = buildMeldQuote('meld-1', 1088.98188)
+
+        const value = quoteDestinationValueInUsd(
+            quote,
+            '100',
+            new Decimal('0.0861775004'),
+        )
+
+        expect(value?.toFixed(2)).toBe('93.85')
+    })
+
+    it('prices the fee-adjusted XO destination amount', () => {
+        // 10 * 5 - 1 = 49 ALGO at $2 = $98
+        const quote = buildXoQuote('xo-1', 5, 1)
+
+        expect(
+            quoteDestinationValueInUsd(quote, '10', new Decimal(2))?.toString(),
+        ).toBe('98')
+    })
+
+    it('returns null when the destination token has no known price', () => {
+        const quote = buildMeldQuote('meld-1', 500)
+
+        expect(quoteDestinationValueInUsd(quote, '100', null)).toBeNull()
     })
 })

@@ -27,9 +27,9 @@ import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
-import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
-import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
+import { ReceiveFundsContent } from '@modules/transactions/routes'
+import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
+import { BidaliContent } from '@modules/gift-card/routes'
 import { PasteLinkContent } from '@modules/menu/components/PasteLinkContent'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview'
@@ -41,7 +41,8 @@ import { useMenuScreen } from './useMenuScreen'
 export const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { isScannerVisible, openScanner, closeScanner } = useMenuScreen()
+    const { canStake, isScannerVisible, openScanner, closeScanner } =
+        useMenuScreen()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
@@ -157,7 +158,7 @@ export const MenuScreen = () => {
             </PWView>
 
             <PWView style={styles.menuContainer}>
-                {routeCapabilities.staking && (
+                {canStake && (
                     <PanelButton
                         title={t('menu.staking')}
                         titleWeight='h3'

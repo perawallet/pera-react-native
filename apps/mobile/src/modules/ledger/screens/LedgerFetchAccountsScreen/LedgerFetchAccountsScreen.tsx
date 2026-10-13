@@ -27,6 +27,7 @@ export const LedgerFetchAccountsScreen = () => {
         errorPreset,
         handleRetry,
         handleTroubleshoot,
+        handleCancel,
     } = useLedgerFetchAccountsScreen()
 
     if (errorPreset) {
@@ -43,6 +44,12 @@ export const LedgerFetchAccountsScreen = () => {
                     label: t('ledger.errors.troubleshoot'),
                     onPress: handleTroubleshoot,
                 }}
+                linkAction={
+                    handleCancel && {
+                        label: t('common.cancel.label'),
+                        onPress: handleCancel,
+                    }
+                }
                 testID='ledger-fetch-accounts-error'
             />
         )

@@ -11,32 +11,17 @@
  */
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
-import { fetchAccountsBalanceHistory } from './endpoints'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    AccountAddress,
-    AccountBalanceHistoryItem,
-    AccountBalanceHistoryResponse,
-    AccountBalanceHistoryResponseItem,
-} from '../models'
+import type { AccountAddress, AccountBalanceHistoryItem } from '../models'
+import {
+    fetchPortfolioHistory,
+    type PortfolioHistoryPoint,
+} from '../chain-adapter'
 import { useCallback } from 'react'
-import { Decimal } from 'decimal.js'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'
-
-const mapAccountBalanceHistoryItem = (
-    item: AccountBalanceHistoryResponseItem,
-    usdToPreferred: (amount: Decimal) => Nullable<Decimal>,
-): AccountBalanceHistoryItem => {
-    return {
-        datetime: new Date(item.datetime),
-        preferredValue: usdToPreferred(new Decimal(item.usd_value)),
-        algoValue: new Decimal(item.algo_value),
-        round: item.round,
-    }
-}
 
 export type UseAccountBalancesHistoryQueryResult = {
     data: AccountBalanceHistoryItem[]
@@ -45,7 +30,7 @@ export type UseAccountBalancesHistoryQueryResult = {
     isError: boolean
     isPaused: boolean
     error: Nullable<Error>
-    /** True when the active network has no Pera backend — this can never succeed here. */
+    /** True when the chain has no portfolio history source — this can never succeed here. */
     isUnavailableOnNetwork: boolean
     refetch: (options?: RefetchOptions) => unknown
 }
@@ -54,27 +39,28 @@ export type UseAccountBalancesHistoryQueryResult = {
 export const useAccountBalancesHistoryQuery = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
+    scope: ChainScope,
     enabled = true,
 ): UseAccountBalancesHistoryQueryResult => {
     const { usdToPreferred } = useCurrency()
-    const { network } = useNetwork()
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
-    const queryKey = getAccountBalancesHistoryQueryKey(
-        addresses,
-        period,
-        network,
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'balanceHistory',
     )
+    const queryKey = getAccountBalancesHistoryQueryKey(addresses, period, scope)
     const query = useQuery({
         queryKey,
         // Gated by callers on chart visibility — this hits a slow network
         // endpoint and is only needed to render the wealth chart/trend.
         enabled: enabled && addresses.length > 0 && !isUnavailableOnNetwork,
-        queryFn: () => fetchAccountsBalanceHistory(addresses, period, network),
+        queryFn: () => fetchPortfolioHistory(addresses, period, scope),
         select: useCallback(
-            (data: AccountBalanceHistoryResponse) =>
-                data?.results?.map(item =>
-                    mapAccountBalanceHistoryItem(item, usdToPreferred),
-                ) ?? [],
+            (points: PortfolioHistoryPoint[]): AccountBalanceHistoryItem[] =>
+                points.map(point => ({
+                    datetime: new Date(point.timestamp),
+                    preferredValue: usdToPreferred(point.usdValue),
+                    nativeValue: point.nativeValue,
+                })),
             [usdToPreferred],
         ),
     })
@@ -88,7 +74,7 @@ export const useAccountBalancesHistoryQuery = (
         error: query.error,
         isUnavailableOnNetwork,
         // The observer's refetch() ignores `enabled` and would still fire the
-        // doomed Pera request on a non-backed network.
+        // doomed request on a chain without the source.
         refetch: (options?: RefetchOptions) =>
             isUnavailableOnNetwork
                 ? Promise.resolve(query)

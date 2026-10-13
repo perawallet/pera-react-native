@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     BANNERS_MODULE_PREFIX,
     getBannersQueryKey,
@@ -19,22 +20,24 @@ import {
 } from '../querykeys'
 import type { Query } from '@tanstack/react-query'
 
+const MAINNET = scopeForLegacyNetwork('mainnet')
+
 describe('banners querykeys', () => {
-    test('banners list key is module-scoped and includes network + device', () => {
-        const key = getBannersQueryKey('mainnet', 'dev-1')
+    test('banners list key is module-scoped and includes scope + device', () => {
+        const key = getBannersQueryKey(MAINNET, 'dev-1')
         expect(key.at(0)).toBe(BANNERS_MODULE_PREFIX)
-        expect(key).toContainEqual({ network: 'mainnet', deviceID: 'dev-1' })
+        expect(key).toContainEqual({ scope: MAINNET, deviceID: 'dev-1' })
     })
 
     test('spot banners list key is distinct from regular banners', () => {
-        const k1 = getBannersQueryKey('mainnet', 'dev-1')
-        const k2 = getSpotBannersQueryKey('mainnet', 'dev-1')
+        const k1 = getBannersQueryKey(MAINNET, 'dev-1')
+        const k2 = getSpotBannersQueryKey(MAINNET, 'dev-1')
         expect(k1).not.toEqual(k2)
     })
 
     test('invalidateAllBannersPredicate matches keys under the prefix', () => {
         const matching = {
-            queryKey: getBannersQueryKey('mainnet', 'dev-1'),
+            queryKey: getBannersQueryKey(MAINNET, 'dev-1'),
         } as unknown as Query
         const other = {
             queryKey: ['unrelated'],

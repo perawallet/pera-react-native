@@ -11,7 +11,10 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { orderCard, CardOrderNotVerifiedError } from '../api/card'
 import {
     getCardApiError,
@@ -33,8 +36,10 @@ export type UseOrderCardMutationResult = CardMutationResult<void>
  * Registered under `cardMutationKeys.order` so concurrent mounted callers
  * (dashboard shell + details tab) can observe one shared in-flight attempt.
  */
-export const useOrderCardMutation = (): UseOrderCardMutationResult => {
-    const { network } = useNetwork()
+export const useOrderCardMutation = (
+    scope: ChainScope,
+): UseOrderCardMutationResult => {
+    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<void, Error, void>({
@@ -59,7 +64,7 @@ export const useOrderCardMutation = (): UseOrderCardMutationResult => {
         throwOnError: false,
         onSuccess: () => {
             void queryClient.invalidateQueries({
-                queryKey: cardQueryKeys.status(network),
+                queryKey: cardQueryKeys.status(scope),
             })
         },
         onError: error => {
@@ -68,7 +73,7 @@ export const useOrderCardMutation = (): UseOrderCardMutationResult => {
             // back to the verification-pending view.
             if (error instanceof CardOrderNotVerifiedError) {
                 void queryClient.invalidateQueries({
-                    queryKey: cardQueryKeys.user(network),
+                    queryKey: cardQueryKeys.user(scope),
                 })
             }
         },

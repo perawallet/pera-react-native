@@ -14,17 +14,15 @@ import { useCallback, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
+    buildAccount,
     useAccountsStore,
     useAllAccounts,
-    AccountTypes,
-    type WalletAccount,
+    findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { trackEvent, OnboardingEvent } from '@analytics'
-import {
-    generateOrderedUniqueId,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 
@@ -53,7 +51,8 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
 
     const isValidAddress = isValidAlgorandAddress(resolvedAddress)
     const isDuplicateAddress =
-        isValidAddress && accounts.some(a => a.address === resolvedAddress)
+        isValidAddress &&
+        !!findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, resolvedAddress)
 
     const handleAddressChange = useCallback((text: string) => {
         setAddress(text)
@@ -64,16 +63,16 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
             return
         }
 
-        const newAccount = {
-            id: generateOrderedUniqueId(),
-            address: resolvedAddress,
-            type: AccountTypes.watch,
-        }
+        const newAccount = buildAccount({
+            custody: { kind: 'watch' },
+            chainId: LEGACY_CHAIN_ID,
+            chains: { [LEGACY_CHAIN_ID]: { address: resolvedAddress } },
+        })
 
         setAccounts([...accounts, newAccount])
         trackEvent(OnboardingEvent.WatchAccountComplete)
         navigation.push('NameAccount', {
-            account: newAccount as WalletAccount,
+            account: newAccount,
         })
     }, [resolvedAddress, isDuplicateAddress, accounts, setAccounts, navigation])
 

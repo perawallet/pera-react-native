@@ -25,6 +25,7 @@ import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingPasswordScreenResult = {
     control: Control<PasswordSetFormValues>
@@ -44,6 +45,7 @@ export type UseCardOnboardingPasswordScreenResult = {
 
 export const useCardOnboardingPasswordScreen =
     (): UseCardOnboardingPasswordScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const { errorToast, infoToast } = useToast()
         const showError = useCardErrorToast({
@@ -66,7 +68,7 @@ export const useCardOnboardingPasswordScreen =
         const allowSms = useCardStore(state => state.allowSms)
         const setAllowMarketing = useCardStore(state => state.setAllowMarketing)
         const setAllowSms = useCardStore(state => state.setAllowSms)
-        const verifyEmail = useVerifyEmailMutation()
+        const verifyEmail = useVerifyEmailMutation(scope)
 
         const {
             control,

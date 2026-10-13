@@ -36,6 +36,9 @@ import {
     type Analytics,
     getAnalytics,
     logEvent as logEventGA,
+    resetAnalyticsData,
+    setAnalyticsCollectionEnabled,
+    setConsent,
 } from '@react-native-firebase/analytics'
 import { Platform } from 'react-native'
 import notifee, {
@@ -53,8 +56,8 @@ import {
     type PushTokenRefreshListener,
     type RemoteConfigService,
     type AnalyticsService,
-    RemoteConfigDefaults,
-    type RemoteConfigKey,
+    remoteConfigDefaultsRegistry,
+    type RemoteConfigDefaultsMap,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
 import { logger, withTimeout } from '@perawallet/wallet-core-shared'
@@ -71,7 +74,7 @@ type AwaitableRemoteConfig = RemoteConfig & {
     setConfigSettings(settings: {
         minimumFetchIntervalMillis: number
     }): Promise<void>
-    setDefaults(defaults: typeof RemoteConfigDefaults): Promise<null>
+    setDefaults(defaults: RemoteConfigDefaultsMap): Promise<null>
 }
 
 // FCM/APNs registration is a known indefinite-hang surface offline. Bound the
@@ -129,6 +132,7 @@ export class RNFirebaseService
     private remoteConfigInitInFlight: Promise<void> | null = null
     messaging: Messaging | null = null
     analytics: Analytics | null = null
+    private isAnalyticsCollectionEnabled = false
     crashlytics: Crashlytics | null = null
 
     // Single listener (the app registers one at the root). A cold-start tap
@@ -218,7 +222,7 @@ export class RNFirebaseService
                 ? 0
                 : config.remoteConfigRefreshTime,
         })
-        await remoteConfig.setDefaults(RemoteConfigDefaults)
+        await remoteConfig.setDefaults(remoteConfigDefaultsRegistry.all())
 
         try {
             await fetchAndActivate(remoteConfig)
@@ -233,7 +237,7 @@ export class RNFirebaseService
         }
     }
 
-    getStringValue(key: RemoteConfigKey, fallback?: string): string {
+    getStringValue(key: string, fallback?: string): string {
         try {
             if (!this.remoteConfig) {
                 return fallback ?? ''
@@ -243,7 +247,7 @@ export class RNFirebaseService
             return fallback ?? ''
         }
     }
-    getBooleanValue(key: RemoteConfigKey, fallback?: boolean): boolean {
+    getBooleanValue(key: string, fallback?: boolean): boolean {
         try {
             if (!this.remoteConfig) {
                 return fallback ?? false
@@ -265,7 +269,7 @@ export class RNFirebaseService
             return fallback ?? false
         }
     }
-    getNumberValue(key: RemoteConfigKey, fallback?: number): number {
+    getNumberValue(key: string, fallback?: number): number {
         try {
             if (!this.remoteConfig) {
                 return fallback ?? 0
@@ -484,13 +488,36 @@ export class RNFirebaseService
 
     initializeAnalytics(): void {
         this.analytics = getAnalytics()
+        this.applyAnalyticsConsent(this.analytics)
     }
 
     logEvent(key: string, payload?: Record<string, unknown>): void {
-        if (this.analytics) {
+        if (this.analytics && this.isAnalyticsCollectionEnabled) {
             // Fire-and-forget: analytics delivery must never surface to or
             // block the caller.
             void logEventGA<string>(this.analytics, key, payload)
         }
+    }
+
+    setCollectionEnabled(isEnabled: boolean): void {
+        const isWithdrawal = this.isAnalyticsCollectionEnabled && !isEnabled
+        this.isAnalyticsCollectionEnabled = isEnabled
+        if (!this.analytics) return
+        this.applyAnalyticsConsent(this.analytics)
+        if (isWithdrawal) void resetAnalyticsData(this.analytics)
+    }
+
+    // firebase.json keeps collection off and every consent type denied at
+    // launch; this is the only place either is switched on. The ad types stay
+    // denied regardless, since the app serves no ads.
+    private applyAnalyticsConsent(analytics: Analytics): void {
+        const isEnabled = this.isAnalyticsCollectionEnabled
+        void setConsent(analytics, {
+            analytics_storage: isEnabled,
+            ad_storage: false,
+            ad_user_data: false,
+            ad_personalization: false,
+        })
+        void setAnalyticsCollectionEnabled(analytics, isEnabled)
     }
 }

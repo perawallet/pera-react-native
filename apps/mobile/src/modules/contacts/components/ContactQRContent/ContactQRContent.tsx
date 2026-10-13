@@ -37,21 +37,22 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
     const { copyToClipboard } = useClipboard()
 
     const qrSize = width - theme.spacing['5xl'] * 2
+    const address = contact.addresses.algorand ?? ''
 
     const handleCopy = useCallback(() => {
-        void copyToClipboard(contact.address)
-    }, [contact, copyToClipboard])
+        void copyToClipboard(address)
+    }, [address, copyToClipboard])
 
     const handleShare = useCallback(async () => {
         try {
             await shareText({
                 title: contact.name,
-                message: contact.address,
+                message: address,
             })
         } catch {
             // User cancelled — ignore.
         }
-    }, [contact])
+    }, [contact.name, address])
 
     return (
         <PWView
@@ -76,7 +77,7 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     )}
                 >
                     <QRCode
-                        value={contact.address}
+                        value={address}
                         size={qrSize}
                         color='black'
                         backgroundColor='white'
@@ -87,13 +88,13 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     variant='h3'
                     style={styles.shortAddress}
                 >
-                    {truncateAlgorandAddress(contact.address)}
+                    {truncateAlgorandAddress(address)}
                 </PWText>
                 <PWText
                     variant='body'
                     style={styles.fullAddress}
                 >
-                    {contact.address}
+                    {address}
                 </PWText>
             </PWView>
             <PWView style={styles.actions}>

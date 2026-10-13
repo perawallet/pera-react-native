@@ -64,16 +64,32 @@ const { stores, withSecretMock, parsePinRecordMock, mkStore, seedStores } =
             })
             Object.assign(stores.accounts, {
                 accounts: [
-                    { address: 'ADDR_A', name: 'A' },
-                    { address: 'ADDR_B', name: 'B' },
+                    {
+                        id: 'id-a',
+                        name: 'A',
+                        chains: { algorand: { address: 'ADDR_A' } },
+                    },
+                    {
+                        id: 'id-b',
+                        name: 'B',
+                        chains: { algorand: { address: 'ADDR_B' } },
+                    },
                 ],
                 sortMode: 'manual',
-                manualAccountOrder: ['ADDR_A', 'ADDR_B'],
+                manualAccountOrder: ['id-a', 'id-b'],
             })
             Object.assign(stores.contacts, {
                 contacts: [
-                    { id: '1', name: 'Alice', address: 'ADDR_C1' },
-                    { id: '2', name: 'Bob', address: 'ADDR_C2' },
+                    {
+                        id: '1',
+                        name: 'Alice',
+                        addresses: { algorand: 'ADDR_C1' },
+                    },
+                    {
+                        id: '2',
+                        name: 'Bob',
+                        addresses: { algorand: 'ADDR_C2' },
+                    },
                 ],
             })
             Object.assign(stores.notifications, {
@@ -81,10 +97,10 @@ const { stores, withSecretMock, parsePinRecordMock, mkStore, seedStores } =
             })
             Object.assign(stores.device, {
                 deviceIDs: new Map([
-                    ['mainnet', 'm-id'],
-                    ['testnet', 't-id'],
+                    ['algorand/mainnet', 'm-id'],
+                    ['algorand/testnet', 't-id'],
                 ]),
-                deviceIdOrigins: { mainnet: 'migrated' },
+                deviceIdOrigins: { 'algorand/mainnet': 'migrated' },
             })
             Object.assign(stores.swaps, { slippage: '0.5' })
         }
@@ -113,6 +129,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: mkStore(stores.accounts),
+    chainAccountOf: (
+        account: { chains: Record<string, { address: string }> },
+        chainId: string,
+    ) => account.chains[chainId],
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -125,12 +145,23 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: mkStore(stores.device),
+    deviceIdFor: (
+        state: { deviceIDs: Map<string, string | null> },
+        network: string,
+    ) => state.deviceIDs.get(`algorand/${network}`) ?? null,
+    deviceIdOriginFor: (
+        state: { deviceIdOrigins: Record<string, string | undefined> },
+        network: string,
+    ) => state.deviceIdOrigins[`algorand/${network}`],
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapsStore: mkStore(stores.swaps),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
 vi.mock('@perawallet/wallet-core-config', () => ({
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
 }))
@@ -216,7 +247,7 @@ describe('useRNMigrationSnapshot > preferences', () => {
 })
 
 describe('useRNMigrationSnapshot > derived maps', () => {
-    it('builds accountsByAddress keyed by account.address', () => {
+    it('builds accountsByAddress keyed by the Algorand address', () => {
         const { result } = renderHook(() => useRNMigrationSnapshot())
 
         expect(result.current.accountsByAddress.get('ADDR_A')?.name).toBe('A')
@@ -225,7 +256,7 @@ describe('useRNMigrationSnapshot > derived maps', () => {
 
     it('builds contactsByAddress with lowercase address keys', () => {
         stores.contacts.contacts = [
-            { id: '1', name: 'Alice', address: 'ADDR_MIXED' },
+            { id: '1', name: 'Alice', addresses: { algorand: 'ADDR_MIXED' } },
         ]
 
         const { result } = renderHook(() => useRNMigrationSnapshot())
@@ -254,7 +285,7 @@ describe('useRNMigrationSnapshot > derived maps', () => {
     })
 
     it('falls back to null when a device id is missing from the store', () => {
-        stores.device.deviceIDs = new Map([['mainnet', 'only-m']])
+        stores.device.deviceIDs = new Map([['algorand/mainnet', 'only-m']])
 
         const { result } = renderHook(() => useRNMigrationSnapshot())
 
@@ -274,7 +305,7 @@ describe('useRNMigrationSnapshot > derived maps', () => {
     })
 
     it('reflects a recreated device id origin', () => {
-        stores.device.deviceIdOrigins = { mainnet: 'recreated' }
+        stores.device.deviceIdOrigins = { 'algorand/mainnet': 'recreated' }
 
         const { result } = renderHook(() => useRNMigrationSnapshot())
 

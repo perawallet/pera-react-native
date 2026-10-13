@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import { DEVICE_ACCOUNT_TYPE_RANK } from '../models'
 import type {
     DeviceAccountRegistration,
     DeviceRegistration,
     DeviceRegistrationRequest,
 } from '../models'
 
+const MAX_CURRENCY_LENGTH = 8
+
 /**
- * Collapse repeated addresses, the higher-precedence account type winning and
+ * Collapse repeated addresses, the higher-ranked registration winning and
  * equal ranks keeping the last occurrence — v3 specifies last-wins
  * server-side, so ties resolve the way the backend would. Sending a clean
  * array keeps the request auditable and removes the dependency on that
@@ -30,11 +31,7 @@ const dedupeByAddress = (
     const byAddress = new Map<string, DeviceAccountRegistration>()
     for (const account of accounts) {
         const incumbent = byAddress.get(account.address)
-        if (
-            incumbent === undefined ||
-            DEVICE_ACCOUNT_TYPE_RANK[account.accountType] >=
-                DEVICE_ACCOUNT_TYPE_RANK[incumbent.accountType]
-        ) {
+        if (incumbent === undefined || account.rank >= incumbent.rank) {
             byAddress.set(account.address, account)
         }
     }
@@ -49,6 +46,13 @@ export const toDeviceRegistrationRequest = (
     platform: registration.platform,
     locale: registration.locale,
     app_version: registration.appVersion,
+    // Omitted rather than truncated: the backend stores what it is sent and
+    // marks the choice explicit, so a sliced code would stick as a currency
+    // that never existed. Dropping it leaves the column null and falls back.
+    ...(registration.currency &&
+    registration.currency.length <= MAX_CURRENCY_LENGTH
+        ? { currency: registration.currency }
+        : {}),
     accounts: dedupeByAddress(registration.accounts).map(account => ({
         address: account.address,
         account_type: account.accountType,

@@ -13,7 +13,7 @@
 // MAIN-world WebAuthn interceptor. No chrome.* available here. Wraps
 // navigator.credentials.create/get and round-trips `publicKey` ceremonies to
 // the ISOLATED relay over a per-load-randomized CustomEvent channel — the same
-// pattern inject-main.ts uses for ARC-0027.
+// pattern inject-main.ts uses for window.pera.
 //
 // FALL-THROUGH CONTRACT: every non-success outcome — no publicKey option,
 // conditional mediation, a decline, a dead toggle, a timeout, a transport
@@ -47,7 +47,7 @@ import {
 import type {
     WebauthnCeremonyRequest,
     WebauthnCeremonyResponse,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 // Must be captured BEFORE anything assigns to navigator.credentials — running
 // after installProvider() would stash our own wrapper as "the original" and

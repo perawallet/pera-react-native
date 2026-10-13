@@ -69,7 +69,7 @@ pnpm ios                               # or: pnpm android
 pnpm localnet:stop
 ```
 
-Point the app at it from Settings, Developer, Node Settings, Custom network. Selecting it opens a
+Point the app at it from Settings, Developer, Node Settings: turn on Developer mode, then pick Custom network under Algorand. Selecting it opens a
 sheet for the algod and indexer URLs, their optional tokens, and the genesis hash and ID; **Fetch
 from node** fills the genesis values in. **Save and switch** applies the config at runtime, with no
 rebuild, no env rewrite, and MainNet and TestNet untouched.
@@ -124,7 +124,7 @@ running either. `algorand/algod:nightly` is not a substitute; it still lacks `pq
 > Balances, the asset list and sending are unaffected, because `account-syncer.ts` reads them from
 > algod and holdings only fall back to the indexer past algod's resource cap. Expect indexer-backed
 > surfaces (transaction history, large accounts) to be empty. If a balance reads 0.00 on LocalNet it
-> is far more likely a stale `account_balances` row than the indexer: pull-to-refresh does NOT
+> is far more likely a stale `account_chain_state` row than the indexer: pull-to-refresh does NOT
 > re-fetch when a row already exists, so relaunch the app after funding.
 
 ### Conformance suite
@@ -143,7 +143,9 @@ pera-react-native/
 ├── packages/                # Headless business logic (one per domain)
 │   ├── accounts/            # Account management and state
 │   ├── assets/              # Asset management
-│   ├── blockchain/          # Algorand-specific code (node/indexer)
+│   ├── browser-runtime/     # Browser extension runtime (message routing, dApp/WC plumbing)
+│   ├── chain-algorand/      # Algorand chain: node/indexer access and per-package adapters
+│   ├── chain-ethereum/      # Ethereum chain: descriptor, module and its adapters (viem)
 │   ├── config/              # Configuration and environment
 │   ├── database/            # Local persistence
 │   ├── devtools/            # Development tools
@@ -188,10 +190,8 @@ pnpm test           # run all tests (unit + integration)
 pnpm test:unit      # run unit tests only
 pnpm test:coverage  # run tests with coverage
 pnpm lint           # report lint/type-aware issues
-pnpm lint:fix       # auto-fix lint/type-aware issues
-pnpm lint:copyright # add/update necessary copyright headers
-pnpm lint:i18n      # report i18n errors
-pnpm lint:docs      # report stale doc/comment references
+pnpm lint:fix       # auto-fix lint issues and licence headers
+pnpm lint:docs      # report stale references in Markdown, shell and YAML
 pnpm format         # format files
 pnpm fallow         # report unused code, circular deps, duplication
 ```
@@ -202,10 +202,11 @@ pnpm fallow         # report unused code, circular deps, duplication
 dependencies, plus circular dependencies and code duplication, which neither Oxlint nor `tsc` cover.
 Config lives in [`.fallowrc.jsonc`](.fallowrc.jsonc).
 
-It runs in CI as an advisory, non-blocking job (`Dead Code` in
-[`ci-pre-merge.yml`](.github/workflows/ci-pre-merge.yml)): findings appear in the job summary but never
-fail a PR. The plan is to triage the existing findings, then ratchet specific rules to blocking with
-a `--baseline` so only new findings fail. Do removals in reviewed PRs, not via `fallow fix`.
+It runs in CI as the `Dead Code` job in [`ci-pre-merge.yml`](.github/workflows/ci-pre-merge.yml):
+findings appear in the job summary, and any rule set to `"error"` (unused files, exports and
+dependencies, cycles) fails the PR. A dependency used outside the import graph (an autolinked native
+module, a config plugin, a Metro polyfill) goes in `ignoreDependencies` with its reason. Do removals
+in reviewed PRs, not via `fallow fix`.
 
 ## Documentation
 

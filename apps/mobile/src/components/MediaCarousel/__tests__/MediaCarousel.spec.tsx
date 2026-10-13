@@ -35,7 +35,7 @@ describe('MediaCarousel', () => {
             />,
         )
 
-        expect(screen.getByTestId('PWImage')).toBeTruthy()
+        expect(screen.getByTestId('expo-image')).toBeTruthy()
         expect(screen.queryByTestId('icon-image-off')).toBeNull()
     })
 
@@ -51,9 +51,9 @@ describe('MediaCarousel', () => {
             />,
         )
 
-        fireEvent.error(screen.getByTestId('PWImage'))
+        fireEvent.error(screen.getByTestId('expo-image'))
 
         expect(screen.getByTestId('icon-image-off')).toBeTruthy()
-        expect(screen.queryByTestId('PWImage')).toBeNull()
+        expect(screen.queryByTestId('expo-image')).toBeNull()
     })
 })

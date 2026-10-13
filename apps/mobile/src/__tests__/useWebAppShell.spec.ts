@@ -29,7 +29,11 @@ const mocks = vi.hoisted(() => ({
         .fn<() => Promise<void>>()
         .mockResolvedValue(undefined),
     getDatabase: vi.fn(() => ({ __db: true })),
-    seedAlgoAsset: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    seedNativeAssets: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    hydrateAccountChainStates: vi
+        .fn<() => Promise<void>>()
+        .mockResolvedValue(undefined),
+    backfillAccountRecords: vi.fn(),
     initializeSyncService: vi.fn(),
     syncStart: vi.fn(),
     syncStop: vi.fn(),
@@ -53,6 +57,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: (): Surface => mocks.surface,
+}))
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     getCurrentApproval: () => mocks.getCurrentApproval(),
 }))
 
@@ -75,6 +81,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         useHasAccounts: () => mocks.hasAccounts,
+        hydrateAccountChainStates: () => mocks.hydrateAccountChainStates(),
+        backfillAccountRecords: () => mocks.backfillAccountRecords(),
     }
 })
 
@@ -87,6 +95,7 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
         ...original,
         getKeystore: () => ({ ready: mocks.keystoreReady() }),
         getProvider: () => ({
+            chains: { has: () => false },
             database: {},
             initialize: mocks.platformInitialize,
         }),
@@ -129,8 +138,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...original,
-        seedAlgoAsset: (...args: unknown[]) =>
-            mocks.seedAlgoAsset(...(args as [])),
+        seedNativeAssets: (...args: unknown[]) =>
+            mocks.seedNativeAssets(...(args as [])),
     }
 })
 
@@ -163,6 +172,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     }
 })
 
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useWebAppShell } from '../useWebAppShell.web'
 
 describe('useWebAppShell module import', () => {
@@ -175,6 +185,9 @@ describe('useWebAppShell module import', () => {
 
 describe('useWebAppShell', () => {
     beforeEach(() => {
+        // The mocked storage never completes a rehydrate; the real extension
+        // has hydrated the accounts store long before the vault unlocks.
+        vi.spyOn(useAccountsStore.persist, 'hasHydrated').mockReturnValue(true)
         mocks.surface = 'popup'
         mocks.isInitialized = null
         mocks.isUnlocked = null
@@ -182,7 +195,8 @@ describe('useWebAppShell', () => {
         mocks.hasAccounts = false
         vi.clearAllMocks()
         mocks.initializeDatabase.mockResolvedValue(undefined)
-        mocks.seedAlgoAsset.mockResolvedValue(undefined)
+        mocks.seedNativeAssets.mockResolvedValue(undefined)
+        mocks.hydrateAccountChainStates.mockResolvedValue(undefined)
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
@@ -247,13 +261,13 @@ describe('useWebAppShell', () => {
         expect(result.current.shellState).toBe('approval-placeholder')
     })
 
-    it('routes popup surface to dapp-request when a pending enable is discovered', async () => {
+    it('routes popup surface to dapp-request when a pending approval is discovered', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = null
         mocks.isUnlocked = null
         mocks.getCurrentApproval.mockResolvedValue({
             requestId: 'r1',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
 
         const { result } = renderHook(() => useWebAppShell())
@@ -361,7 +375,7 @@ describe('useWebAppShell', () => {
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
 
-    it('re-arms auto-lock on every unlock but hydrates the keystore once', async () => {
+    it('hydrates the keystore once across lock/unlock cycles', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
@@ -369,31 +383,45 @@ describe('useWebAppShell', () => {
 
         const { result, rerender } = renderHook(() => useWebAppShell())
 
-        // Wait for initial unlock to settle
         await waitFor(() => expect(result.current.shellState).toBe('main'))
-
-        // First unlock: both hydrate and arm
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
-        expect(mocks.armAutoLock).toHaveBeenCalledOnce()
 
-        // Lock: transition isUnlocked to false
         mocks.isUnlocked = false
         act(() => {
             rerender()
         })
-
-        // Unlock again: re-arm but do NOT re-hydrate/re-bootstrap
         mocks.isUnlocked = true
         act(() => {
             rerender()
         })
 
-        await waitFor(() => expect(mocks.armAutoLock).toHaveBeenCalledTimes(2))
-
+        await waitFor(() => expect(result.current.shellState).toBe('main'))
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
 
-    it('bootstraps in order: keystore ready before initializeDatabase; seedAlgoAsset receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
+    it.each<Surface>(['approval', 'popup', 'expanded'])(
+        'never re-arms auto-lock when the %s surface opens while unlocked',
+        async surface => {
+            // A page can open approval surfaces at will; arming on mount would
+            // let it hold the vault unlocked. Only user input may re-arm.
+            mocks.surface = surface
+            mocks.isInitialized = true
+            mocks.isUnlocked = true
+            mocks.getCurrentApproval.mockResolvedValue({
+                requestId: 'r1',
+                kind: 'sign',
+            })
+
+            const { result } = renderHook(() => useWebAppShell())
+
+            await waitFor(() =>
+                expect(result.current.shellState).not.toBe('resolving'),
+            )
+            expect(mocks.armAutoLock).not.toHaveBeenCalled()
+        },
+    )
+
+    it('bootstraps in order: keystore ready before initializeDatabase; seedNativeAssets receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
@@ -406,8 +434,15 @@ describe('useWebAppShell', () => {
         mocks.initializeDatabase.mockImplementation(async () => {
             callOrder.push('initializeDatabase')
         })
-        mocks.seedAlgoAsset.mockImplementation(async () => {
-            callOrder.push('seedAlgoAsset')
+        mocks.seedNativeAssets.mockImplementation(async () => {
+            callOrder.push('seedNativeAssets')
+        })
+        mocks.hydrateAccountChainStates.mockImplementation(async () => {
+            callOrder.push('hydrateAccountChainStates')
+        })
+        // Reads the keystore, and writes the keys offscreen can't open itself.
+        mocks.backfillAccountRecords.mockImplementation(() => {
+            callOrder.push('backfillAccountRecords')
         })
 
         const { result } = renderHook(() => useWebAppShell())
@@ -416,10 +451,12 @@ describe('useWebAppShell', () => {
 
         expect(callOrder).toEqual([
             'keystoreReady',
+            'backfillAccountRecords',
             'initializeDatabase',
-            'seedAlgoAsset',
+            'seedNativeAssets',
+            'hydrateAccountChainStates',
         ])
-        expect(mocks.seedAlgoAsset).toHaveBeenCalledWith(
+        expect(mocks.seedNativeAssets).toHaveBeenCalledWith(
             mocks.getDatabase.mock.results[0]?.value,
         )
         expect(mocks.initializeSyncService).toHaveBeenCalledOnce()
@@ -428,8 +465,11 @@ describe('useWebAppShell', () => {
             registerCompletionHandler: unknown
         }
         expect(initArgs.queryClient).toBeDefined()
-        expect(initArgs.registerCompletionHandler).toBe(
-            mocks.setOnConfirmedHandler,
+        const handler = vi.fn()
+        ;(initArgs.registerCompletionHandler as (h: unknown) => void)(handler)
+        expect(mocks.setOnConfirmedHandler).toHaveBeenCalledWith(
+            'algorand',
+            handler,
         )
     })
 

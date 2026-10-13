@@ -1,16 +1,23 @@
 # Pera Card
 
-A Visa card issued by Baanx and funded from a Pera account. Most of the state
+A payment card issued by Baanx and funded from a Pera account. Most of the state
 that matters is owned by Baanx rather than by us, so this file records the
 contract to stop behaviour being re-derived from the screens.
 
 ## Where the code lives
 
-| Path                            | Holds                                   |
-| ------------------------------- | --------------------------------------- |
-| `packages/card/`                | API clients, session, stores, models    |
-| `apps/mobile/src/modules/card/` | Screens, onboarding routes, dashboard   |
-| `modules/gift-card/`            | Gift cards: separate flow, same backend |
+| Path                                | Holds                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `packages/card/`                    | API clients, session, stores, models, `CardChainAdapter`                 |
+| `packages/chain-algorand/src/card/` | Card app ids, escrow contracts, AutoDraw LogicSig, deposits, delegations |
+| `apps/mobile/src/modules/card/`     | Screens, onboarding routes, dashboard                                    |
+| `modules/gift-card/`                | Gift cards: separate flow, same backend                                  |
+
+The card package and the app's card module reach every chain-specific step
+through the adapter the chain package registers, so neither imports
+`chain-algorand`. Every card hook takes a `ChainScope`; the module gets its one
+scope from `useCardScope`, which pins Algorand because the card is issued there
+only.
 
 ## Ownership
 
@@ -52,26 +59,76 @@ when a user is mid-signup. The two vocabularies are not 1:1; the server phase
 decides where a returning user resumes.
 
 Eligible countries and US states come from `GET /v1/auth/settings`, so
-eligibility changes without a release.
+eligibility changes without a release. US residents also enter their SSN on
+the personal-details step; Baanx requires it for them and takes the nine
+digits without separators. A US resident shipping the card elsewhere unticks
+the same-mailing box on the address step: Baanx then withholds the session
+token from that call and issues it on `POST /v1/auth/register/mailing-address`
+instead, so that step is the one that completes registration.
 
 ## Funding
 
 Chosen on the setup checklist, and switchable afterwards:
 
-- `MANUAL`: the user tops the card up themselves.
+- `MANUAL`: the user tops the card up themselves. Add Funds with a non-USDC
+  asset swaps it in the linked account first; the DEX pays the swapper and its
+  groups are pre-signed, so the deposit cannot join them. The screen waits for
+  the USDC to land and deposits exactly the credited amount.
 - `AUTO` (AutoDraw): a delegated LogicSig lets Baanx draw from the connected
-  account, capped at $400 per transaction. Delegation tokens from
-  `GET /v1/delegation/token` are single-use and valid ~10 minutes.
+  account, capped at $400 per transaction.
+
+Delegation runs entirely through Baanx; the app never calls the delegation
+service directly. Creating a card ends with
+`POST /v1/delegation/algorand/post-approval`, which registers the funding
+wallet. That call is bound to a token from `GET /v1/delegation/token`: the
+token is single-use and valid ~10 minutes, and its nonce must be inside the
+signed ownership payload, so the proof is built after the token is fetched and
+a retry needs a fresh pair. AutoDraw additionally registers the signed LogicSig
+once per wallet and currency via
+`POST /v1/delegation/algorand/delegator-lsig`.
 
 Registered wallets come from `GET /v1/wallet/external`. An allowance of 0 means
 the delegation is inactive, which is how a revoked AutoDraw presents.
 A killswitch app (ARC-56) can disable AutoDraw independently of the delegation.
 
-> [!WARNING]
-> The AutoDraw TEAL template is pinned by an ed25519 signature, but the pinned
-> public key and signature are still empty pre-launch placeholders. Until they
-> are populated, verification is dormant and only logs. It does not guard the
-> compile path. This must be filled in before AutoDraw ships.
+### AutoDraw integrity
+
+The delegated program is pinned twice. Both checks fail closed in every
+environment, because staging builds sign real keys too:
+
+- The vendored template
+  (`packages/chain-algorand/src/card/escrow/autodraw-teal.ts`) must hash to
+  `CARD_AUTODRAW_TEMPLATE_HASH`, one SHA-256 for every network. It is
+  checked by `pnpm check:autodraw-hash` inside `pnpm build`, and again by
+  `verifyAutoDrawTealTemplate` before the user signs.
+- The algod-compiled program must hash to the network's
+  `*_CARD_AUTODRAW_PROGRAM_HASH` (`verifyAutoDrawProgram`). This one depends on
+  the app ids and genesis hash, and is the only check that covers a node
+  returning different bytes than the source it was given.
+
+Both pins are Bitrise secrets baked in by `tools/dev/generate-config.sh`, never
+remote config, so a change to the repo cannot supply its own expected value.
+Changing the template or redeploying a card app means running
+`pnpm check:autodraw-hash --print` and updating the matching secrets in the same
+change; otherwise the build refuses.
+
+## Credits
+
+Two Baanx-held balances sit beside the card and share one contract
+(`GET /v1/wallet/{reward|credit}`, plus `withdraw-estimation` and `withdraw`):
+
+- **Rewards** (`reward`): earned on purchases. The user-facing word is always
+  "Rewards"; US stablecoin rules forbid calling it cashback.
+- **Refunds** (`credit`): when a merchant refunds a card purchase the money lands
+  here, not back on the card. Baanx cannot push crypto to a user in every
+  jurisdiction, so the payout has to be user-initiated. Baanx draws this balance
+  first when the card is used, so it counts toward the per-transaction figure;
+  rewards do not until claimed.
+
+Both wallets answer 404 until the first credit, which the client treats as an
+empty balance. The claim flow, screens and query keys are parametrized by
+`CardWalletKind`; per-kind copy and artwork live in
+`apps/mobile/src/modules/card/utils/cardWalletPresentation.ts`.
 
 ## Session and secrets
 

@@ -11,9 +11,12 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { NotificationsState } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'notifications-store'
@@ -25,7 +28,7 @@ const initialState = {
 export const useNotificationsStore: UseBoundStore<
     WithPersist<StoreApi<NotificationsState>, unknown>
 > = create<NotificationsState>()(
-    persist(
+    guardedPersist(
         (set, get) => ({
             ...initialState,
             setAccountNotificationEnabled: (
@@ -54,7 +57,7 @@ export const useNotificationsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({
                 notificationDisabledAccounts:

@@ -13,9 +13,9 @@
 import { useCallback, useEffect } from 'react'
 import { BackHandler } from 'react-native'
 
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview'
 import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 

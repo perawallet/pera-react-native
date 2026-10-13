@@ -11,8 +11,11 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { OnboardingStep, type CardUxState } from '../models'
 
@@ -40,11 +43,12 @@ const initialState = {
     allowSms: null,
     connectedFundingSourceAddress: null,
     // A single global preference, while the on-chain AutoDraw enable it
-    // mirrors is per account + network (one Killswitch box per enabler).
+    // mirrors is per account + network (one on-chain switch per enabler).
     // Holds only because the funding account/type flows keep them in
     // lockstep (change-funding is blocked while Auto is on); scope this per
     // account+network if that constraint is ever lifted.
     selectedFundingType: null,
+    cardUserId: null,
     escrowCardAddress: null,
     escrowCardOwner: null,
     escrowCardNetwork: null,
@@ -59,7 +63,7 @@ const initialState = {
 export const useCardStore: UseBoundStore<
     WithPersist<StoreApi<CardUxState>, unknown>
 > = create<CardUxState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setOnboardingStep: step => set({ onboardingStep: step }),
@@ -88,6 +92,15 @@ export const useCardStore: UseBoundStore<
                     // approval is recorded separately once the AB call succeeds.
                     escrowCardApproved: false,
                 }),
+            restoreEscrowCard: ({ cardAddress, ownerAddress, network }) =>
+                set({
+                    escrowCardAddress: cardAddress,
+                    escrowCardOwner: ownerAddress,
+                    escrowCardNetwork: network,
+                    escrowCardTxId: null,
+                    escrowCardApproved: true,
+                    connectedFundingSourceAddress: ownerAddress,
+                }),
             markEscrowCardApproved: () => set({ escrowCardApproved: true }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({
@@ -97,6 +110,23 @@ export const useCardStore: UseBoundStore<
                 }),
             setTransactionFilters: filters =>
                 set({ transactionFilters: filters }),
+            adoptCardUser: userId =>
+                set(state => {
+                    if (state.cardUserId === userId) return {}
+                    // The escrow card belongs to the previous user's Baanx
+                    // account, so it goes along with the funding selection.
+                    return {
+                        cardUserId: userId,
+                        connectedFundingSourceAddress:
+                            initialState.connectedFundingSourceAddress,
+                        selectedFundingType: initialState.selectedFundingType,
+                        escrowCardAddress: initialState.escrowCardAddress,
+                        escrowCardOwner: initialState.escrowCardOwner,
+                        escrowCardNetwork: initialState.escrowCardNetwork,
+                        escrowCardTxId: initialState.escrowCardTxId,
+                        escrowCardApproved: initialState.escrowCardApproved,
+                    }
+                }),
             // Reset only the onboarding-flow fields (so a fresh sign-up
             // re-locks the setup checklist); card-snapshot/filters stay intact.
             resetOnboardingProgress: () =>
@@ -121,7 +151,7 @@ export const useCardStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             // `verificationCode` is intentionally omitted — a transient OTP
             // that should never be written to disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
@@ -140,6 +170,7 @@ export const useCardStore: UseBoundStore<
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,
                 selectedFundingType: state.selectedFundingType,
+                cardUserId: state.cardUserId,
                 escrowCardAddress: state.escrowCardAddress,
                 escrowCardOwner: state.escrowCardOwner,
                 escrowCardNetwork: state.escrowCardNetwork,

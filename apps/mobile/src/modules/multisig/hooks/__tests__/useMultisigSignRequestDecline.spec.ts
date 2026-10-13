@@ -12,10 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     MultisigSignRequest,
     SignRequestStatus,
@@ -32,7 +29,10 @@ vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
@@ -43,14 +43,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-123',
-    DeviceAccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-        quantum: 'quantum',
-    },
 }))
 
 const declineMutateAsyncMock = vi.fn()
@@ -90,9 +82,8 @@ const SIGNER = 'SIGNER_ADDRESS'
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
-    type: AccountTypes.algo25,
-    address,
-    keyPairId: `kp-${address}`,
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildMultisigSignRequest = (

@@ -15,7 +15,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountTypeInfo } from './useAccountTypeInfo'
-import { AccountIcon } from '../../AccountIcon'
+import { AccountIcon } from '@components/AccountIcon'
 
 export type AccountTypeInfoContentProps = {
     account: WalletAccount

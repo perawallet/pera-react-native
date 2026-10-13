@@ -11,13 +11,19 @@
  */
 
 import { useCallback } from 'react'
-import { Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useDeepLink } from '@hooks/useDeepLink'
+import {
+    getUniversalLinkPath,
+    isNotificationAllowedDeeplinkType,
+    useDeepLink,
+} from '@modules/deeplink'
+import {
+    openValidatedBrowserUrl,
+    toValidatedBrowserUrl,
+} from '@modules/webview'
 
 type RouteInput = {
     url: string | null
-    isExternal: boolean
 }
 
 type UseBannerLinkRouterResult = {
@@ -25,28 +31,48 @@ type UseBannerLinkRouterResult = {
 }
 
 export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
-    const { isValidDeepLink, handleDeepLink } = useDeepLink()
+    const { parseDeeplink, handleDeepLink, isDeepLinkAvailable } = useDeepLink()
 
     const route = useCallback(
-        ({ url, isExternal }: RouteInput) => {
+        ({ url }: RouteInput) => {
             if (!url) return
-            if (isExternal) {
-                // No OS handler for the URL is a device condition, not our bug.
-                Linking.openURL(url).catch(err =>
-                    logger.warn('Failed to open banner URL', { url, err }),
+            // Classify the canonical form that is then dispatched or opened: a
+            // bare or `HTTPS://` Pera link must not pass as an external URL.
+            const externalUrl = toValidatedBrowserUrl(url)
+            const candidate = externalUrl ?? url
+
+            const parsed = parseDeeplink(candidate)
+            if (parsed) {
+                // CMS content sits in the same trust class as a push payload:
+                // the server picks the destination, the user navigated nowhere.
+                // Refusals stay silent, like a notification's.
+                if (
+                    !isNotificationAllowedDeeplinkType(parsed.type) ||
+                    !isDeepLinkAvailable(candidate)
+                ) {
+                    logger.warn('Blocked banner-initiated deeplink', {
+                        type: parsed.type,
+                    })
+                    return
+                }
+                void handleDeepLink(candidate, false, 'in-app')
+                return
+            }
+
+            // Unparsed, but under the app's own App Link paths: the OS would
+            // route it back in as a full-trust deeplink.
+            if (
+                externalUrl &&
+                getUniversalLinkPath(externalUrl)?.startsWith('/qr/')
+            ) {
+                logger.warn(
+                    'Blocked unparsed banner URL under an App Link path',
                 )
                 return
             }
-            if (isValidDeepLink(url)) {
-                void handleDeepLink(url, false, 'in-app')
-            } else {
-                // No OS handler for the URL is a device condition, not our bug.
-                Linking.openURL(url).catch(err =>
-                    logger.warn('Failed to open banner URL', { url, err }),
-                )
-            }
+            openValidatedBrowserUrl(url)
         },
-        [isValidDeepLink, handleDeepLink],
+        [parseDeeplink, handleDeepLink, isDeepLinkAvailable],
     )
 
     return { route }

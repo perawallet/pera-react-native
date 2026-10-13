@@ -68,11 +68,11 @@ export class ParticipantIsWatchError extends MultisigValidationError {
     }
 }
 
-export class ParticipantIsQuantumError extends MultisigValidationError {
+export class ParticipantSchemeUnsupportedError extends MultisigValidationError {
     constructor() {
         super(
             'participant_is_quantum',
-            'Cannot add a quantum account as a participant.',
+            "Cannot add a participant whose signature scheme the multisig can't carry.",
             {
                 messageKey:
                     'multisig.add_participant.cannot_add_quantum_error_body',

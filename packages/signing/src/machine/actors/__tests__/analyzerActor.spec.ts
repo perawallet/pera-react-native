@@ -10,32 +10,36 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createActor, toPromise } from 'xstate'
-
-const mocks = vi.hoisted(() => ({
-    analyze: vi.fn(),
-}))
-
-vi.mock('../../../pipeline/analyzers/createStandardAnalyzer', () => ({
-    createStandardAnalyzer: () => ({ analyze: mocks.analyze }),
-}))
-
+import {
+    ChainAdapterNotRegisteredError,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    fakeReviewerAdapter,
+    registerFakeReviewerAdapter,
+} from '../../../__tests__/fakeReviewerAdapter'
+import { reviewerChainAdapters } from '../../../chain-adapter'
+import {
+    GenesisHashMismatchError,
+    ReviewRequiredError,
+} from '../../../pipeline/errors'
 import { analyzerActor } from '../analyzerActor'
 import type { AnalyzerActorInput } from '../analyzerActor'
 import type {
     AnalysisContext,
+    DecodedGroup,
     SignableAnalysis,
     SignableGroup,
 } from '../../../pipeline/types'
 
-const emptyAnalysis: SignableAnalysis = {
-    totalFees: 0n,
-    transactionSummaries: [],
-    warnings: [],
+const FIXTURE_CHAIN_ID = 'fixturehex' as ChainId
+
+const decoded = (totalFees: bigint): DecodedGroup => ({
+    totalFees,
     signableAddresses: [],
-    riskLevel: 'low',
-}
+})
 
 const makeGroup = (signerAddress: string): SignableGroup =>
     ({
@@ -48,62 +52,173 @@ const makeGroup = (signerAddress: string): SignableGroup =>
         signerAddress,
     }) as SignableGroup
 
-const makeContext = (): AnalysisContext =>
-    ({
-        network: 'mainnet',
-        accounts: [],
-    }) as AnalysisContext
+const algorandContext: AnalysisContext = {
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    accounts: [],
+}
 
-const buildInput = (groups: SignableGroup[]): AnalyzerActorInput => ({
+const buildInput = (
+    groups: SignableGroup[],
+    overrides: Partial<AnalyzerActorInput> = {},
+): AnalyzerActorInput => ({
     groups,
-    context: makeContext(),
+    context: algorandContext,
+    isHeadless: false,
+    ...overrides,
 })
 
+const run = (input: AnalyzerActorInput) => {
+    const actor = createActor(analyzerActor, { input })
+    actor.start()
+    return toPromise(actor)
+}
+
 describe('analyzerActor', () => {
-    it('returns one analysis per group, in order', async () => {
-        mocks.analyze
-            .mockResolvedValueOnce({ ...emptyAnalysis, totalFees: 100n })
-            .mockResolvedValueOnce({ ...emptyAnalysis, totalFees: 200n })
+    const decode = vi.fn()
+    const detect = vi.fn()
+    const autoApproveLocal = vi.fn()
 
-        const input = buildInput([makeGroup('A'), makeGroup('B')])
-        const actor = createActor(analyzerActor, { input })
-        actor.start()
-        const results = await toPromise(actor)
-
-        expect(results).toHaveLength(2)
-        expect(results[0].totalFees).toBe(100n)
-        expect(results[1].totalFees).toBe(200n)
-        expect(mocks.analyze).toHaveBeenCalledTimes(2)
+    beforeEach(() => {
+        decode.mockReset().mockResolvedValue(decoded(0n))
+        detect.mockReset().mockReturnValue([])
+        autoApproveLocal.mockReset().mockReturnValue(true)
+        registerFakeReviewerAdapter({
+            decoder: { decode },
+            warnings: { detect },
+            policy: { autoApproveLocal },
+        })
     })
 
-    it('passes the same analysis context to each group invocation', async () => {
-        mocks.analyze.mockResolvedValue(emptyAnalysis)
+    it('returns one analysis per group, in order', async () => {
+        decode
+            .mockResolvedValueOnce(decoded(100n))
+            .mockResolvedValueOnce(decoded(200n))
 
+        const analyses = await run(buildInput([makeGroup('A'), makeGroup('B')]))
+
+        expect(analyses.map(a => a.totalFees)).toEqual([100n, 200n])
+    })
+
+    it("warns from each group's decoded result, with the shared context", async () => {
         const groups = [makeGroup('A'), makeGroup('B')]
-        const input = buildInput(groups)
-        const actor = createActor(analyzerActor, { input })
-        actor.start()
-        await toPromise(actor)
+        decode
+            .mockResolvedValueOnce(decoded(100n))
+            .mockResolvedValueOnce(decoded(200n))
 
-        expect(mocks.analyze).toHaveBeenNthCalledWith(
+        await run(buildInput(groups))
+
+        expect(detect).toHaveBeenNthCalledWith(
             1,
             groups[0],
-            input.context,
+            decoded(100n),
+            algorandContext,
         )
-        expect(mocks.analyze).toHaveBeenNthCalledWith(
+        expect(detect).toHaveBeenNthCalledWith(
             2,
             groups[1],
-            input.context,
+            decoded(200n),
+            algorandContext,
         )
     })
 
-    it('rejects when the underlying analyzer throws', async () => {
-        mocks.analyze.mockRejectedValueOnce(new Error('analysis blew up'))
+    it('rejects when the decoder throws', async () => {
+        decode.mockRejectedValueOnce(new Error('decode blew up'))
 
-        const input = buildInput([makeGroup('A')])
-        const actor = createActor(analyzerActor, { input })
-        actor.start()
+        await expect(run(buildInput([makeGroup('A')]))).rejects.toThrow(
+            'decode blew up',
+        )
+    })
 
-        await expect(toPromise(actor)).rejects.toThrow('analysis blew up')
+    it('rejects with ChainAdapterNotRegisteredError when no reviewer adapter is registered', async () => {
+        reviewerChainAdapters.reset()
+
+        await expect(run(buildInput([makeGroup('A')]))).rejects.toBeInstanceOf(
+            ChainAdapterNotRegisteredError,
+        )
+    })
+
+    it("never falls back to another chain's reviewer", async () => {
+        await expect(
+            run(
+                buildInput([makeGroup('A')], {
+                    context: {
+                        ...algorandContext,
+                        scope: {
+                            chainId: FIXTURE_CHAIN_ID,
+                            networkId: 'mainnet',
+                        },
+                    },
+                }),
+            ),
+        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+        expect(decode).not.toHaveBeenCalled()
+    })
+
+    it("reviews another chain's request with that chain's reviewer, never Algorand's network check", async () => {
+        decode.mockRejectedValue(
+            new GenesisHashMismatchError('mainnet', 0, 'EXPECTED', 'ACTUAL'),
+        )
+        reviewerChainAdapters.register(
+            fakeReviewerAdapter({
+                chainId: FIXTURE_CHAIN_ID,
+                decoder: { decode: async () => decoded(7n) },
+            }),
+        )
+
+        const analyses = await run(
+            buildInput([makeGroup('A')], {
+                context: {
+                    ...algorandContext,
+                    scope: { chainId: FIXTURE_CHAIN_ID, networkId: 'mainnet' },
+                },
+            }),
+        )
+
+        expect(analyses.map(a => a.totalFees)).toEqual([7n])
+        expect(decode).not.toHaveBeenCalled()
+    })
+
+    describe('with no review screen', () => {
+        it("signs when the chain's policy approves every group", async () => {
+            const analyses = await run(
+                buildInput([makeGroup('A'), makeGroup('B')], {
+                    isHeadless: true,
+                }),
+            )
+
+            expect(analyses).toHaveLength(2)
+            expect(autoApproveLocal).toHaveBeenCalledTimes(2)
+        })
+
+        it("refuses the request when the chain's policy turns down any group, naming that group's warnings", async () => {
+            detect
+                .mockReturnValueOnce([])
+                .mockReturnValueOnce([
+                    { type: 'rekey', severity: 'danger', message: 'rekey' },
+                ])
+            autoApproveLocal.mockImplementation(
+                (analysis: SignableAnalysis) => analysis.warnings.length === 0,
+            )
+
+            const error = await run(
+                buildInput([makeGroup('A'), makeGroup('B')], {
+                    isHeadless: true,
+                }),
+            ).catch((e: unknown) => e)
+
+            expect(error).toBeInstanceOf(ReviewRequiredError)
+            expect((error as ReviewRequiredError).metadata.params).toEqual({
+                warningTypes: ['rekey'],
+            })
+        })
+    })
+
+    it('leaves the decision to the user when a review screen shows the request', async () => {
+        autoApproveLocal.mockReturnValue(false)
+
+        const analyses = await run(buildInput([makeGroup('A')]))
+
+        expect(analyses).toHaveLength(1)
+        expect(autoApproveLocal).not.toHaveBeenCalled()
     })
 })

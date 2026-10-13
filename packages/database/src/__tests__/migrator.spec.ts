@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { sql } from 'drizzle-orm'
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
-import { runMigrations, type MigrationConfig } from '../migrator'
+import {
+    runMigrations,
+    type MigrationConfig,
+    type MigrationRecovery,
+} from '../migrator'
 import { createTestDatabase } from '../test-utils'
 
 const sqliteMaster = sqliteTable('sqlite_master', {
@@ -166,5 +170,125 @@ describe('runMigrations', () => {
             'first_table',
             'second_table',
         ])
+    })
+
+    describe('recovery', () => {
+        class FakeTimeoutError extends Error {}
+
+        const SEEDED: MigrationConfig = {
+            '0000_seed':
+                "CREATE TABLE cache (id TEXT)\n--> statement-breakpoint\nINSERT INTO cache (id) VALUES ('a'), ('b')",
+        }
+        const SLOW: MigrationConfig = {
+            ...SEEDED,
+            '0001_slow': "UPDATE cache SET id = 'x/' || id",
+        }
+
+        // Fails the first `count` statements matching `pattern` once armed.
+        const failing = (pattern: RegExp, count: number) => {
+            let remaining = count
+            let isArmed = false
+            return {
+                arm: () => {
+                    isArmed = true
+                },
+                beforeExec: (statement: string) => {
+                    if (isArmed && remaining > 0 && pattern.test(statement)) {
+                        remaining--
+                        throw new FakeTimeoutError('timed out')
+                    }
+                },
+            }
+        }
+
+        const recoveryWith = (
+            overrides: Partial<MigrationRecovery> = {},
+        ): MigrationRecovery => ({
+            isRecoverable: error =>
+                error instanceof FakeTimeoutError ||
+                (error instanceof Error &&
+                    error.cause instanceof FakeTimeoutError),
+            clear: async target => {
+                await target.run(sql`DELETE FROM cache`)
+            },
+            onReset: vi.fn(),
+            ...overrides,
+        })
+
+        const appliedTags = async (
+            db: Parameters<typeof runMigrations>[0],
+        ): Promise<string[]> =>
+            (
+                await db
+                    .select({ tag: drizzleMigrationsTable.tag })
+                    .from(drizzleMigrationsTable)
+                    .all()
+            ).map(row => row.tag)
+
+        it('clears and reruns a migration that hit a recoverable failure', async () => {
+            const fault = failing(/^UPDATE cache/, 1)
+            const { db, teardown: td } = createTestDatabase(fault)
+            teardown = td
+            await runMigrations(db, SEEDED)
+            fault.arm()
+            const recovery = recoveryWith()
+
+            await runMigrations(db, SLOW, { recovery })
+
+            expect(await db.all(sql`SELECT * FROM cache`)).toHaveLength(0)
+            expect(await appliedTags(db)).toContain('0001_slow')
+            expect(recovery.onReset).toHaveBeenCalledExactlyOnceWith(
+                '0001_slow',
+            )
+        })
+
+        it('waits out a connection still busy with the timed-out statement', async () => {
+            // The ROLLBACK and the first probes queue behind the slow statement
+            // and time out as well.
+            const fault = failing(/^(UPDATE cache|ROLLBACK|SELECT 1)/, 4)
+            const { db, teardown: td } = createTestDatabase(fault)
+            teardown = td
+            await runMigrations(db, SEEDED)
+            fault.arm()
+            const recovery = recoveryWith()
+
+            await runMigrations(db, SLOW, { recovery })
+
+            expect(await appliedTags(db)).toContain('0001_slow')
+            expect(recovery.onReset).toHaveBeenCalledOnce()
+        })
+
+        it('rethrows any other failure without clearing', async () => {
+            const { db, teardown: td } = createTestDatabase()
+            teardown = td
+            const recovery = recoveryWith({ clear: vi.fn() })
+
+            await expect(
+                runMigrations(
+                    db,
+                    { '0000_broken': 'THIS IS NOT VALID SQL' },
+                    { recovery },
+                ),
+            ).rejects.toThrow()
+
+            expect(recovery.clear).not.toHaveBeenCalled()
+            expect(recovery.onReset).not.toHaveBeenCalled()
+        })
+
+        it('fails when the rerun on the cleared tables fails too', async () => {
+            const fault = failing(/^UPDATE cache/, 2)
+            const { db, teardown: td } = createTestDatabase(fault)
+            teardown = td
+            await runMigrations(db, SEEDED)
+            fault.arm()
+            const recovery = recoveryWith()
+
+            await expect(
+                runMigrations(db, SLOW, { recovery }),
+            ).rejects.toThrow()
+
+            expect(await appliedTags(db)).not.toContain('0001_slow')
+            expect(recovery.onReset).not.toHaveBeenCalled()
+        })
     })
 })

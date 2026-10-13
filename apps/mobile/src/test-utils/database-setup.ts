@@ -19,15 +19,22 @@
 //
 // or `withTestDatabase()` for all three at once.
 
+import { Decimal } from 'decimal.js'
+import { upsertAccountChainState } from '@perawallet/wallet-core-accounts'
 import {
     initializeDatabase,
     resetDatabase,
 } from '@perawallet/wallet-core-database'
 import {
-    ALGO_ASSET,
+    nativeAssetFor,
     upsertAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import {
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { testDatabaseService } from './sqlite-database'
 
@@ -65,7 +72,7 @@ export const teardownTestDatabase = async (): Promise<void> => {
 // Add new helpers here as more flows need richer pre-loaded state.
 
 /**
- * Insert ALGO_ASSET into the assets cache. Required by any flow that
+ * Insert the native asset into the assets cache. Required by any flow that
  * goes through `useAssetsQuery(['0'])` (send, receive, asset details,
  * confirmation screens). Defaults to mainnet — pass `network` if your
  * test needs testnet.
@@ -73,7 +80,10 @@ export const teardownTestDatabase = async (): Promise<void> => {
 export const seedAlgoAsset = async (
     network: Network = 'mainnet',
 ): Promise<void> => {
-    await upsertAssets({ items: [ALGO_ASSET], network })
+    await upsertAssets({
+        items: [nativeAssetFor(LEGACY_CHAIN_ID)],
+        scope: scopeForLegacyNetwork(network),
+    })
 }
 
 /**
@@ -85,5 +95,46 @@ export const seedAssets = async (
     network: Network = 'mainnet',
 ): Promise<void> => {
     if (assets.length === 0) return
-    await upsertAssets({ items: assets, network })
+    await upsertAssets({ items: assets, scope: scopeForLegacyNetwork(network) })
+}
+
+type SeedAlgorandAccountStateParams = {
+    accountAddress: string
+    scope: ChainScope
+    /** microAlgos. */
+    nativeBalance: Decimal
+    /** microAlgos. */
+    minBalance?: Decimal
+    totalAssetsOptedIn?: number
+    totalCreatedAssets?: number
+    authAddress?: string
+}
+
+/**
+ * Insert an account's chain-state row the way the syncer persists it, so
+ * balance and holdings reads have data without a network round-trip.
+ */
+export const seedAlgorandAccountState = async ({
+    accountAddress,
+    scope,
+    nativeBalance,
+    minBalance = new Decimal(100_000),
+    totalAssetsOptedIn = 0,
+    totalCreatedAssets = 0,
+    authAddress,
+}: SeedAlgorandAccountStateParams): Promise<void> => {
+    await upsertAccountChainState({
+        accountAddress,
+        scope,
+        nativeBalance,
+        chainData: {
+            family: 'algorand',
+            minBalance,
+            status: 'Offline',
+            totalAssetsOptedIn,
+            totalCreatedAssets,
+            totalAppsOptedIn: 0,
+            ...(authAddress ? { authAddress } : {}),
+        },
+    })
 }

@@ -12,17 +12,33 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    const bulletSize = theme.spacing.xxl
+type StyleProps = {
+    isDense: boolean
+}
+
+export const useStyles = makeStyles((theme, { isDense }: StyleProps) => {
+    const bulletSize = isDense
+        ? theme.spacing.xl + theme.spacing.sm
+        : theme.spacing.xxl
 
     return {
         container: {
-            gap: theme.spacing.xl,
+            gap: isDense ? theme.spacing.md : theme.spacing.xl,
         },
         row: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.lg,
+        },
+        detailedRow: {
+            alignItems: 'flex-start',
+        },
+        detailedBody: {
+            flex: 1,
+            paddingTop: theme.spacing.xs,
+        },
+        itemDescription: {
+            color: theme.colors.textGray,
         },
         bullet: {
             width: bulletSize,

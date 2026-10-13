@@ -10,12 +10,14 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from './models'
 
 /**
  * Base account error
@@ -41,9 +43,9 @@ export class AccountError extends AppError {
 }
 
 /**
- * Account has no HD wallet details
+ * The wallet holds no HD seed under the id given.
  */
-export class NoHDWalletError extends AccountError {
+export class NoHdSeedError extends AccountError {
     constructor(walletKeyId: string) {
         super('No Universal Wallet could be found', undefined, {
             messageKey: 'errors.account.no_hd_wallet',
@@ -53,15 +55,33 @@ export class NoHDWalletError extends AccountError {
 }
 
 /**
- * Rekey target account not found in local accounts
+ * The wallet has no seed that can mint an account on the chain.
  */
-export class RekeyTargetNotFoundError extends AccountError {
-    constructor(rekeyAddress: string) {
+export class WalletCannotDeriveError extends AccountError {
+    readonly walletId: string
+    readonly chainId: ChainId
+
+    constructor(walletId: string, chainId: ChainId) {
         super(
-            `Rekey target account ${rekeyAddress} not found in local accounts`,
+            `Wallet ${walletId} cannot derive an account on ${chainId}`,
+            undefined,
+            { params: { walletId, chainId } },
+        )
+        this.walletId = walletId
+        this.chainId = chainId
+    }
+}
+
+/**
+ * Delegation target account not found in local accounts
+ */
+export class DelegationTargetNotFoundError extends AccountError {
+    constructor(authorityAddress: string) {
+        super(
+            `Delegation target account ${authorityAddress} not found in local accounts`,
             undefined,
             {
-                params: { rekeyAddress },
+                params: { authorityAddress },
             },
         )
     }
@@ -85,17 +105,122 @@ export class HDImportSessionNotFoundError extends AccountError {
 /**
  * The address derived from the import flow already exists in the wallet.
  *
- * Surfaced from the algo25 import path so the UI can show a specific
+ * Surfaced from the single-key import path so the UI can show a specific
  * "already imported" toast instead of the generic failure message. HD
  * imports get the same protection at the selection screen (already-
  * imported addresses render a chip rather than a checkbox).
  */
 export class DuplicateAccountError extends AccountError {
-    constructor(address: string) {
+    // Names the existing account by id, not its user-chosen name: the message
+    // reaches crash reports.
+    constructor(address: string, existingAccount?: Pick<WalletAccount, 'id'>) {
         super(
-            `Account with address ${address} is already in the wallet`,
+            existingAccount
+                ? `Account with address ${address} is already in the wallet as ${existingAccount.id}`
+                : `Account with address ${address} is already in the wallet`,
             undefined,
-            { params: { address } },
+            {
+                params: existingAccount
+                    ? { address, existingAccountId: existingAccount.id }
+                    : { address },
+            },
         )
+    }
+}
+
+/**
+ * The address a key or derivation path produced isn't the one the caller
+ * holds for it, so the source (e.g. a backup) is corrupt or mismatched.
+ */
+export class AddressMismatchError extends AccountError {
+    constructor(expected: string, derived: string) {
+        super(
+            `Derived address ${derived} does not match expected ${expected}`,
+            undefined,
+            { params: { expected, derived } },
+        )
+    }
+}
+
+/**
+ * Why a BIP44 path failed validation.
+ *
+ * - `'malformed'`: the path string isn't a well-formed BIP44 path for the chain.
+ * - `'mismatch'`: the path parses cleanly but points to a different
+ *   account/change/keyIndex than the HD index being compared against.
+ */
+export type Bip44PathFailureReason = 'malformed' | 'mismatch'
+
+/**
+ * Thrown when a chain's `assertHdPathMatches` rejects a path. Carries a
+ * machine-readable `reason` so callers can map to domain-specific errors
+ * (e.g. ARC-60's `ERROR_FAILED_HD_PATH`) without re-parsing the message.
+ */
+export class InvalidBip44PathError extends AccountError {
+    readonly reason: Bip44PathFailureReason
+    readonly hdPath: string
+
+    constructor(
+        hdPath: string,
+        reason: Bip44PathFailureReason,
+        detail: string,
+    ) {
+        super(`Invalid BIP44 path "${hdPath}": ${detail}`, undefined, {
+            params: { hdPath, reason, detail },
+        })
+        this.reason = reason
+        this.hdPath = hdPath
+    }
+}
+
+class ChainFeatureUnsupportedError extends AccountError {
+    readonly chainId: ChainId
+
+    constructor(feature: string, chainId: ChainId) {
+        super(`${feature} is not supported on ${chainId}`, undefined, {
+            params: { chainId },
+        })
+        this.chainId = chainId
+    }
+}
+
+export class RawKeyImportUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Private-key import', chainId)
+    }
+}
+
+export class SingleKeyAccountsUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Single-key accounts', chainId)
+    }
+}
+
+export class HdAccountsUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('HD accounts', chainId)
+    }
+}
+
+export class MultisigUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Multisig accounts', chainId)
+    }
+}
+
+export class RootKeyDiscoveryUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Discovery from an in-memory root key', chainId)
+    }
+}
+
+export class PrivateKeyRevealUnsupportedError extends AccountError {
+    readonly accountId: string
+
+    constructor(accountId: string) {
+        super('This account has no private key to reveal', undefined, {
+            params: { accountId },
+        })
+        this.accountId = accountId
     }
 }

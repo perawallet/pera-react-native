@@ -12,9 +12,12 @@
 
 import { useCallback, useRef } from 'react'
 import {
-    AccountTypes,
+    chainAccountOf,
+    hasRecoverySeed,
+    signingKeyOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useKMS,
     BACKUP_ACCESS_DOMAIN,
@@ -57,20 +60,21 @@ export const useMnemonicForAddress = (
             if (!currentAddress) {
                 throw new Error('Account not found')
             }
-            if (!currentAccount || currentAccount.address !== currentAddress) {
+            if (
+                !currentAccount ||
+                chainAccountOf(currentAccount, LEGACY_CHAIN_ID)?.address !==
+                    currentAddress
+            ) {
                 throw new Error('Account not found')
             }
 
-            if (
-                currentAccount.type !== AccountTypes.hdWallet &&
-                currentAccount.type !== AccountTypes.algo25 &&
-                currentAccount.type !== AccountTypes.quantum
-            ) {
+            const keyPairId = signingKeyOn(currentAccount, LEGACY_CHAIN_ID)
+            if (!hasRecoverySeed(currentAccount) || !keyPairId) {
                 throw new Error('Account type does not support backup')
             }
 
             return kmsRef.current.executeWithMnemonic(
-                currentAccount.keyPairId,
+                keyPairId,
                 DOMAIN,
                 handler,
             )

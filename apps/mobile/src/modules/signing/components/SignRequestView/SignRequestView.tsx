@@ -22,7 +22,7 @@ import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
-import { SigningRoutes } from '@modules/signing/routes'
+import { SigningRoutes } from '../../routes/SigningRoutes'
 import {
     NavigationContainer,
     NavigationIndependentTree,
@@ -90,7 +90,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const isSupported =
         request.type === 'transactions' ||
         request.type === 'arbitrary-data' ||
-        request.type === 'arc60'
+        request.type === 'auth-data'
 
     if (!isSupported) {
         return (

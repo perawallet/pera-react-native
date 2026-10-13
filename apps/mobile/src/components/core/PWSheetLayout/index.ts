@@ -12,3 +12,4 @@
 
 export { PWSheetLayout } from './PWSheetLayout'
 export type { PWSheetLayoutProps } from './PWSheetLayout'
+export type { PWSheetLayoutScrollHandle } from './types'

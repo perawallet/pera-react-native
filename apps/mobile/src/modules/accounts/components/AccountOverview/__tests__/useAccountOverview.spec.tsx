@@ -45,7 +45,10 @@ vi.mock('@perawallet/wallet-core-background', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
@@ -62,19 +65,20 @@ vi.mock('../../AccountOptionsContent', () => ({
     AccountOptionsContent: () => null,
 }))
 
-vi.mock(
-    '@modules/transactions/components/receive-funds/ReceiveFundsContent',
-    () => ({
-        ReceiveFundsContent: () => null,
-    }),
-)
-
-vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
+vi.mock('@modules/transactions/routes', () => ({
+    ReceiveFundsContent: () => null,
     SendFundsContent: () => null,
+    SEND_FUNDS_SHEET_ID: 'send-funds',
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(() => ({ address: 'selected-address' })),
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
+    useSelectedAccount: vi.fn(() => ({
+        chains: { algorand: { address: 'selected-address' } },
+    })),
     useAccountSummaryQuery: vi.fn(() => ({
         isPending: mockBalancesPending.value,
         isPaused: mockBalancesPaused.value,
@@ -85,14 +89,18 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useEnsureAccountEnriched: vi.fn(),
 }))
 
-vi.mock('@modules/transactions/hooks', () => ({
+vi.mock('@modules/transactions', () => ({
     useReceiveFunds: vi.fn(() => ({
         setSelectedAccount: mockSetSelectedAccount,
         setCanSelectAccount: mockSetCanSelectAccount,
     })),
 }))
 
-const mockAccount = { address: 'test-address' } as WalletAccount
+const mockAccount = {
+    id: 'test',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address' } },
+} as WalletAccount
 
 const createDeferred = () => {
     let resolve: () => void = () => {}
@@ -174,7 +182,7 @@ describe('useAccountOverview', () => {
 
         expect(mockSetCanSelectAccount).toHaveBeenCalledWith(false)
         expect(mockSetSelectedAccount).toHaveBeenCalledWith({
-            address: 'selected-address',
+            chains: { algorand: { address: 'selected-address' } },
         })
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
@@ -195,7 +203,7 @@ describe('useAccountOverview', () => {
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
         expect(arg?.options).toEqual({
-            size: 'modal',
+            size: 'auto',
             enablePanDownToClose: true,
             autoCreateContainer: false,
         })

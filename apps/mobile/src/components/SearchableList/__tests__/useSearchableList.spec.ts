@@ -11,10 +11,17 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { Platform } from 'react-native'
 import { act, renderHook } from '@test-utils/render'
 import { isSeparatorSuppressed, useSearchableList } from '../useSearchableList'
 import type { PWFlatListRef } from '@components/core'
+import * as webScrollUnpin from '../scrollUnpin.web'
+
+// vitest doesn't resolve `.web.ts` twins, so the web cases swap one in here.
+const scrollUnpin = vi.hoisted(() => ({
+    shouldUnpinSearchOnScroll: false,
+    shouldReleasePinOnScrollUp: false,
+}))
+vi.mock('../scrollUnpin', () => scrollUnpin)
 
 const HEADER_SENTINEL = { __searchableListHeader: true, key: 'h' }
 const SEARCH_SENTINEL = { __searchableListSearch: true, key: 's' }
@@ -89,20 +96,26 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
             current: Pick<ReturnType<typeof useSearchableList>, 'handleScroll'>
         },
         y: number,
+        extent = { contentHeight: 12_000, viewportHeight: 600 },
     ) =>
         act(() =>
             result.current.handleScroll({
-                nativeEvent: { contentOffset: { y } },
+                nativeEvent: {
+                    contentOffset: { y },
+                    contentSize: { height: extent.contentHeight },
+                    layoutMeasurement: { height: extent.viewportHeight },
+                },
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any),
         )
 
     beforeEach(() => {
-        Platform.OS = 'ios'
+        scrollUnpin.shouldUnpinSearchOnScroll = false
+        scrollUnpin.shouldReleasePinOnScrollUp = false
     })
 
     it('unpins (hides the overlay) once a real scroll moves away from the settled pin offset on web', () => {
-        Platform.OS = 'web'
+        Object.assign(scrollUnpin, webScrollUnpin)
         const { result } = setup()
         layoutHeader(result, HEADER_HEIGHT)
 
@@ -126,7 +139,7 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
     })
 
     it('unpins when scrolling further down past the settled pin offset on web', () => {
-        Platform.OS = 'web'
+        Object.assign(scrollUnpin, webScrollUnpin)
         const { result } = setup()
         layoutHeader(result, HEADER_HEIGHT)
 
@@ -138,8 +151,47 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
         expect(result.current.showOverlay).toBe(false)
     })
 
+    // QA Finding 25: clearing the query moved the list off a pin it never
+    // settled exactly on, so the overlay stayed stuck at the top.
+    it('unpins when the list moves up off a pin it never settled on exactly on web', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, HEADER_HEIGHT + 14)
+        expect(result.current.showOverlay).toBe(true)
+
+        scrollTo(result, HEADER_HEIGHT - 60)
+        expect(result.current.showOverlay).toBe(false)
+    })
+
+    it('keeps the overlay while the pin animation climbs towards the pin on web', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, 100)
+        scrollTo(result, 200)
+
+        expect(result.current.showOverlay).toBe(true)
+    })
+
+    it('keeps the overlay when shrinking results clamp the offset above the pin on web', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, HEADER_HEIGHT + 14)
+        // Content shrank to 788 with a 538 viewport: max offset is 250.
+        scrollTo(result, 250, { contentHeight: 788, viewportHeight: 538 })
+
+        expect(result.current.showOverlay).toBe(true)
+    })
+
     it('does not unpin from scroll alone on native — onScrollBeginDrag remains the only trigger', () => {
-        Platform.OS = 'ios'
         const { result } = setup()
         layoutHeader(result, HEADER_HEIGHT)
 
@@ -213,16 +265,22 @@ describe('useSearchableList content-size pin correction', () => {
             current: Pick<ReturnType<typeof useSearchableList>, 'handleScroll'>
         },
         y: number,
+        extent = { contentHeight: 12_000, viewportHeight: 600 },
     ) =>
         act(() =>
             result.current.handleScroll({
-                nativeEvent: { contentOffset: { y } },
+                nativeEvent: {
+                    contentOffset: { y },
+                    contentSize: { height: extent.contentHeight },
+                    layoutMeasurement: { height: extent.viewportHeight },
+                },
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any),
         )
 
     beforeEach(() => {
-        Platform.OS = 'ios'
+        scrollUnpin.shouldUnpinSearchOnScroll = false
+        scrollUnpin.shouldReleasePinOnScrollUp = false
     })
 
     it('leaves a scroll position deep in the list alone when content size changes', () => {
@@ -247,6 +305,61 @@ describe('useSearchableList content-size pin correction', () => {
         // Collapse first, then a transient drop leaves the offset above the pin.
         scrollTo(result, 5000)
         scrollTo(result, HEADER_HEIGHT - 40)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 900))
+
+        expect(scrollToOffset).toHaveBeenCalledWith({
+            offset: HEADER_HEIGHT,
+            animated: false,
+        })
+    })
+
+    // QA on the extension: scrolling back up into the chart jumped straight to
+    // the pin, because web never emits onScrollEndDrag and so never cleared the
+    // collapsed latch.
+    it('lets a web user scroll back up into the header', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        scrollTo(result, 5000)
+        scrollTo(result, HEADER_HEIGHT - 150)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 12_100))
+
+        expect(scrollToOffset).not.toHaveBeenCalled()
+    })
+
+    it('still corrects a web offset clamped above the pin by shrinking content', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        scrollTo(result, 5000)
+        // Content shrank to 880: the platform clamps to its max offset (280).
+        scrollTo(result, HEADER_HEIGHT - 40, {
+            contentHeight: 880,
+            viewportHeight: 600,
+        })
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 880))
+
+        expect(scrollToOffset).toHaveBeenCalledWith({
+            offset: HEADER_HEIGHT,
+            animated: false,
+        })
+    })
+
+    it('keeps the latch through the web search-pin animation', () => {
+        Object.assign(scrollUnpin, webScrollUnpin)
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, HEADER_HEIGHT / 2)
         scrollToOffset.mockClear()
 
         act(() => result.current.handleContentSizeChange(0, 900))

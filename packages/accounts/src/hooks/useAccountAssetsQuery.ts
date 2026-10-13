@@ -11,8 +11,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import {
+    queryKeyReferencesScope,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { AssetSortMode } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     getAccountHoldingsLite,
     type AccountHoldingsFilters,
@@ -51,6 +54,7 @@ export type UseAccountAssetsQueryResult = {
  */
 export const useAccountAssetsQuery = (
     address: string | undefined,
+    scope: ChainScope,
     {
         filters,
         sortMode = 'balanceDesc',
@@ -58,10 +62,8 @@ export const useAccountAssetsQuery = (
         enabled = true,
     }: UseAccountAssetsQueryParams = {},
 ): UseAccountAssetsQueryResult => {
-    const { network } = useNetwork()
-
     const query = useQuery({
-        queryKey: getAccountHoldingsPageQueryKey(address ?? '', network, {
+        queryKey: getAccountHoldingsPageQueryKey(address ?? '', scope, {
             filters,
             sortMode,
             search,
@@ -75,10 +77,10 @@ export const useAccountAssetsQuery = (
         // but never across accounts or networks.
         placeholderData: (previousRows, previousQuery) => {
             const previousParams = previousQuery?.queryKey[2] as
-                | { address?: string; network?: string }
+                | { address?: string }
                 | undefined
             return previousParams?.address === address &&
-                previousParams?.network === network
+                queryKeyReferencesScope(previousQuery?.queryKey ?? [], scope)
                 ? previousRows
                 : undefined
         },
@@ -90,10 +92,10 @@ export const useAccountAssetsQuery = (
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the summary query's fetch).
-            await ensureAccountFetched(address as string, network)
+            await ensureAccountFetched(address as string, scope)
             return getAccountHoldingsLite({
                 accountAddress: address as string,
-                network,
+                scope,
                 ...filters,
                 sortMode,
                 search,

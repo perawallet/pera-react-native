@@ -17,7 +17,7 @@ export type GoAlgorandPQVector = {
 }
 
 /**
- * Pinned from `packages/blockchain/src/pq/__tests__/derivation.spec.ts:22-24`,
+ * Pinned from `packages/chain-algorand/src/blockchain/pq/__tests__/derivation.spec.ts:22-24`,
  * which in turn carries go-algorand's `cmd/algokey/pq_test.go` published vector
  * (entropy = bytes 1..32). An external, non-Pera oracle — the whole point of
  * this vector is that it was never computed by this repo's code.
@@ -33,7 +33,7 @@ export type InRepoHdVector = {
 }
 
 /**
- * Pinned from `packages/kms/src/crypto/__tests__/hdwallet-integration.test.ts:34-38`
+ * Pinned from `packages/kms/src/crypto/__tests__/hdwallet-integration.spec.ts:34-38`
  * — a BIP39 24-word mnemonic at path `m/44'/283'/0'/0/0` (Peikert derivation),
  * documented there as matching the native iOS/Android Pera apps.
  *

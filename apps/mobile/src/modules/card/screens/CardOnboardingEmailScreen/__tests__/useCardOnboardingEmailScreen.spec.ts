@@ -76,12 +76,26 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock(
+    '@perawallet/wallet-core-chain-algorand/blockchain',
+    async importOriginal => ({
+        ...(await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+        >()),
+    }),
+)
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 let mockDeviceId: string | null = 'device-1'
 vi.mock('@perawallet/wallet-core-device', () => ({
+    logEvent: vi.fn(),
+    createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => mockDeviceId,
 }))
 
@@ -100,11 +114,10 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardOnboardingEmailScreen } from '../useCardOnboardingEmailScreen'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const france: SupportedCountry = {
     id: 'FR',
@@ -132,6 +145,10 @@ const selectCountry = async (
     })
     await waitFor(() => expect(result.current.selectedCountry).toEqual(country))
 }
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useCardOnboardingEmailScreen', () => {
     beforeEach(() => {

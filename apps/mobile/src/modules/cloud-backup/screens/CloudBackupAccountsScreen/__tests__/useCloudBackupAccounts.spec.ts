@@ -1,0 +1,109 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { trackEvent, CloudBackupEvent } from '@analytics'
+import { useCloudBackupAccounts } from '../useCloudBackupAccounts'
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
+
+const { navigateMock, backUpAccountMock, isBackedUpMock } = vi.hoisted(() => ({
+    navigateMock: vi.fn(),
+    backUpAccountMock: vi.fn(),
+    isBackedUpMock: vi.fn((address: string) => address === 'A'),
+}))
+
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({ navigate: navigateMock }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => {
+    const account = (address: string) => ({
+        id: address,
+        custody: { kind: 'watch' },
+        chains: { algorand: { address } },
+    })
+    // An account with nothing on the backup's chain has no backup item.
+    const elsewhere = { id: 'ETH', custody: { kind: 'watch' }, chains: {} }
+    return {
+        chainAccountOf: (
+            account: { chains: Record<string, unknown> },
+            chainId: string,
+        ) => account.chains[chainId],
+        useAccountsStore: (
+            selector: (state: { accounts: unknown[] }) => unknown,
+        ) => selector({ accounts: [account('A'), elsewhere, account('B')] }),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    accountBackupAddresses: (account: {
+        chains: Record<string, { address: string }>
+    }) => Object.values(account.chains).map(entry => entry.address),
+}))
+
+vi.mock('../../../hooks/useBackupAccountReview', () => ({
+    useBackupAccountReview: () => ({
+        isBackedUp: isBackedUpMock,
+        notBackedUpAccounts: [{ account: { id: 'B' }, address: 'B' }],
+        availableFromBackup: ['GONE', 'ALSO_GONE'],
+        isBusy: (address: string) => address === 'B',
+        backUpAccount: backUpAccountMock,
+    }),
+}))
+
+beforeEach(() => {
+    vi.clearAllMocks()
+})
+
+describe('useCloudBackupAccounts', () => {
+    it('lists the device accounts that have a backup item alongside the counts awaiting review', () => {
+        const { result } = renderHook(() => useCloudBackupAccounts())
+
+        expect(
+            result.current.accounts.map(({ account, address }) => [
+                account.id,
+                address,
+            ]),
+        ).toEqual([
+            ['A', 'A'],
+            ['B', 'B'],
+        ])
+        expect(result.current.isBackedUp('A')).toBe(true)
+        expect(result.current.isBackedUp('B')).toBe(false)
+        expect(result.current.notBackedUpCount).toBe(1)
+        expect(result.current.availableFromBackupCount).toBe(2)
+        expect(result.current.isBusy('B')).toBe(true)
+    })
+
+    it('tracks and opens the review screen', () => {
+        const { result } = renderHook(() => useCloudBackupAccounts())
+
+        act(() => result.current.onReview())
+
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.AccountsReview)
+        expect(navigateMock).toHaveBeenCalledWith('CloudBackupAccountsReview')
+    })
+
+    it('tracks and backs up a device account', () => {
+        const { result } = renderHook(() => useCloudBackupAccounts())
+
+        act(() => result.current.onBackUp('B'))
+
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.AccountsBackUp)
+        expect(backUpAccountMock).toHaveBeenCalledWith('B')
+    })
+})

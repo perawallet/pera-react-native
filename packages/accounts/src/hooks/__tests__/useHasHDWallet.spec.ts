@@ -14,7 +14,8 @@ import { renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach } from 'vitest'
 import { useHasHDWallet } from '../useHasHDWallet'
 import { useAccountsStore } from '../../store'
-import { AccountTypes, type WalletAccount } from '../../models'
+import type { WalletAccount } from '../../models'
+import { testAccount } from '../../__tests__/accountFactory'
 
 const setAccounts = (accounts: WalletAccount[]) =>
     useAccountsStore.getState().setAccounts(accounts)
@@ -32,18 +33,17 @@ describe('useHasHDWallet', () => {
 
     it('returns false when the wallet holds only non-HD accounts', () => {
         setAccounts([
-            { type: AccountTypes.algo25, address: 'A' } as WalletAccount,
-            { type: AccountTypes.watch, address: 'W' } as WalletAccount,
+            testAccount('local', 'A'),
+            testAccount('explicit', 'Q'),
+            testAccount('hardware', 'L'),
+            testAccount('watch', 'W'),
         ])
         const { result } = renderHook(() => useHasHDWallet())
         expect(result.current).toBe(false)
     })
 
     it('returns true when at least one HD account exists', () => {
-        setAccounts([
-            { type: AccountTypes.algo25, address: 'A' } as WalletAccount,
-            { type: AccountTypes.hdWallet, address: 'H' } as WalletAccount,
-        ])
+        setAccounts([testAccount('local', 'A'), testAccount('hd', 'H')])
         const { result } = renderHook(() => useHasHDWallet())
         expect(result.current).toBe(true)
     })

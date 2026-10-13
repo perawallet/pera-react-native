@@ -24,20 +24,16 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
-    useDeepLink: () => ({
-        buildDeeplink: ({ address }: { address: string }) =>
-            `perawallet://app/shared-account-import/?address=${encodeURIComponent(address)}`,
-    }),
+vi.mock('@modules/deeplink/builders', () => ({
+    buildDeeplink: ({ address }: { address: string }) =>
+        `perawallet://app/shared-account-import/?address=${encodeURIComponent(address)}`,
 }))
 
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowToast }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@utils/shareText', () => ({
     shareText: mockShareText,
@@ -46,6 +42,7 @@ vi.mock('@utils/shareText', () => ({
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { debugEnabled: false },
     isTestnet: () => false,
+    registerCustomNetworkSource: vi.fn(() => () => undefined),
 }))
 
 vi.mock('@components/core', () => ({

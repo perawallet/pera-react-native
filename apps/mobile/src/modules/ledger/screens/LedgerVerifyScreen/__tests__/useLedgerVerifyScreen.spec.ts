@@ -13,10 +13,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import {
-    AccountTypes,
+    authorityOf,
+    hardwareDetailsOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -27,6 +29,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 import { useLedgerVerifyScreen } from '../useLedgerVerifyScreen'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const {
     mockVerify,
@@ -35,7 +38,9 @@ const {
     mockConnect,
     mockDisconnect,
     mockSheetRequest,
+    handoff,
 } = vi.hoisted(() => ({
+    handoff: { isHandoffTab: false, closeHandoffTab: vi.fn() },
     mockVerify: vi.fn(),
     mockExit: vi.fn(),
     mockSetConfetti: vi.fn(),
@@ -44,6 +49,14 @@ const {
     mockSheetRequest: vi.fn(),
 }))
 
+vi.mock('@modules/ledger/hooks', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useLedgerExpandedTabHandoff: () => ({
+        isPopupSurface: false,
+        openLedgerExpandedTab: vi.fn(),
+        ...handoff,
+    }),
+}))
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: vi.fn() }),
 }))
@@ -75,6 +88,8 @@ vi.mock('@modules/ledger/utils', async () => ({
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
+        // Before bootstrap registers a chain, the scope reads the tier name.
+        chains: { has: () => false },
         keyValueStorage: {
             getItem: vi.fn().mockResolvedValue(null),
             setItem: vi.fn().mockResolvedValue(undefined),
@@ -113,14 +128,21 @@ const routeParams = vi.hoisted(() => ({
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
 }))
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    isValidAlgorandAddress: (address?: string) =>
+        typeof address === 'string' && !address.startsWith('!!'),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    getSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    isValidAlgorandAddress: (address?: string) =>
-        typeof address === 'string' && !address.startsWith('!!'),
 }))
 
 // Route params carry the serialized (JSON-safe) shape; the hook decodes it.
@@ -135,7 +157,7 @@ const derived = (address: string, accountIndex: number) => ({
 const expectedAddressFor = (accountIndex: number): string => {
     const selected = routeParams.current.selectedAccounts as Array<
         | { kind: 'derived'; account: ReturnType<typeof derived> }
-        | { kind: 'rekeyed'; authAccount: ReturnType<typeof derived> }
+        | { kind: 'delegated'; authAccount: ReturnType<typeof derived> }
     >
     for (const sel of selected) {
         const acc = sel.kind === 'derived' ? sel.account : sel.authAccount
@@ -145,6 +167,7 @@ const expectedAddressFor = (accountIndex: number): string => {
 }
 
 beforeEach(() => {
+    registerAlgorandAccountsAdapter()
     vi.clearAllMocks()
     mockConnect.mockResolvedValue({
         getAddress: vi.fn(),
@@ -159,6 +182,7 @@ beforeEach(() => {
         }),
     )
     mockSheetRequest.mockResolvedValue(true)
+    handoff.isHandoffTab = false
     useAccountsStore.getState().setAccounts([])
 })
 
@@ -171,8 +195,8 @@ describe('useLedgerVerifyScreen', () => {
             transportType: 'ble',
             selectedAccounts: [
                 { kind: 'derived', account: d0 },
-                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
-                { kind: 'rekeyed', address: 'REKEYED_B', authAccount: d0 },
+                { kind: 'delegated', address: 'REKEYED_A', authAccount: d0 },
+                { kind: 'delegated', address: 'REKEYED_B', authAccount: d0 },
             ],
         }
 
@@ -190,12 +214,12 @@ describe('useLedgerVerifyScreen', () => {
         ])
     })
 
-    it('handleAdd imports derived as hardware, rekeyed as watch+rekeyAddress, auto-includes auth, skips already-imported and invalid', async () => {
+    it('handleAdd imports derived as hardware, rekeyed as watch accounts under their Ledger authority, auto-includes auth, skips already-imported and invalid', async () => {
         const d0 = derived('LEDGER0', 0)
         useAccountsStore.getState().setAccounts([
             {
-                type: AccountTypes.watch,
-                address: 'ALREADY',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'ALREADY' } },
             } as WalletAccount,
         ])
         routeParams.current = {
@@ -203,9 +227,9 @@ describe('useLedgerVerifyScreen', () => {
             deviceName: 'Nano',
             transportType: 'ble',
             selectedAccounts: [
-                { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
-                { kind: 'rekeyed', address: 'ALREADY', authAccount: d0 },
-                { kind: 'rekeyed', address: '!!bad', authAccount: d0 },
+                { kind: 'delegated', address: 'REKEYED_A', authAccount: d0 },
+                { kind: 'delegated', address: 'ALREADY', authAccount: d0 },
+                { kind: 'delegated', address: '!!bad', authAccount: d0 },
             ],
         }
 
@@ -217,15 +241,85 @@ describe('useLedgerVerifyScreen', () => {
         })
 
         const accounts = useAccountsStore.getState().accounts
-        const hw = accounts.find(a => a.address === 'LEDGER0')
-        const watch = accounts.find(a => a.address === 'REKEYED_A')
-        expect(hw?.type).toBe(AccountTypes.hardware)
-        expect(watch?.type).toBe(AccountTypes.watch)
-        expect(watch?.rekeyAddress).toBe('LEDGER0')
-        expect(accounts.filter(a => a.address === 'ALREADY')).toHaveLength(1)
-        expect(accounts.find(a => a.address === '!!bad')).toBeUndefined()
+        const hw = accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
+        const watch = accounts.find(
+            a => a.chains.algorand?.address === 'REKEYED_A',
+        )
+        expect(hw?.custody.kind).toBe('hardware')
+        expect(watch?.custody.kind).toBe('watch')
+        expect(authorityOf(watch!, scopeForLegacyNetwork('mainnet'))).toBe(
+            'LEDGER0',
+        )
+        expect(
+            accounts.filter(a => a.chains.algorand?.address === 'ALREADY'),
+        ).toHaveLength(1)
+        expect(
+            accounts.find(a => a.chains.algorand?.address === '!!bad'),
+        ).toBeUndefined()
         expect(mockExit).toHaveBeenCalledTimes(1)
         expect(mockSetConfetti).toHaveBeenCalledWith(true)
+    })
+
+    describe('in a Ledger pairing tab', () => {
+        beforeEach(() => {
+            handoff.isHandoffTab = true
+            routeParams.current = {
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'usb',
+                selectedAccounts: [
+                    { kind: 'derived', account: derived('LEDGER0', 0) },
+                ],
+            }
+        })
+
+        it('shows the added result instead of leaving for the wallet home', async () => {
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+            await waitFor(() =>
+                expect(result.current.areAllVerified).toBe(true),
+            )
+
+            act(() => {
+                result.current.handleAdd()
+            })
+
+            await waitFor(() =>
+                expect(result.current.isAddedInHandoffTab).toBe(true),
+            )
+            expect(
+                useAccountsStore
+                    .getState()
+                    .accounts.some(
+                        a => a.chains.algorand?.address === 'LEDGER0',
+                    ),
+            ).toBe(true)
+            expect(mockExit).not.toHaveBeenCalled()
+            expect(mockSetConfetti).not.toHaveBeenCalled()
+        })
+
+        it('closes the tab on Done and offers Cancel', async () => {
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+
+            result.current.handleDone()
+
+            expect(handoff.closeHandoffTab).toHaveBeenCalledTimes(1)
+            expect(result.current.handleCancel).toBeDefined()
+        })
+    })
+
+    it('offers no Cancel outside a Ledger pairing tab', () => {
+        routeParams.current = {
+            deviceId: 'dev',
+            deviceName: 'Nano',
+            transportType: 'usb',
+            selectedAccounts: [
+                { kind: 'derived', account: derived('LEDGER0', 0) },
+            ],
+        }
+
+        const { result } = renderHook(() => useLedgerVerifyScreen())
+
+        expect(result.current.handleCancel).toBeUndefined()
     })
 
     it('does not persist a rekeyed watch account when its auth account address is invalid', async () => {
@@ -239,7 +333,11 @@ describe('useLedgerVerifyScreen', () => {
             deviceName: 'Nano',
             transportType: 'ble',
             selectedAccounts: [
-                { kind: 'rekeyed', address: 'REKEYED_X', authAccount: badAuth },
+                {
+                    kind: 'delegated',
+                    address: 'REKEYED_X',
+                    authAccount: badAuth,
+                },
             ],
         }
 
@@ -251,9 +349,11 @@ describe('useLedgerVerifyScreen', () => {
         })
 
         const accounts = useAccountsStore.getState().accounts
-        expect(accounts.find(a => a.address === 'REKEYED_X')).toBeUndefined()
         expect(
-            accounts.find(a => a.address === '!!invalidauth'),
+            accounts.find(a => a.chains.algorand?.address === 'REKEYED_X'),
+        ).toBeUndefined()
+        expect(
+            accounts.find(a => a.chains.algorand?.address === '!!invalidauth'),
         ).toBeUndefined()
     })
 
@@ -336,8 +436,8 @@ describe('useLedgerVerifyScreen', () => {
             ({
                 id: `watch-${address}`,
                 ...(name ? { name } : {}),
-                type: AccountTypes.watch,
-                address,
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: address } },
             }) as WalletAccount
 
         it('upgrades a watch account of a derived address to hardware after confirmation, preserving its name', async () => {
@@ -366,13 +466,10 @@ describe('useLedgerVerifyScreen', () => {
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             const upgraded = accounts[0]
-            expect(upgraded.type).toBe(AccountTypes.hardware)
+            expect(upgraded.custody.kind).toBe('hardware')
             expect(upgraded.name).toBe('My Cold Wallet')
             expect(upgraded.id).toBe('watch-LEDGER0')
-            expect(
-                upgraded.type === AccountTypes.hardware &&
-                    upgraded.hardwareDetails,
-            ).toEqual({
+            expect(hardwareDetailsOf(upgraded)).toEqual({
                 manufacturer: 'ledger',
                 deviceId: 'dev',
                 deviceName: 'Nano',
@@ -407,10 +504,12 @@ describe('useLedgerVerifyScreen', () => {
 
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accounts[0].type).toBe(AccountTypes.watch)
+            expect(accounts[0].custody.kind).toBe('watch')
             // The brand-new LEDGER1 is withheld too: a declined confirmation
             // aborts the add wholesale instead of importing a partial set.
-            expect(accounts.find(a => a.address === 'LEDGER1')).toBeUndefined()
+            expect(
+                accounts.find(a => a.chains.algorand?.address === 'LEDGER1'),
+            ).toBeUndefined()
             expect(mockExit).not.toHaveBeenCalled()
             expect(mockSetConfetti).not.toHaveBeenCalled()
         })
@@ -423,7 +522,11 @@ describe('useLedgerVerifyScreen', () => {
                 deviceName: 'Nano',
                 transportType: 'ble',
                 selectedAccounts: [
-                    { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
+                    {
+                        kind: 'delegated',
+                        address: 'REKEYED_A',
+                        authAccount: d0,
+                    },
                 ],
             }
 
@@ -437,11 +540,17 @@ describe('useLedgerVerifyScreen', () => {
             })
 
             const accounts = useAccountsStore.getState().accounts
-            const auth = accounts.find(a => a.address === 'LEDGER0')
-            const rekeyed = accounts.find(a => a.address === 'REKEYED_A')
-            expect(auth?.type).toBe(AccountTypes.hardware)
-            expect(rekeyed?.type).toBe(AccountTypes.watch)
-            expect(rekeyed?.rekeyAddress).toBe('LEDGER0')
+            const auth = accounts.find(
+                a => a.chains.algorand?.address === 'LEDGER0',
+            )
+            const rekeyed = accounts.find(
+                a => a.chains.algorand?.address === 'REKEYED_A',
+            )
+            expect(auth?.custody.kind).toBe('hardware')
+            expect(rekeyed?.custody.kind).toBe('watch')
+            expect(
+                authorityOf(rekeyed!, scopeForLegacyNetwork('mainnet')),
+            ).toBe('LEDGER0')
         })
 
         it('does not add the rekeyed pair when upgrading its watch auth is declined', async () => {
@@ -453,7 +562,11 @@ describe('useLedgerVerifyScreen', () => {
                 deviceName: 'Nano',
                 transportType: 'ble',
                 selectedAccounts: [
-                    { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
+                    {
+                        kind: 'delegated',
+                        address: 'REKEYED_A',
+                        authAccount: d0,
+                    },
                 ],
             }
 
@@ -468,9 +581,9 @@ describe('useLedgerVerifyScreen', () => {
 
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
-            expect(accounts[0].type).toBe(AccountTypes.watch)
+            expect(accounts[0].custody.kind).toBe('watch')
             expect(
-                accounts.find(a => a.address === 'REKEYED_A'),
+                accounts.find(a => a.chains.algorand?.address === 'REKEYED_A'),
             ).toBeUndefined()
         })
 
@@ -479,15 +592,17 @@ describe('useLedgerVerifyScreen', () => {
                 {
                     id: 'hw-1',
                     name: 'Ledger 1',
-                    type: AccountTypes.hardware,
-                    address: 'LEDGER0',
-                    hardwareDetails: {
-                        manufacturer: 'ledger',
-                        deviceId: 'forgotten-device',
-                        deviceName: 'Nano',
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'forgotten-device',
+                            deviceName: 'Nano',
+                            transportType: 'ble',
+                        },
                         accountIndex: 0,
-                        transportType: 'ble',
                     },
+                    chains: { algorand: { address: 'LEDGER0' } },
                 } as WalletAccount,
             ])
             routeParams.current = {
@@ -513,10 +628,7 @@ describe('useLedgerVerifyScreen', () => {
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             const rebound = accounts[0]
-            expect(
-                rebound.type === AccountTypes.hardware &&
-                    rebound.hardwareDetails.deviceId,
-            ).toBe('dev')
+            expect(hardwareDetailsOf(rebound)?.deviceId).toBe('dev')
             expect(rebound.name).toBe('Ledger 1')
             expect(mockExit).toHaveBeenCalledTimes(1)
         })
@@ -524,15 +636,17 @@ describe('useLedgerVerifyScreen', () => {
         it('re-imports an unchanged hardware account as a pure no-op', async () => {
             const untouched = {
                 id: 'hw-1',
-                type: AccountTypes.hardware,
-                address: 'LEDGER0',
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'dev',
-                    deviceName: 'Nano',
+                custody: {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'dev',
+                        deviceName: 'Nano',
+                        transportType: 'ble',
+                    },
                     accountIndex: 0,
-                    transportType: 'ble',
                 },
+                chains: { algorand: { address: 'LEDGER0' } },
             } as WalletAccount
             useAccountsStore.getState().setAccounts([untouched])
             routeParams.current = {
@@ -570,7 +684,11 @@ describe('useLedgerVerifyScreen', () => {
                 selectedAccounts: [
                     { kind: 'derived', account: d0 },
                     { kind: 'derived', account: derived('LEDGER1', 1) },
-                    { kind: 'rekeyed', address: 'REKEYED_A', authAccount: d0 },
+                    {
+                        kind: 'delegated',
+                        address: 'REKEYED_A',
+                        authAccount: d0,
+                    },
                 ],
             }
 
@@ -584,7 +702,10 @@ describe('useLedgerVerifyScreen', () => {
             })
 
             const accounts = useAccountsStore.getState().accounts
-            const names = accounts.map(a => [a.address, a.name])
+            const names = accounts.map(a => [
+                a.chains.algorand?.address,
+                a.name,
+            ])
             expect(names).toContainEqual([
                 'LEDGER0',
                 'ledger.default_account_name#1',
@@ -602,15 +723,17 @@ describe('useLedgerVerifyScreen', () => {
                 {
                     id: 'hw-existing',
                     name: 'ledger.default_account_name#1',
-                    type: AccountTypes.hardware,
-                    address: 'OLDLEDGER',
-                    hardwareDetails: {
-                        manufacturer: 'ledger',
-                        deviceId: 'other-dev',
-                        deviceName: 'Nano S',
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'other-dev',
+                            deviceName: 'Nano S',
+                            transportType: 'ble',
+                        },
                         accountIndex: 0,
-                        transportType: 'ble',
                     },
+                    chains: { algorand: { address: 'OLDLEDGER' } },
                 } as WalletAccount,
             ])
             routeParams.current = {
@@ -633,7 +756,7 @@ describe('useLedgerVerifyScreen', () => {
 
             const added = useAccountsStore
                 .getState()
-                .accounts.find(a => a.address === 'LEDGER0')
+                .accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
             expect(added?.name).toBe('ledger.default_account_name#2')
         })
     })

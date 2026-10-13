@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
+import { registerFakeAssetsAdapter } from './src/__tests__/fakeAssetsChain'
 
 const store = new Map<string, string>()
 
@@ -34,3 +35,8 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         },
     }),
 }))
+
+// Hooks and the syncers resolve the chain through the registry.
+beforeEach(() => {
+    registerFakeAssetsAdapter()
+})

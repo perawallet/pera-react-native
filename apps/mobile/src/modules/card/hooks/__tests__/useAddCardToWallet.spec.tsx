@@ -29,6 +29,11 @@ const mocks = vi.hoisted(() => ({
     fetchGooglePayload: vi.fn(),
 }))
 
+// The provider stub has no storage, so the network store can't resolve a scope.
+vi.mock('../useCardScope', () => ({
+    useCardScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         walletProvisioning: {
@@ -53,8 +58,8 @@ vi.mock('@hooks/useIsCardPushProvisioningEnabled', () => ({
     useIsCardPushProvisioningEnabled: () => mocks.isEnabled,
 }))
 
-vi.mock('../../../../platform/utils', async () => {
-    const actual = await vi.importActual<object>('../../../../platform/utils')
+vi.mock('@utils/platform', async () => {
+    const actual = await vi.importActual<object>('@utils/platform')
     return {
         ...actual,
         isIOS: () => mocks.isIOS,

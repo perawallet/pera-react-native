@@ -10,12 +10,120 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import {
+    parseAccountRecordPayload,
     parseAddressPayload,
+    parseContactPayload,
+    parsePasskeyPayload,
+    parsePasskeySecretsPayload,
     parseSecretsPayload,
     BackupPayloadParseError,
 } from '../payloadParsers'
+import { isChainAddressPayload, isChainHdAddressPayload } from '../../models'
+
+describe('chain-tagged payloads', () => {
+    const standaloneKeySecrets = {
+        type: 'standaloneKey',
+        chain: 'ethereum',
+        address: '0xabc',
+        privateKey: 'ab01',
+    }
+
+    test.each(['hdChain', 'standaloneKey'])(
+        'rejects a %s address item, which only exists inside a record',
+        type => {
+            expect(() =>
+                parseAddressPayload(
+                    JSON.stringify({
+                        type,
+                        chain: 'ethereum',
+                        address: '0xabc',
+                    }),
+                ),
+            ).toThrow(BackupPayloadParseError)
+        },
+    )
+
+    test('parses a standaloneKey secrets payload', () => {
+        expect(
+            parseSecretsPayload(JSON.stringify(standaloneKeySecrets)),
+        ).toEqual(standaloneKeySecrets)
+    })
+
+    // An unknown chain still parses; whether this build restores it is decided
+    // where the chain registry is.
+    test('rejects secrets with no chain', () => {
+        expect(() =>
+            parseSecretsPayload(
+                JSON.stringify({ ...standaloneKeySecrets, chain: undefined }),
+            ),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    test.each(['0xab', 'AB01', 'abc', ''])(
+        'rejects a non-hex or odd-length private key %j',
+        privateKey => {
+            expect(() =>
+                parseSecretsPayload(
+                    JSON.stringify({ ...standaloneKeySecrets, privateKey }),
+                ),
+            ).toThrow(BackupPayloadParseError)
+        },
+    )
+
+    test('leaves a legacy watch payload free of a chain', () => {
+        const parsed = parseAddressPayload(
+            JSON.stringify({ type: 'watch', address: 'W', customName: null }),
+        )
+
+        expect(Object.keys(parsed)).not.toContain('chain')
+    })
+})
+
+describe('parseAccountRecordPayload', () => {
+    const record = {
+        formatVersion: 2,
+        customName: 'Both',
+        updatedAt: 5,
+        chains: [
+            { chain: 'algorand', type: 'watch', address: 'ALGO' },
+            { chain: 'ethereum', type: 'watch', address: '0xabc' },
+        ],
+    }
+
+    test('keeps fields and chains this build does not know', () => {
+        const future = {
+            ...record,
+            futureField: 1,
+            chains: [
+                ...record.chains,
+                { chain: 'solana', type: 'solanaKey', address: 'SOL', x: 1 },
+            ],
+        }
+
+        expect(parseAccountRecordPayload(JSON.stringify(future))).toEqual(
+            future,
+        )
+    })
+
+    test.each([
+        ['no chains', { ...record, chains: [] }],
+        [
+            'a chain without an address',
+            { ...record, chains: [{ chain: 'x', type: 'watch' }] },
+        ],
+        [
+            'a chain without a type',
+            { ...record, chains: [{ chain: 'x', address: 'X' }] },
+        ],
+        ['no format version', { ...record, formatVersion: undefined }],
+    ])('rejects a record with %s', (_label, payload) => {
+        expect(() =>
+            parseAccountRecordPayload(JSON.stringify(payload)),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
 
 describe('parseAddressPayload', () => {
     it('parses an algo25 address payload', () => {
@@ -109,9 +217,45 @@ describe('parseAddressPayload', () => {
         })
     })
 
-    it('throws on an unknown type', () => {
+    // The format holds no chain's kind names; the restoring chain's adapter
+    // decides whether it knows this one.
+    it("passes a kind the format doesn't define through as a chain item", () => {
+        const payload = parseAddressPayload(
+            JSON.stringify({ type: 'Nope', address: 'A' }),
+        )
+
+        expect(payload).toEqual({
+            type: 'Nope',
+            address: 'A',
+            customName: null,
+        })
+        expect(isChainAddressPayload(payload)).toBe(true)
+        expect(isChainHdAddressPayload(payload)).toBe(false)
+    })
+
+    it('throws on an empty type', () => {
         expect(() =>
-            parseAddressPayload(JSON.stringify({ type: 'Nope', address: 'A' })),
+            parseAddressPayload(JSON.stringify({ type: '', address: 'A' })),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    it("throws on a format kind missing its own fields rather than reading it as a chain's kind", () => {
+        expect(() =>
+            parseAddressPayload(
+                JSON.stringify({ type: 'hardware', address: 'A' }),
+            ),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    it('throws on an item naming a parent seed without the rest of the HD fields', () => {
+        expect(() =>
+            parseAddressPayload(
+                JSON.stringify({
+                    type: 'hdWallet',
+                    address: 'A',
+                    seedFirstDerivedAddress: 'S',
+                }),
+            ),
         ).toThrow(BackupPayloadParseError)
     })
 
@@ -193,10 +337,15 @@ describe('parseAddressPayload', () => {
 
 describe('parseSecretsPayload', () => {
     it('parses an algo25 secrets payload', () => {
-        const json = JSON.stringify({ type: 'algo25', mnemonic: 'a b c' })
+        const json = JSON.stringify({
+            type: 'algo25',
+            mnemonic: 'a b c',
+            address: 'ADDR',
+        })
         expect(parseSecretsPayload(json)).toEqual({
             type: 'algo25',
             mnemonic: 'a b c',
+            address: 'ADDR',
         })
     })
 
@@ -205,29 +354,36 @@ describe('parseSecretsPayload', () => {
             type: 'hdSeed',
             seed: 'aa',
             entropy: 'bb',
+            address: 'FIRST',
         })
         expect(parseSecretsPayload(json)).toEqual({
             type: 'hdSeed',
             seed: 'aa',
             entropy: 'bb',
+            address: 'FIRST',
         })
     })
 
     it('parses a quantum secrets payload', () => {
-        const json = JSON.stringify({ type: 'quantum', mnemonic: 'a b c' })
+        const json = JSON.stringify({
+            type: 'quantum',
+            mnemonic: 'a b c',
+            address: 'ADDR',
+        })
         expect(parseSecretsPayload(json)).toEqual({
             type: 'quantum',
             mnemonic: 'a b c',
+            address: 'ADDR',
         })
     })
 
     it('keeps quantum and algo25 secrets distinct for an identical mnemonic', () => {
         const mnemonic = 'a b c'
         const asQuantum = parseSecretsPayload(
-            JSON.stringify({ type: 'quantum', mnemonic }),
+            JSON.stringify({ type: 'quantum', mnemonic, address: 'ADDR' }),
         )
         const asAlgo25 = parseSecretsPayload(
-            JSON.stringify({ type: 'algo25', mnemonic }),
+            JSON.stringify({ type: 'algo25', mnemonic, address: 'ADDR' }),
         )
 
         expect(asQuantum.type).toBe('quantum')
@@ -238,6 +394,104 @@ describe('parseSecretsPayload', () => {
     it('throws on an unknown secrets type', () => {
         expect(() =>
             parseSecretsPayload(JSON.stringify({ type: 'hardware' })),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    test('throws when a secrets payload has no address', () => {
+        expect(() =>
+            parseSecretsPayload(
+                JSON.stringify({ type: 'algo25', mnemonic: 'a b c' }),
+            ),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
+
+describe('parseContactPayload', () => {
+    it('parses an address, name and updatedAt', () => {
+        expect(
+            parseContactPayload(
+                JSON.stringify({
+                    address: 'ADDR',
+                    name: 'Alice',
+                    updatedAt: 42,
+                }),
+            ),
+        ).toEqual({ address: 'ADDR', name: 'Alice', updatedAt: 42 })
+    })
+
+    it('accepts a payload with no updatedAt', () => {
+        expect(
+            parseContactPayload(
+                JSON.stringify({ address: 'ADDR', name: 'Alice' }),
+            ),
+        ).toEqual({ address: 'ADDR', name: 'Alice' })
+    })
+
+    it('rejects a payload with no name', () => {
+        expect(() =>
+            parseContactPayload(JSON.stringify({ address: 'ADDR' })),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
+
+describe('parsePasskeyPayload', () => {
+    const valid = {
+        credentialId: 'Y3JlZC1pZA==',
+        origin: 'webauthn.io',
+        identity: 'alice',
+        counter: 0,
+        publicKeySpkiDer: 'cHVi',
+        seedAddress: 'SEEDADDRESS',
+        createdAt: 1_700_000_000_000,
+    }
+
+    it('parses a complete payload', () => {
+        const parsed = parsePasskeyPayload(JSON.stringify(valid))
+
+        expect(parsed.identity).toBe('alice')
+        expect(parsed.counter).toBe(0)
+    })
+
+    it('parses a payload without derivation inputs', () => {
+        const {
+            identity: _identity,
+            counter: _counter,
+            seedAddress: _seedAddress,
+            ...withoutInputs
+        } = valid
+
+        expect(
+            parsePasskeyPayload(JSON.stringify(withoutInputs)).credentialId,
+        ).toBe(valid.credentialId)
+    })
+
+    it('rejects a payload missing the public key', () => {
+        const { publicKeySpkiDer: _dropped, ...withoutPublicKey } = valid
+
+        expect(() =>
+            parsePasskeyPayload(JSON.stringify(withoutPublicKey)),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    it('rejects a negative counter', () => {
+        expect(() =>
+            parsePasskeyPayload(JSON.stringify({ ...valid, counter: -1 })),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
+
+describe('parsePasskeySecretsPayload', () => {
+    it('parses a credential id and private key', () => {
+        const valid = { credentialId: 'Y3JlZC1pZA==', privateKey: 'a2V5' }
+
+        expect(parsePasskeySecretsPayload(JSON.stringify(valid))).toEqual(valid)
+    })
+
+    it('rejects a payload missing the private key', () => {
+        expect(() =>
+            parsePasskeySecretsPayload(
+                JSON.stringify({ credentialId: 'Y3JlZC1pZA==' }),
+            ),
         ).toThrow(BackupPayloadParseError)
     })
 })

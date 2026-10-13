@@ -13,6 +13,8 @@
 import { useTheme } from '@rneui/themed'
 import { useProvidersQuery } from '@perawallet/wallet-core-swaps'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
@@ -27,9 +29,10 @@ export const SwapProviderDisplay = ({
     providerDisplayName,
     testID,
 }: SwapProviderDisplayProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const { theme } = useTheme()
-    const { data: providers } = useProvidersQuery()
+    const { data: providers } = useProvidersQuery(scope)
 
     const provider = providers?.find(item => item.name === providerName)
     const label = providerDisplayName ?? providerName ?? '-'

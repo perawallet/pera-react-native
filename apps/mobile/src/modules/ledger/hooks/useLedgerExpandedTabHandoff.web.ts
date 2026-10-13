@@ -10,12 +10,16 @@
  limitations under the License
  */
 
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import {
-    getSurface,
+    closeCurrentTab,
     openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+    putTabResumeIntent,
+} from '@perawallet/wallet-core-browser-runtime'
+import { peekTabResumeIntent } from '@utils/tabResumeIntent'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { UseLedgerExpandedTabHandoffResult } from './useLedgerExpandedTabHandoff'
+import { isLedgerHandoffTab } from './useLedgerHandoffTabExit.web'
 
 /**
  * WebHID's and Web Bluetooth's `requestDevice()` device-picker dialog isn't
@@ -32,4 +36,19 @@ export const useLedgerExpandedTabHandoff =
             openExpandedTab(
                 transportType === 'usb' ? 'ledger-usb' : 'ledger-ble',
             ),
+        openWalletInTab: async () => {
+            // Read before the first await: the caller closes the error sheet
+            // right after, and the flow clears its intent as signing settles.
+            const intent = peekTabResumeIntent()
+            if (!intent) {
+                await openExpandedTab()
+                return
+            }
+            // Written before the tab opens: Chrome closes the popup as soon as
+            // the tab takes focus.
+            await putTabResumeIntent({ ...intent, createdAt: Date.now() })
+            await openExpandedTab('resume')
+        },
+        isHandoffTab: isLedgerHandoffTab(),
+        closeHandoffTab: closeCurrentTab,
     })

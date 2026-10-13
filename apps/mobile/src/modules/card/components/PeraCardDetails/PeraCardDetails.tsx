@@ -37,12 +37,10 @@ export const PeraCardDetails = () => {
         onSecureImageError,
         fundingAddress,
         onChangeFunding,
-        hasCard,
         issuanceState,
+        eligibilityReason,
         onRetryOrder,
         onContactSupport,
-        fundingTypeLabel,
-        onChangeFundingType,
         isOffline,
         isFrozen,
         freezeLabel,
@@ -96,6 +94,7 @@ export const PeraCardDetails = () => {
                 ) : (
                     <CardIssuanceNotice
                         state={issuanceState}
+                        eligibilityReason={eligibilityReason}
                         onRetryOrder={onRetryOrder}
                         onContactSupport={onContactSupport}
                     />
@@ -105,9 +104,6 @@ export const PeraCardDetails = () => {
             <CardFundingAccountSection
                 address={fundingAddress}
                 onChange={onChangeFunding}
-                hasCard={hasCard}
-                fundingTypeLabel={fundingTypeLabel}
-                onChangeFundingType={onChangeFundingType}
             />
 
             <CardOptionsSection

@@ -10,49 +10,27 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '../store'
-import { AccountTypes, type WalletAccount } from '../models'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import {
-    algo25SignKeyId,
-    hdDerivedKeyId,
-    KeyNotFoundError,
-    PQ_DERIVATION_CANONICAL,
-    quantumSignKeyId,
-    useKMS,
-} from '@perawallet/wallet-core-kms'
-import { NoHDWalletError } from '../errors'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useAccountsStore } from '../store'
+import type { WalletAccount } from '../models'
+import { NoHdSeedError } from '../errors'
+import { buildAccount } from '../credentials'
+import {
+    accountsChainAdapters,
+    deriveHdAccount,
+    requireSingleKeyAccounts,
+    type LocalKeySeed,
+} from '../chain-adapter'
 import {
     setPendingAccountRollback,
     clearPendingAccountRollback,
 } from '../store/pendingAccountCreation'
 
-export type Algo25SeedReference = {
-    /** Keystore id of the algo25 seed entry. */
-    seedKeyId: string
-    /** Encoded Algorand address derived from the seed. */
-    address: string
-}
-
-export type QuantumSeedReference = {
-    /** Keystore id of the quantum seed entry. */
-    seedKeyId: string
-    /** Encoded Algorand address derived from the seed. */
-    address: string
-}
-
-export const useCreateAccount = () => {
+export const useCreateAccount = (scope: ChainScope) => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const {
-        getKey,
-        createHDWalletKey,
-        createAlgo25Key,
-        createQuantumKey,
-        getDerivedPublicKey,
-        removeKeyAndChildren,
-    } = useKMS()
+    const { getKey, createHDWalletKey, removeKeyAndChildren } = useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
         // We get the state fresh to avoid stale captures
@@ -66,7 +44,7 @@ export const useCreateAccount = () => {
     // derive the child at (account, keyIndex) and build the WalletAccount.
     // Skips `getKey()` so it's safe to call right after `createHDWalletKey`
     // in the same React tick — the keystore snapshot from `useKeystoreKeys`
-    // would still be stale, but `getDerivedPublicKey` reads the live store.
+    // would still be stale, but `kmsCore` reads the live store.
     const buildHdWalletAccountForSeed = async ({
         seedKeyId,
         account,
@@ -76,32 +54,27 @@ export const useCreateAccount = () => {
         account: number
         keyIndex: number
     }): Promise<WalletAccount> => {
-        const derivationType = BIP32DerivationType.Peikert
-        const publicKey = await getDerivedPublicKey(
-            seedKeyId,
+        const derived = await deriveHdAccount(scope, seedKeyId, {
             account,
             keyIndex,
-            derivationType,
-        )
-        if (!publicKey) throw new NoHDWalletError(seedKeyId)
+        })
+        if (!derived.publicKey) throw new NoHdSeedError(seedKeyId)
 
-        return {
-            id: generateOrderedUniqueId(),
-            address: encodeAlgorandAddress(publicKey),
-            type: AccountTypes.hdWallet,
-            hdWalletDetails: {
-                account,
-                change: 0,
-                keyIndex,
-                derivationType,
+        const { chainId } = scope
+        return buildAccount({
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account, keyIndex },
             },
-            keyPairId: hdDerivedKeyId(
-                seedKeyId,
-                account,
-                keyIndex,
-                derivationType,
-            ),
-        }
+            chainId,
+            chains: {
+                [chainId]: {
+                    address: derived.address,
+                    keyPairId: derived.keyPairId,
+                },
+            },
+        })
     }
 
     const buildHdWalletAccount = async ({
@@ -124,7 +97,7 @@ export const useCreateAccount = () => {
                 createdNewSeed = true
             }
 
-            if (!seedKeyId) throw new NoHDWalletError(rootWalletId)
+            if (!seedKeyId) throw new NoHdSeedError(rootWalletId)
 
             const newAccount = await buildHdWalletAccountForSeed({
                 seedKeyId,
@@ -147,104 +120,23 @@ export const useCreateAccount = () => {
         }
     }
 
-    const buildAlgo25WalletAccount = async ({
+    /** Mints an unsaved account of one of the chain's single-key kinds. */
+    const buildSingleKeyAccount = async ({
         seed,
         id,
     }: {
-        seed?: Algo25SeedReference
+        seed: LocalKeySeed
         id?: string
     }): Promise<WalletAccount> => {
-        let resolved: Algo25SeedReference | null = seed ?? null
-        let createdNewKey = false
-        let createdKeyId: string | undefined
-
-        try {
-            if (!resolved) {
-                const keyId = id ?? generateOrderedUniqueId()
-                const existing = getKey(keyId)
-                if (existing) {
-                    resolved = {
-                        seedKeyId: existing.id,
-                        address: encodeAlgorandAddress(
-                            existing.publicKey ?? new Uint8Array(),
-                        ),
-                    }
-                } else {
-                    const result = await createAlgo25Key({ id: keyId })
-                    resolved = {
-                        seedKeyId: result.seedKey.id,
-                        address: result.address,
-                    }
-                    createdNewKey = true
-                    createdKeyId = result.seedKey.id
-                }
-            }
-
-            if (!resolved?.seedKeyId) throw new KeyNotFoundError(id ?? '')
-
-            const newAccount: WalletAccount = {
-                id: generateOrderedUniqueId(),
-                address: resolved.address,
-                type: AccountTypes.algo25,
-                keyPairId: algo25SignKeyId(resolved.seedKeyId),
-            }
-
-            if (createdNewKey && createdKeyId) {
-                const keyToRemove = createdKeyId
-                setPendingAccountRollback(() =>
-                    removeKeyAndChildren(keyToRemove),
-                )
-            }
-
-            return newAccount
-        } catch (error) {
-            if (createdNewKey && createdKeyId) {
-                await removeKeyAndChildren(createdKeyId).catch(() => {})
-            }
-            throw error
+        const minted = await requireSingleKeyAccounts(
+            accountsChainAdapters.get(scope.chainId),
+        ).create({ seed, id }, scope)
+        if (minted.isNewSeed) {
+            setPendingAccountRollback(() =>
+                removeKeyAndChildren(minted.seedKeyId),
+            )
         }
-    }
-
-    // Unlike buildAlgo25WalletAccount there is no getKey(id) reuse branch:
-    // a quantum seed entry carries no derivable public key at this layer
-    // (the signing child holds it, inside the KMS), so a bare `id` is
-    // passed through to createQuantumKey instead.
-    const buildQuantumWalletAccount = async ({
-        seed,
-        id,
-    }: {
-        seed?: QuantumSeedReference
-        id?: string
-    } = {}): Promise<WalletAccount> => {
-        if (seed) {
-            return {
-                id: generateOrderedUniqueId(),
-                address: seed.address,
-                type: AccountTypes.quantum,
-                keyPairId: quantumSignKeyId(
-                    seed.seedKeyId,
-                    PQ_DERIVATION_CANONICAL,
-                ),
-            }
-        }
-
-        const result = await createQuantumKey({ id })
-        const createdKeyId = result.seedKey.id
-        try {
-            const newAccount: WalletAccount = {
-                id: generateOrderedUniqueId(),
-                address: result.address,
-                type: AccountTypes.quantum,
-                keyPairId: result.signKeyId,
-            }
-
-            setPendingAccountRollback(() => removeKeyAndChildren(createdKeyId))
-
-            return newAccount
-        } catch (error) {
-            await removeKeyAndChildren(createdKeyId).catch(() => {})
-            throw error
-        }
+        return minted.account
     }
 
     const saveAccount = async (account: WalletAccount) => {
@@ -271,20 +163,11 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
-    const createAlgo25WalletAccount = async (params: {
-        seed?: Algo25SeedReference
+    const createSingleKeyAccount = async (params: {
+        seed: LocalKeySeed
         id?: string
     }) => {
-        const newAccount = await buildAlgo25WalletAccount(params)
-        await saveAndUpdateAccounts(newAccount)
-        return newAccount
-    }
-
-    const createQuantumWalletAccount = async (params?: {
-        seed?: QuantumSeedReference
-        id?: string
-    }) => {
-        const newAccount = await buildQuantumWalletAccount(params)
+        const newAccount = await buildSingleKeyAccount(params)
         await saveAndUpdateAccounts(newAccount)
         return newAccount
     }
@@ -292,12 +175,10 @@ export const useCreateAccount = () => {
     return {
         createHdWalletAccount,
         createHdWalletAccountForSeed,
-        createAlgo25WalletAccount,
-        createQuantumWalletAccount,
+        createSingleKeyAccount,
         buildHdWalletAccount,
         buildHdWalletAccountForSeed,
-        buildAlgo25WalletAccount,
-        buildQuantumWalletAccount,
+        buildSingleKeyAccount,
         saveAccount,
     }
 }

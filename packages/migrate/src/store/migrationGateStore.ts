@@ -11,8 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'migration-gate-store'
@@ -45,7 +44,7 @@ const initialState: MigrationGateState = {
 }
 
 export const useMigrationGateStore = create<MigrationGateStore>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             markStarted: () => set({ hasStarted: true }),
@@ -58,7 +57,7 @@ export const useMigrationGateStore = create<MigrationGateStore>()(
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             // Only `skipped` survives cold launches. Session-local fields
             // (isChecking, needsMigration, dismissed, hasStarted) re-evaluate
             // on every launch.

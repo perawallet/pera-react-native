@@ -11,7 +11,10 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     fetchOnboardingDetails,
@@ -38,15 +41,18 @@ export type UseOnboardingDetailsQueryOptions = {
 }
 
 /** Pre-auth onboarding status (GET /v1/auth/register) — polls the KYC state. */
-export const useOnboardingDetailsQuery = ({
-    onboardingId,
-    enabled,
-    refetchInterval,
-}: UseOnboardingDetailsQueryOptions) => {
-    const { network } = useNetwork()
+export const useOnboardingDetailsQuery = (
+    scope: ChainScope,
+    {
+        onboardingId,
+        enabled,
+        refetchInterval,
+    }: UseOnboardingDetailsQueryOptions,
+) => {
+    const network = legacyNetworkOf(scope)
 
     return useQuery({
-        queryKey: cardQueryKeys.onboardingDetails(network, onboardingId),
+        queryKey: cardQueryKeys.onboardingDetails(scope, onboardingId),
         queryFn: ({ signal }) =>
             fetchOnboardingDetails({
                 // queryFn only runs when enabled, which requires a non-null id.

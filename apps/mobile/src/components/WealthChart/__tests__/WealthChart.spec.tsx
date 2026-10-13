@@ -87,7 +87,10 @@ describe('WealthChart', () => {
     })
 
     it('uses single account address when account prop is provided', () => {
-        const mockAccount = { address: 'test-address', name: 'Test' }
+        const mockAccount = {
+            name: 'Test',
+            chains: { algorand: { address: 'test-address' } },
+        }
         const mockData = [
             { preferredValue: new Decimal(100), datetime: new Date() },
         ]
@@ -110,8 +113,8 @@ describe('WealthChart', () => {
 
     it('uses all account addresses when no account prop is provided', () => {
         vi.mocked(useAllAccounts).mockReturnValue([
-            { address: 'addr1' },
-            { address: 'addr2' },
+            { chains: { algorand: { address: 'addr1' } } },
+            { chains: { algorand: { address: 'addr2' } } },
         ] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({

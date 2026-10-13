@@ -13,8 +13,7 @@
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { useLedgerErrorAction } from '@modules/ledger/hooks'
-import type { LedgerErrorPreset } from '@modules/ledger/utils/ledgerErrorPresets'
+import { useLedgerErrorAction, type LedgerErrorPreset } from '@modules/ledger'
 import { useStyles } from './styles'
 
 export type LedgerErrorContentProps = {
@@ -34,6 +33,20 @@ export const LedgerErrorContent = ({
     const { t } = useLanguage()
     const { runAction } = useLedgerErrorAction()
     const { action } = error
+    // With no retry, the action is the only way forward, so it leads.
+    const leadAction = !error.isRetryable && action ? action : null
+    const hasPrimary = error.isRetryable || leadAction !== null
+
+    const handleConfirm = () => {
+        if (error.isRetryable) {
+            onRetry()
+            return
+        }
+        if (leadAction) {
+            runAction(leadAction.kind)
+        }
+        onClose()
+    }
 
     return (
         <ConfirmActionContent
@@ -64,17 +77,17 @@ export const LedgerErrorContent = ({
             confirmLabel={
                 error.isRetryable
                     ? t('ledger.signing.retry')
-                    : t('ledger.signing.cancel')
+                    : (leadAction?.label ?? t('ledger.signing.cancel'))
             }
-            confirmVariant={error.isRetryable ? 'primary' : 'secondary'}
-            onConfirm={error.isRetryable ? onRetry : onClose}
-            cancelLabel={
-                error.isRetryable ? t('ledger.signing.cancel') : undefined
-            }
+            confirmVariant={hasPrimary ? 'primary' : 'secondary'}
+            onConfirm={handleConfirm}
+            cancelLabel={hasPrimary ? t('ledger.signing.cancel') : undefined}
             onCancel={onClose}
-            tertiaryLabel={action?.label}
+            tertiaryLabel={leadAction ? undefined : action?.label}
             tertiaryVariant='secondary'
-            onTertiary={action ? () => runAction(action.kind) : undefined}
+            onTertiary={
+                action && !leadAction ? () => runAction(action.kind) : undefined
+            }
         />
     )
 }

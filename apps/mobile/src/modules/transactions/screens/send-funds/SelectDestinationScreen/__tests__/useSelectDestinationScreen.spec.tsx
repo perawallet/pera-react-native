@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { act, renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -17,13 +18,14 @@ import {
     canSignWith,
     useAccountBalancesQuery,
     useAllAccounts,
-    useOnChainAccountInformationQuery,
+    useOnChainAccountStateQuery,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
 
 const mockNavigate = vi.fn()
-const mockCanGoBack = vi.fn()
+const mockStackRoutes = vi.fn<() => { key: string }[]>()
+const ROUTE_KEY = 'select-destination'
 const mockOnFinished = vi.fn()
 const mockSetSendMode = vi.fn()
 const mockSetDestination = vi.fn()
@@ -37,28 +39,39 @@ const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
     }),
 )
 
+const mockVerifyNameAddress = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    verifyNameAddress: mockVerifyNameAddress,
+}))
+
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         navigate: mockNavigate,
-        canGoBack: mockCanGoBack,
     }),
+    useRoute: () => ({ key: ROUTE_KEY }),
+    useNavigationState: (
+        selector: (state: { routes: { key: string }[] }) => unknown,
+    ) => selector({ routes: mockStackRoutes() }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     getArc59Config: mockGetArc59Config,
 }))
 
+vi.mock('@hooks/useCapability', async () =>
+    (await import('@test-utils/capability-mock')).capabilityHookMock(),
+)
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
@@ -68,11 +81,22 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     canSignWith: mockCanSignWith,
     useAccountBalancesQuery: vi.fn(),
     useAllAccounts: mockUseAllAccounts,
-    useOnChainAccountInformationQuery: vi.fn(),
-    useSelectedAccount: vi.fn(() => ({ address: 'SENDERADDR' })),
+    useOnChainAccountStateQuery: vi.fn(),
+    useSelectedAccount: vi.fn(() => ({
+        id: 'sender',
+        custody: { kind: 'watch' },
+        chains: { algorand: { address: 'SENDERADDR' } },
+    })),
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(() => ({
         data: new Map([['123', { assetId: '123', name: 'TestToken' }]]),
     })),
@@ -90,7 +114,10 @@ describe('useSelectDestinationScreen', () => {
 
         // Default to a pushed screen so the default header back button applies;
         // the close-control tests flip this to model the pure-NFT flow root.
-        mockCanGoBack.mockReturnValue(true)
+        mockStackRoutes.mockReturnValue([
+            { key: 'input-amount' },
+            { key: ROUTE_KEY },
+        ])
         mockUseAllAccounts.mockReturnValue([])
         mockCanSignWith.mockReturnValue(false)
 
@@ -116,7 +143,7 @@ describe('useSelectDestinationScreen', () => {
 
         ;(useAllAccounts as Mock).mockReturnValue([])
         ;(canSignWith as Mock).mockReturnValue(false)
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
             isSuccess: false,
@@ -168,7 +195,10 @@ describe('useSelectDestinationScreen', () => {
 
     it('navigates to ExpressSend for internal signable account not opted in', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: INTERNAL_SIGNABLE_ADDR, name: 'Signable' },
+            {
+                chains: { algorand: { address: INTERNAL_SIGNABLE_ADDR } },
+                name: 'Signable',
+            },
         ])
         mockCanSignWith.mockReturnValue(true)
 
@@ -184,7 +214,10 @@ describe('useSelectDestinationScreen', () => {
 
     it('navigates to ARC59SendSummary for internal watch account not opted in', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: INTERNAL_WATCH_ADDR, name: 'Watch' },
+            {
+                chains: { algorand: { address: INTERNAL_WATCH_ADDR } },
+                name: 'Watch',
+            },
         ])
         mockCanSignWith.mockReturnValue(false)
 
@@ -199,10 +232,13 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ConfirmTransaction for external account already opted in on-chain', async () => {
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: {
-                assets: [
-                    { assetId: BigInt(ASA_ID), amount: 100n, isFrozen: false },
+                holdings: [
+                    {
+                        assetId: ASA_ID,
+                        amount: new Decimal(100),
+                    },
                 ],
             },
             isFetching: false,
@@ -221,8 +257,8 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('navigates to ARC59SendSummary for external account not opted in on-chain', async () => {
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-            data: { assets: [] },
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+            data: { holdings: [] },
             isFetching: false,
             isSuccess: true,
             isError: false,
@@ -239,7 +275,7 @@ describe('useSelectDestinationScreen', () => {
     })
 
     it('falls back to ARC59SendSummary when on-chain query fails for external account', async () => {
-        ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: undefined,
             isFetching: false,
             isSuccess: false,
@@ -263,7 +299,10 @@ describe('useSelectDestinationScreen', () => {
         it('blocks the inbox route with a toast for a local unsignable receiver', () => {
             mockGetArc59Config.mockReturnValue(null)
             mockUseAllAccounts.mockReturnValue([
-                { address: INTERNAL_WATCH_ADDR, name: 'Watch' },
+                {
+                    chains: { algorand: { address: INTERNAL_WATCH_ADDR } },
+                    name: 'Watch',
+                },
             ])
             mockCanSignWith.mockReturnValue(false)
 
@@ -282,8 +321,8 @@ describe('useSelectDestinationScreen', () => {
 
         it('blocks the inbox route with a toast for an external receiver not opted in', async () => {
             mockGetArc59Config.mockReturnValue(null)
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { assets: [] },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: { holdings: [] },
                 isFetching: false,
                 isSuccess: true,
                 isError: false,
@@ -350,8 +389,8 @@ describe('useSelectDestinationScreen', () => {
         })
 
         it('routes an unopted-in external prefilled receiver through ARC59', async () => {
-            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
-                data: { assets: [] },
+            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+                data: { holdings: [] },
                 isFetching: false,
                 isSuccess: true,
                 isError: false,
@@ -430,7 +469,7 @@ describe('useSelectDestinationScreen', () => {
     // back button and no way out.
     describe('close control as the flow root', () => {
         it('exposes a close that tears down the flow when it is the stack root', () => {
-            mockCanGoBack.mockReturnValue(false)
+            mockStackRoutes.mockReturnValue([{ key: ROUTE_KEY }])
 
             const { result } = renderHook(() => useSelectDestinationScreen())
 
@@ -444,11 +483,107 @@ describe('useSelectDestinationScreen', () => {
         })
 
         it('defers to the header back button when it was pushed onto the stack', () => {
-            mockCanGoBack.mockReturnValue(true)
+            mockStackRoutes.mockReturnValue([
+                { key: 'input-amount' },
+                { key: ROUTE_KEY },
+            ])
 
             const { result } = renderHook(() => useSelectDestinationScreen())
 
             expect(result.current.canClose).toBe(false)
+        })
+
+        // Picking a receiver writes the destination and pushes the next screen
+        // in the same tick, so this screen re-renders with a route above it.
+        // The close must survive that render or popping back strands the sheet.
+        it('keeps the close while a later screen sits on top of the root', () => {
+            mockStackRoutes.mockReturnValue([
+                { key: ROUTE_KEY },
+                { key: 'express-send' },
+            ])
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(result.current.canClose).toBe(true)
+        })
+    })
+
+    describe('NFD destinations', () => {
+        const NFD_NAME = 'alice.algo'
+        const algoSend = () =>
+            (useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: '0',
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+
+        it('routes a plain address without consulting the contract', () => {
+            algoSend()
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            act(() => {
+                result.current.handleSelected(EXTERNAL_ADDR)
+            })
+
+            expect(mockVerifyNameAddress).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+        })
+
+        it('routes a name only after the contract vouches for its address', async () => {
+            algoSend()
+            mockVerifyNameAddress.mockResolvedValue('verified')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(EXTERNAL_ADDR, NFD_NAME)
+            })
+
+            expect(mockVerifyNameAddress).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    name: NFD_NAME,
+                    address: EXTERNAL_ADDR,
+                    network: 'testnet',
+                }),
+            )
+            expect(mockSetDestination).toHaveBeenCalledWith(EXTERNAL_ADDR)
+            expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+        })
+
+        it('blocks a name whose address the contract does not list', async () => {
+            algoSend()
+            mockVerifyNameAddress.mockResolvedValue('mismatch')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(EXTERNAL_ADDR, NFD_NAME)
+            })
+
+            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.destination.nfd_mismatch_title',
+                    type: 'error',
+                }),
+            )
+            expect(result.current.isCheckingExternalOptIn).toBe(false)
+        })
+
+        it('blocks, rather than trusts, when the contract cannot be read', async () => {
+            algoSend()
+            mockVerifyNameAddress.mockResolvedValue('unavailable')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(EXTERNAL_ADDR, NFD_NAME)
+            })
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.destination.nfd_unavailable_title',
+                }),
+            )
         })
     })
 })

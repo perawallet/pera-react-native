@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
 import type { SourceCallbacks, SourceType } from './types'
 
@@ -70,11 +70,11 @@ export type PendingWalletConnectHandoff = {
     /** Device id for the `with-signatures` + `mark-confirmed` calls. */
     deviceId: string
     /**
-     * Network the sign-request was created on. Captured here so the
+     * Scope the sign-request was created on. Captured here so the
      * resolver keeps polling the right backend even if the user switches
      * networks mid-flight.
      */
-    network: Network
+    scope: ChainScope
     /** Originating source type, for logging / telemetry. */
     sourceType: SourceType
     /**

@@ -1,0 +1,194 @@
+# Connections
+
+How a dApp session reaches the wallet, on native and in the browser extension, and the decisions
+that shape the seam between them.
+
+## The model
+
+`extensions/connections` owns the persisted record: a `Connection` (`src/models.ts`) is a peer, the
+accounts it may act for, a `kind`, timestamps and an optional `origin`. It never holds secret
+material; a kind that needs one (WalletConnect v1's session key) stores it elsewhere and keeps a
+`secretRef`. The store (`src/store.ts`) validates every record on read, because persisted rows can
+be stale or half-migrated.
+
+`packages/connections` owns the runtime. A `ConnectionHandler` (`src/handler.ts`) is one protocol
+managing N connections; the `ConnectionRegistry` (`src/registry.ts`) owns the handlers, validates
+every inbound payload before a subscriber can see it, and reconciles the store from each handler's
+`restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
+message belongs to. That chain's dApp request adapter (`src/dappRequest.ts`) validates the
+transaction payload and supplies the signing hook, and a message for a chain with no registered
+adapter is refused. `src/signing-adapter.ts` is the single bridge from those operations into the
+signing pipeline, so a new protocol needs a handler and a new chain needs an adapter, nothing else.
+The bridge runs both ways: a handler
+whose peer stops waiting for an answer reports `onRequestExpired`, and the adapter withdraws the
+sign request it is holding for the user, since answering late would only fail on the wire.
+
+`src/__tests__/handler-contract.ts` is the contract suite every handler runs against. An assertion a
+legitimate handler cannot satisfy is an interface finding, not a reason to bend the handler.
+
+`src/handlerKit.ts` (`createHandlerKit`) is the scaffolding a handler closure would otherwise
+repeat: the context guard, error reporting with pairing/connection scopes, `lastActiveAt` stamping
+and pending pair-time origins. Handlers import it from the `./handlerKit` subpath, not the barrel,
+which would pull signing into the walletconnect and dapp module graphs.
+
+## Client and host surfaces
+
+`ConnectionRegistry` is split by type. `ConnectionRegistryClient` is what a UI context holds: pair,
+abandon a pairing, describe a URI, list a connection's networks, disconnect, subscribe to proposals
+and errors. The full `ConnectionRegistry` adds `register`, `initialize`, `teardown`, `reconnect` and
+`subscribeToMessages`, and only the composition root that owns handlers holds one. `reconnect` fans
+out to each handler's optional `reconnect()`, for a transport the platform suspends and nothing
+revives on its own: WalletConnect v1's per-session bridge sockets. In the extension the service
+worker's connections heartbeat alarm asks for it with `reconnect-all`.
+
+The split exists for the browser extension. There the live handlers run in the offscreen document,
+and the popup, expanded tab and approval window cannot hold an in-process registry. Those realms get
+`createRemoteConnectionRegistry` (`packages/browser-runtime/src/connections/remote-registry.ts`),
+a `ConnectionRegistryClient` whose descriptors are answered locally by handler instances that are
+constructed but never initialised, whose lifecycle calls are request/response messages to the
+offscreen host, and whose proposals and errors are re-emitted from a broadcast. The host surface is
+absent by type, so a UI hook cannot register or initialise a handler by mistake.
+
+Inbound sign requests never reach a UI-realm registry. The offscreen host forwards each one to the
+service worker, which opens the approval window; the window rebuilds an `InboundMessage` whose
+`respond`/`reject` answer through the approval bridge and hands it to `enqueueInboundRequest`, the
+same function the native signing adapter uses. Proxying only pair, disconnect and approve keeps the
+promise semantics honest: a proxied `respond()` that had to reject on a failed delivery across a
+message port is exactly what would have been lost.
+
+The remote registry is served from its own package entry,
+`@perawallet/wallet-core-browser-runtime/remote-registry`, and is kept off the main barrel: it is
+the one browser-runtime module with a runtime dependency on the connections package, whose barrel
+reaches react-native, and the service worker imports the main barrel.
+
+## Message scopes
+
+Defined in `packages/browser-runtime/src/connections/protocol.ts`, and the `pera-dapp-*` ones in
+`packages/browser-runtime/src/dapp/dapp-wire.ts`; every listener is gated to extension-origin
+senders because content scripts share `chrome.runtime.onMessage`.
+
+| Scope                      | Direction                | Carries                                                                                                                                                             |
+| -------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pera-connections-control` | UI or SW to offscreen    | pair, abandon-pairing, disconnect(-all), reconnect-all, approve/reject-proposal, respond; request/response, retried while the host is booting                       |
+| `pera-connections-request` | offscreen to SW          | connection-proposal, connection-request, connection-request-withdrawn, connection-error; acked                                                                      |
+| `pera-connections-event`   | offscreen to every realm | proposal summaries and errors with scope; fire-and-forget                                                                                                           |
+| `pera-wc-page-pair`        | content script to SW     | a page's pair request plus the relay's user-activation stamp; the SW requires the stamp, budgets pairs per origin and stamps the browser-verified `requesterOrigin` |
+| `pera-dapp-page-request`   | content script to SW     | a page's JSON-RPC request plus the relay's user-activation stamp; acked as accepted, or refused with a response                                                     |
+| `pera-dapp-host-request`   | SW to offscreen          | the same request with the browser-verified origin, favicon and return tab stamped; retried while the host boots                                                     |
+| `pera-dapp-host-response`  | offscreen to SW          | a response addressed to a tab, or a notification for every tab of an origin; acked once delivered                                                                   |
+| `pera-dapp-page-response`  | SW to content script     | delivered with `chrome.tabs.sendMessage`; the relay drops anything not for its own origin                                                                           |
+
+Two ack meanings on the request scope: a proposal or request acks acceptance (the decision comes
+back later on the control scope, so waiting for it would deadlock the host); an error notice acks
+dismissal, which is what lets the host keep at most one notice open against a page that pairs on
+the wrong network in a loop.
+
+`chrome.runtime` messaging is JSON, so operations and results cross the wire through the codec in
+`protocol.ts`: ARC-60's `authenticatorData` and every signature travel as base64.
+
+`approve-proposal` carries caller-chosen accounts. The host intersects them with the wallet's own
+addresses before approving, because any extension page can send on the control scope.
+
+## Composition roots
+
+- Native: `apps/mobile/src/modules/connections/providers/useConnectionsProvider.ts` creates the
+  registry, registers the WalletConnect v1 and v2 handlers, boots it through `bootConnections`
+  (`packages/connections/src/boot.ts`), and mounts the proposal queue, error toasts and signing
+  adapter.
+- Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` registers the WalletConnect
+  v1 and `dapp` handlers, runs both legacy importers, does the same boot and starts
+  `connectionsHost.ts`, which holds pending proposals and requests while the service worker collects
+  the user's decision.
+- Extension UI: `useConnectionsProvider.web.ts` builds the remote client, constructs the `dapp`
+  handler over the no-op transport so its descriptors are answered locally, and mirrors the store
+  into `useConnectionsStore`, re-listing when another extension context writes the storage key.
+- Service worker: `apps/browser/src/background/connections.ts` routes approval requests to the
+  window bridge and decisions back; `connect-modal-pair.ts` is the trust boundary for page-initiated
+  pairs.
+
+A handler added on web must be constructed in both `useConnectionsProvider.web.ts` (so URI claims
+and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
+
+WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
+<!-- doc-hygiene-ignore-next-line stale-path reason: build output dir, produced by CI before the grep -->
+
+`apps/browser/dist` for it), so the handler ships from the walletconnect package's `./v2` subpath and
+neither web realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
+
+## The `dapp` handler
+
+`packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
+origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
+the per-origin approval cap in `packages/browser-runtime/src/dapp/approval-bridge.ts` and
+`disconnect` all key on one value. It is network-agnostic (`matchesNetwork` is always true) and
+reports the active network at connect time instead.
+
+The handler is transport-agnostic through `DappTransport`: the extension supplies one over
+`chrome.runtime` messaging from the offscreen document; UI realms construct it with the no-op
+transport so descriptors are answered locally. A proposal from this handler carries
+`requesterOrigin`, which the host prefers over its pairing-keyed lookup — for a URI pairing the
+origin arrives on the pair command, for a page request the handler already holds it.
+
+Answers travel back as messages, not a held `sendResponse`: the worker acks acceptance and the
+offscreen handler answers later through `pera-dapp-host-response`, which the worker delivers with
+`chrome.tabs.sendMessage`. Holding the callback across worker → offscreen → approval window would
+lose it on worker eviction.
+
+## Boot order
+
+`bootConnections` runs the one safe order: keystore ready, legacy import, `initialize()`, mirror
+hydration. The legacy importer reads the keystore synchronously and reports "absent" before
+hydration, and a handler restored before the import has written its records reports zero sessions,
+which reconciliation would then delete.
+
+## WalletConnect v1 sockets
+
+The v1 handler owns its connectors as instance state, one bridge socket per session, and sweeps
+them itself on a foreground or network-regain edge. Nothing is module-global, so the descriptor-only
+handler a UI realm constructs can never reach the offscreen document's sockets. `teardown` leaves
+the sockets alive and a re-initialised handler rebinds them. On native the multisig handoff
+resolver, which mounts beside the connections provider, answers a resumed request through the
+handler that `useConnectionsProvider.ts` publishes in
+`apps/mobile/src/modules/walletconnect/utils/activeV1Delivery.ts`.
+
+## WalletConnect v1 session keys
+
+`packages/walletconnect/src/v1/handler.ts` takes a `WalletConnectV1SessionKeyStore`
+(`src/v1/secrets.ts`). Native uses the keystore-backed store. The offscreen document has no vault
+and must revive sockets before the user unlocks, so it uses the storage-backed store and the key sits in
+plaintext key-value storage. The keystore store fixes at-rest exposure on native only; in memory the connector retains the key as a string for the
+socket's lifetime either way.
+
+`importLegacyConnections` (`src/migration/importLegacyConnections.ts`) takes the same store, deletes
+the legacy blob only once every committed key reads back, and is crash-resumable. It keeps its own
+set of imported ids: the blob outlives a partial pass, and the live store alone cannot tell a record
+that was never imported from one the user has since disconnected.
+
+The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes the store too,
+through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
+`buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
+
+## WalletConnect v2 key material
+
+The v2 record carries no `secretRef`. WalletKit owns the key material itself: every pairing and
+session symKey and the client's ed25519 seed sit in its keychain, which `Core` persists as one JSON
+row through the storage adapter in `packages/walletconnect/src/v2/storage.ts`. That adapter is Pera's
+default key-value store, namespaced under `wc2:`, so on native the keychain is plaintext MMKV where
+v1's session key is a keystore entry.
+
+This is a deliberate trade-off, not an oversight. Sealing it would mean an adapter that routes the
+keychain row through the keystore on every write, and the row is rewritten on every pairing and
+session change. The exposure is the same class as v1's on the extension: a symKey lets an attacker
+read or inject that dApp session's relay traffic and signs nothing. Delete all data clears the
+namespace through `clearWalletConnectV2Storage`, which the wipe runs last because it holds only the
+client registry surface and cannot tear the handler down first.
+
+## Origins
+
+`Connection.origin` records where a pairing entered the wallet (`external-browser`, `in-app`, `qr`)
+at approval time, from the option passed to `pair`. The success sheet and the post-sign hand-off key
+off it; an in-app pairing shows no sheet because the dApp is directly behind it.
+
+Only a URI pairing can carry one in, so a `dapp` connection records none, as the handler contract
+suite asserts: it is created from a page request, and the browser-verified origin it does carry is
+the connection id, not this field.

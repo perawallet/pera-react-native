@@ -11,7 +11,7 @@
  */
 
 import { expect } from '@playwright/test'
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 
 /** The toolbar popup's real dimensions. */
 const POPUP_VIEWPORT = { width: 360, height: 600 }
@@ -162,4 +162,62 @@ export const openApprovalSurface = async ({
 /** Asserts the page is one of the two approval surfaces. */
 export const expectApprovalSurfaceUrl = (approvalPage: Page): void => {
     expect(approvalPage.url()).toMatch(/(popup|approval)\.html/)
+}
+
+/**
+ * How long an approval window's primary action stays disarmed after mount.
+ * Mirrors `APPROVAL_ARMING_DELAY_MS` in `useApprovalArming.web.ts`, which this
+ * tree cannot import; a drift there shows up here as a flake.
+ */
+const APPROVAL_ARMING_DELAY_MS = 500
+
+/** Mirrors `TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY` in `constants/ui.ts`, plus slack. */
+const TAP_TO_CONFIRM_GAP_MS = 400 + 100
+
+/**
+ * Arms an approval-window action: input inside the window, then the delay.
+ * A bare `click()` would deadlock, as Playwright waits for the control to be
+ * enabled before it moves the pointer that enables it. `force` for the same
+ * reason: a disabled react-native-web touchable is `pointer-events: none`, so
+ * hover's hit-test never passes, while the move still reaches the window.
+ */
+export const armApprovalAction = async (
+    approvalPage: Page,
+    control: Locator,
+): Promise<void> => {
+    await control.hover({ force: true })
+    await approvalPage.waitForTimeout(APPROVAL_ARMING_DELAY_MS)
+    await expect(control).not.toHaveAttribute('aria-disabled', 'true')
+}
+
+/** Arms the web tap-to-confirm, then taps twice with the required gap. */
+export const tapToConfirm = async (
+    approvalPage: Page,
+    control: Locator,
+): Promise<void> => {
+    await armApprovalAction(approvalPage, control)
+    await control.click()
+    await approvalPage.waitForTimeout(TAP_TO_CONFIRM_GAP_MS)
+    await control.click()
+}
+
+/**
+ * Arms Connect, then selects the first account unless one is already selected.
+ * Connect stays disabled until the arming delay passes and input lands inside
+ * the approval window, so only then does its state report the selection. The
+ * checkboxes can't be read instead: react-native-web renders no aria-checked
+ * for them.
+ */
+export const selectAccountAndArmConnect = async (
+    approvalPage: Page,
+    connectButton: Locator,
+): Promise<void> => {
+    const firstAccount = approvalPage.getByRole('checkbox').first()
+    await expect(firstAccount).toBeVisible({ timeout: 20_000 })
+    await connectButton.hover()
+    await approvalPage.waitForTimeout(APPROVAL_ARMING_DELAY_MS)
+    if ((await connectButton.getAttribute('aria-disabled')) === 'true') {
+        await firstAccount.click()
+    }
+    await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
 }

@@ -11,11 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
 import type { SupportedUsState } from '@perawallet/wallet-core-card'
 import {
     PWButton,
     PWFlatList,
+    PWLoadingIndicator,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -74,7 +74,7 @@ export const CardUsStatePickerContent = () => {
                 />
             ) : isLoading ? (
                 <PWView style={styles.center}>
-                    <ActivityIndicator />
+                    <PWLoadingIndicator />
                 </PWView>
             ) : (
                 <PWView style={styles.content}>

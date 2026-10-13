@@ -129,7 +129,29 @@ describe('useWebQRScanner', () => {
         await flushAsync(1)
 
         expect(result.current.hasCameraError).toBe(true)
+        expect(result.current.cameraError).toBe('unavailable')
         expect(onResult).not.toHaveBeenCalled()
+    })
+
+    it('reports a permission denial as blocked, so the user can retry after allowing it', async () => {
+        const getUserMedia = vi
+            .fn()
+            .mockRejectedValue(new DOMException('denied', 'NotAllowedError'))
+        Object.defineProperty(navigator, 'mediaDevices', {
+            value: { getUserMedia },
+            configurable: true,
+        })
+        class FakeBarcodeDetector {
+            static getSupportedFormats = vi.fn().mockResolvedValue(['qr_code'])
+            detect = vi.fn()
+        }
+        vi.stubGlobal('BarcodeDetector', FakeBarcodeDetector)
+
+        const { result } = renderHook(() => useWebQRScanner(vi.fn()))
+
+        await flushAsync(1)
+
+        expect(result.current.cameraError).toBe('blocked')
     })
 
     it('flags a camera error when BarcodeDetector is unsupported, leaving paste-only mode', async () => {
@@ -147,7 +169,7 @@ describe('useWebQRScanner', () => {
 
         await flushAsync(1)
 
-        expect(result.current.hasCameraError).toBe(true)
+        expect(result.current.cameraError).toBe('unsupported')
         expect(onResult).not.toHaveBeenCalled()
         // Unsupported entirely: never even prompts for camera access.
         expect(getUserMedia).not.toHaveBeenCalled()

@@ -12,7 +12,7 @@
 
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { onlineManager } from '@tanstack/react-query'
-import { useNetworkStatusStore } from './hooks/useNetworkStatusStore'
+import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 
 /**
  * Must return HTTP 204 with an empty body. iOS has no native reachability

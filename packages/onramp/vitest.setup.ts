@@ -11,8 +11,10 @@
  */
 
 import { vi } from 'vitest'
+import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
 
 const store = new Map<string, string>()
+const chains = createChainRegistry()
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
@@ -44,5 +46,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 store.delete(key)
             },
         },
+        chains,
     }),
 }))

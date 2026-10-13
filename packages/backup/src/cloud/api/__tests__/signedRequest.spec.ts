@@ -32,7 +32,27 @@ import {
     signedBackupRequest,
     BackupAuthKeyMissingError,
 } from '../signedRequest'
-import { buildBackupRequestMessage } from '../../crypto/buildBackupRequestProof'
+
+// The server's canonical string and body digests, spelled out rather than
+// rebuilt with `buildBackupRequestMessage`: checking our signature with our own
+// builder is what let a mismatch reach production green.
+const EMPTY_BODY_HASH =
+    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+const READ_BODY_HASH =
+    'a4ecf624b7ed264e7e69aa0d289520c96d9ac0eceb3405b562e19da883103223'
+const serverMessage = (
+    method: string,
+    path: string,
+    bodyHash: string,
+    nonce: string,
+): string => `${method}|${path}|${bodyHash}|${nonce}`
+
+const verifiesAgainst = (message: string, signature: string): boolean =>
+    nacl.sign.detached.verify(
+        new TextEncoder().encode(message),
+        Buffer.from(signature, 'base64'),
+        keypair.publicKey,
+    )
 
 describe('signedBackupRequest', () => {
     beforeEach(() => {
@@ -58,18 +78,15 @@ describe('signedBackupRequest', () => {
         expect(config.headers['x-device-id']).toBe('device-1')
         expect(typeof config.headers['x-nonce']).toBe('string')
 
-        const message = buildBackupRequestMessage({
-            method: 'GET',
-            path: '/api/v3/backup/did:pera:ADDR/manifest',
-            body: undefined,
-            nonce: config.headers['x-nonce'],
-        })
-        const ok = nacl.sign.detached.verify(
-            new TextEncoder().encode(message),
-            Buffer.from(config.headers['x-signature'], 'base64'),
-            keypair.publicKey,
+        const message = serverMessage(
+            'GET',
+            '/api/v3/backup/did:pera:ADDR/manifest',
+            EMPTY_BODY_HASH,
+            config.headers['x-nonce'],
         )
-        expect(ok).toBe(true)
+        expect(verifiesAgainst(message, config.headers['x-signature'])).toBe(
+            true,
+        )
     })
 
     it('sends and hashes the same body bytes for POST', async () => {
@@ -84,6 +101,16 @@ describe('signedBackupRequest', () => {
         const config = queryClientMock.mock.calls[0][0]
         expect(config.body).toBe('{"keys":["accounts/ADDR"]}')
         expect(config.data).toBeUndefined()
+
+        const message = serverMessage(
+            'POST',
+            '/api/v3/backup/did:pera:ADDR/items/read',
+            READ_BODY_HASH,
+            config.headers['x-nonce'],
+        )
+        expect(verifiesAgainst(message, config.headers['x-signature'])).toBe(
+            true,
+        )
     })
 
     it('forwards query params without including them in the signed path', async () => {
@@ -100,18 +127,15 @@ describe('signedBackupRequest', () => {
         expect(config.params).toEqual({ from_seq: 0 })
 
         // The signature is built over the path WITHOUT the query string.
-        const message = buildBackupRequestMessage({
-            method: 'GET',
-            path: '/api/v3/backup/did:pera:ADDR/delta',
-            body: undefined,
-            nonce: config.headers['x-nonce'],
-        })
-        const ok = nacl.sign.detached.verify(
-            new TextEncoder().encode(message),
-            Buffer.from(config.headers['x-signature'], 'base64'),
-            keypair.publicKey,
+        const message = serverMessage(
+            'GET',
+            '/api/v3/backup/did:pera:ADDR/delta',
+            EMPTY_BODY_HASH,
+            config.headers['x-nonce'],
         )
-        expect(ok).toBe(true)
+        expect(verifiesAgainst(message, config.headers['x-signature'])).toBe(
+            true,
+        )
     })
 
     it('throws BackupAuthKeyMissingError when no auth key is stored', async () => {

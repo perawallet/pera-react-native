@@ -1,0 +1,130 @@
+name: CI / Cache Warm
+
+# A PR can restore a cache saved on its own branch or on main, and pre-merge
+# runs on PRs alone, so without this every PR saved its own copy of the same
+# node_modules and Playwright browsers. Those copies filled the repo's 10 GB
+# cache budget and evicted every other cache, the Metro cache and the build
+# artifacts included, within the hour. Saved here once on main, a PR that
+# restores the exact key saves nothing.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pnpm-lock.yaml"
+      - ".tool-versions"
+      - ".github/workflows/ci-cache-warm.yml"
+  schedule:
+    # ~02:00 UTC daily, between Nightly Tag (01:00) and Conformance (03:00).
+    # Re-saves anything evicted since, and refreshes the Metro cache.
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    name: node_modules and Playwright browsers
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".tool-versions"
+
+      # Path list and key match ci-pre-merge.yml's Setup exactly; a mismatch
+      # is a miss on every PR.
+      - name: Restore node_modules
+        id: node-modules
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            extensions/*/node_modules
+            conformance/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies
+        if: steps.node-modules.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Save node_modules
+        if: steps.node-modules.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            extensions/*/node_modules
+            conformance/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # Restore and save in one step, so an exact hit saves nothing. Browser
+      # binaries only; their system packages install in each e2e job.
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter browser exec playwright install chromium
+
+  metro:
+    name: Metro cache
+    if: github.event_name != 'push'
+    needs: dependencies
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".tool-versions"
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            extensions/*/node_modules
+            conformance/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      # Built from an empty cache on purpose: Metro never prunes its file
+      # store, so restoring and re-saving would grow it forever, while each
+      # PR's own chain starts from this fresh one.
+      - name: Bundle extension
+        env:
+          # Expo keeps Metro's cache under os.tmpdir(); ci-pre-merge.yml
+          # restores it from the same place.
+          TMPDIR: ${{ runner.temp }}
+        run: pnpm --filter browser bundle
+
+      - name: Save Metro cache
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/metro-cache
+          key: metro-web-${{ runner.os }}-${{ github.sha }}

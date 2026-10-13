@@ -31,9 +31,13 @@ type KmsAccess = {
 }
 
 export type PinRecordMigrationResult = {
-    /** True when the `pera.pinCode` record was rewritten (callers must
-     * re-mirror the biometric blob, which holds a copy of its bytes). */
+    /** True when the `pera.pinCode` record was rewritten. */
     migrated: boolean
+    /**
+     * The counters of a record that was already v3, so hydration needs no
+     * second read. Only the counters leave the read, never the hashes.
+     */
+    lockout?: Pick<PinRecord, 'failedAttempts' | 'lockoutEndTime'>
 }
 
 type LegacyV2Record = {
@@ -91,7 +95,16 @@ const runMigration = async (
     kms: KmsAccess,
 ): Promise<PinRecordMigrationResult> => {
     const current = await kms.withSecret(PIN_RECORD_KEY_ID, bytes => {
-        if (parsePinRecord(bytes)) return { kind: 'v3' as const }
+        const record = parsePinRecord(bytes)
+        if (record) {
+            return {
+                kind: 'v3' as const,
+                lockout: {
+                    failedAttempts: record.failedAttempts,
+                    lockoutEndTime: record.lockoutEndTime,
+                },
+            }
+        }
         const v2 = parseLegacyV2(bytes)
         return v2 ? { kind: 'v2' as const, v2 } : { kind: 'unknown' as const }
     })
@@ -100,7 +113,9 @@ const runMigration = async (
         // Nothing to merge into, but a lingering legacy record is still the
         // observable tell this migration exists to remove.
         await kms.removeSecret(LEGACY_DURESS_PIN_RECORD_KEY_ID)
-        return { migrated: false }
+        return current?.kind === 'v3'
+            ? { migrated: false, lockout: current.lockout }
+            : { migrated: false }
     }
 
     const legacyDuress = await kms.withSecret(

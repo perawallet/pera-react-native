@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useOpenSubmissionTxIdsQuery } from '../useOpenSubmissionTxIdsQuery'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const mockGetOpenSubmissionAttempts = vi.fn()
 
@@ -48,7 +49,10 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         ])
 
         const { result } = renderHook(
-            () => useOpenSubmissionTxIdsQuery({ network: 'mainnet' }),
+            () =>
+                useOpenSubmissionTxIdsQuery({
+                    scope: scopeForLegacyNetwork('mainnet'),
+                }),
             { wrapper: wrapper(queryClient) },
         )
 
@@ -60,7 +64,7 @@ describe('useOpenSubmissionTxIdsQuery', () => {
             ]),
         )
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
     })
 
@@ -68,7 +72,10 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         mockGetOpenSubmissionAttempts.mockResolvedValue([])
 
         const { result } = renderHook(
-            () => useOpenSubmissionTxIdsQuery({ network: 'testnet' }),
+            () =>
+                useOpenSubmissionTxIdsQuery({
+                    scope: scopeForLegacyNetwork('testnet'),
+                }),
             { wrapper: wrapper(queryClient) },
         )
 
@@ -83,7 +90,10 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         mockGetOpenSubmissionAttempts.mockReturnValue(new Promise(() => {}))
 
         const { result, rerender } = renderHook(
-            () => useOpenSubmissionTxIdsQuery({ network: 'mainnet' }),
+            () =>
+                useOpenSubmissionTxIdsQuery({
+                    scope: scopeForLegacyNetwork('mainnet'),
+                }),
             { wrapper: wrapper(queryClient) },
         )
 

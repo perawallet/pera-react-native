@@ -25,7 +25,7 @@ import {
 import { usePrepareTransactionsMutation } from '../usePrepareTransactionsMutation'
 import { prepareTransactions } from '../../api'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 

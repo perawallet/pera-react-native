@@ -13,9 +13,8 @@
 import { useMemo } from 'react'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import { formatSwapRate, type SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
-import { formatSwapRate } from '../../hooks/swapQuoteHelpers'
 import { useStyles } from './styles'
 
 export type SwapProviderRowProps = {

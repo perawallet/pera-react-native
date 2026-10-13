@@ -12,10 +12,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform } from 'react-native'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useCreateRampQuoteMutation,
     toOnrampUserMessage,
+    filterQuotesByPaymentMethod,
+    isSourceAmountTooLowError,
     parseRampAmount,
     pickBestQuote,
     resolveRampQuoteLimits,
@@ -71,7 +75,11 @@ export const useOnrampQuotes = ({
     sourceAmount,
 }: UseOnrampQuotesParams): UseOnrampQuotesResult => {
     const { t } = useLanguage()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+    const selectedAccount = useSelectedAccount()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedAccountAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
 
     const [quotes, setQuotes] = useState<RampQuote[]>([])
     const [selectedQuoteId, setSelectedQuoteId] =
@@ -140,7 +148,9 @@ export const useOnrampQuotes = ({
                               ? t('onramp.form.amount_below_min', {
                                     min: limits.min.toString(),
                                 })
-                              : toOnrampUserMessage(error),
+                              : isSourceAmountTooLowError(error)
+                                ? t('onramp.form.amount_below_min_unknown')
+                                : toOnrampUserMessage(error),
                     )
                     setIsQuoting(false)
                 }
@@ -182,6 +192,20 @@ export const useOnrampQuotes = ({
         setSelectedQuoteId(quoteId)
     }, [])
 
+    // "Best offer" ranks providers within one payment method, matching the
+    // provider sheet — a card quote is not comparable with a bank-transfer one.
+    const isBestOffer = useMemo(() => {
+        if (selectedQuote === null) return false
+        const sameMethod = filterQuotesByPaymentMethod(
+            quotes,
+            selectedQuote.paymentMethod.id,
+        )
+        return (
+            pickBestQuote(sameMethod, sourceAmount)?.quoteId ===
+            selectedQuote.quoteId
+        )
+    }, [quotes, selectedQuote, sourceAmount])
+
     // Choosing a payment method selects the best quote offering that method.
     const selectPaymentMethod = useCallback(
         (paymentMethodId: string) => {
@@ -203,8 +227,6 @@ export const useOnrampQuotes = ({
         selectQuote,
         selectedPaymentMethodId: selectedQuote?.paymentMethod.id ?? null,
         selectPaymentMethod,
-        isBestOffer:
-            selectedQuote !== null &&
-            selectedQuote.quoteId === bestQuote?.quoteId,
+        isBestOffer,
     }
 }

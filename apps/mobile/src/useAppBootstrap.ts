@@ -12,20 +12,20 @@
 
 import { useEffect, useState } from 'react'
 import * as SplashScreen from 'expo-splash-screen'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
-    algorandSafeQuerySerialize,
-    algorandSafeQueryParse,
-    derivePQKeygenSeed,
-} from '@perawallet/wallet-core-blockchain'
-import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
-import { initializeSyncService } from '@perawallet/wallet-core-background'
+    createSyncStorePorts,
+    initializeSyncService,
+} from '@perawallet/wallet-core-background'
 import {
     initializeDatabase,
     getDatabase,
 } from '@perawallet/wallet-core-database'
 import {
     logger,
-    updateBackendHeaders,
+    parseTypedJson,
+    stringifyTypedJson,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -33,9 +33,14 @@ import {
     RemoteConfigKeys,
     useRemoteConfigStore,
 } from '@perawallet/wallet-core-remote-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    backfillAccountRecords,
+    hydrateAccountChainStates,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     getProvider,
     KeystoreHydrationError,
@@ -46,10 +51,11 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
+import { updateQueryHeaders } from './bootstrap/query-headers'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
 import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
 import { resolveLocale } from './i18n/locales'
-import i18n from './i18n'
+import { i18n } from './i18n'
 
 /**
  * 'keystore' means hydration refused undecodable wallet records — retrying
@@ -73,20 +79,6 @@ const SPLASH_HIDE_BACKSTOP_MS = 1000
 // Ceiling on the wait for store rehydration; see waitForStoreHydration for why
 // an unguarded wait can hang forever.
 const STORE_HYDRATION_TIMEOUT_MS = 2000
-
-const updateQueryHeaders = () => {
-    const deviceInfo = getProvider().deviceInfo
-    const headers = new Map<string, string>()
-    headers.set('App-Name', deviceInfo.getAppName())
-    headers.set('App-Package-Name', deviceInfo.getAppPackage())
-    headers.set('App-Version', deviceInfo.getAppVersion())
-    headers.set('Client-Type', deviceInfo.getDevicePlatform())
-    headers.set('Device-Version', deviceInfo.getDeviceLocale())
-    headers.set('Device-OS-Version', deviceInfo.getDeviceOSVersion())
-    headers.set('Device-Model', deviceInfo.getDeviceModelId())
-    headers.set('User-Agent', deviceInfo.getUserAgent())
-    updateBackendHeaders(headers)
-}
 
 const resolveEffectiveLocale = (): string => {
     // Reads the same dev-override layer `useRemoteConfig()` applies, via the
@@ -184,7 +176,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 const keystoreBranch = runKeystoreMaintenance({
                     deriveKeygenSeed: derivePQKeygenSeed,
                 })
-                    .then(({ repair, failedDecodeIds }) => {
+                    .then(({ repair, passkeySplit, failedDecodeIds }) => {
                         if (failedDecodeIds.length > 0) {
                             // Non-fatal this session, but these exact records
                             // will fail the strict hydration at the next cold
@@ -195,6 +187,13 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                         }
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)
+                        }
+                        if (passkeySplit.failed.length > 0) {
+                            // Hidden from the Android chooser until a later
+                            // launch splits them; the pass retries every launch.
+                            logger.warn(
+                                `Passkey credentials left flat: ${passkeySplit.failed.join(', ')}`,
+                            )
                         }
                     })
                     .catch(err => {
@@ -212,7 +211,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 const databaseBranch = initializeDatabase(
                     provider.database,
-                ).then(() => seedAlgoAsset(getDatabase()))
+                ).then(() => seedNativeAssets(getDatabase()))
 
                 const languageBranch = syncLanguagePreference().catch(err =>
                     logger.error('Language preference sync failed', {
@@ -235,17 +234,25 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     launchAccountBranch,
                 ])
 
+                // Needs the hydrated keystore and accounts store, both awaited above.
+                backfillAccountRecords()
+
+                // Runs before the splash lifts so signing never reads an unhydrated slice.
+                await hydrateAccountChainStates()
+
                 initializeSyncService({
                     queryClient,
-                    registerCompletionHandler: setOnConfirmedHandler,
+                    stores: createSyncStorePorts(),
+                    registerCompletionHandler: handler =>
+                        setOnConfirmedHandler(LEGACY_CHAIN_ID, handler),
                 })
 
                 updateQueryHeaders()
 
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: provider.keyValueStorage,
-                    serialize: algorandSafeQuerySerialize,
-                    deserialize: algorandSafeQueryParse,
+                    serialize: stringifyTypedJson,
+                    deserialize: parseTypedJson,
                 })
 
                 setPersister(reactQueryPersistor)

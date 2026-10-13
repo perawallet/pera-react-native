@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    findAccountByAddressOn,
+    hardwareDeviceOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AnalyzedSignableGroup } from '../../pipeline/types'
 import { resolveSigningAccount } from './resolveSigningAccount'
 
@@ -28,11 +33,14 @@ import { resolveSigningAccount } from './resolveSigningAccount'
 export const resolveHardwareDeviceName = (
     groups: AnalyzedSignableGroup[],
     allAccounts: WalletAccount[],
+    chainId: ChainId,
 ): string | null => {
     const firstGroup = groups[0]
     if (!firstGroup) return null
-    const signerAccount = allAccounts.find(
-        a => a.address === firstGroup.signerAddress,
+    const signerAccount = findAccountByAddressOn(
+        allAccounts,
+        chainId,
+        firstGroup.signerAddress,
     )
     if (!signerAccount) return null
 
@@ -43,6 +51,7 @@ export const resolveHardwareDeviceName = (
             firstGroup.source,
             firstGroup.data.type,
             allAccounts,
+            chainId,
         )
     } catch {
         // Rekey target not held — the sign itself will fail with a typed
@@ -50,8 +59,5 @@ export const resolveHardwareDeviceName = (
         return null
     }
 
-    return (
-        (accountForSigning as { hardwareDetails?: { deviceName?: string } })
-            .hardwareDetails?.deviceName ?? null
-    )
+    return hardwareDeviceOf(accountForSigning)?.device.deviceName ?? null
 }

@@ -18,12 +18,9 @@ import { act, fireEvent, render, screen } from '@test-utils/render'
 // does).
 import { QRScannerView, type QRScannerViewProps } from '../QRScannerView.web'
 
-// vitest.setup.ts globally stubs the whole '@components/core' barrel
-// (PWBottomSheet included) with a trivial testID='PWBottomSheet' div and no
-// backdrop — fine for other specs, but this one exists to prove real sheet
-// chrome (backdrop press, testID passthrough). Swap in the real web
-// PWBottomSheet; the rest stay as simple DOM stand-ins mirroring the setup
-// file's stubs.
+// This spec exists to prove the real web sheet chrome (backdrop press, testID
+// passthrough), so PWBottomSheet is the .web implementation — the barrel would
+// resolve the native one. The rest are simple DOM stand-ins.
 vi.mock('@components/core', async () => {
     const { default: React } = await import('react')
     const { PWBottomSheet } =
@@ -83,7 +80,7 @@ const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn(() => true)
 const mockParseDeeplink = vi.fn(() => ({ type: 'HOME' }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: mockHandleDeepLink,
         isValidDeepLink: mockIsValidDeepLink,
@@ -96,7 +93,15 @@ const mockOpenExpandedTab = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: () => mockGetSurface(),
+}))
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExpandedTab: (...args: unknown[]) => mockOpenExpandedTab(...args),
+}))
+
+const mockShowToast = vi.fn()
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
 }))
 
 const PASTED_VALUE = 'ALGO-ADDRESS'
@@ -191,15 +196,15 @@ describe('QRScannerView (web)', () => {
         })
 
         // Field scans (skipDeepLinkHandler: true) can't round-trip a value
-        // scanned in the tab back into the closed popup's input, so the
-        // hand-off button is dropped in favor of paste-only.
-        it('hides the "Scan with camera" button for a field scan (skipDeepLinkHandler)', () => {
+        // scanned in the tab back into the closed popup's input, so instead
+        // of scanning there the tab only grants the camera for the popup.
+        it('offers camera access instead of a tab scan for a field scan (skipDeepLinkHandler)', () => {
             renderScanner({ skipDeepLinkHandler: true })
 
             expect(screen.queryByTestId('qr-scan-with-camera')).toBeNull()
-            expect(
-                screen.getByText('qr_scanner.camera_unavailable'),
-            ).toBeTruthy()
+            fireEvent.click(screen.getByTestId('qr-allow-camera'))
+
+            expect(mockOpenExpandedTab).toHaveBeenCalledWith('camera-access')
         })
     })
 
@@ -218,6 +223,38 @@ describe('QRScannerView (web)', () => {
             renderScanner()
             await flushAsync()
             expect(screen.queryByTestId('qr-scan-with-camera')).toBeNull()
+        })
+
+        it('offers a retry that asks for the camera again when it is blocked', async () => {
+            getUserMedia.mockRejectedValueOnce(
+                new DOMException('denied', 'NotAllowedError'),
+            )
+            renderScanner()
+            await flushAsync()
+
+            fireEvent.click(screen.getByTestId('qr-camera-retry'))
+            await flushAsync()
+
+            expect(getUserMedia).toHaveBeenCalledTimes(2)
+        })
+
+        it('cancels through onClose when the camera is unavailable', async () => {
+            getUserMedia.mockRejectedValueOnce(new Error('in use'))
+            const onClose = vi.fn()
+            renderScanner({ onClose })
+            await flushAsync()
+
+            fireEvent.click(screen.getByTestId('qr-camera-cancel'))
+
+            expect(onClose).toHaveBeenCalledTimes(1)
+        })
+
+        it('offers no retry when the browser cannot scan QR codes', async () => {
+            vi.stubGlobal('BarcodeDetector', undefined)
+            renderScanner()
+            await flushAsync()
+
+            expect(screen.queryByTestId('qr-camera-error')).toBeNull()
         })
     })
 
@@ -320,6 +357,22 @@ describe('QRScannerView (web)', () => {
 
             expect(mockHandleDeepLink).not.toHaveBeenCalled()
             expect(onSuccess).not.toHaveBeenCalled()
+        })
+
+        it('toasts and keeps scanning when the code is not one Pera can use', () => {
+            mockIsValidDeepLink.mockReturnValue(false)
+            renderScanner()
+
+            submitPasted(PASTED_VALUE)
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'qr_scanner.invalid_code',
+                    type: 'error',
+                }),
+            )
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+            expect(screen.getByTestId('qr-paste-input')).toBeTruthy()
         })
 
         it('skips handleDeepLink and calls onSuccess directly when skipDeepLinkHandler is true', () => {

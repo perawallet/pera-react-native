@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { PasswordStrengthMeter } from '../../components/PasswordStrengthMeter'
 import { useVaultSecuritySettingsScreen } from './useVaultSecuritySettingsScreen.web'
 import { useStyles } from './styles'
 
@@ -47,6 +48,7 @@ export const VaultSecuritySettingsScreen = () => {
         setNewPassword,
         setConfirmNewPassword,
         isChangingPassword,
+        newPasswordScore,
         changePasswordValidationError,
         changePasswordError,
         changePasswordSuccess,
@@ -57,7 +59,9 @@ export const VaultSecuritySettingsScreen = () => {
     const newPasswordError =
         changePasswordValidationError === 'too_short'
             ? t('vault.security.change_password_error_too_short')
-            : undefined
+            : changePasswordValidationError === 'too_weak'
+              ? t('vault.password_strength.error_too_weak')
+              : undefined
 
     const confirmNewPasswordError =
         changePasswordValidationError === 'mismatch'
@@ -155,10 +159,11 @@ export const VaultSecuritySettingsScreen = () => {
                         autoCapitalize='none'
                         autoComplete='new-password'
                         errorMessage={newPasswordError}
-                        renderErrorMessage={
-                            changePasswordValidationError === 'too_short'
-                        }
+                        renderErrorMessage={newPasswordError !== undefined}
                     />
+                    {newPassword.length > 0 && (
+                        <PasswordStrengthMeter score={newPasswordScore} />
+                    )}
                     <PWInput
                         testID='vault-security-confirm-new-password'
                         placeholder={t(

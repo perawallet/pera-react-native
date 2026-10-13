@@ -10,43 +10,104 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
-import { fetchDelta, fetchManifest, readItems } from '../api'
-import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
+import { fetchManifest, readItems } from '../api'
+import {
+    parseAccountRecordPayload,
+    parseAddressPayload,
+    parseContactPayload,
+    parsePasskeyPayload,
+    parsePasskeySecretsPayload,
+    parseSecretsPayload,
+    parseSettingsPayload,
+} from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
+    accountIdentityOf,
+    accountRecordAddresses,
+    accountRecordEntries,
+    accountRecordIdentity,
+    accountRecordType,
+    isAccountRecordKey,
+    isAccountRecordReadable,
+    BACKUP_ACCOUNT_RECORDS_KEY_PREFIX,
+    BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_CONTACTS_KEY_PREFIX,
+    BACKUP_PASSKEYS_KEY_PREFIX,
+    BACKUP_PASSKEY_SECRETS_KEY_PREFIX,
+    BACKUP_SECRETS_KEY_PREFIX,
+    BACKUP_SETTINGS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
-    DeltaOperation,
+    isContactItemKey,
+    isPasskeyItemKey,
+    isPasskeySecretsItemKey,
+    isSettingsItemKey,
+    type AccountEntryPayload,
+    type AccountRecordPayload,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
-    type DeltaEntry,
+    type ContactBackupPayload,
     type DeviceId,
     type FetchedItem,
+    type ManifestItem,
+    type PasskeyBackupPayload,
+    type PasskeySecretsBackupPayload,
     type SecretsBackupPayload,
+    type SettingsBackupPayload,
+    type SyncItemState,
 } from '../models'
+import { canRestoreRecordEntry, isBackupChain } from '../sync/backupChains'
+import type { PulledPasskey } from '../sync/types'
 
-const ACCOUNTS_PREFIX = 'accounts/'
-const SECRETS_PREFIX = 'secrets/'
 const READ_BATCH_SIZE = 50
 
+/** One chain of one account. `group` is the account's identity, shared by
+ *  every chain of it, so the import can treat them as one account. */
 export type PulledAccount = {
     address: string
-    addressPayload: AddressBackupPayload
+    group: string
+    /** A record entry's chain; absent for a legacy item, which is on the
+     *  backup's scope chain. */
+    chain?: ChainId
+    addressPayload: AccountEntryPayload
     secretsPayload: SecretsBackupPayload | null
+}
+
+/** What a tracked item caches about its payload; the key is a hash. */
+export type TrackedIdentifiers = Pick<
+    SyncItemState,
+    'address' | 'addresses' | 'accountType' | 'record'
+>
+
+export type PulledSettings = {
+    key: BackupItemKey
+    payload: SettingsBackupPayload
 }
 
 export type SkippedItem = {
     key: BackupItemKey
-    reason: 'decrypt' | 'parse' | 'missing-address'
+    /** `newer`: an account record only a newer client can restore. */
+    reason: 'decrypt' | 'parse' | 'chain' | 'newer'
 }
 
 export type PullBackupItemsResult = {
     backupGlobalHash: string
     lastSeq: number
+    /** Every key the backup holds and the version it holds it at — including
+     *  tombstones and items the restore could not read, which the caller still
+     *  has to track or it will offer them to the server as new. */
+    manifestItems: Record<BackupItemKey, ManifestItem>
+    /** What each read item was filed under. This pull is the only place a
+     *  restore can learn it: the key is an HMAC. */
+    trackedByKey: Record<BackupItemKey, TrackedIdentifiers>
     accounts: PulledAccount[]
+    contacts: ContactBackupPayload[]
+    passkeys: PulledPasskey[]
+    settings: PulledSettings | null
     skipped: SkippedItem[]
 }
 
@@ -57,13 +118,6 @@ type PullBackupItemsParams = {
     encryptionKey: Uint8Array
 }
 
-const addressFromKey = (key: BackupItemKey): string | null => {
-    if (key.startsWith(ACCOUNTS_PREFIX))
-        return key.slice(ACCOUNTS_PREFIX.length)
-    if (key.startsWith(SECRETS_PREFIX)) return key.slice(SECRETS_PREFIX.length)
-    return null
-}
-
 const chunk = <T>(items: T[], size: number): T[][] => {
     const out: T[][] = []
     for (let i = 0; i < items.length; i += size) {
@@ -72,17 +126,30 @@ const chunk = <T>(items: T[], size: number): T[][] => {
     return out
 }
 
-/** Keys of the active account/secret items that should be read and restored. */
-const selectWantedKeys = (deltas: DeltaEntry[]): BackupItemKey[] =>
-    deltas
+/** Keys of the active items that should be read and restored. Read from the
+ *  manifest and never from a `from_seq=0` delta: once changelog retention has
+ *  pruned anything, seq 0 is itself out of the window and the delta call fails
+ *  permanently — which would make every restore of a busy backup fail with it.
+ *
+ *  Contacts are in here because the restore is their only way home: it seeds
+ *  `lastSyncedSeq` from the manifest, so no later delta ever mentions an item
+ *  that was already in the backup when the device joined. */
+const selectWantedKeys = (
+    manifestItems: Record<BackupItemKey, ManifestItem>,
+): BackupItemKey[] =>
+    Object.entries(manifestItems)
         .filter(
-            d =>
-                d.op === DeltaOperation.UPSERT &&
-                d.status === BackupItemStatus.ACTIVE &&
-                (d.key.startsWith(ACCOUNTS_PREFIX) ||
-                    d.key.startsWith(SECRETS_PREFIX)),
+            ([key, item]) =>
+                item.status === BackupItemStatus.ACTIVE &&
+                (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_ACCOUNT_RECORDS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_CONTACTS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_PASSKEY_SECRETS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_SETTINGS_KEY_PREFIX)),
         )
-        .map(d => d.key)
+        .map(([key]) => key)
 
 const readItemsInBatches = async (
     network: Network,
@@ -117,74 +184,223 @@ const decryptItem = (
 }
 
 type CollectedPayloads = {
+    records: AccountRecordPayload[]
     addressPayloads: Map<string, AddressBackupPayload>
     secretsPayloads: Map<string, SecretsBackupPayload>
+    contacts: ContactBackupPayload[]
+    passkeys: PulledPasskey[]
+    settings: PulledSettings | null
+    trackedByKey: Record<BackupItemKey, TrackedIdentifiers>
     skipped: SkippedItem[]
 }
 
+type ParsedItemPayload =
+    | { kind: 'record'; payload: AccountRecordPayload }
+    | { kind: 'address'; payload: AddressBackupPayload }
+    | { kind: 'secrets'; payload: SecretsBackupPayload }
+    | { kind: 'contact'; payload: ContactBackupPayload }
+    | { kind: 'passkey'; payload: PasskeyBackupPayload }
+    | { kind: 'passkeySecrets'; payload: PasskeySecretsBackupPayload }
+    | { kind: 'settings'; payload: SettingsBackupPayload }
+
+/** The prefixes are deliberately in the clear, so they still say which of the
+ *  shapes a payload is; everything after the prefix is a hash. */
+const parseItemPayload = (
+    key: BackupItemKey,
+    plaintext: string,
+): ParsedItemPayload => {
+    if (isContactItemKey(key))
+        return { kind: 'contact', payload: parseContactPayload(plaintext) }
+    if (isPasskeyItemKey(key))
+        return { kind: 'passkey', payload: parsePasskeyPayload(plaintext) }
+    if (isPasskeySecretsItemKey(key))
+        return {
+            kind: 'passkeySecrets',
+            payload: parsePasskeySecretsPayload(plaintext),
+        }
+    if (isSettingsItemKey(key))
+        return { kind: 'settings', payload: parseSettingsPayload(plaintext) }
+    if (isAccountRecordKey(key))
+        return { kind: 'record', payload: parseAccountRecordPayload(plaintext) }
+    if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX))
+        return { kind: 'address', payload: parseAddressPayload(plaintext) }
+    return { kind: 'secrets', payload: parseSecretsPayload(plaintext) }
+}
+
+/** Both maps are keyed on the payload's own address: the item key is an HMAC
+ *  of it and cannot be inverted, while an account's address record and its
+ *  secrets record repeat the same address, so they still join. */
 const collectItemPayloads = (
     items: FetchedItem[],
     encryptionKey: Uint8Array,
     backupId: BackupId,
 ): CollectedPayloads => {
+    const records: AccountRecordPayload[] = []
     const addressPayloads = new Map<string, AddressBackupPayload>()
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
+    const contacts: ContactBackupPayload[] = []
+    const passkeyPayloads: PasskeyBackupPayload[] = []
+    const passkeySecrets = new Map<string, PasskeySecretsBackupPayload>()
+    let settings: PulledSettings | null = null
+    const trackedByKey: Record<BackupItemKey, TrackedIdentifiers> = {}
     const skipped: SkippedItem[] = []
 
     for (const item of items) {
-        const address = addressFromKey(item.key)
-        if (!address) {
-            logger.warn('pullBackupItems: unexpected item key format', {
-                key: item.key,
-            })
-            skipped.push({ key: item.key, reason: 'missing-address' })
-            continue
-        }
-
         const plaintext = decryptItem(item, encryptionKey, backupId)
         if (plaintext === null) {
             skipped.push({ key: item.key, reason: 'decrypt' })
             continue
         }
 
+        let parsed: ParsedItemPayload
         try {
-            if (item.key.startsWith(ACCOUNTS_PREFIX)) {
-                addressPayloads.set(address, parseAddressPayload(plaintext))
-            } else {
-                secretsPayloads.set(address, parseSecretsPayload(plaintext))
-            }
+            parsed = parseItemPayload(item.key, plaintext)
         } catch {
             logger.warn('pullBackupItems: failed to parse item', {
                 key: item.key,
             })
             skipped.push({ key: item.key, reason: 'parse' })
+            continue
+        }
+
+        if (parsed.kind === 'settings') {
+            settings = { key: item.key, payload: parsed.payload }
+            continue
+        }
+
+        // A passkey has no address; its credential id is the identifier the
+        // review buckets read back out of `trackedByKey`.
+        if (parsed.kind === 'passkey') {
+            trackedByKey[item.key] = {
+                address: parsed.payload.credentialId,
+                accountType: null,
+            }
+            passkeyPayloads.push(parsed.payload)
+            continue
+        }
+        if (parsed.kind === 'passkeySecrets') {
+            trackedByKey[item.key] = {
+                address: parsed.payload.credentialId,
+                accountType: null,
+            }
+            passkeySecrets.set(parsed.payload.credentialId, parsed.payload)
+            continue
+        }
+
+        if (parsed.kind === 'record') {
+            // Tracked either way, so this device never writes over it.
+            trackedByKey[item.key] = recordIdentifiers(parsed.payload)
+            if (isAccountRecordReadable(parsed.payload))
+                records.push(parsed.payload)
+            else skipped.push({ key: item.key, reason: 'newer' })
+            continue
+        }
+
+        const chain =
+            parsed.kind === 'secrets' && 'chain' in parsed.payload
+                ? (parsed.payload.chain as ChainId)
+                : null
+        if (chain !== null && !isBackupChain(chain)) {
+            skipped.push({ key: item.key, reason: 'chain' })
+            continue
+        }
+
+        const { address } = parsed.payload
+        if (parsed.kind === 'contact') {
+            trackedByKey[item.key] = { address, accountType: null }
+            contacts.push(parsed.payload)
+        } else {
+            trackedByKey[item.key] = {
+                address,
+                accountType: parsed.payload.type,
+            }
+            if (parsed.kind === 'address')
+                addressPayloads.set(address, parsed.payload)
+            else secretsPayloads.set(address, parsed.payload)
         }
     }
 
-    return { addressPayloads, secretsPayloads, skipped }
+    return {
+        records,
+        addressPayloads,
+        secretsPayloads,
+        contacts,
+        passkeys: passkeyPayloads.map(payload => ({
+            payload,
+            secret: passkeySecrets.get(payload.credentialId) ?? null,
+        })),
+        settings,
+        trackedByKey,
+        skipped,
+    }
 }
 
-/** Joins address + secrets payloads by address into PulledAccounts. A hdSeed
- *  secret with no matching address payload (its first account was removed) is
- *  surfaced as a standalone hdSeed entry so the seed still restores. */
-export const buildPulledAccounts = (
-    addressPayloads: Map<string, AddressBackupPayload>,
-    secretsPayloads: Map<string, SecretsBackupPayload>,
-): PulledAccount[] => {
-    const accounts: PulledAccount[] = [...addressPayloads.entries()].map(
-        ([address, addressPayload]) => ({
-            address,
-            addressPayload,
-            secretsPayload: secretsPayloads.get(address) ?? null,
+export const recordIdentifiers = (
+    record: AccountRecordPayload,
+): TrackedIdentifiers => ({
+    address: record.chains[0]?.address ?? null,
+    addresses: accountRecordAddresses(record),
+    accountType: accountRecordType(record),
+    record,
+})
+
+/**
+ * Splits records into one entry per chain this build reads, adds the legacy
+ * items no record covers, and joins each to its secret by address. A legacy
+ * item a record covers is the same account written before records existed, so
+ * the record wins. So a client that predates records can't reach that account:
+ * its rename is dropped, and its delete leaves the record live, so the account
+ * comes back on the next restore. An hdSeed secret no entry claims (its first
+ * account was removed) still surfaces, so the seed restores.
+ */
+export const buildPulledAccounts = ({
+    records,
+    addressPayloads,
+    secretsPayloads,
+}: {
+    records: readonly AccountRecordPayload[]
+    addressPayloads: ReadonlyMap<string, AddressBackupPayload>
+    secretsPayloads: ReadonlyMap<string, SecretsBackupPayload>
+}): PulledAccount[] => {
+    const covered = new Set(records.flatMap(accountRecordAddresses))
+    const entries: {
+        group: string
+        chain?: ChainId
+        payload: AccountEntryPayload
+    }[] = [
+        ...records.flatMap(record => {
+            const group = accountRecordIdentity(record)
+            return accountRecordEntries(record, canRestoreRecordEntry).map(
+                ({ chain, payload }) => ({
+                    group,
+                    chain: chain as ChainId,
+                    payload,
+                }),
+            )
+        }),
+        ...[...addressPayloads.values()]
+            .filter(payload => !covered.has(payload.address))
+            .map(payload => ({ group: accountIdentityOf(payload), payload })),
+    ]
+    const accounts: PulledAccount[] = entries.map(
+        ({ group, chain, payload }) => ({
+            address: payload.address,
+            group,
+            ...(chain ? { chain } : {}),
+            addressPayload: payload,
+            secretsPayload: secretsPayloads.get(payload.address) ?? null,
         }),
     )
-    for (const [address, secretsPayload] of secretsPayloads.entries()) {
+    const claimed = new Set(accounts.map(account => account.address))
+    for (const secretsPayload of secretsPayloads.values()) {
+        const { address } = secretsPayload
         if (
             secretsPayload.type === BackupAccountType.hdSeed &&
-            !addressPayloads.has(address)
+            !claimed.has(address)
         ) {
             accounts.push({
                 address,
+                group: address,
                 addressPayload: { type: BackupAccountType.hdSeed, address },
                 secretsPayload,
             })
@@ -200,25 +416,38 @@ export const pullBackupItems = async ({
     encryptionKey,
 }: PullBackupItemsParams): Promise<PullBackupItemsResult> => {
     const manifest = await fetchManifest(network, backupId, deviceId)
-    const deltas = await fetchDelta(network, backupId, deviceId, 0)
 
-    const wantedKeys = selectWantedKeys(deltas)
+    const wantedKeys = selectWantedKeys(manifest.items)
     const items = await readItemsInBatches(
         network,
         backupId,
         deviceId,
         wantedKeys,
     )
-    const { addressPayloads, secretsPayloads, skipped } = collectItemPayloads(
-        items,
-        encryptionKey,
-        backupId,
-    )
+    const {
+        records,
+        addressPayloads,
+        secretsPayloads,
+        contacts,
+        passkeys,
+        settings,
+        trackedByKey,
+        skipped,
+    } = collectItemPayloads(items, encryptionKey, backupId)
 
     return {
         backupGlobalHash: manifest.backupGlobalHash,
         lastSeq: manifest.lastSeq,
-        accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
+        manifestItems: manifest.items,
+        trackedByKey,
+        accounts: buildPulledAccounts({
+            records,
+            addressPayloads,
+            secretsPayloads,
+        }),
+        contacts,
+        passkeys,
+        settings,
         skipped,
     }
 }

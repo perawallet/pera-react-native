@@ -13,14 +13,15 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import {
-    fetchRekeyedAddresses,
-    getRekeyedAddressesQueryKey,
-    isQuantumAccount,
+    fetchDelegatedAddresses,
+    addressOn,
+    getDelegatedAddressesQueryKey,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { isLegacyQuantumChild } from '@modules/accounts/utils/legacyQuantum'
+import { isLegacyQuantumChild } from '@modules/accounts'
 
 export type UseLegacyQuantumPromptResult = {
     /** The wallet holds at least one legacy-derivation quantum account. */
@@ -38,24 +39,25 @@ export type UseLegacyQuantumPromptResult = {
 export const useLegacyQuantumPrompt = (): UseLegacyQuantumPromptResult => {
     const accounts = useAllAccounts()
     const { getKey } = useKMS()
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const legacyAddresses = useMemo(
         () =>
             accounts
-                .filter(isQuantumAccount)
-                .filter(account => isLegacyQuantumChild(getKey, account))
-                .map(account => account.address),
-        [accounts, getKey],
+                .filter(account =>
+                    isLegacyQuantumChild(getKey, account, scope.chainId),
+                )
+                .flatMap(account => addressOn(account, scope) ?? []),
+        [accounts, getKey, scope],
     )
 
-    // Shares its query key with `useRekeyedAddressesQuery` (the per-account
+    // Shares its query key with `useDelegatedAddressesQuery` (the per-account
     // marker's own lookup), so a prior fetch for the same address is reused
     // instead of doubling the indexer round-trip.
     const lookups = useQueries({
         queries: legacyAddresses.map(address => ({
-            queryKey: getRekeyedAddressesQueryKey(address, network),
-            queryFn: () => fetchRekeyedAddresses(address, network),
+            queryKey: getDelegatedAddressesQueryKey(address, scope),
+            queryFn: () => fetchDelegatedAddresses(address, scope),
             staleTime: 30_000,
         })),
     })

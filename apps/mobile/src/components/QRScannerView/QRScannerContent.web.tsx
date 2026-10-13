@@ -11,13 +11,12 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    getSurface,
-    openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
 import {
     PWButton,
     PWInput,
@@ -76,6 +75,7 @@ export const QRScannerContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { handleDeepLink, isValidDeepLink, parseDeeplink } = useDeepLink()
+    const { showToast } = useToast()
 
     // Synchronous guard against double-fire, same reasoning as the native
     // hook: a result can arrive while a previous one is still dispatching.
@@ -85,10 +85,18 @@ export const QRScannerContent = ({
         (value: string) => {
             try {
                 if (handlingRef.current) return
-                if (!isValidDeepLink(value)) {
-                    // Unrecognized payload — re-arm so the user can retry
-                    // (camera stops after its first decode; paste can
-                    // always be resubmitted).
+                // `skipDeepLinkHandler` callers validate the payload
+                // themselves and scan things that are not deeplinks at all
+                // (e.g. a raw JSON backup envelope), so the gate is theirs to
+                // apply, not ours.
+                if (!skipDeepLinkHandler && !isValidDeepLink(value)) {
+                    // Toast rather than a blocking error: a near-miss decode
+                    // is common, and the re-armed scanner is the retry.
+                    showToast({
+                        title: t('qr_scanner.invalid_code'),
+                        body: '',
+                        type: 'error',
+                    })
                     onRestart()
                     return
                 }
@@ -152,6 +160,8 @@ export const QRScannerContent = ({
             onSuccess,
             onRestart,
             skipDeepLinkHandler,
+            showToast,
+            t,
         ],
     )
 
@@ -227,6 +237,7 @@ export const QRScannerContent = ({
 
     const {
         hasCameraError,
+        cameraError,
         videoRef,
         pastedValue,
         setPastedValue,
@@ -235,6 +246,13 @@ export const QRScannerContent = ({
 
     const handleScanWithCamera = useCallback(() => {
         void openExpandedTab('scan')
+    }, [])
+
+    // A field scanner can't move to the tab, but the camera permission is
+    // per-origin: granting it there once lets this popup start the camera
+    // inline from then on.
+    const handleAllowCamera = useCallback(() => {
+        void openExpandedTab('camera-access')
     }, [])
 
     return (
@@ -260,6 +278,33 @@ export const QRScannerContent = ({
                     muted
                     style={styles.video}
                 />
+            ) : cameraError === 'blocked' || cameraError === 'unavailable' ? (
+                <PWView testID='qr-camera-error'>
+                    <PWText
+                        variant='body'
+                        style={styles.unavailable}
+                    >
+                        {t(
+                            cameraError === 'blocked'
+                                ? 'qr_scanner.camera_access_denied'
+                                : 'qr_scanner.camera_unavailable',
+                        )}
+                    </PWText>
+                    <PWView style={styles.cameraErrorActions}>
+                        <PWButton
+                            testID='qr-camera-retry'
+                            variant='primary'
+                            title={t('qr_scanner.try_again')}
+                            onPress={onRestart}
+                        />
+                        <PWButton
+                            testID='qr-camera-cancel'
+                            variant='secondary'
+                            title={t('common.cancel.label')}
+                            onPress={onClose}
+                        />
+                    </PWView>
+                </PWView>
             ) : isPopup &&
               !skipDeepLinkHandler &&
               cameraPermission !== 'denied' &&
@@ -269,6 +314,14 @@ export const QRScannerContent = ({
                     variant='secondary'
                     title={t('qr_scanner.scan_with_camera')}
                     onPress={handleScanWithCamera}
+                    style={styles.scanWithCamera}
+                />
+            ) : isPopup && cameraPermission !== 'denied' && !hasCameraError ? (
+                <PWButton
+                    testID='qr-allow-camera'
+                    variant='secondary'
+                    title={t('qr_scanner.allow_camera')}
+                    onPress={handleAllowCamera}
                     style={styles.scanWithCamera}
                 />
             ) : (

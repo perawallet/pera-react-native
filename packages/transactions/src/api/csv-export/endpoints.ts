@@ -10,17 +10,19 @@
  limitations under the License
  */
 
-import { type Network, queryClient } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    isRawPlatformNetworkError,
+    type Network,
+    queryClient,
+} from '@perawallet/wallet-core-shared'
 import type { ExportCsvParams, CsvExportResult } from './types'
 import { generateFilename, buildCsvQueryParams, countCsvRows } from './utils'
 
-/**
- * Custom error class for CSV export operations.
- */
-export class CsvExportError extends Error {
+export class CsvExportError extends AppError {
     public statusCode?: number
     public url?: string
-    public originalError?: Error
 
     constructor(
         message: string,
@@ -28,11 +30,13 @@ export class CsvExportError extends Error {
         url?: string,
         originalError?: Error,
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.NETWORK }, originalError)
         this.name = 'CsvExportError'
         this.statusCode = statusCode
         this.url = url
-        this.originalError = originalError
+        // The cause's message is flattened into ours, so a raw platform
+        // offline failure is still recognisable here and must stay unreported.
+        this.metadata.expected = isRawPlatformNetworkError(this)
     }
 }
 

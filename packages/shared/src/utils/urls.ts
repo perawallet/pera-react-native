@@ -26,6 +26,25 @@ export const stripUrlScheme = (url?: string) => {
     return url
 }
 
+/** The URL's origin, or undefined when it doesn't parse to a real one. */
+export const originOf = (url?: string): Optional<string> => {
+    if (!url) return undefined
+    try {
+        const { origin } = new URL(url)
+        // Opaque origins (extension, data, file URLs) serialise as 'null',
+        // which would make any two of them compare equal.
+        return origin === 'null' ? undefined : origin
+    } catch {
+        return undefined
+    }
+}
+
+/** An unparseable or opaque side is never the same origin. */
+export const isSameOrigin = (a?: string, b?: string): boolean => {
+    const origin = originOf(a)
+    return !!origin && origin === originOf(b)
+}
+
 export const buildPrismUrl = (
     url: Maybe<string>,
     width: number,

@@ -13,22 +13,33 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import {
+    BackupAccountType,
     BackupItemStatus,
     BackupItemType,
     createEmptySyncState,
 } from '../../models'
 import { UpsertResult } from '../../api'
+import { decryptItemPayload } from '../../crypto/itemPayload'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { passkeyItemKey } from '../../models'
+import { buildLocalPasskeyItems } from '../buildLocalPasskeyItems'
 import { pushDirty } from '../pushDirty'
+import { reconcileSettings } from '../reconcileSettings'
+import { BackupPushIncompleteError, BackupSyncAbortedError } from '../types'
 import type { LocalItem } from '../types'
+import { TEST_SETTINGS } from './testSettings'
 
 const encryptionKey = new Uint8Array(32).fill(7)
-const item = (key: string): LocalItem => ({
+/** `key` is an opaque hash, as in production, so the address is declared. */
+const item = (key: string, address: string): LocalItem => ({
     key,
     type: BackupItemType.ACCOUNT,
     contentHash: 'h',
+    address,
+    accountType: BackupAccountType.watch,
     payload: {
         type: 'watch',
-        address: key.split('/')[1],
+        address,
         updatedAt: 0,
     } as never,
 })
@@ -39,9 +50,100 @@ const baseDeps = () => ({
     encryptionKey,
     batchUpsertItems: vi.fn(),
     deleteItem: vi.fn(async () => ({ seq: 99 })),
+    isAborted: () => false,
+})
+
+const dirtyState = (count: number) => {
+    const state = createEmptySyncState('b')
+    const localItems: LocalItem[] = []
+    for (let i = 0; i < count; i++) {
+        state.items[`accounts/${i}`] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 0,
+            baseVer: 0,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+        localItems.push(item(`accounts/${i}`, `ADDR${i}`))
+    }
+    return { state, localItems }
+}
+
+const acceptAll = async (
+    _network: unknown,
+    _backupId: unknown,
+    _deviceId: unknown,
+    request: { items: { key: string }[] },
+) => ({
+    results: request.items.map((entry, i) => ({
+        key: entry.key,
+        result: UpsertResult.OK,
+        new_ver: 1,
+        seq: i + 1,
+    })),
 })
 
 describe('pushDirty', () => {
+    it('uploads a large backlog in bounded batches', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockImplementation(acceptAll)
+        const { state, localItems } = dirtyState(60)
+
+        const next = await pushDirty({ state, localItems, deps })
+
+        const sizes = deps.batchUpsertItems.mock.calls.map(
+            call => (call[3] as { items: unknown[] }).items.length,
+        )
+        expect(sizes).toEqual([25, 25, 10])
+        expect(Object.values(next.items).every(i => !i.isDirty)).toBe(true)
+    })
+
+    it("holds the cursor below another device's write that landed between batches", async () => {
+        const deps = baseDeps()
+        // seq 26 went to another device between our two batches.
+        deps.batchUpsertItems
+            .mockImplementationOnce(acceptAll)
+            .mockImplementationOnce(
+                async (...args: Parameters<typeof acceptAll>) => {
+                    const response = await acceptAll(...args)
+                    return {
+                        results: response.results.map(r => ({
+                            ...r,
+                            seq: r.seq + 26,
+                        })),
+                    }
+                },
+            )
+        const { state, localItems } = dirtyState(30)
+
+        const next = await pushDirty({ state, localItems, deps })
+
+        expect(next.lastSyncedSeq).toBe(25)
+        expect(Object.values(next.items).every(i => !i.isDirty)).toBe(true)
+    })
+
+    it('carries the batches that landed when a later one fails', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems
+            .mockImplementationOnce(acceptAll)
+            .mockRejectedValueOnce(new Error('timeout'))
+        const { state, localItems } = dirtyState(60)
+
+        const error = await pushDirty({ state, localItems, deps }).catch(
+            (e: unknown) => e,
+        )
+
+        expect(error).toBeInstanceOf(BackupPushIncompleteError)
+        const partial = (error as BackupPushIncompleteError).state
+        const landed = Object.values(partial.items).filter(i => !i.isDirty)
+        expect(landed).toHaveLength(25)
+        expect(landed.every(i => i.baseVer === 1)).toBe(true)
+        expect(deps.batchUpsertItems).toHaveBeenCalledTimes(2)
+    })
+
     it('pushes dirty items and on OK clears dirty + advances ver/seq', async () => {
         const deps = baseDeps()
         deps.batchUpsertItems.mockResolvedValue({
@@ -54,7 +156,7 @@ describe('pushDirty', () => {
                 },
             ],
         })
-        const state = createEmptySyncState('b')
+        const state = { ...createEmptySyncState('b'), lastSyncedSeq: 50 }
         state.items['accounts/A'] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 7,
@@ -67,7 +169,7 @@ describe('pushDirty', () => {
         }
         const next = await pushDirty({
             state,
-            localItems: [item('accounts/A')],
+            localItems: [item('accounts/A', 'A')],
             deps,
         })
         expect(deps.batchUpsertItems).toHaveBeenCalledTimes(1)
@@ -104,7 +206,7 @@ describe('pushDirty', () => {
         }
         const next = await pushDirty({
             state,
-            localItems: [item('accounts/A')],
+            localItems: [item('accounts/A', 'A')],
             deps,
         })
         // Stays dirty, records the server's current_ver, but DELIBERATELY keeps
@@ -118,7 +220,7 @@ describe('pushDirty', () => {
         })
     })
 
-    it('processes pending-delete keys via deleteItem and removes them from items', async () => {
+    it('processes pending-delete keys via deleteItem and tombstones them', async () => {
         const deps = baseDeps()
         const state = createEmptySyncState('b')
         state.items['accounts/GONE'] = {
@@ -139,6 +241,291 @@ describe('pushDirty', () => {
             'dev',
             'accounts/GONE',
         )
-        expect(next.items['accounts/GONE']).toBeUndefined()
+        expect(next.items['accounts/GONE']).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            isDirty: false,
+            pendingDelete: false,
+            localContentHash: null,
+        })
+    })
+
+    it('tombstones a pending delete the server no longer holds', async () => {
+        const deps = {
+            ...baseDeps(),
+            deleteItem: vi.fn(async () => {
+                throw { response: { status: 404 } }
+            }),
+        }
+        const state = createEmptySyncState('b')
+        state.lastSyncedSeq = 5
+        state.items['accounts/GONE'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 0,
+            baseVer: 0,
+            isDirty: false,
+            pendingDelete: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+
+        const next = await pushDirty({ state, localItems: [], deps })
+
+        expect(next.items['accounts/GONE']).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            pendingDelete: false,
+        })
+        expect(next.lastSyncedSeq).toBe(5)
+    })
+
+    it('keeps a pending delete queued when the server fails it', async () => {
+        const deps = {
+            ...baseDeps(),
+            deleteItem: vi.fn(async () => {
+                throw { response: { status: 503 } }
+            }),
+        }
+        const state = createEmptySyncState('b')
+        state.items['accounts/GONE'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            pendingDelete: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+
+        const next = await pushDirty({ state, localItems: [], deps })
+
+        expect(next.items['accounts/GONE']).toMatchObject({
+            status: BackupItemStatus.ACTIVE,
+            pendingDelete: true,
+        })
+    })
+
+    it('does not upload when a stop lands while a deletion is in flight', async () => {
+        let stopped = false
+        const deps = {
+            ...baseDeps(),
+            deleteItem: vi.fn(async () => {
+                stopped = true
+                return { seq: 99 }
+            }),
+            isAborted: () => stopped,
+        }
+        const state = createEmptySyncState('b')
+        state.items['accounts/GONE'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            pendingDelete: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+        state.items['accounts/A'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+
+        await expect(
+            pushDirty({
+                state,
+                localItems: [item('accounts/A')],
+                deps,
+            }),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(deps.batchUpsertItems).not.toHaveBeenCalled()
+    })
+
+    it('injects the last-write-wins timestamp into a contact payload', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({ results: [] })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = {
+            type: BackupItemType.CONTACT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 777,
+        }
+
+        await pushDirty({
+            state,
+            localItems: [
+                {
+                    key: 'contacts/C1',
+                    type: BackupItemType.CONTACT,
+                    contentHash: 'h',
+                    address: 'C1',
+                    accountType: null,
+                    payload: { address: 'C1', name: 'Alice' },
+                },
+            ],
+            deps,
+        })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const plaintext = decryptItemPayload(request.items[0].payload, {
+            encryptionKey,
+            backupId: 'b',
+            key: 'contacts/C1',
+        })
+        expect(JSON.parse(plaintext)).toEqual({
+            address: 'C1',
+            name: 'Alice',
+            updatedAt: 777,
+        })
+    })
+
+    it('injects the last-write-wins timestamp into a passkey payload', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({ results: [] })
+        const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+        const key = passkeyItemKey(hashAddress('Y3JlZC1pZA=='))
+        const state = createEmptySyncState('b')
+        state.items[key] = {
+            type: BackupItemType.PASSKEY,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1_700_000_000,
+        }
+        const localItems = buildLocalPasskeyItems(
+            [
+                {
+                    credentialId: 'Y3JlZC1pZA==',
+                    origin: 'webauthn.io',
+                    identity: 'alice',
+                    counter: 0,
+                    publicKeySpkiDer: 'cHVi',
+                    seedAddress: 'SEEDADDRESS',
+                    createdAt: 1,
+                    privateKey: new Uint8Array(32).fill(9),
+                },
+            ],
+            0,
+            hashAddress,
+        )
+
+        await pushDirty({ state, localItems, deps })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const plaintext = decryptItemPayload(request.items[0].payload, {
+            encryptionKey,
+            backupId: 'b',
+            key,
+        })
+        expect(JSON.parse(plaintext).updatedAt).toBe(1_700_000_000)
+    })
+
+    it('injects the last-write-wins timestamp into an account record', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({ results: [] })
+        const key = 'account-records/' + 'a'.repeat(64)
+        const state = createEmptySyncState('b')
+        state.items[key] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1_700_000_000,
+        }
+        const localItems: LocalItem[] = [
+            {
+                key,
+                type: BackupItemType.ACCOUNT,
+                contentHash: 'h',
+                address: 'W',
+                addresses: ['W'],
+                accountType: null,
+                payload: {
+                    formatVersion: 2,
+                    kind: 'watch',
+                    customName: null,
+                    chains: [{ chain: 'algorand', address: 'W' }],
+                },
+            },
+        ]
+
+        await pushDirty({ state, localItems, deps })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const plaintext = decryptItemPayload(request.items[0].payload, {
+            encryptionKey,
+            backupId: 'b',
+            key,
+        })
+        expect(JSON.parse(plaintext).updatedAt).toBe(1_700_000_000)
+    })
+
+    it('pushes a settings item from its tracked document, with no local item', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: 'settings/S',
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 3,
+                },
+            ],
+        })
+        const state = reconcileSettings(
+            createEmptySyncState('b'),
+            'settings/S',
+            TEST_SETTINGS,
+            100,
+        )
+
+        const next = await pushDirty({ state, localItems: [], deps })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const [entry] = request.items
+        expect(entry).toMatchObject({
+            key: 'settings/S',
+            type: BackupItemType.SETTINGS,
+            expected_ver: 0,
+        })
+        expect(
+            JSON.parse(
+                decryptItemPayload(entry.payload, {
+                    encryptionKey,
+                    backupId: 'b',
+                    key: 'settings/S',
+                }),
+            ),
+        ).toEqual({
+            confirmationMode: { value: 'slide', updatedAt: 0 },
+            currency: { value: TEST_SETTINGS.currency, updatedAt: 0 },
+            language: { value: 'system', updatedAt: 0 },
+            launchAccount: { value: TEST_SETTINGS.launchAccount, updatedAt: 0 },
+        })
+        expect(next.items['settings/S']).toMatchObject({
+            isDirty: false,
+            knownVer: 1,
+        })
     })
 })

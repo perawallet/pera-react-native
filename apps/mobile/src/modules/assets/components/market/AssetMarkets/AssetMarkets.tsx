@@ -11,6 +11,15 @@
  */
 
 import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type AssetPriceHistoryItem,
+    type PeraAsset,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import {
     AssetFavoriteButton,
@@ -40,18 +49,11 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { EmptyView } from '@components/EmptyView'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import {
-    type AssetPriceHistoryItem,
-    type PeraAsset,
-    useSingleAssetDetailsQuery,
-} from '@perawallet/wallet-core-assets'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
-import { routeCapabilities } from '@routes/capabilities'
-import { toDiscoverTokenDetailPath } from '@modules/discover/utils/tokenDetailPath'
+import { useCapability } from '@hooks/useCapability'
+import { toDiscoverTokenDetailPath } from '@modules/discover'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
@@ -77,20 +79,25 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference } = usePreferences()
     const { t } = useLanguage()
+    const canOpenDiscover = useCapability({
+        platform: 'discoverTab',
+        anyChain: 'discover',
+    })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
 
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         data: assetDetails,
         isError,
         isPending,
-    } = useSingleAssetDetailsQuery(asset.assetId)
+    } = useSingleAssetDetailsQuery(asset.assetId, scope)
 
     const openDiscover = () => {
         // Pushed over asset details (not the Discover tab, which swaps in
         // place and strands the user with no back affordance)
         navigation.navigate('DiscoverDetail', {
-            path: toDiscoverTokenDetailPath(asset.assetId),
+            path: toDiscoverTokenDetailPath(asset.assetId, LEGACY_CHAIN_ID),
         })
     }
 
@@ -187,7 +194,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 </PWView>
             </ExpandablePanel>
 
-            {routeCapabilities.discoverTab && (
+            {canOpenDiscover && (
                 <PWTouchableOpacity
                     style={styles.discoverButton}
                     onPress={openDiscover}

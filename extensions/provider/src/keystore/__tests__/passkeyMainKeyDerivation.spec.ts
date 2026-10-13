@@ -22,28 +22,19 @@ import {
 
 /**
  * Pins the two things that decide how the passkey main key is derived, both of
- * which `createPeraKeystore` gets by supplying no `shims` and no `dp256`
- * override.
+ * which `createPeraKeystore` gets by building its shims with
+ * `createDefaultShims({ falcon })` and no `dp256` override.
  *
  * `createDefaultShims` wraps the bundled dp256 binding in
- * `withSubtleDerivedMainKey` **only when no `dp256` override is passed**
- * (`keystore-core@1.0.0-canary.3` `dist/defaults.js:169`), and the React Native
- * engine calls it that way (`react-native-keystore@1.0.0-canary.19`
- * `dist/engine.js:205-209`, which passes `{ falcon }` alone). Supplying a
- * `dp256` override would silently swap the host's native PBKDF2 for the
- * bundled pure-JS one — 210,000 `@noble/hashes` iterations, which blocks
- * Hermes.
+ * `withSubtleDerivedMainKey` **only when no `dp256` override is passed**, and
+ * `createPeraKeystore` calls it with `{ falcon }` alone, as the React Native
+ * engine's own default does. Supplying a `dp256` override would silently swap
+ * the host's native PBKDF2 for the bundled pure-JS one — 210,000
+ * `@noble/hashes` iterations, which blocks Hermes.
  *
  * Both paths produce identical bytes, so a bytes-only assertion cannot tell
  * them apart; the host-call assertion below is the one that discriminates.
  */
-
-// The fallback case really does run 210,000 pure-JS PBKDF2 iterations — that
-// slowness is the defect being pinned, not an accident — so it costs ~1.4s idle
-// and over 13s when the full monorepo suite saturates the CPU. Raised here
-// rather than made faster: a faster derivation would stop demonstrating the
-// cost that makes the override wrong on Hermes.
-vi.setConfig({ testTimeout: 30_000 })
 
 /** 32 bytes of 0x09 — arbitrary, fixed so the vector below stays reproducible. */
 const ENTROPY = new Uint8Array(32).fill(9)
@@ -138,16 +129,29 @@ describe('passkey main-key derivation', () => {
     })
 
     // The regression this file exists for: an explicit `dp256` override is
-    // taken as-is, so the derivation silently moves off the host.
-    it('falls back to the bundled pure-JS derivation when a dp256 override is supplied', async () => {
+    // taken as-is, so the derivation silently moves off the host. The
+    // override's derive is stubbed: running its real 210,000 pure-JS
+    // iterations would pin nothing more than the call does, and under
+    // coverage on a loaded runner it outran a 30s timeout.
+    it('hands the derivation to a dp256 override instead of the host Subtle', async () => {
+        const binding = await createDP256Binding()
+        if (!binding) throw new Error('bundled dp256 binding did not load')
+        const genDerivedMainKey = vi.fn(async () =>
+            Uint8Array.from(Buffer.from(MAIN_KEY_VECTOR, 'hex')),
+        )
+
         const { bytes, pbkdf2Calls } = await mintMainKey({
             falcon: undefined,
-            dp256: await createDP256Binding(),
+            dp256: { ...binding, genDerivedMainKey },
         })
 
         expect(pbkdf2Calls).toHaveLength(0)
-        // Identical bytes either way — which is exactly why the call count,
-        // not the vector, is what pins the host path above.
+        expect(genDerivedMainKey).toHaveBeenCalledWith(
+            expect.any(Uint8Array),
+            expect.anything(),
+            210_000,
+            64,
+        )
         expect(toHex(bytes)).toBe(MAIN_KEY_VECTOR)
     })
 })

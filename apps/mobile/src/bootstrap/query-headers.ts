@@ -13,8 +13,7 @@
 import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
-/** Stamps device-identity headers onto every backend request (shared by the
- * native bootstrap and the web shell — was duplicated in both). */
+/** Shared by the native bootstrap and the web shell. */
 export const updateQueryHeaders = (): void => {
     const deviceInfo = getProvider().deviceInfo
     const headers = new Map<string, string>()

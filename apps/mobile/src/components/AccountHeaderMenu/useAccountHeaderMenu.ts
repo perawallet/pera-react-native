@@ -13,58 +13,55 @@
 import { useCallback, useMemo } from 'react'
 import type { PWDropdownItem } from '@components/core'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { useSwitchNetwork } from '@perawallet/wallet-core-device'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
-import { routeCapabilities } from '@routes/capabilities'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
+import { routeCapabilities } from '@routes/capabilities'
+import { lockWallet } from './lockWallet'
+
+export type UseAccountHeaderMenuOptions = {
+    showChartToggle?: boolean
+}
 
 export type UseAccountHeaderMenuResult = {
     items: PWDropdownItem[]
 }
 
-export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
+export const useAccountHeaderMenu = ({
+    showChartToggle = true,
+}: UseAccountHeaderMenuOptions = {}): UseAccountHeaderMenuResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { getPreference, setPreference } = usePreferences()
     const { privacyMode, setPrivacyMode } = useSettings()
-    const { isMainnet } = useNetwork()
-    const { switchNetwork } = useSwitchNetwork()
+    const mode = useNetworkStore(state => state.mode)
+    const setMode = useNetworkStore(state => state.setMode)
+    const isDeveloperMode = mode === 'developer'
+    const canSearch = useCapability({ anyChain: 'assetSearch' })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
     // The preference alone isn't enough: it persists across upgrades, and
     // store builds that used to expose developer settings may have it on.
-    const isDeveloperMenuEnabled =
+    const isDebugToolsEnabled =
         routeCapabilities.developerSettings &&
-        !!getPreference(UserPreferences.developerMenuEnabled)
+        !!getPreference(UserPreferences.debugToolsEnabled)
 
-    const handleNetworkSwitch = useCallback(async () => {
-        const target = isMainnet ? Networks.testnet : Networks.mainnet
-        // Offline-safe local write; registration is deferred (see
-        // useSwitchNetwork). No failure to toast about.
-        await switchNetwork(target)
+    const handleModeToggle = useCallback(() => {
+        setMode(isDeveloperMode ? 'live' : 'developer')
         try {
-            // Invalidation is owned by RootComponent's network effect —
+            // Invalidation is owned by RootComponent's network effect;
             // calling it here too would double-refetch every mounted query.
             getSyncService().restart()
         } catch {
             // SyncService not yet initialized
         }
-    }, [isMainnet, switchNetwork])
+    }, [isDeveloperMode, setMode])
 
     const items = useMemo<PWDropdownItem[]>(() => {
         const baseItems: PWDropdownItem[] = [
-            {
-                label: chartVisible
-                    ? t('portfolio.hide_chart')
-                    : t('portfolio.show_chart'),
-                icon: chartVisible ? 'text-document' : 'chart',
-                onPress: () =>
-                    setPreference(UserPreferences.chartVisible, !chartVisible),
-            },
             {
                 label: privacyMode
                     ? t('common.exit_stealth_mode')
@@ -72,23 +69,52 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
                 icon: 'eye',
                 onPress: () => setPrivacyMode(!privacyMode),
             },
-            {
+        ]
+
+        if (canSearch) {
+            baseItems.push({
                 label: t('search.title'),
                 icon: 'magnifying-glass',
                 onPress: () =>
                     navigation.navigate('Search', { screen: 'SearchScreen' }),
-            },
-        ]
-
-        if (isDeveloperMenuEnabled) {
-            baseItems.push({
-                label: isMainnet
-                    ? t('settings.developer.node_settings.enable_testnet')
-                    : t('settings.developer.node_settings.enable_mainnet'),
-                icon: 'globe',
-                onPress: () => void handleNetworkSwitch(),
             })
+        }
 
+        if (showChartToggle) {
+            baseItems.unshift({
+                label: chartVisible
+                    ? t('portfolio.hide_chart')
+                    : t('portfolio.show_chart'),
+                icon: chartVisible ? 'text-document' : 'chart',
+                onPress: () =>
+                    setPreference(UserPreferences.chartVisible, !chartVisible),
+            })
+        }
+
+        if (lockWallet) {
+            baseItems.push({
+                label: t('vault.security.lock_now'),
+                icon: 'locked',
+                // VaultGate observes the lock and takes over the screen.
+                onPress: () => void lockWallet?.(),
+            })
+        }
+
+        if (isDebugToolsEnabled) {
+            baseItems.push({
+                label: isDeveloperMode
+                    ? t(
+                          'settings.developer.node_settings.disable_developer_mode',
+                      )
+                    : t(
+                          'settings.developer.node_settings.enable_developer_mode',
+                      ),
+                icon: 'globe',
+                onPress: handleModeToggle,
+            })
+        }
+
+        if (isDebugToolsEnabled && routeCapabilities.developerGallery) {
             baseItems.push({
                 label: 'Screen Gallery',
                 icon: 'grid-view',
@@ -102,15 +128,17 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
 
         return baseItems
     }, [
+        showChartToggle,
+        canSearch,
         chartVisible,
         privacyMode,
         t,
         setPreference,
         setPrivacyMode,
         navigation,
-        isDeveloperMenuEnabled,
-        isMainnet,
-        handleNetworkSwitch,
+        isDebugToolsEnabled,
+        isDeveloperMode,
+        handleModeToggle,
     ])
 
     return { items }

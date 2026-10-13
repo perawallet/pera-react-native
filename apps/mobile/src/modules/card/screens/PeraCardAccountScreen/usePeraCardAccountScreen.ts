@@ -13,23 +13,33 @@
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
-import type { AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { AccountDisplayCard } from '@components/AccountDisplay'
+import {
+    useAccountDrawerPickerKind,
+    useCardPicker,
+    type AccountDrawerPickerProps,
+} from '@modules/accounts'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { useCardComingSoonToast } from '../../hooks'
+import { useModalState } from '@hooks/useModalState'
+import { useCardScope } from '../../hooks/useCardScope'
+import { useCardSessionGuard } from '../../hooks/useCardSessionGuard'
+import { findCardAccount } from '../../utils/cardAccountAddress'
 
 type UsePeraCardAccountScreenResult = {
     /** Pera Card identity rendered in the shared AccountSelection trigger. */
     cardDisplay: AccountDisplayCard
-    onSelectAccount: () => void
-    onMore: () => void
+    /** List shape and post-selection navigation for the account switcher. */
+    accountPicker: AccountDrawerPickerProps
+    isScannerVisible: boolean
     onScan: () => void
-    onInbox: () => void
+    onScannerClose: () => void
 }
 
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
+    const scope = useCardScope()
     const { t } = useLanguage()
-    const navigation = useAppNavigation()
     const accounts = useAllAccounts()
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
@@ -40,38 +50,54 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     // regardless of which tab is mounted or whether tabs become lazy. The
     // details tab mounts its own instance for display; the shared mutation
     // key keeps the two coordinated.
-    useCardIssuance()
+    useCardIssuance(scope)
+    useCardSessionGuard()
 
+    const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const cardDisplay = useMemo<AccountDisplayCard>(() => {
-        const account = connectedAddress
-            ? accounts.find(item => item.address === connectedAddress)
-            : undefined
+        const account = findCardAccount(
+            accounts,
+            connectedAddress,
+            LEGACY_CHAIN_ID,
+        )
+        // "Linked" is the on-chain binding (escrow card), not the locally
+        // selected funding account: without the card nothing is linked yet.
+        if (escrowCardAddress === null) {
+            return {
+                title: t('peraCard.account.navigation_title'),
+                subtitle: t('peraCard.account.setup_incomplete'),
+            }
+        }
         return {
             title: t('peraCard.account.navigation_title'),
             subtitle: account?.name
                 ? t('peraCard.account.linked_to', { name: account.name })
                 : t('peraCard.account.linked_to_fallback'),
         }
-    }, [accounts, connectedAddress, t])
+    }, [accounts, connectedAddress, escrowCardAddress, t])
 
-    // Picking a wallet account from the switcher returns to the wallet home.
-    // Names AccountDetails explicitly: a bare 'Home' resolves to this screen,
-    // since the card home lives in that stack too.
-    const onSelectAccount = useCallback(() => {
-        navigation.navigate('TabBar', {
-            screen: 'Home',
-            params: { screen: 'AccountDetails' },
-        })
-    }, [navigation])
+    // The switcher here is the shared drawer, which reads its behaviour from the
+    // published kind rather than from props on the trigger. Publishing is what
+    // makes selection navigate; the same shape is handed to the trigger for the
+    // bottom-sheet fallback used where no drawer wraps the screen.
+    const accountPicker = useCardPicker()
+    useAccountDrawerPickerKind('card')
 
-    // TODO(card): wire the more/scan/inbox actions once their destinations exist.
-    const showComingSoon = useCardComingSoonToast()
+    const {
+        isOpen: isScannerVisible,
+        open: openScanner,
+        close: onScannerClose,
+    } = useModalState()
+    const onScan = useCallback(() => {
+        trackEvent(HomeEvent.QrScan)
+        openScanner()
+    }, [openScanner])
 
     return {
         cardDisplay,
-        onSelectAccount,
-        onMore: showComingSoon,
-        onScan: showComingSoon,
-        onInbox: showComingSoon,
+        accountPicker,
+        isScannerVisible,
+        onScan,
+        onScannerClose,
     }
 }

@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { PWSheetLayout, PWText, PWView } from '@components/core'
+import {
+    PWLoadingIndicator,
+    PWSheetLayout,
+    PWText,
+    PWView,
+} from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -43,7 +47,7 @@ export const CardAccountDetailsSheet = () => {
             }
         >
             {isLoading ? (
-                <ActivityIndicator />
+                <PWLoadingIndicator />
             ) : (
                 <PWView style={styles.rows}>
                     {details.map(detail => (

@@ -11,8 +11,7 @@
  */
 
 import { isHTTPError } from 'ky'
-import { getValidIntegrityToken } from '@perawallet/wallet-core-app-integrity'
-import { config } from '@perawallet/wallet-core-config'
+import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import type {
     CardTransport,
@@ -20,7 +19,6 @@ import type {
     CardTransportResponse,
 } from './types'
 import { baanxDirectRequest } from './baanx-client'
-import { escrowRequest } from './escrow-client'
 
 /**
  * Refreshes the session and returns whether a usable token is now available.
@@ -35,27 +33,19 @@ export const setRefreshHandler = (handler: RefreshHandler | null): void => {
     refreshHandler = handler
 }
 
+/** Drops the stored session once a freshly refreshed token is still rejected. */
+type SessionLostHandler = () => Promise<void>
+
+let sessionLostHandler: SessionLostHandler | null = null
+
+export const setSessionLostHandler = (
+    handler: SessionLostHandler | null,
+): void => {
+    sessionLostHandler = handler
+}
+
 const isUnauthorized = (error: unknown): boolean =>
     isHTTPError(error) && error.response?.status === 401
-
-/**
- * The Pera-backend `/api/v3/baanx/*` routes sit behind the app-integrity
- * guard, so every proxy call carries the device attestation token when a
- * non-expired one is available. On non-production builds (simulators can't
- * attest) the backend's env-gated staging/dev bypass header is sent as a
- * fallback — production backends ignore it, and production builds never send
- * it.
- */
-const integrityHeaders = (): Record<string, string> => {
-    const integrityToken = getValidIntegrityToken()
-    if (integrityToken) {
-        return { 'x-app-integrity-token': integrityToken }
-    }
-    if (config.appEnvironment !== 'production') {
-        return { 'x-bypass-integrity': 'DEVELOPMENT_AND_STAGING_ONLY' }
-    }
-    return {}
-}
 
 const proxyRequest = <TData, TVars>(
     req: CardTransportRequest<TVars>,
@@ -68,8 +58,10 @@ const proxyRequest = <TData, TVars>(
         params: req.params,
         data: req.data,
         signal: req.signal,
-        headers: { ...integrityHeaders(), ...req.headers },
+        // Every `/api/v3/baanx/*` route sits behind the app-integrity guard.
+        headers: { ...buildIntegrityHeaders(), ...req.headers },
         responseType: req.responseType,
+        ...(req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : {}),
     })
 
 const dispatch = <TData, TVars>(
@@ -78,9 +70,6 @@ const dispatch = <TData, TVars>(
     switch (req.route) {
         case 'proxy': {
             return proxyRequest<TData, TVars>(req)
-        }
-        case 'escrow': {
-            return escrowRequest<TData, TVars>(req)
         }
         default: {
             return baanxDirectRequest<TData, TVars>(req)
@@ -101,8 +90,8 @@ export const defaultTransport: CardTransport = {
             // Pre-auth calls (login, OTP) and the refresh exchange itself run
             // without the Bearer — intercepting those would be useless at
             // best and, for the refresh call, infinitely recursive. The proxy
-            // (secret-key) and escrow (static-token) routes never carry a
-            // refreshable Bearer either, so they never set the flag.
+            // route carries a server-side secret key, not a refreshable
+            // Bearer, so it never sets the flag either.
             if (
                 req.authenticated === true &&
                 isUnauthorized(error) &&
@@ -110,7 +99,17 @@ export const defaultTransport: CardTransport = {
             ) {
                 const refreshed = await refreshHandler()
                 if (refreshed) {
-                    return await dispatch<TData, TVars>(req)
+                    try {
+                        return await dispatch<TData, TVars>(req)
+                    } catch (retryError) {
+                        // The refresh "succeeded" yet Baanx still rejects the
+                        // token: keeping it would leave every screen stuck on
+                        // 401s, so drop it and let the UI route to sign-in.
+                        if (isUnauthorized(retryError)) {
+                            await sessionLostHandler?.()
+                        }
+                        throw retryError
+                    }
                 }
             }
             throw error

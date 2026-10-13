@@ -17,6 +17,8 @@ import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
 import { useNavigation } from '@react-navigation/native'
 import { trackEvent } from '@analytics'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const mockNavigate = vi.fn()
 
@@ -54,6 +56,7 @@ const mockStatus = ({
 describe('useNotificationsIcon', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
         vi.mocked(useNavigation).mockReturnValue({
             navigate: mockNavigate,
         } as unknown as ReturnType<typeof useNavigation>)
@@ -61,6 +64,22 @@ describe('useNotificationsIcon', () => {
         vi.mocked(useSpotBannersQuery).mockReturnValue({
             spotBanners: [],
         } as unknown as ReturnType<typeof useSpotBannersQuery>)
+    })
+
+    it('offers the inbox while any of notifications, asset inbox or multisig is on', () => {
+        const { result } = renderHook(() => useNotificationsIcon())
+
+        act(() => setCapabilityOverrides({ notifications: false }))
+        expect(result.current.canOpenMessages).toBe(true)
+
+        act(() =>
+            setCapabilityOverrides({
+                notifications: false,
+                assetInbox: false,
+                multisig: false,
+            }),
+        )
+        expect(result.current.canOpenMessages).toBe(false)
     })
 
     it('shows the count badge when there are unread inbox items', () => {

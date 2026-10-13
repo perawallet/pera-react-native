@@ -59,12 +59,13 @@ const mocks = vi.hoisted(() => {
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
         getDatabase: vi.fn(() => ({})),
-        seedAlgoAsset: vi.fn(),
+        seedNativeAssets: vi.fn(),
         initializeSyncService: vi.fn(),
         setOnConfirmedHandler: vi.fn(),
         createAsyncStoragePersister: vi.fn(() => ({ persistClient: vi.fn() })),
         runPasskeyAutofillBootstrap: vi.fn(),
         loggerError: vi.fn(),
+        loggerWarn: vi.fn(),
         configOverrides: {} as Record<string, string | boolean | number>,
         settingsState: { language: 'system' as string },
         settingsHasHydrated: vi.fn(() => true),
@@ -78,6 +79,8 @@ const mocks = vi.hoisted(() => {
             (_fn: (state: unknown) => void) => () => {},
         ),
         applyLaunchAccountPreference: vi.fn(),
+        hydrateAccountChainStates: vi.fn(),
+        backfillAccountRecords: vi.fn(),
     }
 })
 
@@ -94,10 +97,11 @@ vi.mock('@perawallet/wallet-core-database', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    seedAlgoAsset: mocks.seedAlgoAsset,
+    seedNativeAssets: mocks.seedNativeAssets,
 }))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
+    createSyncStorePorts: vi.fn(() => ({})),
     initializeSyncService: mocks.initializeSyncService,
 }))
 
@@ -105,9 +109,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     setOnConfirmedHandler: mocks.setOnConfirmedHandler,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    algorandSafeQuerySerialize: (value: unknown) => value,
-    algorandSafeQueryParse: (value: unknown) => value,
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     derivePQKeygenSeed: (entropy: Uint8Array) => entropy,
 }))
 
@@ -147,6 +149,8 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    backfillAccountRecords: () => mocks.backfillAccountRecords(),
+    hydrateAccountChainStates: () => mocks.hydrateAccountChainStates(),
     useAccountsStore: {
         getState: () => ({
             applyLaunchAccountPreference: mocks.applyLaunchAccountPreference,
@@ -159,7 +163,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('./i18n', () => ({
-    default: {
+    i18n: {
         get language() {
             return mocks.i18nLanguage
         },
@@ -167,7 +171,7 @@ vi.mock('./i18n', () => ({
     },
 }))
 vi.mock('../i18n', () => ({
-    default: {
+    i18n: {
         get language() {
             return mocks.i18nLanguage
         },
@@ -195,14 +199,20 @@ vi.mock('@perawallet/wallet-core-remote-config', async () => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         error: mocks.loggerError,
-        warn: vi.fn(),
+        warn: mocks.loggerWarn,
         debug: vi.fn(),
         info: vi.fn(),
     },
     updateBackendHeaders: vi.fn(),
+    stringifyTypedJson: (value: unknown) => value,
+    parseTypedJson: (value: unknown) => value,
 }))
 
 describe('useAppBootstrap', () => {
@@ -215,10 +225,12 @@ describe('useAppBootstrap', () => {
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.runKeystoreMaintenance.mockResolvedValue({
             repair: { repaired: 0, failed: 0 },
+            passkeySplit: { split: [], normalized: [], failed: [] },
             failedDecodeIds: [],
         })
         mocks.initializeDatabase.mockResolvedValue(undefined)
-        mocks.seedAlgoAsset.mockResolvedValue(undefined)
+        mocks.seedNativeAssets.mockResolvedValue(undefined)
+        mocks.hydrateAccountChainStates.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)
         mocks.configOverrides = {}
         mocks.settingsState.language = 'system'
@@ -249,6 +261,29 @@ describe('useAppBootstrap', () => {
         expect(result.current.initError).toBeNull()
         expect(result.current.persister).toBeDefined()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.backfillAccountRecords).toHaveBeenCalledTimes(1)
+    })
+
+    it('stays unbootstrapped until the chain-state slice has hydrated', async () => {
+        let finishHydration: () => void = () => {}
+        mocks.hydrateAccountChainStates.mockReturnValue(
+            new Promise<void>(resolve => {
+                finishHydration = resolve
+            }),
+        )
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+        expect(result.current.bootstrapped).toBe(false)
+
+        await act(async () => {
+            finishHydration()
+            await vi.runAllTimersAsync()
+        })
+        expect(result.current.bootstrapped).toBe(true)
     })
 
     // rAF does not fire while the app produces no frames, so a cold start that
@@ -354,6 +389,7 @@ describe('useAppBootstrap', () => {
     it('logs undecodable reconcile records as a non-fatal and still bootstraps', async () => {
         mocks.runKeystoreMaintenance.mockResolvedValue({
             repair: { repaired: 0, failed: 0 },
+            passkeySplit: { split: [], normalized: [], failed: [] },
             failedDecodeIds: ['k/bad', 'k/worse'],
         })
         vi.useFakeTimers()
@@ -596,5 +632,23 @@ describe('useAppBootstrap', () => {
 
         expect(result.current.bootstrapped).toBe(true)
         expect(result.current.initError).toBeNull()
+    })
+
+    it('logs passkey credentials the split left flat', async () => {
+        mocks.runKeystoreMaintenance.mockResolvedValue({
+            repair: { repaired: 0, failed: 0 },
+            passkeySplit: { split: [], normalized: [], failed: ['cred-1'] },
+            failedDecodeIds: [],
+        })
+        vi.useFakeTimers()
+        renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.loggerWarn).toHaveBeenCalledWith(
+            'Passkey credentials left flat: cred-1',
+        )
     })
 })

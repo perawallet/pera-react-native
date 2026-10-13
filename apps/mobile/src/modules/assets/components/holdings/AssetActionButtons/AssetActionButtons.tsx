@@ -16,25 +16,28 @@ import { RoundButton } from '@components/RoundButton'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    isAlgoAssetId,
-    ALGO_ASSET_ID,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
-import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
+import { useSendFunds } from '@modules/transactions'
+import {
+    SendFundsContent,
+    SEND_FUNDS_SHEET_ID,
+    ReceiveFundsContent,
+} from '@modules/transactions/routes'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useSelectedAccount,
     useCanSignWith,
+    HoldingRestrictions,
     type AssetWithAccountBalance,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
+import { useAssetActionButtons } from './useAssetActionButtons'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -52,11 +55,14 @@ export const AssetActionButtons = ({
     const { t } = useLanguage()
     const account = useSelectedAccount()
     const { request: requestBottomSheet } = useBottomSheet()
-    const isReadOnly = !useCanSignWith(account)
+    const isReadOnly = !useCanSignWith(account, LEGACY_CHAIN_ID)
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
-    const isFrozen = assetHolding?.isFrozen ?? false
+    const isFrozen =
+        assetHolding?.restriction === HoldingRestrictions.transferBlocked
+    const nativeAsset = useNativeAsset()
+    const { canSwap, canBuy } = useAssetActionButtons()
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -75,7 +81,7 @@ export const AssetActionButtons = ({
     }
 
     const handleSwap = useCallback(() => {
-        const isAlgo = isAlgoAssetId(asset.assetId)
+        const isAlgo = asset.assetId === nativeAsset.assetId
         if (isAlgo) {
             trackEvent(AssetDetailsEvent.SwapAlgo)
         }
@@ -83,9 +89,9 @@ export const AssetActionButtons = ({
             screen: 'Swap',
             params: isAlgo
                 ? undefined
-                : { assetInId: ALGO_ASSET_ID, assetOutId: asset.assetId },
+                : { assetInId: nativeAsset.assetId, assetOutId: asset.assetId },
         })
-    }, [asset.assetId, navigation])
+    }, [asset.assetId, nativeAsset.assetId, navigation])
 
     const handleSend = useCallback(() => {
         trackEvent(AssetDetailsEvent.Send)
@@ -95,6 +101,7 @@ export const AssetActionButtons = ({
         }
 
         void requestBottomSheet({
+            id: SEND_FUNDS_SHEET_ID,
             contents: <SendFundsContent assetId={asset.assetId} />,
             options: {
                 size: 'modal',
@@ -112,8 +119,11 @@ export const AssetActionButtons = ({
     ])
 
     const handleCopyAddress = useCallback(() => {
-        if (account) {
-            void copyToClipboard(account.address)
+        const address = account
+            ? chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+            : undefined
+        if (address) {
+            void copyToClipboard(address)
             showToast({
                 title: t('account_options.copy_address'),
                 body: '',
@@ -149,24 +159,28 @@ export const AssetActionButtons = ({
 
     return (
         <PWView style={styles.container}>
-            <RoundButton
-                title={t('asset_details.action_buttons.swap')}
-                icon='swap'
-                variant='primary'
-                onPress={handleSwap}
-                disabled={isFrozen}
-                badgeIcon={isFrozen ? 'snowflake' : undefined}
-                style={styles.buttonFour}
-                testID='asset_detail_swap_button'
-            />
-            <RoundButton
-                title={t('asset_details.action_buttons.buy')}
-                icon='dollar'
-                variant='secondary'
-                onPress={() => goToRootPage('Fund')}
-                style={styles.buttonFour}
-                testID='asset_detail_buy_button'
-            />
+            {canSwap && (
+                <RoundButton
+                    title={t('asset_details.action_buttons.swap')}
+                    icon='swap'
+                    variant='primary'
+                    onPress={handleSwap}
+                    disabled={isFrozen}
+                    badgeIcon={isFrozen ? 'snowflake' : undefined}
+                    style={styles.buttonFour}
+                    testID='asset_detail_swap_button'
+                />
+            )}
+            {canBuy && (
+                <RoundButton
+                    title={t('asset_details.action_buttons.buy')}
+                    icon='dollar'
+                    variant='secondary'
+                    onPress={() => goToRootPage('Fund')}
+                    style={styles.buttonFour}
+                    testID='asset_detail_buy_button'
+                />
+            )}
             <RoundButton
                 title={t('asset_details.action_buttons.send')}
                 icon='outflow'

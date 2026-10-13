@@ -11,7 +11,11 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { formatNumber } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    displayUnitsToBaseUnits,
+    formatNumber,
+} from '@perawallet/wallet-core-shared'
 
 import { type MinimalAsset, type PeraAsset, PeraAssetType } from './models'
 
@@ -20,7 +24,7 @@ export const toWholeUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
 ): Decimal => {
-    return new Decimal(value.toString()).div(Decimal.pow(10, asset.decimals))
+    return baseUnitsToDisplayUnits(value, asset.decimals)
 }
 
 /** Display units -> base units. Asset-aware wrapper over `displayUnitsToBaseUnits`. */
@@ -28,7 +32,7 @@ export const toDecimalUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
 ): Decimal => {
-    return new Decimal(value.toString()).mul(Decimal.pow(10, asset.decimals))
+    return displayUnitsToBaseUnits(value, asset.decimals)
 }
 
 /** Pure (non-fractional) NFT per ARC-3: 1 total supply, 0 decimals. */
@@ -79,9 +83,7 @@ export const formatAssetAmount = (
     asset: Pick<MinimalAsset, 'decimals' | 'unitName'>,
 ): string => {
     const decimals = asset.decimals ?? 0
-    const display = new Decimal(amount.toString()).div(
-        Decimal.pow(10, decimals),
-    )
+    const display = baseUnitsToDisplayUnits(amount, decimals)
     const { sign, integer, fraction } = formatNumber(
         display,
         decimals,

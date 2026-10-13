@@ -12,20 +12,25 @@
 
 import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { fetchProviders } from '../api'
 import { swapQueryKeys } from './querykeys'
 
 type UsePrefetchProvidersResult = () => void
 
-export const usePrefetchProviders = (): UsePrefetchProvidersResult => {
+export const usePrefetchProviders = (
+    scope: ChainScope,
+): UsePrefetchProvidersResult => {
     const queryClient = useQueryClient()
-    const { network } = useNetwork()
+    const network = legacyNetworkOf(scope)
 
     return useCallback(() => {
         void queryClient.prefetchQuery({
-            queryKey: swapQueryKeys.providers(network),
+            queryKey: swapQueryKeys.providers(scope),
             queryFn: () => fetchProviders(network),
         })
-    }, [queryClient, network])
+    }, [queryClient, scope, network])
 }

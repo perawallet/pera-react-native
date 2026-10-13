@@ -10,53 +10,42 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     discoverAccounts,
-    discoverRekeyedAccounts,
-    fetchRekeyedAddresses,
-    type GetPublicKey,
+    discoverDelegatedAccounts,
 } from '../account-discovery'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import type { GetPublicKey } from '../chain-adapter'
+import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
+import { addressOn, authorityOf, hdIndexOf, signingKeyOn } from '../credentials'
+import type { WalletAccount } from '../models'
 
-vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
-    BIP32DerivationType: { Peikert: 0 },
-    KeyContext: { Address: 0 },
-    XHDWalletAPI: class {},
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: vi.fn(
-        (bytes: Uint8Array) => `ADDRESS_${bytes[0]}_${bytes[1]}`,
-    ),
-    getAlgorandClient: vi.fn(),
-    useNetworkStore: {
-        getState: vi.fn(() => ({ network: 'testnet' })),
-    },
-}))
-
-const mockFetchAccountFastLookup = vi.fn()
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
         generateOrderedUniqueId: vi.fn(() => Math.random().toString(36)),
-        fetchAccountFastLookup: (...args: unknown[]) =>
-            mockFetchAccountFastLookup(...args),
     }
 })
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    hdDerivedKeyId: (
-        seedKeyId: string,
-        account: number,
-        keyIndex: number,
-        derivationType: number,
-    ) => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`,
-}))
+// The chain's activity probe takes the addresses and answers per address; the
+// fast-lookup shape these specs were written against maps straight onto it.
+const mockFetchAccountFastLookup = vi.fn()
+
+const installFakeChain = () => {
+    const { adapter, codec } = fakeAccountsChain()
+    vi.mocked(codec.fromPublicKey).mockImplementation(
+        (bytes: Uint8Array) => `ADDRESS_${bytes[0]}_${bytes[1]}`,
+    )
+    vi.mocked(adapter.checkActivity).mockImplementation(async addresses => {
+        const results: { address: string; accountExists: boolean }[] =
+            await mockFetchAccountFastLookup(addresses)
+        return new Map(results.map(r => [r.address, r.accountExists]))
+    })
+}
+
+const addressOf = (account: WalletAccount) => addressOn(account, TESTNET_SCOPE)
 
 const createMockGetPublicKey = (): GetPublicKey =>
     vi.fn(
@@ -65,10 +54,9 @@ const createMockGetPublicKey = (): GetPublicKey =>
     )
 
 describe('discoverAccounts', () => {
-    const derivationType = BIP32DerivationType.Peikert
-
     beforeEach(() => {
         vi.clearAllMocks()
+        installFakeChain()
     })
 
     const createMockFastLookupResponse = (
@@ -90,20 +78,20 @@ describe('discoverAccounts', () => {
         )
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 2,
             accountGapLimit: 1,
         })
 
         expect(accounts).toHaveLength(2)
-        expect(accounts[0].address).toBe('ADDRESS_0_0')
-        expect(accounts[0].hdWalletDetails.account).toBe(0)
-        expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
-        expect(accounts[1].address).toBe('ADDRESS_0_2')
-        expect(accounts[1].hdWalletDetails.account).toBe(0)
-        expect(accounts[1].hdWalletDetails.keyIndex).toBe(2)
+        expect(addressOf(accounts[0])).toBe('ADDRESS_0_0')
+        expect(hdIndexOf(accounts[0])?.account).toBe(0)
+        expect(hdIndexOf(accounts[0])?.keyIndex).toBe(0)
+        expect(addressOf(accounts[1])).toBe('ADDRESS_0_2')
+        expect(hdIndexOf(accounts[1])?.account).toBe(0)
+        expect(hdIndexOf(accounts[1])?.keyIndex).toBe(2)
     })
 
     it('should sort accounts by account index first, then by key index', async () => {
@@ -116,19 +104,19 @@ describe('discoverAccounts', () => {
         ])
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             keyIndexGapLimit: 5,
             accountGapLimit: 5,
         })
 
         expect(accounts).toHaveLength(5)
-        expect(accounts[0].address).toBe('ADDRESS_0_0')
-        expect(accounts[1].address).toBe('ADDRESS_0_1')
-        expect(accounts[2].address).toBe('ADDRESS_0_2')
-        expect(accounts[3].address).toBe('ADDRESS_1_0')
-        expect(accounts[4].address).toBe('ADDRESS_1_1')
+        expect(addressOf(accounts[0])).toBe('ADDRESS_0_0')
+        expect(addressOf(accounts[1])).toBe('ADDRESS_0_1')
+        expect(addressOf(accounts[2])).toBe('ADDRESS_0_2')
+        expect(addressOf(accounts[3])).toBe('ADDRESS_1_0')
+        expect(addressOf(accounts[4])).toBe('ADDRESS_1_1')
     })
 
     it('should stop after account gap limit', async () => {
@@ -144,8 +132,8 @@ describe('discoverAccounts', () => {
         })
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,
@@ -160,17 +148,49 @@ describe('discoverAccounts', () => {
         ])
 
         const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
             keyIndexGapLimit: 2,
         })
 
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe('ADDRESS_0_0')
-        expect(accounts[0].hdWalletDetails.account).toBe(0)
-        expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
+        expect(addressOf(accounts[0])).toBe('ADDRESS_0_0')
+        expect(hdIndexOf(accounts[0])?.account).toBe(0)
+        expect(hdIndexOf(accounts[0])?.keyIndex).toBe(0)
+    })
+
+    it('stamps discovered accounts with an HD custody and their chain entry', async () => {
+        mockFetchAccountFastLookup.mockResolvedValue([
+            { address: 'ADDRESS_0_0', accountExists: false },
+        ])
+
+        const [account] = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+            accountGapLimit: 2,
+            keyIndexGapLimit: 2,
+        })
+
+        expect(account.custody).toEqual({
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        })
+        expect(account.chains).toEqual({
+            algorand: {
+                address: 'ADDRESS_0_0',
+                keyPairId: 'test-wallet-acc0-idx0-dt9',
+            },
+        })
+        expect(signingKeyOn(account, 'algorand')).toBe(
+            fakeAccountsChain().adapter.hdKeyPairId('test-wallet', {
+                account: 0,
+                keyIndex: 0,
+            }),
+        )
     })
 
     it('should use batch API for account activity checks', async () => {
@@ -184,141 +204,46 @@ describe('discoverAccounts', () => {
         })
 
         await discoverAccounts({
+            scope: TESTNET_SCOPE,
             getPublicKey: createMockGetPublicKey(),
-            derivationType,
             walletKeyId: 'test-wallet',
             accountGapLimit: 2,
             keyIndexGapLimit: 3,
         })
 
-        expect(mockFetchAccountFastLookup).toHaveBeenCalled()
+        expect(fakeAccountsChain().adapter.checkActivity).toHaveBeenCalledWith(
+            expect.any(Array),
+            TESTNET_SCOPE,
+        )
         const calls = mockFetchAccountFastLookup.mock.calls
         expect(calls.length).toBeGreaterThan(0)
     })
 })
 
-describe('discoverRekeyedAccounts', () => {
-    // algosdk v9: `indexer.searchAccounts().authAddr(a).nextToken(t).do()`.
-    // The factory returns a builder that records the chained `authAddr`/
-    // `nextToken` args (so the per-auth-addr and pagination assertions keep
-    // working) and delegates `.do()` to the supplied data fn. `calls` mirrors
-    // the old `searchForAccounts` call log: one entry per `.do()`, carrying the
-    // builder's `authAddr`/`next` so existing call-arg assertions translate.
-    type SearchDataFn = (params: {
-        authAddr?: string
-        next?: string
-    }) => Promise<{ accounts: { address: string }[]; nextToken?: string }>
-
-    const makeSearchAccounts = (dataFn: SearchDataFn) => {
-        const searchAccounts = vi.fn(() => {
-            const chain: { authAddr?: string; next?: string } = {}
-            const builder = {
-                authAddr: (value: string) => {
-                    chain.authAddr = value
-                    return builder
-                },
-                nextToken: (value: string) => {
-                    chain.next = value
-                    return builder
-                },
-                do: () => {
-                    searchAccounts.calls.push({ ...chain })
-                    return dataFn(chain)
-                },
-            }
-            return builder
-        }) as ReturnType<typeof vi.fn> & {
-            calls: { authAddr?: string; next?: string }[]
-        }
-        searchAccounts.calls = []
-        return searchAccounts
-    }
-
-    const installIndexer = (searchAccounts: ReturnType<typeof vi.fn>) => {
-        vi.mocked(getAlgorandClient).mockReturnValue({
-            client: { indexer: { searchAccounts } },
-        } as any)
-    }
-
-    beforeEach(() => {
-        vi.clearAllMocks()
-        installIndexer(makeSearchAccounts(async () => ({ accounts: [] })))
-    })
-
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
-
-    it('scans every provided address and labels results with it', async () => {
-        const searchAccounts = makeSearchAccounts(async params =>
-            params.authAddr === 'EXPLICIT_ADDRESS'
-                ? { accounts: [{ address: 'REKEYED_FROM_EXPLICIT' }] }
-                : { accounts: [] },
+describe('discoverDelegatedAccounts', () => {
+    it('scans every provided address on the active network and labels results with it', async () => {
+        const fetchDelegatedAddresses = vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
         )
-        installIndexer(searchAccounts)
+        fetchDelegatedAddresses.mockImplementation(async authAddress =>
+            authAddress === 'EXPLICIT_ADDRESS' ? ['REKEYED_FROM_EXPLICIT'] : [],
+        )
 
-        const accounts = await discoverRekeyedAccounts({
+        const accounts = await discoverDelegatedAccounts({
             accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
+            scope: TESTNET_SCOPE,
         })
 
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
-        expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
-        expect(searchAccounts.calls.map(c => c.authAddr)).toEqual([
-            'EXPLICIT_ADDRESS',
-            'OTHER_ADDRESS',
+        expect(addressOf(accounts[0])).toBe('REKEYED_FROM_EXPLICIT')
+        expect(authorityOf(accounts[0], TESTNET_SCOPE)).toBe('EXPLICIT_ADDRESS')
+        expect(accounts[0].custody).toEqual({ kind: 'watch' })
+        expect(accounts[0].chains).toEqual({
+            algorand: { address: 'REKEYED_FROM_EXPLICIT' },
+        })
+        expect(fetchDelegatedAddresses.mock.calls).toEqual([
+            ['EXPLICIT_ADDRESS', TESTNET_SCOPE],
+            ['OTHER_ADDRESS', TESTNET_SCOPE],
         ])
-    })
-
-    it('follows the indexer pagination token across pages', async () => {
-        let page = 0
-        const searchAccounts = makeSearchAccounts(async () => {
-            page += 1
-            return page === 1
-                ? {
-                      accounts: [{ address: 'REKEYED_PAGE_1' }],
-                      nextToken: 'token-1',
-                  }
-                : { accounts: [{ address: 'REKEYED_PAGE_2' }] }
-        })
-        installIndexer(searchAccounts)
-
-        const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet')
-
-        expect(addresses).toEqual(['REKEYED_PAGE_1', 'REKEYED_PAGE_2'])
-        expect(searchAccounts.calls).toHaveLength(2)
-        expect(searchAccounts.calls[1]).toMatchObject({ next: 'token-1' })
-    })
-
-    it('logs a warning when the scan stops at the page cap', async () => {
-        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        let page = 0
-        // Never-ending pagination: every page returns a next token.
-        const searchAccounts = makeSearchAccounts(async () => {
-            page += 1
-            return {
-                accounts: [{ address: `REKEYED_PAGE_${page}` }],
-                nextToken: `token-${page}`,
-            }
-        })
-        installIndexer(searchAccounts)
-
-        const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet')
-
-        // MAX_REKEYED_SCAN_PAGES = 20
-        expect(addresses).toHaveLength(20)
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('page cap'),
-            expect.objectContaining({ address: 'AUTH_ADDRESS', pages: 20 }),
-        )
-    })
-
-    it('propagates indexer errors instead of returning an empty result', async () => {
-        const indexerError = new Error('indexer unreachable')
-        installIndexer(makeSearchAccounts(() => Promise.reject(indexerError)))
-
-        await expect(
-            fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet'),
-        ).rejects.toThrow('indexer unreachable')
     })
 })

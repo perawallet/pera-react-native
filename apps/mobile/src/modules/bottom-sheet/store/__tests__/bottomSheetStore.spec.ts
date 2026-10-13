@@ -72,6 +72,16 @@ describe('bottomSheetStore', () => {
         expect(useBottomSheetStore.getState().requests[0].id).toBe('my-id')
     })
 
+    it('request() ignores a duplicate id while that sheet is still open', async () => {
+        useBottomSheetStore.getState().request({ id: 'my-id', contents: 'A' })
+        const second = useBottomSheetStore
+            .getState()
+            .request({ id: 'my-id', contents: 'B' })
+        expect(useBottomSheetStore.getState().requests).toHaveLength(1)
+        expect(useBottomSheetStore.getState().requests[0].contents).toBe('A')
+        await expect(second).resolves.toBeUndefined()
+    })
+
     it('resolve(id, value) marks the request invisible without removing it', () => {
         useBottomSheetStore.getState().request({ id: 'x', contents: 'A' })
         useBottomSheetStore.getState().resolve('x', 'confirm')

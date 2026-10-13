@@ -29,14 +29,22 @@
 import React, { useEffect, useRef } from 'react'
 import { createHash } from 'crypto'
 import { expect, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    screen,
+    waitFor,
+    renderHook,
+} from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     useSigningRequest,
-    type Arc60SignRequest,
+    type AuthDataSignRequest,
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataSignResult,
     type SignRequest,
+    type PeraTransactionSignRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -45,18 +53,18 @@ import {
     type QuantumKeyResult,
 } from '@perawallet/wallet-core-kms'
 import {
-    AccountTypes,
+    buildAccount,
     useAccountsStore,
-    type QuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
-import { renderHook } from '@testing-library/react'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
+import { createTestQueryClient } from './render'
 import { renderWithNavigation } from './renderWithNavigation'
 import {
     ALGO25_TEST_ADDRESS,
@@ -67,6 +75,7 @@ import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from '../__integration__/__fixtures__/quantum'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export const REVIEW_SIGNER_ADDRESS = ALGO25_TEST_ADDRESS
 export const REVIEW_RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -101,15 +110,20 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
         })
         expect(keyResult).not.toBeNull()
     })
-    const account: WalletAccount = {
+    const account = buildAccount({
         id: 'review-signer',
-        type: AccountTypes.algo25,
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: keyResult!.seedKey.id ?? '',
         name: 'Review Signer',
-    }
+        custody: { kind: 'local', seed: null },
+        chainId: LEGACY_CHAIN_ID,
+        chains: {
+            [LEGACY_CHAIN_ID]: {
+                address: ALGO25_TEST_ADDRESS,
+                keyPairId: keyResult!.seedKey.id ?? '',
+            },
+        },
+    })
     useAccountsStore.getState().setAccounts([account])
-    useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
 }
 
@@ -123,20 +137,26 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
+            chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })
-    const account: QuantumAccount = {
+    const account = buildAccount({
         id: 'review-quantum-signer',
-        type: AccountTypes.quantum,
-        address: QUANTUM_TEST_ADDRESS,
-        keyPairId: keyResult!.signKeyId,
         name: 'Quantum Review Signer',
-    }
+        custody: { kind: 'local', seed: 'quantum' },
+        chainId: LEGACY_CHAIN_ID,
+        chains: {
+            [LEGACY_CHAIN_ID]: {
+                address: QUANTUM_TEST_ADDRESS,
+                keyPairId: keyResult!.signKeyId,
+            },
+        },
+    })
     const store = useAccountsStore.getState()
     store.setAccounts([...store.accounts, account])
-    store.setSelectedAccountAddress(account.address)
+    store.setSelectedAccountId(account.id)
     return account
 }
 
@@ -197,12 +217,13 @@ export const buildTransactionSignRequest = ({
 }: {
     txs?: Transaction[]
     sourceType?: TransactionSignRequest['sourceType']
-    overrides?: Partial<TransactionSignRequest>
+    overrides?: Partial<PeraTransactionSignRequest>
 } = {}): BuiltRequest<TransactionSignRequest> => {
     const spies = makeCallbackSpies()
-    const request: TransactionSignRequest = {
+    const request: PeraTransactionSignRequest = {
         id: `review-tx-${Math.round(Math.random() * 1e9)}`,
         type: 'transactions',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         txs: txs ?? [buildPaymentTransaction()],
@@ -230,6 +251,7 @@ export const buildArbitraryDataSignRequest = ({
     const request: ArbitraryDataSignRequest = {
         id: `review-data-${Math.round(Math.random() * 1e9)}`,
         type: 'arbitrary-data',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         data: (messages ?? [{ message: 'Sign me' }]).map(m => ({
@@ -267,9 +289,9 @@ export const buildArc60SignRequest = ({
     /** SIWA `account_address`; defaults to `signer` (the un-rekeyed shape). */
     accountAddress?: string
     verifiedOrigin?: string
-    sourceType?: Arc60SignRequest['sourceType']
-    overrides?: Partial<Arc60SignRequest>
-} = {}): BuiltRequest<Arc60SignRequest> => {
+    sourceType?: AuthDataSignRequest['sourceType']
+    overrides?: Partial<AuthDataSignRequest>
+} = {}): BuiltRequest<AuthDataSignRequest> => {
     const spies = makeCallbackSpies()
 
     // Keys inserted in lexicographic order so JSON.stringify yields the RFC-8785
@@ -292,22 +314,46 @@ export const buildArc60SignRequest = ({
     const authenticatorData = new Uint8Array(37)
     authenticatorData.set(rpIdHash.subarray(0, 32), 0)
 
-    const request: Arc60SignRequest = {
+    const request: AuthDataSignRequest = {
         id: `review-arc60-${Math.round(Math.random() * 1e9)}`,
-        type: 'arc60',
+        type: 'auth-data',
+        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
         verifiedOrigin,
-        stdSigData: { data, signer, domain, authenticatorData },
+        authData: { data, signer, domain, authenticatorData },
         metadata: { scope: 1, encoding: 'base64' },
         approve: spies.approve as unknown as (
             signed: PeraArbitraryDataSignResult[],
         ) => Promise<void>,
-        reject: spies.reject as unknown as Arc60SignRequest['reject'],
-        error: spies.error as unknown as Arc60SignRequest['error'],
+        reject: spies.reject as unknown as AuthDataSignRequest['reject'],
+        error: spies.error as unknown as AuthDataSignRequest['error'],
         ...overrides,
     }
     return { request, ...spies }
+}
+
+/**
+ * `renderSignReview` enqueues into a persisted store that nothing drains when a
+ * test ends, so the review a later test renders is the FIRST request still
+ * pending: an earlier test's. Call this in `beforeEach` of every spec that
+ * renders more than one review.
+ */
+export const drainPendingSignRequests = (): void => {
+    const client = createTestQueryClient()
+    const { result, unmount } = renderHook(() => useSigningRequest(), {
+        wrapper: ({ children }) => (
+            <QueryClientProvider client={client}>
+                {children}
+            </QueryClientProvider>
+        ),
+    })
+    act(() => {
+        for (const request of [...result.current.pendingSignRequests]) {
+            result.current.removeSignRequest(request)
+        }
+    })
+    unmount()
 }
 
 /**

@@ -53,6 +53,7 @@ const mockPlatformServices = {
     analytics: {
         initializeAnalytics() {},
         logEvent() {},
+        setCollectionEnabled() {},
     },
     biometrics: {
         async getSupportedBiometricType() {

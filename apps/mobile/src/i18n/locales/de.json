@@ -1,16 +1,5 @@
 {
     "dapp": {
-        "enable": {
-            "title": "Mit dieser Website verbinden",
-            "description": "Wähle die Konten aus, die du mit dieser Website teilen möchtest.",
-            "connect_button": "Verbinden",
-            "cancel_button": "Abbrechen",
-            "peer_origin_claim": "Website gibt an: {{origin}}",
-            "request_origin": "Anfrage kam von {{origin}}",
-            "requester_verified_label": "Verifizierter Tab",
-            "requester_verified_a11y_label": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab",
-            "requester_verified_a11y_origin": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab unter {{origin}}"
-        },
         "sign": {
             "error": {
                 "title": "Diese Anfrage kann nicht verarbeitet werden",
@@ -18,9 +7,7 @@
                 "dismiss": "Schließen"
             },
             "network_mismatch": "Diese Transaktion ist für ein anderes Algorand-Netzwerk als das aktive Netzwerk deines Wallets bestimmt. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
-            "unsupported_message": "Diese Website hat eine Anfrage zum Signieren einer Nachricht gesendet, die Pera nicht verarbeiten kann. Die Anfrage wurde abgelehnt.",
-            "unauthorized_signer": "Diese Website ist nicht berechtigt, eine Signatur für dieses Konto anzufordern.",
-            "no_session": "Diese Verbindung ist nicht mehr gültig. Verbinde die Website erneut und versuche es noch einmal."
+            "connection_revoked": "Diese Verbindung wurde getrennt. Verbinde dich erneut über die Website und versuche es noch einmal."
         },
         "passkey": {
             "create": {
@@ -38,7 +25,11 @@
             }
         },
         "approval": {
-            "delivery_failed": "Pera konnte deine Entscheidung nicht an die Website übermitteln. Die Erweiterung wurde in den Ruhezustand versetzt, während dieses Fenster geöffnet war. Schließe dieses Fenster und starte die Anfrage erneut über die Website."
+            "delivery_failed": "Pera konnte deine Entscheidung nicht an die Website übermitteln. Die Erweiterung wurde in den Ruhezustand versetzt, während dieses Fenster geöffnet war. Schließe dieses Fenster und starte die Anfrage erneut über die Website.",
+            "request_origin": "Anfrage kam von {{origin}}",
+            "requester_verified_label": "Verifizierter Tab: {{origin}}",
+            "requester_mismatch": "Diese Anfrage kam von {{origin}}, nicht von {{claimed}}.",
+            "requester_verified_a11y_origin": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab unter {{origin}}"
         }
     },
     "account_menu": {
@@ -160,7 +151,8 @@
             "title_generic": "Link konnte nicht geöffnet werden",
             "body_generic": "Der Link konnte nicht verarbeitet werden. Bitte versuche es erneut.",
             "title_walletconnect": "WalletConnect fehlgeschlagen",
-            "body_walletconnect": "Verbindung zur dApp konnte nicht hergestellt werden. Möglicherweise ist die Sitzung abgelaufen oder die Bridge ist nicht erreichbar.",
+            "body_walletconnect": "Verbindung zur dApp konnte nicht hergestellt werden. Möglicherweise ist die Sitzung abgelaufen oder die dApp ist nicht erreichbar.",
+            "body_walletconnect_timeout": "Keine Antwort von der dApp. Möglicherweise ist die Sitzung abgelaufen oder die dApp ist nicht erreichbar.",
             "title_wc_unsupported": "Verbindungslink nicht unterstützt",
             "body_wc_unsupported": "Dieser WalletConnect-Link kann von Pera nicht verwendet werden. Bitte stelle die Verbindung in der dApp erneut her und versuche es noch einmal.",
             "title_keyreg": "Schlüsselregistrierung konnte nicht vorbereitet werden",
@@ -367,9 +359,8 @@
         "copy_address": "Adresse kopieren",
         "shared_account_detail": "Gemeinschaftskonto-Details ({{count}})",
         "show_address": "Adresse anzeigen",
-        "view_passphrase_hd": "Passphrase des Root-Wallets anzeigen",
-        "view_passphrase_algo25": "Wallet-Passphrase anzeigen",
-        "view_passphrase_quantum": "Passphrase des Quantum-Kontos anzeigen",
+        "view_passphrase_hd": "Wiederherstellungsphrase des Root-Wallets anzeigen",
+        "view_passphrase_algo25": "Wiederherstellungsphrase anzeigen",
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
         "rekey_account": "Konto rekeyen",
@@ -379,7 +370,6 @@
         "rekey_option_standard_description": "Transaktionen werden von einem anderen Konto in deinem Wallet autorisiert.",
         "rekey_option_quantum_title": "Zu einem Quantum-Konto",
         "rekey_option_quantum_description": "Transaktionen werden von einem quantensicheren Konto in deinem Wallet autorisiert.",
-        "rekey_option_quantum_badge": "NEU",
         "export_share_account": "Konto exportieren/teilen",
         "scan_rekeyed": "Nach rekeyed Konten suchen",
         "rename_account": "Konto umbenennen",
@@ -399,7 +389,8 @@
         "notifications_muted": "Benachrichtigungen stummgeschaltet",
         "notifications_unmuted": "Benachrichtigungen aktiviert",
         "backup_warning_title": "Hast du dein Konto gesichert?",
-        "backup_warning_message": "Wenn du keine Kopie der Passphrase dieses Kontos hast und das Konto weder mit einem Ledger-Gerät gesichert noch von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_message": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast und das Konto weder mit einem Ledger-Gerät gesichert noch von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_message_with_cloud_backup": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast, das Konto weder im Cloud-Backup noch mit einem Ledger-Gerät gesichert ist und auch nicht von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
         "backup_warning_continue": "Ja, fortfahren",
         "backup_warning_cancel": "Nein, Konto behalten",
         "remove_rekey_error_title": "Konto kann nicht entfernt werden",
@@ -465,7 +456,7 @@
             "row_share": "Ich riskiere den Verlust meines gesamten Guthabens, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
             "row_lose": "Mein Guthaben ist unwiderruflich verloren, wenn ich meine Wiederherstellungsphrase verliere und den Zugriff auf mein Wallet verliere.",
             "row_pera": "Pera-Mitarbeiter werden NIEMALS nach meiner Wiederherstellungsphrase fragen.",
-            "cta_reveal": "Passphrase anzeigen",
+            "cta_reveal": "Wiederherstellungsphrase anzeigen",
             "cta_cancel": "Abbrechen"
         },
         "screen": {
@@ -480,18 +471,18 @@
     },
     "backup": {
         "banner": {
-            "text": "Du musst die Passphrase sichern",
+            "text": "Du musst die Wiederherstellungsphrase sichern",
             "cta": "Jetzt sichern"
         },
         "info": {
-            "title": "Passphrase-Backup für dein Konto erstellen",
-            "body": "Ein Passphrase-Backup ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Passphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
+            "title": "Backup der Wiederherstellungsphrase für dein Konto erstellen",
+            "body": "Ein Backup der Wiederherstellungsphrase ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Wiederherstellungsphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
             "cta": "Ich verstehe"
         },
         "write_down": {
             "title": "Bereite dich darauf vor, deine Wiederherstellungsphrase aufzuschreiben",
             "body": "Die einzige Möglichkeit, ein Algorand-Konto wiederherzustellen, ist diese Wiederherstellungsphrase.",
-            "warning": "Teile diese Passphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
+            "warning": "Teile diese Wiederherstellungsphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
             "cta": "Ich bin bereit zu beginnen"
         },
         "mnemonic": {
@@ -531,9 +522,22 @@
         "title": "QR-Code scannen",
         "camera_unavailable": "Kamera nicht verfügbar. Füge stattdessen den Code unten ein.",
         "scan_with_camera": "Kamera-Scanner in einem Tab öffnen",
+        "allow_camera": "Kamerazugriff erlauben",
+        "camera_access_title": "Kamerazugriff",
+        "camera_access_requesting": "Erlaube Pera die Nutzung deiner Kamera, wenn dein Browser danach fragt.",
+        "camera_access_granted": "Der Kamerazugriff ist aktiviert. Schließe diesen Tab und scanne erneut über die Erweiterung.",
+        "camera_access_denied": "Der Kamerazugriff ist blockiert. Erlaube Pera die Kamera in den Website-Einstellungen deines Browsers und versuche es dann erneut.",
+        "camera_access_close": "Tab schließen",
         "paste_label": "Oder QR-Inhalt einfügen",
         "paste_placeholder": "Adresse oder WalletConnect-URI einfügen",
-        "paste_submit": "Absenden"
+        "paste_submit": "Absenden",
+        "invalid_code": "Pera kann diesen QR-Code nicht verwenden. Versuche es mit einem anderen.",
+        "try_again": "Erneut versuchen"
+    },
+    "camera_tab": {
+        "account_imported_title": "Konto importiert",
+        "backup_restored_title": "Backup wiederhergestellt",
+        "body": "Du kannst diesen Tab schließen und zur Erweiterung zurückkehren."
     },
     "chart": {
         "one_day": {
@@ -549,6 +553,317 @@
             "label": "1J"
         }
     },
+    "cloud_backup": {
+        "encryption_key_label": "Verschlüsselungsschlüssel",
+        "deleted_remotely": "Das Cloud-Backup wurde auf einem anderen Gerät gelöscht",
+        "main": {
+            "title": "Cloud-Backup",
+            "subtitle": "Wähle eine Option, um fortzufahren",
+            "setup_title": "Neues Cloud-Backup einrichten",
+            "setup_description": "Schütze deine Konten und Kontakte mit sicherer Cloud-Synchronisierung. So kannst du sie mit deinen anderen Geräten synchronisieren.",
+            "restore_title": "Backup wiederherstellen/abrufen",
+            "restore_description": "Stelle deine Konten und Kontakte in einer frisch installierten App wieder her oder synchronisiere sie mit deinen anderen Geräten.",
+            "storage_note": "Backups werden vollständig verschlüsselt auf den Backup-Servern von Pera gespeichert. Einige nicht sensible Daten werden aus zusätzlichen Sicherheitsgründen außerdem in deinem iCloud-/Google-Drive-Konto gespeichert."
+        },
+        "setup": {
+            "title": "Neues Cloud-Backup einrichten",
+            "description": "Bewahre deinen 12-Wort-Schlüssel und deine Verschlüsselungsschlüssel sicher auf, um dein Backup später abrufen zu können.",
+            "passphrase_label": "Passphrase",
+            "encryption_key_label": "Verschlüsselungsschlüssel",
+            "info_title": "Für die lokale Verschlüsselung erforderlich",
+            "info_body": "Diese Zugangsdaten können nicht wiederhergestellt werden, wenn sie verloren gehen. Bewahre sie sicher auf, damit du den Zugriff auf dein Backup nicht verlierst.",
+            "checkbox_label": "Ja, ich habe meine Passphrase gespeichert",
+            "proceed": "Fortfahren"
+        },
+        "verify": {
+            "title": "Passphrase überprüfen",
+            "description": "Wähle die richtigen Wörter aus, um zu bestätigen, dass du deinen 12-Wort-Schlüssel sicher aufbewahrt hast.",
+            "proceed": "Fortfahren",
+            "error_message": "Falsche Auswahl. Bitte versuche es erneut."
+        },
+        "store_encryption_key": {
+            "title": "Verschlüsselungsschlüssel speichern",
+            "description": "Bewahre deinen Verschlüsselungsschlüssel sicher auf. Zusammen mit deiner Passphrase brauchst du ihn, um dieses Backup wiederherzustellen.",
+            "checkbox_label": "Ja, ich habe meinen Verschlüsselungsschlüssel gespeichert",
+            "enable_button": "Cloud-Backup jetzt aktivieren",
+            "leave_title": "Cloud-Backup ist noch nicht aktiv",
+            "leave_body": "Bis du es aktivierst, wird nichts gesichert, und du musst von vorn beginnen.",
+            "leave_confirm": "Trotzdem verlassen",
+            "leave_cancel": "Bleiben"
+        },
+        "enable": {
+            "success": "Cloud-Backup aktiviert",
+            "error": "Cloud-Backup konnte nicht aktiviert werden. Bitte versuche es erneut."
+        },
+        "credentials": {
+            "title": "Backup-Zugangsdaten",
+            "credential_address_label": "Zugangsdaten-Adresse",
+            "passphrase_label": "Passphrase",
+            "passphrase_missing": "Auf diesem Gerät ist keine Passphrase gespeichert.",
+            "passphrase_unreadable": "Deine gespeicherte Passphrase konnte auf diesem Gerät nicht gelesen werden.",
+            "done_button": "Bewahre deine Zugangsdaten sicher auf"
+        },
+        "store_credentials": {
+            "title": "Backup-Zugangsdaten speichern",
+            "description": "Wähle einen Ort, an dem du deinen Verschlüsselungsschlüssel sicher aufbewahrst. Private Schlüssel werden bei uns niemals gespeichert.",
+            "warning_title": "Wir speichern nur deinen Verschlüsselungsschlüssel",
+            "warning_body": "Deine 12-Wort-Passphrase musst du selbst sicher aufbewahren.",
+            "store_locally": "Lokal speichern",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "storing": "Dein Verschlüsselungsschlüssel wird gespeichert…",
+            "success": "Verschlüsselungsschlüssel gespeichert",
+            "error": "Dein Verschlüsselungsschlüssel konnte nicht gespeichert werden",
+            "no_credentials": "Cloud-Backup ist auf diesem Gerät nicht eingerichtet."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud ist nicht verfügbar",
+            "unavailable": "Melde dich bei iCloud an, aktiviere iCloud Drive und versuche es dann erneut.",
+            "not_configured": "Pera kann auf diesem Gerät nicht auf den iCloud-Speicher zugreifen. Prüfe, ob iCloud Drive für Pera aktiviert ist, oder wähle einen anderen Ort."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive ist in dieser Version der App nicht eingerichtet.",
+            "play_services": "Aktualisiere die Google Play-Dienste und versuche es dann erneut.",
+            "sign_in_failed": "Anmeldung bei Google Drive fehlgeschlagen. Versuche es erneut.",
+            "unreachable": "Google Drive ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
+        },
+        "overview": {
+            "title": "Cloud-Backup",
+            "latest_sync": "Letzte Synchronisierung",
+            "last_successful_sync": "Letzte erfolgreiche Synchronisierung: {{date}}",
+            "status_success": "ERFOLGREICH",
+            "status_failed": "FEHLGESCHLAGEN",
+            "status_syncing": "SYNCHRONISIERUNG",
+            "protected_data": "Geschützte Daten",
+            "accounts": "Konten",
+            "accounts_in_sync": "{{count}} Konten synchronisiert",
+            "accounts_in_sync_one": "{{count}} Konto synchronisiert",
+            "update_required": "Pera aktualisieren",
+            "update_required_description": "{{count}} Konten in deinem Backup wurden mit einer neueren Version von Pera gespeichert. Aktualisiere die App, um sie wiederherzustellen.",
+            "update_required_description_one": "{{count}} Konto in deinem Backup wurde mit einer neueren Version von Pera gespeichert. Aktualisiere die App, um es wiederherzustellen.",
+            "accounts_not_backed_up": "Du hast {{count}} Konten ohne Backup",
+            "accounts_not_backed_up_one": "Du hast {{count}} Konto ohne Backup",
+            "contacts": "Kontakte",
+            "contacts_in_sync": "{{count}} Kontakte synchronisiert",
+            "contacts_in_sync_one": "{{count}} Kontakt synchronisiert",
+            "contacts_not_backed_up": "Du hast {{count}} Kontakte ohne Backup",
+            "contacts_not_backed_up_one": "Du hast {{count}} Kontakt ohne Backup",
+            "passkeys": "Passkeys",
+            "passkeys_in_sync": "{{count}} Passkeys synchronisiert",
+            "passkeys_in_sync_one": "{{count}} Passkey synchronisiert",
+            "passkeys_not_backed_up": "Du hast {{count}} Passkeys ohne Backup",
+            "passkeys_not_backed_up_one": "Du hast {{count}} Passkey ohne Backup",
+            "backup_details": "Backup-Details",
+            "credential_address": "Zugangsdaten-Adresse",
+            "sync_devices": "Mit anderen Geräten synchronisieren",
+            "sync_devices_description": "Greife auf all deinen Geräten auf deine Daten zu",
+            "turn_off": "Cloud-Backup deaktivieren",
+            "turn_off_description": "Keine Daten mehr in die Cloud synchronisieren"
+        },
+        "sync_devices": {
+            "title": "Mit anderen Geräten synchronisieren",
+            "description": "Scanne diesen QR-Code mit deinem anderen Gerät und gib dann den soeben gewählten Code ein, um mit der Synchronisierung zu beginnen.",
+            "warning": "Ein Foto dieses QR-Codes lässt sich mit genug Zeit knacken. Lass niemanden ihn fotografieren und teile deinen 6-stelligen Code nicht.",
+            "error": "Auf diesem Gerät konnte kein QR-Code zur Synchronisierung erstellt werden."
+        },
+        "encryption_code": {
+            "setup_title": "Einmal-Code erstellen",
+            "confirm_title": "Code erneut eingeben",
+            "setup_description": "Dieser 6-stellige Code schützt nur diesen QR-Code und ist nicht deine Pera-PIN. Behalte ihn für dich; du gibst ihn nach dem Scannen auf dem anderen Gerät ein.",
+            "confirm_description": "Gib dieselben 6 Ziffern noch einmal ein, um sie zu bestätigen."
+        },
+        "accounts": {
+            "title": "Konten",
+            "review_title": "Zu prüfende Konten",
+            "review_action": "Prüfen",
+            "count_label": "({{count}})",
+            "asset_count": "{{count}} Assets",
+            "asset_count_one": "{{count}} Asset",
+            "not_backed_up_count": "{{count}} nicht gesichert",
+            "not_backed_up_count_one": "{{count}} nicht gesichert",
+            "available_count": "{{count}} aus dem Backup verfügbar",
+            "available_count_one": "{{count}} aus dem Backup verfügbar",
+            "device_title": "Konten",
+            "device_subtitle": "Auf diesem Gerät verfügbar",
+            "add_from_backup_title": "Aus Backup hinzufügen",
+            "add_from_backup_subtitle": "In deinem Cloud-Backup, nicht auf diesem Gerät",
+            "not_backed_up_title": "Nicht gesichert",
+            "not_backed_up_subtitle": "Auf diesem Gerät, nicht in deinem Cloud-Backup",
+            "back_up_action": "Sichern",
+            "add_action": "Hinzufügen",
+            "update_to_add": "Aktualisiere Pera, um dieses Konto hinzuzufügen",
+            "review_empty_title": "Nichts zu prüfen",
+            "review_empty_body": "Jedes Konto auf diesem Gerät ist in deinem Cloud-Backup.",
+            "back_up_success": "Konto gesichert",
+            "back_up_error": "Dieses Konto konnte nicht gesichert werden. Bitte versuche es erneut.",
+            "back_up_deferred": "Dieses Konto wird bei der nächsten Synchronisierung gesichert.",
+            "add_success": "Konto hinzugefügt",
+            "add_error": "Dieses Konto konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
+            "delete_sheet_title": "Aus dem Cloud-Backup löschen?",
+            "delete_sheet_body": "Damit wird das Backup dieses Kontos dauerhaft aus der Cloud entfernt. Du kannst es jederzeit von deinem Gerät aus erneut sichern.",
+            "delete_sheet_confirm": "Löschen",
+            "delete_sheet_cancel": "Abbrechen",
+            "keep_action": "Behalten",
+            "delete_success": "Aus dem Cloud-Backup entfernt",
+            "delete_error": "Dieses Konto konnte nicht aus dem Backup entfernt werden. Bitte versuche es erneut.",
+            "keep_error": "Dieses Konto konnte nicht von diesem Gerät entfernt werden. Bitte versuche es erneut."
+        },
+        "contacts": {
+            "title": "Kontakte",
+            "review_title": "Zu prüfende Kontakte",
+            "review_action": "Prüfen",
+            "not_backed_up_count": "{{count}} nicht gesichert",
+            "not_backed_up_count_one": "{{count}} nicht gesichert",
+            "available_count": "{{count}} aus dem Backup verfügbar",
+            "available_count_one": "{{count}} aus dem Backup verfügbar",
+            "device_title": "Kontakte",
+            "device_subtitle": "Auf diesem Gerät verfügbar",
+            "add_from_backup_title": "Aus Backup hinzufügen",
+            "add_from_backup_subtitle": "In deinem Cloud-Backup, nicht auf diesem Gerät",
+            "not_backed_up_title": "Nicht gesichert",
+            "not_backed_up_subtitle": "Auf diesem Gerät, nicht in deinem Cloud-Backup",
+            "back_up_action": "Sichern",
+            "add_action": "Hinzufügen",
+            "unnamed": "Kontakt ohne Namen",
+            "empty_title": "Noch keine Kontakte",
+            "empty_body": "Kontakte, die du auf diesem Gerät speicherst, werden durch dein Cloud-Backup geschützt.",
+            "review_empty_title": "Nichts zu prüfen",
+            "review_empty_body": "Jeder Kontakt auf diesem Gerät ist in deinem Cloud-Backup.",
+            "back_up_success": "Kontakt gesichert",
+            "back_up_error": "Dieser Kontakt konnte nicht gesichert werden. Bitte versuche es erneut.",
+            "back_up_deferred": "Dieser Kontakt wird bei der nächsten Synchronisierung gesichert.",
+            "add_success": "Kontakt hinzugefügt",
+            "add_error": "Dieser Kontakt konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
+            "delete_sheet_title": "Aus dem Cloud-Backup löschen?",
+            "delete_sheet_body": "Damit wird das Backup dieses Kontakts dauerhaft aus der Cloud entfernt. Du kannst ihn jederzeit von deinem Gerät aus erneut sichern.",
+            "delete_success": "Aus dem Cloud-Backup entfernt",
+            "delete_error": "Dieser Kontakt konnte nicht aus dem Backup entfernt werden. Bitte versuche es erneut.",
+            "keep_error": "Dieser Kontakt konnte nicht von diesem Gerät entfernt werden. Bitte versuche es erneut."
+        },
+        "passkeys": {
+            "title": "Passkeys",
+            "review_title": "Zu prüfende Passkeys",
+            "review_action": "Prüfen",
+            "not_backed_up_count": "{{count}} nicht gesichert",
+            "not_backed_up_count_one": "{{count}} nicht gesichert",
+            "available_count": "{{count}} aus dem Backup verfügbar",
+            "available_count_one": "{{count}} aus dem Backup verfügbar",
+            "device_title": "Passkeys",
+            "device_subtitle": "Auf diesem Gerät verfügbar",
+            "add_from_backup_title": "Aus Backup hinzufügen",
+            "add_from_backup_subtitle": "In deinem Cloud-Backup, nicht auf diesem Gerät",
+            "not_backed_up_title": "Nicht gesichert",
+            "not_backed_up_subtitle": "Auf diesem Gerät, nicht in deinem Cloud-Backup",
+            "back_up_action": "Sichern",
+            "add_action": "Hinzufügen",
+            "unnamed": "Passkey ohne Namen",
+            "empty_title": "Noch keine Passkeys",
+            "empty_body": "Passkeys, die du auf diesem Gerät erstellst, werden durch dein Cloud-Backup geschützt.",
+            "unsupported_title": "Diese Passkeys können nicht gesichert werden",
+            "unsupported_body": "Pera kann nur einen Passkey sichern, den es aus der Wiederherstellungsphrase eines Universal Wallets neu erzeugen kann. Die Passkeys auf diesem Gerät sind anders entstanden und bleiben deshalb nur hier.",
+            "review_empty_title": "Nichts zu prüfen",
+            "review_empty_body": "Jeder Passkey auf diesem Gerät ist in deinem Cloud-Backup.",
+            "back_up_success": "Passkey gesichert",
+            "back_up_error": "Dieser Passkey konnte nicht gesichert werden. Bitte versuche es erneut.",
+            "back_up_deferred": "Dieser Passkey wird bei der nächsten Synchronisierung gesichert.",
+            "add_success": "Passkey hinzugefügt",
+            "add_error": "Dieser Passkey konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
+            "delete_sheet_title": "Aus dem Cloud-Backup löschen?",
+            "delete_sheet_body": "Damit wird das Backup dieses Passkeys dauerhaft aus der Cloud entfernt. Du kannst ihn jederzeit von deinem Gerät aus erneut sichern.",
+            "delete_success": "Aus dem Cloud-Backup entfernt",
+            "delete_error": "Dieser Passkey konnte nicht aus dem Backup entfernt werden. Bitte versuche es erneut.",
+            "keep_error": "Dieser Passkey konnte nicht von diesem Gerät entfernt werden. Bitte versuche es erneut."
+        },
+        "turn_off_sheet": {
+            "title": "Cloud-Backup deaktivieren",
+            "description": "Deine Daten werden nicht mehr zwischen Geräten synchronisiert und nur lokal gespeicherte Daten können verloren gehen, wenn dieses Gerät zurückgesetzt wird.",
+            "keep_enabled": "Aktiviert lassen",
+            "turn_off": "Backup deaktivieren",
+            "turn_off_and_remove": "Deaktivieren & Backup löschen"
+        },
+        "turn_off": {
+            "success": "Cloud-Backup deaktiviert",
+            "error": "Cloud-Backup konnte nicht deaktiviert werden. Bitte versuche es erneut.",
+            "confirm_title": "Backup auf diesem Gerät deaktivieren?",
+            "confirm_body": "Dieses Gerät wird nicht mehr synchronisiert und deine Backup-Zugangsdaten werden davon entfernt. Dein Backup bleibt in der Cloud und deine anderen Geräte synchronisieren weiter. Um dieses Gerät später wieder zu verbinden, stelle sicher, dass du deine Passphrase und deinen Verschlüsselungsschlüssel hast.",
+            "confirm_button": "Deaktivieren"
+        },
+        "turn_off_and_remove": {
+            "success": "Cloud-Backup deaktiviert und gelöscht",
+            "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut.",
+            "confirm_title": "Cloud-Backup endgültig löschen?",
+            "confirm_body": "Das Cloud-Backup wird auf all deinen Geräten deaktiviert, und Konten und Kontakte, die nur im Backup vorhanden sind, gehen verloren.",
+            "confirm_button": "Backup löschen",
+            "confirm_checkbox_label": "Ich verstehe, dass mein Backup endgültig vom Server gelöscht wird und das nicht rückgängig gemacht werden kann."
+        },
+        "restore": {
+            "sheet_title": "Backup wiederherstellen/abrufen",
+            "sheet_description": "Stelle dein Backup wieder her, indem du einen QR-Code scannst oder deine Zugangsdaten manuell eingibst.",
+            "sheet_description_with_import": "Stelle dein Backup wieder her, indem du einen QR-Code scannst, deinen Verschlüsselungsschlüssel von dort importierst, wo du ihn gespeichert hast, oder deine Zugangsdaten manuell eingibst.",
+            "sheet_scan": "QR-Code scannen",
+            "sheet_manual": "Details manuell eingeben",
+            "sheet_device": "Von diesem Gerät importieren",
+            "sheet_icloud": "Apple iCloud",
+            "sheet_google_drive": "Google Drive",
+            "import_reading": "Dein Verschlüsselungsschlüssel wird gesucht…",
+            "import_error": "Dein Verschlüsselungsschlüssel konnte nicht gelesen werden",
+            "import_not_found_icloud": "In deiner iCloud wurde kein Verschlüsselungsschlüssel gefunden.",
+            "import_not_found_google_drive": "In deinem Google Drive wurde kein Verschlüsselungsschlüssel gefunden.",
+            "import_still_downloading": "Dein Verschlüsselungsschlüssel wird noch aus iCloud geladen. Versuche es gleich erneut.",
+            "import_invalid_file": "Diese Datei ist kein Pera-Verschlüsselungsschlüssel.",
+            "import_unsupported_version": "Für diese Schlüsseldatei brauchst du eine neuere Version von Pera.",
+            "choose_file_title": "Verschlüsselungsschlüssel auswählen",
+            "choose_file_description": "Hier ist mehr als ein Verschlüsselungsschlüssel gespeichert. Wähle den Schlüssel des Backups aus, das du wiederherstellen möchtest.",
+            "choose_file_row": "Adresse {{prefix}}…",
+            "choose_file_unknown": "Zuvor gespeicherter Schlüssel",
+            "passphrase_title": "Gib deine Backup-Phrase ein",
+            "passphrase_continue": "Weiter",
+            "too_many_words_title": "Ungültige Backup-Phrase",
+            "too_many_words_body": "Die eingefügte Phrase enthält zu viele Wörter.",
+            "insufficient_slots_title": "Ungültige Backup-Phrase",
+            "insufficient_slots_body": "Die eingefügte Phrase passt nicht in die verbleibenden Felder.",
+            "encryption_key_title": "Gib deinen Verschlüsselungsschlüssel ein",
+            "encryption_key_placeholder": "Verschlüsselungsschlüssel einfügen",
+            "encryption_key_restore": "Backup wiederherstellen",
+            "restoring": "Dein Backup wird wiederhergestellt …",
+            "progress_unlocking": "Dein Backup wird entsperrt …",
+            "progress_downloading": "Dein Backup wird heruntergeladen …",
+            "progress_importing": "Konten werden wiederhergestellt: {{done}} von {{total}}",
+            "progress_finishing": "Wird abgeschlossen …",
+            "progress_hint": "Bei Backups mit vielen Konten kann das über eine Minute dauern. Lass Pera geöffnet, bis der Vorgang abgeschlossen ist.",
+            "error_not_found": "Kein Backup für diese Zugangsdaten gefunden.",
+            "error_invalid_credentials": "Falsche Backup-Phrase oder falscher Verschlüsselungsschlüssel.",
+            "error_unknown": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+            "success": "Backup wiederhergestellt",
+            "partial_success": "{{count}} Konten konnten nicht vollständig wiederhergestellt werden.",
+            "partial_success_one": "{{count}} Konto konnte nicht vollständig wiederhergestellt werden.",
+            "update_to_restore": "Aktualisiere Pera, um {{count}} weitere Konten wiederherzustellen.",
+            "update_to_restore_one": "Aktualisiere Pera, um {{count}} weiteres Konto wiederherzustellen."
+        },
+        "restore_scan": {
+            "title": "QR-Code scannen",
+            "instructions": "Öffne Cloud-Backup auf deinem anderen Gerät, wähle „Mit anderen Geräten synchronisieren“ und scanne den angezeigten Code.",
+            "scan_button": "Kamera öffnen",
+            "code_title": "Gib den 6-stelligen Code ein",
+            "invalid_qr_title": "Kein Backup-QR-Code",
+            "invalid_qr_body": "Scanne den Code, den „Mit anderen Geräten synchronisieren“ auf deinem anderen Gerät anzeigt.",
+            "unsupported_version_title": "Aktualisiere Pera, um fortzufahren",
+            "unsupported_version_body": "Dieser QR-Code wurde mit einer neueren Version von Pera erstellt.",
+            "code_description": "Gib den Einmal-Code ein, der auf dem Gerät mit dem QR-Code erstellt wurde, nicht deine Pera-PIN."
+        },
+        "intro": {
+            "badge": "CLOUD-BACKUP",
+            "title": "Sichere deine Wallet",
+            "description": "Schütze deine Konten und Kontakte mit sicherer Cloud-Synchronisierung.",
+            "encryption_title": "Sichere Verschlüsselung",
+            "encryption_description": "Vor dem Hochladen lokal mit deiner Passphrase und deinem Verschlüsselungsschlüssel verschlüsselt.",
+            "sync_title": "Synchronisierung über alle Geräte",
+            "sync_description": "Deine Kontakte und Spitznamen, auf jedem Gerät.",
+            "recovery_title": "Kontowiederherstellung",
+            "recovery_description": "Telefon wechseln oder neu installieren? Deine Daten kommen mit.",
+            "continue": "Weiter"
+        }
+    },
     "common": {
         "offline_mode": "Offline-Modus",
         "offline_mode_description": "Guthaben sind möglicherweise nicht aktuell und einige Aktionen sind nicht verfügbar, bis du wieder online bist.",
@@ -562,7 +877,8 @@
         },
         "network_unavailable": {
             "title": "Auf diesem Netzwerk nicht verfügbar",
-            "body": "Dies erfordert Pera-Services, die auf BetaNet oder benutzerdefinierten Knoten nicht verfügbar sind. Wechsel zu MainNet oder TestNet."
+            "body": "Dies erfordert Pera-Services, die auf BetaNet oder benutzerdefinierten Knoten nicht verfügbar sind. Wechsel zu MainNet oder TestNet.",
+            "generic_body": "Diese Funktion ist gerade nicht verfügbar."
         },
         "yes": "Ja",
         "no": "Nein",
@@ -736,6 +1052,37 @@
                 "body": "Das Netzwerk hat die Transaktion abgelehnt. Bitte versuche es erneut oder wende dich an den Support, falls das Problem weiterhin besteht."
             }
         },
+        "evm": {
+            "reverted": {
+                "title": "Smart Contract hat die Transaktion abgelehnt",
+                "body": "Der Smart Contract hat diese Transaktion ohne Angabe eines Grundes abgelehnt. Prüfe die Details und versuche es erneut."
+            },
+            "reverted_with_reason": {
+                "title": "Smart Contract hat die Transaktion abgelehnt",
+                "body": "Der Contract meldete: {{reason}}"
+            },
+            "out_of_gas": {
+                "title": "Nicht genug Gas",
+                "body": "Diese Transaktion benötigt mehr Gas, als ihr Limit erlaubt. Bitte versuche es erneut und wende dich an den Support, wenn das Problem weiterhin besteht."
+            },
+            "nonce_too_low": {
+                "title": "Transaktion in falscher Reihenfolge",
+                "body": "Eine andere Transaktion dieses Kontos wurde zuerst verarbeitet. Bitte versuche es erneut."
+            },
+            "replacement_underpriced": {
+                "title": "Netzwerkgebühr zu niedrig",
+                "body": "Eine ausstehende Transaktion dieses Kontos kann nur mit einer höheren Netzwerkgebühr ersetzt werden. Warte, bis sie abgeschlossen ist, oder versuche es mit einer höheren Gebühr erneut."
+            },
+            "insufficient_funds": {
+                "title": "Unzureichendes ETH",
+                "body": "Dieses Konto verfügt nicht über genügend ETH, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr ETH hinzu und versuche es erneut."
+            },
+            "rate_limited": {
+                "title": "Netzwerk ausgelastet",
+                "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
+            },
+            "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x."
+        },
         "submission": {
             "unknown_outcome": {
                 "title": "Transaktionsstatus unbekannt",
@@ -783,22 +1130,41 @@
                 "body": "Der Server hatte ein Problem bei der Verarbeitung deiner Anfrage. Bitte versuche es erneut."
             }
         },
-        "validation": {
-            "generic": "Die Daten scheinen ungültig zu sein.",
-            "invalid_address": "Die Adresse scheint ungültig zu sein: {{address}}",
-            "invalid_amount": "Der Betrag scheint ungültig zu sein: {{amount}}",
-            "invalid_mnemonic": "Die Wiederherstellungsphrase scheint ungültig zu sein.",
-            "required_field": "Ein Pflichtfeld fehlt: {{field}}"
-        },
         "transaction": {
             "title": "Bei der Verarbeitung dieser Transaktion ist ein Fehler aufgetreten",
-            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
+            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
+            "insufficient_balance_for_opt_in": {
+                "title": "Nicht genügend ALGO",
+                "body": "Du brauchst noch {{shortfall}} ALGO, um dich für dieses Asset anzumelden. Dein Konto muss sein Mindestguthaben halten und die Transaktionsgebühr decken."
+            },
+            "already_opted_in": {
+                "title": "Bereits angemeldet",
+                "body": "Dieses Konto ist bereits für dieses Asset angemeldet."
+            },
+            "non_zero_balance_opt_out": {
+                "title": "Asset hat noch ein Guthaben",
+                "body": "Du kannst nur ein Asset ohne Guthaben entfernen. Sende oder tausche zuerst den verbleibenden Betrag."
+            },
+            "creator_cannot_opt_out": {
+                "title": "Asset kann nicht entfernt werden",
+                "body": "Dieses Konto hat das Asset erstellt und kann sich daher nicht davon abmelden."
+            }
         },
         "kms": {
             "key_not_found": "Der Signaturschlüssel für dieses Konto konnte nicht gefunden werden.",
             "key_access_error": "Auf den Signaturschlüssel konnte nicht zugegriffen werden.",
             "invalid_key": "Der Signaturschlüssel für dieses Konto ist ungültig.",
             "generic": "Beim Zugriff auf deinen Signaturschlüssel ist ein Fehler aufgetreten."
+        },
+        "connections": {
+            "invalid_payload": "Eine App hat eine Anfrage gesendet, die Pera nicht verstehen konnte. Bitte überprüfe die App und versuche es erneut.",
+            "no_handler": "Pera konnte diese Verbindungsanfrage nicht verarbeiten. Bitte überprüfe die App und versuche es erneut.",
+            "unknown_connection": "Pera konnte diese Verbindung nicht finden. Möglicherweise wurde sie bereits getrennt.",
+            "duplicate_kind": "Beim Einrichten der App-Verbindungen ist etwas schiefgelaufen. Bitte starte Pera neu und versuche es erneut.",
+            "already_initialized": "Beim Einrichten der App-Verbindungen ist etwas schiefgelaufen. Bitte starte Pera neu und versuche es erneut.",
+            "already_answered": "Diese Anfrage wurde bereits beantwortet.",
+            "no_subscriber": "Pera war noch nicht bereit, diese Anfrage zu verarbeiten. Bitte versuche es erneut.",
+            "not_initialized": "Pera startet noch. Bitte versuche es gleich noch einmal."
         },
         "walletconnect": {
             "title": "Bei der Verarbeitung einer App-Anfrage ist ein Fehler aufgetreten",
@@ -810,7 +1176,8 @@
             "invalid_session_body": "Du hast eine ungültige Sitzungsanfrage von einer App erhalten. Bitte überprüfe die App und versuche es erneut.",
             "connection_timeout_body": "WalletConnect konnte nicht erreicht werden, um deine signierte Transaktion zu übermitteln. Überprüfe deine Verbindung und versuche es erneut.",
             "bridge_connection_body": "Verbindung zu WalletConnect konnte nicht hergestellt werden. Überprüfe deine Internetverbindung und versuche es erneut.",
-            "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut."
+            "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut.",
+            "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden."
         },
         "signing": {
             "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
@@ -855,26 +1222,22 @@
             "overview_tab": "Übersicht",
             "card_details_tab": "Kartendetails",
             "balance": "Guthaben",
-            "spendable_per_tx": "≈{{amount}} {{currency}} verfügbar",
-            "spendable_info_title": "Verfügbar pro Transaktion",
-            "spendable_info_body": "Der Höchstbetrag für einen einzelnen Kauf: dein Kartenguthaben plus Guthaben, und — mit Auto-Funding — bis zu {{limit}} von deinem verknüpften Konto.",
             "withdraw": "Auszahlen",
             "add_funds": "Guthaben hinzufügen",
-            "get_usdc": "USDC erhalten",
             "credits_title": "Guthaben",
-            "credits_description": "Dein Guthaben stammt aus Rückerstattungen oder stornierten Transaktionen.",
-            "cashbacks": "Cashbacks",
+            "credits_description": "Geld, das du über deine Karte zurückbekommst: Prämien für Einkäufe und Rückerstattungen von Händlern. Löse es jederzeit in deine Wallet ein.",
+            "rewards": "Prämien",
             "refunds": "Rückerstattungen",
             "transactions_title": "Transaktionen",
             "show_all": "Alle anzeigen",
             "transactions_empty": "Du hast noch keine Transaktionen.",
             "transaction_fallback": "Transaktion",
-            "coming_soon_title": "Demnächst verfügbar",
-            "coming_soon_body": "Diese Funktion ist noch nicht verfügbar.",
             "reveal_card_details": "Kartendetails anzeigen",
             "hide_card_details": "Kartendetails ausblenden",
             "issuance_pending_title": "Verifizierung in Prüfung",
             "issuance_pending_body": "Deine Karte wird automatisch ausgestellt, sobald deine Identitätsprüfung genehmigt wurde.",
+            "issuance_edd_title": "Zusätzliche Prüfungen erforderlich",
+            "issuance_edd_body": "Deine Identität wurde bestätigt, aber vor der Ausgabe deiner Karte sind zusätzliche Compliance-Prüfungen nötig. Melde dich beim Support, falls du nichts von uns hörst.",
             "issuance_issuing_title": "Deine Karte wird ausgestellt",
             "issuance_issuing_body": "Dies dauert normalerweise ein paar Minuten.",
             "issuance_rejected_title": "Verifizierung nicht erfolgreich",
@@ -886,20 +1249,20 @@
             "funding_account": "Finanzierungskonto",
             "no_funding_account": "Kein Konto verbunden",
             "connect": "Verbinden",
-            "change": "Ändern",
-            "funding_type_label": "Finanzierungsart",
+            "funding_type_enabled_auto": "Auto-Funding aktiviert",
+            "funding_type_enabled_manual": "Manuelle Finanzierung aktiviert",
             "funding_type_sheet_title": "Finanzierungsart auswählen",
-            "funding_type_sheet_description": "Wähle, wie deine Karte finanziert wird. Auto-Funding deckt Käufe bis zu {{limit}} pro Transaktion ab.",
+            "funding_type_sheet_description": "Wähle, wie deine Karte finanziert wird.",
             "funding_type_apply": "Anwenden",
             "funding_type_updated_title": "Finanzierungsart aktualisiert",
             "funding_type_updated_body": "Deine Kartenfinanzierungspräferenz wurde gespeichert.",
             "funding_change_requires_manual_title": "Zuerst zu manueller Finanzierung wechseln",
             "funding_change_requires_manual_body": "Das Ändern des verbundenen Kontos ist bei aktiviertem Auto-Funding nicht möglich. Wechsle zu Manuell, ändere das Konto und aktiviere Auto-Funding anschließend erneut.",
             "funding_type_auto_unavailable_hint": "Für dieses Konto nicht verfügbar — es kann keine Auto-Funding-Autorisierung signieren.",
-            "funding_type_auto_ledger_hint": "Wird bei Ledger-Konten nicht unterstützt. Verbinde ein anderes Konto, um Auto-Funding zu nutzen.",
+            "funding_type_auto_ledger_hint": "Für Ledger-Konten nicht verfügbar. Nutze die manuelle Finanzierung oder verbinde ein Standard-Konto, um Auto-Funding zu aktivieren.",
             "funding_type_auto_coming_soon_hint": "Auto-Funding ist demnächst verfügbar.",
             "authorize_delegation_title": "Auto-Funding autorisieren",
-            "authorize_delegation_body": "Du autorisierst die automatische Finanzierung von bis zu {{limit}} pro Transaktion von {{account}}. Pera signiert eine Dauerautorisierung, die du jederzeit auf Manuell umstellen kannst.",
+            "authorize_delegation_body": "Auto Funding bucht von {{account}} ab, bis du es deaktivierst. Das Limit von {{limit}} pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst jederzeit auf Manuell umstellen.",
             "authorize_delegation_confirm": "Autorisieren",
             "options": "Optionen",
             "accounts_details": "Kontodetails",
@@ -932,7 +1295,59 @@
             "report_suspicious_before_body": "Bitte prüfe mit Familienmitgliedern oder anderen berechtigten Nutzern, ob sie deine Karte verwendet haben. Falls ja, kannst du die Sperre deiner Karte jederzeit aufheben, um sie weiter zu nutzen. Falls nicht, fahre mit der Meldung fort.",
             "report_suspicious_before_confirm": "Mit Meldung fortfahren",
             "error_title": "Etwas ist schiefgelaufen",
-            "error_body": "Bitte versuche es erneut."
+            "error_body": "Bitte versuche es erneut.",
+            "insufficient_algo_title": "Nicht genug ALGO",
+            "insufficient_algo_body": "Ihr verknüpftes Konto hat nicht genug ALGO für die Netzwerkgebühr. Laden Sie ALGO auf und versuchen Sie es erneut.",
+            "setup_incomplete": "Einrichtung nicht abgeschlossen",
+            "auto_funding_unavailable_title": "Auto-Funding ist noch nicht verfügbar",
+            "auto_funding_unavailable_body": "Diese Karte kann derzeit nicht für Auto-Funding autorisiert werden. Du kannst weiterhin die manuelle Finanzierung nutzen.",
+            "auto_funding_rejected_title": "Auto-Funding-Autorisierung abgelehnt",
+            "auto_funding_rejected_body": "Die Autorisierung konnte nicht bestätigt werden. Versuche es erneut oder nutze weiterhin die manuelle Finanzierung."
+        },
+        "rewards": {
+            "navigation_title": "Prämien",
+            "withdraw_navigation_title": "Prämien einlösen",
+            "balance_label": "Prämienguthaben",
+            "empty_title": "Deine Prämien starten hier",
+            "empty_body": "Prämien, die du bei Kartenzahlungen verdienst, erscheinen hier.",
+            "how_title": "So funktionieren Prämien",
+            "how_first_title": "Mit Pera Card bezahlen",
+            "how_first_body": "Verdiene Prämien bei deinen Kartenzahlungen.",
+            "how_second_title": "Nutze deine Prämien",
+            "how_second_body": "Löse deine Prämien ein, sobald sie verfügbar sind.",
+            "body": "Löse deine Prämien jederzeit in deine Wallet ein.",
+            "not_withdrawable_body": "Deine Prämien können bald eingelöst werden. Bezahle weiter mit der Karte, um mehr zu verdienen.",
+            "confirm_body": "Du löst {{amount}} USDC an Prämien ein.",
+            "success_body": "{{amount}} USDC an Prämien sind auf dem Weg in deine Wallet."
+        },
+        "refunds": {
+            "navigation_title": "Rückerstattungen",
+            "withdraw_navigation_title": "Rückerstattungen einlösen",
+            "balance_label": "Rückerstattungsguthaben",
+            "empty_title": "Noch keine Rückerstattungen",
+            "empty_body": "Wenn ein Händler eine Kartenzahlung zurückerstattet, erscheint das Geld hier.",
+            "how_title": "So funktionieren Rückerstattungen",
+            "how_first_title": "Ein Händler erstattet einen Kauf",
+            "how_first_body": "Die Rückerstattung landet hier statt auf deiner Karte.",
+            "how_second_title": "Ausgeben oder einlösen",
+            "how_second_body": "Rückerstattungen werden beim Bezahlen mit der Karte zuerst verwendet, oder du löst sie jederzeit in deine Wallet ein.",
+            "body": "Löse dein Rückerstattungsguthaben jederzeit in deine Wallet ein.",
+            "not_withdrawable_body": "Dein Rückerstattungsguthaben kann noch nicht eingelöst werden. Du kannst es weiterhin mit deiner Karte ausgeben.",
+            "confirm_body": "Du löst {{amount}} USDC an Rückerstattungen ein.",
+            "success_body": "{{amount}} USDC an Rückerstattungen sind auf dem Weg in deine Wallet."
+        },
+        "credits": {
+            "error_body": "Dein Guthaben konnte nicht geladen werden.",
+            "retry": "Erneut versuchen",
+            "claim_button": "Einlösen",
+            "withdraw_button": "Einlösen",
+            "withdraw_subtitle": "Wie viel möchtest du einlösen?",
+            "amount": "Betrag",
+            "balance": "Guthaben: {{amount}} USDC",
+            "confirm_title": "Einlösung bestätigen",
+            "confirm_button": "Bestätigen",
+            "success_title": "Einlösung übermittelt",
+            "history_title": "Aktivität"
         },
         "transactions": {
             "navigation_title": "Transaktionen",
@@ -947,6 +1362,8 @@
             "status_reverted": "Storniert",
             "status_completed": "Abgeschlossen",
             "export_accessibility_label": "Kontoauszug exportieren",
+            "export_error_title": "Kontoauszug konnte nicht exportiert werden",
+            "export_error_body": "Bitte versuche es erneut.",
             "error_title": "Transaktionen konnten nicht geladen werden",
             "error_body": "Bitte versuche es erneut.",
             "retry": "Erneut versuchen",
@@ -992,17 +1409,30 @@
             "amount": "Betrag",
             "balance": "Guthaben: {{amount}}",
             "deposit": "Einzahlen",
+            "continue": "Weiter",
             "select_asset": "Asset auswählen",
             "select_asset_search": "Nach Name oder ID suchen",
             "select_asset_empty_title": "Keine passenden Assets",
             "select_asset_empty_body": "Keine Assets entsprechen deinem Suchbegriff",
-            "swap_success_title": "Tausch abgeschlossen",
-            "swap_success_body": "Deine Assets wurden in USDC getauscht.",
-            "swap_error_title": "Tausch fehlgeschlagen"
+            "swap_error_title": "Tausch fehlgeschlagen",
+            "confirm_button": "Tauschen und Guthaben hinzufügen",
+            "confirm_note": "Sie bestätigen zwei Transaktionen nacheinander: den Tausch und dann die Überweisung auf Ihre Karte.",
+            "confirm_card_label": "Ihre Karte",
+            "confirm_step_swap": "{{asset}} in USDC tauschen",
+            "confirm_step_deposit": "USDC zu Ihrer Karte hinzufügen",
+            "confirm_details_title": "Tauschdetails",
+            "swap_deposit_success_body": "{{amount}} USDC wurden getauscht und an deine Karte gesendet.",
+            "swap_deposit_failed_title": "Getauscht, aber noch nicht hinzugefügt",
+            "swap_deposit_failed_body": "Der Tausch war erfolgreich und die USDC liegen in deinem verknüpften Konto. Füge sie deiner Karte hinzu, wann immer du möchtest.",
+            "swap_deposit_retry_button": "Zur Karte hinzufügen",
+            "deposit_success_title": "Guthaben hinzugefügt",
+            "deposit_success_body": "Dein USDC ist auf dem Weg zu deiner Karte.",
+            "deposit_error_title": "Guthaben konnte nicht hinzugefügt werden",
+            "deposit_error_body": "Dein USDC wurde nicht an deine Karte gesendet. Bitte versuche es erneut."
         },
         "withdraw": {
             "navigation_title": "Auszahlen",
-            "subtitle": "Zahle USDC von deiner Pera Card zurück auf dein verknüpftes Pera-Konto aus.",
+            "subtitle": "Übertrage USDC von deiner Pera Card zurück auf das Konto, mit dem sie erstellt wurde. Auszahlungen sind nach einem kurzen Moment verfügbar.",
             "to_account": "Zielkonto",
             "amount": "Betrag",
             "balance": "Guthaben: {{amount}}",
@@ -1010,18 +1440,32 @@
             "confirm_title": "Auszahlung bestätigen",
             "confirm_body": "Du bist dabei, {{amount}} USDC von deiner Pera Card auf das unten stehende Konto auszuzahlen.",
             "confirm_button": "Bestätigen",
-            "success_title": "Auszahlung eingeleitet",
-            "success_body": "{{amount}} USDC ist auf dem Weg zu deinem Konto."
+            "pending_exists": "Schließe zuerst deine ausstehende Auszahlung ab oder brich sie ab.",
+            "status_navigation_title": "Auszahlung",
+            "status_body": "Auszahlungen laufen in zwei Schritten. Ihre Anfrage wird gespeichert und die USDC bleiben auf Ihrer Karte, bis Sie die Überweisung bestätigen. Bis dahin können Sie jederzeit abbrechen und das Guthaben auf der Karte behalten.",
+            "status_step_request": "Auszahlung anfordern",
+            "status_step_complete": "USDC auf Ihr Konto überweisen",
+            "status_waiting": "Bereit zum Abschließen in {{seconds}} s",
+            "status_ready": "Bereit zum Abschließen. Bestätige die Transaktion, um das Guthaben auf dein Konto zu übertragen.",
+            "status_none": "Keine Auszahlung in Bearbeitung.",
+            "complete_button": "Auszahlung abschließen",
+            "cancel_button": "Auszahlung abbrechen",
+            "in_progress_button": "Auszahlung in Bearbeitung",
+            "completed_title": "Auszahlung abgeschlossen",
+            "completed_body": "{{amount}} USDC sind zurück auf deinem Konto.",
+            "cancelled_title": "Auszahlung abgebrochen",
+            "cancelled_body": "Dein USDC bleibt auf deiner Karte.",
+            "error_title": "Auszahlung nicht möglich",
+            "error_body": "Deine Auszahlung wurde nicht verarbeitet. Bitte versuche es erneut."
         },
         "confirm_swap": {
-            "navigation_title": "Tausch bestätigen",
+            "navigation_title": "Bestätigen",
             "price": "Preis",
             "slippage": "Slippage-Toleranz",
             "price_impact": "Preisauswirkung",
             "minimum_received": "Mindestbetrag erhalten",
             "exchange_fee": "Wechselgebühr",
-            "pera_fee": "Pera-Gebühr",
-            "confirm": "Bestätigen"
+            "pera_fee": "Pera-Gebühr"
         },
         "account_details": {
             "title": "Kontodetails",
@@ -1081,6 +1525,7 @@
             "success_title": "Angemeldet",
             "success_body": "Du bist bei deinem Pera Card Konto angemeldet.",
             "otp_body": "Gib den Bestätigungscode ein, den wir dir gesendet haben, um die Anmeldung abzuschließen.",
+            "otp_body_with_phone": "Gib den Bestätigungscode ein, den wir an {{phone}} gesendet haben, um die Anmeldung abzuschließen.",
             "otp_invalid": "Dieser Code ist nicht korrekt. Bitte versuche es erneut.",
             "send_again": "Erneut senden",
             "send_again_in": "Erneut senden in {{count}}s"
@@ -1194,13 +1639,19 @@
             "last_name_invalid": "Gib deinen Nachnamen ein",
             "dob_label": "Geburtsdatum TT/MM/JJJJ",
             "dob_invalid": "Gib ein gültiges Datum ein (TT/MM/JJJJ)",
+            "ssn_label": "Sozialversicherungsnummer (SSN)",
+            "ssn_invalid": "Gib eine gültige 9-stellige Sozialversicherungsnummer ein",
             "nationality_label": "Staatsangehörigkeit",
             "nationality_placeholder": "Staatsangehörigkeit auswählen",
             "nationality_required": "Wähle deine Staatsangehörigkeit aus",
             "nationality_picker_title": "Staatsangehörigkeit",
             "confirm_button": "Weiter",
             "error_title": "Etwas ist schiefgelaufen",
-            "error_body": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut."
+            "error_body": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
+            "birth_country_label": "Geburtsland",
+            "birth_country_placeholder": "Land auswählen",
+            "birth_country_picker_title": "Geburtsland",
+            "birth_country_required": "Bitte wähle dein Geburtsland"
         },
         "address": {
             "navigation_title": "Wohnadresse",
@@ -1223,6 +1674,7 @@
             "us_state_error_title": "Bundesstaaten konnten nicht geladen werden",
             "us_state_error_body": "Bitte überprüfe deine Verbindung und versuche es erneut.",
             "us_state_retry": "Erneut versuchen",
+            "same_mailing_address": "Meine Postanschrift ist dieselbe wie meine Wohnadresse",
             "card_terms": "Ich habe die Karten-<0>Allgemeinen Geschäftsbedingungen</0> gelesen, verstanden und akzeptiere sie.",
             "platform_terms": "Ich habe die <0>Allgemeinen Geschäftsbedingungen</0> von Pera gelesen, verstanden und akzeptiere sie.",
             "confirm_button": "Weiter",
@@ -1230,6 +1682,10 @@
             "error_body": "Wir konnten deine Adresse nicht speichern. Bitte versuche es erneut.",
             "already_registered_title": "Registrierung bereits abgeschlossen",
             "already_registered_body": "Deine Angaben liegen bereits vor. Bitte melde dich an, um die Einrichtung deiner Karte fortzusetzen."
+        },
+        "mailing_address": {
+            "navigation_title": "Postanschrift",
+            "body": "Deine physische Karte wird an diese Adresse geschickt."
         },
         "verification": {
             "title": "Beginne On-Chain\nauszugeben",
@@ -1268,12 +1724,10 @@
             "funding_type_info_title": "Finanzierungsarten",
             "funding_type_auto_title": "Auto-Funding",
             "funding_type_auto_description": "Gib direkt von deinem verbundenen Pera-Konto aus",
-            "funding_type_auto_info": "Käufe werden direkt von deinem verbundenen Pera-Konto bezahlt, es gibt also nichts aufzuladen",
+            "funding_type_auto_info": "Käufe werden automatisch von deinem verbundenen Pera-Konto finanziert, ohne dass du das Kartenguthaben manuell aufladen musst.",
             "funding_type_manual_title": "Manuelle Finanzierung",
             "funding_type_manual_description": "Lade deine Karte selbst auf, bevor du ausgibst",
-            "funding_type_manual_info": "Du überträgst das Guthaben selbst auf die Karte, und Käufe werden von diesem Guthaben abgebucht",
-            "funding_type_limit_info": "Auto-Funding deckt Käufe bis zu {{limit}} pro Transaktion ab; größere Käufe werden von deinem Kartenguthaben abgebucht",
-            "funding_type_limit_hint": "Bis zu {{limit}} pro Transaktion",
+            "funding_type_manual_info": "Du lädst das Kartenguthaben selbst auf, und alle Käufe werden davon abgebucht. Lade rechtzeitig auf, damit keine Zahlung abgelehnt wird.",
             "funding_type_button": "Pera Card erstellen",
             "create_card_success_title": "Alles bereit",
             "create_card_success_body": "Deine Pera Card ist auf dem Weg.",
@@ -1281,20 +1735,28 @@
             "create_card_account_error_body": "Die Kartenerstellung erfordert eine Signatur, die dieser Kontotyp nicht bereitstellen kann. Verbinde ein Standard-Pera-Konto als Finanzierungsquelle.",
             "linked_elsewhere_error_title": "Konto bereits verknüpft",
             "linked_elsewhere_error_body": "Dieses Konto ist bereits mit einem anderen Pera Card Profil verknüpft. Verbinde ein anderes Konto als Finanzierungsquelle.",
+            "create_in_progress_title": "Kartenerstellung läuft bereits",
+            "create_in_progress_body": "Eine andere Anfrage erstellt gerade eine Karte für dieses Konto. Warte einen Moment und versuche es erneut.",
+            "setup_incomplete_error_title": "Schließe zuerst die Kontoeinrichtung ab",
+            "setup_incomplete_error_body": "Dein Pera Card Konto ist noch nicht bereit für eine Karte. Schließe die restlichen Schritte ab und versuche es erneut.",
+            "create_card_unavailable_title": "Karte konnte im Netzwerk nicht bestätigt werden",
+            "create_card_unavailable_body": "Die Karte wurde nicht erstellt und nichts wurde belastet. Bitte versuche es gleich noch einmal.",
             "auto_funding_degraded_title": "Karte erstellt",
             "auto_funding_degraded_body": "Auto-Funding konnte gerade nicht aktiviert werden, daher startet deine Karte mit manueller Finanzierung. Du kannst später in den Karteneinstellungen wechseln."
         },
         "signing": {
-            "title": "Los geht's",
-            "body": "Um deine Pera Card zu erstellen, musst du drei Gruppen von Transaktionen signieren. Befolge bitte diese Schritte:",
-            "step_sign_label": "Signiere eine Authentifizierungsanfrage, um nachzuweisen, dass dir das verknüpfte Konto gehört",
-            "step_create_label": "Erstelle und finalisiere dein neues Pera Card Konto",
-            "step_authorize_label": "Signiere das Auto-Funding-Programm, um der Pera Card zu erlauben, von deinem verknüpften Konto abzubuchen",
-            "proceed_button": "Fortfahren"
+            "title": "Pera Card erstellen",
+            "body_auto": "Du signierst, um nachzuweisen, dass dir das verknüpfte Konto gehört, und um Auto-Funding zu erlauben. Danach bestätigst du eine Transaktion, die es aktiviert.",
+            "body_manual": "Du signierst einmal, um nachzuweisen, dass dir das verknüpfte Konto gehört. Direkt danach erstellen wir deine Karte.",
+            "step_sign_create_label": "Nachweisen, dass dir das verknüpfte Konto gehört, und deine Pera Card erstellen",
+            "step_auto_funding_label": "Auto-Funding vom verknüpften Konto erlauben",
+            "proceed_button": "Fortfahren",
+            "standing_authority_title": "Was du autorisierst",
+            "standing_authority_body": "Diese Autorisierung bleibt aktiv, bis du sie deaktivierst. Das Limit pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst sie jederzeit stoppen, indem du den Finanzierungstyp auf Manuell umstellst."
         },
         "auto_funding_signing": {
             "title": "Anfrage zur automatischen Signaturgenehmigung",
-            "body": "Dadurch kann deine Karte bei Bedarf automatisch Guthaben abbuchen, sodass du nicht jede Aufladung selbst genehmigen musst. Du signierst eine Logic Sig — eine vorab autorisierte Signatur —, die diese automatische Abbuchung von deinem verbundenen Konto ermöglicht.",
+            "body": "Dadurch kann deine Karte bei Bedarf automatisch Guthaben abbuchen, sodass du nicht jede Aufladung selbst genehmigen musst. Du signierst eine Logic Sig, eine vorab autorisierte Signatur, die diese automatische Abbuchung von deinem verbundenen Konto ermöglicht.",
             "error_title": "Auto-Funding konnte nicht autorisiert werden",
             "error_body": "Bei der Autorisierung von Auto-Funding ist ein Fehler aufgetreten. Versuche es erneut, oder brich ab, um mit manueller Finanzierung fortzufahren (du kannst später in deinen Karteneinstellungen zu Auto wechseln).",
             "cancel_button": "Abbrechen"
@@ -1302,7 +1764,8 @@
         "connect_account": {
             "title": "Kartenkonto wählen",
             "subtitle": "Verbinde zunächst das Wallet, das du zur Einrichtung deines Kontos verwenden möchtest.",
-            "change": "Ändern"
+            "change": "Ändern",
+            "create_account": "Konto erstellen"
         }
     },
     "notifications": {
@@ -1348,8 +1811,10 @@
             "success_title": "Vorgang abgeschlossen",
             "success_subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
             "sender_count_more": "+{{count}} weitere",
+            "insufficient_algo_title": "Nicht genügend ALGO",
             "insufficient_algo_claim": "Du hast nicht genügend ALGO, um dieses Asset zu beanspruchen. Füge Guthaben hinzu, um das Mindestguthaben abzudecken.",
-            "insufficient_algo_reject": "Du hast nicht genügend ALGO, um dieses Asset abzulehnen. Füge Guthaben hinzu, um die Transaktionsgebühren abzudecken."
+            "insufficient_algo_reject": "Du hast nicht genügend ALGO, um dieses Asset abzulehnen. Füge Guthaben hinzu, um die Transaktionsgebühren abzudecken.",
+            "insufficient_algo_cta": "Guthaben hinzufügen"
         }
     },
     "multisig": {
@@ -1473,6 +1938,8 @@
             "delivery_failed": "Konnte nicht an die anfragende App gesendet werden – die Verbindung wurde getrennt.",
             "failed_default": "Transaktion fehlgeschlagen",
             "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
+            "cosign_rejected_title": "Signieren nicht möglich",
+            "cosign_rejected_body": "Diese Anfrage enthält eine Transaktion, die das Gemeinschaftskonto nicht autorisiert. Wenn der Absender ein Konto ist, das auf das Gemeinschaftskonto gerekeyt wurde, füge es deinem Wallet hinzu und versuche es erneut.",
             "retry": "Erneut versuchen",
             "canceled": "Transaktion abgebrochen.",
             "declined": "Transaktion abgelehnt.",
@@ -1569,6 +2036,11 @@
                 "paste_passphrase": "Vollständige Passphrase einfügen",
                 "scan_qr": "QR-Code scannen",
                 "learn_more": "Mehr erfahren"
+            },
+            "quantum_detected": {
+                "title": "Das ist die Passphrase eines Quantum-Kontos",
+                "body": "Diese Wörter gehören zu einem bereits bestehenden Quantum-Konto. Als reguläres Konto importiert, würden sie ein anderes, leeres Konto hinzufügen.",
+                "import_button": "Quantum-Konto importieren"
             }
         },
         "searching_accounts": {
@@ -1665,9 +2137,15 @@
             "pair_ledger_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über Bluetooth durch mein Ledger-Hardware-Wallet gesichert ist",
             "pair_ledger_usb_title": "Ledger per USB koppeln",
             "pair_ledger_usb_description": "Ich möchte ein Algorand-Konto wiederherstellen, das über USB-Kabel durch mein Ledger-Hardware-Wallet gesichert ist",
+            "pair_ledger_unsupported_description": "Von diesem Browser oder Gerät nicht unterstützt",
             "pera_web_title": "Von Pera Web importieren",
             "pera_web_description": "Ich möchte Algorand-Konten von Pera Web importieren",
+            "cloud_backup_title": "Aus Cloud-Backup importieren",
+            "cloud_backup_description": "Ich möchte meine Konten und Kontakte mit meiner 12-Wort-Backup-Phrase und meinem Verschlüsselungsschlüssel wiederherstellen",
+            "cloud_backup_already_enabled_title": "Cloud-Backup ist bereits aktiv",
+            "cloud_backup_already_enabled_body": "Dieses Gerät hat bereits ein Cloud-Backup. Verwalte es unter Einstellungen › Cloud-Backup.",
             "asb_title": "Algorand Secure Backup",
+            "asb_legacy_title": "Legacy-Backup",
             "asb_description": "Ich möchte meine Konten mithilfe einer Algorand Secure Backup-Datei und eines 12-Wort-Schlüssels wiederherstellen",
             "quantum_title": "Quantum-Konto importieren",
             "quantum_description": "Ich möchte ein Quantum-Konto mit seiner 25-Wort-Passphrase importieren"
@@ -2090,6 +2568,7 @@
         "edit_contact": "Kontakt bearbeiten",
         "add_contact": "Neuen Kontakt hinzufügen",
         "settings": "Einstellungen",
+        "cloud_backup": "Cloud-Backup",
         "launch_settings": "Starteinstellung",
         "advanced_preferences": "Erweiterte Einstellungen",
         "confirmation_action": "Bestätigungsaktion",
@@ -2098,15 +2577,14 @@
         "wallet_connect": "Wallet Connect",
         "wallet_connect_details": "Verbindungsdetails",
         "passkeys": "Passkeys",
-        "connected_sites": "Verbundene Websites",
         "connections": "Verbindungen",
         "currency": "Währung",
         "theme": "Design",
         "language": "Sprache",
         "developer_settings": "Entwicklereinstellungen",
-        "node_settings": "Node-Einstellungen",
+        "node_settings": "Entwicklermodus",
         "feature_flags": "Feature Flags",
-        "developer_menu": "Entwickleroptionen",
+        "debug_tools": "Debug-Tools",
         "manage_cache": "Cache verwalten",
         "app_integrity": "App-Integrität",
         "messages": "Nachrichten"
@@ -2160,7 +2638,8 @@
             "cancel": "Jetzt nicht",
             "unavailable_title": "Biometrie nicht verfügbar",
             "unavailable_body": "Aktiviere Face ID oder Touch ID für Pera in den Geräteeinstellungen und schalte die biometrische Entsperrung danach wieder ein.",
-            "body_not-available": "Die biometrische Entsperrung funktioniert nicht, weil auf deinem Gerät keine Biometrie für Pera eingerichtet ist. Richte sie in den Geräteeinstellungen ein und aktiviere sie hier wieder."
+            "body_not-available": "Die biometrische Entsperrung funktioniert nicht, weil auf deinem Gerät keine Biometrie für Pera eingerichtet ist. Richte sie in den Geräteeinstellungen ein und aktiviere sie hier wieder.",
+            "body_rebind-required": "Pera muss die biometrische Entsperrung auf diesem Gerät erneut einrichten. Aktiviere sie wieder, um weiterhin biometrisch zu entsperren."
         }
     },
     "send_funds": {
@@ -2194,6 +2673,7 @@
         "input": {
             "max": "MAX",
             "next": "Weiter",
+            "amount_label": "Betrag",
             "error_title": "Ungültiger Betrag",
             "error_body": "Bitte gib einen Betrag größer als {{min}} ein.",
             "exceeds_max_title": "Unzureichendes Guthaben",
@@ -2209,7 +2689,11 @@
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
             "inbox_unavailable_title": "Asset-Posteingang nicht verfügbar",
-            "inbox_unavailable_body": "Der Empfänger ist nicht für dieses Asset angemeldet und der Asset-Posteingang ist in diesem Netzwerk nicht verfügbar. Wechsle zu MainNet oder TestNet, um es zu senden."
+            "inbox_unavailable_body": "Der Empfänger ist nicht für dieses Asset angemeldet und der Asset-Posteingang ist gerade nicht verfügbar, daher kann es nicht gesendet werden.",
+            "nfd_mismatch_title": "Name stimmt nicht mit der Chain überein",
+            "nfd_mismatch_body": "Der NFD-Vertrag für {{name}} führt diese Adresse nicht. Füge die Adresse direkt ein, wenn du ihr vertraust.",
+            "nfd_unavailable_title": "{{name}} konnte nicht überprüft werden",
+            "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein."
         },
         "confirmation": {
             "edit": "Bearbeiten",
@@ -2241,8 +2725,9 @@
         },
         "close_account": {
             "title": "Konto schließen",
-            "body": "Dieses Konto hat keine angemeldeten Assets. Durch das Senden des gesamten Guthabens wird das Konto im Algorand-Netzwerk geschlossen.",
+            "body": "Dieses Konto hat keine angemeldeten Assets. Du kannst es daher schließen und das gesamte Guthaben senden. Manche Börsen akzeptieren keine Transaktionen, die ein Konto schließen. Wenn du das Konto offen lässt, verbleibt das Mindestguthaben von {{minBalance}} ALGO darin.",
             "confirm": "Konto schließen & senden",
+            "keep_open": "Senden, ohne zu schließen",
             "warning": "Diese Transaktion schließt dein Konto im Algorand-Netzwerk.",
             "success_title": "Konto geschlossen",
             "success_subtitle": "Dein Konto wurde im Algorand-Netzwerk geschlossen."
@@ -2295,12 +2780,14 @@
         },
         "main": {
             "account_section": "Konto",
+            "cloud_backup_title": "Cloud-Backup",
+            "cloud_backup_on": "An",
+            "cloud_backup_off": "Aus",
             "security_title": "Sicherheit",
             "notifications_title": "Benachrichtigungen",
             "scan_rekeyed_title": "Nach rekeyed Konten suchen",
             "wallet_connect_title": "WalletConnect-Sitzungen",
             "passkeys_title": "Passkeys",
-            "connected_sites_title": "Verbundene Websites",
             "connections_title": "Verbindungen",
             "app_preferences_section": "App-Einstellungen",
             "currency_title": "Währung",
@@ -2351,17 +2838,17 @@
             "body": "Erzähl uns von deiner Erfahrung"
         },
         "developer": {
-            "node_settings_title": "Node-Einstellungen",
+            "node_settings_title": "Entwicklermodus",
             "dispenser_title": "Algorand Dispenser",
             "node_settings": {
-                "mainnet_label": "Algorand MainNet",
-                "testnet_label": "Algorand TestNet",
-                "betanet_label": "Algorand BetaNet",
+                "developer_mode_title": "Entwicklermodus",
+                "developer_mode_body": "Stellt Pera auf TestNet oder auf das Netzwerk um, das du unten wählst. Schalte den Modus aus, um zu MainNet zurückzukehren.",
+                "default_network_label": "{{network}} (Standard)",
                 "custom_label": "Benutzerdefiniertes Netzwerk",
                 "non_mainnet_warning_title": "Eingeschränkte Unterstützung außerhalb von MainNet",
                 "non_mainnet_warning_body": "MainNet ist das einzige vollständig unterstützte Netzwerk. Funktionen, die auf Pera-Dienste angewiesen sind — Asset-Details, Tauschen, Kauf, Karte, Staking und Posteingang — sind auf TestNet eingeschränkt und auf BetaNet sowie benutzerdefinierten Nodes nicht verfügbar.",
-                "enable_mainnet": "MainNet aktivieren",
-                "enable_testnet": "TestNet aktivieren",
+                "enable_developer_mode": "Entwicklermodus aktivieren",
+                "disable_developer_mode": "Entwicklermodus deaktivieren",
                 "custom_sheet_title": "Benutzerdefiniertes Netzwerk konfigurieren",
                 "algod_url_label": "Algod-URL",
                 "indexer_url_label": "Indexer-URL",
@@ -2372,6 +2859,7 @@
                 "fetch_from_node": "Vom Node abrufen",
                 "fetch_failed": "Dieser Node konnte nicht erreicht werden. Gib die Werte manuell ein.",
                 "invalid_url": "Gib eine gültige http:// oder https:// URL ein",
+                "invalid_https_url": "Gib eine gültige https:// URL ein",
                 "genesis_required": "Genesis-Hash abrufen oder eingeben",
                 "genesis_id_required": "Genesis-ID abrufen oder eingeben",
                 "save": "Speichern und wechseln",
@@ -2408,8 +2896,8 @@
             "clear_one_time_flags": "Einmalige Flags löschen",
             "clear_one_time_flags_success_title": "Einmalige Flags gelöscht",
             "clear_one_time_flags_success_body": "Erstlauf-Hinweise und Hinweistexte werden wieder angezeigt.",
-            "taps_to_notify": "Entwicklermenü wird in {{remaining}} Tipps aktiviert",
-            "developer_menu_enabled": "Entwicklermenü aktiviert",
+            "taps_to_notify": "Debug-Tools werden in {{remaining}} Tipps aktiviert",
+            "debug_tools_enabled": "Debug-Tools aktiviert",
             "overridden": "Überschrieben",
             "enabled": "Aktiviert",
             "disabled": "Deaktiviert"
@@ -2446,6 +2934,7 @@
         "notifications": {
             "push_notifications": "Push-Benachrichtigungen",
             "account_notifications": "Benachrichtigungen anzeigen für",
+            "push_service_unavailable": "Dieser Browser stellt keine Push-Benachrichtigungen zu. Aktiviere in Brave in den Datenschutzeinstellungen „Google-Dienste für Push-Benachrichtigungen verwenden“ und öffne Pera dann erneut.",
             "no_accounts": "Keine Konten gefunden.",
             "no_accounts_body": "Keine Konten gefunden. Füge ein Konto hinzu, um Benachrichtigungseinstellungen zu verwalten."
         },
@@ -2489,10 +2978,6 @@
             "interception_toggle_body_disabled": "Aktiviere dies, damit Pera Wallet Passkeys für Websites, bei denen du dich anmeldest, speichern und anbieten kann."
         },
         "connected_sites": {
-            "empty_title": "Keine verbundenen Websites",
-            "empty_body": "Websites, mit denen du dein Wallet verbindest, werden hier angezeigt.",
-            "accounts_count": "{{count}} Konten",
-            "accounts_count_one": "{{count}} Konto",
             "revoke_title": "Website trennen",
             "revoke_body": "{{origin}} hat keinen Zugriff mehr auf deine verbundenen Konten. Du kannst dich jederzeit erneut über die Website verbinden.",
             "revoke_confirm": "Trennen",
@@ -2603,7 +3088,7 @@
             "siwa_not_before": "Nicht vor",
             "siwa_resources": "Ressourcen",
             "siwa_invalid": "Diese Authentifizierungsanfrage ist fehlerhaft und kann nicht signiert werden.",
-            "origin_mismatch": "Diese Website bittet dich, dich bei einer anderen Domain ({{domain}}) anzumelden. Fahre nur fort, wenn du ihr vertraust.",
+            "origin_mismatch": "Diese Website bittet dich, dich bei einer anderen Domain ({{domain}}) anzumelden. Pera hat diese Anfrage zum Schutz deines Kontos blockiert.",
             "show_details": "Details anzeigen",
             "details_title": "Details der Authentifizierungsanfrage",
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
@@ -2650,7 +3135,10 @@
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
             "default": "Transaktion",
-            "more_impacts": "{{count}} weitere anzeigen"
+            "more_impacts": "{{count}} weitere anzeigen",
+            "interpreted_title": "{{title}}",
+            "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
+            "inner_transaction_count": "{{innerCount}} innere Transaktionen"
         },
         "type": {
             "pay": "Zahlungstransaktion",
@@ -2820,7 +3308,8 @@
             "error_sheet_retry": "Bitte versuche es erneut, indem du zur dApp zurückkehrst, bei der du die Anfrage gestellt hast.",
             "quantum_fee_delivery_failed": "Die Anfrage konnte nicht abgeschlossen werden. Diese App unterstützt möglicherweise nicht die höheren Netzwerkgebühren, die für Quantum-Konten erforderlich sind.",
             "networks_betanet": "Betanet",
-            "error_network_mismatch": "Diese App wollte sich mit {{requested}} verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut."
+            "error_network_mismatch": "Diese App wollte sich mit einem anderen Netzwerk verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
+            "error_delivery_failed": "Pera konnte die App nicht erreichen, um deine Antwort zu übermitteln — sie wartet möglicherweise noch. Versuche es erneut über die App."
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -2838,7 +3327,6 @@
             "delete_body": "Möchtest du diese Sitzung wirklich löschen?  Dadurch wird deine aktive Sitzung entfernt und die Verbindung zur verbundenen App getrennt.",
             "delete_all_title": "Alle Sitzungen löschen",
             "delete_all_body": "Möchtest du wirklich alle Sitzungen löschen?  Dadurch werden alle deine aktiven Sitzungen entfernt und die Verbindung zu allen verbundenen Apps getrennt.",
-            "unknown_peer": "Unbekannt",
             "version": "Diese Sitzung verwendet WalletConnect V{{version}}",
             "connected_accounts": "Verbunden mit",
             "permissions": "Erweiterte Berechtigungen",
@@ -2947,6 +3435,7 @@
         "execution": {
             "error_title": "Tausch fehlgeschlagen",
             "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
             "insufficient_algo_title": "Unzureichendes ALGO",
             "insufficient_algo_body": "Dieses Konto benötigt mindestens {{amount}} ALGO mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr ALGO hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
@@ -3039,6 +3528,7 @@
             "max": "MAX",
             "no_payment_methods": "Keine Zahlungsmethoden für dein Gerät verfügbar.",
             "amount_below_min": "Der Betrag muss größer als {{min}} sein",
+            "amount_below_min_unknown": "Der Betrag liegt unter dem Minimum des Anbieters",
             "amount_above_max": "Der Betrag muss kleiner als {{max}} sein"
         },
         "pair_selection": {
@@ -3167,11 +3657,15 @@
             "retry": "Erneut scannen",
             "error": "Scan fehlgeschlagen. Stelle sicher, dass Bluetooth aktiviert ist, und versuche es erneut.",
             "usb_error": "Kein Ledger-Gerät über USB gefunden. Prüfe, ob es angeschlossen und entsperrt ist, und versuche es erneut.",
+            "web_ble_brave_error": "Brave deaktiviert Web Bluetooth standardmäßig. Öffne brave://flags/#brave-web-bluetooth-api, setze die Option auf „Enabled“, starte Brave neu und versuche es erneut.",
             "location_services_disabled": "Aktiviere den Standort in deinen Geräteeinstellungen, um nach nahegelegenen Ledger-Geräten zu suchen.",
             "open_location_settings": "Standorteinstellungen öffnen",
             "grant_permission": "Berechtigung erteilen",
             "open_settings": "Einstellungen öffnen",
             "web_start_title": "Bereit zur Suche",
+            "web_ble_unsupported_title": "Bluetooth nicht verfügbar",
+            "web_ble_unsupported_body": "Dieser Browser kann keine Bluetooth-Verbindung zu einem Ledger herstellen. Kopple ihn stattdessen per USB oder nutze einen Browser mit Bluetooth-Unterstützung wie Chrome.",
+            "use_usb": "Per USB koppeln",
             "web_start_body": "Dein Browser fordert dich auf, dein Ledger-Gerät auszuwählen.",
             "web_start_button": "Nach Ledger suchen",
             "popup_launch_title": "Bereit zur Kopplung",
@@ -3297,10 +3791,13 @@
             "provider_unavailable": "Der Hardware-Wallet-Verbindungsdienst ist nicht verfügbar. Starte Pera neu und versuche es erneut.",
             "device_not_found_title": "Ledger nicht gefunden",
             "device_not_found": "Ledger nicht gefunden. Stelle sicher, dass dein Ledger-Gerät eingeschaltet und in der Nähe ist, und versuche es erneut.",
+            "device_picker_unavailable_title": "In einem Browser-Tab fortfahren",
+            "device_picker_unavailable": "Dein Browser kann dich in diesem Fenster nicht auffordern, dein Ledger-Gerät auszuwählen. Öffne Pera in einem Browser-Tab und versuche es dort erneut.",
             "device_busy_title": "Ledger ist beschäftigt",
             "device_busy": "Ledger ist beschäftigt. Schließe die aktuelle Aktion auf deinem Ledger ab und versuche es erneut.",
             "action_enable_bluetooth": "Bluetooth aktivieren",
             "action_open_settings": "Einstellungen öffnen",
+            "action_open_in_tab": "In Tab öffnen",
             "action_open_location_settings": "Standorteinstellungen öffnen"
         },
         "troubleshooting": {
@@ -3325,7 +3822,11 @@
         "scan_header": {
             "having_issues": "Hast du Probleme?"
         },
-        "default_account_name": "Ledger {{number}}"
+        "default_account_name": "Ledger {{number}}",
+        "handoff_added": {
+            "title": "Ledger-Konto hinzugefügt",
+            "body": "Du kannst es jetzt in der Pera-Erweiterung verwenden."
+        }
     },
     "countries": {
         "AC": "Ascension",
@@ -3609,6 +4110,13 @@
         "ZW": "Simbabwe"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Schwach",
+            "fair": "Mäßig",
+            "good": "Gut",
+            "strong": "Stark",
+            "error_too_weak": "Das Passwort ist zu leicht zu erraten. Versuche eine längere Phrase mit ungewöhnlichen Wörtern."
+        },
         "create_password": {
             "title": "Passwort erstellen",
             "description": "Lege ein Passwort fest, um deine Pera Wallet-Erweiterung zu schützen. Du benötigst es jedes Mal, wenn du die Erweiterung öffnest.",
@@ -3628,7 +4136,21 @@
             "error_invalid_password": "Falsches Passwort. Bitte versuche es erneut.",
             "corrupted_error": "Deine Vault-Daten sind beschädigt und können nicht entsperrt werden. Möglicherweise musst du die Erweiterung zurücksetzen und aus deinem Backup wiederherstellen.",
             "passkey_error": "Passkey-Entsperrung fehlgeschlagen. Verwende stattdessen dein Passwort.",
-            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}"
+            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}",
+            "forgot_password": "Passwort vergessen?"
+        },
+        "reset": {
+            "title": "Wallet zurücksetzen?",
+            "body": "Dein Passwort lässt sich nicht wiederherstellen. Beim Zurücksetzen wird alles gelöscht, was Pera Wallet in diesem Browser speichert. Danach legst du ein neues Passwort fest.",
+            "restore_note": "Stelle deine Konten danach mit ihrer Wiederherstellungsphrase wieder her. Konten ohne gesicherte Wiederherstellungsphrase gehen verloren.",
+            "hardware_note": "Ledger-Konten und Beobachtungskonten lassen sich nicht aus einer Passphrase wiederherstellen. Füge sie nach dem Zurücksetzen erneut hinzu.",
+            "acknowledge": "Mir ist klar, dass meine Daten gelöscht werden und das nicht rückgängig gemacht werden kann",
+            "confirm_button": "Wallet zurücksetzen",
+            "error": "Die Wallet konnte nicht zurückgesetzt werden. Bitte versuche es erneut."
+        },
+        "database_reset": {
+            "title": "Wallet-Daten aktualisiert",
+            "body": "Wir haben die in diesem Browser gespeicherten Guthaben und Verläufe neu aufgebaut. Sie werden gleich neu geladen. Deine Konten sind nicht betroffen."
         },
         "security": {
             "autolock_title": "Automatisch sperren nach",
@@ -3655,9 +4177,6 @@
         "approval": {
             "placeholder": "Genehmigungsoberfläche — kommt in M4."
         },
-        "expanded": {
-            "redirecting": "Wird in einem neuen Tab fortgesetzt…"
-        },
         "reauth": {
             "title": "Bestätige, dass du es bist",
             "confirm_button": "Bestätigen",
@@ -3682,5 +4201,17 @@
         "submit": "Link öffnen",
         "error_invalid": "Das scheint kein Link zu sein, den Pera öffnen kann.",
         "error_failed": "Pera konnte diesen Link nicht öffnen. Überprüfe ihn und versuche es erneut."
+    },
+    "integrityCheck": {
+        "frame_title": "Pera Wallet-Prüfung"
+    },
+    "analytics_consent": {
+        "prompt": {
+            "title": "Hilf mit, Pera zu verbessern",
+            "body": "Erlaube Pera, anonyme Nutzungsdaten der App zu erfassen. So können wir das Produkt verbessern. Du kannst deine Wahl jederzeit in den Einstellungen ändern.",
+            "allow": "Erlauben",
+            "decline": "Nicht erlauben"
+        },
+        "settings_label": "Nutzungsanalysen teilen"
     }
 }

@@ -16,7 +16,9 @@ import {
     useSwaps,
     type SwapDistinctPairItem,
 } from '@perawallet/wallet-core-swaps'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
@@ -34,13 +36,17 @@ export type UseSwapPairHistoryWidgetResult = {
 }
 
 export const useSwapPairHistoryWidget = (): UseSwapPairHistoryWidgetResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const selectedAccount = useSelectedAccount()
-    const { setFromAsset, setToAsset } = useSwaps()
-    const address = selectedAccount?.address ?? ''
+    const { setFromAsset, setToAsset } = useSwaps(scope)
+    const address = selectedAccount
+        ? (addressOn(selectedAccount, scope) ?? '')
+        : ''
     const { request: requestBottomSheet } = useBottomSheet()
 
     const { data, isLoading, isError } = useDistinctPairsHistoryQuery(
         address,
+        scope,
         VISIBLE_SWAP_STATUSES,
         address.length > 0,
     )

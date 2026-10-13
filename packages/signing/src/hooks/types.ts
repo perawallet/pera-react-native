@@ -10,30 +10,28 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
 import type { SnapshotFrom } from 'xstate'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
+import type { SigningMachineContext } from '../machine/context'
 import type {
-    SigningMachineContext,
-    ResolvedSignerType,
-} from '../machine/context'
+    SignerCredential,
+    SignerCustody,
+} from '../machine/utils/resolveSignerCredential'
 import type { hardwareSigningMachine } from '../machine/children/hardwareSigningMachine'
 import type {
+    FeeAdjustment,
     PipelineStage,
     SigningPipelineEvent,
     SignRequest,
     TransactionWarning,
 } from '../models'
-import type {
-    RequestStructure,
-    TransactionListItem,
-} from '../utils/classification'
-import type { FeeAdjustment } from '../pipeline/sources'
-import type { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
+import type { RequestStructure, TransactionListItem } from '../chain-adapter'
+import type { ParsedAuthData } from '../message-signer'
 
 /**
  * Configuration passed to useSigningPipeline.
@@ -113,8 +111,6 @@ export type MachineSnapshot = {
     matches: (stateValue: string) => boolean
 }
 
-type Arc60ParsedForDisplay = ReturnType<typeof parseArc60ForDisplay>
-
 export type SourceKind =
     | 'local'
     | 'walletconnect'
@@ -122,7 +118,7 @@ export type SourceKind =
     | 'multisig-cosign'
     | 'deeplink'
     | 'gift-card'
-    | 'arc60'
+    | 'card'
     | 'injected'
 
 export type TransportKind =
@@ -139,7 +135,7 @@ export type ResolvedRequestKind =
           hasMultiple: boolean
       }
     | { type: 'arbitrary-data'; isSingle: boolean }
-    | { type: 'arc60'; parsed: Arc60ParsedForDisplay }
+    | { type: 'auth-data'; parsed: ParsedAuthData }
 
 export type HardwareChildSnapshot = SnapshotFrom<typeof hardwareSigningMachine>
 
@@ -158,9 +154,9 @@ export type ActiveSigningChild = {
 } | null
 
 export type ResolvedSignRequest = {
-    signerType: ResolvedSignerType
+    signerType: SignerCustody
     signerAccount: WalletAccount
-    groupSignerTypes: ReadonlyMap<string, ResolvedSignerType>
+    groupSigners: ReadonlyMap<string, SignerCredential>
     source: { kind: SourceKind; isInteractive: boolean }
     transport: { kind: TransportKind }
     kind: ResolvedRequestKind

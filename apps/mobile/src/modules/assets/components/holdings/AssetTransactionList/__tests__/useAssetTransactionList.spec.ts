@@ -14,14 +14,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAssetTransactionList } from '../useAssetTransactionList'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
 } from '@perawallet/wallet-core-transactions'
-import { shareCsvFile } from '@utils/shareCsvFile'
+import { shareFile } from '@utils/shareFile'
 import { useToast } from '@hooks/useToast'
-import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterContent/types'
+import { TransactionFilter } from '@modules/accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -43,11 +43,15 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 // Mock dependencies
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
+    CSV_MIME_TYPE: 'text/csv',
     useTransactionHistoryQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
 }))
@@ -64,9 +68,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({
@@ -82,8 +84,8 @@ vi.mock('react-native', () => ({
     },
 }))
 
-vi.mock('@utils/shareCsvFile', () => ({
-    shareCsvFile: vi.fn(),
+vi.mock('@utils/shareFile', () => ({
+    shareFile: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -97,10 +99,13 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 describe('useAssetTransactionList', () => {
+    const ACCOUNT_ADDRESS =
+        'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA'
     const mockAccount = {
-        address: 'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        id: 'test-account',
         name: 'Test Account',
-        type: 'algo25',
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: ACCOUNT_ADDRESS } },
     } as WalletAccount
 
     const mockAsset: PeraAsset = {
@@ -171,9 +176,9 @@ describe('useAssetTransactionList', () => {
             )
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith({
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: '12345',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 isEnabled: true,
                 afterTime: undefined,
                 beforeTime: undefined,
@@ -537,7 +542,7 @@ describe('useAssetTransactionList', () => {
             })
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
-                [mockAccount.address],
+                [ACCOUNT_ADDRESS],
                 'mainnet',
             )
         })
@@ -582,16 +587,13 @@ describe('useAssetTransactionList', () => {
             result.current.handleExportCsv()
 
             expect(mockExportCsv).toHaveBeenCalledWith({
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: '12345',
             })
         })
 
         it('does not call exportCsv if no account address', () => {
-            const accountWithoutAddress = {
-                ...mockAccount,
-                address: '',
-            }
+            const accountWithoutAddress = { ...mockAccount, chains: {} }
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
@@ -621,7 +623,7 @@ describe('useAssetTransactionList', () => {
             result.current.handleExportCsv()
 
             expect(mockExportCsv).toHaveBeenCalledWith({
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: '99999',
             })
         })
@@ -668,14 +670,16 @@ describe('useAssetTransactionList', () => {
             const mockResult = {
                 filename: 'test.csv',
                 csvContent: 'data',
-                accountAddress: mockAccount.address,
+                accountAddress: ACCOUNT_ADDRESS,
                 assetId: 12_345,
                 rowCount: 5,
             }
 
             await successCallback(mockResult)
 
-            expect(shareCsvFile).toHaveBeenCalledWith('test.csv', 'data')
+            expect(shareFile).toHaveBeenCalledWith('test.csv', 'data', {
+                mimeType: 'text/csv',
+            })
         })
 
         it('shows error toast when share fails', async () => {
@@ -693,7 +697,7 @@ describe('useAssetTransactionList', () => {
                 },
             )
 
-            vi.mocked(shareCsvFile).mockRejectedValueOnce(
+            vi.mocked(shareFile).mockRejectedValueOnce(
                 new Error('Share cancelled'),
             )
 
@@ -816,9 +820,9 @@ describe('useAssetTransactionList', () => {
                 expect(mockShowError).toHaveBeenCalledTimes(1)
                 const [error, title] = mockShowError.mock.calls[0]
                 expect(isPeraServiceUnavailableError(error)).toBe(true)
-                expect((error as PeraServiceUnavailableError).network).toBe(
-                    network,
-                )
+                expect(
+                    (error as PeraServiceUnavailableError).scope,
+                ).toStrictEqual({ chainId: 'algorand', networkId: network })
                 expect(title).toBe('common.network_unavailable.title')
             },
         )

@@ -13,12 +13,11 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAlgoAssetId,
     logger,
     pow10,
     useStableIdList,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type {
@@ -27,15 +26,16 @@ import type {
     AssetWithAccountBalance,
     WalletAccount,
 } from '../models'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
-    getAccountBalance,
+    getAccountChainStateRow,
     getAccountHoldingsPage,
     type AccountHoldingsFilters,
     type AccountHoldingsPageRow,
 } from '../db'
+import { describeHolding } from '../chain-adapter'
+import { chainAccountOf } from '../credentials/accessors'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 
@@ -45,23 +45,23 @@ type AccountDbSnapshot = {
 
 async function readAccountFromDb(
     address: string,
-    network: string,
+    scope: ChainScope,
     filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
-    // If this account has no balance row yet the background sync either
+    // If this account has no chain-state row yet the background sync either
     // hasn't run or silently failed. Pull directly from the chain before
     // reading so the UI recovers without waiting for the next poll cycle.
-    const balance = await getAccountBalance({
+    const row = await getAccountChainStateRow({
         accountAddress: address,
-        network,
+        scope,
     })
-    if (!balance) {
+    if (!row) {
         try {
-            await fetchAndPersistAccount(address, network as Network)
+            await fetchAndPersistAccount(address, scope)
         } catch (error) {
             logger.warn('On-demand account fetch failed', {
                 address,
-                network,
+                scope,
                 error:
                     error instanceof Error
                         ? { message: error.message, stack: error.stack }
@@ -71,11 +71,11 @@ async function readAccountFromDb(
     }
 
     // Single join read: each holding carries its asset metadata + USD price, so
-    // there's no separate `WHERE assetId IN (…)` metadata/price read. ALGO is a
-    // holding row too (base units, 6 decimals), so it needs no special append.
+    // there's no separate `WHERE assetId IN (…)` metadata/price read. The native
+    // asset is a holding row too, so it needs no special append.
     const holdings = await getAccountHoldingsPage({
         accountAddress: address,
-        network,
+        scope,
         ...filters,
     })
 
@@ -84,22 +84,27 @@ async function readAccountFromDb(
 
 export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
+    scope: ChainScope,
     enabled?: boolean,
     filters?: AccountHoldingsFilters,
 ): AccountBalancesWithTotals => {
-    const { network } = useNetwork()
+    const nativeAsset = nativeAssetFor(scope.chainId)
     const hasAccounts = !!accounts?.length
 
     // Call sites routinely pass a fresh array literal (`[account]`) per
     // render. Only addresses are read below, so key the memos on this stable
     // list instead of array identity — otherwise every render of every such
     // call site re-walks all holdings, a Decimal per field per asset.
-    const addresses = useStableIdList(accounts?.map(a => a.address) ?? [])
+    const addresses = useStableIdList(
+        accounts?.flatMap(
+            a => chainAccountOf(a, scope.chainId)?.address ?? [],
+        ) ?? [],
+    )
 
     const queries = useMemo(() => {
         return addresses.map(address => {
             return {
-                queryKey: getAccountBalancesQueryKey(address, network, filters),
+                queryKey: getAccountBalancesQueryKey(address, scope, filters),
                 enabled: !!address && enabled,
                 staleTime: Infinity,
                 gcTime: HOLDINGS_ROWS_GC_TIME_MS,
@@ -113,7 +118,7 @@ export const useAccountBalancesQuery = (
                 // where _observerMatches and _result can get out of sync during
                 // synchronous notifications, causing "new Proxy target must be an Object".
                 notifyOnChangeProps: 'all' as const,
-                queryFn: () => readAccountFromDb(address, network, filters),
+                queryFn: () => readAccountFromDb(address, scope, filters),
             }
         })
         // filters is a stable object passed from a Zustand selector or memoized
@@ -122,10 +127,10 @@ export const useAccountBalancesQuery = (
     }, [
         addresses,
         enabled,
-        network,
+        scope,
         filters?.hideZeroBalance,
         filters?.hideNfts,
-        filters?.hideOptedInNfts,
+        filters?.hideZeroBalanceNfts,
     ])
 
     const results = useQueries({ queries })
@@ -135,7 +140,7 @@ export const useAccountBalancesQuery = (
     // re-walks every holding — allocating a Decimal per field, per asset, per
     // render. This primitive signature captures everything the body reads
     // (`dataUpdatedAt` moves whenever the data does), and Object.is stays true
-    // across renders when content matches. Same guard as `useLedgerRekeyedScan`.
+    // across renders when content matches. Same guard as `useLedgerDelegatedScan`.
     const resultsSig = results
         .map(
             (r, i) =>
@@ -149,7 +154,7 @@ export const useAccountBalancesQuery = (
 
     const {
         accountBalances,
-        portfolioAlgoValue,
+        portfolioNativeValue,
         isPending,
         isFetched,
         isRefetching,
@@ -159,7 +164,7 @@ export const useAccountBalancesQuery = (
         if (!hasAccounts) {
             return {
                 accountBalances: new Map() as AccountBalances,
-                portfolioAlgoValue: new Decimal(0),
+                portfolioNativeValue: new Decimal(0),
                 isPending: false,
                 isFetched: false,
                 isRefetching: false,
@@ -170,23 +175,29 @@ export const useAccountBalancesQuery = (
 
         const accountBalanceList = results.map(r => {
             const holdings = r.data?.holdings ?? []
-            // ALGO is itself a holding row now; its joined price is the ALGO/USD
-            // rate used to express every holding's value in ALGO terms.
-            const usdAlgoPrice =
-                holdings.find(h => isAlgoAssetId(h.assetId))?.usdPrice ??
-                new Decimal(0)
+            // The native asset is itself a holding row; its joined price is the
+            // rate used to express every holding's value in native terms.
+            const nativeHolding = holdings.find(
+                h => h.assetId === nativeAsset.assetId,
+            )
+            const nativeUsdPrice = nativeHolding?.usdPrice ?? new Decimal(0)
 
-            let algoValue = new Decimal(0)
-            // Accumulated in the same pass as `algoValue`: the portfolio
+            let nativeValue = new Decimal(0)
+            // Accumulated in the same pass as `nativeValue`: the portfolio
             // roll-up used to re-walk every account's holdings to derive this,
             // doubling the accounts×holdings Decimal work on every price poll.
             let usdValue = new Decimal(0)
             const assetBalances: AssetWithAccountBalance[] = holdings.map(
                 holding => {
-                    const isAlgo = isAlgoAssetId(holding.assetId)
-                    // ALGO metadata is seeded, but fall back defensively so the
-                    // native balance always renders even mid-sync.
-                    const asset = holding.asset ?? (isAlgo ? ALGO_ASSET : null)
+                    const isNative = holding.assetId === nativeAsset.assetId
+                    const { restriction } = describeHolding(
+                        scope.chainId,
+                        holding.native,
+                    )
+                    // Native asset metadata is seeded, but fall back defensively
+                    // so the native balance always renders even mid-sync.
+                    const asset =
+                        holding.asset ?? (isNative ? nativeAsset : null)
                     // Without asset metadata we can't scale base units to
                     // display units, so emit zeros until the metadata syncs —
                     // otherwise the sort-by-value key is inflated by 10^decimals.
@@ -195,39 +206,50 @@ export const useAccountBalancesQuery = (
                             assetId: holding.assetId,
                             asset: undefined,
                             amount: new Decimal(0),
-                            algoValue: new Decimal(0),
+                            nativeValue: new Decimal(0),
                             usdPrice: holding.usdPrice ?? undefined,
-                            isFrozen: holding.isFrozen ?? false,
+                            fiatValue: null,
+                            restriction,
                         }
                     }
                     const usdAssetPrice = holding.usdPrice ?? new Decimal(0)
                     const assetAmount = holding.amount.div(
                         pow10(asset.decimals),
                     )
-                    // ALGO's value in ALGO terms is just its amount (1:1),
-                    // independent of price. ASAs convert via the ALGO/USD rate.
-                    const algoAssetValue = isAlgo
+                    // The native asset's value in native terms is just its amount
+                    // (1:1), independent of price. Others convert via its rate.
+                    const nativeAssetValue = isNative
                         ? assetAmount
-                        : usdAlgoPrice.isZero()
+                        : nativeUsdPrice.isZero()
                           ? new Decimal(0)
-                          : assetAmount.times(usdAssetPrice).div(usdAlgoPrice)
-                    algoValue = algoValue.plus(algoAssetValue)
+                          : assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
+                    nativeValue = nativeValue.plus(nativeAssetValue)
                     usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
                     return {
                         assetId: holding.assetId,
                         asset,
                         amount: assetAmount,
-                        algoValue: algoAssetValue,
+                        nativeValue: nativeAssetValue,
                         usdPrice: usdAssetPrice,
-                        isFrozen: holding.isFrozen ?? false,
+                        fiatValue:
+                            holding.usdPrice === null
+                                ? null
+                                : assetAmount.times(holding.usdPrice),
+                        restriction,
                     }
                 },
             )
 
+            const isNativeUnpriced =
+                !!nativeHolding &&
+                nativeHolding.usdPrice === null &&
+                !nativeHolding.amount.isZero()
+
             return {
                 assetBalances,
-                algoValue,
+                nativeValue,
                 usdValue,
+                fiatValue: isNativeUnpriced ? null : usdValue,
                 isPending: r.isPending,
                 isFetched: r.isFetched,
                 isRefetching: r.isRefetching,
@@ -239,8 +261,8 @@ export const useAccountBalancesQuery = (
             addresses.map((address, i) => [address, accountBalanceList[i]]),
         )
 
-        const portfolioAlgoValue = accountBalanceList.reduce(
-            (acc, cur) => acc.plus(cur.algoValue),
+        const portfolioNativeValue = accountBalanceList.reduce(
+            (acc, cur) => acc.plus(cur.nativeValue),
             new Decimal(0),
         )
 
@@ -252,7 +274,7 @@ export const useAccountBalancesQuery = (
 
         return {
             accountBalances: isPending ? new Map() : accountBalances,
-            portfolioAlgoValue,
+            portfolioNativeValue,
             isPending,
             isFetched,
             isRefetching,
@@ -262,11 +284,11 @@ export const useAccountBalancesQuery = (
         // `results` is read inside but deliberately not a dep — `resultsSig`
         // is its stable stand-in; see the comment where it is built.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, addresses, hasAccounts])
+    }, [resultsSig, addresses, hasAccounts, nativeAsset, scope.chainId])
 
     return {
         accountBalances,
-        portfolioAlgoValue,
+        portfolioNativeValue,
         isPending,
         isFetched,
         isRefetching,
@@ -276,8 +298,9 @@ export const useAccountBalancesQuery = (
 }
 
 export const useAccountAssetBalanceQuery = (
-    account?: WalletAccount,
-    assetId?: string,
+    account: WalletAccount | undefined,
+    assetId: string | undefined,
+    scope: ChainScope,
 ) => {
     const {
         accountBalances,
@@ -288,18 +311,22 @@ export const useAccountAssetBalanceQuery = (
         isPaused,
     } = useAccountBalancesQuery(
         account ? [account] : [],
+        scope,
         !!account && assetId !== null && assetId !== undefined,
     )
+    const address = account
+        ? chainAccountOf(account, scope.chainId)?.address
+        : undefined
 
     const assetBalance = useMemo<Nullable<AssetWithAccountBalance>>(() => {
         return (
             accountBalances
-                ?.get(account?.address ?? '')
+                ?.get(address ?? '')
                 ?.assetBalances?.find(
                     (b: AssetWithAccountBalance) => b.assetId === assetId,
                 ) ?? null
         )
-    }, [accountBalances, account?.address, assetId])
+    }, [accountBalances, address, assetId])
 
     return {
         data: assetBalance,

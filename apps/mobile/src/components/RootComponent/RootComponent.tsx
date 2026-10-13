@@ -10,21 +10,23 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { MainRoutes } from '@routes/index'
 import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { OfflineBanner } from '@components/OfflineBanner'
-import { NETWORK_LABEL_KEYS } from '@constants/network-labels'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useAllAccounts,
     useSyncNewAccounts,
@@ -32,38 +34,40 @@ import {
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { useNetworkStatusListener } from '@modules/network'
-import { WebViewOverlay } from '@modules/webview'
+import { WebViewOverlay } from '@modules/webview/shell'
 import { PromptContainer } from '@modules/prompts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
+import { useNetworkLabel } from '@hooks/useNetworkLabel'
+import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
-import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
-import { PairingProgressOverlay } from '@modules/walletconnect/components/PairingProgressOverlay'
+import { ConnectionsProvider } from '@modules/connections/shell'
+import { PairingProgressOverlay } from '@modules/walletconnect/shell'
 import { useTokenListener } from '@modules/token'
-import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
-import { MultisigOverlays } from '@modules/multisig/components/MultisigOverlays'
-import { SwapOverlays } from '@modules/swap/components/SwapOverlays'
-import { useSyncMultisigAccountsOnNetworkSwitch } from '@modules/multisig/hooks/useSyncMultisigAccountsOnNetworkSwitch'
+import { AutoLockGuard } from '@modules/security/shell'
+import { SigningOverlays } from '@modules/signing/shell'
+import {
+    useSyncMultisigAccountsOnNetworkSwitch,
+    MultisigOverlays,
+} from '@modules/multisig/shell'
+import { SwapOverlays } from '@modules/swap/shell'
 import {
     getAppStatePlatform,
     getPollingTransitionAction,
 } from '@utils/app-state'
 import { getSyncService } from '@perawallet/wallet-core-background'
+import { useBackupSyncLifecycle } from '@modules/cloud-backup'
 import { config } from '@perawallet/wallet-core-config'
 
 export type RootComponentProps = {
     fcmToken: Nullable<string>
 }
 
-// These overlays render outside the main content's error boundary and host
-// signing/multisig/swap (money) flows, so an unhandled render-throw here
-// would unwind the whole app. Contain it: log the crash and render nothing
-// while the fallback schedules a boundary reset (see OverlayErrorFallback)
-// so the overlays come back instead of staying dead until app restart.
+// These overlays host signing/multisig/swap (money) flows outside the main
+// content's error boundary, so an unhandled render-throw would unwind the whole
+// app. Contain it; OverlayErrorFallback schedules a reset so they come back.
 const handleOverlayError = (error: string | Error) => {
     logger.critical(error, { source: 'RootOverlaysErrorBoundary' })
 }
@@ -74,16 +78,11 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const styles = useStyles(insets)
     const { showError } = useErrorToast()
     const { t } = useLanguage()
+    const networkLabel = useNetworkLabel()
 
-    // Initialize network status listener (replaces NetworkStatusProvider)
     useNetworkStatusListener()
-
-    // Initialize FCM token (replaces TokenInitializer)
     useTokenListener(fcmToken)
-
-    // Route tapped push notifications through the deeplink dispatcher.
     useNotificationDeeplinkListener()
-
     // Refresh the notification badge/inbox as soon as a foreground push lands.
     useNotificationReceivedListener()
 
@@ -101,23 +100,22 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                 {!isMainnet && (
                     <PWView style={styles.testnetBar}>
                         <PWText style={styles.testnetText}>
-                            {t(NETWORK_LABEL_KEYS[network])}
+                            {networkLabel(network)}
                         </PWText>
                     </PWView>
                 )}
 
-                <GestureHandlerRootView>
+                {/* App.tsx mounts the single GestureHandlerRootView above this tree. */}
+                <PWView style={styles.content}>
                     <MainRoutes />
                     <WebViewOverlay />
                     {/* After WebViewOverlay so a deep-link pairing scrim
                         paints above the in-app browser too. */}
                     <PairingProgressOverlay />
-                    {/* Blocking prompts (T&C re-acceptance, PIN setup) paint
-                        above the navigator and the tab bar. Inside
-                        AutoLockGuard's children so the lock overlay still
-                        hides them. */}
+                    {/* Blocking prompts paint above the navigator and tab bar, but
+                        inside AutoLockGuard's children so the lock still hides them. */}
                     <PromptContainer />
-                </GestureHandlerRootView>
+                </PWView>
             </PWView>
         </ErrorBoundary>
     )
@@ -130,30 +128,24 @@ const DeviceRegistrar = () => {
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
 
     // The Zustand `accounts` array gets a new reference on every store write
-    // (incl. background sync ticks). Effects that only care about the *set* of
-    // accounts must depend on a stable scalar, otherwise they re-fire on every
-    // tick and the sync service re-arms in a tight loop.
-    const addresses = useMemo(
-        () => accounts?.map(account => account.address) ?? [],
-        [accounts],
-    )
-    const hasAccounts = addresses.length > 0
+    // (incl. sync ticks); depending on it directly re-arms the sync service in a
+    // tight loop, so effects key on a stable scalar instead.
+    const hasAccounts = (accounts?.length ?? 0) > 0
 
     const { isChecking, needsMigration } = useNeedsMigration()
     const migrationInProgress = isChecking || needsMigration
     useSyncMultisigAccountsOnNetworkSwitch()
-    // Accounts added mid-session (import/create/watch/discovery) get an
-    // immediate fetch + asset/price enrichment — the gated background poll
-    // never picks up an account whose activity predates its checkpoint.
-    // Gated on migration like DeviceRegistrar below: syncing before the
-    // migrated device id lands caches favorites as false.
-    useSyncNewAccounts({ isEnabled: !migrationInProgress })
+    // Accounts added mid-session get an immediate fetch: the background poll never
+    // picks up an account whose activity predates its checkpoint. Gated on
+    // migration because syncing before the migrated device id lands caches favorites as false.
+    useSyncNewAccounts(scope, { isEnabled: !migrationInProgress })
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {
@@ -174,6 +166,8 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     useNetworkSwitchInvalidation()
     useImageMemoryRelease()
+
+    useBackupSyncLifecycle()
 
     useEffect(() => {
         // Hold the background poll until migration finishes: its initial
@@ -218,9 +212,11 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             <BottomSheetModalProvider>
                 {!migrationInProgress && <DeviceRegistrar />}
                 <AutoLockGuard>
-                    <WalletConnectProvider>
+                    {/* The app's single connection registry: it owns every
+                        handler's lifecycle, so exactly one may be mounted. */}
+                    <ConnectionsProvider>
                         <RootContentContainer fcmToken={fcmToken} />
-                    </WalletConnectProvider>
+                    </ConnectionsProvider>
                     <ErrorBoundary
                         onError={handleOverlayError}
                         FallbackComponent={OverlayErrorFallback}
@@ -231,10 +227,8 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     </ErrorBoundary>
                 </AutoLockGuard>
             </BottomSheetModalProvider>
-            {/* Global offline indicator. Mounted as the LAST node in the root
-                tree so it paints above navigation, bottom-sheet modals, and the
-                AutoLockGuard PIN overlay (which itself uses zIndex.max). Order
-                here is load-bearing — keep <OfflineBanner /> last. */}
+            {/* LAST node in the root tree so it paints above navigation, sheet
+                modals and the AutoLockGuard PIN overlay (zIndex.max). Keep it last. */}
             <OfflineBanner />
         </>
     )

@@ -12,11 +12,12 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getAssetHolderAddresses } from '../db'
 import { useAllAccounts } from './useAllAccounts'
-import { useSelectedAccountAddress } from './useSelectedAccountAddress'
+import { chainAccountOf } from '../credentials'
+import { useAccountsStore } from '../store'
 import { getAssetHoldersQueryKey } from './querykeys'
 
 const ASSET_HOLDERS_STALE_TIME_MS = 60_000
@@ -28,7 +29,7 @@ export type ResolveAssetHolderAddress = (
 /**
  * Which of the user's accounts to treat as the holder of `assetId`, preferring
  * the selected account when it holds the asset. Resolves to `null` when no
- * account holds it (including ALGO, which has no holdings row).
+ * account holds it (including the native asset, which has no holdings row).
  *
  * The asset and collectible detail screens are account-scoped but their routes
  * only carry an asset id, so they read the *selected* account. Any caller that
@@ -37,22 +38,34 @@ export type ResolveAssetHolderAddress = (
  * holder first, or the detail screen attributes the asset to whichever account
  * happened to be selected.
  */
-export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
-    const { network } = useNetwork()
-    const { selectedAccountAddress } = useSelectedAccountAddress()
+export const useResolveAssetHolderAddress = (
+    scope: ChainScope,
+): ResolveAssetHolderAddress => {
+    const selectedAccount = useAccountsStore(state =>
+        state.getSelectedAccount(),
+    )
+    const selectedAccountAddress = selectedAccount
+        ? chainAccountOf(selectedAccount, scope.chainId)?.address
+        : undefined
     const accounts = useAllAccounts()
     const queryClient = useQueryClient()
 
     const knownAddresses = useMemo(
-        () => new Set(accounts.map(account => account.address)),
-        [accounts],
+        () =>
+            new Set(
+                accounts.flatMap(
+                    account =>
+                        chainAccountOf(account, scope.chainId)?.address ?? [],
+                ),
+            ),
+        [accounts, scope.chainId],
     )
 
     return useCallback(
         async (assetId: string) => {
             const holders = await queryClient.ensureQueryData({
-                queryKey: getAssetHoldersQueryKey(assetId, network),
-                queryFn: () => getAssetHolderAddresses({ assetId, network }),
+                queryKey: getAssetHoldersQueryKey(assetId, scope),
+                queryFn: () => getAssetHolderAddresses({ assetId, scope }),
                 staleTime: ASSET_HOLDERS_STALE_TIME_MS,
             })
 
@@ -70,6 +83,6 @@ export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
             }
             return candidates[0] ?? null
         },
-        [queryClient, network, knownAddresses, selectedAccountAddress],
+        [queryClient, scope, knownAddresses, selectedAccountAddress],
     )
 }

@@ -13,23 +13,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import { hardwareDetailsOf } from '@perawallet/wallet-core-accounts'
 import { useLedgerAccountInfoContent } from '../useLedgerAccountInfoContent'
+import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mocks = vi.hoisted(() => ({
     useLedgerAccountPreview: vi.fn(),
     t: vi.fn((k: string, _opts?: Record<string, unknown>) => k),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     useLedgerAccountPreview: mocks.useLedgerAccountPreview,
-    AccountTypes: {
-        algo25: 'algo25',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        multisig: 'multisig',
-        watch: 'watch',
-    },
 }))
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: mocks.t }),
@@ -45,7 +42,8 @@ const baseAsset = {
     fiatValue: new Decimal(10),
     usdPrice: new Decimal(2),
     verificationTier: 'verified' as const,
-    isAlgo: true,
+    isNative: true,
+    restriction: null,
 }
 
 const asaAsset = {
@@ -58,10 +56,12 @@ const asaAsset = {
     fiatValue: new Decimal(100),
     usdPrice: new Decimal(1),
     verificationTier: 'trusted' as const,
-    isAlgo: false,
+    isNative: false,
+    restriction: null,
 }
 
 beforeEach(() => {
+    registerAlgorandAccountsAdapter()
     vi.clearAllMocks()
 })
 
@@ -91,10 +91,10 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(5),
+                nativeBalance: new Decimal(5),
                 totalFiatValue: new Decimal(10),
                 assets: [baseAsset],
-                rekey: { kind: 'none' },
+                delegation: { kind: 'none' },
             },
             isLoading: false,
             isError: false,
@@ -123,10 +123,10 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'rekeyedTo', authAddress: 'AUTH' },
+                delegation: { kind: 'delegatedTo', authorityAddress: 'AUTH' },
             },
             isLoading: false,
             isError: false,
@@ -137,17 +137,19 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 1),
         )
 
-        const rekeyAddressItems = result.current.items.filter(
-            i => i.kind === 'rekeyAddress',
+        const authorityItems = result.current.items.filter(
+            i => i.kind === 'authorityAccount',
         )
-        expect(rekeyAddressItems).toHaveLength(1)
-        expect(rekeyAddressItems[0]).toMatchObject({
-            kind: 'rekeyAddress',
+        expect(authorityItems).toHaveLength(1)
+        expect(authorityItems[0]).toMatchObject({
+            kind: 'authorityAccount',
         })
-        if (rekeyAddressItems[0].kind === 'rekeyAddress') {
-            expect(rekeyAddressItems[0].account.address).toBe('AUTH')
+        if (authorityItems[0].kind === 'authorityAccount') {
+            expect(authorityItems[0].account.chains.algorand?.address).toBe(
+                'AUTH',
+            )
             // synth is hardware → base icon is the Ledger icon, no override.
-            expect(rekeyAddressItems[0].displayStateOverride).toBeUndefined()
+            expect(authorityItems[0].displayStateOverride).toBeUndefined()
         }
     })
 
@@ -155,10 +157,10 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'canSignFor', addresses: ['R1', 'R2'] },
+                delegation: { kind: 'canSignFor', addresses: ['R1', 'R2'] },
             },
             isLoading: false,
             isError: false,
@@ -169,15 +171,17 @@ describe('useLedgerAccountInfoContent', () => {
             useLedgerAccountInfoContent('ADDR', 1),
         )
 
-        const rekeyAddressItems = result.current.items.filter(
-            i => i.kind === 'rekeyAddress',
+        const authorityItems = result.current.items.filter(
+            i => i.kind === 'authorityAccount',
         )
-        const rekeyAddresses = rekeyAddressItems.map(i =>
-            i.kind === 'rekeyAddress' ? i.account.address : '',
+        const authorityAddresses = authorityItems.map(i =>
+            i.kind === 'authorityAccount'
+                ? i.account.chains.algorand?.address
+                : '',
         )
-        expect(rekeyAddresses).toEqual(['R1', 'R2'])
-        rekeyAddressItems.forEach(i => {
-            if (i.kind === 'rekeyAddress') {
+        expect(authorityAddresses).toEqual(['R1', 'R2'])
+        authorityItems.forEach(i => {
+            if (i.kind === 'authorityAccount') {
                 expect(i.displayStateOverride).toBe('rekeyedSignable')
             }
         })
@@ -202,10 +206,10 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal('408.2'),
+                nativeBalance: new Decimal('408.2'),
                 totalFiatValue: new Decimal('48.45'),
                 assets: [{ ...baseAsset, usdPrice: new Decimal('0.6') }],
-                rekey: { kind: 'none' },
+                delegation: { kind: 'none' },
             },
             isLoading: false,
             isError: false,
@@ -230,10 +234,10 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'MYADDR',
-                algoBalance: new Decimal(1),
+                nativeBalance: new Decimal(1),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'none' },
+                delegation: { kind: 'none' },
             },
             isLoading: false,
             isError: false,
@@ -246,25 +250,28 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(acct.account.type).toBe(AccountTypes.hardware)
-            expect(acct.account.address).toBe('MYADDR')
-            if (acct.account.type === AccountTypes.hardware) {
-                expect(acct.account.hardwareDetails.accountIndex).toBe(2)
-                expect(acct.account.hardwareDetails.manufacturer).toBe('ledger')
-            }
+            expect(acct.account.custody.kind).toBe('hardware')
+            expect(acct.account.chains.algorand?.address).toBe('MYADDR')
+            expect(hardwareDetailsOf(acct.account)).toMatchObject({
+                accountIndex: 2,
+                manufacturer: 'ledger',
+            })
             // synth is hardware → base icon resolves correctly, no override.
             expect(acct.displayStateOverride).toBeUndefined()
         }
     })
 
-    it('builds a watch+rekeyAddress synth account on the account item when rekeyedTo', () => {
+    it('builds a watch synth account on the account item when rekeyedTo', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'WATCH_ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [baseAsset],
-                rekey: { kind: 'rekeyedTo', authAddress: 'AUTH_ADDR' },
+                delegation: {
+                    kind: 'delegatedTo',
+                    authorityAddress: 'AUTH_ADDR',
+                },
             },
             isLoading: false,
             isError: false,
@@ -277,9 +284,8 @@ describe('useLedgerAccountInfoContent', () => {
 
         const acct = result.current.items.find(i => i.kind === 'account')
         if (acct?.kind === 'account') {
-            expect(acct.account.type).toBe(AccountTypes.watch)
-            expect(acct.account.address).toBe('WATCH_ADDR')
-            expect(acct.account.rekeyAddress).toBe('AUTH_ADDR')
+            expect(acct.account.custody.kind).toBe('watch')
+            expect(acct.account.chains.algorand?.address).toBe('WATCH_ADDR')
             expect(acct.displayStateOverride).toBe('rekeyedSignable')
         }
     })
@@ -288,10 +294,10 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(5),
+                nativeBalance: new Decimal(5),
                 totalFiatValue: new Decimal(105),
                 assets: [baseAsset, asaAsset],
-                rekey: { kind: 'none' },
+                delegation: { kind: 'none' },
             },
             isLoading: false,
             isError: false,
@@ -312,7 +318,9 @@ describe('useLedgerAccountInfoContent', () => {
             expect(assetItems[0].usdPrice).toBeInstanceOf(Decimal)
             expect(assetItems[0].usdPrice.toString()).toBe('2')
             // ALGO holding: its ALGO value is the amount itself (5 * 2 / 2).
-            expect(assetItems[0].accountBalance.algoValue.toString()).toBe('5')
+            expect(assetItems[0].accountBalance.nativeValue.toString()).toBe(
+                '5',
+            )
         }
 
         if (assetItems[1].kind === 'asset') {
@@ -320,7 +328,9 @@ describe('useLedgerAccountInfoContent', () => {
             expect(assetItems[1].usdPrice.toString()).toBe('1')
             // USDC holding value in ALGO = amount * usdPrice / algoUsdPrice
             //                            = 100 * 1 / 2 = 50.
-            expect(assetItems[1].accountBalance.algoValue.toString()).toBe('50')
+            expect(assetItems[1].accountBalance.nativeValue.toString()).toBe(
+                '50',
+            )
         }
     })
 
@@ -328,7 +338,7 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(0),
+                nativeBalance: new Decimal(0),
                 totalFiatValue: new Decimal(0),
                 assets: [
                     baseAsset,
@@ -338,7 +348,7 @@ describe('useLedgerAccountInfoContent', () => {
                         usdPrice: new Decimal(0),
                     },
                 ],
-                rekey: { kind: 'none' },
+                delegation: { kind: 'none' },
             },
             isLoading: false,
             isError: false,
@@ -358,14 +368,14 @@ describe('useLedgerAccountInfoContent', () => {
         }
     })
 
-    it('falls back to a zero algoValue when the ALGO USD price is unknown', () => {
+    it('falls back to a zero nativeValue when the ALGO USD price is unknown', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(5),
+                nativeBalance: new Decimal(5),
                 totalFiatValue: new Decimal(0),
                 assets: [{ ...baseAsset, usdPrice: new Decimal(0) }, asaAsset],
-                rekey: { kind: 'none' },
+                delegation: { kind: 'none' },
             },
             isLoading: false,
             isError: false,
@@ -378,7 +388,9 @@ describe('useLedgerAccountInfoContent', () => {
 
         const assetItems = result.current.items.filter(i => i.kind === 'asset')
         if (assetItems[1].kind === 'asset') {
-            expect(assetItems[1].accountBalance.algoValue.toString()).toBe('0')
+            expect(assetItems[1].accountBalance.nativeValue.toString()).toBe(
+                '0',
+            )
         }
     })
 
@@ -386,10 +398,10 @@ describe('useLedgerAccountInfoContent', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
-                algoBalance: new Decimal(1),
+                nativeBalance: new Decimal(1),
                 totalFiatValue: new Decimal(1),
                 assets: [baseAsset, asaAsset],
-                rekey: { kind: 'canSignFor', addresses: ['R1'] },
+                delegation: { kind: 'canSignFor', addresses: ['R1'] },
             },
             isLoading: false,
             isError: false,
@@ -408,7 +420,7 @@ describe('useLedgerAccountInfoContent', () => {
             'asset', // ALGO
             'asset', // USDC
             'sectionHeader', // can_sign_for
-            'rekeyAddress',
+            'authorityAccount',
         ])
 
         const headers = result.current.items

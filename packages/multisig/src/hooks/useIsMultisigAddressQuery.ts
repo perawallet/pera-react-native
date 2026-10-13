@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { checkIsMultisigAddress } from '../api/endpoints'
 import { getMultisigAccountDetailQueryKey } from './querykeys'
@@ -25,16 +26,21 @@ export type MultisigAddressCheckResult = {
     isMultisig: boolean
 }
 
+export type UseIsMultisigAddressQueryResult = {
+    data: MultisigAddressCheckResult | undefined
+    isFetching: boolean
+}
+
 export const useIsMultisigAddressQuery = ({
     network,
     address,
     enabled = true,
-}: UseIsMultisigAddressQueryParams): UseQueryResult<
-    MultisigAddressCheckResult,
-    Error
-> => {
-    return useQuery({
-        queryKey: getMultisigAccountDetailQueryKey(network, address),
+}: UseIsMultisigAddressQueryParams): UseIsMultisigAddressQueryResult => {
+    const query = useQuery({
+        queryKey: getMultisigAccountDetailQueryKey(
+            scopeForLegacyNetwork(network),
+            address,
+        ),
         queryFn: async () => {
             const isMultisig = await checkIsMultisigAddress(network, address)
             return { isMultisig }
@@ -42,4 +48,9 @@ export const useIsMultisigAddressQuery = ({
         enabled: enabled && !!address,
         retry: false,
     })
+
+    return {
+        data: query.data,
+        isFetching: query.isFetching,
+    }
 }

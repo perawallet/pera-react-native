@@ -10,23 +10,35 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import { Address, Transaction } from 'algosdk'
-import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
+import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
+import { Address, Transaction, assignGroupID } from 'algosdk'
 import {
+    addressCodecs,
+    ChainAdapterNotRegisteredError,
+    ScopeChangedError,
+    transactionPlanners,
+    type AddressCodec,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    SECOND_CHAIN_SCOPE,
     makeTestAddress,
     makeTestPaymentTx,
-} from '../../test-utils/transactions'
+    makeUnsignedTransaction,
+    fakeTransactionPlanner,
+    planFromPayload,
+    registerFakeTransactionPlanner,
+} from '../../__tests__/transactions'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
 import type {
     ArbitraryDataSignRequest,
-    Arc60SignRequest,
+    AuthDataSignRequest,
     SignRequest,
     TransactionSignRequest,
 } from '../../models'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { algo25Account, ledgerAccount } from '../../__tests__/accounts'
 import {
     CannotSignError,
     HardwareWalletError,
@@ -34,17 +46,20 @@ import {
     SigningError,
 } from '../../pipeline/errors'
 
+// assignGroupID stamps the group id in place.
+const groupTransactions = (transactions: Transaction[]): Transaction[] => {
+    assignGroupID(transactions)
+    return transactions
+}
+
 const userAddr = makeTestAddress(1)
 const dappAddr = makeTestAddress(2)
 
 const makePayment = (sender: Address, amount: bigint): Transaction =>
     makeTestPaymentTx(sender, { receiver: dappAddr, amount })
 
-const userAccount = {
-    type: 'algo25',
-    address: userAddr.toString(),
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const USER_ADDRESS = userAddr.toString()
+const userAccount = algo25Account(USER_ADDRESS, { keyPairId: 'key-1' })
 
 const baseInput = (request: SignRequest): SigningMachineInput =>
     ({
@@ -52,9 +67,9 @@ const baseInput = (request: SignRequest): SigningMachineInput =>
         allAccounts: [userAccount],
         signTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
-        signArc60: vi.fn(),
+        signAuthData: vi.fn(),
         createTransport: vi.fn(),
-        network: 'mainnet' as never,
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
         encodeTransaction: vi.fn(),
     }) as unknown as SigningMachineInput
 
@@ -238,7 +253,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             sourceType: 'walletconnect',
             data: [
                 {
-                    signer: userAccount.address,
+                    signer: USER_ADDRESS,
                     data: 'hello',
                     chainId: 4160,
                 },
@@ -247,9 +262,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 
         const context = resolveInitialContext(baseInput(request))
         expect(context.signableGroups).toHaveLength(1)
-        expect(context.signableGroups![0].signerAddress).toBe(
-            userAccount.address,
-        )
+        expect(context.signableGroups![0].signerAddress).toBe(USER_ADDRESS)
         expect(context.signableGroups![0].data.type).toBe('arbitrary-data')
     })
 
@@ -280,7 +293,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             transport: 'callback',
             sourceType: 'walletconnect',
             data: [
-                { signer: userAccount.address, data: 'hello', chainId: 4160 },
+                { signer: USER_ADDRESS, data: 'hello', chainId: 4160 },
                 { signer: 'OTHER_SIGNER', data: 'world', chainId: 4160 },
             ],
         }
@@ -297,9 +310,7 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             type: 'arbitrary-data',
             transport: 'callback',
             sourceType: 'walletconnect',
-            data: [
-                { signer: userAccount.address, data: 'hello', chainId: 4160 },
-            ],
+            data: [{ signer: USER_ADDRESS, data: 'hello', chainId: 4160 }],
             approve: arbApprove,
         }
 
@@ -309,11 +320,11 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 
         await callbacks?.approve?.({
             signedData: { type: 'arbitrary-data', signatures: [sig] },
-            signers: [{ address: userAccount.address }],
+            signers: [{ address: USER_ADDRESS }],
         } as never)
 
         expect(arbApprove).toHaveBeenCalledWith([
-            { signature: sig, signer: userAccount.address },
+            { signature: sig, signer: USER_ADDRESS },
         ])
     })
 
@@ -328,8 +339,8 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
             transport: 'callback',
             sourceType: 'walletconnect',
             data: [
-                { signer: userAccount.address, data: 'one', chainId: 4160 },
-                { signer: userAccount.address, data: 'two', chainId: 4160 },
+                { signer: USER_ADDRESS, data: 'one', chainId: 4160 },
+                { signer: USER_ADDRESS, data: 'two', chainId: 4160 },
             ],
             approve: arbApprove,
         }
@@ -341,53 +352,51 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 
         await callbacks?.approve?.({
             signedData: { type: 'arbitrary-data', signatures: [sigA, sigB] },
-            signers: [{ address: userAccount.address }],
+            signers: [{ address: USER_ADDRESS }],
         } as never)
 
         expect(arbApprove).toHaveBeenCalledWith([
-            { signature: sigA, signer: userAccount.address },
-            { signature: sigB, signer: userAccount.address },
+            { signature: sigA, signer: USER_ADDRESS },
+            { signature: sigB, signer: USER_ADDRESS },
         ])
     })
 })
 
-describe('resolveInitialContext — arc60 requests', () => {
-    const stdSigData = {
+describe('resolveInitialContext — auth-data requests', () => {
+    const authData = {
         data: 'e30=',
-        signer: userAccount.address,
-        domain: 'arc60.io',
+        signer: USER_ADDRESS,
+        domain: 'example.io',
         authenticatorData: new Uint8Array(37),
     }
     const metadata = { scope: 1, encoding: 'base64' }
 
-    it('produces a single signable arc60 group keyed off stdSigData.signer', () => {
-        const request: Arc60SignRequest = {
-            id: 'req-arc60',
-            type: 'arc60',
+    it('produces a single signable auth-data group keyed off authData.signer', () => {
+        const request: AuthDataSignRequest = {
+            id: 'req-auth-data',
+            type: 'auth-data',
             transport: 'callback',
             sourceType: 'walletconnect',
-            stdSigData,
+            authData,
             metadata,
         }
 
         const context = resolveInitialContext(baseInput(request))
         expect(context.signableGroups).toHaveLength(1)
-        expect(context.signableGroups![0].data.type).toBe('arc60')
-        expect(context.signableGroups![0].signerAddress).toBe(
-            userAccount.address,
-        )
+        expect(context.signableGroups![0].data.type).toBe('auth-data')
+        expect(context.signableGroups![0].signerAddress).toBe(USER_ADDRESS)
     })
 
     it('wraps the approve callback to project the single signature into the [{signature,signer}] shape', async () => {
-        const arc60Approve = vi.fn(async () => undefined)
-        const request: Arc60SignRequest = {
-            id: 'req-arc60-cb',
-            type: 'arc60',
+        const authDataApprove = vi.fn(async () => undefined)
+        const request: AuthDataSignRequest = {
+            id: 'req-auth-data-cb',
+            type: 'auth-data',
             transport: 'callback',
             sourceType: 'walletconnect',
-            stdSigData,
+            authData,
             metadata,
-            approve: arc60Approve,
+            approve: authDataApprove,
         }
 
         const context = resolveInitialContext(baseInput(request))
@@ -395,28 +404,19 @@ describe('resolveInitialContext — arc60 requests', () => {
         const sig = new Uint8Array([7])
 
         await callbacks?.approve?.({
-            signedData: { type: 'arc60', signature: sig },
-            signers: [{ address: userAccount.address }],
+            signedData: { type: 'auth-data', signature: sig },
+            signers: [{ address: USER_ADDRESS }],
         } as never)
 
-        expect(arc60Approve).toHaveBeenCalledWith([
-            { signature: sig, signer: userAccount.address },
+        expect(authDataApprove).toHaveBeenCalledWith([
+            { signature: sig, signer: USER_ADDRESS },
         ])
     })
 })
 
 describe('resolveInitialContext — hardware wallet registry requirement', () => {
-    const hardwareAccount = {
-        type: 'hardware',
-        address: new Address(new Uint8Array(32).fill(3)).toString(),
-        hardwareDetails: {
-            manufacturer: 'ledger',
-            deviceId: 'd1',
-            deviceName: 'Nano X',
-            accountIndex: 0,
-            transportType: 'ble',
-        },
-    } as unknown as WalletAccount
+    const HW_ADDRESS = new Address(new Uint8Array(32).fill(3)).toString()
+    const hardwareAccount = ledgerAccount(HW_ADDRESS, 0, { deviceId: 'd1' })
 
     const buildHardwareInput = (
         request: TransactionSignRequest,
@@ -427,9 +427,9 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
             allAccounts: [hardwareAccount],
             signTransactions: vi.fn(),
             signArbitraryData: vi.fn(),
-            signArc60: vi.fn(),
+            signAuthData: vi.fn(),
             createTransport: vi.fn(),
-            network: 'mainnet' as never,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             encodeTransaction: vi.fn(),
             hardwareWalletRegistry: opts.hardwareWalletRegistry,
         }) as unknown as SigningMachineInput
@@ -438,7 +438,7 @@ describe('resolveInitialContext — hardware wallet registry requirement', () =>
         // Critical wiring guard: hardware actors require a registry to call
         // the device. The machine refuses to start rather than failing
         // partway through.
-        const hwAddr = (hardwareAccount as { address: string }).address
+        const hwAddr = HW_ADDRESS
         const request: TransactionSignRequest = {
             id: 'req-hw',
             type: 'transactions',
@@ -475,4 +475,203 @@ describe('resolveInitialContext — signer account not found', () => {
             CannotSignError,
         )
     })
+})
+
+describe('resolveInitialContext: chain-neutral transaction requests', () => {
+    const OURS = '0xOURS'
+    const ALSO_OURS = '0xALSO_OURS'
+    const STRANGER = '0xSTRANGER'
+
+    const accountOnSecondChain = (address: string): WalletAccount =>
+        ({
+            ...userAccount,
+            address: `${address}-algorand`,
+            chains: { ethereum: { address, keyPairId: 'key-1' } },
+        }) as unknown as WalletAccount
+
+    const input = (
+        txs: ReturnType<typeof makeUnsignedTransaction>[],
+    ): SigningMachineInput => ({
+        ...baseInput({
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs,
+        }),
+        allAccounts: [
+            accountOnSecondChain(OURS),
+            accountOnSecondChain(ALSO_OURS),
+        ],
+        scope: SECOND_CHAIN_SCOPE,
+    })
+
+    beforeAll(() => {
+        registerAlgorandRulesAs(SECOND_CHAIN_SCOPE.chainId)
+        // Compares as Ethereum's codec does: case doesn't matter.
+        if (!addressCodecs.has(SECOND_CHAIN_SCOPE.chainId)) {
+            addressCodecs.register({
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+                areEqual: (a: string, b: string) =>
+                    a.toLowerCase() === b.toLowerCase(),
+            } as AddressCodec)
+        }
+    })
+
+    beforeEach(() => {
+        registerFakeTransactionPlanner()
+    })
+
+    it("groups each transaction under the signer its chain's planner names, keeping its position", () => {
+        const txs = [
+            makeUnsignedTransaction(OURS),
+            makeUnsignedTransaction(ALSO_OURS),
+            makeUnsignedTransaction(OURS),
+        ]
+
+        const context = resolveInitialContext(input(txs))
+
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                data: {
+                    type: 'transactions',
+                    transactions: [txs[0], txs[2]],
+                    chainData: {},
+                },
+                signerAddress: OURS,
+                originalIndices: [0, 2],
+            }),
+            expect.objectContaining({
+                data: {
+                    type: 'transactions',
+                    transactions: [txs[1]],
+                    chainData: {},
+                },
+                signerAddress: ALSO_OURS,
+                originalIndices: [1],
+            }),
+        ])
+    })
+
+    it('leaves out a transaction no wallet account signs', () => {
+        const ours = makeUnsignedTransaction(OURS)
+
+        const context = resolveInitialContext(
+            input([makeUnsignedTransaction(STRANGER), ours]),
+        )
+
+        expect(context.signableGroups?.map(g => g.originalIndices)).toEqual([
+            [1],
+        ])
+    })
+
+    it("refuses a transaction built on a network other than the chain's selected one", () => {
+        const onTestnet = makeUnsignedTransaction(OURS, {
+            ...SECOND_CHAIN_SCOPE,
+            networkId: 'sepolia',
+        })
+
+        expect(() => resolveInitialContext(input([onTestnet]))).toThrow(
+            ScopeChangedError,
+        )
+    })
+
+    it("refuses a transaction for a chain other than the request's", () => {
+        const algorandTx = makeUnsignedTransaction(OURS, {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+
+        expect(() =>
+            resolveInitialContext(
+                input([makeUnsignedTransaction(OURS), algorandTx]),
+            ),
+        ).toThrow(InvalidSignableDataError)
+    })
+
+    it('refuses a chain with no transaction planner', () => {
+        transactionPlanners.reset()
+
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
+        ).toThrow(ChainAdapterNotRegisteredError)
+    })
+
+    it('keys a transaction several signers sign to the first one the wallet holds', () => {
+        registerFakeTransactionPlanner(
+            fakeTransactionPlanner(transaction => [
+                { ...planFromPayload(transaction)[0], signer: STRANGER },
+                { ...planFromPayload(transaction)[0], requestIndex: 1 },
+                {
+                    ...planFromPayload(transaction)[0],
+                    requestIndex: 2,
+                    signer: ALSO_OURS,
+                },
+            ]),
+        )
+
+        const context = resolveInitialContext(
+            input([makeUnsignedTransaction(OURS)]),
+        )
+
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                signerAddress: OURS,
+                originalIndices: [0],
+            }),
+        ])
+    })
+
+    it("groups under the wallet's spelling of a signer the planner spells differently", () => {
+        const txs = [
+            makeUnsignedTransaction(OURS.toLowerCase()),
+            makeUnsignedTransaction(OURS),
+        ]
+
+        const context = resolveInitialContext(input(txs))
+
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                signerAddress: OURS,
+                originalIndices: [0, 1],
+            }),
+        ])
+    })
+
+    it('refuses a request no wallet account signs', () => {
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(STRANGER)])),
+        ).toThrow(CannotSignError)
+    })
+
+    it("refuses a payload the chain's planner can't read, as untrusted data", () => {
+        registerFakeTransactionPlanner(
+            fakeTransactionPlanner(() => {
+                throw new Error('The payload is malformed')
+            }),
+        )
+
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
+        ).toThrow(InvalidSignableDataError)
+    })
+
+    it.each([
+        ['chain-neutral', 'Algorand'],
+        ['Algorand', 'chain-neutral'],
+    ])(
+        'refuses a request that mixes %s then %s transactions',
+        (first, _second) => {
+            const neutral = makeUnsignedTransaction(OURS)
+            const algorand = makePayment(userAddr, 1n)
+            const mixed = (first === 'Algorand'
+                ? [algorand, neutral]
+                : [neutral, algorand]) as unknown as ReturnType<
+                typeof makeUnsignedTransaction
+            >[]
+
+            expect(() => resolveInitialContext(input(mixed))).toThrow(
+                InvalidSignableDataError,
+            )
+        },
+    )
 })

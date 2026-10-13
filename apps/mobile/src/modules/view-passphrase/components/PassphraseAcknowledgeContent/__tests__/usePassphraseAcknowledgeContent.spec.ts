@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@test-utils/render'
 import { usePassphraseAcknowledgeContent } from '../usePassphraseAcknowledgeContent'
 
@@ -65,5 +65,46 @@ describe('usePassphraseAcknowledgeContent', () => {
 
         act(() => result.current.toggle(3))
         expect(result.current.allChecked).toBe(true)
+    })
+
+    describe('auto-scroll', () => {
+        const renderWithScrollSpy = () => {
+            const scrollToEnd = vi.fn()
+            const hook = renderHook(() =>
+                usePassphraseAcknowledgeContent({
+                    rowCount: 4,
+                }),
+            )
+            hook.result.current.scrollRef.current = { scrollToEnd }
+            return { ...hook, scrollToEnd }
+        }
+
+        it('scrolls to the end when ticking a row leaves an unticked row below it', () => {
+            const { result, scrollToEnd } = renderWithScrollSpy()
+
+            act(() => result.current.toggle(2))
+
+            expect(scrollToEnd).toHaveBeenCalledWith({ animated: true })
+        })
+
+        it('does not scroll when every row below is already ticked', () => {
+            const { result, scrollToEnd } = renderWithScrollSpy()
+            act(() => result.current.toggle(3))
+            scrollToEnd.mockClear()
+
+            act(() => result.current.toggle(2))
+
+            expect(scrollToEnd).not.toHaveBeenCalled()
+        })
+
+        it('does not scroll when unticking a row', () => {
+            const { result, scrollToEnd } = renderWithScrollSpy()
+            act(() => result.current.toggle(0))
+            scrollToEnd.mockClear()
+
+            act(() => result.current.toggle(0))
+
+            expect(scrollToEnd).not.toHaveBeenCalled()
+        })
     })
 })

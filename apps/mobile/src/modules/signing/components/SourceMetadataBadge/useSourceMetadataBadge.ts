@@ -12,17 +12,23 @@
 
 import { useMemo } from 'react'
 
-import { stripUrlScheme } from '@perawallet/wallet-core-shared'
+import {
+    isSameOrigin,
+    originOf,
+    stripUrlScheme,
+} from '@perawallet/wallet-core-shared'
 import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const useSourceMetadataBadge = (
     metadata: SignRequestSource,
     verifiedOrigin?: string,
 ) => {
+    const { t } = useLanguage()
     const { data: project } = useProjectByUrlQuery({
         url: metadata.url,
         isEnabled: !!metadata.url,
@@ -48,10 +54,21 @@ export const useSourceMetadataBadge = (
 
     const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
 
+    // The name and url above are what the dApp claims about itself.
+    const requestOriginLabel =
+        verifiedOrigin && !isSameOrigin(verifiedOrigin, metadata.url)
+            ? t('dapp.approval.request_origin', {
+                  origin: stripUrlScheme(
+                      originOf(verifiedOrigin) ?? verifiedOrigin,
+                  ),
+              })
+            : undefined
+
     return {
         displayIcon,
         displayName,
         url,
         verificationTier,
+        requestOriginLabel,
     }
 }

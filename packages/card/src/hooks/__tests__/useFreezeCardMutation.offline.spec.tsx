@@ -20,17 +20,15 @@ import {
 import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mockUseNetwork,
-}))
-
 const api = vi.hoisted(() => ({ freezeCard: vi.fn() }))
 vi.mock('../../api/card', () => api)
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { CardStatus, type Card } from '../../models/card'
 import { cardQueryKeys } from '../querykeys'
 import { useFreezeCardMutation } from '../useFreezeCardMutation'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 const ACTIVE_CARD: Card = {
     id: 'card_1',
@@ -57,21 +55,20 @@ describe('useFreezeCardMutation (offline optimism regression)', () => {
     // only place the cached status flips to Frozen, so a failed-offline
     // freeze must leave the cache exactly as it was.
     it('does not flip cached status to Frozen when the freeze fails offline', async () => {
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         const queryClient = new QueryClient({
             defaultOptions: {
                 queries: { retry: false },
                 mutations: { ...mutationDefaults, retry: false },
             },
         })
-        queryClient.setQueryData(cardQueryKeys.status('mainnet'), ACTIVE_CARD)
+        queryClient.setQueryData(cardQueryKeys.status(SCOPE), ACTIVE_CARD)
 
         onlineManager.setOnline(false)
         api.freezeCard.mockRejectedValue(
             new TypeError('Network request failed'),
         )
 
-        const { result } = renderHook(() => useFreezeCardMutation(), {
+        const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
             wrapper: createWrapper(queryClient),
         })
 
@@ -82,8 +79,8 @@ describe('useFreezeCardMutation (offline optimism regression)', () => {
         // networkMode:'always' ran the mutationFn (which rejected) rather than
         // pausing — proving fail-fast, not pause-and-later-resume.
         expect(api.freezeCard).toHaveBeenCalledTimes(1)
-        expect(
-            queryClient.getQueryData(cardQueryKeys.status('mainnet')),
-        ).toEqual(ACTIVE_CARD)
+        expect(queryClient.getQueryData(cardQueryKeys.status(SCOPE))).toEqual(
+            ACTIVE_CARD,
+        )
     })
 })

@@ -52,9 +52,20 @@ export const useVaultLockState = (): UseVaultLockStateResult => {
     useEffect(() => {
         void refresh()
         const unsubscribe = onLockStateChanged(unlocked => {
-            refreshTokenRef.current++
+            const token = ++refreshTokenRef.current
             setIsUnlocked(unlocked)
-            if (unlocked) setIsInitialized(true)
+            if (unlocked) {
+                setIsInitialized(true)
+                return
+            }
+            // A lock can also mean the vault was destroyed by a wipe; without
+            // this re-read the surface would sit on an unlock screen that no
+            // password can pass.
+            void isVaultInitialized().then(initialized => {
+                if (token === refreshTokenRef.current) {
+                    setIsInitialized(initialized)
+                }
+            })
         })
         return unsubscribe
     }, [refresh])

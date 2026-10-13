@@ -15,18 +15,26 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 /**
  * Why biometric unlock stopped working without the user asking for it.
  *
- * The first two are affirmative reports that destroy the opt-in, recoverable by
- * re-enabling in the app — `enrollment-changed` immediately, `weak-biometric`
- * only once a class-3 biometric is enrolled. `not-available` is different in
- * kind: nothing is destroyed and it re-arms itself once the device is fixed, but
- * until then unlock silently does not happen, which is worth saying out loud.
- * Only persistent unavailability qualifies — a lockout clears on its own and is
+ * `enrollment-changed`, `weak-biometric` and `rebind-required` are affirmative
+ * reports that destroy the opt-in, recoverable by re-enabling in the app —
+ * `enrollment-changed` immediately, `weak-biometric` only once a class-3
+ * biometric is enrolled. `not-available` is different in kind: nothing is
+ * destroyed and it re-arms itself once the device is fixed, but until then
+ * unlock silently does not happen, which is worth saying out loud. Only
+ * persistent unavailability qualifies — a lockout clears on its own and is
  * never reported here.
+ *
+ * `rebind-required` is a key that is gone rather than superseded: a restored
+ * backup, a keystore reset, or an upgrade whose silent re-arm could not create
+ * a key. On iOS it also covers a changed enrollment, because
+ * `.biometryCurrentSet` removes the key rather than marking it unusable and
+ * nothing can tell the two apart without a marker that would outlive the app.
  */
 export type BiometricsDisabledReason =
     | 'enrollment-changed'
     | 'weak-biometric'
     | 'not-available'
+    | 'rebind-required'
 
 export type SecurityState = BaseStoreState & {
     failedAttempts: number
@@ -80,6 +88,21 @@ export type SecurityState = BaseStoreState & {
      * so a later recurrence prompts again.
      */
     acknowledgedBiometricsDisabledReason: Nullable<BiometricsDisabledReason>
+    /**
+     * Unlock ceremonies that passed but whose key could not release the
+     * token, since the last successful unwrap. Persisted: unlocks are usually
+     * separated by a cold start, so an in-memory count would never reach the
+     * drop threshold.
+     */
+    biometricUnwrapFailures: number
+    /**
+     * A blob from before OS-bound keys existed was swept and the binding is
+     * re-armed silently on the next successful PIN entry, which is the
+     * identity proof that makes arming without a ceremony acceptable.
+     * Persisted: the sweep runs at the lock screen and the app may be killed
+     * before the PIN is ever entered.
+     */
+    isBiometricRearmPending: boolean
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
@@ -95,6 +118,8 @@ export type SecurityState = BaseStoreState & {
     setAcknowledgedBiometricsDisabledReason: (
         reason: Nullable<BiometricsDisabledReason>,
     ) => void
+    setBiometricUnwrapFailures: (count: number) => void
+    setBiometricRearmPending: (pending: boolean) => void
 }
 
 export type PinEntryMode =

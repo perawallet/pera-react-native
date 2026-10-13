@@ -10,62 +10,22 @@
  limitations under the License
  */
 
+import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { DevicePlatform } from '@perawallet/wallet-extension-platform'
 
-/**
- * Account types as the v3 devices API spells them on the wire. Deliberately a
- * separate declaration from `AccountType` in `@perawallet/wallet-core-accounts`
- * even though the literals currently match: this is a backend contract, and an
- * internal rename must break the build at the mapping in
- * `packages/accounts/src/device-accounts.ts` rather than silently start
- * sending an unrecognised `account_type`.
- */
-export const DeviceAccountTypes = {
-    algo25: 'algo25',
-    hdWallet: 'hdWallet',
-    hardware: 'hardware',
-    multisig: 'multisig',
-    watch: 'watch',
-    quantum: 'quantum',
-} as const
-
-export type DeviceAccountType =
-    (typeof DeviceAccountTypes)[keyof typeof DeviceAccountTypes]
-
-/**
- * Precedence for resolving two registrations of the same address: higher wins.
- * If an address is ever held both as a watch account and as a signing account,
- * the signing type is the one the backend must be told about — registering
- * `watch` for what is really a quantum account makes it price that account's
- * swap quotes at the Ed25519 minimum fee and the chain rejects the swap.
- *
- * `as const` is load-bearing: `satisfies Record<K, number>` alone widens every
- * value to `number` and the cross-enum equality assertion that pins this table
- * to its internal counterpart would pass vacuously.
- *
- * This is the wire-boundary copy of `ACCOUNT_TYPE_RANK` in
- * `@perawallet/wallet-core-accounts`, which resolves the same collision over
- * the internal `AccountType` enum before registration ever sees it. The two
- * enums are deliberately separate declarations (see the comment on
- * `DeviceAccountTypes` above), so the orders are held in sync by a type-level
- * assertion in `packages/accounts/src/device-accounts.ts` — update both
- * together.
- */
-export const DEVICE_ACCOUNT_TYPE_RANK = {
-    quantum: 6,
-    hardware: 5,
-    hdWallet: 4,
-    algo25: 3,
-    multisig: 2,
-    watch: 1,
-} as const satisfies Record<DeviceAccountType, number>
-
 /** One account as registration reports it. Domain shape, camelCase. */
 export type DeviceAccountRegistration = {
     address: string
-    accountType: DeviceAccountType
+    /** The devices API `account_type`, as the account's chain spells it. */
+    accountType: string
+    /**
+     * Which of two registrations of one address the backend is told about:
+     * higher wins. Registering `watch` for what is really a signing account
+     * makes the backend price it as the wrong kind.
+     */
+    rank: number
     receiveNotifications: boolean
 }
 
@@ -83,12 +43,19 @@ export type DeviceRegistration = {
     platform: DevicePlatform
     locale: string
     appVersion: string
+    /**
+     * The user's display-currency id, exactly as `/v1/currencies/` returns it
+     * ('USD', 'TRY', 'ALGO'). The backend renders push copy and notification
+     * text in it, and falls back to USD for a device that never sent one.
+     * Independent of `locale`.
+     */
+    currency?: string
     accounts: DeviceAccountRegistration[]
 }
 
 export type DeviceAccountRequest = {
     address: string
-    account_type: DeviceAccountType
+    account_type: string
     receive_notifications: boolean
 }
 
@@ -98,6 +65,8 @@ export type DeviceRegistrationRequest = {
     platform: DevicePlatform
     locale: string
     app_version: string
+    /** Max 8 characters; over-length 422s the whole registration. */
+    currency?: string
     accounts: DeviceAccountRequest[]
 }
 
@@ -126,10 +95,11 @@ export type DeviceIdOrigin = 'migrated' | 'recreated'
 
 export type DeviceState = BaseStoreState & {
     pushToken: Nullable<string>
-    deviceIDs: Map<Network, Nullable<string>>
+    /** Read through `deviceIdFor`; the setters take a `Network`. */
+    deviceIDs: Map<ChainScopeKey, Nullable<string>>
     /** Networks whose last registration attempt failed and awaits a retry. */
     pendingRegistrationNetworks: Network[]
-    deviceIdOrigins: Partial<Record<Network, DeviceIdOrigin>>
+    deviceIdOrigins: Partial<Record<ChainScopeKey, DeviceIdOrigin>>
     setPushToken: (token: Nullable<string>) => void
     setDeviceID: (network: Network, id: Nullable<string>) => void
     setRegistrationPending: (network: Network, isPending: boolean) => void

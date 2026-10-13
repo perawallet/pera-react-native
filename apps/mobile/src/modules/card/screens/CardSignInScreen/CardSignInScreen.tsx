@@ -32,6 +32,7 @@ export const CardSignInScreen = () => {
         isValid,
         isSubmitting,
         isOtpRequired,
+        otpPhone,
         otpCode,
         onChangeOtp,
         isOtpValid,
@@ -124,7 +125,11 @@ export const CardSignInScreen = () => {
                             variant='body'
                             style={styles.otpDescription}
                         >
-                            {t('peraCard.sign_in.otp_body')}
+                            {otpPhone
+                                ? t('peraCard.sign_in.otp_body_with_phone', {
+                                      phone: otpPhone,
+                                  })
+                                : t('peraCard.sign_in.otp_body')}
                         </PWText>
                         <PWCodeInput
                             value={otpCode}

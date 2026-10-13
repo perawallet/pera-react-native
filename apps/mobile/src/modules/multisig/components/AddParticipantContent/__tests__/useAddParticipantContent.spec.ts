@@ -12,6 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandMultisigAdapter,
+} from '@test-utils/algorandAccountsAdapter'
 import { useAddParticipantContent } from '../useAddParticipantContent'
 
 const LOCAL_ALGO_ADDR = 'A'.repeat(58)
@@ -30,9 +34,12 @@ const multisigCheckState: {
     isFetching: boolean
 } = { data: undefined, isFetching: false }
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+const verdictCheckState: {
+    verdict: string | null
+    isFetching: boolean
+} = { verdict: null, isFetching: false }
+
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ errorToast: mockErrorToast }),
@@ -52,26 +59,33 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => [
-            { address: LOCAL_ALGO_ADDR, type: actual.AccountTypes.algo25 },
-            { address: LOCAL_WATCH_ADDR, type: actual.AccountTypes.watch },
-            { address: LOCAL_QUANTUM_ADDR, type: actual.AccountTypes.quantum },
+            {
+                chains: { algorand: { address: LOCAL_ALGO_ADDR } },
+                custody: { kind: 'local', seed: null },
+            },
+            {
+                chains: { algorand: { address: LOCAL_WATCH_ADDR } },
+                custody: { kind: 'watch' },
+            },
+            {
+                chains: { algorand: { address: LOCAL_QUANTUM_ADDR } },
+                custody: { kind: 'local', seed: 'quantum' },
+            },
         ],
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     // The accounts barrel subscribes to the network store at load.
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
     useNetwork: () => ({ network: 'testnet' }),
-}))
-
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: () => ({
-        contacts: [{ address: CONTACT_ADDR, name: 'Bob' }],
-    }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
@@ -81,14 +95,19 @@ vi.mock('@perawallet/wallet-core-multisig', async () => {
     return {
         ...actual,
         useIsMultisigAddressQuery: () => multisigCheckState,
+        useParticipantVerdictQuery: () => verdictCheckState,
     }
 })
 
 describe('useAddParticipantContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAccountsAdapter()
+        registerAlgorandMultisigAdapter()
         multisigCheckState.data = undefined
         multisigCheckState.isFetching = false
+        verdictCheckState.verdict = null
+        verdictCheckState.isFetching = false
     })
 
     it('resolves immediately with the address when the user picks a local non-watch account', () => {
@@ -133,17 +152,69 @@ describe('useAddParticipantContent', () => {
         )
     })
 
-    it('resolves immediately when the user picks a contact', () => {
+    it('validates a contact address like any external one before resolving', async () => {
+        multisigCheckState.data = { isMultisig: false }
         const { result } = renderHook(() => useAddParticipantContent())
 
         act(() => {
             result.current.handleSelected(CONTACT_ADDR)
         })
 
-        expect(mockResolve).toHaveBeenCalledWith({
-            address: CONTACT_ADDR,
-            nfdName: undefined,
+        await waitFor(() =>
+            expect(mockResolve).toHaveBeenCalledWith({
+                address: CONTACT_ADDR,
+                nfdName: undefined,
+            }),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('shows a quantum-account error toast and does not resolve when the contact address signs with a post-quantum key', async () => {
+        multisigCheckState.data = { isMultisig: false }
+        verdictCheckState.verdict = 'incompatible-scheme'
+        const { result } = renderHook(() => useAddParticipantContent())
+
+        act(() => {
+            result.current.handleSelected(CONTACT_ADDR)
         })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'multisig.add_participant.cannot_add_quantum_error',
+                'multisig.add_participant.cannot_add_quantum_error_body',
+            ),
+        )
+        expect(mockResolve).not.toHaveBeenCalled()
+    })
+
+    it('shows a quantum-account error toast and does not resolve when the external (QR-scanned) address signs with a post-quantum key', async () => {
+        multisigCheckState.data = { isMultisig: false }
+        verdictCheckState.verdict = 'incompatible-scheme'
+        const { result } = renderHook(() => useAddParticipantContent())
+
+        act(() => {
+            result.current.handleSelected(EXTERNAL_ADDR)
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'multisig.add_participant.cannot_add_quantum_error',
+                'multisig.add_participant.cannot_add_quantum_error_body',
+            ),
+        )
+        expect(mockResolve).not.toHaveBeenCalled()
+    })
+
+    it("waits for the chain's participant check before resolving an external address", async () => {
+        multisigCheckState.data = { isMultisig: false }
+        verdictCheckState.isFetching = true
+        const { result } = renderHook(() => useAddParticipantContent())
+
+        act(() => {
+            result.current.handleSelected(EXTERNAL_ADDR)
+        })
+
+        expect(mockResolve).not.toHaveBeenCalled()
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 

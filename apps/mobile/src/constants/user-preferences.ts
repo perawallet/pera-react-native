@@ -14,7 +14,7 @@ export const UserPreferences = {
     transactionInfoAgreed: 'transaction-info-agreed',
     chartVisible: 'chart-visible',
     chartPeriod: 'chart-period',
-    developerMenuEnabled: 'developer-menu-enabled',
+    debugToolsEnabled: 'debug-tools-enabled',
     rekeySupportEnabled: 'rekey-support-enabled',
     assetFreezeSupportEnabled: 'asset-freeze-support-enabled',
     shakeToLockEnabled: 'shake-to-lock-enabled',
@@ -27,6 +27,10 @@ export const UserPreferences = {
     onrampIntroductionSeen: 'onramp-introduction-seen',
     onrampXoTermsAccepted: 'onramp-xo-terms-accepted',
     quantumDappWarningAcknowledged: 'quantum-dapp-warning-acknowledged',
+    cloudBackupIntroSeen: 'cloud-backup-intro-seen',
+    // Set by the extension's offscreen document when a migration it could not
+    // finish wiped the cache; the next UI open shows a notice and clears it.
+    databaseResetNoticePending: 'database-reset-notice-pending',
 
     // Web-only master toggle for WebAuthn interception. Deliberately
     // camelCase (breaking this map's kebab-case convention) — it must match
@@ -58,4 +62,5 @@ export const OneTimeUserPreferenceFlags = [
     UserPreferences.quantumDappWarningAcknowledged,
     UserPreferences._securityPinSetupPrompt,
     UserPreferences._legacyQuantumNoticePrompt,
+    UserPreferences.cloudBackupIntroSeen,
 ] as const

@@ -12,6 +12,13 @@
 
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    buildOptInTxs,
+    buildOptOutTxs,
+    buildTransferTxs,
+} from '@perawallet/wallet-core-chain-algorand/transactions/builders'
+
 import {
     createAlgo25Account,
     fundAccount,
@@ -20,8 +27,9 @@ import {
 import type { TxnIntent } from '../../harness/assert/intent'
 import { expectConformant } from '../../harness/assert/roundTrip'
 import {
-    buildTxn,
     createTestAsset,
+    onlyTxn,
+    signGroupWithKeystore,
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
@@ -30,6 +38,7 @@ import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
+import { localNetScope } from '../../harness/scope'
 
 const holdingOf = async (
     address: string,
@@ -50,13 +59,17 @@ const holdingOf = async (
 // close-out. Pinning the expected value turns that into a loud failure.
 const TRANSFER_AMOUNT = 400n
 
+// Built by the app's send-flow builders, the ones the opt-in, opt-out and send
+// hooks reach through the chain adapter.
 describe('asset transfer construction conformance', () => {
+    let scope: ChainScope
     let keyStore: ConformanceKeyStore
     let creator: ConformanceAccount
     let holder: ConformanceAccount
     let assetId: bigint
 
     beforeAll(async () => {
+        scope = await localNetScope()
         keyStore = await createConformanceKeyStore()
         creator = await createAlgo25Account(keyStore)
         holder = await createAlgo25Account(keyStore)
@@ -75,9 +88,9 @@ describe('asset transfer construction conformance', () => {
         expect(await holdingOf(holder.address, assetId)).toBeUndefined()
 
         const senderBalanceBefore = await balanceOf(holder.address)
-        const txn = await buildTxn(composer => {
-            composer.addAssetOptIn({ sender: holder.address, assetId })
-        })
+        const txn = onlyTxn(
+            await buildOptInTxs({ scope, sender: holder.address, assetId }),
+        )
         const signedBytes = await signWithKeystore(keyStore, holder, txn)
         const { txId } = await submitAndConfirm(signedBytes)
 
@@ -103,14 +116,15 @@ describe('asset transfer construction conformance', () => {
         const amount = TRANSFER_AMOUNT
         const senderBalanceBefore = await balanceOf(creator.address)
 
-        const txn = await buildTxn(composer => {
-            composer.addAssetTransfer({
+        const txn = onlyTxn(
+            await buildTransferTxs({
+                scope,
                 sender: creator.address,
                 receiver: holder.address,
-                assetId,
+                assetId: assetId.toString(),
                 amount,
-            })
-        })
+            }),
+        )
         const signedBytes = await signWithKeystore(keyStore, creator, txn)
         const { txId } = await submitAndConfirm(signedBytes)
 
@@ -145,15 +159,18 @@ describe('asset transfer construction conformance', () => {
         }
         const senderBalanceBefore = await balanceOf(holder.address)
 
-        const txn = await buildTxn(composer => {
-            composer.addAssetTransfer({
-                sender: holder.address,
-                receiver: holder.address,
-                assetId,
-                amount: 0n,
-                closeAssetTo: creator.address,
-            })
-        })
+        const txn = onlyTxn(
+            await buildOptOutTxs({
+                scope,
+                optOuts: [
+                    {
+                        sender: holder.address,
+                        assetId,
+                        creator: creator.address,
+                    },
+                ],
+            }),
+        )
         const signedBytes = await signWithKeystore(keyStore, holder, txn)
         const { txId } = await submitAndConfirm(signedBytes)
 
@@ -176,6 +193,78 @@ describe('asset transfer construction conformance', () => {
         expect(await holdingOf(holder.address, assetId)).toBeUndefined()
         expect(await holdingOf(creator.address, assetId)).toBe(
             creatorHoldingBefore + remaining,
+        )
+    })
+})
+
+describe('multi-asset opt-out construction conformance', () => {
+    let scope: ChainScope
+    let keyStore: ConformanceKeyStore
+    let creator: ConformanceAccount
+    let holder: ConformanceAccount
+    let assetIds: bigint[]
+
+    beforeAll(async () => {
+        scope = await localNetScope()
+        keyStore = await createConformanceKeyStore()
+        creator = await createAlgo25Account(keyStore)
+        holder = await createAlgo25Account(keyStore)
+        await fundAccount(creator.address, 10_000_000n)
+        await fundAccount(holder.address, 10_000_000n)
+
+        assetIds = [
+            await createTestAsset(keyStore, creator, { unitName: 'OUTA' }),
+            await createTestAsset(keyStore, creator, { unitName: 'OUTB' }),
+        ]
+        for (const assetId of assetIds) {
+            const optIn = onlyTxn(
+                await buildOptInTxs({ scope, sender: holder.address, assetId }),
+            )
+            await submitAndConfirm(
+                await signWithKeystore(keyStore, holder, optIn),
+            )
+        }
+    })
+
+    it('removes every holding in one atomic group', async () => {
+        for (const assetId of assetIds) {
+            expect(await holdingOf(holder.address, assetId)).toBe(0n)
+        }
+
+        const txns = await buildOptOutTxs({
+            scope,
+            optOuts: assetIds.map(assetId => ({
+                sender: holder.address,
+                assetId,
+                creator: creator.address,
+            })),
+        })
+        expect(txns).toHaveLength(assetIds.length)
+
+        const holderBalanceBefore = await balanceOf(holder.address)
+        const signed = await signGroupWithKeystore(keyStore, holder, txns)
+        const { txIds } = await submitAndConfirm(signed)
+
+        for (const [index, assetId] of assetIds.entries()) {
+            await expectConformant({
+                intent: {
+                    type: 'axfer',
+                    sender: holder.address,
+                    receiver: holder.address,
+                    assetId,
+                    amount: 0n,
+                    assetCloseTo: creator.address,
+                    fee: txns[index].fee,
+                    groupSize: assetIds.length,
+                },
+                signedBytes: signed[index],
+                txId: txIds[index],
+            })
+            expect(await holdingOf(holder.address, assetId)).toBeUndefined()
+        }
+        const totalFee = txns.reduce((sum, txn) => sum + txn.fee, 0n)
+        expect(await balanceOf(holder.address)).toBe(
+            holderBalanceBefore - totalFee,
         )
     })
 })

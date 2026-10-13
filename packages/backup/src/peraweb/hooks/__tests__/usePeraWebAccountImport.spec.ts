@@ -18,10 +18,8 @@ const mocks = vi.hoisted(() => ({
     importFromSeed: vi.fn(),
 }))
 
-vi.mock('../../../shared', () => ({
-    useImportAlgo25FromSeed: () => ({ importFromSeed: mocks.importFromSeed }),
-}))
-
+import { backupChainAdapters } from '../../../chain-adapter'
+import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { usePeraWebAccountImport } from '../usePeraWebAccountImport'
 
 const account = (
@@ -36,14 +34,19 @@ const account = (
 })
 
 const renderImport = () =>
-    renderHook(() => usePeraWebAccountImport()).result.current.importAccount
+    renderHook(() => usePeraWebAccountImport('algorand')).result.current
+        .importAccount
 
 beforeEach(() => {
     vi.clearAllMocks()
+    backupChainAdapters.reset()
+    backupChainAdapters.register(
+        fakeBackupAdapter({ useImportFromSeed: () => mocks.importFromSeed }),
+    )
 })
 
 describe('usePeraWebAccountImport', () => {
-    it('delegates to the shared algo25-from-seed import with mapped fields', async () => {
+    it('delegates to the registered seed import with mapped fields', async () => {
         const imported = { address: 'A' }
         mocks.importFromSeed.mockResolvedValue(imported)
         const acc = account()

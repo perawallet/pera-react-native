@@ -12,22 +12,32 @@
 
 export const name = '@perawallet/wallet-core-accounts'
 
-// Side effect: keeps each account's rekeyAddress mirror in lockstep with the
-// active network (see the module for rationale).
-import './store/network-rekey-sync'
-
 export * from './constants'
+export * from './import-formats'
+export * from './multisig'
 export * from './models'
+export * from './credentials'
 export * from './hooks'
 export * from './errors'
-export * from './utils'
 export * from './bip44'
+export * from './utils'
+export * from './signer-resolution'
+export * from './chain-adapter'
+export * from './presentation-adapter'
 export * from './account-discovery'
 export * from './db'
 export * from './cleanup'
 export * from './import-session'
 
-export { useAccountsStore } from './store'
+export {
+    rehydrateAccountsStore,
+    backfillAccountRecords,
+    useAccountsStore,
+    useAccountChainStateStore,
+    hydrateAccountChainStates,
+    recordAuthority,
+    type AccountChainStateSlice,
+} from './store'
 export {
     fetchAndPersistAccount,
     ensureAccountFetched,
@@ -48,8 +58,3 @@ export {
     consumePendingImportMnemonic,
     usePendingImportMnemonicStore,
 } from './store'
-
-export {
-    buildDeviceAccountRegistrations,
-    toDeviceAccountType,
-} from './device-accounts'

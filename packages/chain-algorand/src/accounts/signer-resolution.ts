@@ -1,0 +1,88 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    authorityOf,
+    canSignDirectly,
+    isMultisigAccount,
+    type SignerResolution,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { hasLocalCoSigner } from './multisig-participants'
+import { algorandAddressOf } from './vocabulary'
+
+type AuthHop =
+    | { kind: 'self'; auth: WalletAccount }
+    | { kind: 'rekeyed'; auth: WalletAccount }
+    | { kind: 'authMissing'; authorityAddress: string }
+
+/**
+ * The one place the auth-addr hop is followed. Kept apart from the
+ * signability check because the auth-account forms must not depend on it:
+ * a legacy multisig persisted without its parameters can't sign, but is
+ * still the auth account.
+ *
+ * Rekey indirection follows exactly ONE hop: if A is rekeyed to B and B to C,
+ * B still signs for A (A's auth-addr is literally B), so B's own rekey is
+ * never followed. The same rule makes cyclic chains terminate.
+ */
+const followAuthHop = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): AuthHop => {
+    const authorityAddress = authorityOf(account, scope)
+    if (!authorityAddress) return { kind: 'self', auth: account }
+    const auth = accounts.find(a => algorandAddressOf(a) === authorityAddress)
+    return auth
+        ? { kind: 'rekeyed', auth }
+        : { kind: 'authMissing', authorityAddress }
+}
+
+export const resolveAlgorandSigner = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): SignerResolution => {
+    const hop = followAuthHop(account, accounts, scope)
+    if (hop.kind === 'authMissing') {
+        return {
+            kind: 'authMissing',
+            account,
+            authorityAddress: hop.authorityAddress,
+        }
+    }
+    const { auth } = hop
+    const isRekeyed = hop.kind === 'rekeyed'
+    if (isMultisigAccount(auth)) {
+        if (hasLocalCoSigner(auth, accounts)) {
+            return { kind: 'ok', signer: auth }
+        }
+        return isRekeyed
+            ? { kind: 'authNoLocalParticipant', account, auth }
+            : { kind: 'noLocalParticipant', account: auth }
+    }
+    if (canSignDirectly(auth)) return { kind: 'ok', signer: auth }
+    return isRekeyed
+        ? { kind: 'authIsWatch', account, auth }
+        : { kind: 'watch', account }
+}
+
+export const getAlgorandAuthAccount = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): WalletAccount | null => {
+    const hop = followAuthHop(account, accounts, scope)
+    return hop.kind === 'authMissing' ? null : hop.auth
+}

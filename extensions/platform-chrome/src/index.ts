@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -35,50 +35,11 @@ export {
 export { getFirebaseApp } from './services/firebase-app'
 export { getPlatformServices, hydratePlatform } from './resources'
 export { getSurface, type ExtensionSurface } from './surface'
-export {
-    openExpandedTab,
-    closeCurrentTab,
-    consumeInitialExpandedFlow,
-    openExternalTab,
-    type ExpandedFlow,
-} from './navigation'
 export { isTrustedExtensionPageSender } from './trusted-sender'
 export {
     ensureDeviceInstallationID,
     DEVICE_INSTALLATION_ID_STORAGE_KEY,
 } from './device-installation-id'
-export {
-    WC_CONTROL_SCOPE,
-    isWcControlMessage,
-    type WcControlMessage,
-    type WcDeliveryOutcome,
-    WC_REQUEST_SCOPE,
-    isWcApprovalRequestMessage,
-    type WcApprovalRequestMessage,
-    WC_PAIR_OUTCOME_SCOPE,
-    isWcPairOutcomeMessage,
-    type WcPairOutcome,
-    type WcPairOutcomeMessage,
-    isWcAck,
-    type WcAck,
-    WC_ERROR_NOTICE_SCOPE,
-    isWcErrorNoticeMessage,
-    type WcErrorNoticeMessage,
-} from './walletconnect/protocol'
-export {
-    WC_PAGE_PAIR_SCOPE,
-    isWcPagePairMessage,
-    type WcPagePairMessage,
-} from './walletconnect/page-pair'
-export {
-    sendWcApprovalRequest,
-    onWcControlMessage,
-    sendWcControlMessage,
-    sendPairOutcome,
-    onPairOutcome,
-    sendWcErrorNotice,
-    onWcErrorNotice,
-} from './walletconnect/client'
 export {
     DB_SCOPE,
     DB_CONTROL_SCOPE,
@@ -99,8 +60,10 @@ export {
     getActiveDatabaseHost,
     type SqlExecutor,
 } from './database/host'
-export { createWorkerExecutor } from './database/worker-executor'
-export { onLocalStorageKeyChanged } from './storage-events'
+export {
+    SqlStatementTimeoutError,
+    isSqlStatementTimeout,
+} from './database/errors'
 export {
     STORAGE_PROXY_SCOPE,
     STORAGE_EVENT_SCOPE,
@@ -110,20 +73,3 @@ export {
     type StorageProxyResponse,
     type StorageChangedBroadcast,
 } from './storage-proxy'
-// The ARC-0027 wire/permissions/core-router types+logic now live in
-// @perawallet/wallet-core-arc0027 (platform-agnostic). Re-exported here so
-// existing consumers of this barrel (e.g. apps/mobile's
-// useDappConnectionsStore, which reads DappPermissionStore) don't need to
-// depend on the new package directly.
-export * from '@perawallet/wallet-core-arc0027'
-export { ChromeDappRouter } from './dapp/router'
-export * from './dapp/passkey-opener'
-export * from './dapp/approval-bridge'
-export * from './dapp/approval-client'
-export * from './dapp/webauthn-router-protocol'
-export * from './dapp/passkey-router'
-export {
-    createDiscoverBridgeHost,
-    type DiscoverBridgeHost,
-} from './webview/bridge-host'
-export * from './webview/bridge-wire'

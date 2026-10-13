@@ -11,7 +11,9 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useMenuScreen } from '../useMenuScreen'
 
 vi.mock('@analytics', () => ({
@@ -20,6 +22,19 @@ vi.mock('@analytics', () => ({
 }))
 
 describe('useMenuScreen', () => {
+    beforeEach(() => {
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it('offers staking only while the staking capability is on', () => {
+        const { result } = renderHook(() => useMenuScreen())
+        expect(result.current.canStake).toBe(true)
+
+        act(() => setCapabilityOverrides({ staking: false }))
+
+        expect(result.current.canStake).toBe(false)
+    })
+
     it('starts with the scanner closed', () => {
         const { result } = renderHook(() => useMenuScreen())
 

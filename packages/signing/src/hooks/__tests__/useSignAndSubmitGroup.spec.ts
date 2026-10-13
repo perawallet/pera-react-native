@@ -20,8 +20,9 @@ import {
 import type {
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '../../models'
+import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 
 const mockAddSignRequest = vi.fn()
 const mockSubmitAndAutoRefresh = vi.fn()
@@ -32,22 +33,6 @@ vi.mock('../useSigningRequest', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => ({ client: { algod: {} } }),
-    useTransactionEncoder: () => ({
-        encodeSignedTransactions: vi.fn(arr =>
-            arr.map(() => new Uint8Array([1])),
-        ),
-    }),
-    compactSignedResults: (signed: unknown[]) =>
-        signed.filter(tx => tx !== null),
-}))
-
-vi.mock('../../pipeline/submission/submitAndAutoRefresh', () => ({
-    submitAndAutoRefresh: (...args: unknown[]) =>
-        mockSubmitAndAutoRefresh(...args),
-}))
-
 const fakeTxn = {
     sender: { toString: () => 'A' },
 } as unknown as PeraTransaction
@@ -55,6 +40,9 @@ const fakeTxn = {
 describe('useSignAndSubmitGroup', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeBroadcaster({
+            submitAndAutoRefresh: mockSubmitAndAutoRefresh,
+        })
     })
 
     it('resolves with the algod txIds after the pipeline approves', async () => {
@@ -68,6 +56,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn, fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -88,7 +77,34 @@ describe('useSignAndSubmitGroup', () => {
         expect(captured?.transport).toBe('callback')
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])
+        expect(captured).toMatchObject({ chainId: 'algorand' })
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('submits only the signed slots when the pipeline pads with null', async () => {
+        mockSubmitAndAutoRefresh.mockResolvedValue(['tx1'])
+        let captured: Optional<TransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+            captured = r
+        })
+
+        const { result } = renderHook(() => useSignAndSubmitGroup())
+
+        const promise = act(async () =>
+            result.current.submit({
+                chainId: 'algorand',
+                unsignedTxs: [fakeTxn, fakeTxn],
+                source: { name: 'opt-in', description: 'test' },
+            }),
+        )
+        const signed = { txn: fakeTxn, sig: new Uint8Array([1]) }
+        await captured?.approve?.([
+            signed,
+            null,
+        ] as unknown as PeraSignedTransaction[])
+
+        await promise
+        expect(mockSubmitAndAutoRefresh.mock.calls[0][0]).toEqual([signed])
     })
 
     it('rethrows a submit failure from approve so the transport fails the machine', async () => {
@@ -105,6 +121,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -132,6 +149,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-out', description: 'test' },
             }),
@@ -154,6 +172,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'send', description: 'test' },
             }),
@@ -179,6 +198,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -201,6 +221,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const res = await act(async () =>
             result.current.submit({
+                chainId: 'algorand',
                 unsignedTxs: [],
                 source: { name: 'no-op', description: 'test' },
             }),

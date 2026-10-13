@@ -17,7 +17,7 @@ import { shareText } from '@utils/shareText'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 
 vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: vi.fn(),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(),
 }))
 
@@ -50,9 +50,10 @@ vi.mock('@utils/shareText', () => ({
 }))
 
 const mockAccount = {
-    address: 'test-address-123',
+    id: 'watch-1',
     name: 'Test Account',
-    type: 'watch' as const,
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'test-address-123' } },
 }
 
 describe('useQRViewScreen', () => {
@@ -81,6 +82,7 @@ describe('useQRViewScreen', () => {
         const { result } = renderHook(() => useQRViewScreen())
 
         expect(result.current.account).toEqual(mockAccount)
+        expect(result.current.address).toBe('test-address-123')
     })
 
     it('returns empty deeplink when no account', () => {
@@ -97,7 +99,10 @@ describe('useQRViewScreen', () => {
         const { result } = renderHook(() => useQRViewScreen())
 
         expect(result.current.deeplink).toBe('algorand://test-address-123')
-        expect(mockBuildAccountDeeplink).toHaveBeenCalledWith(mockAccount)
+        expect(mockBuildAccountDeeplink).toHaveBeenCalledWith(
+            mockAccount,
+            'algorand',
+        )
     })
 
     it('copies address to clipboard', () => {

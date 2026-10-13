@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,38 +19,63 @@ const mocks = vi.hoisted(() => ({
     reject: vi.fn(),
     useDappRequest: vi.fn(),
     useSigningAccounts: vi.fn(),
-    useSelectedAccountAddress: vi.fn(),
+    useSelectedAccountId: vi.fn(),
+    useApprovalArming: vi.fn(),
 }))
 
 vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 
+vi.mock('@hooks/useApprovalArming.web', () => ({
+    useApprovalArming: mocks.useApprovalArming,
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: mocks.useSigningAccounts,
-    useSelectedAccountAddress: mocks.useSelectedAccountAddress,
+    useSelectedAccountId: mocks.useSelectedAccountId,
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        id: string,
+    ) => account.chains[id],
 }))
 
 import { useWcConnectScreen } from '../useWcConnectScreen'
 
-const ACCOUNT_A = { address: 'AAAA', name: 'Account A' }
-const ACCOUNT_B = { address: 'BBBB', name: 'Account B' }
+const ACCOUNT_A = {
+    id: 'account-a',
+    name: 'Account A',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'AAAA', keyPairId: 'key-a' } },
+}
+const ACCOUNT_B = {
+    id: 'account-b',
+    name: 'Account B',
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: 'BBBB', keyPairId: 'key-b' } },
+}
 
-const wcConnectApproval = (
+const PEER = {
+    name: 'Test dApp',
+    url: 'https://dapp.example',
+    icons: ['https://dapp.example/icon.png'],
+}
+
+const proposalApproval = (
     overrides: Record<string, unknown> = {},
 ): Record<string, unknown> => ({
-    kind: 'wc-connect',
-    requestId: 'wc-wc-connect-client-1',
-    clientId: 'client-1',
-    chainId: 416_002,
+    kind: 'connection-proposal',
+    requestId: 'connection-proposal-1',
+    proposalId: 'proposal-1',
+    connectionKind: 'walletconnect-v1',
     origin: 'https://dapp.example',
-    peerName: 'Test dApp',
-    peerIcons: ['https://dapp.example/icon.png'],
-    permissions: ['algo_signTxn'],
+    peer: PEER,
+    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+    expiresAt: Date.now() + 60_000,
     ...overrides,
 })
 
-const render = (approval: unknown = wcConnectApproval()) => {
+const render = (approval: unknown = proposalApproval()) => {
     mocks.useDappRequest.mockReturnValue({
         approval,
         isLoading: false,
@@ -63,42 +89,17 @@ describe('useWcConnectScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useSigningAccounts.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: null,
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: null,
         })
+        mocks.useApprovalArming.mockReturnValue(true)
     })
 
-    it('shapes the approval into what the shared header consumes', () => {
+    it('exposes the proposal peer and its requested methods as the permissions list', () => {
         const { result } = render()
 
-        expect(result.current.request).toEqual({
-            clientId: 'client-1',
-            chainId: 416_002,
-            permissions: ['algo_signTxn'],
-            peerMeta: {
-                name: 'Test dApp',
-                url: 'https://dapp.example',
-                icons: ['https://dapp.example/icon.png'],
-                description: '',
-            },
-        })
-    })
-
-    it('falls back to the origin when the peer asserted no name', () => {
-        // peerMeta.name is optional in WC v1; an empty header title would read
-        // as "  wants to connect to your account".
-        const { result } = render(wcConnectApproval({ peerName: undefined }))
-
-        expect(result.current.request?.peerMeta.name).toBe(
-            'https://dapp.example',
-        )
-    })
-
-    it('lists no permissions rather than inventing a full set when the message carries none', () => {
-        // Showing more than the dApp asked for would misrepresent the grant.
-        const { result } = render(wcConnectApproval({ permissions: undefined }))
-
-        expect(result.current.request?.permissions).toEqual([])
+        expect(result.current.peer).toEqual(PEER)
+        expect(result.current.permissions).toEqual(['algo_signTxn'])
     })
 
     it('cannot connect until an account is picked, then approves with exactly those accounts', () => {
@@ -141,8 +142,8 @@ describe('useWcConnectScreen', () => {
     })
 
     it('seeds the selection with the active account when it can sign', () => {
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: 'BBBB',
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
         })
         const { result } = render()
 
@@ -150,11 +151,50 @@ describe('useWcConnectScreen', () => {
         expect(result.current.canConnect).toBe(true)
     })
 
+    it('seeds once the account store rehydrates after the proposal', () => {
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
+        })
+        mocks.useSigningAccounts.mockReturnValue([])
+        const { result, rerender } = render()
+
+        expect(result.current.selected.size).toBe(0)
+
+        mocks.useSigningAccounts.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
+        rerender()
+
+        expect(result.current.selected.has('BBBB')).toBe(true)
+    })
+
+    it('pre-checks nothing for a page-initiated proposal', () => {
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
+        })
+        const { result } = render(
+            proposalApproval({ requesterOrigin: 'https://dapp.example' }),
+        )
+
+        expect(result.current.selected.size).toBe(0)
+        expect(result.current.canConnect).toBe(false)
+    })
+
+    it('cannot connect before the window is armed, even with an account picked', () => {
+        mocks.useApprovalArming.mockReturnValue(false)
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-b',
+        })
+        const { result } = render()
+
+        expect(result.current.canConnect).toBe(false)
+        act(() => result.current.handleConnect())
+        expect(mocks.approve).not.toHaveBeenCalled()
+    })
+
     it('pre-checks nothing when the active account cannot sign', () => {
         // A watch-only active account would otherwise arrive pre-selected and
         // fail on approve.
-        mocks.useSelectedAccountAddress.mockReturnValue({
-            selectedAccountAddress: 'ZZZZ',
+        mocks.useSelectedAccountId.mockReturnValue({
+            selectedAccountId: 'account-z',
         })
         const { result } = render()
 
@@ -172,18 +212,32 @@ describe('useWcConnectScreen', () => {
         expect(mocks.approve).not.toHaveBeenCalled()
     })
 
-    it('surfaces the browser-verified requester origin untouched', () => {
+    it('surfaces the browser-verified requester origin untouched, with its host as the label', () => {
         const { result } = render(
-            wcConnectApproval({ requesterOrigin: 'https://real-tab.example' }),
+            proposalApproval({ requesterOrigin: 'https://real-tab.example' }),
         )
 
         expect(result.current.requesterOrigin).toBe('https://real-tab.example')
+        expect(result.current.requesterOriginLabel).toBe('real-tab.example')
+    })
+
+    it('cleans the peer-asserted name of bidi controls and clamps its length', () => {
+        const { result } = render(
+            proposalApproval({
+                peer: { ...PEER, name: `Pera\u202E${'x'.repeat(200)}` },
+            }),
+        )
+
+        expect(result.current.peerName).not.toContain('\u202E')
+        expect(Array.from(result.current.peerName).length).toBeLessThanOrEqual(
+            60,
+        )
     })
 
     describe('requester origin vs the peer’s own url claim', () => {
         it('treats a matching origin as not distinct, so the header shows only the badge', () => {
             const { result } = render(
-                wcConnectApproval({
+                proposalApproval({
                     origin: 'https://dapp.example',
                     requesterOrigin: 'https://dapp.example',
                 }),
@@ -193,17 +247,16 @@ describe('useWcConnectScreen', () => {
         })
 
         it('ignores a path or trailing slash on the peer url when comparing', () => {
-            // peerMeta.url routinely carries a path while requesterOrigin is
-            // always bare. Comparing raw strings would call this a mismatch and
-            // put the duplicated origin line back on every normal connection —
-            // the exact thing this change removes.
+            // A peer url routinely carries a path while requesterOrigin is
+            // always bare; a raw comparison would name the origin twice on
+            // every ordinary connection.
             for (const peerUrl of [
                 'https://dapp.example/',
                 'https://dapp.example/connect?x=1',
                 'https://dapp.example:443/deep/path#frag',
             ]) {
                 const { result } = render(
-                    wcConnectApproval({
+                    proposalApproval({
                         origin: peerUrl,
                         requesterOrigin: 'https://dapp.example',
                     }),
@@ -213,10 +266,10 @@ describe('useWcConnectScreen', () => {
         })
 
         it('reports a genuinely different origin as distinct, so the spoof stays visible', () => {
-            // The security case: a page can pair while asserting someone
-            // else's peerMeta.url. The badge must not silently vouch for it.
+            // A page can pair while asserting someone else's url; the badge
+            // must not silently vouch for it.
             const { result } = render(
-                wcConnectApproval({
+                proposalApproval({
                     origin: 'https://trusted-looking.example',
                     requesterOrigin: 'https://evil.example',
                 }),
@@ -231,7 +284,7 @@ describe('useWcConnectScreen', () => {
                 'http://dapp.example',
             ]) {
                 const { result } = render(
-                    wcConnectApproval({
+                    proposalApproval({
                         origin: peerUrl,
                         requesterOrigin: 'https://dapp.example',
                     }),
@@ -242,7 +295,7 @@ describe('useWcConnectScreen', () => {
 
         it('treats an unparseable peer url as distinct rather than vouching for it', () => {
             const { result } = render(
-                wcConnectApproval({
+                proposalApproval({
                     origin: 'not a url',
                     requesterOrigin: 'https://real-tab.example',
                 }),
@@ -252,8 +305,6 @@ describe('useWcConnectScreen', () => {
         })
 
         it('is never distinct when there is no requester origin to compare', () => {
-            // Nothing to show and nothing to contradict — the header renders no
-            // requester row at all in this case.
             expect(render().result.current.isRequesterOriginDistinct).toBe(
                 false,
             )
@@ -266,13 +317,62 @@ describe('useWcConnectScreen', () => {
         expect(render().result.current.requesterOrigin).toBeUndefined()
     })
 
-    it('builds no request for an approval of another kind', () => {
-        expect(
-            render({
-                kind: 'enable',
-                requestId: 'x',
-                origin: 'https://x.example',
-            }).result.current.request,
-        ).toBe(null)
+    it('exposes no peer for an approval of another kind', () => {
+        const { result } = render({
+            kind: 'connection-error',
+            requestId: 'x',
+            origin: 'https://x.example',
+        })
+
+        expect(result.current.peer).toBe(null)
+        expect(result.current.permissions).toEqual([])
+    })
+
+    describe('peer url link', () => {
+        beforeEach(() => {
+            vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        })
+
+        it.each([
+            'javascript:alert(document.cookie)',
+            'data:text/html,<script>alert(1)</script>',
+            'file:///etc/passwd',
+            'http://dapp.example',
+            '//evil.example',
+        ])('does not open %j', url => {
+            const { result } = render(
+                proposalApproval({ peer: { ...PEER, url } }),
+            )
+
+            act(() => result.current.handlePressUrl())
+
+            expect(Linking.openURL).not.toHaveBeenCalled()
+            expect(result.current.canOpenPeerUrl).toBe(false)
+        })
+
+        it('opens an https peer url in a new tab', () => {
+            const { result } = render()
+
+            act(() => result.current.handlePressUrl())
+
+            expect(Linking.openURL).toHaveBeenCalledWith('https://dapp.example')
+        })
+
+        it('labels the peer url without its scheme and marks it openable', () => {
+            const { result } = render()
+
+            expect(result.current.peerUrlLabel).toBe('dapp.example')
+            expect(result.current.canOpenPeerUrl).toBe(true)
+        })
+
+        it('labels only the host, in punycode, so a homoglyph or a long path cannot pass for the real site', () => {
+            const { result } = render(
+                proposalApproval({
+                    peer: { ...PEER, url: 'https://\u0430pple.com/login/x' },
+                }),
+            )
+
+            expect(result.current.peerUrlLabel).toBe('xn--pple-43d.com')
+        })
     })
 })

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { SendFundsContent } from './SendFundsContent'
+export { SendFundsContent, SEND_FUNDS_SHEET_ID } from './SendFundsContent'
 export type { SendFundsContentProps } from './SendFundsContent'

@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type ClaimAssetsState = {

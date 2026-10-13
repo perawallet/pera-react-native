@@ -20,6 +20,7 @@ import {
     LedgerDeviceBusyError,
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
+    LedgerDevicePickerUnavailableError,
     LedgerDisconnectedError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
@@ -49,6 +50,7 @@ describe('classifyLedgerErrorKind', () => {
         [new LedgerPermissionDeniedError(), 'bluetooth_permission'],
         [new LedgerScanTimeoutError('x'), 'scan_timeout'],
         [new LedgerDeviceNotFoundError(), 'device_not_found'],
+        [new LedgerDevicePickerUnavailableError(), 'device_picker_unavailable'],
         [new LedgerDeviceBusyError(), 'device_busy'],
         [new LedgerUserRejectedError(), 'user_rejected'],
         [new LedgerAppNotOpenError(), 'app_not_open'],
@@ -123,7 +125,7 @@ describe('isLedgerError', () => {
     })
 
     it('returns false for a SigningError wrapping a non-device failure', () => {
-        // The hardware strategy wraps ARC-60 validation failures (and any
+        // The hardware strategy wraps auth-data validation failures (and any
         // other non-device error) in a SigningError before reaching onError.
         // Such a wrapper must NOT be treated as a device error, so the failure
         // surfaces inline rather than in the troubleshooting sheet.

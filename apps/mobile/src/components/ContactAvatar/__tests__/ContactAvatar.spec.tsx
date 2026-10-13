@@ -25,7 +25,7 @@ describe('ContactAvatar', () => {
     it('renders the person placeholder icon when the contact has no image', () => {
         const contact: Contact = {
             name: 'John',
-            address: 'addr',
+            addresses: { algorand: 'addr' },
         }
         render(
             <ContactAvatar
@@ -40,7 +40,7 @@ describe('ContactAvatar', () => {
         const contact: Contact = {
             name: 'John',
             image: 'https://example.com/image.png',
-            address: 'addr',
+            addresses: { algorand: 'addr' },
         }
         render(
             <ContactAvatar
@@ -48,8 +48,8 @@ describe('ContactAvatar', () => {
                 contact={contact}
             />,
         )
-        // PWImage mock in vitest.setup renders as <img>; when a valid image
-        // source is supplied we should NOT fall through to the placeholder.
+        // When a valid image source is supplied we should NOT fall through to
+        // the placeholder.
         expect(screen.queryByTestId('icon-person')).toBeNull()
     })
 

@@ -10,9 +10,40 @@
  limitations under the License
  */
 
-import { Children, Fragment, isValidElement } from 'react'
-import { describe, it, expect } from 'vitest'
+import React, { Children, Fragment, isValidElement } from 'react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render } from '@testing-library/react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+
+const { exitAccountFlowMock, capturedOnDone } = vi.hoisted(() => ({
+    exitAccountFlowMock: vi.fn(),
+    capturedOnDone: new Map<string, () => void>(),
+}))
+
+// Stubs: what is under test is the wiring the registration supplies, not what
+// the restore screens render.
+vi.mock('@modules/cloud-backup/screens/CloudBackupRestoreScanScreen', () => ({
+    CloudBackupRestoreScanScreen: ({ onDone }: { onDone: () => void }) => {
+        capturedOnDone.set('CloudBackupRestoreScan', onDone)
+        return null
+    },
+}))
+vi.mock(
+    '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen',
+    () => ({
+        CloudBackupRestoreEncryptionKeyScreen: ({
+            onDone,
+        }: {
+            onDone: () => void
+        }) => {
+            capturedOnDone.set('CloudBackupRestoreEncryptionKey', onDone)
+            return null
+        },
+    }),
+)
+vi.mock('@modules/onboarding/hooks/useExitAccountFlow', () => ({
+    useExitAccountFlow: () => ({ exitAccountFlow: exitAccountFlowMock }),
+}))
 
 import {
     IMPORT_FLOW_SCREEN_NAMES,
@@ -23,6 +54,7 @@ import type { ImportFlowParamList } from '../types'
 type ScreenChild = {
     props: {
         name: string
+        component: React.ComponentType
         options?:
             | { title?: string; headerShown?: boolean }
             | ((arg: { route: { params: Record<string, unknown> } }) => {
@@ -42,11 +74,18 @@ const collectScreenChildren = (node: React.ReactNode): ScreenChild[] => {
         .map(child => child as unknown as ScreenChild)
 }
 
+const allowAll = () => true
+
 describe('renderImportFlowScreens', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        capturedOnDone.clear()
+    })
+
     it('registers every screen named in IMPORT_FLOW_SCREEN_NAMES exactly once', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
-        const tree = renderImportFlowScreens(Stack)
+        const tree = renderImportFlowScreens(Stack, allowAll, 'algorand')
         const names = collectScreenChildren(tree).map(child => child.props.name)
         const duplicates = names.filter(
             (name, index) => names.indexOf(name) !== index,
@@ -56,10 +95,54 @@ describe('renderImportFlowScreens', () => {
         expect([...names].sort()).toEqual([...IMPORT_FLOW_SCREEN_NAMES].sort())
     })
 
+    it('leaves out the Ledger entry screens while the ledger capability is off', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+
+        const names = collectScreenChildren(
+            renderImportFlowScreens(
+                Stack,
+                ({ anyChain }) => anyChain !== 'ledger',
+                'algorand',
+            ),
+        ).map(child => child.props.name)
+
+        expect(names).not.toContain('LedgerPair')
+        expect(names).not.toContain('LedgerInstructions')
+        expect(names).toContain('ImportAccountOptions')
+    })
+
+    it('leaves out every ASB import screen while secure backup is off, keeping the cloud restore screens', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+
+        const names = collectScreenChildren(
+            renderImportFlowScreens(
+                Stack,
+                ({ anyChain }) => anyChain !== 'secureBackup',
+                'algorand',
+            ),
+        ).map(child => child.props.name)
+
+        expect(names.filter(name => name.startsWith('AsbImport'))).toEqual([])
+        expect(names).toContain('ImportAccountOptions')
+        expect(names).toContain('CloudBackupRestoreScan')
+    })
+
+    it('leaves out the rekeyed-address import while rekey is off', () => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+
+        const names = collectScreenChildren(
+            renderImportFlowScreens(Stack, ({ chain }) => !chain, 'algorand'),
+        ).map(child => child.props.name)
+
+        expect(names).not.toContain('ImportRekeyedAddresses')
+    })
+
     it('every screen has either title="" or headerShown:false or a dynamic title', () => {
         const Stack = createNativeStackNavigator<ImportFlowParamList>()
 
-        const screens = collectScreenChildren(renderImportFlowScreens(Stack))
+        const screens = collectScreenChildren(
+            renderImportFlowScreens(Stack, allowAll, 'algorand'),
+        )
 
         for (const screen of screens) {
             const options = screen.props.options
@@ -73,5 +156,33 @@ describe('renderImportFlowScreens', () => {
                 `Screen "${screen.props.name}" must set options.title="" or options.headerShown=false or use a dynamic options function`,
             ).toBe(true)
         }
+    })
+})
+
+// `CloudBackupOverview`, the cloud-backup stack's own terminal reset, is not
+// registered here and is owned by a sibling navigator, so a RESET naming it
+// would find no handler and strand the user on the restore screen.
+describe('cloud-backup restore screens registered in the import flow', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        capturedOnDone.clear()
+    })
+
+    it.each([
+        'CloudBackupRestoreScan',
+        'CloudBackupRestoreEncryptionKey',
+    ] as const)('exits %s through the import flow exit', name => {
+        const Stack = createNativeStackNavigator<ImportFlowParamList>()
+        const screens = collectScreenChildren(
+            renderImportFlowScreens(Stack, allowAll, 'algorand'),
+        )
+        const Registered = screens.find(screen => screen.props.name === name)
+            ?.props.component
+
+        expect(Registered).toBeDefined()
+        render(React.createElement(Registered!))
+        capturedOnDone.get(name)?.()
+
+        expect(exitAccountFlowMock).toHaveBeenCalled()
     })
 })

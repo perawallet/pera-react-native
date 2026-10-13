@@ -16,6 +16,7 @@ import {
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardCountryPickerResult = {
     search: string
@@ -33,7 +34,9 @@ export type UseCardCountryPickerResult = {
  * name search, and resolving the chosen country back to the caller.
  */
 export const useCardCountryPicker = (): UseCardCountryPickerResult => {
-    const { data, isLoading, isError, refetch } = useRegistrationSettingsQuery()
+    const scope = useCardScope()
+    const { data, isLoading, isError, refetch } =
+        useRegistrationSettingsQuery(scope)
     const { resolve } = useBottomSheetResult<SupportedCountry>()
     const [search, setSearch] = useState('')
 

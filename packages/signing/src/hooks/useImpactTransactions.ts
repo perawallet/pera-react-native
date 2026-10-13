@@ -11,9 +11,16 @@
  */
 
 import { useMemo } from 'react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type {
+    ChainScope,
+    PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
-import type { TransactionSignRequest } from '../models'
+import { needsSimulation } from '../chain-adapter'
+import {
+    isUnsignedTransactionRequest,
+    type TransactionSignRequest,
+} from '../models'
 import { useSigningPipeline } from './useSigningPipeline'
 import { useGroupSimulationQuery } from './useGroupSimulationQuery'
 
@@ -40,23 +47,30 @@ type UseImpactTransactionsResult = {
  * simulation and append the flattened inner txns. Simulation is best-effort:
  * any failure falls back to the top-level group so the sheet never blocks on it.
  */
-export const useImpactTransactions = (): UseImpactTransactionsResult => {
+export const useImpactTransactions = (
+    scope: ChainScope,
+): UseImpactTransactionsResult => {
     const { allTransactions, signableAddresses, currentRequest } =
         useSigningPipeline()
     const request = currentRequest as Optional<TransactionSignRequest>
 
-    // The full pre-filter group (or txs) in raw form, for the composer.
-    const groupTxs = request?.groupContext ?? request?.txs
+    // The full pre-filter group (or txs) in raw form, for the composer. A
+    // chain-neutral request has no Algorand group to simulate.
+    const groupTxs =
+        request && !isUnsignedTransactionRequest(request)
+            ? (request.groupContext ?? request.txs)
+            : undefined
 
     const hasAppCall = useMemo(
-        () => allTransactions.some(tx => tx.txType === 'appl'),
-        [allTransactions],
+        () => needsSimulation(scope.chainId, allTransactions),
+        [scope.chainId, allTransactions],
     )
 
     const simulation = useGroupSimulationQuery({
         requestId: request?.id,
         groupTxs,
         enabled: hasAppCall,
+        scope,
     })
 
     if (simulation.isError) {
@@ -67,7 +81,7 @@ export const useImpactTransactions = (): UseImpactTransactionsResult => {
     }
 
     const transactions = useMemo(() => {
-        if (simulation.data && simulation.data.length > 0) {
+        if (simulation.data.length > 0) {
             return [...allTransactions, ...simulation.data]
         }
         return allTransactions

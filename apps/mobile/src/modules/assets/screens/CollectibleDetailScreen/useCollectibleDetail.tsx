@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { Linking, Platform } from 'react-native'
+import {
+    useNetwork,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -29,6 +32,7 @@ import {
     useCanSignWith,
     useAccountAssetBalanceQuery,
     type AssetWithAccountBalance,
+    chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
@@ -37,14 +41,19 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
-import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
+import { openValidatedBrowserUrl } from '@modules/webview'
+import { OptOutConfirmationContent } from '@modules/accounts'
+import {
+    SendFundsContent,
+    SEND_FUNDS_SHEET_ID,
+} from '@modules/transactions/routes'
 import {
     FullScreenMediaViewer,
     type FullScreenMediaItem,
@@ -56,6 +65,7 @@ type UseCollectibleDetailResult = {
     collectible: Optional<PeraCollectible>
     isPending: boolean
     isReadOnly: boolean
+    canManageAssets: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
     hasImage: boolean
@@ -84,22 +94,28 @@ type UseCollectibleDetailResult = {
 export const useCollectibleDetail = (
     assetId: string,
 ): UseCollectibleDetailResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: asset, isPending } = useSingleAssetDetailsQuery(
         assetId,
+        scope,
         false,
     )
     const account = useSelectedAccount()
     const { network } = useNetwork()
-    const isReadOnly = !useCanSignWith(account)
+    const isReadOnly = !useCanSignWith(account, scope.chainId)
+    const canManageAssets = useCapability({
+        chain: { chainId: scope.chainId, capability: 'manageAssets' },
+    })
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         account ?? undefined,
         assetId,
+        scope,
     )
     const modelViewerModal = useModalState()
     const { request: requestBottomSheet } = useBottomSheet()
     const [modelViewerUrl, setModelViewerUrl] = useState<Nullable<string>>(null)
-    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
+    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation(scope)
     const navigation = useNavigation()
 
     const collectible = asset?.peraMetadata?.collectible
@@ -126,7 +142,8 @@ export const useCollectibleDetail = (
         [rawMedia, collectible?.primaryImage],
     )
 
-    const accountAddress = account?.address ?? ''
+    const accountAddress =
+        (account && chainAccountOf(account, scope.chainId)?.address) ?? ''
     const accountName = account?.name ?? accountAddress
     const assetAmount = assetBalance?.amount ?? new Decimal(0)
     const isOptedIn = assetBalance != null
@@ -168,6 +185,7 @@ export const useCollectibleDetail = (
 
     const handleSendPressed = useCallback(() => {
         void requestBottomSheet({
+            id: SEND_FUNDS_SHEET_ID,
             contents: <SendFundsContent assetId={assetId} />,
             options: {
                 size: 'modal',
@@ -186,7 +204,7 @@ export const useCollectibleDetail = (
             contents: (
                 <OptOutConfirmationContent
                     assetId={assetBalance.assetId}
-                    accountAddress={account.address}
+                    accountAddress={accountAddress}
                 />
             ),
             options: {
@@ -199,7 +217,7 @@ export const useCollectibleDetail = (
 
         try {
             await optOut({
-                sender: account.address,
+                sender: accountAddress,
                 assetId: BigInt(assetId),
                 creator: asset.creator.address,
             })
@@ -219,6 +237,7 @@ export const useCollectibleDetail = (
         }
     }, [
         account,
+        accountAddress,
         asset,
         assetId,
         assetBalance,
@@ -371,7 +390,7 @@ export const useCollectibleDetail = (
             // Opening the raw .glb in a new tab is a strictly-better
             // fallback than a silent no-op: the browser will offer to
             // download/preview it rather than doing nothing at all.
-            void Linking.openURL(modelUrl)
+            openValidatedBrowserUrl(modelUrl)
             return
         }
         setModelViewerUrl(modelUrl)
@@ -385,16 +404,6 @@ export const useCollectibleDetail = (
             const uri = item?.downloadUrl ?? item?.previewUrl
             const matchIndex = fullScreenMedia.findIndex(m => m.uri === uri)
             const targetIndex = matchIndex >= 0 ? matchIndex : 0
-
-            // A bottom sheet is a fine stand-in for a full-screen native
-            // modal, but it's not "full screen" in a 360x600 popup (or even
-            // the expanded tab) — open the raw media in a real browser tab
-            // instead, which is what actually fills the screen there.
-            if (Platform.OS === 'web') {
-                const targetUri = fullScreenMedia[targetIndex]?.uri
-                if (targetUri) void Linking.openURL(targetUri)
-                return
-            }
 
             void requestBottomSheet({
                 contents: (
@@ -418,6 +427,7 @@ export const useCollectibleDetail = (
         collectible,
         isPending,
         isReadOnly,
+        canManageAssets,
         traits,
         media,
         hasImage,

@@ -12,7 +12,9 @@
 
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import { AccountAssetItemView } from '@modules/assets/components'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { AccountAssetItemView } from '@modules/assets'
 import type { PWTouchableOpacityProps } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
@@ -28,9 +30,10 @@ export const OnrampAssetItemView = ({
     balance,
     ...rest
 }: OnrampAssetItemViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accountBalance = useMemo(
-        () => buildAccountBalanceFromRampToken(token, balance),
-        [token, balance],
+        () => buildAccountBalanceFromRampToken(token, balance, scope),
+        [token, balance, scope],
     )
 
     return (

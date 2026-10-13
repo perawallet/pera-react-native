@@ -12,16 +12,18 @@
 
 import { useCallback } from 'react'
 import {
+    isAlgoAssetName,
     isNotFoundError,
     isPeraNetworkError,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { logEvent } from '@perawallet/wallet-core-analytics'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
 import { usePushToken } from './usePushToken'
-import { useDeviceStore } from '../store'
+import { deviceIdFor, deviceIdOriginFor, useDeviceStore } from '../store'
+import { logEvent } from '../analytics'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
 import type {
     DeviceAccountRegistration,
@@ -122,6 +124,16 @@ export const useDevice = () => {
     // v3 requires push_token, locale and app_version on every call; there is
     // no "omit to keep the stored value" path. A null token becomes '' — see
     // the id rule on `registerDevice` for why that is safe.
+    //
+    // The resolved fiat, not the raw preference: the backend has no ALGO rate,
+    // so recording 'ALGO' renders USD anyway and logs a warning on every
+    // notification. Same rule as `useLocalCurrency`.
+    const notificationCurrency = useCurrenciesStore(state =>
+        isAlgoAssetName(state.preferredCurrency)
+            ? state.fallbackCurrency
+            : state.preferredCurrency,
+    )
+
     const buildPayload = useCallback(
         (accounts: DeviceAccountRegistration[]): DeviceRegistration => ({
             accounts,
@@ -129,8 +141,9 @@ export const useDevice = () => {
             pushToken: pushToken ?? '',
             locale: deviceInfoService.getDeviceLocale(),
             appVersion: deviceInfoService.getAppVersion(),
+            currency: notificationCurrency,
         }),
-        [deviceInfoService, pushToken],
+        [deviceInfoService, pushToken, notificationCurrency],
     )
 
     /**
@@ -215,8 +228,10 @@ export const useDevice = () => {
                 // the origin is only needed at recreate time, and subscribing
                 // would rebuild this callback on every unrelated origin flip.
                 const isReplacingMigratedId =
-                    useDeviceStore.getState().deviceIdOrigins[targetNetwork] ===
-                    'migrated'
+                    deviceIdOriginFor(
+                        useDeviceStore.getState(),
+                        targetNetwork,
+                    ) === 'migrated'
                 await createDeviceForNetwork(targetNetwork, accounts)
                 // Replacing a migrated id orphans its device-keyed server
                 // state (Discover favorites, price alerts, banner
@@ -301,9 +316,10 @@ export const useDevice = () => {
         ): Promise<RegisterDeviceResult> => {
             const targetNetwork = network
             return enqueueRegistration(targetNetwork, async () => {
-                const currentDeviceId =
-                    useDeviceStore.getState().deviceIDs.get(targetNetwork) ??
-                    null
+                const currentDeviceId = deviceIdFor(
+                    useDeviceStore.getState(),
+                    targetNetwork,
+                )
 
                 if (!currentDeviceId) {
                     await createDeviceForNetwork(targetNetwork, accounts)
@@ -330,7 +346,7 @@ export const useDevice = () => {
      */
     const clearDevicePushToken = useCallback(
         async (targetNetwork: Network) => {
-            const targetDeviceId = deviceIDs?.get(targetNetwork)
+            const targetDeviceId = deviceIdFor({ deviceIDs }, targetNetwork)
             if (!targetDeviceId) return
             try {
                 await registerDeviceEndpoint(targetNetwork, {

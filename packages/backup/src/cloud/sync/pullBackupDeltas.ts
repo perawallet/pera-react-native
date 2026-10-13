@@ -10,29 +10,59 @@
  limitations under the License
  */
 
-import { fetchDelta, readItems } from '../api'
+import { logger } from '@perawallet/wallet-core-shared'
+import { fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import type { SyncState } from '../models'
+import { isLegacyItemKey, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
+import { fetchDeltaOrRebuild } from './rebuildFromManifest'
+import { reconcileLocalSettings } from './reconcileSettings'
+import { BackupSyncAbortedError } from './types'
 import type { SyncEngineDeps } from './types'
 
 /** WebSocket-triggered lightweight pull: fetch deltas from the local cursor and
  *  apply them (download/decrypt/import remote changes). No reconcile, no push —
- *  that's `syncBackup`'s job on the periodic/foreground cycle. */
+ *  that's `syncBackup`'s job on the periodic/foreground cycle. `now` is injected
+ *  for deterministic tests. */
 export const pullBackupDeltas = async (
     deps: Pick<
         SyncEngineDeps,
-        'network' | 'backupId' | 'deviceId' | 'encryptionKey' | 'importAccounts'
+        | 'network'
+        | 'backupId'
+        | 'deviceId'
+        | 'encryptionKey'
+        | 'importAccounts'
+        | 'importContacts'
+        | 'isAborted'
+        | 'importPasskeys'
+        | 'getSettings'
+        | 'importSettings'
+        | 'hashAddress'
     >,
     state: SyncState,
+    now: number = Date.now(),
 ): Promise<SyncState> => {
-    const deltas = await fetchDelta(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        state.lastSyncedSeq,
+    const { deltas, rebuiltThroughSeq } = await fetchDeltaOrRebuild(
+        deps,
+        state,
+        () => fetchManifest(deps.network, deps.backupId, deps.deviceId),
     )
-    return applyDeltas({
+
+    /* The socket has to refuse what `syncBackup` refuses, or an `itemsUpdated`
+     * event imports a legacy backup behind that refusal. */
+    const legacyKeyCount = deltas.filter(delta =>
+        isLegacyItemKey(delta.key),
+    ).length
+    if (legacyKeyCount > 0) {
+        logger.warn(
+            'pullBackupDeltas: backup uses legacy address keys, refusing to apply',
+            { legacyKeyCount },
+        )
+        return { ...state, lastSyncResult: 'FAILED' }
+    }
+
+    if (deps.isAborted()) throw new BackupSyncAbortedError()
+    const applied = await applyDeltas({
         state,
         deltas,
         deps: {
@@ -41,8 +71,23 @@ export const pullBackupDeltas = async (
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
+            importContacts: deps.importContacts,
+            importPasskeys: deps.importPasskeys,
+            importSettings: deps.importSettings,
             readItems,
             decrypt: decryptItemPayload,
         },
     })
+
+    // Baselines what the import just wrote, so it is not pushed back as an edit.
+    const next = reconcileLocalSettings(applied, deps, now)
+
+    // A device that only ever receives over the socket never runs `syncBackup`,
+    // so without this it reads as never-synced with a full account list.
+    return {
+        ...next,
+        lastSyncedSeq: Math.max(next.lastSyncedSeq, rebuiltThroughSeq),
+        lastSyncedAt: now,
+        lastSyncResult: 'SUCCESS',
+    }
 }

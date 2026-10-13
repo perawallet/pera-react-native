@@ -47,6 +47,20 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    // Sheet variant: the app shows dimmed behind it, but the overlay still
+    // covers it, so nothing underneath takes a tap.
+    overlaySheet: {
+        backgroundColor: theme.colors.backdropModalBg,
+    },
+    containerSheet: {
+        marginTop: 'auto',
+        paddingRight: insets.right,
+        paddingLeft: insets.left,
+        paddingBottom: insets.bottom,
+        backgroundColor: theme.colors.background,
+        borderTopStartRadius: theme.spacing.xl,
+        borderTopEndRadius: theme.spacing.xl,
+    },
     container: {
         flex: 1,
         paddingRight: insets.right,

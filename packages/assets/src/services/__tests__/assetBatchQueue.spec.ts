@@ -12,12 +12,16 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
+import {
+    scopeForLegacyNetwork,
+    toScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
 
 const mockFetchAndPersistAssets = vi.hoisted(() => vi.fn())
 const mockGetAssetsByIds = vi.hoisted(() => vi.fn())
 
-vi.mock('../../sync/asset-syncer', () => ({
+vi.mock('../../chain-adapter', () => ({
     fetchAndPersistAssets: mockFetchAndPersistAssets,
 }))
 
@@ -26,6 +30,9 @@ vi.mock('../../db', () => ({
 }))
 
 import { assetBatchQueue } from '../assetBatchQueue'
+
+const MAINNET_KEY = toScopeKey(scopeForLegacyNetwork('mainnet'))
+const TESTNET_KEY = toScopeKey(scopeForLegacyNetwork('testnet'))
 
 const makeAsset = (assetId: string, name = `asset-${assetId}`): PeraAsset => ({
     assetId,
@@ -42,21 +49,21 @@ describe('assetBatchQueue (adapter)', () => {
         mockGetAssetsByIds.mockReset().mockResolvedValue([])
     })
 
-    it('coalesces concurrent enqueues into one fetchAndPersistAssets call per network', async () => {
+    it('coalesces concurrent enqueues into one fetchAndPersistAssets call per scope', async () => {
         const a = makeAsset('1', 'alpha')
         const b = makeAsset('2', 'beta')
         mockGetAssetsByIds.mockResolvedValue([a, b])
 
         const [r1, r2, r3] = await Promise.all([
-            assetBatchQueue.enqueue('1', 'mainnet'),
-            assetBatchQueue.enqueue('2', 'mainnet'),
-            assetBatchQueue.enqueue('3', 'mainnet'),
+            assetBatchQueue.enqueue('1', MAINNET_KEY),
+            assetBatchQueue.enqueue('2', MAINNET_KEY),
+            assetBatchQueue.enqueue('3', MAINNET_KEY),
         ])
 
         expect(mockFetchAndPersistAssets).toHaveBeenCalledTimes(1)
-        const [ids, network] = mockFetchAndPersistAssets.mock.calls[0]
+        const [ids, scope] = mockFetchAndPersistAssets.mock.calls[0]
         expect(new Set(ids)).toEqual(new Set(['1', '2', '3']))
-        expect(network).toBe('mainnet')
+        expect(scope).toEqual(scopeForLegacyNetwork('mainnet'))
 
         expect(r1).toEqual(a)
         expect(r2).toEqual(b)
@@ -64,22 +71,28 @@ describe('assetBatchQueue (adapter)', () => {
         expect(r3).toBeUndefined()
     })
 
-    it('separates batches per network', async () => {
+    it('separates batches per scope', async () => {
         mockGetAssetsByIds.mockResolvedValue([])
 
         await Promise.all([
-            assetBatchQueue.enqueue('1', 'mainnet'),
-            assetBatchQueue.enqueue('2', 'testnet'),
+            assetBatchQueue.enqueue('1', MAINNET_KEY),
+            assetBatchQueue.enqueue('2', TESTNET_KEY),
         ])
 
         expect(mockFetchAndPersistAssets).toHaveBeenCalledTimes(2)
-        const networks = mockFetchAndPersistAssets.mock.calls.map(c => c[1])
-        expect(networks.sort()).toEqual(['mainnet', 'testnet'])
+        const scopes = mockFetchAndPersistAssets.mock.calls.map(c => c[1])
+        expect(scopes.map(scope => scope.networkId).sort()).toEqual([
+            'mainnet',
+            'testnet',
+        ])
+        expect(scopes.map(toScopeKey).sort()).toEqual(
+            [MAINNET_KEY, TESTNET_KEY].sort(),
+        )
     })
 
     it('rejects waiters when fetchAndPersistAssets throws', async () => {
         mockFetchAndPersistAssets.mockRejectedValue(new Error('boom'))
-        await expect(assetBatchQueue.enqueue('1', 'mainnet')).rejects.toThrow(
+        await expect(assetBatchQueue.enqueue('1', MAINNET_KEY)).rejects.toThrow(
             'boom',
         )
     })
@@ -87,7 +100,7 @@ describe('assetBatchQueue (adapter)', () => {
     it('resolves with undefined when getAssetsByIds returns no row for the key', async () => {
         mockGetAssetsByIds.mockResolvedValue([])
 
-        const result = await assetBatchQueue.enqueue('1', 'mainnet')
+        const result = await assetBatchQueue.enqueue('1', MAINNET_KEY)
         expect(result).toBeUndefined()
     })
 })

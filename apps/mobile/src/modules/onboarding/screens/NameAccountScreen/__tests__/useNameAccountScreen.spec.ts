@@ -17,7 +17,7 @@ import { useNameAccountScreen } from '../useNameAccountScreen'
 
 const mockBuildHdWalletAccount = vi.fn()
 const mockSaveAccount = vi.fn()
-const mockSetSelectedAccountAddress = vi.fn()
+const mockSetSelectedAccountId = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockShowToast = vi.fn()
@@ -55,14 +55,23 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             getState: vi.fn(() => ({ accounts: [] })),
         },
     ),
-    useSelectedAccountAddress: () => ({
-        selectedAccountAddress: null,
-        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    useSelectedAccountId: () => ({
+        selectedAccountId: null,
+        setSelectedAccountId: mockSetSelectedAccountId,
     }),
     getAccountDisplayName: (account: { name?: string }) =>
         account?.name ?? 'Account 1',
-    isHDWalletAccount: () => false,
-    isWatchAccount: (account: { type: string }) => account?.type === 'watch',
+    hdIndexOf: () => undefined,
+    signingKeyOn: () => undefined,
+    chainAccountOf: (
+        account: { chains: Record<string, unknown> },
+        chainId: string,
+    ) => account.chains[chainId],
+    findAccountByAddressOn: () => undefined,
+    isWatchAccount: (account: { custody?: { kind: string } }) =>
+        account?.custody?.kind === 'watch',
+    isHardwareWalletAccount: (account: { custody?: { kind: string } }) =>
+        account?.custody?.kind === 'hardware',
     WalletAccount: {} as unknown,
 }))
 
@@ -126,10 +135,13 @@ describe('useNameAccountScreen', () => {
         mockRouteParams = {
             account: {
                 id: '1',
-                address: 'ADDR',
-                type: 'hdWallet',
+                chains: { algorand: { address: 'ADDR', keyPairId: 'kp1' } },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 name: 'My Wallet',
-                keyPairId: 'kp1',
             },
         }
 
@@ -152,10 +164,13 @@ describe('useNameAccountScreen', () => {
     it('handleFinish updates account name and exits when account is provided', async () => {
         const account = {
             id: '1',
-            address: 'ADDR',
-            type: 'hdWallet',
+            chains: { algorand: { address: 'ADDR', keyPairId: 'kp1' } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             name: 'Old Name',
-            keyPairId: 'kp1',
         }
         mockRouteParams = { account }
 
@@ -170,9 +185,12 @@ describe('useNameAccountScreen', () => {
         })
 
         expect(mockSaveAccount).toHaveBeenCalledWith(
-            expect.objectContaining({ name: 'Renamed', address: 'ADDR' }),
+            expect.objectContaining({
+                name: 'Renamed',
+                chains: { algorand: { address: 'ADDR', keyPairId: 'kp1' } },
+            }),
         )
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ADDR')
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockExitAccountFlow).toHaveBeenCalled()
         expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
@@ -189,10 +207,13 @@ describe('useNameAccountScreen', () => {
         mockRouteParams = {
             account: {
                 id: '1',
-                address: 'ADDR',
-                type: 'hdWallet',
+                chains: { algorand: { address: 'ADDR', keyPairId: 'kp1' } },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
                 name: 'Old Name',
-                keyPairId: 'kp1',
             },
             returnTo,
         }
@@ -208,8 +229,13 @@ describe('useNameAccountScreen', () => {
 
     it('handleFinish creates HD wallet account when no account is provided', async () => {
         mockBuildHdWalletAccount.mockResolvedValue({
-            address: 'NEW_ADDR',
-            type: 'hdWallet',
+            id: 'new-account',
+            chains: { algorand: { address: 'NEW_ADDR' } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         })
 
         const { result } = renderHook(() => useNameAccountScreen())
@@ -223,9 +249,11 @@ describe('useNameAccountScreen', () => {
             keyIndex: 0,
         })
         expect(mockSaveAccount).toHaveBeenCalledWith(
-            expect.objectContaining({ address: 'NEW_ADDR' }),
+            expect.objectContaining({
+                chains: { algorand: { address: 'NEW_ADDR' } },
+            }),
         )
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('NEW_ADDR')
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('new-account')
         expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 
@@ -248,8 +276,12 @@ describe('useNameAccountScreen', () => {
 
     it('handleFinish resets isCreating after completion', async () => {
         mockBuildHdWalletAccount.mockResolvedValue({
-            address: 'ADDR',
-            type: 'hdWallet',
+            chains: { algorand: { address: 'ADDR' } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
         })
 
         const { result } = renderHook(() => useNameAccountScreen())

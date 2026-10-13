@@ -52,6 +52,9 @@ export const useStyles = makeStyles(
             bottom: 0,
             maxHeight,
             height: isFixed ? maxHeight : undefined,
+            // Stands in for gorhom's handle strip (10px padding around a hidden
+            // indicator), which gives every native sheet this top gap.
+            paddingTop: theme.spacing.lg + theme.spacing.xs,
             backgroundColor: theme.colors.background,
             borderTopLeftRadius: theme.spacing.xl,
             borderTopRightRadius: theme.spacing.xl,

@@ -19,6 +19,30 @@ import { getFirebaseApp } from '@perawallet/wallet-extension-platform-chrome'
 
 declare const self: ServiceWorkerGlobalScope
 
+const PERA_DEEPLINK_PREFIXES = ['perawallet://', 'https://perawallet.app/qr/']
+
+export type PushHandlerOptions = {
+    /** The registered chains' URI schemes, without the `:`. */
+    uriSchemes: readonly string[]
+}
+
+// The URL lands on the extension origin as `expanded.html?deeplink=`, so anything
+// that is not a Pera or chain deeplink is refused here rather than trusted to the app.
+const toAllowedDeeplink = (
+    url: unknown,
+    { uriSchemes }: PushHandlerOptions,
+): string | undefined => {
+    if (typeof url !== 'string') return undefined
+    const normalized = url.trim().toLowerCase()
+    const prefixes = [
+        ...PERA_DEEPLINK_PREFIXES,
+        ...uriSchemes.map(scheme => `${scheme}:`),
+    ]
+    return prefixes.some(prefix => normalized.startsWith(prefix))
+        ? url
+        : undefined
+}
+
 /**
  * The backend sends data-only messages so titles stay client-formatted and the
  * deeplink keeps mobile's `data.url` shape. The SDK only auto-displays payloads
@@ -28,20 +52,28 @@ declare const self: ServiceWorkerGlobalScope
  */
 export const handleBackgroundMessage = async (
     payload: MessagePayload,
+    options: PushHandlerOptions,
 ): Promise<void> => {
     await self.registration.showNotification(
         payload.data?.title ?? 'Pera Wallet',
         {
             body: payload.data?.body,
             icon: '/icons/icon-128.png',
-            data: { peraUrl: payload.data?.url },
+            data: { peraUrl: toAllowedDeeplink(payload.data?.url, options) },
         },
     )
 }
 
-export const handleNotificationClick = (event: NotificationEvent): void => {
-    const url = (event.notification.data as { peraUrl?: string } | undefined)
-        ?.peraUrl
+export const handleNotificationClick = (
+    event: NotificationEvent,
+    options: PushHandlerOptions,
+): void => {
+    // Re-checked on click: a notification shown by an earlier worker version
+    // was stored unvalidated and can outlive the update.
+    const url = toAllowedDeeplink(
+        (event.notification.data as { peraUrl?: string } | undefined)?.peraUrl,
+        options,
+    )
     // Absent on FCM-tagged notifications and on anything we did not create.
     if (!url) return
 
@@ -55,7 +87,7 @@ export const handleNotificationClick = (event: NotificationEvent): void => {
     )
 }
 
-export const installPushHandlers = (): void => {
+export const installPushHandlers = (options: PushHandlerOptions): void => {
     const app = getFirebaseApp()
     // Constructing the SW messaging instance is what registers the SDK's
     // push/pushsubscriptionchange listeners, so this must run synchronously at
@@ -65,7 +97,11 @@ export const installPushHandlers = (): void => {
     // SDK awaits it inside the push event's waitUntil, so voiding it would let
     // the event settle before showNotification resolves — and a push that
     // displays nothing earns Chrome's generic "updated in the background" toast.
+    const onMessage = (payload: MessagePayload) =>
+        handleBackgroundMessage(payload, options)
     // oxlint-disable-next-line @typescript-eslint/no-misused-promises -- see above
-    if (app) onBackgroundMessage(getMessaging(app), handleBackgroundMessage)
-    self.addEventListener('notificationclick', handleNotificationClick)
+    if (app) onBackgroundMessage(getMessaging(app), onMessage)
+    self.addEventListener('notificationclick', event =>
+        handleNotificationClick(event, options),
+    )
 }

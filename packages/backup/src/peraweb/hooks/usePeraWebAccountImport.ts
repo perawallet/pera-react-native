@@ -12,7 +12,8 @@
 
 import { useCallback } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useImportAlgo25FromSeed } from '../../shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { backupAdapterFor } from '../../chain-adapter'
 import type { PeraWebBackupAccount } from '../models'
 
 export type UsePeraWebAccountImportResult = {
@@ -23,13 +24,14 @@ export type UsePeraWebAccountImportResult = {
  * Import a single account decrypted from a Pera Web backup into the wallet.
  *
  * Pera Web's "Transfer Accounts" flow only exports signing accounts (no
- * watch entries), so every row delegates to the shared algo25-from-seed
- * import hook used by both ASB and Pera Web. `DuplicateAccountError` from
- * the underlying import path is re-thrown so the loading screen can bucket
- * duplicates separately from real failures.
+ * watch entries), so every row delegates to the chain's seed import.
+ * `DuplicateAccountError` from the underlying import path is re-thrown so the
+ * loading screen can bucket duplicates separately from real failures.
  */
-export const usePeraWebAccountImport = (): UsePeraWebAccountImportResult => {
-    const { importFromSeed } = useImportAlgo25FromSeed()
+export const usePeraWebAccountImport = (
+    chainId: ChainId,
+): UsePeraWebAccountImportResult => {
+    const importFromSeed = backupAdapterFor(chainId).useImportFromSeed()
 
     const importAccount = useCallback(
         async (account: PeraWebBackupAccount): Promise<WalletAccount> => {

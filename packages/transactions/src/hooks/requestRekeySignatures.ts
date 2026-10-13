@@ -14,11 +14,11 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 import { RekeyError } from '../errors'
 
-import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
 import type {
+    ChainId,
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 type AddSignRequestFn = (request: TransactionSignRequest) => void
@@ -44,6 +44,7 @@ const REKEY_SIGNING_TIMEOUT_MS = 5 * 60 * 1000
  */
 export const requestRekeySignatures = (
     addSignRequest: AddSignRequestFn,
+    chainId: ChainId,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
 ): Promise<PeraSignedTransaction[]> =>
@@ -77,6 +78,7 @@ export const requestRekeySignatures = (
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
+            chainId,
             txs: unsignedTxs,
             sourceMetadata: source,
             approve: async signed => {
@@ -86,7 +88,13 @@ export const requestRekeySignatures = (
                 // a `PeraSignedTransaction` with `pqsig` set, so undoing a
                 // rekey to a quantum auth flows through the same shared
                 // local-key path and submitAndAutoRefresh unchanged.
-                settle(() => resolve(compactSignedResults(signed)))
+                settle(() =>
+                    resolve(
+                        signed.filter(
+                            (tx): tx is PeraSignedTransaction => tx !== null,
+                        ),
+                    ),
+                )
             },
             reject: async () => {
                 settle(() => reject(new RekeyError('user_rejected')))

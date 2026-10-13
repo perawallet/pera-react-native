@@ -231,3 +231,24 @@ describe('invalid dateTime handling', () => {
         ).toBeDefined()
     })
 })
+
+// Wallet history rows carry only a `dateTime`, not the card transaction shape;
+// the grouper must accept anything dated so both lists share one section model.
+describe('groupCardTransactionsByMonth with plain dated rows', () => {
+    it('groups by month using only the dateTime field', () => {
+        const sections = groupCardTransactionsByMonth([
+            { name: 'older', dateTime: '2026-07-02T10:00:00Z' },
+            { name: 'newer', dateTime: '2026-09-10T09:15:00Z' },
+            { name: 'same month', dateTime: '2026-09-01T00:00:00Z' },
+        ])
+
+        expect(sections.map(section => section.key)).toEqual([
+            '2026-09',
+            '2026-07',
+        ])
+        expect(sections[0].data.map(row => row.name)).toEqual([
+            'newer',
+            'same month',
+        ])
+    })
+})

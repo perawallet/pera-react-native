@@ -19,7 +19,7 @@
 // re-dispatches this exact envelope onto window.bidaliProvider[event]().
 import type WebView from 'react-native-webview'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { asBridgeTransport } from '@modules/webview/hooks/handlers.web'
+import { asBridgeTransport } from '@modules/webview/web'
 
 export const sendBidaliEvent = (
     webviewRef: React.RefObject<Nullable<WebView>>,

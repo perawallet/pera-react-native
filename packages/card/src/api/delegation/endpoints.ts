@@ -10,12 +10,21 @@
  limitations under the License
  */
 
-import { decodeFromBase64, type Network } from '@perawallet/wallet-core-shared'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Network } from '@perawallet/wallet-core-shared'
+import { getCardApiError, isAlreadyCreatedError } from '../errors'
 import { getCardTransport } from '../transport'
+import {
+    cardAdapterFor,
+    type CardDelegationRequest,
+    type DelegationApprovalParams,
+} from '../../chain-adapter'
 import type { CardDelegationToken, CardExternalWallet } from '../../models'
 import {
-    algorandPostApprovalResponseSchema,
-    delegationProgramResponseSchema,
+    delegationAcceptedResponseSchema,
     delegationTokenResponseSchema,
     externalWalletsResponseSchema,
 } from './schema'
@@ -61,85 +70,61 @@ export const fetchExternalWallets = async (
         .map(transformExternalWallet)
 }
 
-// ─── SWAP POINT: Baanx Algorand delegation contract (not shipped) ───────────
-// See schema.ts — both routes below are assumed; update alongside it.
-
-/** ASSUMED: the compiled delegation program comes from the chain-config route. */
-export const fetchDelegationProgram = async (
-    params: DelegationRequestParams,
-): Promise<Uint8Array> => {
-    const { network, signal } = params
-
-    const response = await getCardTransport().request({
-        network,
-        method: 'GET',
-        path: '/v1/delegation/chain/config',
-        params: { network: 'algorand' },
-        authenticated: true,
-        signal,
-    })
-
-    const { program } = delegationProgramResponseSchema.parse(response.data)
-    return decodeFromBase64(program)
-}
-
-export type PostAlgorandDelegationApprovalParams = {
-    network: Network
-    /** Delegator (linked funding-source) address. */
-    address: string
-    /** Allowance as a decimal string in display units; "0" cancels. */
-    amount: string
-    /** Currency code as Baanx expects it, e.g. "usdc". */
-    currency: string
-    /** Single-use token from GET /v1/delegation/token. */
-    token: string
-    /** Base64 msgpack-encoded signed LogicSig. */
-    signedProgram: string
-    /**
-     * Single-use nonce from GET /v1/delegation/token, echoed back for token
-     * matching — NOT part of the signed bytes (the signature covers only
-     * "Program" || program), so it binds nothing cryptographically. SWAP POINT:
-     * the real contract may require the nonce inside the signed program.
-     */
-    sigMessage: string
-    signal?: AbortSignal
-}
-
-/** ASSUMED: mirrors the EVM/Solana post-approval with the LSig as proof. */
-export const postAlgorandDelegationApproval = async (
-    params: PostAlgorandDelegationApprovalParams,
-): Promise<void> => {
-    const {
-        network,
-        address,
-        amount,
-        currency,
-        token,
-        signedProgram,
-        sigMessage,
-        signal,
-    } = params
-
-    const response = await getCardTransport().request({
-        network,
-        method: 'POST',
-        path: '/v1/delegation/algorand/post-approval',
-        authenticated: true,
-        data: {
-            address,
-            network: 'algorand',
-            currency,
-            amount,
-            token,
-            signedProgram,
-            sigMessage,
-        },
-        signal,
-    })
-
-    const { success } = algorandPostApprovalResponseSchema.parse(response.data)
-    if (!success) {
+/**
+ * A 2xx the schema cannot read is still a success: the delegation service
+ * answers some calls with a bare status line, and rejecting that shape would
+ * fail a registration it has already accepted. Only an explicit `success:
+ * false` is a rejection.
+ */
+const assertAccepted = (data: unknown): void => {
+    const parsed = delegationAcceptedResponseSchema.safeParse(data)
+    if (parsed.success && !parsed.data.success) {
         throw new Error('Card delegation was rejected')
     }
 }
-// ─── END SWAP POINT ──────────────────────────────────────────────────────────
+
+/**
+ * Sends a chain adapter's delegation request to Baanx. Only an explicit
+ * `success: false` reads as a rejection; see `assertAccepted`.
+ */
+export const postCardDelegation = async (
+    request: CardDelegationRequest,
+    scope: ChainScope,
+    signal?: AbortSignal,
+): Promise<void> => {
+    const response = await getCardTransport().request({
+        network: legacyNetworkOf(scope),
+        method: 'POST',
+        path: request.path,
+        authenticated: true,
+        data: request.data,
+        signal,
+    })
+    assertAccepted(response.data)
+}
+
+export type PostDelegationApprovalParams = DelegationApprovalParams & {
+    scope: ChainScope
+    signal?: AbortSignal
+}
+
+/**
+ * Registers the delegated wallet with Baanx, completing card creation. A
+ * replay of a lost response resolves rather than throwing: the delegation is
+ * registered either way.
+ */
+export const postDelegationApproval = async ({
+    scope,
+    signal,
+    ...params
+}: PostDelegationApprovalParams): Promise<void> => {
+    const request = cardAdapterFor(scope).delegationApprovalRequest(params)
+
+    try {
+        await postCardDelegation(request, scope, signal)
+    } catch (error) {
+        const apiError = await getCardApiError(error)
+        if (isAlreadyCreatedError(apiError)) return
+        throw error
+    }
+}

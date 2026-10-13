@@ -10,108 +10,81 @@
  limitations under the License
  */
 
-// Web/extension twin of @modules/walletconnect's ConnectionViewHeader.
-//
-// A twin rather than a reuse, by owner decision (2026-07-30): phase one keeps
-// the mobile component untouched, and a later phase factors the two into one
-// shared consent view. Two things make the mobile one unusable here as-is:
-//
-//   - It navigates the dApp URL with `useWebView().pushWebView`, which on the
-//     approval page pushes into a store nothing renders — a visibly dead
-//     button. Here the link opens a real browser tab.
-//   - Its `request` comes from the WC session-request store, which no
-//     extension surface may read (offscreen owns connectors).
-//
-// VISUAL FIDELITY is held by importing ConnectionView's own stylesheet rather
-// than copying values out of it, and by keeping this element tree and its i18n
-// keys aligned with that component. Nothing here re-declares a spacing, colour
-// or radius. See __tests__/visualFidelity.spec.ts, which fails if the two
-// element trees drift apart.
+// Not a reuse of ConnectionApprovalViewHeader: that one carries network badges
+// and no requester-origin row. Fidelity comes from importing its stylesheet
+// (see __tests__/visualFidelity.spec.ts).
 import React from 'react'
-import { Linking } from 'react-native'
-import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
-import type {
-    AlgorandPermission,
-    WalletConnectSessionRequest,
-} from '@perawallet/wallet-core-walletconnect'
+import {
+    PWButton,
+    PWIcon,
+    PWImage,
+    PWRoundIcon,
+    PWText,
+    PWView,
+} from '@components/core'
+import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
+import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
-import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
+import {
+    resolveDisplayableVerificationTier,
+    useProjectByUrlQuery,
+} from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
-import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
-// Shared verbatim with ConnectionView/ConnectionViewHeader — the single source
-// of these visuals.
-import { useStyles } from '@modules/walletconnect/components/ConnectionView/styles'
+import { ProjectVerificationIcon } from '@modules/projects'
+import { getPreferredDappIcon, PermissionItem } from '@modules/walletconnect'
+import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useRequesterStyles } from './styles'
 
 export type WcConnectHeaderProps = {
-    request: WalletConnectSessionRequest
-    /**
-     * Browser-verified origin of the tab that asked to pair. Rendered with an
-     * explicit "verified" marker to distinguish it from `peerMeta.url` above,
-     * which the dApp asserts and can forge.
-     */
+    peer: ConnectionPeer
+    /** `peer.name` cleaned and clamped for display. */
+    peerName: string
+    permissions: string[]
+    /** Browser-verified origin of the requesting tab; `peer.url` is forgeable. */
     requesterOrigin?: string
-    /**
-     * Whether `requesterOrigin` differs from the origin of the peer-asserted
-     * `peerMeta.url`. When it does, the badge alone can't stand in for it —
-     * see the comment at the render site.
-     */
+    /** `requesterOrigin` as its host, for display. */
+    requesterOriginLabel?: string
+    /** When true `peer.url` is not the requesting tab, so the header warns instead. */
     isRequesterOriginDistinct?: boolean
+    peerUrlLabel?: string
+    canOpenPeerUrl: boolean
+    onPressUrl: () => void
 }
 
 export const WcConnectHeader = ({
-    request,
+    peer,
+    peerName,
+    permissions,
     requesterOrigin,
+    requesterOriginLabel,
     isRequesterOriginDistinct = false,
+    peerUrlLabel,
+    canOpenPeerUrl,
+    onPressUrl,
 }: WcConnectHeaderProps): React.JSX.Element => {
     const styles = useStyles()
     const requesterStyles = useRequesterStyles()
     const { t } = useLanguage()
 
-    // Same registry lookup mobile's header does: the peer-asserted URL resolves
-    // to a Pera-curated verification tier, so a spoofed name/icon still can't
-    // claim the verified checkmark.
     const { data: project } = useProjectByUrlQuery({
-        url: request.peerMeta.url,
-        isEnabled: !!request.peerMeta.url,
+        url: peer.url ?? '',
+        isEnabled: !!peer.url,
     })
 
-    const preferredIcon =
-        request.peerMeta.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? request.peerMeta.icons?.at(0)
+    // The registry is keyed by the peer-asserted url, so a positive tier only
+    // shows when the browser-verified tab is that same site. A page asserting
+    // someone else's url never inherits their checkmark.
+    const verificationTier = resolveDisplayableVerificationTier(
+        project,
+        isRequesterOriginDistinct ? undefined : requesterOrigin,
+    )
 
-    const handlePressUrl = (): void => {
-        if (!request.peerMeta.url) return
-        // A new browser tab, not a webview: mobile's pushWebView has nothing
-        // rendering it in the approval document.
-        void Linking.openURL(request.peerMeta.url)
-    }
+    const preferredIcon = getPreferredDappIcon(peer.icons)
 
     return (
         <PWView style={styles.headerContainer}>
-            {/*
-                Mobile's network badges are deliberately NOT rendered here.
-                The extension already shows the active network globally —
-                TestnetIndicator, absolutely positioned at the top of every
-                surface from AppShell.web.tsx — and it lands in exactly this
-                spot, so a badge here stacks on top of it and says the same
-                thing twice.
-
-                Redundant, not merely crowded: a request only reaches this
-                screen after passing the host's network gate
-                (`isChainIdAcceptable` in bindHeadlessHandlers), so the
-                requested chain is always either the wallet's own active
-                network — which the global indicator states — or the 4160
-                wildcard. The wildcard is the one case that loses information
-                (mobile shows both badges to mean "any Algorand chain"); it is
-                accepted here rather than reintroducing the collision, since
-                what the user is granting is still their active network.
-            */}
+            {/* No network badges: TestnetIndicator already states the active network
+                here, and a proposal only arrives once the host's network gate passed it. */}
             {preferredIcon ? (
                 <PWImage
                     source={{ uri: preferredIcon }}
@@ -131,77 +104,92 @@ export const WcConnectHeader = ({
                     <PWText
                         variant='h3'
                         style={styles.title}
+                        numberOfLines={3}
                         testID='wc-connect-peer-name'
                     >
                         {t('walletconnect.request.title', {
-                            name: request.peerMeta.name,
+                            name: peerName,
                         })}
                     </PWText>
-                    {!!project?.verificationTier && (
+                    {!!verificationTier && (
                         <ProjectVerificationIcon
-                            tier={project.verificationTier}
+                            tier={verificationTier}
                             size='sm'
                         />
                     )}
                 </PWView>
-                {!!request.peerMeta.url && (
-                    <PWButton
-                        variant='link'
-                        onPress={handlePressUrl}
-                        title={request.peerMeta.url}
-                    />
-                )}
-                {!!requesterOrigin && (
-                    <PWView style={requesterStyles.verifiedRow}>
-                        {/*
-                            Normally just the badge, centred: the verified
-                            origin equals the url rendered directly above, and
-                            spelling it out again read as the same string twice.
-                            The badge is what qualifies that url as a verified
-                            tab.
-
-                            It can only qualify a url it actually matches,
-                            though — the url above is the dApp's own
-                            `peerMeta` claim and the requester origin is
-                            browser-stamped, so a page CAN pair while
-                            asserting someone else's url. In that case the
-                            badge alone would appear to vouch for the forged
-                            one, so the real origin is named instead. This is
-                            the divergence the whole verified-requester
-                            feature exists to expose.
-                        */}
-                        {isRequesterOriginDistinct && (
-                            <PWText
-                                variant='caption'
-                                style={requesterStyles.requesterOrigin}
-                                testID='wc-connect-requester-origin'
-                            >
-                                {t('dapp.enable.request_origin', {
-                                    origin: requesterOrigin,
-                                })}
-                            </PWText>
-                        )}
-                        <PWView style={requesterStyles.verifiedBadge}>
-                            <PWIcon
-                                name='assets/verified'
-                                size='sm'
-                            />
-                            <PWText
-                                variant='caption'
-                                style={requesterStyles.verifiedBadgeText}
-                                accessibilityLabel={t(
-                                    // Carries the origin the visible text no
-                                    // longer shows, so assistive tech still
-                                    // gets it.
-                                    'dapp.enable.requester_verified_a11y_origin',
-                                    { origin: requesterOrigin },
-                                )}
-                                testID='wc-connect-requester-verified-badge'
-                            >
-                                {t('dapp.enable.requester_verified_label')}
-                            </PWText>
-                        </PWView>
+                {/* A page CAN pair while asserting someone else's url. Then the
+                    asserted url is not shown as a link at all: the warning names
+                    the real (browser-stamped) origin and the claimed one. */}
+                {!!requesterOriginLabel && isRequesterOriginDistinct ? (
+                    <PWView
+                        style={requesterStyles.mismatchWarning}
+                        testID='wc-connect-requester-mismatch'
+                    >
+                        <PWRoundIcon
+                            icon='warning'
+                            size='sm'
+                            variant='error'
+                        />
+                        <PWText
+                            variant='body'
+                            style={requesterStyles.mismatchWarningText}
+                        >
+                            {peerUrlLabel
+                                ? t('dapp.approval.requester_mismatch', {
+                                      origin: requesterOriginLabel,
+                                      claimed: peerUrlLabel,
+                                  })
+                                : t('dapp.approval.request_origin', {
+                                      origin: requesterOriginLabel,
+                                  })}
+                        </PWText>
                     </PWView>
+                ) : (
+                    <>
+                        {!!peerUrlLabel &&
+                            (canOpenPeerUrl ? (
+                                <PWButton
+                                    variant='link'
+                                    onPress={onPressUrl}
+                                    title={peerUrlLabel}
+                                />
+                            ) : (
+                                <PWText
+                                    variant='caption'
+                                    style={styles.peerUrlText}
+                                    numberOfLines={1}
+                                    testID='wc-connect-peer-url-text'
+                                >
+                                    {peerUrlLabel}
+                                </PWText>
+                            ))}
+                        {!!requesterOriginLabel && (
+                            <PWView style={requesterStyles.verifiedBadge}>
+                                <PWIcon
+                                    name='assets/verified'
+                                    size='sm'
+                                />
+                                <PWText
+                                    variant='caption'
+                                    style={requesterStyles.verifiedBadgeText}
+                                    numberOfLines={1}
+                                    accessibilityLabel={t(
+                                        'dapp.approval.requester_verified_a11y_origin',
+                                        { origin: requesterOriginLabel },
+                                    )}
+                                    testID='wc-connect-requester-verified-badge'
+                                >
+                                    {t(
+                                        'dapp.approval.requester_verified_label',
+                                        {
+                                            origin: requesterOriginLabel,
+                                        },
+                                    )}
+                                </PWText>
+                            </PWView>
+                        )}
+                    </>
                 )}
             </PWView>
 
@@ -213,13 +201,13 @@ export const WcConnectHeader = ({
                         style={styles.panelTitle}
                     >
                         {t('walletconnect.request.permissions_title', {
-                            count: request.permissions.length,
+                            count: permissions.length,
                         })}
                     </PWText>
                 }
             >
                 <PWView style={styles.permissionsContent}>
-                    {request.permissions.map((permission, index) => (
+                    {permissions.map((permission, index) => (
                         <PermissionItem
                             key={index}
                             permission={permission as AlgorandPermission}

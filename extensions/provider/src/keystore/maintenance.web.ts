@@ -13,6 +13,8 @@
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { QuantumMaterialRepairResult } from './repairQuantumMaterial'
 import type { PQDerivation } from './pqDerivation'
+import type { PasskeySplitResult } from './passkeyCredentials/splitFlatPasskeyCredentials'
+import type { FlatProviderCredential } from './passkeyCredentials/splitProviderCredential'
 
 /**
  * Web build of the keystore maintenance surface. Both operations are
@@ -25,6 +27,9 @@ import type { PQDerivation } from './pqDerivation'
  * - **Material repair** re-mints Falcon children whose sealed material predates
  *   keystore custody. That state only exists on device, where quantum signing
  *   used to re-derive from the seed each time.
+ * - **Passkey credential split and material lookups** serve the Android
+ *   credential provider's records. The extension's passkeys live in
+ *   keystore-web and hold no material of their own.
  *
  * Returning a zeroed result rather than throwing is deliberate: the bootstrap
  * calls this unconditionally and only logs when a count is non-zero, so web
@@ -44,3 +49,22 @@ export const runMaterialRepair = async (_deps: {
         derivation: PQDerivation,
     ) => Promise<void>
 }): Promise<QuantumMaterialRepairResult> => ({ repaired: 0, failed: 0 })
+
+export const runPasskeyCredentialSplit =
+    async (): Promise<PasskeySplitResult> => ({
+        split: [],
+        normalized: [],
+        failed: [],
+    })
+
+export const hasKeyMaterial = (_id: string): boolean => false
+
+export const writePasskeyCredential = async (
+    _masterKey: Uint8Array,
+    _id: string,
+    _record: FlatProviderCredential,
+): Promise<void> => {
+    throw new Error(
+        'passkey credentials are written by the native provider only',
+    )
+}

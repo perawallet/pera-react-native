@@ -10,9 +10,10 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
@@ -21,6 +22,7 @@ import { PWListItem, PWScreen } from '@components/core'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 
 export const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -35,6 +37,11 @@ export const SettingsDeveloperScreen = () => {
     }
 
     const openDispenser = () => {
+        if (!routeCapabilities.inAppWebView) {
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config
+            void Linking.openURL(dispenserUrl)
+            return
+        }
         pushWebView({
             url: dispenserUrl,
             id: generateUniqueId(),
@@ -60,12 +67,12 @@ export const SettingsDeveloperScreen = () => {
                 />
             )}
 
-            {getPreference(UserPreferences.developerMenuEnabled) && (
+            {getPreference(UserPreferences.debugToolsEnabled) && (
                 <PWListItem
-                    onPress={() => handleTapEvent('DevMenu')}
+                    onPress={() => handleTapEvent('DebugTools')}
                     icon='sliders'
-                    title={t('screens.developer_menu')}
-                    testID='developer_settings_menu_item'
+                    title={t('screens.debug_tools')}
+                    testID='developer_settings_debug_tools_item'
                 />
             )}
         </PWScreen>

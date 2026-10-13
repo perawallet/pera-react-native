@@ -14,11 +14,29 @@ import { describe, test, expect, it } from 'vitest'
 import { getBluetoothServiceUuids } from '@ledgerhq/devices'
 import {
     resolveDeviceModel,
-    buildLedgerAccountPath,
     LEDGER_BLE_SERVICE_UUIDS,
-    MIN_ARBITRARY_SIGN_APP_VERSION,
     isAppVersionAtLeast,
+    resolveUsbDeviceModel,
 } from '../constants'
+
+describe('resolveUsbDeviceModel', () => {
+    test.each([
+        [0x0001, 'nanoS'],
+        [0x0004, 'nanoX'],
+        [0x4011, 'nanoSPlus'],
+        [0x6011, 'stax'],
+        [0x7011, 'flex'],
+    ])('maps product id %i to %s', (productId, model) => {
+        expect(resolveUsbDeviceModel(productId)).toBe(model)
+    })
+
+    test.each([0x9999, null, undefined])(
+        'labels %s as a generic ledger',
+        productId => {
+            expect(resolveUsbDeviceModel(productId)).toBe('ledger')
+        },
+    )
+})
 
 describe('resolveDeviceModel', () => {
     test('defaults to nanoX when serviceUUIDs is null', () => {
@@ -44,23 +62,10 @@ describe('resolveDeviceModel', () => {
     })
 })
 
-describe('buildLedgerAccountPath', () => {
-    test('builds the m/-prefixed Algorand BIP-44 path with the given account index', () => {
-        // `@algorandfoundation/ledger-algorand-js` serializePath (used by
-        // signData) requires the canonical "m/"-prefixed BIP-32 form.
-        expect(buildLedgerAccountPath(0)).toBe("m/44'/283'/0'/0/0")
-        expect(buildLedgerAccountPath(5)).toBe("m/44'/283'/5'/0/0")
-    })
-})
-
 describe('isAppVersionAtLeast', () => {
     it('true when version equals the minimum', () => {
-        expect(
-            isAppVersionAtLeast(
-                MIN_ARBITRARY_SIGN_APP_VERSION,
-                MIN_ARBITRARY_SIGN_APP_VERSION,
-            ),
-        ).toBe(true)
+        const version = { major: 2, minor: 0, patch: 0 }
+        expect(isAppVersionAtLeast(version, version)).toBe(true)
     })
 
     it('false when major is lower', () => {

@@ -17,7 +17,7 @@ import {
     resolveAgeGate,
     useAgeGateStore,
     type AgeGateStatus,
-} from '@perawallet/wallet-core-age-gate'
+} from '@perawallet/wallet-core-device'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AgeDeclarationContent } from '@modules/age-gate/components/AgeDeclarationContent'
 

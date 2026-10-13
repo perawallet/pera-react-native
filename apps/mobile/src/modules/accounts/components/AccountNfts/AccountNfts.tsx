@@ -11,6 +11,7 @@
  */
 
 import React, { useCallback, useMemo } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWFlatList,
@@ -24,10 +25,7 @@ import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountNfts } from './useAccountNfts'
-import {
-    CollectibleGridItem,
-    CollectibleListItem,
-} from '@modules/assets/components'
+import { CollectibleGridItem, CollectibleListItem } from '@modules/assets'
 import { NftEmptyState } from '../NftEmptyState'
 import { GallerySkeleton } from './GallerySkeleton'
 import { EmptyView } from '@components/EmptyView'
@@ -69,7 +67,7 @@ const GalleryCellView = ({
     // Metadata is parsed here rather than in the query so a 15k-collectible
     // account only pays for the cells on screen.
     const displayItem = useMemo(() => {
-        const asset = assetFromHoldingLiteRow(item)
+        const asset = assetFromHoldingLiteRow(item, LEGACY_CHAIN_ID)
         if (!asset) return null
         return {
             assetId: item.assetId,

@@ -20,10 +20,16 @@ import {
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import {
+    readAlgorandNative,
+    toAlgorandNative,
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+    type AlgorandTransactionView,
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import {
+    LEGACY_CHAIN_ID,
+    type TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
@@ -40,17 +46,18 @@ type TransactionDetailsRouteProp = RouteProp<
 >
 
 type TransactionDetailsRenderState =
-    | { kind: 'content'; transaction: PeraDisplayableTransaction }
+    | { kind: 'content'; transaction: TransactionNative }
     | { kind: 'loading' }
     | { kind: 'offline' }
     | { kind: 'error'; titleKey: string; bodyKey: string }
 
 type UseTransactionDetailsScreenResult = {
     renderState: TransactionDetailsRenderState
-    groupTransactions: PeraDisplayableTransaction[]
+    groupTransactions: AlgorandTransactionView[]
     currentTransactionId: string
     isExternal: boolean
-    handleTransactionPress: (tx: PeraDisplayableTransaction) => void
+    handleTransactionPress: (tx: AlgorandTransactionView) => void
+    handleRelatedTransactionPress: (related: TransactionNative) => void
     handleRetry: () => void
 }
 
@@ -68,14 +75,17 @@ export const useTransactionDetailsScreen =
         } = route.params
 
         const detailQuery = useTransactionDetailQuery({
-            transactionId: transactionId || paramTransaction?.id || '',
+            transactionId:
+                transactionId ||
+                (paramTransaction &&
+                    readAlgorandNative(paramTransaction)?.id) ||
+                '',
             isEnabled: !paramTransaction && !!transactionId,
         })
 
         const { groupTransactions } = useGroupTransactionsQuery({ groupId })
 
         const { hasInternet } = useNetworkStatus()
-
         // The signing flow's in-memory object is authoritative (unsigned txns
         // have no on-chain id). The indexer fetch enriches the history row
         // (note, inner txns), so prefer it once it lands; until then the
@@ -83,12 +93,21 @@ export const useTransactionDetailsScreen =
         const localTransaction = useMemo(
             () =>
                 historyTransaction
-                    ? mapHistoryItemToDisplayableTransaction(historyTransaction)
+                    ? mapHistoryItemToDisplayableTransaction(
+                          historyTransaction,
+                          LEGACY_CHAIN_ID,
+                      )
                     : null,
             [historyTransaction],
         )
-        const transaction =
-            paramTransaction ?? detailQuery.data ?? localTransaction ?? null
+        const transaction = useMemo((): TransactionNative | null => {
+            if (paramTransaction) {
+                return paramTransaction
+            }
+            // Both sources here (indexer, Algorand history row) are Algorand-only.
+            const fetched = detailQuery.data ?? localTransaction
+            return fetched ? toAlgorandNative(fetched) : null
+        }, [paramTransaction, detailQuery.data, localTransaction])
 
         const renderState = useMemo((): TransactionDetailsRenderState => {
             if (transaction) {
@@ -122,9 +141,19 @@ export const useTransactionDetailsScreen =
         ])
 
         const handleTransactionPress = useCallback(
-            (tx: PeraDisplayableTransaction) => {
+            (tx: AlgorandTransactionView) => {
                 navigation.push('TransactionDetails', {
-                    transaction: tx,
+                    transaction: toAlgorandNative(tx),
+                    groupId,
+                })
+            },
+            [navigation, groupId],
+        )
+
+        const handleRelatedTransactionPress = useCallback(
+            (related: TransactionNative) => {
+                navigation.push('TransactionDetails', {
+                    transaction: related,
                     groupId,
                 })
             },
@@ -144,9 +173,13 @@ export const useTransactionDetailsScreen =
         return {
             renderState,
             groupTransactions,
-            currentTransactionId: transaction?.id ?? transactionId ?? '',
+            currentTransactionId:
+                (transaction && readAlgorandNative(transaction)?.id) ??
+                transactionId ??
+                '',
             isExternal: isExternal ?? false,
             handleTransactionPress,
+            handleRelatedTransactionPress,
             handleRetry,
         }
     }

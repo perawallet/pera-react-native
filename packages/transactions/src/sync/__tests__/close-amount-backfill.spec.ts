@@ -20,7 +20,9 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { TransactionHistoryItem } from '../../models/types'
 import { upsertTransactions, getTransactionHistory } from '../../db'
+import { historyChainAdapters } from '../../history-adapter'
 import { backfillMissingCloseAmounts } from '../close-amount-backfill'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const makeTx = (
     overrides: Partial<TransactionHistoryItem> = {},
@@ -65,21 +67,24 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         const fetchCloseAmount = vi.fn().mockResolvedValue('50854132929')
 
         await backfillMissingCloseAmounts({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             fetchCloseAmount,
         })
 
-        expect(fetchCloseAmount).toHaveBeenCalledWith('TXSTALE', 'mainnet')
+        expect(fetchCloseAmount).toHaveBeenCalledWith(
+            'TXSTALE',
+            scopeForLegacyNetwork('mainnet'),
+        )
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         expect(row.closeAmount).toEqual(new Decimal('50854132929'))
     })
@@ -89,14 +94,14 @@ describe('backfillMissingCloseAmounts', () => {
             db,
             items: [makeTx({ id: 'TXSTALE' })],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         const fetchCloseAmount = vi.fn().mockRejectedValue(new Error('offline'))
 
         await expect(
             backfillMissingCloseAmounts({
                 db,
-                network: 'mainnet',
+                scope: scopeForLegacyNetwork('mainnet'),
                 fetchCloseAmount,
             }),
         ).resolves.toBeUndefined()
@@ -104,7 +109,7 @@ describe('backfillMissingCloseAmounts', () => {
         const [row] = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         // Still null — the row keeps matching the backfill predicate, so the
         // next sync pass retries naturally.
@@ -121,16 +126,46 @@ describe('backfillMissingCloseAmounts', () => {
                 }),
             ],
             accountAddress: 'ACCT1',
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
         })
         const fetchCloseAmount = vi.fn()
 
         await backfillMissingCloseAmounts({
             db,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             fetchCloseAmount,
         })
 
         expect(fetchCloseAmount).not.toHaveBeenCalled()
+    })
+
+    it('defaults to the chain adapter lookup and skips a chain that has none', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ id: 'TXSTALE' })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        historyChainAdapters.reset()
+        historyChainAdapters.register({
+            chainId: 'algorand',
+            fetchHistory: vi.fn(),
+            fetchMoreHistory: vi.fn(),
+            getTransactionHistory: vi.fn(),
+            summarize: vi.fn(),
+            toDisplayable: vi.fn(),
+        })
+
+        await backfillMissingCloseAmounts({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        const [row] = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        expect(row.closeAmount).toBeNull()
     })
 })

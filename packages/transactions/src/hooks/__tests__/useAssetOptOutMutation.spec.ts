@@ -11,27 +11,27 @@
  */
 
 import { createElement, type ReactNode } from 'react'
+import { Decimal } from 'decimal.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
     useAssetOptOutMutation,
     NonZeroBalanceError,
     CreatorCannotOptOutError,
 } from '../useAssetOptOutMutation'
+import { sendFlowChainAdapters } from '../../chain-adapter'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: new QueryClient() }, children)
 
 const mockSubmit = vi.fn()
-const mockAccountInformation = vi.fn()
+const mockAccountState = vi.fn()
 const mockBuild = vi.fn()
-const mockAddAssetTransfer = vi.fn()
-const mockNewGroup = vi.fn(() => ({
-    addAssetTransfer: mockAddAssetTransfer.mockReturnThis(),
-    build: mockBuild,
-}))
-const mockFetchIndexerAssetDetails = vi.fn()
+const mockFetchOnChainAsset = vi.fn()
 const mockDeleteAssetHoldings = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
 const mockAssignFeeToGroup = vi.fn()
@@ -43,42 +43,46 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: 'testnet' }),
-    useAlgorandClient: () => ({
-        client: {
-            algod: {
-                accountInformation: () => ({ do: mockAccountInformation }),
-            },
-        },
-        newGroup: mockNewGroup,
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    fetchIndexerAssetDetails: (...args: unknown[]) =>
-        mockFetchIndexerAssetDetails(...args),
+    fetchOnChainAsset: (...args: unknown[]) => mockFetchOnChainAsset(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    fetchOnChainAccountState: (...args: unknown[]) => mockAccountState(...args),
     deleteAssetHoldings: (...args: unknown[]) =>
         mockDeleteAssetHoldings(...args),
     invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
         mockInvalidate(...args),
 }))
 
+/** `amount` in base units. */
+const holding = (assetId: bigint, amount: bigint) => ({
+    assetId: String(assetId),
+    amount: new Decimal(amount.toString()),
+    isFrozen: false,
+})
+
 const baseAccount = {
-    amount: 1000000n,
-    minBalance: 100000n,
-    assets: [{ assetId: 12345n, amount: 0n }],
+    holdings: [holding(12345n, 0n)],
 }
 
 describe('useAssetOptOutMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAccountInformation.mockResolvedValue(baseAccount)
-        mockBuild.mockResolvedValue({
-            transactions: [{ txn: { sender: 'SENDER' } }],
+        mockAccountState.mockResolvedValue(baseAccount)
+        mockBuild.mockResolvedValue([{ sender: 'SENDER' }])
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            assetHolding: {
+                buildOptInTxs: vi.fn(),
+                buildOptOutTxs: mockBuild,
+            },
         })
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
         // Default: the calculator passes the group through untouched, which is
@@ -89,13 +93,13 @@ describe('useAssetOptOutMutation', () => {
                 adjustments: [],
             }),
         )
-        mockFetchIndexerAssetDetails.mockResolvedValue({
-            asset: { params: { creator: 'CREATOR' } },
+        mockFetchOnChainAsset.mockResolvedValue({
+            creator: { address: 'CREATOR' },
         })
     })
 
     it('opts out of a single asset via the pipeline helper', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -108,16 +112,14 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual(['tx1'])
         })
 
-        expect(mockAddAssetTransfer).toHaveBeenCalledWith(
-            expect.objectContaining({
-                sender: 'SENDER',
-                receiver: 'SENDER',
-                assetId: 12345n,
-                amount: 0n,
-                closeAssetTo: 'CREATOR',
-            }),
-        )
+        expect(mockBuild).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            optOuts: [
+                { sender: 'SENDER', assetId: 12345n, creator: 'CREATOR' },
+            ],
+        })
         expect(mockSubmit).toHaveBeenCalledWith({
+            chainId: 'algorand',
             unsignedTxs: [{ sender: 'SENDER' }],
             source: {
                 name: 'asset-opt-out',
@@ -127,7 +129,7 @@ describe('useAssetOptOutMutation', () => {
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
         // Scoped, not balances-only: the holdings delete must refresh every
         // staleTime-Infinity account read.
@@ -137,23 +139,41 @@ describe('useAssetOptOutMutation', () => {
         ])
     })
 
-    it('opts out of multiple assets in a single grouped pipeline request', async () => {
-        mockBuild.mockResolvedValueOnce({
-            transactions: [
-                { txn: { sender: 'SENDER' } },
-                { txn: { sender: 'SENDER' } },
-            ],
-        })
-        mockSubmit.mockResolvedValueOnce({ txIds: ['tx1', 'tx2'] })
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [
-                { assetId: 12345n, amount: 0n },
-                { assetId: 67890n, amount: 0n },
-            ],
+    it('looks the creator up on chain when the caller does not pass one', async () => {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
+            wrapper,
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        await act(async () => {
+            await result.current.optOut({
+                sender: 'SENDER',
+                assetId: 12345n,
+            })
+        })
+
+        expect(mockFetchOnChainAsset).toHaveBeenCalledWith('12345', {
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
+        expect(mockBuild).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            optOuts: [
+                { sender: 'SENDER', assetId: 12345n, creator: 'CREATOR' },
+            ],
+        })
+    })
+
+    it('opts out of multiple assets in a single grouped pipeline request', async () => {
+        mockBuild.mockResolvedValueOnce([
+            { sender: 'SENDER' },
+            { sender: 'SENDER' },
+        ])
+        mockSubmit.mockResolvedValueOnce({ txIds: ['tx1', 'tx2'] })
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [holding(12345n, 0n), holding(67890n, 0n)],
+        })
+
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -165,8 +185,9 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual(['tx1', 'tx2'])
         })
 
-        expect(mockAddAssetTransfer).toHaveBeenCalledTimes(2)
+        expect(mockBuild).toHaveBeenCalledTimes(1)
         expect(mockSubmit).toHaveBeenCalledWith({
+            chainId: 'algorand',
             unsignedTxs: [{ sender: 'SENDER' }, { sender: 'SENDER' }],
             source: {
                 name: 'asset-opt-out',
@@ -176,7 +197,7 @@ describe('useAssetOptOutMutation', () => {
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345', '67890'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
@@ -187,7 +208,7 @@ describe('useAssetOptOutMutation', () => {
     it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
         const built = { sender: 'SENDER', fee: 1000n }
         const raised = { sender: 'SENDER', fee: 3000n }
-        mockBuild.mockResolvedValueOnce({ transactions: [{ txn: built }] })
+        mockBuild.mockResolvedValueOnce([built])
         mockAssignFeeToGroup.mockResolvedValueOnce({
             transactions: [raised],
             adjustments: [
@@ -200,7 +221,7 @@ describe('useAssetOptOutMutation', () => {
             ],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -221,12 +242,11 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('throws NonZeroBalanceError without calling the pipeline', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [{ assetId: 12345n, amount: 5n }],
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [holding(12345n, 5n)],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -244,7 +264,7 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('throws CreatorCannotOptOutError when sender == creator', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -262,12 +282,11 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('skips submit but still reconciles local state when the asset is already gone on-chain', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [],
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -280,27 +299,24 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual([])
         })
 
-        expect(mockAddAssetTransfer).not.toHaveBeenCalled()
+        expect(mockBuild).not.toHaveBeenCalled()
         expect(mockSubmit).not.toHaveBeenCalled()
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
 
     it('only submits assets still held when some are already gone on-chain', async () => {
-        mockAccountInformation.mockResolvedValueOnce({
-            ...baseAccount,
-            assets: [{ assetId: 12345n, amount: 0n }],
+        mockAccountState.mockResolvedValueOnce({
+            holdings: [holding(12345n, 0n)],
         })
-        mockBuild.mockResolvedValueOnce({
-            transactions: [{ txn: { sender: 'SENDER' } }],
-        })
+        mockBuild.mockResolvedValueOnce([{ sender: 'SENDER' }])
         mockSubmit.mockResolvedValueOnce({ txIds: ['tx1'] })
 
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -312,20 +328,21 @@ describe('useAssetOptOutMutation', () => {
             expect(res.txIds).toEqual(['tx1'])
         })
 
-        expect(mockAddAssetTransfer).toHaveBeenCalledTimes(1)
-        expect(mockAddAssetTransfer).toHaveBeenCalledWith(
-            expect.objectContaining({ assetId: 12345n }),
+        expect(mockBuild).toHaveBeenCalledWith(
+            expect.objectContaining({
+                optOuts: [{ sender: 'SENDER', assetId: 12345n, creator: 'C1' }],
+            }),
         )
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
             assetIds: ['12345', '67890'],
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
     })
 
     it('does not call deleteAssetHoldings when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
-        const { result } = renderHook(() => useAssetOptOutMutation(), {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
             wrapper,
         })
 
@@ -341,5 +358,24 @@ describe('useAssetOptOutMutation', () => {
 
         expect(mockDeleteAssetHoldings).not.toHaveBeenCalled()
         expect(mockInvalidate).not.toHaveBeenCalled()
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('user cancelled')
+    })
+
+    it('resolves an empty selection without touching the chain or the local DB', async () => {
+        const { result } = renderHook(() => useAssetOptOutMutation(SCOPE), {
+            wrapper,
+        })
+
+        await act(async () => {
+            const res = await result.current.optOut([])
+            expect(res.txIds).toEqual([])
+        })
+
+        expect(mockAccountState).not.toHaveBeenCalled()
+        expect(mockSubmit).not.toHaveBeenCalled()
+        expect(mockDeleteAssetHoldings).not.toHaveBeenCalled()
+        expect(mockInvalidate).not.toHaveBeenCalled()
+        expect(result.current.isLoading).toBe(false)
     })
 })

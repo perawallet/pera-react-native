@@ -98,3 +98,37 @@ describe.each([
         expect(context.storage).toBe(keystore)
     })
 })
+
+describe('WithPeraKeystoreRepairs platform', () => {
+    it('passes the device platform into the context', async () => {
+        let registered: MigrationModule | undefined
+        ;(
+            WithPeraKeystoreRepairs as unknown as (
+                provider: unknown,
+                options: unknown,
+            ) => unknown
+        )(
+            {
+                migrations: {
+                    register: (module: MigrationModule) => {
+                        registered = module
+                    },
+                },
+                deviceInfo: { getDevicePlatform: () => 'android' },
+            },
+            { keystore: { storage: fakeStorage({}) } },
+        )
+
+        const context = (await registered!.context()) as PeraMigrationContext
+
+        expect(context.platform).toBe('android')
+    })
+
+    it('leaves the platform unknown when the provider has no device info', async () => {
+        const { context } = await registerWith(
+            WithPeraKeystoreRepairs as unknown as Extension,
+        )
+
+        expect(context.platform).toBeUndefined()
+    })
+})

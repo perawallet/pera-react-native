@@ -22,15 +22,24 @@ export type BuildBidaliUrlParams = {
     baseUrl: string
     apiKey: string
     balances?: Record<string, string>
+    paymentCurrencies?: readonly string[]
 }
 
 const BALANCES_PARAM = 'peraBidaliBalances'
+const CURRENCIES_PARAM = 'peraBidaliCurrencies'
 
 export const buildBidaliUrl = ({
     baseUrl,
     apiKey,
     balances = {},
-}: BuildBidaliUrlParams): string =>
-    `${baseUrl}?key=${apiKey}&${BALANCES_PARAM}=${encodeURIComponent(
+    paymentCurrencies,
+}: BuildBidaliUrlParams): string => {
+    const url = `${baseUrl}?key=${apiKey}&${BALANCES_PARAM}=${encodeURIComponent(
         JSON.stringify(balances),
     )}`
+    return paymentCurrencies
+        ? `${url}&${CURRENCIES_PARAM}=${encodeURIComponent(
+              JSON.stringify(paymentCurrencies),
+          )}`
+        : url
+}

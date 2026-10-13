@@ -13,12 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useRekeyToSharedSelectTargetScreen } from '../useRekeyToSharedSelectTargetScreen'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-const sourceAccount = { address: 'SRC', name: 'Src' } as WalletAccount
-const targetA = { address: 'A', name: 'A' } as WalletAccount
-const targetB = { address: 'B', name: 'B' } as WalletAccount
+import {
+    registerTargetFixtureChain,
+    sourceAccount,
+    targetA,
+    targetB,
+} from '../../../__tests__/authorityTargetFixture'
 
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -33,22 +33,11 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockIsEligibleSharedRekeyTarget = vi.fn(
-    (
-        account: WalletAccount,
-        _source: WalletAccount,
-        _allAccounts: WalletAccount[],
-    ) => account.address !== 'SRC',
-)
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [sourceAccount, targetA, targetB],
-    useFindAccountByAddress: (address: string) =>
-        address === 'SRC' ? sourceAccount : undefined,
-    isEligibleSharedRekeyTarget: (
-        account: WalletAccount,
-        source: WalletAccount,
-        allAccounts: WalletAccount[],
-    ) => mockIsEligibleSharedRekeyTarget(account, source, allAccounts),
+// The real target lookup, so the screen lists what the fixture chain accepts.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
 }))
 
 describe('useRekeyToSharedSelectTargetScreen', () => {
@@ -56,25 +45,47 @@ describe('useRekeyToSharedSelectTargetScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('filters out ineligible accounts via isEligibleSharedRekeyTarget', () => {
+    it('lists the targets the chain accepts under its shared kinds', () => {
+        const adapter = registerTargetFixtureChain(
+            [
+                { id: 'fixture-shared', category: 'shared' },
+                { id: 'fixture-standard', category: 'standard' },
+            ],
+            { 'fixture-shared': ['A'], 'fixture-standard': ['B'] },
+        )
+
         const { result } = renderHook(() =>
             useRekeyToSharedSelectTargetScreen(),
         )
 
-        expect(result.current.targets).toEqual([targetA, targetB])
-    })
-
-    it('passes the resolved source account to isEligibleSharedRekeyTarget', () => {
-        renderHook(() => useRekeyToSharedSelectTargetScreen())
-
-        expect(mockIsEligibleSharedRekeyTarget).toHaveBeenCalledWith(
+        expect(result.current.targets).toEqual([targetA])
+        expect(adapter.authority!.isEligibleTarget).toHaveBeenCalledWith(
+            'fixture-shared',
             targetA,
             sourceAccount,
             [sourceAccount, targetA, targetB],
+            expect.objectContaining({ chainId: 'algorand' }),
         )
     })
 
+    it('lists nothing when the chain files no kind under shared', () => {
+        registerTargetFixtureChain(
+            [{ id: 'fixture-standard', category: 'standard' }],
+            { 'fixture-standard': ['A', 'B'] },
+        )
+
+        const { result } = renderHook(() =>
+            useRekeyToSharedSelectTargetScreen(),
+        )
+
+        expect(result.current.targets).toEqual([])
+    })
+
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {
+        registerTargetFixtureChain(
+            [{ id: 'fixture-shared', category: 'shared' }],
+            { 'fixture-shared': ['A'] },
+        )
         const { result } = renderHook(() =>
             useRekeyToSharedSelectTargetScreen(),
         )

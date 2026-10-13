@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -37,24 +37,42 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
 }))
 
 import { useIsCardAutoFundingActive } from '../useIsCardAutoFundingActive'
+import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
 const localAccount = {
-    address: 'LOCAL',
-    type: 'algo25',
-    keyPairId: 'key-1',
+    chains: { algorand: { address: 'LOCAL', keyPairId: 'key-1' } },
+    custody: { kind: 'local', seed: null },
 } as WalletAccount
 
 const ledgerAccount = {
-    address: 'LEDGER',
-    type: 'hardware',
+    chains: { algorand: { address: 'LEDGER' } },
+    custody: {
+        kind: 'hardware',
+        device: {
+            manufacturer: 'ledger',
+            deviceId: 'device-1',
+            deviceName: 'Nano X',
+            transportType: 'ble',
+        },
+        accountIndex: 0,
+    },
     hardwareDetails: { manufacturer: 'ledger' },
 } as unknown as WalletAccount
+
+beforeEach(() => {
+    registerAlgorandCardAdapter()
+})
 
 describe('useIsCardAutoFundingActive', () => {
     beforeEach(() => {
         mocks.selectedFundingType = 'AUTO'
         mocks.connectedAddress = 'LOCAL'
-        vi.mocked(useAllAccounts).mockReturnValue([localAccount, ledgerAccount])
+        vi.mocked(useFindAccountByAddress).mockImplementation(
+            address =>
+                [localAccount, ledgerAccount].find(
+                    a => a.chains.algorand?.address === address,
+                ) ?? null,
+        )
     })
 
     it('is true when AUTO is stored and the connected account can sign the LSig', () => {

@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-import { getKnownAssetId } from '@perawallet/wallet-core-assets'
-import {
-    ALGO_ASSET_ID,
-    type Network,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import { getKnownAssetId, nativeAssetFor } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 
 export type ResolvedSwapRouteAssets = {
@@ -28,15 +24,15 @@ export type ResolvedSwapRouteAssets = {
 // missing or the same as the input. Returns null when no params are present.
 export const resolveSwapRouteAssets = (
     params: Optional<SwapScreenParams>,
-    network: Network,
+    scope: ChainScope,
 ): Nullable<ResolvedSwapRouteAssets> => {
     if (!params?.assetInId && !params?.assetOutId) return null
 
-    const assetInId = params.assetInId || ALGO_ASSET_ID
+    const assetInId = params.assetInId || nativeAssetFor(scope.chainId).assetId
     const assetOutId =
         params.assetOutId && params.assetOutId !== assetInId
             ? params.assetOutId
-            : getKnownAssetId('USDC', network)
+            : getKnownAssetId('USDC', scope)
 
     // No known USDC to default the output side to — no route to resolve.
     if (assetOutId === null) return null

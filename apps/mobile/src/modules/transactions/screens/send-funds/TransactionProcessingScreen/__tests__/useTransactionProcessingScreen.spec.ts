@@ -12,6 +12,11 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
+import {
+    registerAlgorandAccountsAdapter,
+    seedAuthority,
+} from '@test-utils/algorandAccountsAdapter'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import {
     UserRejectedSigningError,
@@ -19,6 +24,7 @@ import {
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
 import {
+    useAccountChainStateStore,
     useAllAccounts,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -35,10 +41,33 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/stack', () => ({}))
 
-const { mockExecute, mockOnFinished } = vi.hoisted(() => ({
+const {
+    mockExecute,
+    mockOnFinished,
+    mockRegisterTabResume,
+    mockClearTabResume,
+    mockCompleteTabResume,
+    sendFundsState,
+} = vi.hoisted(() => ({
     mockExecute: vi.fn(),
     mockOnFinished: vi.fn(),
+    mockRegisterTabResume: vi.fn(),
+    mockClearTabResume: vi.fn(),
+    mockCompleteTabResume: vi.fn(),
+    sendFundsState: {
+        amount: undefined as unknown,
+        note: undefined as string | undefined,
+        isCloseAccount: false,
+    },
 }))
+
+vi.mock('@utils/tabResumeIntent', () => ({
+    registerTabResumeIntent: mockRegisterTabResume,
+    clearTabResumeIntent: mockClearTabResume,
+    completeTabResume: mockCompleteTabResume,
+}))
+
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionSendFlow: () => ({
@@ -68,8 +97,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useSelectedAccount: vi.fn(() => ({
-            address: 'test-address',
+            chains: { algorand: { address: 'test-address' } },
             name: 'Test',
+            custody: { kind: 'local', seed: null },
         })),
         useAllAccounts: vi.fn(() => []),
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
@@ -89,12 +119,12 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: () => ({
         selectedAssetId: '0',
-        amount: undefined,
+        amount: sendFundsState.amount,
         destination: 'dest-address',
-        note: undefined,
+        note: sendFundsState.note,
         sendMode: 'normal' as const,
         arc59Summary: undefined,
-        isCloseAccount: false,
+        isCloseAccount: sendFundsState.isCloseAccount,
         onFinished: mockOnFinished,
     }),
 }))
@@ -108,7 +138,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
-        logger: { error: vi.fn() },
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
     }
 })
 
@@ -144,8 +179,57 @@ const publishProposed = (
 
 describe('useTransactionProcessingScreen', () => {
     beforeEach(() => {
+        registerAlgorandAccountsAdapter()
+        useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         signingEventBus.__resetForTests()
+        sendFundsState.amount = undefined
+        sendFundsState.note = undefined
+        sendFundsState.isCloseAccount = false
+    })
+
+    it('registers the send to resume in a tab while it signs, and clears it once settled', async () => {
+        sendFundsState.amount = new Decimal('1.25')
+        sendFundsState.note = 'rent'
+        mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockRegisterTabResume).toHaveBeenCalledWith({
+            flow: 'send',
+            accountAddress: 'test-address',
+            assetId: '0',
+            destination: 'dest-address',
+            amount: '1.25',
+            note: 'rent',
+        })
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(mockClearTabResume).toHaveBeenCalledOnce()
+    })
+
+    it('hands a sent transaction back to the popup with its success copy', async () => {
+        mockExecute.mockResolvedValueOnce('TXID')
+
+        renderHook(() => useTransactionProcessingScreen())
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(mockReplace).toHaveBeenCalledWith('TransactionSuccess', {
+            transactionId: 'TXID',
+        })
+        expect(mockCompleteTabResume).toHaveBeenCalledWith({
+            title: 'send_funds.success.title',
+            body: 'send_funds.success.subtitle',
+        })
+    })
+
+    it('does not offer to resume closing an account', () => {
+        sendFundsState.amount = new Decimal('1.25')
+        sendFundsState.isCloseAccount = true
+        mockExecute.mockReturnValue(new Promise(() => {}))
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockRegisterTabResume).not.toHaveBeenCalled()
     })
 
     it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {
@@ -235,19 +319,21 @@ describe('useTransactionProcessingScreen', () => {
         // processing copy must match the machine-driven overlay.
         mockExecute.mockReturnValue(new Promise(() => {}))
         const sender = {
-            address: 'SRC',
-            type: 'watch',
-            rekeyAddress: 'LEDGER_AUTH',
+            chains: { algorand: { address: 'SRC' } },
+            custody: { kind: 'watch' },
         }
+        seedAuthority('SRC', 'LEDGER_AUTH')
         const ledgerAuth = {
-            address: 'LEDGER_AUTH',
-            type: 'hardware',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'dev-1',
-                deviceName: 'Nano X',
+            chains: { algorand: { address: 'LEDGER_AUTH' } },
+            custody: {
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'dev-1',
+                    deviceName: 'Nano X',
+                    transportType: 'ble',
+                },
                 accountIndex: 0,
-                transportType: 'ble',
             },
         }
         vi.mocked(useSelectedAccount).mockReturnValue(sender as never)
@@ -261,7 +347,10 @@ describe('useTransactionProcessingScreen', () => {
 
     it('keeps non-hardware copy for a plain local-key sender', () => {
         mockExecute.mockReturnValue(new Promise(() => {}))
-        const sender = { address: 'SRC', type: 'algo25', keyPairId: 'kp' }
+        const sender = {
+            chains: { algorand: { address: 'SRC', keyPairId: 'kp' } },
+            custody: { kind: 'local', seed: null },
+        }
         vi.mocked(useSelectedAccount).mockReturnValue(sender as never)
         vi.mocked(useAllAccounts).mockReturnValue([sender] as never)
 

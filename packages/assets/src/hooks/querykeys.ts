@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    ALGO_ASSET_ID,
-    type HistoryPeriod,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'assets'
@@ -63,22 +60,25 @@ export const hashAssetIds = (assetIDs: string[]): string => {
 
 export const getAssetPricesQueryKey = (
     assetIDs: string[],
-    network: Network,
+    scope: ChainScope,
 ) => {
     return [
         MODULE_PREFIX,
         'prices',
         'usd',
-        { assetIDs: hashAssetIds(assetIDs), network },
+        {
+            assetIDs: hashAssetIds(assetIDs),
+            scope,
+        },
     ]
 }
 
 export const getAssetPriceHistoryQueryKey = (
     assetID: string,
     period: HistoryPeriod,
-    network: Network,
+    scope: ChainScope,
 ) => {
-    return [MODULE_PREFIX, 'prices', 'history', { assetID, period, network }]
+    return [MODULE_PREFIX, 'prices', 'history', { assetID, period, scope }]
 }
 
 /**
@@ -91,19 +91,21 @@ export const isAssetPriceHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[1] === 'prices' &&
     queryKey[2] === 'history'
 
-export const getAssetsQueryKey = (assetIDs: string[], network: Network) => {
-    return [MODULE_PREFIX, { assetIDs: hashAssetIds(assetIDs), network }]
-}
-
-export const getAlgoQueryKey = (network: Network) => {
-    return [MODULE_PREFIX, { algo: ALGO_ASSET_ID, network }]
+export const getAssetsQueryKey = (assetIDs: string[], scope: ChainScope) => {
+    return [
+        MODULE_PREFIX,
+        {
+            assetIDs: hashAssetIds(assetIDs),
+            scope,
+        },
+    ]
 }
 
 /** Canonical single-asset cache entry (DB-backed read path). */
-export const getAssetDetailsQueryKey = (assetId: string, network: Network) => [
+export const getAssetDetailsQueryKey = (assetId: string, scope: ChainScope) => [
     MODULE_PREFIX,
     'detail',
-    { assetId, network },
+    { assetId, scope },
 ]
 
 /**
@@ -115,26 +117,14 @@ export const getAssetDetailsQueryKey = (assetId: string, network: Network) => [
  */
 export const getRemoteAssetDetailsQueryKey = (
     assetId: string,
-    network: Network,
-) => [MODULE_PREFIX, 'detail-remote', { assetId, network }]
-
-export const getPublicAssetDetailsQueryKey = (assetId: string) => [
-    MODULE_PREFIX,
-    'public',
-    { assetId },
-]
-
-export const getIndexerAssetDetailsQueryKey = (assetId: string) => [
-    MODULE_PREFIX,
-    'indexer',
-    { assetId },
-]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'detail-remote', { assetId, scope }]
 
 /** Freeze/clawback authorities, read from the indexer's asset params. */
 export const getAssetAuthoritiesQueryKey = (
     assetId: string,
-    network: Network,
-) => [MODULE_PREFIX, 'authorities', { assetId, network }]
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'authorities', { assetId, scope }]
 
 export function invalidateAssetQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({

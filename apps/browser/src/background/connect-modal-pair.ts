@@ -11,27 +11,20 @@
  */
 
 import {
-    WC_CONTROL_SCOPE,
+    CONNECTIONS_CONTROL_SCOPE,
     isWcPagePairMessage,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { ensureOffscreenDocument } from './offscreen'
 
-/**
- * Accepts a page-originated WalletConnect pair request from the connect-modal
- * content script and translates it into a `pair` control message for the
- * offscreen document.
- *
- * This is the trust boundary. The WC control channel is gated to
- * extension-origin senders, so a content script cannot reach it directly; this
- * route is the only way a page's intent crosses into the wallet, and it exists
- * so the origin can be stamped from the browser-provided `sender.origin`
- * rather than taken from the message. Copies the posture of
- * ChromeDappRouter.handleMessage (extensions/platform-chrome/src/dapp/router.ts).
- *
- * The pairing itself is still inert until the user approves it in the approval
- * surface — this route only starts a handshake whose accounts the user must
- * then select and grant.
- */
+// Every pairing is a live socket to a page-chosen bridge host in the offscreen
+// document, so a page gets a small budget rather than an open tap. In-memory is
+// enough: a SW idle-reset only helps a page that already went quiet.
+const PAIR_BUDGET_PER_ORIGIN = 3
+const PAIR_BUDGET_WINDOW_MS = 60_000
+
+// Trust boundary: the control channel is gated to extension senders, so this is
+// the only way a page's pair intent crosses in. The origin is stamped from the
+// browser-provided `sender.origin`, never from the message.
 export const installConnectModalPairRoute = ({
     chromeLike = chrome,
     ensureOffscreenDocumentLike = ensureOffscreenDocument,
@@ -39,57 +32,57 @@ export const installConnectModalPairRoute = ({
     chromeLike?: typeof chrome
     ensureOffscreenDocumentLike?: () => Promise<void>
 }): void => {
+    const recentPairs = new Map<string, number[]>()
+
+    // Sweeping every origin on every call keeps the map bounded by origins
+    // active within the window — a page can only ever insert its own origin.
+    const takeFromBudget = (origin: string): boolean => {
+        const now = Date.now()
+        for (const [key, stamps] of recentPairs) {
+            const live = stamps.filter(t => now - t < PAIR_BUDGET_WINDOW_MS)
+            if (live.length === 0) recentPairs.delete(key)
+            else recentPairs.set(key, live)
+        }
+        const live = recentPairs.get(origin) ?? []
+        if (live.length >= PAIR_BUDGET_PER_ORIGIN) return false
+        live.push(now)
+        recentPairs.set(origin, live)
+        return true
+    }
+
     chromeLike.runtime.onMessage.addListener((message, sender) => {
-        // Synchronous false-return: chrome.runtime.onMessage is shared with the
-        // DB-control listener, the approval bridge and the dapp router, and
-        // returning false is how this listener says "not mine". The ensure
-        // below is fired-and-forgotten from the listener's point of view —
-        // it must never make this callback return a truthy/promise value,
-        // or chrome would wait on it as a response.
+        // Always a synchronous `false`: onMessage is shared with other
+        // listeners, and a truthy return would make chrome await a response.
         if (!isWcPagePairMessage(message)) return false
 
-        // Origin is browser-stamped on the sender — never a page-asserted
-        // field. Anything origin-shaped ON the message is ignored by
-        // construction: isWcPagePairMessage narrows to { scope, uri } only.
-        // Rejecting the opaque 'null' origin is redundant with the regex
-        // below (no http(s) string is ever literally "null"), but it stays
-        // for parity with ChromeDappRouter.handleMessage and to document
-        // intent explicitly rather than leaving it implicit in the regex.
+        // The pair event's fixed name is page-dispatchable, so provenance is
+        // enforced here: the isolated relay's own read of the window's user
+        // activation, which page script cannot forge. Legitimate pairs come
+        // from a click on the injected connect-modal row.
+        if (!message.hasUserActivation) return false
+
+        // `isWcPagePairMessage` narrows to { scope, uri, hasUserActivation };
+        // nothing origin-shaped on the message survives.
         const origin = sender?.origin
         if (!origin || origin === 'null' || !/^https?:\/\//.test(origin)) {
             return false
         }
 
-        // A page click on the injected row is exactly the case where the SW
-        // may be waking from idle: ensure the offscreen document (and its
-        // WC control listener) exists before forwarding, rather than
-        // dropping the very first pair on a cold start. Mirrors the
-        // heartbeat alarm's ensure-then-send precedent in ./index.ts.
-        // No `correlationId`: nothing on this route ever awaits a
-        // `pair-outcome` broadcast (unlike `useWalletConnectPairing.web.ts`,
-        // which mints its own and filters `onPairOutcome` by it) — there is
-        // no page-facing surface to report a page-initiated pair's outcome
-        // to (see the design doc's Error handling section), and `wcHost.ts`'s
-        // `WcControlMessage.pair.correlationId` doc comment confirms the
-        // host tolerates its absence: "a caller with no interest in the
-        // outcome ... can pair without one, and the host simply never tracks
-        // or reports back on it." Minting one anyway would only cost an
-        // offscreen `pair-outcome` broadcast nobody is listening for.
+        if (!takeFromBudget(origin)) return false
+
+        // A page click is exactly when the SW may be waking from idle: ensure
+        // the offscreen document before forwarding or the first pair is lost.
         void ensureOffscreenDocumentLike()
             .then(() =>
                 chromeLike.runtime.sendMessage({
-                    scope: WC_CONTROL_SCOPE,
+                    scope: CONNECTIONS_CONTROL_SCOPE,
                     kind: 'pair',
                     uri: message.uri,
                     requesterOrigin: origin,
                 }),
             )
             .catch((error: unknown) => {
-                // Nobody is awaiting this listener's return value (chrome
-                // discards it once we return false below), so a rejected
-                // ensure/sendMessage here would otherwise surface as an
-                // unhandled rejection instead of just failing this one pair
-                // attempt silently.
+                // Nobody awaits this listener, so log rather than leave an unhandled rejection.
                 console.error(
                     '[pera] connect-modal pair ensure-offscreen/forward failed:',
                     error,

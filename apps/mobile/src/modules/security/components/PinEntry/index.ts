@@ -11,3 +11,4 @@
  */
 
 export { PinEntry, type PinEntryProps } from './PinEntry'
+export { usePinEntry } from './usePinEntry'

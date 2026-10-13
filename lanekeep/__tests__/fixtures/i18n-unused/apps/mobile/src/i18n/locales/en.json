@@ -1,0 +1,26 @@
+{
+    "used": {
+        "exact": "Exact",
+        "via_template": "Template",
+        "plural_one": "One",
+        "plural_other": "Other"
+    },
+    "nested": {
+        "child": {
+            "leaf": "Leaf"
+        }
+    },
+    "orphan": {
+        "never": "Never"
+    },
+    "errors": {
+        "claimed": "Claimed",
+        "orphan_one": "One",
+        "orphan": "Orphan"
+    },
+    "transactions": {
+        "type": {
+            "pay": "Pay"
+        }
+    }
+}

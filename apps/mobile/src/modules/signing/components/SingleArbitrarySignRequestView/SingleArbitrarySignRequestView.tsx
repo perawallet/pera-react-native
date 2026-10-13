@@ -12,12 +12,14 @@
 
 import React, { useMemo } from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeArbitraryDataForDisplay,
     type PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-signing'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { SignedDataWarning } from '../SignedDataWarning'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -33,7 +35,8 @@ export const SingleArbitrarySignRequestView = ({
 }: SingleArbitrarySignRequestViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const account = useFindAccountByAddress(request.signer)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useFindAccountByAddress(request.signer, scope)
 
     // The bytes actually signed are `MX || decode(data)`. Show the decoded
     // payload prominently — `request.message` is untrusted dApp text that is
@@ -41,8 +44,8 @@ export const SingleArbitrarySignRequestView = ({
     // payloads render as a hex dump rather than lossy UTF-8. Memoized:
     // `data` is unbounded dApp input.
     const signedContent = useMemo(
-        () => decodeArbitraryDataForDisplay(request.data),
-        [request.data],
+        () => decodeArbitraryDataForDisplay(scope.chainId, request.data),
+        [request.data, scope.chainId],
     )
 
     const handleDetailsPress = () => {

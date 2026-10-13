@@ -12,3 +12,6 @@
 
 /** USDC is a USD stablecoin — display amounts to 2 decimals like the design. */
 export const USDC_DISPLAY_PRECISION = 2
+
+/** USDC is 6-decimal on every network; used until asset metadata loads. */
+export const USDC_FALLBACK_DECIMALS = 6

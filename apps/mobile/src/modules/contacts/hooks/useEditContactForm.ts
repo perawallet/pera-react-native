@@ -18,18 +18,28 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import {
+    contactFromFormValues,
     ContactNotFoundError,
     DuplicateAddressError,
     useContacts,
     type Contact,
+    type ContactFormValues,
 } from '@perawallet/wallet-core-contacts'
 
+import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
+import { useSingleFlight } from '@hooks/useSingleFlight'
+import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
+import { useIsContactBackedUp } from '@modules/cloud-backup'
 import { trackEvent, ContactsEvent } from '@analytics'
 import { useContactForm, type UseContactFormResult } from './useContactForm'
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ContactsStackParamsList } from '@modules/contacts/routes'
+
+export type ContactBackupChoice = 'delete' | 'keep'
 
 export type UseEditContactFormResult = UseContactFormResult & {
     /**
@@ -38,8 +48,11 @@ export type UseEditContactFormResult = UseContactFormResult & {
      * named `selectedContact` — it is no longer always the store's selection.
      */
     contact: Contact | null
-    save: (data: Contact) => void
-    removeContact: () => void
+    /** True when removing this contact needs the cloud-backup choice first. */
+    needsBackupChoice: boolean
+    save: (data: ContactFormValues) => void
+    removeContact: (backupChoice?: ContactBackupChoice) => Promise<void>
+    isRemoving: boolean
 }
 
 export const useEditContactForm = (): UseEditContactFormResult => {
@@ -66,21 +79,33 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const targetContact = useMemo<Contact | null>(() => {
         if (!routeAddress) return selectedContact
         return (
-            contacts.find(contact => contact.address === routeAddress) ?? {
-                address: routeAddress,
+            contacts.find(
+                contact => contact.addresses.algorand === routeAddress,
+            ) ?? {
+                addresses: { algorand: routeAddress },
                 name: routeLabel ?? '',
             }
         )
     }, [routeAddress, routeLabel, contacts, selectedContact])
 
     const form = useContactForm(targetContact)
+    const targetAddress = targetContact?.addresses.algorand ?? ''
+
+    const { showToast } = useToast()
+    const isCloudBackupAvailable = useIsCloudBackupAvailable()
+    const isBackedUp = useIsContactBackedUp(targetAddress)
+    const needsBackupChoice = isCloudBackupAvailable && isBackedUp
 
     const save = useCallback(
-        (data: Contact) => {
+        (data: ContactFormValues) => {
             if (!form.isValid || !targetContact) return
 
+            const contact = contactFromFormValues(data, targetContact)
             try {
-                editContact(targetContact.address, data)
+                editContact(
+                    { family: 'algorand', address: targetAddress },
+                    contact,
+                )
                 trackEvent(ContactsEvent.Edit)
             } catch (e) {
                 if (e instanceof DuplicateAddressError) {
@@ -105,31 +130,112 @@ export const useEditContactForm = (): UseEditContactFormResult => {
 
             // Keep the saved contact as selected so ViewContact re-renders
             // with the updated values when we pop back.
-            setSelectedContact(data)
+            setSelectedContact(contact)
             navigation.goBack()
         },
-        [form, t, editContact, targetContact, setSelectedContact, navigation],
+        [
+            form,
+            t,
+            editContact,
+            targetContact,
+            targetAddress,
+            setSelectedContact,
+            navigation,
+        ],
     )
 
-    const removeContact = useCallback(() => {
-        // `deleteContact` reports whether it matched. A deeplink can name an
-        // address that was never saved, in which case the target is synthesized
-        // from the link and there is nothing to remove — don't report a Delete
-        // that didn't happen or clear a selection we never owned.
-        if (targetContact && deleteContact(targetContact)) {
-            trackEvent(ContactsEvent.Delete)
-            setSelectedContact(null)
-        }
-        navigation.replace('Contacts')
-    }, [targetContact, deleteContact, setSelectedContact, navigation])
+    const { isPending: isRemoving, run: runRemoval } = useSingleFlight()
+
+    /** Records the backup choice before the contact leaves the device: a
+     *  refused choice would strand it in neither review bucket. */
+    const removeContactOnce = useCallback(
+        async (backupChoice?: ContactBackupChoice) => {
+            if (!targetContact) {
+                navigation.replace('Contacts')
+                return
+            }
+
+            if (backupChoice) {
+                let isRecorded = false
+                try {
+                    const manager = getBackupSyncManager()
+                    isRecorded =
+                        backupChoice === 'delete'
+                            ? (await manager.deleteContactFromBackup(
+                                  targetAddress,
+                              )) !== 'refused'
+                            : await manager.keepContactInBackup(
+                                  targetAddress,
+                                  targetContact.name,
+                              )
+                } catch (error) {
+                    logger.warn('useEditContactForm: backup choice failed', {
+                        address: targetAddress,
+                        error:
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                    })
+                }
+                if (!isRecorded) {
+                    showToast({
+                        title: t(
+                            backupChoice === 'delete'
+                                ? 'cloud_backup.contacts.delete_error'
+                                : 'cloud_backup.contacts.keep_error',
+                        ),
+                        body: '',
+                        type: 'error',
+                    })
+                    return
+                }
+            }
+
+            // `deleteContact` reports whether it matched. A deeplink can name an
+            // address that was never saved, in which case the target is
+            // synthesized from the link and there is nothing to remove — don't
+            // report a Delete that didn't happen or clear a selection we never
+            // owned.
+            if (deleteContact(targetContact)) {
+                trackEvent(ContactsEvent.Delete)
+                setSelectedContact(null)
+            }
+            navigation.replace('Contacts')
+        },
+        [
+            targetContact,
+            targetAddress,
+            deleteContact,
+            setSelectedContact,
+            navigation,
+            showToast,
+            t,
+        ],
+    )
+
+    const removeContact = useCallback(
+        async (backupChoice?: ContactBackupChoice) => {
+            await runRemoval(() => removeContactOnce(backupChoice))
+        },
+        [runRemoval, removeContactOnce],
+    )
 
     return useMemo(
         () => ({
             ...form,
             contact: targetContact,
+            needsBackupChoice,
             save,
             removeContact,
+            isRemoving,
         }),
-        [form, targetContact, save, removeContact],
+        [
+            form,
+            targetContact,
+            needsBackupChoice,
+            save,
+            removeContact,
+            isRemoving,
+        ],
     )
 }

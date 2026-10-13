@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useMutation, type UseMutationResult } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { useMutation } from '@tanstack/react-query'
+import type { Nullable, Network } from '@perawallet/wallet-core-shared'
 import { proposeSignRequest } from '../api/endpoints'
 import type {
     ProposeSignRequest,
@@ -22,15 +22,33 @@ type UseProposeSignRequestMutationParams = {
     network: Network
 }
 
+export type UseProposeSignRequestMutationResult = {
+    data: ProposeSignRequestResponse | undefined
+    error: Nullable<Error>
+    isError: boolean
+    isIdle: boolean
+    isSuccess: boolean
+    mutate: (params: ProposeSignRequest) => void
+    mutateAsync: (
+        params: ProposeSignRequest,
+    ) => Promise<ProposeSignRequestResponse>
+}
+
 export const useProposeSignRequestMutation = ({
     network,
-}: UseProposeSignRequestMutationParams): UseMutationResult<
-    ProposeSignRequestResponse,
-    Error,
-    ProposeSignRequest
-> => {
-    return useMutation({
+}: UseProposeSignRequestMutationParams): UseProposeSignRequestMutationResult => {
+    const mutation = useMutation({
         mutationFn: (params: ProposeSignRequest) =>
             proposeSignRequest(network, params),
     })
+
+    return {
+        data: mutation.data,
+        error: mutation.error,
+        isError: mutation.isError,
+        isIdle: mutation.isIdle,
+        isSuccess: mutation.isSuccess,
+        mutate: mutation.mutate,
+        mutateAsync: mutation.mutateAsync,
+    }
 }

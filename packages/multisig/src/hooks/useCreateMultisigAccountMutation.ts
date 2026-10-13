@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useMutation, type UseMutationResult } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { useMutation } from '@tanstack/react-query'
+import type { Nullable, Network } from '@perawallet/wallet-core-shared'
 import { createMultisigAccount } from '../api/endpoints'
 import type {
     CreateMultisigAccountRequest,
@@ -22,15 +22,35 @@ type UseCreateMultisigAccountMutationParams = {
     network: Network
 }
 
+export type UseCreateMultisigAccountMutationResult = {
+    data: CreateMultisigAccountResponse | undefined
+    error: Nullable<Error>
+    isError: boolean
+    isIdle: boolean
+    isPending: boolean
+    isSuccess: boolean
+    mutate: (params: CreateMultisigAccountRequest) => void
+    mutateAsync: (
+        params: CreateMultisigAccountRequest,
+    ) => Promise<CreateMultisigAccountResponse>
+}
+
 export const useCreateMultisigAccountMutation = ({
     network,
-}: UseCreateMultisigAccountMutationParams): UseMutationResult<
-    CreateMultisigAccountResponse,
-    Error,
-    CreateMultisigAccountRequest
-> => {
-    return useMutation({
+}: UseCreateMultisigAccountMutationParams): UseCreateMultisigAccountMutationResult => {
+    const mutation = useMutation({
         mutationFn: (params: CreateMultisigAccountRequest) =>
             createMultisigAccount(network, params),
     })
+
+    return {
+        data: mutation.data,
+        error: mutation.error,
+        isError: mutation.isError,
+        isIdle: mutation.isIdle,
+        isPending: mutation.isPending,
+        isSuccess: mutation.isSuccess,
+        mutate: mutation.mutate,
+        mutateAsync: mutation.mutateAsync,
+    }
 }

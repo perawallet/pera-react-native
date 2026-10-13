@@ -12,115 +12,74 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Address, Transaction, TransactionType } from 'algosdk'
-import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import type {
+    Arc0001ResolveResult,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
+import { algo25Account, multisigAccount } from '../../__tests__/accounts'
 import { useArc0001Resolver } from '../useArc0001Resolver'
 
-const addrA = new Address(new Uint8Array(32).fill(1)).toString()
-const addrB = new Address(new Uint8Array(32).fill(2)).toString()
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
-const baseParams = {
-    fee: 1000n,
-    minFee: 1000n,
-    firstValid: 1000n,
-    lastValid: 2000n,
-    genesisID: 'mainnet-v1.0',
-    genesisHash: new Uint8Array(32).fill(0xab),
-}
+const mockAccounts = vi.fn<() => WalletAccount[]>()
 
-const buildPaymentTxnB64 = (sender: string): string => {
-    const tx = new Transaction({
-        type: TransactionType.pay,
-        sender: new Address(Address.fromString(sender).publicKey),
-        suggestedParams: baseParams,
-        paymentParams: {
-            receiver: new Address(Address.fromString(addrB).publicKey),
-            amount: 1n,
-        },
-    })
-    return encodeToBase64(encodeTransaction(tx))
-}
-
-const mockSigningAccounts = vi.fn<() => Array<{ address: string }>>(() => [
-    { address: addrA },
-])
-
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSigningAccounts: () => mockSigningAccounts(),
-    useAllAccounts: () => mockSigningAccounts(),
-    isMultisigAccount: () => false,
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useSigningAccounts: () => mockAccounts(),
+    useAllAccounts: () => mockAccounts(),
 }))
 
+const resolved = {
+    toSign: [],
+    allDecoded: [],
+} as unknown as Arc0001ResolveResult
+
 describe('useArc0001Resolver', () => {
+    const resolve = vi.fn(() => resolved)
+
     beforeEach(() => {
-        mockSigningAccounts.mockReturnValue([{ address: addrA }])
-    })
-
-    it('returns a function that defaults signableAddresses to the wallet`s signing accounts', () => {
-        const { result } = renderHook(() => useArc0001Resolver())
-
-        const resolved = result.current({
-            transactions: [{ txn: buildPaymentTxnB64(addrA) }],
-        })
-
-        expect(resolved.toSign).toHaveLength(1)
-        expect(resolved.toSign[0].signer).toEqual({
-            kind: 'single',
-            address: addrA,
-        })
-    })
-
-    it('does not gate signers when authorizedAddresses is omitted', () => {
-        // Wallet has A and B; no authorizedAddresses → both are signable.
-        mockSigningAccounts.mockReturnValue([
-            { address: addrA },
-            { address: addrB },
+        mockAccounts.mockReturnValue([
+            algo25Account('A'),
+            multisigAccount('MSIG1'),
         ])
-        const { result } = renderHook(() => useArc0001Resolver())
-
-        const resolved = result.current({
-            transactions: [
-                { txn: buildPaymentTxnB64(addrA) },
-                { txn: buildPaymentTxnB64(addrB) },
-            ],
-        })
-
-        expect(resolved.toSign).toHaveLength(2)
+        resolve.mockClear()
+        registerFakePlannerAdapter({ resolveDappRequest: resolve })
     })
 
-    it('throws 4100 when an authorized set is supplied and a local sender is outside it', () => {
-        mockSigningAccounts.mockReturnValue([
-            { address: addrA },
-            { address: addrB },
-        ])
-        const { result } = renderHook(() => useArc0001Resolver())
+    it('binds the wallet signing and multisig addresses into the planner call', () => {
+        const { result } = renderHook(() => useArc0001Resolver(SCOPE))
+        const request = { transactions: [{ txn: 'abc' }] }
 
-        expect(() =>
-            result.current(
-                { transactions: [{ txn: buildPaymentTxnB64(addrB) }] },
-                { authorizedAddresses: new Set([addrA]) },
-            ),
-        ).toThrow(
-            expect.objectContaining({
-                name: 'Arc0001Error',
-                code: 4100,
-            }),
+        const outcome = result.current(request)
+
+        expect(outcome).toBe(resolved)
+        expect(resolve).toHaveBeenCalledWith(request, {
+            signableAddresses: new Set(['A', 'MSIG1']),
+            multisigAddresses: new Set(['MSIG1']),
+            authorizedAddresses: undefined,
+            maxTransactions: undefined,
+        })
+    })
+
+    it('passes authorizedAddresses and maxTransactions through', () => {
+        const { result } = renderHook(() => useArc0001Resolver(SCOPE))
+        const authorizedAddresses = new Set(['A'])
+
+        result.current(
+            { transactions: [] },
+            { authorizedAddresses, maxTransactions: 2 },
         )
-    })
 
-    it('honors a tighter maxTransactions override', () => {
-        const { result } = renderHook(() => useArc0001Resolver())
-        const txns = Array.from({ length: 3 }, () => ({
-            txn: buildPaymentTxnB64(addrA),
-        }))
-
-        expect(() =>
-            result.current({ transactions: txns }, { maxTransactions: 2 }),
-        ).toThrow(
+        expect(resolve).toHaveBeenCalledWith(
+            { transactions: [] },
             expect.objectContaining({
-                code: 4201,
+                authorizedAddresses,
+                maxTransactions: 2,
             }),
         )
     })

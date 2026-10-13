@@ -10,13 +10,18 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     swapHistoryResponseSchema,
     swapDistinctPairsHistoryResponseSchema,
     type SwapHistoryApiResponse,
     type SwapDistinctPairsHistoryApiResponse,
 } from './schema'
+import { swapAdapterFor } from '../../chain-adapter'
 import {
     transformSwapHistoryItem,
     transformSwapDistinctPairItem,
@@ -24,14 +29,14 @@ import {
 
 export const fetchSwapHistory = async (
     address: string,
-    network: Network,
+    scope: ChainScope,
     statuses?: string,
     cursor?: string,
     limit?: number,
 ) => {
     const response = await queryClient<SwapHistoryApiResponse>({
         backend: 'pera',
-        network,
+        network: legacyNetworkOf(scope),
         method: 'GET',
         url: `/v2/dex-swap/history/`,
         params: {
@@ -43,8 +48,11 @@ export const fetchSwapHistory = async (
     })
 
     const parsed = swapHistoryResponseSchema.parse(response.data)
+    const { nativeAssetId } = swapAdapterFor(scope)
     return {
-        results: parsed.results.map(transformSwapHistoryItem),
+        results: parsed.results.map(item =>
+            transformSwapHistoryItem(item, nativeAssetId),
+        ),
         next: parsed.next,
         previous: parsed.previous,
     }
@@ -52,12 +60,12 @@ export const fetchSwapHistory = async (
 
 export const fetchDistinctPairsHistory = async (
     address: string,
-    network: Network,
+    scope: ChainScope,
     statuses?: string,
 ) => {
     const response = await queryClient<SwapDistinctPairsHistoryApiResponse>({
         backend: 'pera',
-        network,
+        network: legacyNetworkOf(scope),
         method: 'GET',
         url: `/v2/dex-swap/distinct-pairs-history/`,
         params: {
@@ -67,5 +75,8 @@ export const fetchDistinctPairsHistory = async (
     })
 
     const parsed = swapDistinctPairsHistoryResponseSchema.parse(response.data)
-    return parsed.results.map(transformSwapDistinctPairItem)
+    const { nativeAssetId } = swapAdapterFor(scope)
+    return parsed.results.map(pair =>
+        transformSwapDistinctPairItem(pair, nativeAssetId),
+    )
 }

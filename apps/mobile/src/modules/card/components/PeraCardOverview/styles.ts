@@ -36,15 +36,16 @@ export const useStyles = makeStyles(theme => ({
     balanceLabel: {
         color: theme.colors.textGray,
     },
-    // Compact spendable line: hugs its content (label + info icon) instead
-    // of stretching edge-to-edge.
-    spendableRow: {
+    fundingTypeRow: {
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
+        gap: theme.spacing.xs,
     },
-    fundingLabel: {
-        color: theme.colors.textGray,
+    fundingTypeLabelGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
     },
     // Action buttons (stacked)
     buttons: {

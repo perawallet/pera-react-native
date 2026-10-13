@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
@@ -22,7 +23,7 @@ import {
     useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
-import { useIsQuantumDataSigningBlocked } from '@hooks/useIsQuantumDataSigningBlocked'
+import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -41,7 +42,7 @@ type UseArbitraryDataSigningScreenResult = {
      * arbitrary-data scheme can't verify yet — the screen must show a
      * terminal notice instead of the confirm control.
      */
-    isQuantumBlocked: boolean
+    isSigningBlocked: boolean
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: (message: PeraArbitraryDataMessage) => void
@@ -54,7 +55,7 @@ export const useArbitraryDataSigningScreen =
         const { confirmQuantumDappUsage } = useQuantumDappWarning()
         const request =
             (pipeline.currentRequest as ArbitraryDataSignRequest) ?? null
-        const isQuantumBlocked = useIsQuantumDataSigningBlocked(request)
+        const isSigningBlocked = useIsDataSigningBlocked(request)
 
         const isSingleSignRequest = request?.data.length === 1
 
@@ -76,14 +77,14 @@ export const useArbitraryDataSigningScreen =
             // Backstop for the blocked terminal state — the confirm control
             // is not rendered when quantum-blocked, so this should be
             // unreachable.
-            if (isQuantumBlocked) return
+            if (isSigningBlocked) return
 
             void (async () => {
                 // This screen drives the pipeline itself, so the sign-time
                 // backstop in SigningActionButtons never runs for this request.
                 if (request && isExternalCallbackSource(request.sourceType)) {
                     const decision = await confirmQuantumDappUsage(
-                        resolveAllSignerAddresses(request),
+                        resolveAllSignerAddresses(LEGACY_CHAIN_ID, request),
                     )
                     if (decision === 'cancel') {
                         pipeline.fail()
@@ -93,7 +94,7 @@ export const useArbitraryDataSigningScreen =
 
                 pipeline.next()
             })()
-        }, [pipeline, request, confirmQuantumDappUsage, isQuantumBlocked])
+        }, [pipeline, request, confirmQuantumDappUsage, isSigningBlocked])
 
         const handleReject = useCallback(() => {
             pipeline.fail()
@@ -110,7 +111,7 @@ export const useArbitraryDataSigningScreen =
             request,
             isSingleSignRequest,
             isPending: pipeline.isLoading || isApproving,
-            isQuantumBlocked,
+            isSigningBlocked,
             handleApprove,
             handleReject,
             handleDetailsPress,

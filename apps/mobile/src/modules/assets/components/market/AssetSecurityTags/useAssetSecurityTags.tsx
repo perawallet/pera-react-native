@@ -12,6 +12,8 @@
 
 import { useCallback, useMemo } from 'react'
 import { useAssetAuthoritiesQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -107,13 +109,14 @@ export const useAssetSecurityTags = (
     assetId: string,
 ): UseAssetSecurityTagsResult => {
     const buildTag = useSecurityTagBuilder()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         hasFreeze,
         hasClawback,
         freezeAddress,
         clawbackAddress,
         isSuccess,
-    } = useAssetAuthoritiesQuery(assetId)
+    } = useAssetAuthoritiesQuery(assetId, scope)
 
     return useMemo(
         () => ({

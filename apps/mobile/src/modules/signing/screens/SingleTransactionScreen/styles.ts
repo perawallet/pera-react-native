@@ -18,7 +18,4 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         justifyContent: 'space-between',
     },
-    paddedDivider: {
-        marginVertical: theme.spacing.xs,
-    },
 }))

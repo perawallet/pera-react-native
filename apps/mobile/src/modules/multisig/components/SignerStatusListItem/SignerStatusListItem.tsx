@@ -11,9 +11,7 @@
  */
 
 import type { ReactNode } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
-import { PWButton, PWIcon, PWView } from '@components/core'
+import { PWButton, PWIcon, PWLoadingIndicator, PWView } from '@components/core'
 import { AddressListItem } from '@components/AddressListItem'
 import { useStyles } from './styles'
 
@@ -45,7 +43,6 @@ export const SignerStatusListItem = ({
     action,
 }: SignerStatusListItemProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
 
     const statusIcons: Record<SignerStatus, ReactNode> = {
         signed: (
@@ -62,12 +59,7 @@ export const SignerStatusListItem = ({
                 variant='error'
             />
         ),
-        pending: (
-            <ActivityIndicator
-                size='small'
-                color={theme.colors.textGray}
-            />
-        ),
+        pending: <PWLoadingIndicator size='sm' />,
         unsigned: null,
     }
 

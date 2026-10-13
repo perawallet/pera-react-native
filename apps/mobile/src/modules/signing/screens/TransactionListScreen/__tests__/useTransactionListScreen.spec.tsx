@@ -13,7 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTransactionListScreen } from '../useTransactionListScreen'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     SingleTransactionItem,
     TransactionListItem,
@@ -91,7 +91,10 @@ describe('useTransactionListScreen', () => {
         result.current.handleTransactionPress(mockItem)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockItem.transaction,
+            transaction: {
+                family: 'algorand',
+                transaction: mockItem.transaction,
+            },
             isExternal: false,
         })
     })

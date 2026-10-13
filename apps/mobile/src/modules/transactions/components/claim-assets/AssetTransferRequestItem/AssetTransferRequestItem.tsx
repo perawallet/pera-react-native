@@ -12,16 +12,19 @@
 
 import { PWBadge, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useStyles } from './styles'
 import { AssetAmount } from '@components/AssetAmount'
-import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
+import { AssetIcon } from '@components/AssetIcon'
+import { AssetNameBadge } from '@modules/assets'
 import { PreferredAmount } from '@components/PreferredAmount'
 import {
     useSingleAssetDetailsQuery,
     toWholeUnits,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 
 export type AssetTransferRequestItemProps = {
@@ -36,7 +39,8 @@ export const AssetTransferRequestItem = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { asset, senders, totalAmount, usdValue } = item
-    const { data: fullAsset } = useSingleAssetDetailsQuery(asset.assetId)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { data: fullAsset } = useSingleAssetDetailsQuery(asset.assetId, scope)
     const resolvedAsset = useMemo(() => {
         if (!fullAsset) return asset
         return {

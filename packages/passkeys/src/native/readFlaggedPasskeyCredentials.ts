@@ -28,20 +28,20 @@ import {
  * `packages/migrate` can take the codec without dragging
  * `react-native-keystore` (and through it `react-native-mmkv`) along.
  *
- * Reads the migration marker off the **flat, bare-id provider records**,
- * because that is the only place it survives. Upstream's
- * `migrateLegacyPasskeys` stamps `metadata.migration` onto a `k/` record, and
- * `extensions/provider`'s `repairs/0002-rematerialize-passkey-credentials`
- * then deletes that very record — it rematerializes the flat copy the native
- * credential providers actually read and removes the `k/`+`m/` pair. The
- * marker survives in the flat copy through that module's `...rest` spread, and
+ * Reads the migration marker off the **flat, bare-id provider records**. On
+ * iOS that is the only place it survives: upstream's `migrateLegacyPasskeys`
+ * stamps `metadata.migration` onto a `k/` record, and `extensions/provider`'s
+ * `repairs/0002-rematerialize-passkey-credentials` then deletes that very
+ * record — it rematerializes the flat copy the iOS credential provider reads
+ * and removes the `k/`+`m/` pair. The marker survives in the flat copy through
+ * that module's `...rest` spread, and
  * `0002-rematerialize-passkey-credentials.spec.ts`'s "carries the
  * metadata.migration flag upstream stamps on a legacy passkey across the
  * un-adopt" pins that carry-through (with a stand-in value — the marker's own
- * value is pinned in `models/__tests__/passkey.spec.ts`). A flagged credential
- * that repair un-adopted therefore never appears in `listMeta()`/the reactive
- * keystore store again; one that repair declined keeps its `k/` pair and still
- * does — `usePasskeyMigrationBanner` unions both sources.
+ * value is pinned in `models/__tests__/passkey.spec.ts`). On Android
+ * credentials live in `k/`+`m/`, so the marker reaches the banner through the
+ * reactive keystore store, and this scan only sees records not yet split.
+ * `usePasskeyMigrationBanner` unions both sources.
  *
  * A flagged credential still signs in; what it cannot do is come back from the
  * recovery phrase, because the migration wrote no `scheme` and the legacy

@@ -13,8 +13,12 @@
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { config, isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     fetchMessageStatus,
     fetchNotificationStatus,
@@ -40,15 +44,18 @@ type UseInboxStatusResult = {
 // both endpoints at full rate.
 const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
 
-export const useInboxStatus = (): UseInboxStatusResult => {
-    const { network } = useNetwork()
+export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
+    const network = legacyNetworkOf(scope)
     const deviceID = useDeviceID(network)
-    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'notifications',
+    )
 
     // Primary source of truth: the unified v3 message-status endpoint returns
     // both the unread flags and the inbox count in a single call.
     const messageStatus = useQuery({
-        queryKey: getMessageStatusQueryKey(network, deviceID ?? ''),
+        queryKey: getMessageStatusQueryKey(scope, deviceID ?? ''),
         queryFn: () => fetchMessageStatus(network, deviceID ?? ''),
         enabled: !!deviceID && !isUnavailableOnNetwork,
         // Overrides the globally-pinned false: the badge should catch up as
@@ -77,7 +84,7 @@ export const useInboxStatus = (): UseInboxStatusResult => {
     // the inbox list. Fired only when the v3 endpoint is unavailable, so a
     // backend problem degrades gracefully rather than hiding the badge.
     const { data: notificationStatusData } = useQuery({
-        queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
+        queryKey: getNotificationStatusQueryKey(scope, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
         enabled: !!deviceID && shouldUseFallback && !isUnavailableOnNetwork,
         refetchInterval: config.pollingEnabled
@@ -89,7 +96,7 @@ export const useInboxStatus = (): UseInboxStatusResult => {
         ),
     })
 
-    const { data: inboxData } = useInboxQuery()
+    const { data: inboxData } = useInboxQuery(scope)
 
     if (isUnavailableOnNetwork) {
         // The zeros here are meaningless — there is no backend to have

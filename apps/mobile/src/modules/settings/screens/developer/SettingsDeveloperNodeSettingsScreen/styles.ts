@@ -43,5 +43,24 @@ export const useStyles = makeStyles(theme => {
         notice: {
             marginTop: theme.spacing.lg,
         },
+        chainNetworks: {
+            flexDirection: 'column',
+            gap: theme.spacing.sm,
+            marginTop: theme.spacing.xl,
+        },
+        chainSection: {
+            flexDirection: 'column',
+            gap: theme.spacing.sm,
+        },
+        modeRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.md,
+        },
+        modeText: {
+            flexDirection: 'column',
+            flex: 1,
+        },
     }
 })

@@ -3,12 +3,14 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { productionSource } from '../shared/scope.js'
 
 // These packages touch the ambient `chrome` global in their module bodies.
 // Importing one for its VALUE pulls that code into the importer's bundle.
 const CHROME_ONLY = [
     '@perawallet/wallet-extension-platform-chrome',
     '@perawallet/wallet-extension-keystore-chrome',
+    '@perawallet/wallet-core-browser-runtime',
 ]
 
 export default defineRule({
@@ -23,22 +25,26 @@ export default defineRule({
             good: "import { getProvider } from '@perawallet/wallet-extension-platform'",
         },
     },
-    gates: {
-        fileContains: ['-chrome'],
+    gates: productionSource({
+        // The only substring every CHROME_ONLY specifier shares.
+        fileContains: ['@perawallet/wallet-'],
         // apps/browser is web-only by construction, so chrome exists there.
         // extensions/** is mostly non-chrome platform/native packages, but it's
-        // also where the two chrome-only packages themselves live; excluding
+        // also where the two chrome-only extensions themselves live; excluding
         // the whole directory avoids those two self-flagging without having to
-        // name them here. .web.ts(x) resolves only for web builds. Everything
-        // else — packages/* included — is bundled into the native app just as
+        // name them here. packages/browser-runtime is the one chrome-only
+        // package under packages/, and imports platform-chrome itself.
+        // .web.ts(x) resolves only for web builds. Everything else — the rest
+        // of packages/* included — is bundled into the native app just as
         // directly as apps/mobile/src, so it stays in scope.
         pathNotMatches: [
             'apps/browser/**',
             'extensions/**',
+            'packages/browser-runtime/**',
             '**/*.web.ts',
             '**/*.web.tsx',
         ],
-    },
+    }),
     query: '(import_statement (string (string_fragment) @src) @str) @stmt',
     check(ctx, m) {
         const src = m.src

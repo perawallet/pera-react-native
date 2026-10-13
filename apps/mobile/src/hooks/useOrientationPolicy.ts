@@ -11,10 +11,11 @@
  */
 
 import { useEffect } from 'react'
-import { Dimensions, Platform } from 'react-native'
+import { Dimensions } from 'react-native'
 import * as ScreenOrientation from 'expo-screen-orientation'
 
 import { isLargeScreen } from '@utils/screen'
+import { isAndroid } from '@utils/platform'
 
 /**
  * Locks phones to portrait while large screens follow the device.
@@ -35,7 +36,7 @@ import { isLargeScreen } from '@utils/screen'
  */
 export const useOrientationPolicy = (): void => {
     useEffect(() => {
-        if (Platform.OS !== 'android') return
+        if (!isAndroid()) return
 
         let lastIsLargeScreen: boolean | undefined
 

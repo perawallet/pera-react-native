@@ -24,7 +24,7 @@ import { useStyles } from './styles'
 export const ViewContactScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { selectedContact, nfdName, openQR, goToEdit, handleShare } =
+    const { selectedContact, address, nfdName, openQR, goToEdit, handleShare } =
         useViewContactScreen()
 
     useNavigationHeader({
@@ -75,7 +75,7 @@ export const ViewContactScreen = () => {
                         variant='body'
                         style={styles.shortAddress}
                     >
-                        {truncateAlgorandAddress(selectedContact.address)}
+                        {truncateAlgorandAddress(address)}
                     </PWText>
                 </PWView>
                 <PWView style={styles.divider} />
@@ -88,7 +88,7 @@ export const ViewContactScreen = () => {
                     </PWText>
                     <PWView style={styles.addressRow}>
                         <AddressDisplay
-                            address={selectedContact.address}
+                            address={address}
                             addressFormat='full'
                             displayType='address-only'
                             showCopy={false}

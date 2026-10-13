@@ -12,33 +12,14 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
-                'vault/autolock': resolve(__dirname, 'src/vault/autolock.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            'vault/autolock': resolve(__dirname, 'src/vault/autolock.ts'),
         },
-        rollupOptions: {
-            external: [
-                '@algorandfoundation/dp256',
-                '@algorandfoundation/wallet-provider',
-                '@algorandfoundation/xhd-wallet-api',
-                '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js',
-                '@noble/ciphers',
-                '@noble/hashes/sha2.js',
-                '@scure/base',
-                '@scure/bip39',
-                '@scure/bip39/wordlists/english.js',
-                '@tanstack/store',
-                'before-after-hook',
-                '@perawallet/wallet-core-passkeys/webauthn',
-            ],
-        },
-    },
-})
+    }),
+)

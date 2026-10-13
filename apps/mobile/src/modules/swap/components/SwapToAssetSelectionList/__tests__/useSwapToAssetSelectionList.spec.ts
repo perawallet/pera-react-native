@@ -33,6 +33,8 @@ const mockGetAssetsQueryKey = vi.hoisted(() =>
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
+    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
+        account.chains.algorand?.address,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
 }))
 
@@ -41,7 +43,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     PeraAssetVerificationTier: {},
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
@@ -106,7 +111,9 @@ describe('useSwapToAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetQueryData.mockReturnValue(undefined)
-        mockUseSelectedAccount.mockReturnValue({ address: 'TEST_ADDRESS' })
+        mockUseSelectedAccount.mockReturnValue({
+            chains: { algorand: { address: 'TEST_ADDRESS' } },
+        })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
                 ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
@@ -164,6 +171,7 @@ describe('useSwapToAssetSelectionList', () => {
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
             31_566_704,
+            expect.objectContaining({ chainId: 'algorand' }),
             'USDC',
             true,
         )
@@ -174,6 +182,7 @@ describe('useSwapToAssetSelectionList', () => {
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
             31_566_704,
+            expect.objectContaining({ chainId: 'algorand' }),
             undefined,
             true,
         )
@@ -255,8 +264,9 @@ describe('useSwapToAssetSelectionList', () => {
             expect(mockOnAssetSelected).toHaveBeenCalledWith({
                 assetId: '31566704',
                 amount: new Decimal('500'),
-                algoValue: new Decimal(0),
-                isFrozen: false,
+                nativeValue: new Decimal(0),
+                fiatValue: null,
+                restriction: null,
             })
         })
 

@@ -13,18 +13,14 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { selectCosignDispatchAddresses } from '../selectCosignDispatchAddresses'
 
 const account = (address: string): WalletAccount =>
     ({
         id: `algo25-${address}`,
-        type: AccountTypes.algo25,
-        address,
-        keyPairId: `kp-${address}`,
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
     }) as WalletAccount
 
 describe('selectCosignDispatchAddresses', () => {
@@ -34,6 +30,7 @@ describe('selectCosignDispatchAddresses', () => {
             inFlightAddresses: new Set(),
             threshold: 2,
             signedCount: 0,
+            chainId: 'algorand',
         })
 
         expect(result).toEqual(['A', 'B'])
@@ -47,6 +44,7 @@ describe('selectCosignDispatchAddresses', () => {
             inFlightAddresses: new Set(),
             threshold: 2,
             signedCount: 1,
+            chainId: 'algorand',
         })
 
         expect(result).toEqual(['A'])
@@ -60,6 +58,7 @@ describe('selectCosignDispatchAddresses', () => {
             inFlightAddresses: new Set(['A']),
             threshold: 2,
             signedCount: 0,
+            chainId: 'algorand',
         })
 
         expect(result).toEqual(['B'])
@@ -71,6 +70,7 @@ describe('selectCosignDispatchAddresses', () => {
             inFlightAddresses: new Set(['A', 'B']),
             threshold: 2,
             signedCount: 0,
+            chainId: 'algorand',
         })
 
         expect(result).toEqual([])
@@ -82,6 +82,7 @@ describe('selectCosignDispatchAddresses', () => {
             inFlightAddresses: new Set(),
             threshold: 2,
             signedCount: 0,
+            chainId: 'algorand',
         })
 
         expect(result).toEqual([])
@@ -93,6 +94,7 @@ describe('selectCosignDispatchAddresses', () => {
             inFlightAddresses: new Set(),
             threshold: 3,
             signedCount: 0,
+            chainId: 'algorand',
         })
 
         expect(result).toEqual(['C', 'A', 'B'])

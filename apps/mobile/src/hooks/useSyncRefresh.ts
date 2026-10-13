@@ -12,7 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useIsMounted } from '@hooks/useIsMounted'
 
 type UseSyncRefreshParams = {

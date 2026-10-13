@@ -17,10 +17,12 @@ import {
     formatCurrency,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { useLanguage } from '@hooks/useLanguage'
+import { cardAccountAddressOf } from '../utils/cardAccountAddress'
 
 export type UseAuthorizeCardDelegationResult = {
     /**
@@ -64,7 +66,10 @@ export const useAuthorizeCardDelegation =
                                     account:
                                         account.name ??
                                         truncateAlgorandAddress(
-                                            account.address,
+                                            cardAccountAddressOf(
+                                                account,
+                                                LEGACY_CHAIN_ID,
+                                            ) ?? '',
                                         ),
                                 },
                             )}
@@ -78,9 +83,13 @@ export const useAuthorizeCardDelegation =
                         />
                     ),
                     options: {
-                        size: 'modal',
+                        // Short confirm copy: 'modal' is full-height (see
+                        // SheetHeader), which leaves most of the sheet empty.
+                        // ConfirmActionContent owns no container of its own, so
+                        // 'auto' must let the host create one — without it there
+                        // is nothing to measure and the sheet never appears.
+                        size: 'auto',
                         enablePanDownToClose: true,
-                        autoCreateContainer: false,
                     },
                 })
                 if (confirmed !== 'confirm') return false

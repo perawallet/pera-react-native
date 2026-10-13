@@ -11,7 +11,11 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    ChainKeyStore,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SignableGroup,
@@ -24,19 +28,17 @@ import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wa
 import type {
     LocalSigningFunction,
     LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
-} from '../pipeline/signing/createLocalKeyStrategy'
+    LocalAuthDataSigningFunction,
+} from '../chain-adapter'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
+import type {
+    SignerCredential,
+    SignerCustody,
+} from './utils/resolveSignerCredential'
 
-/**
- * Which signing actor to invoke. Quantum (Falcon-1024) accounts resolve to
- * `localKey` — the signature scheme is picked inside the injected signing
- * function, so there is no separate actor for them.
- */
-export type ResolvedSignerType = 'localKey' | 'hardware' | 'multisig'
-
-export type GroupSignerTypeMap = Map<string, ResolvedSignerType>
+/** Keyed by group signer address. */
+export type GroupSignerMap = Map<string, SignerCredential>
 
 /**
  * Built by {@link createTransportSelector} in the React hook layer, where the
@@ -52,10 +54,13 @@ export type TransportFactory = (
 export type SigningMachineDeps = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
-    signArc60: LocalArc60SigningFunction
+    signAuthData: LocalAuthDataSigningFunction
     createTransport: TransportFactory
-    network: Network
+    /** The request's chain and that chain's network, captured at actor creation. */
+    scope: ChainScope
     hardwareWalletRegistry?: HardwareWalletRegistry
+    /** Signs any bytes it is handed, so only `signPlannedGroups` may call it. */
+    keyStore: Pick<ChainKeyStore, 'sign'>
     /** For hardware wallet signing. */
     encodeTransaction: EncodeTransactionFunction
 }
@@ -74,14 +79,14 @@ export type SigningMachineContext = {
     /** From the first group's sender; drives transport routing. */
     signerAddress: Nullable<string>
 
-    /** Populated in idle; `signing` dispatches on it sequentially. */
-    groupSignerTypes: Nullable<GroupSignerTypeMap>
+    /** Populated in idle; `signing` dispatches on its custodies sequentially. */
+    groupSigners: Nullable<GroupSignerMap>
 
     /**
-     * Appended to as each actor finishes. Once this covers every unique type
-     * in `groupSignerTypes`, the machine advances to transporting.
+     * Appended to as each actor finishes. Once this covers every custody in
+     * `groupSigners`, the machine advances to transporting.
      */
-    completedSignerTypes: ResolvedSignerType[]
+    completedCustodies: SignerCustody[]
 
     /**
      * Multiple groups exist when one request spans several atomic transaction

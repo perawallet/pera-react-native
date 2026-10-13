@@ -123,15 +123,17 @@ export const PromptContainer = () => {
     return (
         <PWView
             accessibilityViewIsModal
-            style={styles.overlay}
+            style={[styles.overlay, displayed.isSheet && styles.overlaySheet]}
         >
             <Animated.View style={[styles.revealLayer, revealStyle]}>
                 <PWView style={styles.stage}>
                     <PWView
                         style={
-                            displayed.isFullBleed
-                                ? styles.containerFullBleed
-                                : styles.container
+                            displayed.isSheet
+                                ? styles.containerSheet
+                                : displayed.isFullBleed
+                                  ? styles.containerFullBleed
+                                  : styles.container
                         }
                     >
                         {/* This container mounts above NavigationContainer (it is

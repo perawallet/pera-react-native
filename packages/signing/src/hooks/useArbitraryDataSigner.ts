@@ -10,48 +10,63 @@
  limitations under the License
  */
 
-import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { decodeFromBase64, concatBytes } from '@perawallet/wallet-core-shared'
+import {
+    chainAccountOf,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import type { LocalArbitrarySigningFunction } from '../chain-adapter'
 import { SIGNING_KEY_DOMAIN } from '../constants'
+import { arbitraryDataMessageRequest, signMessages } from '../message-signer'
+import { CannotSignError } from '../pipeline/errors'
 
-const MX_PREFIX = new TextEncoder().encode('MX')
+export type UseArbitraryDataSignerResult = {
+    signArbitraryData: (
+        chainId: ChainId,
+        ...args: Parameters<LocalArbitrarySigningFunction>
+    ) => ReturnType<LocalArbitrarySigningFunction>
+}
 
-export const useArbitraryDataSigner = () => {
+// The caller names the request's chain; the signer resolves the account's address there.
+export const useArbitraryDataSigner = (): UseArbitraryDataSignerResult => {
     const { signDataWithKey } = useKMS()
+    const accounts = useAllAccounts()
 
-    const signArbitraryData = useCallback(
-        async (
-            account: WalletAccount,
-            data: string | string[],
-        ): Promise<Uint8Array[]> => {
-            // Sign with the requested account's own key. Rekey is NOT
-            // followed: the dApp verifies against this account's pubkey.
-            if (!canSignArbitraryData(account) || !account.keyPairId) {
-                return Promise.reject(
-                    new Error(
-                        `Cannot sign arbitrary data for ${account.address}`,
-                    ),
+    const signArbitraryData = useCallback<
+        UseArbitraryDataSignerResult['signArbitraryData']
+    >(
+        async (chainId, account, data) => {
+            const address = chainAccountOf(account, chainId)?.address
+            if (address === undefined) {
+                throw new CannotSignError(
+                    account.id,
+                    `it has no address on chain ${chainId}`,
                 )
             }
-
-            // Legacy algo_signData: dApps verify against `MX || data`.
-            const items = [data].flat()
-            const toSign = items.map(item =>
-                concatBytes(MX_PREFIX, decodeFromBase64(item)),
+            const scope = getSelectedScope(chainId)
+            const signed = await signMessages(
+                [data]
+                    .flat()
+                    .map(item =>
+                        arbitraryDataMessageRequest(scope, address, item),
+                    ),
+                { account, accounts },
+                {
+                    signPayloads: (keyPairId, payloads) =>
+                        signDataWithKey(
+                            keyPairId,
+                            SIGNING_KEY_DOMAIN,
+                            payloads,
+                        ),
+                },
             )
-            return signDataWithKey(
-                account.keyPairId,
-                SIGNING_KEY_DOMAIN,
-                toSign,
-            )
+            return signed.map(message => message.signature.bytes)
         },
-        [signDataWithKey],
+        [signDataWithKey, accounts],
     )
 
-    return {
-        signArbitraryData,
-    }
+    return { signArbitraryData }
 }

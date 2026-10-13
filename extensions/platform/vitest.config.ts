@@ -16,6 +16,7 @@ import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 
 export default defineConfig({
     test: {
+        ...poolConfig,
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
@@ -25,5 +26,4 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
     },
-    ...poolConfig,
 })

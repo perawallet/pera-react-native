@@ -32,8 +32,13 @@ describe('TitledExpandablePanel', () => {
             </TitledExpandablePanel>,
         )
 
-        // Initial state check might be hard via text visibility if it's just hidden via value
-        // But we can check if press works without error
+        // react-native-web renders the collapsed panel's pointerEvents prop
+        // as a `pointer-events` attribute, not a style token.
+        const content = screen.getByText('Content').parentElement
+        expect(content?.getAttribute('pointer-events')).toBe('none')
+
         fireEvent.click(screen.getByText('My Panel'))
+
+        expect(content?.getAttribute('pointer-events')).toBe('auto')
     })
 })

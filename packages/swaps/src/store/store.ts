@@ -11,10 +11,9 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SwapsState } from '../models'
 import {
-    ALGO_ASSET_ID,
+    guardedPersist,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -26,7 +25,8 @@ const STORE_NAME = 'swaps-store'
 // TODO: Replace toAsset with KNOWN_ASSET_IDS.USDC from @perawallet/wallet-core-assets
 // once the assets barrel (which re-exports hooks) no longer causes Metro evaluation order issues
 const initialState = {
-    fromAsset: ALGO_ASSET_ID,
+    // null pays with the chain's native asset; see useSwaps.
+    fromAsset: null as Nullable<string>,
     toAsset: '31566704', // USDC mainnet
     slippage: null as Nullable<string>,
     isLocalCurrencyInput: false,
@@ -35,7 +35,7 @@ const initialState = {
 export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
 > = create<SwapsState>()(
-    persist(
+    guardedPersist(
         set => ({
             ...initialState,
             setFromAsset: (fromAsset: string) => set({ fromAsset }),
@@ -52,7 +52,7 @@ export const useSwapsStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: () => getProvider().keyValueStorage,
             partialize: state => ({
                 slippage: state.slippage,
                 isLocalCurrencyInput: state.isLocalCurrencyInput,

@@ -12,31 +12,45 @@
 
 import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import type { CardWithdrawState } from './usePeraCardOverview'
 import { useStyles } from './styles'
+
+const WITHDRAW_TITLE_KEYS = {
+    idle: 'peraCard.account.withdraw',
+    waiting: 'peraCard.withdraw.in_progress_button',
+    ready: 'peraCard.withdraw.complete_button',
+} as const
 
 type PeraCardActionButtonsProps = {
     isAutoFunding: boolean
+    /** An open request turns the button into the way back to it. */
+    withdrawState: CardWithdrawState
     onWithdraw: () => void
     onAddFunds: () => void
-    onGetUsdc: () => void
+    /** Auto funding: tops up the linked account rather than the card. */
+    onFundLinkedAccount: () => void
+    canFundLinkedAccount: boolean
 }
 
 export const PeraCardActionButtons = ({
     isAutoFunding,
+    withdrawState,
     onWithdraw,
     onAddFunds,
-    onGetUsdc,
+    onFundLinkedAccount,
+    canFundLinkedAccount,
 }: PeraCardActionButtonsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     if (isAutoFunding) {
+        if (!canFundLinkedAccount) return null
         return (
             <PWButton
                 variant='primary'
-                title={t('peraCard.account.get_usdc')}
-                onPress={onGetUsdc}
-                testID='pera_card_get_usdc_button'
+                title={t('peraCard.account.add_funds')}
+                onPress={onFundLinkedAccount}
+                testID='pera_card_fund_linked_account_button'
             />
         )
     }
@@ -45,7 +59,7 @@ export const PeraCardActionButtons = ({
         <PWView style={styles.buttons}>
             <PWButton
                 variant='secondary'
-                title={t('peraCard.account.withdraw')}
+                title={t(WITHDRAW_TITLE_KEYS[withdrawState])}
                 onPress={onWithdraw}
                 testID='pera_card_withdraw_button'
             />

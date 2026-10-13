@@ -11,21 +11,38 @@
  */
 
 import type {
+    ChainId,
     PeraSignedTransaction,
     PeraTransaction,
-} from '@perawallet/wallet-core-blockchain'
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
-    Arc60Metadata,
-    Arc60StdSigData,
+    AuthDataPayload,
     RejectReason,
     SignableAnalysis,
     SignRequestTransportOptions,
     SourceType,
     TransportResult,
 } from '../pipeline/types'
-import type { ResolvedSignerType } from '../machine/context'
-import type { FeeAdjustment } from '../pipeline/sources/assignMinimumFeesToGroup'
+import type { SignerCustody } from '../machine/utils/resolveSignerCredential'
+
+/**
+ * Why a fee was raised. The `quantum-minimum` value predates the switch from a
+ * minimum to a surcharge and is kept for wire/log compatibility.
+ */
+export type FeeAdjustmentReason = 'quantum-minimum'
+
+export type FeeAdjustment = {
+    /** Index into the FULL group array (groupContext space) */
+    index: number
+    /** µAlgo, as received from the dApp */
+    originalFee: bigint
+    /** µAlgo, after raising to the required minimum */
+    adjustedFee: bigint
+    /** Which rule required the raise */
+    reason: FeeAdjustmentReason
+}
 
 export type SignRequestSource = {
     name?: string
@@ -36,7 +53,7 @@ export type SignRequestSource = {
 
 type BaseSignRequest = {
     id: string
-    type: 'transactions' | 'arbitrary-data' | 'arc60'
+    type: 'transactions' | 'arbitrary-data' | 'auth-data'
     transport: 'algod' | 'callback'
     transportId?: string
     /** Origin of the request. Defaults to 'local' when not specified. */
@@ -50,8 +67,13 @@ type BaseSignRequest = {
     transportOptions?: SignRequestTransportOptions
 }
 
-export type TransactionSignRequest = {
-    txs: PeraTransaction[]
+/** Set by whoever builds the request; routes it to that chain's adapters. */
+type ChainStamp = {
+    chainId: ChainId
+}
+
+/** Algorand group and delivery concepts; a chain-neutral request carries none. */
+type AlgorandRequestFields = {
     /**
      * The full atomic group, for ARC-0001 group-integrity validation. A source
      * that filters `txs` down to the signable subset (e.g. WalletConnect)
@@ -92,8 +114,6 @@ export type TransactionSignRequest = {
      * original ARC-0001 slot order.
      */
     approve?: (signedTxs: Nullable<PeraSignedTransaction>[]) => Promise<void>
-    reject?: (reason?: RejectReason) => Promise<void>
-    error?: (error: Error) => Promise<void>
     /** See {@link SourceCallbacks.approveSignedBytes}. */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
     /** See {@link SourceCallbacks.onProposed}. */
@@ -102,13 +122,40 @@ export type TransactionSignRequest = {
         status: import('../pipeline/types').SignRequestStatus
         rawTransactionsBase64: string[]
     }) => Promise<void>
+}
+
+type TransactionRequestCallbacks = {
+    reject?: (reason?: RejectReason) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
+
+export type PeraTransactionSignRequest = AlgorandRequestFields &
+    ChainStamp &
+    TransactionRequestCallbacks & {
+        txs: PeraTransaction[]
+    }
+
+/**
+ * Each transaction names its scope, so the request's chain comes from them.
+ * The Algorand fields and the chain stamp are typed out so a source can't set
+ * one the pipeline would ignore.
+ */
+export type UnsignedTransactionSignRequest = {
+    [Field in keyof (AlgorandRequestFields & ChainStamp)]?: never
+} & TransactionRequestCallbacks & {
+        txs: UnsignedTransaction[]
+    }
+
+export type TransactionSignRequest =
+    | PeraTransactionSignRequest
+    | UnsignedTransactionSignRequest
 
 export type PeraArbitraryDataMessage = {
     signer: string
     data: string
     message?: string
-    chainId: number
+    /** WalletConnect v1 wire concept; absent on transports that have no chain id. */
+    chainId?: number
 }
 
 export type PeraArbitraryDataSignResult = {
@@ -116,30 +163,28 @@ export type PeraArbitraryDataSignResult = {
     signer: string
 }
 
-export type ArbitraryDataSignRequest = {
+export type ArbitraryDataSignRequest = ChainStamp & {
     data: PeraArbitraryDataMessage[]
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
-export type Arc60SignRequest = {
-    stdSigData: Arc60StdSigData
-    /** Supplied by the dApp. */
-    metadata: Arc60Metadata
-    /**
-     * Always invoked with a single-element array, so the `algo_signData`
-     * response shape stays consistent across legacy and ARC-60 modalities.
-     */
-    approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: (reason?: RejectReason) => Promise<void>
-    error?: (error: Error) => Promise<void>
-} & BaseSignRequest
+export type AuthDataSignRequest = AuthDataPayload &
+    ChainStamp & {
+        /**
+         * Always invoked with a single-element array, so the response shape stays
+         * consistent with arbitrary-data signing.
+         */
+        approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
+        reject?: (reason?: RejectReason) => Promise<void>
+        error?: (error: Error) => Promise<void>
+    } & BaseSignRequest
 
 export type SignRequest =
     | TransactionSignRequest
     | ArbitraryDataSignRequest
-    | Arc60SignRequest
+    | AuthDataSignRequest
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
@@ -169,7 +214,7 @@ export type PipelineStage =
     | 'idle' // no request or actor initializing
     | 'validating' // analyzerActor running
     | 'awaiting_user' // waiting for next() or fail()
-    | 'signing' // localKey | hardware | multisig actor running
+    | 'signing' // local | hardware | multisig actor running
     | 'transporting' // transportActor delivering signed data
     | 'completed' // terminal: signing and delivery succeeded
     | 'rejected' // terminal: user cancelled
@@ -181,11 +226,11 @@ export type SigningPipelineEvent =
           type: 'analysis_ready'
           analysis: SignableAnalysis
           /** The type that will sign once approved. */
-          signerType: Nullable<ResolvedSignerType>
+          signerType: Nullable<SignerCustody>
       }
     | {
           type: 'signing_started'
-          signerType: ResolvedSignerType
+          signerType: SignerCustody
       }
     | { type: 'transport_started' }
     | {
@@ -205,5 +250,7 @@ export type SigningPipelineEvent =
 export {
     isTransactionRequest,
     isArbitraryDataRequest,
-    isArc60Request,
+    isAuthDataRequest,
+    isUnsignedTransaction,
+    isUnsignedTransactionRequest,
 } from './guards'

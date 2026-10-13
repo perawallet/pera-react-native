@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
     setPreference: vi.fn(),
 }))
 
-vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
+vi.mock('@hooks/useDeleteAllData', () => ({
     useDeleteAllData: () => ({
         wipeAllUserData: mocks.wipeAllUserData,
         deleteAllData: mocks.wipeAllUserData,

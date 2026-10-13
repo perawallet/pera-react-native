@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryResult } from '../models/types'
+import { fetchTransactionHistory } from '../history-adapter'
 import {
     getSwapRowsMissingAssetFacts,
     persistResolvedSwapAssetFacts,
@@ -21,23 +23,18 @@ import {
 
 type FetchHistoryPage = (params: {
     accountAddress: string
-    network: Network
+    scope: ChainScope
     afterTime: string
     beforeTime: string
     limit: number
 }) => Promise<TransactionHistoryResult>
 
-// Lazy for the same reason as close-amount-backfill: the endpoints module
-// reaches react-native-mmkv through queryClient, which cannot load in the node
-// test environment.
-const defaultFetchHistory: FetchHistoryPage = async params => {
-    const { fetchTransactionHistory } = await import('../api/history')
-    return fetchTransactionHistory(params)
-}
+const defaultFetchHistory: FetchHistoryPage = params =>
+    fetchTransactionHistory(params)
 
 type BackfillParams = {
     db?: Database
-    network: Network
+    scope: ChainScope
     accountAddress: string
     /** Injectable for tests; defaults to the account history endpoint. */
     fetchHistory?: FetchHistoryPage
@@ -99,7 +96,7 @@ const groupIntoWindows = (
  */
 export async function backfillSwapAssetFacts({
     db,
-    network,
+    scope,
     accountAddress,
     fetchHistory = defaultFetchHistory,
 }: BackfillParams): Promise<void> {
@@ -107,7 +104,7 @@ export async function backfillSwapAssetFacts({
     try {
         const rows = await getSwapRowsMissingAssetFacts({
             db,
-            network,
+            scope,
             accountAddress,
         })
         windows = groupIntoWindows(rows)
@@ -120,7 +117,7 @@ export async function backfillSwapAssetFacts({
         try {
             const { transactions } = await fetchHistory({
                 accountAddress,
-                network,
+                scope,
                 afterTime,
                 beforeTime,
                 limit: PAGE_LIMIT,
@@ -132,13 +129,13 @@ export async function backfillSwapAssetFacts({
                 db,
                 items: healed,
                 accountAddress,
-                network,
+                scope,
             })
 
             const returned = new Set(healed.map(item => item.id))
             await persistResolvedSwapAssetFacts({
                 db,
-                network,
+                scope,
                 ids: ids.filter(id => !returned.has(id)),
             })
         } catch (error) {

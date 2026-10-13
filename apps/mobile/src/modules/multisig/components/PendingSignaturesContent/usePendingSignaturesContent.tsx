@@ -11,12 +11,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { trackEvent, MultisigEvent } from '@analytics'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     useNetwork,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useTransactionEncoder } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -31,8 +32,10 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import { formatTimeRemaining, logger } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useMultisigSignRequestDecline } from '../../hooks/useMultisigSignRequestDecline'
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
@@ -119,7 +122,9 @@ const TITLE_KEY_BY_VARIANT: Record<StatusBannerVariant, string> = {
 
 export const usePendingSignaturesContent =
     (): UsePendingSignaturesContentResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { t } = useLanguage()
+        const { errorToast } = useToast()
         const { network } = useNetwork()
         const deviceId = useDeviceID(network) ?? ''
         const accounts = useAllAccounts()
@@ -236,9 +241,10 @@ export const usePendingSignaturesContent =
                 return { localKey: [], hardware: new Set<string>() }
             }
             return splitLocalUnsignedSigners(
-                getLocalUnsignedSigners(signRequest, accounts),
+                getLocalUnsignedSigners(signRequest, accounts, scope.chainId),
+                scope.chainId,
             )
-        }, [signRequest, status, accounts])
+        }, [signRequest, status, accounts, scope.chainId])
 
         /**
          * The signing store is the source of truth: once the actor finishes,
@@ -289,7 +295,9 @@ export const usePendingSignaturesContent =
                     const cosignRequest = buildMultisigCosignRequest({
                         signRequest,
                         signerAddress: address,
+                        scope,
                         decodeTransaction,
+                        localAccounts: accounts,
                     })
                     addSignRequest(cosignRequest)
                 } catch (error) {
@@ -298,9 +306,21 @@ export const usePendingSignaturesContent =
                     logger.error('Skipping invalid multisig cosign request', {
                         error,
                     })
+                    errorToast(
+                        t('multisig.pending_signatures.cosign_rejected_title'),
+                        t('multisig.pending_signatures.cosign_rejected_body'),
+                    )
                 }
             },
-            [signRequest, decodeTransaction, addSignRequest],
+            [
+                signRequest,
+                decodeTransaction,
+                addSignRequest,
+                accounts,
+                errorToast,
+                t,
+                scope,
+            ],
         )
 
         const handleSign = useCallback(() => {
@@ -314,6 +334,7 @@ export const usePendingSignaturesContent =
                 inFlightAddresses: inFlightCosignAddresses,
                 threshold,
                 signedCount,
+                chainId: scope.chainId,
             })
             if (toDispatch.length === 0) return
             trackEvent(MultisigEvent.ConfirmTransaction)
@@ -327,6 +348,7 @@ export const usePendingSignaturesContent =
             threshold,
             signedCount,
             dispatchCosign,
+            scope.chainId,
         ])
 
         const handleSignParticipant = useCallback(

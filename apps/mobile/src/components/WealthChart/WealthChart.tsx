@@ -19,9 +19,12 @@ import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AccountBalanceHistoryItem,
     useAccountBalancesHistoryQuery,
+    addressOn,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type WealthChartProps = {
     account?: WalletAccount
@@ -48,12 +51,13 @@ export const WealthChart = memo(function WealthChart({
     const { t } = useLanguage()
 
     const accounts = useAllAccounts()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const addresses = useMemo(
         () =>
-            account
-                ? [account.address]
-                : accounts.map((a: WalletAccount) => a.address),
-        [account, accounts],
+            (account ? [account] : accounts).flatMap(
+                (a: WalletAccount) => addressOn(a, scope) ?? [],
+            ),
+        [account, accounts, scope],
     )
 
     const {
@@ -63,7 +67,7 @@ export const WealthChart = memo(function WealthChart({
         isPaused,
         refetch,
         isUnavailableOnNetwork,
-    } = useAccountBalancesHistoryQuery(addresses, period, enabled)
+    } = useAccountBalancesHistoryQuery(addresses, period, scope, enabled)
 
     // A point with no preferred value has no rate behind it (offline, never
     // synced). Plotting it as 0 would draw a cliff to the axis, so drop it —

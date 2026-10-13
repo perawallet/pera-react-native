@@ -11,7 +11,10 @@
  */
 
 import React from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import {
+    chainAccountOf,
+    type HdSeedGroup,
+} from '@perawallet/wallet-core-accounts'
 import {
     PWView,
     PWText,
@@ -22,8 +25,8 @@ import {
     PWLoadingOverlay,
     PWScreen,
 } from '@components/core'
-import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
@@ -32,9 +35,10 @@ import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
 
 export const SelectHDWalletScreen = () => {
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const {
-        hdWalletGroups,
+        hdSeedGroups,
         accountBalances,
         isCreatingWallet,
         isSelectingWallet,
@@ -48,7 +52,7 @@ export const SelectHDWalletScreen = () => {
         item,
         index,
     }: {
-        item: HDWalletGroup
+        item: HdSeedGroup
         index: number
     }) => {
         const walletLabel = t('onboarding.select_hd_wallet.wallet_label', {
@@ -58,8 +62,9 @@ export const SelectHDWalletScreen = () => {
         const groupAlgoValue = item.accounts.reduce(
             (sum, acc) =>
                 sum.plus(
-                    accountBalances.get(acc.address)?.algoValue ??
-                        new Decimal(0),
+                    accountBalances.get(
+                        chainAccountOf(acc, LEGACY_CHAIN_ID)?.address ?? '',
+                    )?.nativeValue ?? new Decimal(0),
                 ),
             new Decimal(0),
         )
@@ -89,14 +94,14 @@ export const SelectHDWalletScreen = () => {
                     </PWView>
                     <PWView style={styles.balanceContainer}>
                         <AssetAmount
-                            asset={ALGO_ASSET}
+                            asset={nativeAsset}
                             value={groupAlgoValue}
                             density='compact'
                             style={styles.algoBalance}
                             variant='h4'
                         />
                         <PreferredAmount
-                            sourceAssetId={ALGO_ASSET_ID}
+                            sourceAssetId={nativeAsset.assetId}
                             sourceAmount={groupAlgoValue}
                             density='compact'
                             style={styles.fiatBalance}
@@ -138,7 +143,7 @@ export const SelectHDWalletScreen = () => {
                         />
                         <PWFlatList
                             style={styles.list}
-                            data={hdWalletGroups}
+                            data={hdSeedGroups}
                             renderItem={renderItem}
                             keyExtractor={item => item.seedKeyId}
                             extraData={accountBalances}

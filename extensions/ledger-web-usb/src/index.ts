@@ -13,4 +13,7 @@
 export const name = '@perawallet/wallet-extension-ledger-web-usb'
 
 export { WithLedgerWebUsbExtension } from './extension'
-export { LedgerWebUsbService } from './LedgerWebUsbService'
+export {
+    LedgerWebUsbService,
+    type LedgerWebUsbServiceOptions,
+} from './LedgerWebUsbService'

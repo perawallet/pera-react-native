@@ -16,16 +16,18 @@ import {
     computeBalanceImpact,
     useImpactTransactions,
 } from '@perawallet/wallet-core-signing'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
-    ALGO_ASSET,
+    useNativeAsset,
     PeraAssetType,
+    isPureNft,
     useAssetPricesQuery,
     useAssetsQuery,
     type DisplayableAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type BalanceImpactDirection = 'receive' | 'spend'
 
@@ -34,6 +36,11 @@ export type BalanceImpactItem = {
     /** Drives the asset/collectible avatar and the AssetAmount unit + decimals. */
     asset: DisplayableAsset
     isCollectible: boolean
+    /**
+     * One-of-one, indivisible collectible. Its quantity is implicitly 1, so the
+     * row omits the amount; editions and fractional NFTs still show theirs.
+     */
+    isPureCollectible: boolean
     direction: BalanceImpactDirection
     /** Absolute amount in display units. The direction carries the sign. */
     amount: Decimal
@@ -72,12 +79,19 @@ export type UseBalanceImpactSummaryResult = {
 type SortableItem = BalanceImpactItem & { sortValue: Decimal }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset()
     const { transactions, signableAddresses, isSimulating, simulationFailed } =
-        useImpactTransactions()
+        useImpactTransactions(scope)
 
     const impact = useMemo(
-        () => computeBalanceImpact(transactions, signableAddresses),
-        [transactions, signableAddresses],
+        () =>
+            computeBalanceImpact(
+                scope.chainId,
+                transactions,
+                signableAddresses,
+            ),
+        [transactions, signableAddresses, scope.chainId],
     )
 
     const assetIds = useMemo(
@@ -89,15 +103,18 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                     // still needs metadata to render its "entire balance" row.
                     ...impact.closedAssetIds,
                 ]),
-            ].filter(id => id !== ALGO_ASSET_ID),
-        [impact.deltas, impact.closedAssetIds],
+            ].filter(id => id !== nativeAsset.assetId),
+        [impact.deltas, impact.closedAssetIds, nativeAsset.assetId],
     )
 
     // The signed group can touch assets the user doesn't hold (e.g. a swap
     // into a new asset), so they won't be in the local DB. Fetch them so rows
     // show real names/units instead of falling back to the raw asset id.
     const { data: assets } = useAssetsQuery(assetIds, { fetchMissing: true })
-    const { data: prices } = useAssetPricesQuery([ALGO_ASSET_ID, ...assetIds])
+    const { data: prices } = useAssetPricesQuery([
+        nativeAsset.assetId,
+        ...assetIds,
+    ])
 
     return useMemo(() => {
         const closedAssetIds = new Set(impact.closedAssetIds)
@@ -113,9 +130,9 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 .map(assetId => ({ assetId, amount: 0n })),
         ]
         const items = movements.map<SortableItem>(({ assetId, amount }) => {
-            const isAlgo = assetId === ALGO_ASSET_ID
+            const isAlgo = assetId === nativeAsset.assetId
             const asset: PeraAsset | undefined = isAlgo
-                ? ALGO_ASSET
+                ? nativeAsset
                 : assets.get(assetId)
             const decimals = asset?.decimals ?? 0
             const isCollectible =
@@ -146,6 +163,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 assetId,
                 asset: displayAsset,
                 isCollectible,
+                isPureCollectible: isCollectible && !!asset && isPureNft(asset),
                 direction: amount > 0n ? 'receive' : 'spend',
                 amount: displayAbs,
                 isFullBalance: closedAssetIds.has(assetId),
@@ -175,6 +193,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                     decimals: created.decimals,
                 },
                 isCollectible: false,
+                isPureCollectible: false,
                 direction: 'receive',
                 amount,
                 isFullBalance: false,
@@ -187,8 +206,8 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
         const order = (list: SortableItem[]): BalanceImpactItem[] =>
             [...list]
                 .sort((a, b) => {
-                    if (a.assetId === ALGO_ASSET_ID) return -1
-                    if (b.assetId === ALGO_ASSET_ID) return 1
+                    if (a.assetId === nativeAsset.assetId) return -1
+                    if (b.assetId === nativeAsset.assetId) return 1
                     return b.sortValue.comparedTo(a.sortValue)
                 })
                 .map(({ sortValue: _sortValue, ...item }) => item)
@@ -206,5 +225,5 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             isSimulating,
             simulationFailed,
         }
-    }, [impact, assets, prices, isSimulating, simulationFailed])
+    }, [impact, assets, prices, isSimulating, simulationFailed, nativeAsset])
 }

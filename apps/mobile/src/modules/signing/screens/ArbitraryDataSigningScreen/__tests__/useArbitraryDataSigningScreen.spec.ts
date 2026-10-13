@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { registerAlgorandReviewerAdapter } from '@test-utils/reviewerChainAdapter'
 import { useArbitraryDataSigningScreen } from '../useArbitraryDataSigningScreen'
 
 const mockNavigate = vi.fn()
@@ -51,8 +52,8 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
 }))
 
 const mockIsQuantumDataSigningBlocked = vi.fn()
-vi.mock('@hooks/useIsQuantumDataSigningBlocked', () => ({
-    useIsQuantumDataSigningBlocked: (request: unknown) =>
+vi.mock('@hooks/useIsDataSigningBlocked', () => ({
+    useIsDataSigningBlocked: (request: unknown) =>
         mockIsQuantumDataSigningBlocked(request),
 }))
 
@@ -65,6 +66,7 @@ const buildRequest = (sourceType: string) => ({
 
 describe('useArbitraryDataSigningScreen', () => {
     beforeEach(() => {
+        registerAlgorandReviewerAdapter()
         vi.clearAllMocks()
         mockPipeline.currentRequest = buildRequest('walletconnect')
         mockPipeline.isLoading = false
@@ -79,7 +81,7 @@ describe('useArbitraryDataSigningScreen', () => {
         expect(mockIsQuantumDataSigningBlocked).toHaveBeenCalledWith(
             mockPipeline.currentRequest,
         )
-        expect(result.current.isQuantumBlocked).toBe(true)
+        expect(result.current.isSigningBlocked).toBe(true)
     })
 
     it('never advances the pipeline from handleApprove when quantum-blocked', async () => {

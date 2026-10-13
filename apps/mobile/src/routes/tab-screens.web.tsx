@@ -26,9 +26,9 @@
 import type React from 'react'
 import { withAgeGate } from '@components/AgeGated'
 import { TabbarEvent } from '@analytics'
-import { SwapScreen } from '@modules/swap/screens/SwapScreen'
-import { OnrampScreen } from '@modules/onramp/screens/OnrampScreen'
-import { MenuScreen } from '@modules/menu/screens/MenuScreen'
+import { SwapScreen } from '@modules/swap/routes'
+import { OnrampScreen } from '@modules/onramp/routes'
+import { MenuScreen } from '@modules/menu/routes'
 import { AccountStackNavigator } from '@modules/accounts/routes'
 import { headeredLayout, safeAreaLayout } from '@layouts/index'
 import type { TabScreenDescriptor } from './tab-screens'
@@ -56,6 +56,7 @@ export const tabScreens: TabScreenDescriptor[] = [
         layout: safeAreaLayout,
         options: { tabBarButtonTestID: 'tab_swap_button' },
         event: TabbarEvent.Swap,
+        requires: { platform: 'swapTab', anyChain: 'swap' },
     },
     {
         name: 'Fund',
@@ -63,6 +64,7 @@ export const tabScreens: TabScreenDescriptor[] = [
         layout: headeredLayout,
         options: { tabBarButtonTestID: 'tab_fund_button' },
         event: TabbarEvent.Fund,
+        requires: { platform: 'fundTab' },
     },
     {
         name: 'Menu',

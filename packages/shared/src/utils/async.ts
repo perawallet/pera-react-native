@@ -12,6 +12,14 @@
 
 import type { Optional } from './types'
 
+export const isPromiseLike = <T>(
+    value: T | PromiseLike<T>,
+): value is PromiseLike<T> =>
+    typeof value === 'object' &&
+    value !== null &&
+    'then' in value &&
+    typeof value.then === 'function'
+
 /** Exponential backoff, in milliseconds, capped at `maxInterval`. */
 export function calculateBackoff(
     currentInterval: number,
@@ -57,20 +65,10 @@ export function deferToNextCycle<T>(
 }
 
 /**
- * `Promise.allSettled(items.map(fn))` with at most `limit` in flight.
- *
- * A bare `allSettled` over a mapped list starts every task at once. With one
- * request per item that is a burst proportional to the user's data — enough
- * accounts, or enough uncached addresses, and it reads as an attack to a rate
- * limiter and comes back as 429s.
- *
- * Returns `PromiseSettledResult`s positionally aligned with `items`, so it
- * drops into an existing `allSettled` call site unchanged — including callers
- * that map a result index back to its input (e.g. failure logging that needs
- * the address a rejection belongs to).
- *
- * `limit` is floored at 1: a caller computing it from config can't accidentally
- * pass 0 and deadlock.
+ * `Promise.allSettled(items.map(fn))` with at most `limit` in flight: a bare
+ * `allSettled` bursts one request per item, which a rate limiter answers with
+ * 429s. Results stay positionally aligned with `items`. `limit` is floored at 1
+ * so a config-derived 0 cannot deadlock.
  */
 export const mapWithConcurrency = async <T, R>(
     items: T[],
@@ -102,10 +100,8 @@ export const mapWithConcurrency = async <T, R>(
 }
 
 /**
- * The timer is cleared on settle, so fast calls don't leave a setTimeout
- * pinning the rejection closure for the full window. Cleaning up a
- * late-resolving resource is the caller's job — see the hardware-wallet
- * strategy, which disconnects a BLE link arriving after the timeout.
+ * The timer is cleared on settle so a fast call does not pin the rejection
+ * closure for the full window. Cleaning up a late-resolving resource is the caller's job.
  */
 export function withTimeout<T>(
     promise: Promise<T>,

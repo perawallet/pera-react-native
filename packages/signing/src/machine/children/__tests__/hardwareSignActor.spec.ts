@@ -11,15 +11,20 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import '../../../__tests__/registerAlgorandAccounts'
 import { createActor, setup } from 'xstate'
 import { LedgerBluetoothDisabledError } from '@perawallet/wallet-core-ledger'
 
 const mocks = vi.hoisted(() => ({
     sign: vi.fn(),
+    createHardwareStrategy: vi.fn(),
 }))
 
 vi.mock('../../../pipeline/signing/createHardwareStrategy', () => ({
-    createHardwareStrategy: () => ({ sign: mocks.sign }),
+    createHardwareStrategy: (options: unknown) => {
+        mocks.createHardwareStrategy(options)
+        return { sign: mocks.sign }
+    },
 }))
 
 import { hardwareSignActor } from '../hardwareSignActor'
@@ -32,10 +37,9 @@ import type {
     SigningCallbacks,
     SigningResult,
 } from '../../../pipeline/types'
-import type {
-    HardwareWalletAccount,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
 
 const HARDWARE_ADDRESS =
     'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
@@ -43,23 +47,9 @@ const HARDWARE_ADDRESS =
 const OTHER_ADDRESS =
     'OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
 
-const hardwareAccount = {
-    type: 'hardware',
-    address: HARDWARE_ADDRESS,
-    hardwareDetails: {
-        manufacturer: 'ledger',
-        deviceId: 'device-1',
-        deviceName: 'Nano X',
-        accountIndex: 0,
-        transportType: 'ble',
-    },
-} as unknown as HardwareWalletAccount
+const hardwareAccount = ledgerAccount(HARDWARE_ADDRESS)
 
-const nonHardwareAccount = {
-    type: 'algo25',
-    address: OTHER_ADDRESS,
-    keyPairId: 'key-1',
-} as unknown as WalletAccount
+const nonHardwareAccount = algo25Account(OTHER_ADDRESS)
 
 const makeGroup = (
     signerAddress: string = HARDWARE_ADDRESS,
@@ -77,7 +67,6 @@ const makeGroup = (
         originalIndices: [0],
         analysis: {
             totalFees: 0n,
-            transactionSummaries: [],
             warnings: [],
             signableAddresses: [],
             riskLevel: 'low',
@@ -95,9 +84,11 @@ const makeInput = (
     overrides: Partial<HardwareSigningInput> = {},
 ): HardwareSigningInput => ({
     groups: [makeGroup()],
-    allAccounts: [hardwareAccount as unknown as WalletAccount],
+    allAccounts: [hardwareAccount],
+    scope: scopeForLegacyNetwork('mainnet'),
     hardwareWalletRegistry: {} as never,
     encodeTransaction: vi.fn() as never,
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     totalTxs: 1,
     deviceName: 'Nano X',
     operation: 'transaction',
@@ -265,7 +256,7 @@ describe('hardwareSignActor', () => {
     })
 
     it('Non-Ledger plain Error → NON_LEDGER_ERROR (bypasses BLE-class gate)', async () => {
-        const plainError = new Error('arc60 validation failed')
+        const plainError = new Error('auth-data validation failed')
         mocks.sign.mockImplementation(
             async (_g, _a, callbacks: SigningCallbacks) => {
                 callbacks.onError?.(plainError)
@@ -345,6 +336,21 @@ describe('hardwareSignActor', () => {
         expect(types.lastIndexOf('GROUP_SIGNED')).toBeLessThan(
             types.indexOf('ALL_DONE'),
         )
+    })
+
+    it("builds the strategy and resolves the signer on the input scope's chain", async () => {
+        const { events, stop } = await runActor(
+            makeInput({ scope: { chainId: 'ethereum', networkId: 'sepolia' } }),
+        )
+        stop()
+
+        expect(mocks.createHardwareStrategy).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+        // No Ethereum accounts adapter is registered, so the rekey lookup
+        // fails instead of quietly following Algorand's rules.
+        expect(mocks.sign).not.toHaveBeenCalled()
+        expect(events.some(e => e.type === 'NON_LEDGER_ERROR')).toBe(true)
     })
 
     it('signer not in allAccounts → throws HardwareWalletError(signer_not_found) → NON_LEDGER_ERROR', async () => {

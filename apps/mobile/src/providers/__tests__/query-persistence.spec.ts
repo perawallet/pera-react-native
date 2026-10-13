@@ -17,10 +17,29 @@ import { describe, it, expect, vi } from 'vitest'
 // real predicates, not the hook stubs.
 vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-assets')
-vi.unmock('@perawallet/wallet-core-blockchain')
+vi.unmock('@perawallet/wallet-core-chain-algorand/blockchain')
 
-import type { Query, QueryKey } from '@tanstack/react-query'
-import { shouldDehydrateQuery } from '../query-persistence'
+import {
+    QueryClient,
+    dehydrate,
+    hydrate,
+    type Query,
+    type QueryKey,
+} from '@tanstack/react-query'
+import {
+    persistQueryClientRestore,
+    type PersistedClient,
+    type Persister,
+} from '@tanstack/react-query-persist-client'
+import { Decimal } from 'decimal.js'
+import {
+    parseTypedJson,
+    stringifyTypedJson,
+} from '@perawallet/wallet-core-shared'
+import {
+    PERSISTED_CACHE_BUSTER,
+    shouldDehydrateQuery,
+} from '../query-persistence'
 
 const asQuery = (
     queryKey: QueryKey,
@@ -29,41 +48,42 @@ const asQuery = (
 
 // Keys below are literals (not built via the packages' query-key factories,
 // which stay package-internal) whose shapes are pinned by the package-level
-// predicate tests added in Tasks 1-2:
-// packages/accounts/src/hooks/__tests__/querykeys.test.ts and
-// packages/assets/src/hooks/__tests__/querykeys.test.ts.
+// predicate tests in packages/accounts/src/hooks/__tests__/querykeys.spec.ts
+// and packages/assets/src/hooks/__tests__/querykeys.spec.ts.
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' }
+
 const balanceHistoryKey: QueryKey = [
     'accounts',
     'balance-history',
-    { period: 'one-week', addresses: ['ADDR1'], network: 'mainnet' },
+    { period: 'one-week', addresses: ['ADDR1'], scope: MAINNET },
 ]
 const priceHistoryKey: QueryKey = [
     'assets',
     'prices',
     'history',
-    { assetID: '123', period: 'one-week', network: 'mainnet' },
+    { assetID: '123', period: 'one-week', scope: MAINNET },
 ]
 const assetPricesKey: QueryKey = [
     'assets',
     'prices',
     'usd',
-    { assetIDs: ['123'], network: 'mainnet' },
+    { assetIDs: ['123'], scope: MAINNET },
 ]
 
 const transactionDetailKey: QueryKey = [
     'blockchain',
     'transaction-detail',
-    { transactionId: 'TXID123', network: 'mainnet' },
+    { transactionId: 'TXID123', scope: MAINNET },
 ]
 const groupTransactionsKey: QueryKey = [
     'blockchain',
     'group-transactions',
-    { groupId: 'GROUP123', network: 'mainnet' },
+    { groupId: 'GROUP123', scope: MAINNET },
 ]
 const suggestedParametersKey: QueryKey = [
     'blockchain',
     'suggested-parameters',
-    { network: 'mainnet' },
+    { scope: MAINNET },
 ]
 
 describe('shouldDehydrateQuery', () => {
@@ -126,12 +146,158 @@ describe('shouldDehydrateQuery', () => {
         ).toBe(false)
     })
 
-    it('persists other successful queries and skips non-success ones', () => {
+    it('never persists a prefix the policy does not list', () => {
         expect(
             shouldDehydrateQuery(asQuery(['discover', 'feed'], 'success')),
+        ).toBe(false)
+    })
+
+    it('persists an allowlisted prefix and skips non-success ones', () => {
+        expect(
+            shouldDehydrateQuery(asQuery(['currencies', 'list'], 'success')),
         ).toBe(true)
         expect(
-            shouldDehydrateQuery(asQuery(['discover', 'feed'], 'pending')),
+            shouldDehydrateQuery(asQuery(['currencies', 'list'], 'pending')),
         ).toBe(false)
+    })
+
+    it('persists chain-derived modules and keeps DB-backed and PII ones off disk', () => {
+        for (const key of [
+            ['nfd', 'address', { address: 'ADDR1' }],
+            ['notifications', 'list', { address: 'ADDR1' }],
+            ['asa-inbox', 'summary', { address: 'ADDR1' }],
+            ['balance-impact-simulation', 'req-1', MAINNET],
+        ]) {
+            expect(shouldDehydrateQuery(asQuery(key, 'success'))).toBe(true)
+        }
+        for (const key of [
+            ['passkeys', 'list'],
+            ['onramp', 'history', { accountAddress: 'ADDR1' }],
+            ['swaps', 'history-infinite', { address: 'ADDR1' }],
+        ]) {
+            expect(shouldDehydrateQuery(asQuery(key, 'success'))).toBe(false)
+        }
+    })
+
+    it('persists a module catalog sub-key without persisting its address-keyed siblings', () => {
+        expect(
+            shouldDehydrateQuery(
+                asQuery(['swaps', 'providers', { scope: MAINNET }], 'success'),
+            ),
+        ).toBe(true)
+        expect(
+            shouldDehydrateQuery(
+                asQuery(
+                    ['swaps', 'history-infinite', { address: 'AAAA' }],
+                    'success',
+                ),
+            ),
+        ).toBe(false)
+        expect(
+            shouldDehydrateQuery(
+                asQuery(['onramp', 'pairs', { scope: MAINNET }], 'success'),
+            ),
+        ).toBe(true)
+        expect(
+            shouldDehydrateQuery(
+                asQuery(
+                    ['onramp', 'history', { accountAddress: 'AAAA' }],
+                    'success',
+                ),
+            ),
+        ).toBe(false)
+    })
+})
+
+describe('persisted Decimal query data', () => {
+    // The preferred-currency rate is persisted and transformed in its queryFn,
+    // so the Decimal itself crosses the disk boundary. Consumers call Decimal
+    // methods on the hydrated value during render, so a string coming back
+    // is a cold-start crash for every non-USD user.
+    it('survives the dehydrate → serialize → parse → hydrate round trip', () => {
+        const currencyPriceKey: QueryKey = [
+            'currencies',
+            { scope: MAINNET, preferredFiatCurrency: 'EUR' },
+        ]
+        const source = new QueryClient()
+        source.setQueryData(currencyPriceKey, {
+            id: 'EUR',
+            usdPrice: new Decimal('0.85'),
+        })
+        expect(
+            shouldDehydrateQuery(
+                source.getQueryCache().find({ queryKey: currencyPriceKey })!,
+            ),
+        ).toBe(true)
+
+        const restored = new QueryClient()
+        hydrate(
+            restored,
+            parseTypedJson(
+                stringifyTypedJson(dehydrate(source, { shouldDehydrateQuery })),
+            ),
+        )
+
+        const data = restored.getQueryData<{ usdPrice: Decimal }>(
+            currencyPriceKey,
+        )
+        expect(Decimal.isDecimal(data?.usdPrice)).toBe(true)
+        expect(data?.usdPrice.isZero()).toBe(false)
+        expect(data?.usdPrice.toString()).toBe('0.85')
+    })
+})
+
+describe('PERSISTED_CACHE_BUSTER', () => {
+    const MAX_AGE = 1000 * 60 * 60
+
+    const persisterHolding = (buster: string, queryKey: QueryKey) => {
+        const source = new QueryClient()
+        source.setQueryData(queryKey, ['cached'])
+        const stored: PersistedClient = {
+            timestamp: Date.now(),
+            buster,
+            clientState: dehydrate(source),
+        }
+        const persister: Persister = {
+            persistClient: vi.fn(),
+            restoreClient: vi.fn(async () => stored),
+            removeClient: vi.fn(),
+        }
+        return persister
+    }
+
+    const restore = async (persister: Persister) => {
+        const queryClient = new QueryClient()
+        await persistQueryClientRestore({
+            queryClient,
+            persister,
+            maxAge: MAX_AGE,
+            buster: PERSISTED_CACHE_BUSTER,
+        })
+        return queryClient
+    }
+
+    it('discards a cache persisted under the bare-network key shape', async () => {
+        const legacyKey: QueryKey = [
+            'swaps',
+            'providers',
+            { network: 'mainnet' },
+        ]
+        const persister = persisterHolding('prefix-allowlist', legacyKey)
+
+        const restored = await restore(persister)
+
+        expect(restored.getQueryData(legacyKey)).toBeUndefined()
+        expect(persister.removeClient).toHaveBeenCalled()
+    })
+
+    it('rehydrates a cache persisted under the current buster', async () => {
+        const scopedKey: QueryKey = ['swaps', 'providers', { scope: MAINNET }]
+        const persister = persisterHolding(PERSISTED_CACHE_BUSTER, scopedKey)
+
+        const restored = await restore(persister)
+
+        expect(restored.getQueryData(scopedKey)).toEqual(['cached'])
+        expect(persister.removeClient).not.toHaveBeenCalled()
     })
 })

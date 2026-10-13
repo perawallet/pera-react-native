@@ -11,127 +11,150 @@
  */
 
 import {
-    AccountTypes,
+    hasCustody,
+    hdIndexOf,
+    standaloneSecretOf,
+    type ChainAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { backupChainAdapters, type BackupHdContext } from '../../chain-adapter'
 import {
+    ACCOUNT_RECORD_FORMAT_VERSION,
     BackupAccountType,
-    BackupItemType,
-    type AddressBackupPayload,
-    type SecretsBackupPayload,
+    orderAccountRecordChains,
+    type AccountEntryPayload,
+    type AccountRecordChain,
+    type AccountRecordPayload,
 } from '../models'
-import type { SerializedAccount } from './types'
+import { isBackupChain } from './backupChains'
 
-type SerializeParams = {
-    /** Epoch millis to stamp on the address payload (LWW). */
-    updatedAt: number
-    /** Secrets payload from KMS, or null for secret-less account types. */
-    secrets: SecretsBackupPayload | null
-    /** Resolved HD derivation data; REQUIRED for hdWallet accounts (the account
-     *  carries neither its derived public key nor the seed's first address). */
-    hd?: { seedFirstDerivedAddress: string; publicKeyHex: string }
+type BackupChainEntry = { chain: ChainId; entry: ChainAccount }
+
+/** The account's chains this build backs up, in chain-id order. */
+const backupChainEntriesOf = (account: WalletAccount): BackupChainEntry[] =>
+    orderAccountRecordChains(
+        (
+            Object.entries(account.chains) as [
+                ChainId,
+                ChainAccount | undefined,
+            ][]
+        )
+            .filter(
+                (pair): pair is [ChainId, ChainAccount] =>
+                    pair[1] !== undefined && isBackupChain(pair[0]),
+            )
+            .map(([chain, entry]) => ({ chain, entry })),
+    )
+
+/** The addresses the account is backed up under, in chain-id order; empty
+ *  when none of its chains is one this build backs up. */
+export const accountBackupAddresses = (account: WalletAccount): string[] =>
+    backupChainEntriesOf(account).map(({ entry }) => entry.address)
+
+/** Every address the account holds, whatever the chain. */
+export const accountAddressesOf = (account: WalletAccount): string[] => [
+    ...new Set(
+        Object.values(account.chains)
+            .map(entry => entry?.address)
+            .filter((address): address is string => !!address),
+    ),
+]
+
+/** Resolved for an HD account: its seed's reference, and the public key its
+ *  entry on the scope chain records (null when it has none there). */
+export type RecordHdContext = {
+    seedFirstDerivedAddress: string
+    publicKeyHex: string | null
 }
 
-const accountsKey = (address: string): string => `accounts/${address}`
-const secretsKey = (address: string): string => `secrets/${address}`
-
-const nameValue = (a: WalletAccount): string | null => a.name ?? null
-
-/** Maps a supported WalletAccount to its address payload, or null when HD context is absent. */
-const toAddressPayload = (
-    a: WalletAccount,
-    updatedAt: number,
-    hd?: { seedFirstDerivedAddress: string; publicKeyHex: string },
-): AddressBackupPayload | null => {
-    switch (a.type) {
-        case AccountTypes.algo25: {
-            return {
-                type: BackupAccountType.algo25,
-                address: a.address,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.quantum: {
-            return {
-                type: BackupAccountType.quantum,
-                address: a.address,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.watch: {
-            return {
-                type: BackupAccountType.watch,
-                address: a.address,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.hardware: {
-            return {
-                type: BackupAccountType.hardware,
-                address: a.address,
-                deviceId: a.hardwareDetails.deviceId,
-                deviceName: a.hardwareDetails.deviceName,
-                accountIndex: a.hardwareDetails.accountIndex,
-                manufacturer: a.hardwareDetails.manufacturer,
-                transportType: a.hardwareDetails.transportType,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.multisig: {
-            return {
-                type: BackupAccountType.multisig,
-                address: a.address,
-                participantAddresses: a.multisigDetails.addresses,
-                threshold: a.multisigDetails.threshold,
-                version: a.multisigDetails.version,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        case AccountTypes.hdWallet: {
-            if (!hd) return null
-            return {
-                type: BackupAccountType.hdWallet,
-                address: a.address,
-                seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
-                publicKey: hd.publicKeyHex,
-                account: a.hdWalletDetails.account,
-                change: a.hdWalletDetails.change,
-                keyIndex: a.hdWalletDetails.keyIndex,
-                derivationType: a.hdWalletDetails.derivationType,
-                customName: nameValue(a),
-                updatedAt,
-            }
-        }
-        default: {
-            const exhaustive: never = a
-            return exhaustive
-        }
-    }
-}
-
-export const serializeAccountItems = (
+/**
+ * The entry for a chain with no backup adapter, or for a key held as a raw
+ * private key, which no adapter writes as its own kind.
+ */
+const formatEntry = (
     account: WalletAccount,
-    { updatedAt, secrets, hd }: SerializeParams,
-): SerializedAccount | null => {
-    const addressPayload = toAddressPayload(account, updatedAt, hd)
-    if (addressPayload === null || !account.address) return null
-
-    const address = {
-        key: accountsKey(account.address),
-        type: BackupItemType.ACCOUNT,
-        payload: addressPayload,
+    address: string,
+    hd: RecordHdContext | undefined,
+): AccountEntryPayload | null => {
+    if (hasCustody(account, 'watch')) {
+        return { type: BackupAccountType.watch, address, customName: null }
     }
-    const secretsItem = secrets
-        ? {
-              key: secretsKey(account.address),
-              type: BackupItemType.ACCOUNT,
-              payload: secrets,
-          }
+    if (!hasCustody(account, 'local')) return null
+    const index = hdIndexOf(account)
+    if (index) {
+        return hd
+            ? {
+                  type: BackupAccountType.hdChain,
+                  address,
+                  seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
+                  account: index.account,
+                  keyIndex: index.keyIndex,
+                  customName: null,
+              }
+            : null
+    }
+    return standaloneSecretOf(account) === 'privateKey'
+        ? { type: BackupAccountType.standaloneKey, address, customName: null }
         : null
-    return { address, secrets: secretsItem }
 }
+
+const entryFor = (
+    account: WalletAccount,
+    { chain, entry }: BackupChainEntry,
+    updatedAt: number,
+    hd: RecordHdContext | undefined,
+): AccountRecordChain | null => {
+    const adapterContext: BackupHdContext | undefined =
+        hd?.publicKeyHex != null
+            ? {
+                  seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
+                  publicKeyHex: hd.publicKeyHex,
+              }
+            : undefined
+    // A raw private key is the format's own kind on every chain.
+    const payload =
+        backupChainAdapters.has(chain) &&
+        standaloneSecretOf(account) !== 'privateKey'
+            ? backupChainAdapters.get(chain).serializeAccount(account, {
+                  updatedAt,
+                  hd: adapterContext,
+              })
+            : formatEntry(account, entry.address, hd)
+    if (payload === null) return null
+    // The record holds the name and timestamp once, for every chain.
+    const {
+        customName: _customName,
+        updatedAt: _updatedAt,
+        ...rest
+    } = payload as Record<string, unknown> & { type: string; address: string }
+    return { chain, ...rest }
+}
+
+/**
+ * The account's record, or null when it has nothing to back up: no chain this
+ * build backs up, or an HD account given no seed reference. A chain with a
+ * backup adapter writes its own entry, byte-for-byte its legacy item less the
+ * name and timestamp; any other chain gets an entry the format owns.
+ */
+export const buildAccountRecord = (
+    account: WalletAccount,
+    { updatedAt, hd }: { updatedAt: number; hd?: RecordHdContext },
+): AccountRecordPayload | null => {
+    if (hdIndexOf(account) && !hd) return null
+    const chains = backupChainEntriesOf(account).flatMap(chainEntry => {
+        const entry = entryFor(account, chainEntry, updatedAt, hd)
+        return entry ? [entry] : []
+    })
+    if (chains.length === 0) return null
+    return {
+        formatVersion: ACCOUNT_RECORD_FORMAT_VERSION,
+        customName: account.name ?? null,
+        updatedAt,
+        chains,
+    }
+}
+
+/** False when no chain of the account is one this build backs up. */
+export const hasBackupChains = (account: WalletAccount): boolean =>
+    backupChainEntriesOf(account).length > 0

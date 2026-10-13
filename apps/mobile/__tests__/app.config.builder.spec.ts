@@ -455,6 +455,31 @@ describe('buildAppConfig — Android manifest parity', () => {
         expect(android.buildToolsVersion).toBe('36.0.0')
     })
 
+    // Losing these silently fails `:app:minifyReleaseWithR8` on the release
+    // build only, which CI surfaces as a truncated Gradle error.
+    it('suppresses the JNA desktop-AWT references R8 cannot resolve', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.extraProguardRules).toContain('-dontwarn com.sun.jna.**')
+        expect(android.extraProguardRules).toContain('-dontwarn java.awt.**')
+    })
+
+    // Without these the release build succeeds and the app dies on launch in
+    // Native.initIDs, which only a device run catches.
+    it('keeps the JNA members native code resolves by name', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.extraProguardRules).toContain(
+            '-keep class com.sun.jna.** { *; }',
+        )
+        expect(android.extraProguardRules).toContain(
+            '-keepclassmembers class * extends com.sun.jna.** { *; }',
+        )
+        expect(android.extraProguardRules).toContain(
+            '-keep class uniffi.** { *; }',
+        )
+    })
+
     it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {
         const { permissions } = build({ APP_ENV: 'production' }).android
 
@@ -533,5 +558,123 @@ describe('buildAppConfig — deep-link scheme parity', () => {
                 pathPrefix: '/qr/perawallet-wc/',
             },
         ])
+    })
+})
+
+describe('credential storage plugins', () => {
+    const CONTAINER = 'iCloud.com.algorandllc.algorand'
+    const CLIENT_ID = '1234-abc.apps.googleusercontent.com'
+    const findPluginOptions = (config: ResolvedConfig, name: string) => {
+        const entry = config.plugins.find(
+            (plugin: unknown) => Array.isArray(plugin) && plugin[0] === name,
+        )
+        return Array.isArray(entry)
+            ? (entry[1] as Record<string, unknown>)
+            : undefined
+    }
+
+    it('leaves both plugins out when their settings are absent', () => {
+        const config = build({ APP_ENV: 'staging' })
+
+        expect(
+            findPluginOptions(config, 'react-native-cloud-storage'),
+        ).toBeUndefined()
+        expect(
+            findPluginOptions(
+                config,
+                '@react-native-google-signin/google-signin',
+            ),
+        ).toBeUndefined()
+    })
+
+    it.each([
+        ['dev', 'Development'],
+        ['staging', 'Production'],
+        ['production', 'Production'],
+    ])(
+        'adds only the iCloud plugin for %s, in the %s container environment',
+        (APP_ENV, environment) => {
+            const config = build({
+                APP_ENV,
+                IOS_ICLOUD_CONTAINER_ID: CONTAINER,
+            })
+
+            expect(
+                findPluginOptions(config, 'react-native-cloud-storage'),
+            ).toEqual({
+                iCloudContainerIdentifier: CONTAINER,
+                iCloudContainerEnvironment: environment,
+            })
+            expect(
+                findPluginOptions(
+                    config,
+                    '@react-native-google-signin/google-signin',
+                ),
+            ).toBeUndefined()
+        },
+    )
+
+    it('adds only the Google plugin, with the trimmed, reversed client id as the URL scheme', () => {
+        const config = build({
+            APP_ENV: 'production',
+            GOOGLE_IOS_CLIENT_ID: `${CLIENT_ID} `,
+        })
+
+        expect(
+            findPluginOptions(
+                config,
+                '@react-native-google-signin/google-signin',
+            ),
+        ).toEqual({ iosUrlScheme: 'com.googleusercontent.apps.1234-abc' })
+        expect(
+            findPluginOptions(config, 'react-native-cloud-storage'),
+        ).toBeUndefined()
+    })
+
+    it('trims the iCloud container id', () => {
+        const config = build({
+            APP_ENV: 'production',
+            IOS_ICLOUD_CONTAINER_ID: `${CONTAINER} `,
+        })
+
+        expect(findPluginOptions(config, 'react-native-cloud-storage')).toEqual(
+            {
+                iCloudContainerIdentifier: CONTAINER,
+                iCloudContainerEnvironment: 'Production',
+            },
+        )
+    })
+
+    it('treats a whitespace-only Google client id as unset', () => {
+        const config = build({
+            APP_ENV: 'production',
+            GOOGLE_IOS_CLIENT_ID: '  ',
+        })
+
+        expect(
+            findPluginOptions(
+                config,
+                '@react-native-google-signin/google-signin',
+            ),
+        ).toBeUndefined()
+    })
+})
+
+describe('buildAppConfig — iOS ccache', () => {
+    const ccacheEnabled = (env: Record<string, string | undefined>) =>
+        (
+            pluginOptions(build(env), 'expo-build-properties') as {
+                ios: { ccacheEnabled: boolean }
+            }
+        ).ios.ccacheEnabled
+
+    it('is on when CI found ccache on the host', () => {
+        expect(ccacheEnabled({ APP_ENV: 'production', USE_CCACHE: '1' })).toBe(
+            true,
+        )
+    })
+
+    it('stays off for a local prebuild', () => {
+        expect(ccacheEnabled({ APP_ENV: 'production' })).toBe(false)
     })
 })

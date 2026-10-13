@@ -31,6 +31,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingPhoneScreenResult = {
     control: Control<PhoneSendFormValues>
@@ -44,6 +45,7 @@ export type UseCardOnboardingPhoneScreenResult = {
 
 export const useCardOnboardingPhoneScreen =
     (): UseCardOnboardingPhoneScreenResult => {
+        const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
@@ -57,8 +59,8 @@ export const useCardOnboardingPhoneScreen =
             state => state.contactVerificationId,
         )
         const setPhone = useCardStore(state => state.setPhone)
-        const sendPhoneVerification = useSendPhoneVerificationMutation()
-        const { data: settings } = useRegistrationSettingsQuery()
+        const sendPhoneVerification = useSendPhoneVerificationMutation(scope)
+        const { data: settings } = useRegistrationSettingsQuery(scope)
 
         const [selectedCallingCountry, setSelectedCallingCountry] =
             useState<Optional<SupportedCountry>>(undefined)

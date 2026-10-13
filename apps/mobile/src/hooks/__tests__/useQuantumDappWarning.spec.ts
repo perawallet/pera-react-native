@@ -12,26 +12,39 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    usesNonPrimaryScheme,
+} from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { QuantumDappWarningSheet } from '@components/QuantumDappWarningSheet'
 import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnabled'
 import { useQuantumDappWarning } from '../useQuantumDappWarning'
 
-type TestAccount = { address: string; type: string; rekeyAddress?: string }
+type TestAccount = {
+    custody: { kind: string; seed?: string | null }
+    chains: { algorand: { address: string } }
+    authority?: string
+}
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
-    isQuantumAccount: (account: { type: string }) => account.type === 'quantum',
+    // Stands in for the fee path's scheme predicate, which reads the chain
+    // descriptor and keystore this spec doesn't set up.
+    usesNonPrimaryScheme: vi.fn(
+        (account: TestAccount) => account.custody.seed === 'quantum',
+    ),
     getSignerFor: (address: string, accounts: TestAccount[]) => {
-        const account = accounts.find(a => a.address === address)
+        const holder = (held: string) =>
+            accounts.find(a => a.chains.algorand.address === held)
+        const account = holder(address)
         if (!account) return null
-        if (!account.rekeyAddress) return account
-        const auth = accounts.find(a => a.address === account.rekeyAddress)
+        if (!account.authority) return account
+        const auth = holder(account.authority)
         // Mirrors resolveSignerForAccount: an unresolvable or watch-only auth
         // account yields no signer.
-        return auth && auth.type !== 'watch' ? auth : null
+        return auth && auth.custody.kind !== 'watch' ? auth : null
     },
 }))
 
@@ -64,12 +77,18 @@ describe('useQuantumDappWarning', () => {
         vi.clearAllMocks()
         ;(useIsQuantumDappWarningEnabled as Mock).mockReturnValue(true)
         ;(useAllAccounts as Mock).mockReturnValue([
-            { address: QUANTUM_ADDRESS, type: 'quantum' },
-            { address: STANDARD_ADDRESS, type: 'algo25' },
             {
-                address: REKEYED_TO_QUANTUM_ADDRESS,
-                type: 'algo25',
-                rekeyAddress: QUANTUM_ADDRESS,
+                chains: { algorand: { address: QUANTUM_ADDRESS } },
+                custody: { kind: 'local', seed: 'quantum' },
+            },
+            {
+                chains: { algorand: { address: STANDARD_ADDRESS } },
+                custody: { kind: 'local', seed: null },
+            },
+            {
+                chains: { algorand: { address: REKEYED_TO_QUANTUM_ADDRESS } },
+                custody: { kind: 'local', seed: null },
+                authority: QUANTUM_ADDRESS,
             },
         ])
         mockGetPreference.mockReturnValue(null)
@@ -112,6 +131,12 @@ describe('useQuantumDappWarning', () => {
 
         expect(mockRequest).toHaveBeenCalledTimes(1)
         expect(decision).toBe('continue')
+        expect(usesNonPrimaryScheme).toHaveBeenCalledWith(
+            expect.objectContaining({
+                chains: { algorand: { address: QUANTUM_ADDRESS } },
+            }),
+            'algorand',
+        )
     })
 
     it('continues without a sheet when no address is a quantum account', async () => {

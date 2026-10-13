@@ -12,8 +12,11 @@
 
 import { useCallback, useState } from 'react'
 import { createVault } from '@perawallet/wallet-extension-keystore-chrome'
-
-const MIN_PASSWORD_LENGTH = 8
+import {
+    usePasswordStrength,
+    type PasswordScore,
+    type PasswordStrengthError,
+} from '../../hooks/usePasswordStrength.web'
 
 type UseCreatePasswordScreenParams = { onDone: () => void }
 
@@ -22,7 +25,8 @@ type UseCreatePasswordScreenResult = {
     confirmation: string
     isSubmitting: boolean
     hasError: boolean
-    validationError: 'too_short' | 'mismatch' | null
+    passwordScore: PasswordScore
+    validationError: PasswordStrengthError | 'mismatch' | null
     canSubmit: boolean
     setPassword: (value: string) => void
     setConfirmation: (value: string) => void
@@ -37,17 +41,18 @@ export const useCreatePasswordScreen = ({
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [hasError, setHasError] = useState(false)
 
+    const { score: passwordScore, error: strengthError } =
+        usePasswordStrength(password)
+
     const validationError =
-        password.length > 0 && password.length < MIN_PASSWORD_LENGTH
-            ? ('too_short' as const)
+        password.length > 0 && strengthError
+            ? strengthError
             : confirmation.length > 0 && confirmation !== password
               ? ('mismatch' as const)
               : null
 
     const canSubmit =
-        password.length >= MIN_PASSWORD_LENGTH &&
-        confirmation === password &&
-        !isSubmitting
+        !strengthError && confirmation === password && !isSubmitting
 
     const handleSubmit = useCallback(async (): Promise<void> => {
         if (!canSubmit) return
@@ -68,6 +73,7 @@ export const useCreatePasswordScreen = ({
         confirmation,
         isSubmitting,
         hasError,
+        passwordScore,
         validationError,
         canSubmit,
         setPassword,

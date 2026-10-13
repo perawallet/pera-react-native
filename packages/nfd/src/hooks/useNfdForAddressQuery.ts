@@ -10,15 +10,28 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
-    useNetwork,
-    isValidAlgorandAddress,
-} from '@perawallet/wallet-core-blockchain'
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
+import { nameServiceAdapterFor } from '../chain-adapter'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdName } from '../models'
+
+export type UseNfdForAddressQueryResult = {
+    data: NfdName[]
+    isPending: boolean
+}
+
+// One stable empty array, so memos that depend on `data` don't re-run every render.
+const NO_RESULTS: NfdName[] = []
 
 /**
  * The batch queue coalesces enqueues that land in the same microtask.
@@ -36,13 +49,20 @@ import type { NfdName } from '../models'
 export const useNfdForAddressQuery = (
     address: string,
     options?: { enabled?: boolean },
-): UseQueryResult<NfdName[], Error> => {
-    const { network } = useNetwork()
+): UseNfdForAddressQueryResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const network = legacyNetworkOf(scope)
+    const isNameServiceEnabled = useChainCapability(
+        LEGACY_CHAIN_ID,
+        'nameService',
+    )
     const enabled =
-        (options?.enabled ?? true) && isValidAlgorandAddress(address)
+        (options?.enabled ?? true) &&
+        isNameServiceEnabled &&
+        nameServiceAdapterFor(scope).isValidAddress(address)
 
-    return useQuery({
-        queryKey: nfdQueryKeys.forAddress(address, network),
+    const query = useQuery({
+        queryKey: nfdQueryKeys.forAddress(address, scope),
         queryFn: () => {
             const valuePromise = nfdBatchQueue.enqueue(address, network)
             return valuePromise.then(value => (value ? [value] : []))
@@ -51,4 +71,9 @@ export const useNfdForAddressQuery = (
         staleTime: config.reactQueryLongLivedStaleTime,
         gcTime: config.reactQueryLongLivedGCTime,
     })
+
+    return {
+        data: query.data ?? NO_RESULTS,
+        isPending: query.isPending,
+    }
 }

@@ -18,17 +18,17 @@ import {
     PeraNetworkError,
     logger,
 } from '@perawallet/wallet-core-shared'
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { AlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { SubmissionError, SigningError } from '@perawallet/wallet-core-signing'
 import { resolveErrorCopy } from '../resolveErrorCopy'
 
-// Use the real blockchain package — this spec relies on actual AlgodError
+// Use the real Algorand runtime — this spec relies on actual AlgodError
 // instanceof checks and toAlgodError parsing, which the global mock in
 // vitest.setup.ts stubs out to always return unknown_node_error.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >('@perawallet/wallet-core-blockchain')
+        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
+    >('@perawallet/wallet-core-chain-algorand/blockchain')
     return actual
 })
 
@@ -137,26 +137,26 @@ describe('resolveErrorCopy', () => {
     it('resolves a declared messageKey as the body', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.validation.invalid_address',
+            messageKey: 'errors.webview.unsupported_url',
         })
 
         const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
 
-        expect(result.body).toBe('errors.validation.invalid_address')
+        expect(result.body).toBe('errors.webview.unsupported_url')
     })
 
     it('passes params through to the translator', () => {
         const spy = vi.fn((key: string) => key)
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.validation.invalid_address',
-            params: { address: 'ABC' },
+            messageKey: 'errors.webview.unsupported_url',
+            params: { url: 'ABC' },
         })
 
         resolveErrorCopy(error, spy, undefined, getAlgodMessage)
 
-        expect(spy).toHaveBeenCalledWith('errors.validation.invalid_address', {
-            address: 'ABC',
+        expect(spy).toHaveBeenCalledWith('errors.webview.unsupported_url', {
+            url: 'ABC',
         })
     })
 

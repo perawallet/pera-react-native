@@ -11,7 +11,6 @@
  */
 
 import { create } from 'zustand'
-import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { registerStore } from '@perawallet/wallet-core-shared'
 
@@ -26,7 +25,6 @@ export type HDImportSession = {
     walletKeyId: string
     rootKey: Uint8Array
     entropy: Uint8Array
-    derivationType: BIP32DerivationType
 }
 
 type State = {

@@ -10,27 +10,30 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    hasSigningKeys,
-    isHardwareWalletAccount,
-    isMultisigAccount,
+    chainAccountOf,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { SigningStrategy } from '../types'
 import { CannotSignError } from '../errors'
 import {
-    createLocalKeyStrategy,
+    localKeySignerAdapterFor,
+    plannerAdapterForScope,
     type LocalSigningFunction,
     type LocalArbitrarySigningFunction,
-    type LocalArc60SigningFunction,
-} from './createLocalKeyStrategy'
+    type LocalAuthDataSigningFunction,
+} from '../../chain-adapter'
 import {
     createHardwareStrategy,
     type EncodeTransactionFunction,
 } from './createHardwareStrategy'
-import { createMultisigStrategy } from './createMultisigStrategy'
+import {
+    resolveSignerCredential,
+    type SignerCustody,
+} from '../../machine/utils/resolveSignerCredential'
 
 /**
  * Options for creating the signing strategy selector
@@ -42,8 +45,8 @@ export interface GetSigningStrategyOptions {
     /** Arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
 
-    /** ARC-60 signing function from useLocalKeyArc60Signer */
-    signArc60: LocalArc60SigningFunction
+    /** Auth-data signing function from useAuthDataSigner */
+    signAuthData: LocalAuthDataSigningFunction
 
     /** Get local participants for a multisig account */
     getLocalParticipants: (
@@ -59,6 +62,9 @@ export interface GetSigningStrategyOptions {
 
     /** Hardware wallet registry from platform extension (optional) */
     hardwareWalletRegistry?: HardwareWalletRegistry
+
+    /** Picks the chain whose local-key and multisig strategies are built. */
+    scope: ChainScope
 }
 
 /**
@@ -71,31 +77,48 @@ export const createSigningStrategySelector = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ) => SigningStrategy) => {
-    const localStrategy = createLocalKeyStrategy({
+    const localStrategy = localKeySignerAdapterFor(
+        options.scope,
+    ).createStrategy({
         signTransactions: options.signTransactions,
         signArbitraryData: options.signArbitraryData,
-        signArc60: options.signArc60,
+        signAuthData: options.signAuthData,
+        scope: options.scope,
     })
     const hardwareStrategy = createHardwareStrategy({
         hardwareWalletRegistry: options.hardwareWalletRegistry,
         encodeTransaction: options.encodeTransaction,
+        getAllAccounts: options.getAllAccounts,
+        chainId: options.scope.chainId,
     })
+
+    const leafStrategyFor = (
+        account: WalletAccount,
+        custody: SignerCustody,
+    ): SigningStrategy => {
+        if (custody === 'hardware') return hardwareStrategy
+        if (custody === 'local') return localStrategy
+        throw new CannotSignError(
+            chainAccountOf(account, options.scope.chainId)?.address ??
+                account.id,
+            `No signing capability found for account custody: ${custody}`,
+        )
+    }
 
     // Given an account that is already the resolved signing account
     // (i.e. rekey has been followed where applicable, or doesn't apply),
     // pick the strategy that produces its signature.
     const selectStrategyForAccount = (
         account: WalletAccount,
-    ): SigningStrategy => {
-        if (isHardwareWalletAccount(account)) return hardwareStrategy
-        if (hasSigningKeys(account)) return localStrategy
-        throw new CannotSignError(
-            account.address,
-            `No signing capability found for account type: ${account.type}`,
+    ): SigningStrategy =>
+        leafStrategyFor(
+            account,
+            resolveSignerCredential(account, options.scope.chainId).custody,
         )
-    }
 
-    const multisigStrategy = createMultisigStrategy({
+    const multisigStrategy = plannerAdapterForScope(
+        options.scope,
+    ).createMultisigStrategy({
         getLocalParticipants: options.getLocalParticipants,
         // Multisig participant slots are bound to the participant's OWN pubkey
         // at multisig creation — rekey indirection is intentionally NOT
@@ -115,9 +138,18 @@ export const createSigningStrategySelector = (
         // the auth's template authorizes the transaction. The multisig
         // strategy re-resolves the hop itself, so passing the original
         // account to `sign` stays correct.
-        const authAccount = resolveAuthAccount(account, allAccounts)
-        if (isMultisigAccount(authAccount)) return multisigStrategy
-        return selectStrategyForAccount(authAccount)
+        const authAccount = resolveAuthAccount(
+            account,
+            allAccounts,
+            options.scope.chainId,
+        )
+        const { custody } = resolveSignerCredential(
+            authAccount,
+            options.scope.chainId,
+        )
+        return custody === 'multisig'
+            ? multisigStrategy
+            : leafStrategyFor(authAccount, custody)
     }
 
     return selectStrategy

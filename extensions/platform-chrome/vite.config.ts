@@ -12,29 +12,17 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export default defineConfig({
-    plugins: [],
-    build: {
-        lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
-            },
-            formats: ['es'],
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: {
+            index: resolve(__dirname, 'src/index.ts'),
+            bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
+            messaging: resolve(__dirname, 'src/messaging.ts'),
+            // Built so the browser-runtime package's specs can share the fake.
+            'test-utils/index': resolve(__dirname, 'src/test-utils/index.ts'),
         },
-        rollupOptions: {
-            external: [
-                '@perawallet/wallet-core-arc0027',
-                '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-passkeys/webauthn',
-                '@perawallet/wallet-extension-platform',
-                'drizzle-orm',
-                'drizzle-orm/sqlite-proxy',
-                'firebase/app',
-                'firebase/remote-config',
-                '@sentry/browser',
-            ],
-        },
-    },
-})
+    }),
+)

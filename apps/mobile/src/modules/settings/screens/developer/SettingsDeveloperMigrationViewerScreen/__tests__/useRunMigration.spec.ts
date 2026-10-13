@@ -48,7 +48,10 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({ migration: migrationService }),
+    getProvider: () => ({
+        migration: migrationService,
+        chains: { has: () => false },
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-migrate', () => ({
@@ -88,6 +91,7 @@ describe('useRunMigration', () => {
         })
 
         expect(runMigration).toHaveBeenCalledWith(migrationService, {
+            chainId: 'algorand',
             importAccount: importAccountFn,
             createHdWalletAccount: createHdWalletAccountFn,
             createHDWalletKey: createHDWalletKeyFn,

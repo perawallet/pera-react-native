@@ -24,6 +24,13 @@ import { getNavigationTheme } from '@theme/theme'
 import { SendFundsRoutes } from '../../../routes/send-funds'
 import { useSendFundsContent } from './useSendFundsContent'
 
+/**
+ * Stable request id for the send sheet. The store ignores a request whose id
+ * is already open, so a second tap on a Send button during the sheet's open
+ * animation (past the touchable's 500ms guard) can't stack a second sheet.
+ */
+export const SEND_FUNDS_SHEET_ID = 'send-funds'
+
 export type SendFundsContentProps = {
     assetId?: string
 }

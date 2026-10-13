@@ -13,11 +13,17 @@
 import React from 'react'
 import { PWButton, PWInput, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { usePasteLinkContent } from './usePasteLinkContent'
 import { useStyles } from './styles'
 
+const SCREEN_CAPTURE_TAG = 'paste-link'
+
 export const PasteLinkContent = () => {
+    // Whatever the scanner accepts can be pasted here too, including a Pera Web
+    // transfer key or a recovery mnemonic.
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const styles = useStyles()
     const { t } = useLanguage()
     // Sheet contents dismiss themselves through the id-scoped handle rather
@@ -52,8 +58,7 @@ export const PasteLinkContent = () => {
                     value={value}
                     onChangeText={setValue}
                     placeholder={t('paste_link.placeholder')}
-                    autoCapitalize='none'
-                    autoCorrect={false}
+                    isSensitive
                     autoFocus
                     editable={!isSubmitting}
                     onSubmitEditing={handleSubmit}

@@ -14,20 +14,19 @@ import { PWSheetLayout, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useStyles } from './styles'
+import {
+    useRekeyOptionsContent,
+    type RekeyTargetType,
+} from './useRekeyOptionsContent'
 
-/**
- * Shared accounts never reach this sheet — they have a single destination
- * type, so their menu row goes straight to the intro screen.
- */
-export type RekeyTargetType = 'ledger' | 'standard' | 'quantum'
+export type { RekeyTargetType } from './useRekeyOptionsContent'
 
 export const RekeyOptionsContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<RekeyTargetType>()
-    const isQuantumEnabled = useIsQuantumAccountsEnabled()
+    const { rows } = useRekeyOptionsContent()
 
     return (
         <PWSheetLayout
@@ -35,44 +34,17 @@ export const RekeyOptionsContent = () => {
             header={<SheetHeader title={t('account_options.rekey_account')} />}
         >
             <PWView style={styles.optionsContainer}>
-                <PanelButton
-                    testID='rekey_option_ledger'
-                    title={t('account_options.rekey_option_ledger_title')}
-                    description={t(
-                        'account_options.rekey_option_ledger_description',
-                    )}
-                    titleWeight='h3'
-                    leftIcon='ledger'
-                    onPress={() => resolve('ledger')}
-                />
-                <PanelButton
-                    testID='rekey_option_standard'
-                    title={t('account_options.rekey_option_standard_title')}
-                    description={t(
-                        'account_options.rekey_option_standard_description',
-                    )}
-                    titleWeight='h3'
-                    leftIcon='wallet'
-                    onPress={() => resolve('standard')}
-                />
-                {isQuantumEnabled && (
+                {rows.map(row => (
                     <PanelButton
-                        testID='rekey_option_quantum'
-                        title={t('account_options.rekey_option_quantum_title')}
-                        description={t(
-                            'account_options.rekey_option_quantum_description',
-                        )}
+                        key={row.testID}
+                        testID={row.testID}
+                        title={t(row.titleKey)}
+                        description={t(row.descriptionKey)}
                         titleWeight='h3'
-                        leftIcon='quantum'
-                        badge={{
-                            label: t(
-                                'account_options.rekey_option_quantum_badge',
-                            ),
-                            variant: 'new',
-                        }}
-                        onPress={() => resolve('quantum')}
+                        leftIcon={row.icon}
+                        onPress={() => resolve(row.target)}
                     />
-                )}
+                ))}
             </PWView>
         </PWSheetLayout>
     )

@@ -23,14 +23,14 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { WealthChart } from '@components/WealthChart'
 import {
     formatDatetime,
     type HistoryPeriod,
     type Nullable,
+    percentChange,
 } from '@perawallet/wallet-core-shared'
-import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useCallback, useMemo } from 'react'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -45,8 +45,11 @@ import {
     type AccountBalanceHistoryItem,
     useAccountValueTotalsQuery,
     useAccountBalancesHistoryQuery,
+    addressOn,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { Decimal } from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
@@ -59,13 +62,15 @@ export type PortfolioViewProps = {
 } & PWViewProps
 
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
 
-    const accounts = useSigningAccounts()
-    const { portfolioAlgoValue, portfolioUsdValue, isPending } =
-        useAccountValueTotalsQuery(accounts)
+    const accounts = useSigningAccounts(scope.chainId)
+    const { portfolioNativeValue, portfolioUsdValue, isPending } =
+        useAccountValueTotalsQuery(accounts, scope)
     const portfolioPreferredValue = useMemo(() => {
         return usdToPreferred(portfolioUsdValue)
     }, [portfolioUsdValue, usdToPreferred])
@@ -79,11 +84,15 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         setPreference(UserPreferences.chartVisible, !isChartShown)
     }
 
-    const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
+    const addresses = useMemo(
+        () => accounts.flatMap(a => addressOn(a, scope) ?? []),
+        [accounts, scope],
+    )
 
     const { data: historyData } = useAccountBalancesHistoryQuery(
         addresses,
         period,
+        scope,
         isChartShown,
     )
 
@@ -178,10 +187,10 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                         variant='h2'
                         value={
                             selectedPoint
-                                ? selectedPoint.algoValue
-                                : portfolioAlgoValue
+                                ? selectedPoint.nativeValue
+                                : portfolioNativeValue
                         }
-                        asset={ALGO_ASSET}
+                        asset={nativeAsset}
                         density='compact'
                         style={styles.primaryCurrency}
                         isLoading={isPending}
@@ -240,7 +249,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             {formatDatetime(
                                 selectedPoint.datetime,
                                 undefined,
-                                'long',
+                                'medium',
                                 'date',
                             )}
                         </PWText>
@@ -251,7 +260,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             {formatDatetime(
                                 selectedPoint.datetime,
                                 undefined,
-                                'long',
+                                'medium',
                                 'time',
                             )}
                         </PWText>

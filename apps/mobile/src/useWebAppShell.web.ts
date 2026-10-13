@@ -11,16 +11,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import {
-    getCurrentApproval,
-    getSurface,
-} from '@perawallet/wallet-extension-platform-chrome'
-import {
-    armAutoLock,
-    requireSessionMasterKey,
-} from '@perawallet/wallet-extension-keystore-chrome'
-import { useVaultLockState } from '@modules/vault'
-import { useShowOnboarding } from '@hooks/useShowOnboarding'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { getCurrentApproval } from '@perawallet/wallet-core-browser-runtime'
+import { requireSessionMasterKey } from '@perawallet/wallet-extension-keystore-chrome'
 import {
     getKeystore,
     getProvider,
@@ -31,16 +24,30 @@ import {
     getDatabase,
     initializeDatabase,
 } from '@perawallet/wallet-core-database'
-import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
+import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
+    createSyncStorePorts,
     getSyncService,
     initializeSyncService,
 } from '@perawallet/wallet-core-background'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
-import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    backfillAccountRecords,
+    hydrateAccountChainStates,
+    useAccountsStore,
+    useHasAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
+import { useVaultLockState } from '@modules/vault'
+import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { queryClient } from '@providers/QueryProvider'
+import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
+
+// Past it this launch backfills nothing and the next one retries; see
+// waitForStoreHydration for why the wait needs a ceiling at all.
+const ACCOUNTS_HYDRATION_TIMEOUT_MS = 2000
 
 // The keystore asks for this on every seal and open. Registered here because
 // the provider cannot import the vault, and every surface that opens material
@@ -140,11 +147,21 @@ export const useWebAppShell = (): UseWebAppShellResult => {
                     reminted: resealReport.reminted,
                 })
             }
+            // The offscreen document can't open the keystore, so it reads what
+            // this records (quantum public keys) through the synced accounts store.
+            await waitForStoreHydration(
+                useAccountsStore,
+                ACCOUNTS_HYDRATION_TIMEOUT_MS,
+            )
+            backfillAccountRecords()
             await initializeDatabase(getProvider().database)
-            await seedAlgoAsset(getDatabase())
+            await seedNativeAssets(getDatabase())
+            await hydrateAccountChainStates()
             initializeSyncService({
                 queryClient,
-                registerCompletionHandler: setOnConfirmedHandler,
+                stores: createSyncStorePorts(),
+                registerCompletionHandler: handler =>
+                    setOnConfirmedHandler(LEGACY_CHAIN_ID, handler),
             })
             setIsBootstrapped(true)
         }
@@ -152,11 +169,6 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             logger.error('Web shell bootstrap failed', { error })
             setHasBootstrapError(true)
         })
-    }, [isUnlocked])
-
-    useEffect(() => {
-        if (!isUnlocked) return
-        void armAutoLock() // sliding window: surface open re-arms
     }, [isUnlocked])
 
     // Sync runs while a UI context is open AND the wallet is usable
@@ -173,7 +185,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
     if (getSurface() === 'approval') {
         // The SW's approval bridge opens this popup at
         // approval.html?requestId=…; a requestId in the query string means
-        // there's a real ARC-0027 enable request to render. Any other
+        // there's a real approval request to render. Any other
         // navigation into the approval surface (e.g. opened by hand) falls
         // back to the placeholder. This check stays ahead of the
         // resolving/create-password/error branches below — same as before

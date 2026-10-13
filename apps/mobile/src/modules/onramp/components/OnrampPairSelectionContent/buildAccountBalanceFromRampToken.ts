@@ -14,32 +14,39 @@ import { Decimal } from 'decimal.js'
 import {
     DEFAULT_ASSET_METADATA,
     PeraAssetVerificationTier,
+    isNativeAssetId,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import {
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
-import { isAlgoAssetName, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    rampTokenAssetId,
+    type RampToken,
+} from '@perawallet/wallet-core-onramp'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 
-// Verification tier mapping for known onramp tokens, keyed on token.id.
-// RampToken has no tier field; we map the known-safe tokens to a real
-// PeraAssetVerificationTier here and keep the mapping local — no tier is
-// fabricated on the domain model.
+// RampToken carries no tier, so the known-safe listings are mapped here rather
+// than fabricating one on the domain model. The native asset is matched on the
+// resolved asset id, so a provider that lists ALGO under its on-chain id is
+// still recognised.
 const RAMP_TOKEN_VERIFICATION_TIER: Record<string, PeraAssetVerificationTier> =
     {
-        ALGO: PeraAssetVerificationTier.verified,
         USDC: PeraAssetVerificationTier.verified,
         USDC_ALGORAND: PeraAssetVerificationTier.verified,
     }
 
 // Builds a synthetic AssetWithAccountBalance from a RampToken so onramp tokens
-// can render through the standard AccountAssetItemView. RampToken has no real
-// Algorand asset id (only ALGO maps to '0'); other tokens keep their provider id.
+// can render through the standard AccountAssetItemView.
 export const buildAccountBalanceFromRampToken = (
     token: RampToken,
     balance: Nullable<Decimal>,
+    scope: ChainScope,
 ): AssetWithAccountBalance => {
-    const isAlgo = isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
-    const assetId = isAlgo ? '0' : token.id
+    const assetId = rampTokenAssetId(token, legacyNetworkOf(scope))
+    const isNative = isNativeAssetId(scope.chainId, assetId)
 
     const asset: PeraAsset = {
         assetId,
@@ -50,9 +57,10 @@ export const buildAccountBalanceFromRampToken = (
         totalSupply: new Decimal(0),
         peraMetadata: {
             ...DEFAULT_ASSET_METADATA,
-            verificationTier:
-                RAMP_TOKEN_VERIFICATION_TIER[token.id] ??
-                DEFAULT_ASSET_METADATA.verificationTier,
+            verificationTier: isNative
+                ? PeraAssetVerificationTier.verified
+                : (RAMP_TOKEN_VERIFICATION_TIER[assetId] ??
+                  DEFAULT_ASSET_METADATA.verificationTier),
         },
     }
 
@@ -60,7 +68,8 @@ export const buildAccountBalanceFromRampToken = (
         assetId,
         asset,
         amount: balance ?? new Decimal(0),
-        algoValue: new Decimal(0),
-        isFrozen: false,
+        nativeValue: new Decimal(0),
+        fiatValue: null,
+        restriction: null,
     }
 }

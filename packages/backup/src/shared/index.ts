@@ -11,9 +11,7 @@
  */
 
 // Primitives shared between the ASB (ARC-35) and Pera Web import flows.
-// Both flows decrypt the same secretbox layout, both rebuild an algo25
-// account from a raw seed, and both decode `private_key` fields whose
-// on-wire encoding has a couple of legitimate formats.
+// Both flows decrypt the same secretbox layout and decode `private_key`
+// fields whose on-wire encoding has a couple of legitimate formats.
 export * from './secretbox'
 export * from './decode-key-bytes'
-export * from './useImportAlgo25FromSeed'

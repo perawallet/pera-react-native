@@ -1,0 +1,38 @@
+name: Security / SSL Pins
+
+# The app's SSL pinning blocks any request whose served chain has no pinned
+# SPKI, so a CA rotation on a pinned host (most likely Cloudflare moving to a CA
+# outside the set) breaks networking for real users. This checks the live chains
+# weekly, ahead of any release; a red scheduled run is the notification.
+#
+# Not part of PR CI: it depends on external hosts, and a rotation happens on the
+# CA's schedule, not on a merge.
+
+on:
+  schedule:
+    # Mondays 07:00 UTC, so a rotation lands on someone's desk at the start of the week.
+    - cron: "0 7 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  pins:
+    name: Check pinned TLS chains
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".tool-versions"
+
+      # Node built-ins only, and it reads pins.ts as text, so no install is needed.
+      - name: Check served chains against the pin set
+        run: node tools/check-pinned-chains.mjs

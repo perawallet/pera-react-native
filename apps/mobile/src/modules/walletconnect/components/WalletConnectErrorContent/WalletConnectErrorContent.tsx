@@ -24,11 +24,9 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 export type WalletConnectErrorContentProps = {
     error: Nullable<Error>
     /**
-     * Acknowledge handler. Supply it to render outside a bottom sheet — the
-     * default host (`ConfirmActionContent`) resolves the sheet it lives in,
-     * and its `useBottomSheetResult()` throws where there is no sheet at all,
-     * which is the extension's approval page. Mobile omits it and keeps the
-     * sheet behaviour unchanged.
+     * Supply to render outside a bottom sheet: the default host
+     * (`ConfirmActionContent`) resolves the sheet it lives in, and its
+     * `useBottomSheetResult()` throws where there is none (the extension's approval page).
      */
     onConfirm?: () => void
     testID?: string

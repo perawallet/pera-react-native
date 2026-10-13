@@ -15,9 +15,10 @@ import { renderHook, act } from '@testing-library/react'
 import { Networks } from '@perawallet/wallet-core-shared'
 import {
     getCustomNetworkConfig,
-    useCustomNetworkStore,
+    setCustomNetwork,
     type CustomNetworkConfig,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
 
 const { switchNetwork, fetchGenesisFromNode, clearCustomNetworkCache } =
@@ -35,38 +36,36 @@ vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(() => ({})),
 }))
 
-// Real store + shouldClearCustomCache (imported by concrete module path, not
-// the package barrel, for the same reason the global vitest.setup.ts mock
-// does: the barrel re-exports utils/algorandClient, whose module-level
-// `useCustomNetworkStore.subscribe(...)` side effect would otherwise run for
-// this suite and reach into other mocked modules). fetchGenesisFromNode and
-// clearCustomNetworkCache stay mocked — they hit the network and the
-// database/query-cache respectively.
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const store = await vi.importActual<
-        typeof import('../../../../../../../../../packages/blockchain/src/store/custom-network-store')
-    >(
-        '../../../../../../../../../packages/blockchain/src/store/custom-network-store',
-    )
-    const { shouldClearCustomCache } = await vi.importActual<
-        typeof import('../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache')
-    >(
-        '../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache',
-    )
+// Real store and shouldClearCustomCache; clearCustomNetworkCache stays mocked
+// because it hits the database and query cache.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    clearCustomNetworkCache,
+}))
+
+// Real custom-network functions, imported by concrete module path: the barrel
+// re-exports utils/algorandClient, whose module-level
+// `useNetworkStore.subscribe(...)` side effect would otherwise run for this
+// suite and reach into other mocked modules. fetchGenesisFromNode stays mocked
+// because it hits the network.
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
+    const customNetwork = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/store/custom-network')
+    >('@packages/chain-algorand/src/blockchain/store/custom-network')
 
     return {
-        useCustomNetworkStore: store.useCustomNetworkStore,
-        getCustomNetworkConfig: store.getCustomNetworkConfig,
-        isCustomNetworkConfigured: store.isCustomNetworkConfigured,
-        shouldClearCustomCache,
+        getCustomNetworkConfig: customNetwork.getCustomNetworkConfig,
+        isCustomNetworkConfigured: customNetwork.isCustomNetworkConfigured,
+        setCustomNetwork: customNetwork.setCustomNetwork,
         fetchGenesisFromNode,
-        clearCustomNetworkCache,
     }
 })
 
 describe('useCustomNetworkSheet', () => {
     beforeEach(() => {
-        useCustomNetworkStore.getState().resetState()
+        useNetworkStore.getState().resetState()
         // Reset, not just clear: the persist-before-switch test installs an
         // implementation that snapshots store state, which must not leak.
         switchNetwork.mockReset()
@@ -81,7 +80,7 @@ describe('useCustomNetworkSheet', () => {
         // introduce: the component now mounts fresh on each request, so the
         // draft must come from a lazy useState initializer reading whatever
         // is already persisted, not from a since-deleted open() call.
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://old:4001',
             indexerUrl: 'http://old:8980',
             genesisHash: 'OLD=',
@@ -211,7 +210,7 @@ describe('useCustomNetworkSheet', () => {
         // fetchGenesisFromNode defaults genesisId to '' when a node omits
         // `genesis-id`, so without this an otherwise "valid" saved config can
         // carry an empty one — and the extension advertises genesisId to every
-        // dApp over ARC-0027 discover/enable.
+        // connected dApp.
         const { result } = renderHook(() => useCustomNetworkSheet())
 
         act(() => {
@@ -274,7 +273,7 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('reset clears the draft without persisting', () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://old:4001',
             indexerUrl: 'http://old:8980',
             genesisHash: 'OLD=',
@@ -290,7 +289,7 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('changing the genesis hash on save clears the custom cache', async () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://old:4001',
             indexerUrl: 'http://old:8980',
             genesisHash: 'OLD=',
@@ -316,7 +315,7 @@ describe('useCustomNetworkSheet', () => {
         // `custom` partition — surviving the sweep that exists to remove them.
         // Ordering is the invariant, so snapshot what the store holds at the
         // moment the clear is called.
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://old:4001',
             indexerUrl: 'http://old:8980',
             genesisHash: 'OLD=',
@@ -341,7 +340,7 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('changing only the host does NOT clear the custom cache', async () => {
-        useCustomNetworkStore.getState().setCustomNetwork({
+        setCustomNetwork({
             algodUrl: 'http://old:4001',
             indexerUrl: 'http://old:8980',
             genesisHash: 'SAME=',

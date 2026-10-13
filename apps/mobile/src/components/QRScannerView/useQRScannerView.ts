@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -93,7 +93,11 @@ export const useQRScannerView = ({
                 if (handlingRef.current) return
                 const url = barcodes.at(0)?.rawValue
                 if (!url) return
-                if (!isValidDeepLink(url)) {
+                // `skipDeepLinkHandler` callers validate the payload
+                // themselves and scan things that are not deeplinks at all
+                // (e.g. a raw JSON backup envelope), so the gate is theirs to
+                // apply, not ours.
+                if (!skipDeepLinkHandler && !isValidDeepLink(url)) {
                     // Unrecognized code — leave the scanner armed so the
                     // user can try again without closing the modal.
                     return
@@ -121,10 +125,8 @@ export const useQRScannerView = ({
                     () => {
                         setIsHandling(false)
                         // Dispatcher toasted the failure where a toast
-                        // applies (capability-gated CARDS/SELL drop silently —
-                        // toast follow-up tracked). Close the
-                        // Modal so the toast (rendered behind it via the
-                        // root NotifierRoot) becomes visible.
+                        // applies. Close the Modal so the toast (rendered
+                        // behind it via the root NotifierRoot) becomes visible.
                         handlingRef.current = false
                         setScanningEnabled(true)
                         onClose?.()

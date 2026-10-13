@@ -30,24 +30,23 @@ import { useFeatureFlagOverrides } from '../useFeatureFlagOverrides'
 const mockSetConfigOverride = vi.fn()
 const mockConfigOverrides: Record<string, Optional<boolean>> = {}
 
+// A chain's overrides key reaches the registry through the composition root's
+// declaration, next to the platform's own keys.
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfigOverrides: () => ({
         configOverrides: mockConfigOverrides,
         setConfigOverride: mockSetConfigOverride,
     }),
-    RemoteConfigKeys: {
-        enable_pera_card: 'enable_pera_card',
-        enable_motion_lock: 'enable_motion_lock',
-        terms_version: 'terms_version',
-        active_locales: 'active_locales',
-        fee_warning_standard_fee: 'fee_warning_standard_fee',
-    },
-    RemoteConfigDefaults: {
-        enable_pera_card: false, // boolean
-        enable_motion_lock: true, // boolean
-        terms_version: '1', // string
-        active_locales: '', // string
-        fee_warning_standard_fee: 0.001, // number
+    remoteConfigDefaultsRegistry: {
+        all: () => ({
+            enable_pera_card: false, // boolean
+            enable_motion_lock: true, // boolean
+            terms_version: '1', // string
+            active_locales: '', // string
+            fee_warning_standard_fee: 0.001, // number
+            chain_algorand_overrides: '', // declared string
+            enable_quantum_swap: false, // declared boolean
+        }),
     },
 }))
 
@@ -153,6 +152,7 @@ describe('useFeatureFlagOverrides', () => {
             expect(result.current.booleanFlagKeys).toEqual([
                 'enable_pera_card',
                 'enable_motion_lock',
+                'enable_quantum_swap',
             ])
         })
     })
@@ -166,6 +166,7 @@ describe('useFeatureFlagOverrides', () => {
             expect(result.current.stringFlagKeys).toEqual([
                 'terms_version',
                 'active_locales',
+                'chain_algorand_overrides',
             ])
         })
     })
@@ -181,6 +182,19 @@ describe('useFeatureFlagOverrides', () => {
             expect(mockSetConfigOverride).toHaveBeenCalledWith(
                 'active_locales',
                 'de,fr',
+            )
+        })
+
+        it('hands a chain override back to remote config when the field is emptied', () => {
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            act(() => {
+                result.current.setStringOverride('chain_algorand_overrides', '')
+            })
+
+            expect(mockSetConfigOverride).toHaveBeenCalledWith(
+                'chain_algorand_overrides',
+                null,
             )
         })
 

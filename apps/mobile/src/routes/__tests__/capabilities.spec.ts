@@ -16,31 +16,43 @@ import { routeCapabilities as webCapabilities } from '../capabilities.web'
 
 describe('route capabilities', () => {
     it('native map keeps every current-behavior capability on', () => {
-        // vaultSecuritySettings, dappConnections, and connectionsSettings
-        // are new, web-only capabilities with no native equivalent (native
-        // has its own WalletConnect-based dapp connections, not the
-        // ARC-0027 injected provider; native keeps the two separate
-        // WalletConnect/Connected Sites menu entries instead of the unified
-        // screen) — all are deliberately off for native, not a
-        // current-behavior regression. deepLinkPaste is
-        // web-only (native keeps the qrScanner camera instead — the two
-        // flags are mutually exclusive per platform).
+        // vaultSecuritySettings and connectionsSettings are web-only
+        // capabilities with no native equivalent (native lists WalletConnect
+        // sessions under its own menu entry instead of the unified screen) —
+        // both are deliberately off for native, not a current-behavior
+        // regression. deepLinkPaste is web-only (native keeps the qrScanner
+        // camera instead — the two flags are mutually exclusive per platform).
+        // ledgerUsb follows the native OS (Android only); the specs run as iOS.
         // developerSettings is build-gated (isDebug || isStaging), not a
         // constant — the unit-test env is signed-release-shaped (__DEV__
         // false), so it's excluded here and covered by the gate tests below.
         const {
             vaultSecuritySettings,
-            dappConnections,
             connectionsSettings,
             deepLinkPaste,
             developerSettings: _developerSettings,
+            ledgerUsb,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
-        expect(dappConnections).toBe(false)
         expect(connectionsSettings).toBe(false)
         expect(deepLinkPaste).toBe(false)
+        expect(ledgerUsb).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
+    })
+
+    it('native map offers Ledger USB on Android only', async () => {
+        const { Platform } = await import('react-native')
+        const originalOS = Platform.OS
+        try {
+            Platform.OS = 'android'
+            vi.resetModules()
+            const android = await import('../capabilities')
+            expect(android.routeCapabilities.ledgerUsb).toBe(true)
+        } finally {
+            Platform.OS = originalOS
+            vi.resetModules()
+        }
     })
 
     describe('developerSettings build gate', () => {
@@ -111,7 +123,8 @@ describe('route capabilities', () => {
             pushNotificationSettings: true,
             storeRating: false,
             vaultSecuritySettings: true,
-            dappConnections: true,
+            // The vault password is the extension's lock; no app PIN.
+            pin: false,
             // Menu icon bar swaps the camera for paste-a-deeplink on
             // web (Pera Connect covers the pairing path scanning existed for).
             qrScanner: false,
@@ -122,8 +135,9 @@ describe('route capabilities', () => {
             rekeyFlows: true,
             sharedAccounts: true,
             // The unified Connections settings screen supersedes the
-            // separate WalletConnect/Connected Sites menu entries on web.
+            // separate WalletConnect menu entry on web.
             connectionsSettings: true,
+            ledgerUsb: true,
         })
     })
 

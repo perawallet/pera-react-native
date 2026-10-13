@@ -11,14 +11,20 @@
  */
 
 import { fromPromise } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    findAccountByAddressOn,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type {
     SigningResult,
     SourceMetadata,
     TransportResult,
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
-import { mergeSigningResults } from '../../../utils/mergeSigningResults'
+import { plannerAdapterForScope } from '../../../chain-adapter'
+import { CannotSignError } from '../../../pipeline/errors'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type TransportActorInput = {
@@ -33,6 +39,7 @@ export type TransportActorInput = {
     allAccounts: WalletAccount[]
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
+    scope: ChainScope
 }
 
 /**
@@ -48,35 +55,55 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             signerAddress,
             allAccounts,
             createTransport,
+            scope,
         } = input
 
-        const signerAccount = allAccounts.find(a => a.address === signerAddress)
+        const signerAccount = findAccountByAddressOn(
+            allAccounts,
+            scope.chainId,
+            signerAddress,
+        )
         if (!signerAccount) {
             throw new Error(
                 `Signer account not found for transport: ${signerAddress}`,
             )
         }
 
-        // Transport routing and multisig-template keying must follow the SAME
+        // Planned results already name the key holder (below). Otherwise,
+        // transport routing and multisig-template keying must follow the SAME
         // account the signing dispatcher routed on: the account whose key (or
         // multisig template) authorizes the signature. resolveSigningAccount
         // applies the rules — rekey hop for transactions (so a sender rekeyed
         // to a multisig routes to the propose transport keyed on the AUTH's
         // template, not the sender's own type; algod would otherwise reject
         // with "should have been authorized by <auth>"), and no hop for cosign
-        // participants or off-chain data (`arbitrary-data`, `arc60`).
+        // participants or off-chain data (`arbitrary-data`, `auth-data`).
         // Non-rekeyed accounts self-resolve.
-        const dataType = signingResults[0]?.signedData.type ?? 'transactions'
-        const authAccount = resolveSigningAccount(
-            signerAccount,
-            source,
-            dataType,
-            allAccounts,
-        )
+        const signedType = signingResults[0]?.signedData.type ?? 'transactions'
+        // A planner already named the key holder, so a rekey isn't followed twice.
+        const authAccount =
+            signedType === 'signed-transactions'
+                ? signerAccount
+                : resolveSigningAccount(
+                      signerAccount,
+                      source,
+                      signedType,
+                      allAccounts,
+                      scope.chainId,
+                  )
+
+        const authAddress = chainAccountOf(authAccount, scope.chainId)?.address
+        if (authAddress === undefined) {
+            throw new CannotSignError(
+                signerAddress,
+                `its signing account has no address on chain ${scope.chainId}`,
+            )
+        }
 
         const transport = createTransport(source, authAccount)
-        const merged = mergeSigningResults(signingResults)
+        const merged =
+            plannerAdapterForScope(scope).mergeSigningResults(signingResults)
 
-        return transport.send(merged, source, authAccount.address)
+        return transport.send(merged, source, authAddress)
     },
 )

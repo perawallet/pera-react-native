@@ -11,7 +11,8 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { AssetSyncKind } from '../polling/models'
 
 /**
  * Handler invoked after a submitted transaction group involves wallet-held
@@ -24,8 +25,25 @@ export type SyncCompletionHandler = (
     network: Network,
 ) => void | Promise<void>
 
+/**
+ * The app state the sync loop reads and the per-scope cursor it writes.
+ * Injected so the service never reaches into global stores;
+ * `createSyncStorePorts` is the store-backed implementation every app wires in.
+ */
+export type SyncStorePorts = {
+    getAccountAddresses: () => string[]
+    getActiveNetwork: () => Network
+    /** Null for a network never synced, including one absent from the map. */
+    getLastRefreshedRound: (network: Network) => Nullable<number>
+    setLastRefreshedRound: (network: Network, round: number) => void
+    /** Epoch ms of the last successful pass of `kind`; null when it never ran. */
+    getLastSyncAt: (network: Network, kind: AssetSyncKind) => Nullable<number>
+    setLastSyncAt: (network: Network, kind: AssetSyncKind, atMs: number) => void
+}
+
 export type SyncServiceDeps = {
     queryClient: QueryClient
+    stores: SyncStorePorts
     /**
      * Optional registration function for the post-confirmation refresh
      * hook. When provided, `initializeSyncService` wires the freshly-built

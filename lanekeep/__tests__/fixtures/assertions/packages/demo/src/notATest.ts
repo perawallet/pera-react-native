@@ -1,0 +1,3 @@
+it('asserts nothing', () => {
+    run()
+})

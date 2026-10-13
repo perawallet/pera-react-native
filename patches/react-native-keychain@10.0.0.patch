@@ -1,0 +1,81 @@
+diff --git a/android/src/main/java/com/oblador/keychain/KeychainModule.kt b/android/src/main/java/com/oblador/keychain/KeychainModule.kt
+index 722a5ed990c2a1baa15546351d36928ec2b6d268..0e9220a7a90cd670ac3697d70f1532371d8182a2 100644
+--- a/android/src/main/java/com/oblador/keychain/KeychainModule.kt
++++ b/android/src/main/java/com/oblador/keychain/KeychainModule.kt
+@@ -115,6 +115,9 @@ class KeychainModule(reactContext: ReactApplicationContext) :
+       /** AES GCM encryption. */
+       const val AES_GCM_NO_AUTH = "KeystoreAESGCM_NoAuth"
+ 
++      /** AES GCM encryption with a key kept out of StrongBox. */
++      const val AES_GCM_NO_AUTH_TEE = "KeystoreAESGCM_NoAuth_TEE"
++
+       /** Biometric Auth + RSA ECB encryption */
+       const val RSA = "KeystoreRSAECB"
+     }
+@@ -141,6 +144,7 @@ class KeychainModule(reactContext: ReactApplicationContext) :
+     prefsStorage = DataStorePrefsStorage(reactContext, coroutineScope)
+     addCipherStorageToMap(CipherStorageKeystoreAesCbc(reactContext))
+     addCipherStorageToMap(CipherStorageKeystoreAesGcm(reactContext, false))
++    addCipherStorageToMap(CipherStorageKeystoreAesGcm(reactContext, false, allowStrongBox = false))
+     addCipherStorageToMap(CipherStorageKeystoreAesGcm(reactContext, true))
+     addCipherStorageToMap(CipherStorageKeystoreRsaEcb(reactContext))
+   }
+diff --git a/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageBase.kt b/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageBase.kt
+index adc9c007c602481c5a202639294a34975e97f39b..c4b1e88a82b6ca2d4b05601d0a2ea01fdef3eada 100644
+--- a/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageBase.kt
++++ b/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageBase.kt
+@@ -371,6 +371,9 @@ abstract class CipherStorageBase(protected val applicationContext: Context) : Ci
+     }
+   }
+ 
++  /** False keeps new keys out of StrongBox, in the TEE. */
++  protected open val allowStrongBox: Boolean = true
++
+   /** Get the most secured keystore */
+   @Throws(GeneralSecurityException::class)
+   fun generateKeyAndStoreUnderAlias(alias: String, requiredLevel: SecurityLevel) {
+@@ -378,7 +381,8 @@ abstract class CipherStorageBase(protected val applicationContext: Context) : Ci
+     // see https://developer.android.com/training/articles/keystore#HardwareSecurityModule
+ 
+     var secretKey: Key? = null
+-    val supportsSecureHardware = DeviceAvailability.isStrongboxAvailable(applicationContext)
++    val supportsSecureHardware =
++      allowStrongBox && DeviceAvailability.isStrongboxAvailable(applicationContext)
+ 
+     if (supportsSecureHardware) {
+       try {
+diff --git a/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageKeystoreAesGcm.kt b/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageKeystoreAesGcm.kt
+index 6b6e626161945d21d2cf1392a5d16d41d1675b57..f68bbdef07cb0f36772f17a9e5585355bdd2539f 100644
+--- a/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageKeystoreAesGcm.kt
++++ b/android/src/main/java/com/oblador/keychain/cipherStorage/CipherStorageKeystoreAesGcm.kt
+@@ -25,7 +25,9 @@ import javax.crypto.SecretKeyFactory
+ import javax.crypto.spec.GCMParameterSpec
+ 
+ class CipherStorageKeystoreAesGcm(
+-    reactContext: ReactApplicationContext, private val requiresAuth: Boolean
++    reactContext: ReactApplicationContext,
++    private val requiresAuth: Boolean,
++    override val allowStrongBox: Boolean = true
+ ) : CipherStorageBase(reactContext) {
+ 
+     // region Constants
+@@ -49,11 +51,16 @@ class CipherStorageKeystoreAesGcm(
+     // endregion
+ 
+     // region Configuration
+-    override fun getCipherStorageName(): String = when (requiresAuth) {
+-        true -> KnownCiphers.AES_GCM
+-        false -> KnownCiphers.AES_GCM_NO_AUTH
++    override fun getCipherStorageName(): String = when {
++        requiresAuth -> KnownCiphers.AES_GCM
++        !allowStrongBox -> KnownCiphers.AES_GCM_NO_AUTH_TEE
++        else -> KnownCiphers.AES_GCM_NO_AUTH
+     }
+ 
++    // Only ever chosen by name: never outranks a storage picked by default.
++    override fun getCapabilityLevel(): Int =
++        if (allowStrongBox) super.getCapabilityLevel() else super.getCapabilityLevel() - 1
++
+     /** API23 is a requirement. */
+     override fun getMinSupportedApiLevel(): Int = Build.VERSION_CODES.M
+ 

@@ -13,19 +13,23 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import {
+    BackupAccountType,
     BackupItemStatus,
     BackupItemType,
     createEmptySyncState,
+    type SyncItemState,
 } from '../../models'
 import { reconcile } from '../reconcile'
 import type { LocalItem, LocalSnapshot } from '../types'
 
 const NOW = 1_000
-const item = (key: string, hash: string): LocalItem => ({
+const item = (key: string, hash: string, address = 'ADDR'): LocalItem => ({
     key,
     type: BackupItemType.ACCOUNT,
     contentHash: hash,
-    payload: { type: 'watch', address: key.split('/')[1] } as never,
+    address,
+    accountType: BackupAccountType.watch,
+    payload: { type: 'watch', address } as never,
 })
 const snapshot = (items: LocalItem[], skipped = 0): LocalSnapshot => ({
     items,
@@ -44,6 +48,18 @@ describe('reconcile', () => {
             localContentHash: 'h1',
             localUpdatedAt: NOW,
             status: BackupItemStatus.ACTIVE,
+        })
+    })
+
+    it('tracks a new local item with its address and account type', () => {
+        const next = reconcile(
+            createEmptySyncState('b'),
+            snapshot([item('accounts/HASHED', 'h1', 'REAL_ADDRESS')]),
+            NOW,
+        )
+        expect(next.items['accounts/HASHED']).toMatchObject({
+            address: 'REAL_ADDRESS',
+            accountType: BackupAccountType.watch,
         })
     })
 
@@ -84,7 +100,7 @@ describe('reconcile', () => {
         })
     })
 
-    it('flags pending-delete for an ACTIVE account item with no local counterpart', () => {
+    it('leaves an ACTIVE account item alone when it is no longer local', () => {
         const base = createEmptySyncState('b')
         base.items['accounts/GONE'] = {
             type: BackupItemType.ACCOUNT,
@@ -97,23 +113,8 @@ describe('reconcile', () => {
             localUpdatedAt: 1,
         }
         const next = reconcile(base, snapshot([]), NOW)
-        expect(next.items['accounts/GONE'].pendingDelete).toBe(true)
-    })
-
-    it('does not flag pending-delete when an account could not be serialized', () => {
-        const base = createEmptySyncState('b')
-        base.items['accounts/GONE'] = {
-            type: BackupItemType.ACCOUNT,
-            knownVer: 2,
-            baseVer: 2,
-            isDirty: false,
-            status: BackupItemStatus.ACTIVE,
-            lastRemoteHash: 'r',
-            localContentHash: 'h',
-            localUpdatedAt: null,
-        }
-        const next = reconcile(base, snapshot([], 1), NOW)
         expect(next.items['accounts/GONE'].pendingDelete).toBeUndefined()
+        expect(next.items['accounts/GONE'].status).toBe(BackupItemStatus.ACTIVE)
     })
 
     it('never marks an IGNORED item dirty or pending-delete', () => {
@@ -131,5 +132,176 @@ describe('reconcile', () => {
         const next = reconcile(base, snapshot([]), NOW)
         expect(next.items['accounts/IG'].isDirty).toBe(false)
         expect(next.items['accounts/IG'].pendingDelete).toBeFalsy()
+    })
+
+    it('does not queue a delete for an item awaiting review', () => {
+        const base = createEmptySyncState('b')
+        base.items['accounts/AWAY'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'r',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+        const next = reconcile(base, snapshot([]), NOW)
+        expect(next.items['accounts/AWAY'].pendingDelete).toBeUndefined()
+    })
+
+    it('clears the review flag once the address is on the device again', () => {
+        const base = createEmptySyncState('b')
+        base.items['accounts/A'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'r',
+            localContentHash: 'h1',
+            localUpdatedAt: null,
+        }
+        const next = reconcile(base, snapshot([item('accounts/A', 'h1')]), NOW)
+        expect(next.items['accounts/A'].pendingImport).toBe(false)
+    })
+
+    describe('an account record', () => {
+        const KEY = 'account-records/R'
+        const record = (formatVersion: number) => ({
+            formatVersion,
+            customName: null,
+            chains: [{ chain: 'algorand', type: 'watch', address: 'ADDR' }],
+        })
+        const recordItem = (): LocalItem => ({
+            ...item(KEY, 'h2'),
+            addresses: ['ADDR'],
+            payload: record(2),
+        })
+
+        it('caches every address and the content it writes', () => {
+            const next = reconcile(
+                createEmptySyncState('b'),
+                snapshot([recordItem()]),
+                NOW,
+            )
+
+            expect(next.items[KEY]).toMatchObject({
+                addresses: ['ADDR'],
+                record: record(2),
+            })
+        })
+
+        it('never writes over a record a newer client wrote', () => {
+            const base = createEmptySyncState('b')
+            base.items[KEY] = {
+                type: BackupItemType.ACCOUNT,
+                knownVer: 1,
+                baseVer: 1,
+                isDirty: false,
+                status: BackupItemStatus.ACTIVE,
+                lastRemoteHash: 'r',
+                localContentHash: 'h1',
+                localUpdatedAt: null,
+                record: record(3),
+            }
+
+            const next = reconcile(base, snapshot([recordItem()]), NOW)
+
+            expect(next.items[KEY]).toEqual(base.items[KEY])
+        })
+    })
+
+    describe('a secret another device deleted', () => {
+        const SECRET_KEY = 'secrets/S'
+        const RECORD_KEY = 'account-records/R'
+        const tracked = (
+            overrides: Partial<SyncItemState> = {},
+        ): SyncItemState => ({
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: null,
+            ...overrides,
+        })
+        const hdRecord = {
+            formatVersion: 2,
+            customName: null,
+            chains: [
+                {
+                    chain: 'ethereum',
+                    type: 'hdChain',
+                    address: 'CHILD',
+                    seedFirstDerivedAddress: 'SEED',
+                    account: 0,
+                    keyIndex: 1,
+                },
+            ],
+        }
+        const secret = (address: string): LocalItem => ({
+            ...item(SECRET_KEY, 'hs', address),
+            accountType: BackupAccountType.hdSeed,
+        })
+        const withTombstone = (record: Partial<SyncItemState>) => {
+            const base = createEmptySyncState('b')
+            base.items[SECRET_KEY] = tracked({
+                status: BackupItemStatus.IGNORED,
+                localContentHash: null,
+            })
+            base.items[RECORD_KEY] = tracked(record)
+            return base
+        }
+
+        it('re-tracks a seed a live HD record derives from', () => {
+            const base = withTombstone({
+                address: 'CHILD',
+                addresses: ['CHILD'],
+                record: hdRecord,
+            })
+
+            const next = reconcile(base, snapshot([secret('SEED')]), NOW)
+
+            expect(next.items[SECRET_KEY]).toMatchObject({
+                status: BackupItemStatus.ACTIVE,
+                knownVer: 0,
+                isDirty: true,
+            })
+        })
+
+        it('re-tracks a key at an address a live record holds', () => {
+            const base = withTombstone({
+                address: 'ALGO',
+                addresses: ['ALGO', '0xeth'],
+            })
+
+            const next = reconcile(base, snapshot([secret('0xeth')]), NOW)
+
+            expect(next.items[SECRET_KEY]).toMatchObject({
+                knownVer: 0,
+                isDirty: true,
+            })
+        })
+
+        it.each([
+            ['deleted', { status: BackupItemStatus.IGNORED }],
+            ['being deleted', { pendingDelete: true }],
+        ])('leaves it deleted when the record is %s', (_label, state) => {
+            const base = withTombstone({
+                address: 'CHILD',
+                addresses: ['CHILD'],
+                record: hdRecord,
+                ...state,
+            })
+
+            const next = reconcile(base, snapshot([secret('SEED')]), NOW)
+
+            expect(next.items[SECRET_KEY]).toEqual(base.items[SECRET_KEY])
+        })
     })
 })

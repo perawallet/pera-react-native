@@ -11,7 +11,7 @@
  */
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
 import { bytesToHex, toBytes } from '@perawallet/wallet-core-shared'
@@ -44,7 +44,7 @@ export const GroupPreviewItem = ({
             testID='group_preview_item'
         >
             <TransactionIcon
-                type='group'
+                name='transactions/group'
                 size='sm'
             />
             <PWView style={styles.groupPreviewContent}>

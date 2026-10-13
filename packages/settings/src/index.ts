@@ -12,6 +12,7 @@
 
 export const name = '@perawallet/wallet-core-settings'
 
+export { syncAnalyticsConsent, type AnalyticsConsent } from './analyticsConsent'
 export * from './hooks'
 export * from './models'
 export { useSettingsStore } from './store'

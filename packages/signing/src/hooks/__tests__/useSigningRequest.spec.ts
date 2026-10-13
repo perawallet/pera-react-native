@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { createElement, type ReactNode } from 'react'
 import { renderHook, act } from '@testing-library/react'
+import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '../useSigningRequest'
 import { SigningRequestScopeProvider } from '../SigningRequestScope'
 import { __resetSigningActorRegistryForTests } from '../useSigningActorLifecycle'
@@ -23,7 +24,6 @@ import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
 } from '../../constants'
-import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     SignRequest,
     TransactionSignRequest,
@@ -59,16 +59,18 @@ vi.mock('../useArbitraryDataSigner', () => ({
     })),
 }))
 
-vi.mock('../useLocalKeyArc60Signer', () => ({
-    useLocalKeyArc60Signer: vi.fn(() => ({
-        signArc60: vi.fn(),
+vi.mock('../useAuthDataSigner', () => ({
+    useAuthDataSigner: vi.fn(() => ({
+        signAuthData: vi.fn(),
     })),
 }))
 
 vi.mock('../useMultisigTransportAdapters', () => ({
     useMultisigTransportAdapters: vi.fn(() => ({
-        proposeSignRequest: vi.fn(),
-        addSignatures: vi.fn(),
+        adaptersFor: () => ({
+            proposeSignRequest: vi.fn(),
+            addSignatures: vi.fn(),
+        }),
     })),
 }))
 
@@ -80,28 +82,22 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...original,
         useAllAccounts: vi.fn(() => [
-            { address: 'ADDR1', type: 'algo25' },
-            { address: 'ADDR2', type: 'algo25' },
+            { address: 'ADDR1', custody: { kind: 'local', seed: null } },
+            { address: 'ADDR2', custody: { kind: 'local', seed: null } },
         ]),
     }
 })
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...original,
-        useTransactionEncoder: vi.fn(() => ({
-            encodeSignedTransactions: vi.fn(),
-        })),
-        useAlgorandClient: vi.fn(() => ({
-            client: { algod: { sendRawTransaction: vi.fn() } },
-        })),
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-    }
-})
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    getSelectedScope: vi.fn((chainId: string) => ({
+        chainId,
+        networkId: 'testnet',
+    })),
+}))
 
 vi.mock('../../machine/createSigningMachine')
 
