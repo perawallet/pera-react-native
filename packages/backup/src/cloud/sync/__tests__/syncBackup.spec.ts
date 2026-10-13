@@ -28,14 +28,19 @@ vi.mock('../../api', async importOriginal => ({
 }))
 
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { FromSeqTooOldError, UpsertResult } from '../../api'
+import {
+    decryptItemPayload,
+    encryptItemPayload,
+} from '../../crypto/itemPayload'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupItemStatus,
     BackupItemType,
     DeltaOperation,
-    accountItemKey,
+    accountRecordItemKey,
     contactItemKey,
     createEmptySyncState,
     passkeyItemKey,
@@ -45,15 +50,23 @@ import {
     type SyncState,
 } from '../../models'
 import { reconcileSettings } from '../reconcileSettings'
-import { serializeAccountItems } from '../serializeAccountItems'
+import { buildAccountRecord } from '../serializeAccountItems'
+import { serializeAccountForBackup } from '../serializeAccountForBackup'
+import { itemContentHash } from '../itemContentHash'
+import { MAX_IMPORT_ATTEMPTS } from '../importRetry'
 import { syncBackup } from '../syncBackup'
 import { BackupSyncAbortedError } from '../types'
-import { canonicalJson, contentHash } from '../canonicalize'
 import { TEST_SETTINGS } from './testSettings'
 import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
-const accountKey = (address: string) => accountItemKey(hashAddress(address))
+const recordKey = (address: string) =>
+    accountRecordItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
 const settingsKey = settingsItemKey(hashAddress(SETTINGS_ITEM_ID))
 
@@ -67,6 +80,9 @@ const withSyncedSettings = (state: SyncState): SyncState => {
         baseVer: 1,
         lastRemoteHash: 's',
     }
+    // Algorand is always readable here, so a state that predates the check
+    // would replay every record on its first sync.
+    next.readableChains ??= ['algorand']
     return next
 }
 
@@ -74,9 +90,24 @@ const encryptionKey = new Uint8Array(32).fill(7)
 const watch: WalletAccount = {
     id: '1',
     custody: { kind: 'watch' },
-    chains: { algorand: { address: 'W' } },
     name: 'Watcher',
+    chains: { algorand: { address: 'W' } },
 }
+// Built when asked: the chain and adapter registries are filled per test.
+const watchRecordHash = () =>
+    itemContentHash(
+        recordKey('W'),
+        buildAccountRecord(watch, { updatedAt: 1 }) as Record<string, unknown>,
+    )
+const serialize = (a: WalletAccount) =>
+    serializeAccountForBackup(a, {
+        chainId: 'algorand',
+        updatedAt: 1,
+        hashAddress,
+    })
+
+// The scope chain counts as backed up only with its accounts adapter.
+registerAlgorandAccountsAdapter()
 
 const deps = () => ({
     network: 'mainnet' as const,
@@ -87,13 +118,7 @@ const deps = () => ({
     listAccounts: () => [watch],
     listContacts: () => [],
     isAborted: () => false,
-    serializeAccount: async (a: WalletAccount) =>
-        serializeAccountItems(a, {
-            chainId: 'algorand',
-            updatedAt: 1,
-            secrets: null,
-            hashAddress,
-        }),
+    serializeAccount: serialize,
     importAccounts: vi.fn(async () => ({
         imported: 0,
         skippedDuplicate: 0,
@@ -120,20 +145,14 @@ describe('syncBackup', () => {
         })
         const state = createEmptySyncState('b')
         state.lastKnownBackupHash = 'g'
-        state.items[accountKey('W')] = {
+        state.items[recordKey('W')] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 1,
             baseVer: 1,
             isDirty: false,
             status: BackupItemStatus.ACTIVE,
             lastRemoteHash: 'r',
-            localContentHash: contentHash(
-                canonicalJson({
-                    type: 'watch',
-                    address: 'W',
-                    customName: 'Watcher',
-                }),
-            ),
+            localContentHash: watchRecordHash(),
             localUpdatedAt: 1,
             address: 'W',
         }
@@ -150,7 +169,7 @@ describe('syncBackup', () => {
             backupGlobalHash: 'g',
             lastSeq: 100,
             items: {
-                [accountKey('W')]: {
+                [recordKey('W')]: {
                     type: BackupItemType.ACCOUNT,
                     ver: 1,
                     status: BackupItemStatus.ACTIVE,
@@ -170,20 +189,14 @@ describe('syncBackup', () => {
         const state = createEmptySyncState('b')
         state.lastSyncedSeq = 3
         state.lastKnownBackupHash = 'stale'
-        state.items[accountKey('W')] = {
+        state.items[recordKey('W')] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 1,
             baseVer: 1,
             isDirty: false,
             status: BackupItemStatus.ACTIVE,
             lastRemoteHash: 'r',
-            localContentHash: contentHash(
-                canonicalJson({
-                    type: 'watch',
-                    address: 'W',
-                    customName: 'Watcher',
-                }),
-            ),
+            localContentHash: watchRecordHash(),
             localUpdatedAt: 1,
             address: 'W',
         }
@@ -207,7 +220,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: accountKey('W'),
+                    key: recordKey('W'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 1,
@@ -216,7 +229,7 @@ describe('syncBackup', () => {
         })
         const next = await syncBackup(deps(), createEmptySyncState('b'))
         expect(batchUpsertItems).toHaveBeenCalledTimes(1)
-        expect(next.items[accountKey('W')]).toMatchObject({
+        expect(next.items[recordKey('W')]).toMatchObject({
             isDirty: false,
             knownVer: 1,
         })
@@ -232,7 +245,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: accountKey('W'),
+                    key: recordKey('W'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 1,
@@ -280,7 +293,8 @@ describe('syncBackup', () => {
         })
         fetchDelta.mockResolvedValue([])
         const state = createEmptySyncState('b')
-        state.items[accountKey('W')] = {
+        state.readableChains = ['algorand']
+        state.items[recordKey('W')] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 1,
             baseVer: 1,
@@ -298,7 +312,7 @@ describe('syncBackup', () => {
         )
 
         expect(deleteItem).not.toHaveBeenCalled()
-        expect(next.items[accountKey('W')].pendingDelete).toBeUndefined()
+        expect(next.items[recordKey('W')].pendingDelete).toBeUndefined()
     })
 
     it('refuses to sync a backup still keyed by plaintext address', async () => {
@@ -339,7 +353,7 @@ describe('syncBackup', () => {
             backupGlobalHash: 'g5',
             lastSeq: 1,
             items: {
-                [accountKey('W')]: {
+                [recordKey('W')]: {
                     type: BackupItemType.ACCOUNT,
                     ver: 1,
                     status: BackupItemStatus.ACTIVE,
@@ -352,7 +366,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: accountKey('W'),
+                    key: recordKey('W'),
                     result: UpsertResult.OK,
                     new_ver: 2,
                     seq: 2,
@@ -375,12 +389,7 @@ describe('syncBackup', () => {
         let stopped = false
         const serializeAccount = vi.fn(async (a: WalletAccount) => {
             stopped = true
-            return serializeAccountItems(a, {
-                chainId: 'algorand',
-                updatedAt: 1,
-                secrets: null,
-                hashAddress,
-            })
+            return serialize(a)
         })
 
         await expect(
@@ -413,12 +422,7 @@ describe('syncBackup', () => {
                     ...deps(),
                     serializeAccount: async (a: WalletAccount) => {
                         stopped = true
-                        return serializeAccountItems(a, {
-                            chainId: 'algorand',
-                            updatedAt: 1,
-                            secrets: null,
-                            hashAddress,
-                        })
+                        return serialize(a)
                     },
                     isAborted: () => stopped,
                 },
@@ -439,12 +443,7 @@ describe('syncBackup', () => {
                     ...deps(),
                     serializeAccount: async (a: WalletAccount) => {
                         stopped = true
-                        return serializeAccountItems(a, {
-                            chainId: 'algorand',
-                            updatedAt: 1,
-                            secrets: null,
-                            hashAddress,
-                        })
+                        return serialize(a)
                     },
                     listPasskeys,
                     isAborted: () => stopped,
@@ -518,7 +517,7 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual([accountKey('W'), contactKey('C1'), settingsKey].sort())
+        ).toEqual([recordKey('W'), contactKey('C1'), settingsKey].sort())
         expect(next.items[contactKey('C1')]).toMatchObject({
             type: BackupItemType.CONTACT,
             isDirty: false,
@@ -536,7 +535,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: accountKey('W'),
+                    key: recordKey('W'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 1,
@@ -567,7 +566,7 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual([accountKey('W'), contactKey('C1'), settingsKey].sort())
+        ).toEqual([recordKey('W'), contactKey('C1'), settingsKey].sort())
         expect(next.lastSyncResult).toBe('SUCCESS')
         expect(warn).toHaveBeenCalledWith(
             'syncBackup: listPasskeys failed, skipping passkeys',
@@ -610,5 +609,449 @@ describe('syncBackup', () => {
             ]),
         )
         expect(privateKey.every(byte => byte === 0)).toBe(true)
+    })
+})
+
+const encrypted = (key: string, payload: unknown) => ({
+    key,
+    ver: 2,
+    hash: `r-${key}`,
+    payload: encryptItemPayload(JSON.stringify(payload), {
+        encryptionKey,
+        backupId: 'b',
+        key,
+    }),
+})
+
+const settledRecord = (
+    key: string,
+    record: Record<string, unknown>,
+    overrides: Partial<SyncState['items'][string]> = {},
+): SyncState['items'][string] => ({
+    type: BackupItemType.ACCOUNT,
+    knownVer: 2,
+    baseVer: 2,
+    isDirty: false,
+    status: BackupItemStatus.ACTIVE,
+    lastRemoteHash: `r-${key}`,
+    localContentHash: itemContentHash(key, record),
+    localUpdatedAt: null,
+    address: (record.chains as { address: string }[])[0]!.address,
+    addresses: (record.chains as { address: string }[]).map(c => c.address),
+    record,
+    ...overrides,
+})
+
+describe('syncBackup after a chain becomes readable', () => {
+    const ETH_KEY = recordKey('0xabc')
+    const ethRecord = {
+        formatVersion: 2,
+        customName: 'Eth watch',
+        updatedAt: 1,
+        chains: [{ chain: 'ethereum', type: 'watch', address: '0xabc' }],
+    }
+
+    // A record this device tracked but never read.
+    const stateWithUnreadItem = (readableChains?: ChainId[]): SyncState => {
+        const state = createEmptySyncState('b')
+        state.lastKnownBackupHash = 'g'
+        state.lastSyncedSeq = 4
+        if (readableChains) state.readableChains = readableChains
+        state.items[ETH_KEY] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: `r-${ETH_KEY}`,
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+        return withSyncedSettings(state)
+    }
+
+    const syncDeps = () => ({ ...deps(), listAccounts: () => [] })
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        registerEthereumAccountsAdapter()
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 4,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        readItems.mockResolvedValue([encrypted(ETH_KEY, ethRecord)])
+    })
+
+    it('re-reads the item it skipped and imports it, though the manifest is unchanged', async () => {
+        registerEthereumBackupChain()
+        const dependencies = syncDeps()
+
+        const next = await syncBackup(dependencies, stateWithUnreadItem())
+
+        expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [ETH_KEY])
+        expect(dependencies.importAccounts).toHaveBeenCalledWith([
+            expect.objectContaining({
+                address: '0xabc',
+                addressPayload: expect.objectContaining({
+                    type: 'watch',
+                }),
+            }),
+        ])
+        expect(next.readableChains).toEqual(['algorand', 'ethereum'])
+        expect(next.items[ETH_KEY]).toMatchObject({ address: '0xabc' })
+    })
+
+    it('replays a record it already read once a chain becomes readable', async () => {
+        registerEthereumBackupChain()
+        const state = stateWithUnreadItem(['algorand'])
+        state.items[ETH_KEY] = settledRecord(ETH_KEY, ethRecord)
+
+        await syncBackup(syncDeps(), state)
+
+        expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [ETH_KEY])
+    })
+
+    it('short-circuits when the readable chains are unchanged', async () => {
+        registerEthereumBackupChain()
+
+        const next = await syncBackup(
+            syncDeps(),
+            stateWithUnreadItem(['algorand', 'ethereum']),
+        )
+
+        expect(readItems).not.toHaveBeenCalled()
+        expect(fetchDelta).not.toHaveBeenCalled()
+        expect(next.lastSyncResult).toBe('SUCCESS')
+    })
+
+    it('keeps the item unread while its chain is still unreadable', async () => {
+        const dependencies = syncDeps()
+
+        const next = await syncBackup(
+            dependencies,
+            stateWithUnreadItem(['algorand']),
+        )
+
+        expect(readItems).not.toHaveBeenCalled()
+        expect(next.readableChains).toEqual(['algorand'])
+        expect(next.items[ETH_KEY]?.localContentHash).toBeNull()
+    })
+
+    it('leaves a held item for the user instead of re-reading it', async () => {
+        registerEthereumBackupChain()
+        const state = stateWithUnreadItem()
+        state.items[ETH_KEY] = { ...state.items[ETH_KEY]!, pendingImport: true }
+
+        await syncBackup(syncDeps(), state)
+
+        expect(readItems).not.toHaveBeenCalled()
+    })
+
+    describe('after a failed import', () => {
+        const failing = (address = '0xabc') => ({
+            ...syncDeps(),
+            importAccounts: vi.fn(async () => ({
+                imported: 0,
+                skippedDuplicate: 0,
+                failed: [{ address, reason: 'keystore refused' }],
+            })),
+        })
+        const withFailures = (importFailures: number): SyncState => {
+            const state = stateWithUnreadItem(['algorand', 'ethereum'])
+            state.items[ETH_KEY] = {
+                ...state.items[ETH_KEY]!,
+                address: '0xabc',
+                importFailures,
+            }
+            return state
+        }
+
+        it('leaves the item unread and counts the attempt', async () => {
+            registerEthereumBackupChain()
+
+            const next = await syncBackup(failing(), stateWithUnreadItem())
+
+            expect(next.items[ETH_KEY]).toMatchObject({
+                localContentHash: null,
+                importFailures: 1,
+            })
+        })
+
+        it('marks the record when a chain other than its first fails', async () => {
+            registerEthereumBackupChain()
+            readItems.mockResolvedValue([
+                encrypted(ETH_KEY, {
+                    ...ethRecord,
+                    chains: [
+                        { chain: 'ethereum', type: 'watch', address: '0xabc' },
+                        { chain: 'ethereum2', type: 'watch', address: '0xdef' },
+                    ],
+                }),
+            ])
+
+            const next = await syncBackup(
+                failing('0xdef'),
+                stateWithUnreadItem(),
+            )
+
+            expect(next.items[ETH_KEY]?.importFailures).toBe(1)
+        })
+
+        it('re-reads it on a sync whose readable chains are unchanged', async () => {
+            registerEthereumBackupChain()
+
+            const next = await syncBackup(failing(), withFailures(1))
+
+            expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [
+                ETH_KEY,
+            ])
+            expect(next.items[ETH_KEY]?.importFailures).toBe(2)
+        })
+
+        it('stops re-reading it once the attempts run out', async () => {
+            registerEthereumBackupChain()
+
+            await syncBackup(failing(), withFailures(MAX_IMPORT_ATTEMPTS))
+
+            expect(readItems).not.toHaveBeenCalled()
+        })
+
+        it('clears the count once the import succeeds', async () => {
+            registerEthereumBackupChain()
+
+            const next = await syncBackup(syncDeps(), withFailures(1))
+
+            expect(next.items[ETH_KEY]?.importFailures).toBeUndefined()
+            expect(next.items[ETH_KEY]?.localContentHash).not.toBeNull()
+        })
+    })
+
+    describe('a record this device holds only part of', () => {
+        const KEY = recordKey('W')
+        const partial = {
+            formatVersion: 2,
+            customName: 'Watcher',
+            updatedAt: 1,
+            chains: [
+                { chain: 'algorand', type: 'watch', address: 'W' },
+                { chain: 'ethereum', type: 'watch', address: '0xabc' },
+            ],
+        }
+        const stateWith = (importFailures: number): SyncState => {
+            const state = stateWithUnreadItem(['algorand', 'ethereum'])
+            delete state.items[ETH_KEY]
+            state.items[KEY] = settledRecord(KEY, partial, {
+                localContentHash: null,
+                importFailures,
+            })
+            return state
+        }
+        const holding = () => ({
+            ...deps(),
+            importAccounts: vi.fn(async () => ({
+                imported: 0,
+                skippedDuplicate: 0,
+                failed: [{ address: '0xabc', reason: 'keystore refused' }],
+            })),
+        })
+
+        beforeEach(() => {
+            readItems.mockResolvedValue([encrypted(KEY, partial)])
+            batchUpsertItems.mockResolvedValue({
+                results: [
+                    { key: KEY, result: UpsertResult.OK, new_ver: 3, seq: 5 },
+                ],
+            })
+        })
+
+        it('stays unread and replays while its failed chain has attempts left', async () => {
+            registerEthereumBackupChain()
+
+            const next = await syncBackup(holding(), stateWith(1))
+
+            expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [KEY])
+            expect(batchUpsertItems).not.toHaveBeenCalled()
+            expect(next.items[KEY]?.importFailures).toBe(2)
+        })
+
+        it('pushes a local edit once the attempts run out', async () => {
+            registerEthereumBackupChain()
+
+            await syncBackup(
+                {
+                    ...holding(),
+                    listAccounts: () => [{ ...watch, name: 'Renamed' }],
+                },
+                stateWith(MAX_IMPORT_ATTEMPTS),
+            )
+
+            const [, , , request] = batchUpsertItems.mock.calls[0]
+            expect(
+                request.items.map((entry: { key: string }) => entry.key),
+            ).toContain(KEY)
+        })
+    })
+})
+
+describe('syncBackup writing an account record', () => {
+    const KEY = recordKey('W')
+
+    const stateHolding = (record: Record<string, unknown>): SyncState => {
+        const state = createEmptySyncState('b')
+        state.lastKnownBackupHash = 'g'
+        state.lastSyncedSeq = 4
+        state.readableChains = ['algorand']
+        state.items[KEY] = settledRecord(KEY, record)
+        return withSyncedSettings(state)
+    }
+
+    const pushed = (): Record<string, unknown> => {
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const entry = request.items.find(
+            (item: { key: string }) => item.key === KEY,
+        )
+        return JSON.parse(
+            decryptItemPayload(entry.payload, {
+                encryptionKey,
+                backupId: 'b',
+                key: KEY,
+            }),
+        )
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g2',
+            lastSeq: 4,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                { key: KEY, result: UpsertResult.OK, new_ver: 3, seq: 5 },
+            ],
+        })
+    })
+
+    it('never writes over a record a newer client wrote', async () => {
+        const next = await syncBackup(
+            deps(),
+            stateHolding({
+                formatVersion: 3,
+                customName: 'Other',
+                updatedAt: 1,
+                chains: [{ chain: 'algorand', type: 'watch', address: 'W' }],
+            }),
+        )
+
+        expect(batchUpsertItems).not.toHaveBeenCalled()
+        expect(next.items[KEY]?.isDirty).toBe(false)
+    })
+
+    it('keeps a chain and a field this build does not know through a rename', async () => {
+        await syncBackup(
+            deps(),
+            stateHolding({
+                formatVersion: 2,
+                customName: 'Old name',
+                updatedAt: 1,
+                futureField: 'kept',
+                chains: [
+                    { chain: 'algorand', type: 'watch', address: 'W' },
+                    {
+                        chain: 'solana',
+                        type: 'watch',
+                        address: 'S1',
+                        memo: 'm',
+                    },
+                ],
+            }),
+        )
+
+        expect(pushed()).toMatchObject({
+            customName: 'Watcher',
+            futureField: 'kept',
+            chains: expect.arrayContaining([
+                { chain: 'solana', type: 'watch', address: 'S1', memo: 'm' },
+            ]),
+        })
+    })
+
+    describe('when another device rewrote it in the same sync', () => {
+        const before = {
+            formatVersion: 2,
+            customName: 'Old name',
+            updatedAt: 1,
+            chains: [{ chain: 'algorand', type: 'watch', address: 'W' }],
+        }
+        const deliver = (remote: Record<string, unknown>) => {
+            fetchDelta.mockResolvedValue([
+                {
+                    seq: 5,
+                    key: KEY,
+                    type: BackupItemType.ACCOUNT,
+                    ver: 3,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'r2',
+                },
+            ])
+            readItems.mockResolvedValue([
+                { ...encrypted(KEY, remote), ver: 3, hash: 'r2' },
+            ])
+        }
+
+        it('pushes the local rename with the chain the other device added', async () => {
+            deliver({
+                ...before,
+                updatedAt: 5,
+                chains: [
+                    { chain: 'algorand', type: 'watch', address: 'W' },
+                    { chain: 'ethereum', type: 'watch', address: '0xabc' },
+                ],
+            })
+
+            await syncBackup(deps(), stateHolding(before))
+
+            expect(pushed()).toMatchObject({
+                customName: 'Watcher',
+                chains: [
+                    { chain: 'algorand', type: 'watch', address: 'W' },
+                    { chain: 'ethereum', type: 'watch', address: '0xabc' },
+                ],
+            })
+        })
+
+        it("drops the local edit when a newer client's record arrives", async () => {
+            deliver({ ...before, formatVersion: 3, updatedAt: 5 })
+
+            const next = await syncBackup(deps(), stateHolding(before))
+
+            expect(batchUpsertItems).not.toHaveBeenCalled()
+            expect(next.items[KEY]?.isDirty).toBe(false)
+        })
+    })
+
+    it('keeps a chain the account lacks on this device', async () => {
+        await syncBackup(
+            deps(),
+            stateHolding({
+                formatVersion: 2,
+                customName: 'Old name',
+                updatedAt: 1,
+                chains: [
+                    { chain: 'algorand', type: 'watch', address: 'W' },
+                    { chain: 'ethereum', type: 'watch', address: '0xabc' },
+                ],
+            }),
+        )
+
+        expect(pushed().chains).toEqual([
+            { chain: 'algorand', type: 'watch', address: 'W' },
+            { chain: 'ethereum', type: 'watch', address: '0xabc' },
+        ])
     })
 })

@@ -49,6 +49,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    accountBackupAddresses: (account: {
+        chains: Record<string, { address: string }>
+    }) => Object.values(account.chains).map(entry => entry.address),
+}))
+
 vi.mock('../../../hooks/useBackupAccountReview', () => ({
     useBackupAccountReview: () => ({
         isBackedUp: isBackedUpMock,

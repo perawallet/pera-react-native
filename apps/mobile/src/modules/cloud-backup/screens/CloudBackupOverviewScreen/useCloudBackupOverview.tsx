@@ -16,6 +16,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useCloudBackupStore,
     useBackupSyncStateStore,
+    accountBackupAddresses,
+    countNewerAccountRecords,
     deriveBackupAccountReview,
     deriveBackupContactReview,
     deriveBackupPasskeyReview,
@@ -51,6 +53,7 @@ type UseCloudBackupOverviewResult = {
     credentialAddressLabel: string
     accountsInSync: number
     accountsNotBackedUp: number
+    accountsNeedingUpdate: number
     contactsInSync: number
     contactsNotBackedUp: number
     passkeysInSync: number
@@ -115,7 +118,10 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     )
 
     const addresses = useMemo(
-        () => backupAccountsOf(accounts).map(({ address }) => address),
+        () =>
+            backupAccountsOf(accounts).map(({ account }) =>
+                accountBackupAddresses(account),
+            ),
         [accounts],
     )
     const { backedUp, notBackedUp } = useMemo(
@@ -205,6 +211,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         credentialAddressLabel,
         accountsInSync: backedUp.size,
         accountsNotBackedUp: notBackedUp.length,
+        accountsNeedingUpdate: countNewerAccountRecords(syncState),
         contactsInSync: contactReview.backedUp.size,
         contactsNotBackedUp: contactReview.notBackedUp.length,
         passkeysInSync: passkeyReview.backedUp.size,

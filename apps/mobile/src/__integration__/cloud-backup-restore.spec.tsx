@@ -35,6 +35,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import {
     accountItemKey,
+    accountRecordItemKey,
     buildRestoreHandlers,
     buildSyncHandlers,
     contactItemKey,
@@ -275,8 +276,12 @@ describe('Flow: Cloud backup → Restore', () => {
             subscribePasskeyChanges: () => () => {},
         }).syncNow()
 
+        // One record per HD account, keyed by its seed position
+        // (test-handlers doesn't re-export the record key builder).
         expect(
-            getItem(accountItemKey(hashAddress(addressOf(first)))),
+            getItem(
+                accountRecordItemKey(hashAddress(`${addressOf(first)}/0/0`)),
+            ),
         ).toBeDefined()
         expect(
             getItem(secretsItemKey(hashAddress(addressOf(first)))),

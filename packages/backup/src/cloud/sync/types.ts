@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     LocalAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
-    AddressBackupPayload,
+    AccountRecordPayload,
     BackupItemKind,
     BackupId,
     BackupItemKey,
@@ -95,7 +95,7 @@ export type SerializedItem = {
     key: BackupItemKey
     type: BackupItemType
     payload:
-        | AddressBackupPayload
+        | AccountRecordPayload
         | SecretsBackupPayload
         | ContactBackupPayload
         | PasskeyBackupPayload
@@ -125,7 +125,7 @@ export type BackupPasskey = {
 export type LocalPasskey = BackupPasskey & { privateKey: Uint8Array }
 
 export type SerializedAccount = {
-    address: SerializedItem
+    record: SerializedItem
     secrets: SerializedItem | null
     /** Shared items emitted alongside this account (e.g. the hdSeed secret keyed
      *  at the hashed seedFirstDerivedAddress); deduped by key downstream. */
@@ -143,10 +143,19 @@ export type SerializeMnemonicResolver = (
  *  (needs KMS), injected from the app layer; null when the seed is unavailable. */
 export type SerializeHdResolver = (account: LocalAccount) => Promise<{
     seedFirstDerivedAddress: string
-    publicKeyHex: string
+    /** Null for an account with no key on the scope chain, which has no entry
+     *  there to record it in. */
+    publicKeyHex: string | null
     seedHex: string
     entropyHex: string
 } | null>
+
+/** Reads a private-key account's raw key. The caller zeroes the bytes; null
+ *  means unavailable, which skips the account. */
+export type SerializePrivateKeyResolver = (
+    chainId: ChainId,
+    keyPairId: string,
+) => Promise<Uint8Array | null>
 
 /** A local item with its content hash (sha256 of canonical payload sans
  *  updatedAt). `address`/`accountType` are lifted out of the payload for the
@@ -154,6 +163,8 @@ export type SerializeHdResolver = (account: LocalAccount) => Promise<{
 export type LocalItem = SerializedItem & {
     contentHash: string
     address: string
+    /** An account record's every chain address; absent for anything else. */
+    addresses?: string[]
     accountType: BackupItemKind | null
 }
 

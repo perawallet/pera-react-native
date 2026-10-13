@@ -32,7 +32,11 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import { accountsChainAdapters } from '../../chain-adapter'
 import { buildAccount } from '../../credentials'
-import { DuplicateAccountError, WalletCannotDeriveError } from '../../errors'
+import {
+    AddressMismatchError,
+    DuplicateAccountError,
+    WalletCannotDeriveError,
+} from '../../errors'
 import type { HdIndex, WalletAccount } from '../../models'
 import {
     buildTestAccount,
@@ -179,6 +183,33 @@ describe('addChainAccount', () => {
             hd: FREE,
         })
         expect(Object.keys(result.chains)).toEqual([FIXTURE_CHAIN_ID])
+    })
+
+    test('creates the first account of a held seed no account references', async () => {
+        state().setAccounts([])
+
+        const result = await add(ORIGIN, 'First')
+
+        expect(state().accounts).toEqual([result])
+        expect(result.custody).toEqual({
+            kind: 'local',
+            seed: 'bip39',
+            hd: ORIGIN,
+        })
+        expect(result.chains?.[FIXTURE_CHAIN_ID]?.keyPairId).toBe(
+            'hd-seed-fx-0-0',
+        )
+    })
+
+    test('refuses a derived address other than the expected one before any write', async () => {
+        const before = state().accounts
+
+        const failure = await state()
+            .addChainAccount('hd-seed', FIXTURE_CHAIN_ID, FREE, 'X', 'fx-other')
+            .catch((error: unknown) => error)
+
+        expect(failure).toBeInstanceOf(AddressMismatchError)
+        expect(state().accounts).toBe(before)
     })
 
     test('derives the same address after the account is removed and added again', async () => {

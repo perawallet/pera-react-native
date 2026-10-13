@@ -60,10 +60,6 @@ vi.mock('../../credentials/keyStorage', () => ({
 vi.mock('../pullBackupItems', () => ({
     pullBackupItems: pullBackupItemsMock,
 }))
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
-    ...(await importOriginal<object>()),
-    deriveHdAccount: deriveHdAccountMock,
-}))
 // Real `entropyChildIdOf`/`seedSchemeOf`/`SeedScheme`/`zeroBytes`, so the
 // acceptance test below exercises the actual seed-lookup logic; only the
 // secret read (`withSecret`, which needs a real keystore backend) is faked.
@@ -76,6 +72,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         keyValueStorage: { getItem: () => null },
         passkeyAutofill: { refreshCredentialIdentities: async () => {} },
         deviceInfo: { getDevicePlatform: () => 'ios' },
+        chains: {
+            has: () => true,
+            list: () => [{ id: 'algorand' }],
+            capabilities: () => ({ cloudBackup: true }),
+        },
     }),
     getKeystoreStore: () => ({ state: { keys: keystoreKeysMock() } }),
     // The import derives with `derivePasskeyMainKey`'s default `subtle`.
@@ -114,6 +115,10 @@ import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyIm
 import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
 
 const HD_ACCOUNT_KIND = chainBackupKind('hdWallet')
+import {
+    accountsChainAdapters,
+    type AccountsChainAdapter,
+} from '@perawallet/wallet-core-accounts'
 import { backupChainAdapters } from '../../../chain-adapter'
 import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
@@ -171,14 +176,18 @@ const pull = {
         [SECRETS_KEY]: manifestItem({ ver: 2, hash: 'sha256:secret' }),
         [CONTACT_KEY]: manifestItem({ type: 'CONTACT', ver: 1 }),
     },
-    addressByKey: {
-        [ACCOUNT_KEY]: 'A',
-        [SECRETS_KEY]: 'A',
-        [CONTACT_KEY]: 'C',
+    trackedByKey: {
+        [ACCOUNT_KEY]: {
+            address: 'A',
+            accountType: HD_ACCOUNT_KIND,
+        },
+        [SECRETS_KEY]: { address: 'A', accountType: BackupAccountType.hdSeed },
+        [CONTACT_KEY]: { address: 'C', accountType: null },
     },
     accounts: [
         {
             address: 'A',
+            group: 'A',
             addressPayload: {
                 type: HD_ACCOUNT_KIND,
                 address: 'A',
@@ -240,6 +249,19 @@ describe('restoreCloudBackup', () => {
             lastSyncResult: 'SUCCESS',
         })
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('seeds the chains this build can read, so the first sync does not re-read what it skipped', async () => {
+        const result = await restoreCloudBackup(params())
+
+        expect(result.syncState.readableChains).toEqual([])
+
+        accountsChainAdapters.register({
+            chainId: 'algorand',
+        } as unknown as AccountsChainAdapter)
+        const withAdapter = await restoreCloudBackup(params())
+
+        expect(withAdapter.syncState.readableChains).toEqual(['algorand'])
     })
 
     test('reports each phase in order, with the account import counted', async () => {
@@ -347,6 +369,60 @@ describe('restoreCloudBackup', () => {
             address: 'C',
             accountType: null,
         })
+    })
+
+    test('counts an account with failed chains once, not once per chain', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            accounts: [
+                { ...pull.accounts[0], address: 'A', group: 'S/0/0' },
+                { ...pull.accounts[0], address: '0xa', group: 'S/0/0' },
+                { ...pull.accounts[0], address: 'B', group: 'B' },
+            ],
+        })
+        importAccounts.mockResolvedValue({
+            ...SUMMARY,
+            failed: [
+                { address: 'A', reason: 'x' },
+                { address: '0xa', reason: 'x' },
+            ],
+        })
+
+        const { incompleteAccountCount } = await restoreCloudBackup(params())
+
+        expect(incompleteAccountCount).toBe(1)
+    })
+
+    test('counts the accounts only a newer app can restore', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            skipped: [
+                { key: 'account-records/a', reason: 'newer' },
+                { key: 'account-records/b', reason: 'newer' },
+                { key: ACCOUNT_KEY, reason: 'parse' },
+            ],
+        })
+
+        const { newerAccountCount } = await restoreCloudBackup(params())
+
+        expect(newerAccountCount).toBe(2)
+    })
+
+    test('marks the items of an account that failed to import for the first syncs to retry', async () => {
+        importAccounts.mockResolvedValue({
+            ...SUMMARY,
+            // A contact can share an account's address; only account items retry.
+            failed: [
+                { address: 'A', reason: 'keystore refused' },
+                { address: 'C', reason: 'keystore refused' },
+            ],
+        })
+
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(syncState.items[ACCOUNT_KEY]?.importFailures).toBe(1)
+        expect(syncState.items[SECRETS_KEY]?.importFailures).toBe(1)
+        expect(syncState.items[CONTACT_KEY]?.importFailures).toBeUndefined()
     })
 
     test('leaves an item the pull could not read without an address', async () => {

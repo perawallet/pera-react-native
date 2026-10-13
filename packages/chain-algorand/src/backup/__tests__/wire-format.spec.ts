@@ -23,6 +23,7 @@ import {
     wireItemsOf,
     type GoldenAccountKind,
 } from '@perawallet/wallet-core-backup/testing'
+import '../../__tests__/registerAlgorandAccounts'
 import { algorandBackupAdapter } from '../adapter'
 
 const KINDS = Object.keys(GOLDEN_ACCOUNT_ITEMS) as GoldenAccountKind[]

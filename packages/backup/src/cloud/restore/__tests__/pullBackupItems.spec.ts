@@ -28,6 +28,7 @@ vi.mock('../../api', async importOriginal => ({
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     accountItemKey,
+    accountRecordItemKey,
     contactItemKey,
     secretsItemKey,
     settingsItemKey,
@@ -35,9 +36,17 @@ import {
     BackupAccountType,
 } from '../../models'
 import { pullBackupItems, buildPulledAccounts } from '../pullBackupItems'
+import {
+    registerAlgorandAccountsAdapter,
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
+const recordKey = (identity: string) =>
+    accountRecordItemKey(hashAddress(identity))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
 
@@ -68,6 +77,193 @@ const pull = () =>
         deviceId: 'device-1',
         encryptionKey: encKey,
     })
+
+describe('pullBackupItems on an account record', () => {
+    const HD_IDENTITY = 'SEED/0/1'
+    const hdRecord = {
+        formatVersion: 2,
+        customName: 'Both',
+        updatedAt: 3,
+        chains: [
+            {
+                chain: 'algorand',
+                type: 'hdWallet',
+                address: 'ALGO',
+                seedFirstDerivedAddress: 'SEED',
+                publicKey: 'aa',
+                account: 0,
+                change: 0,
+                keyIndex: 1,
+                derivationType: 9,
+            },
+            {
+                chain: 'ethereum',
+                type: 'hdChain',
+                address: '0xabc',
+                seedFirstDerivedAddress: 'SEED',
+                account: 0,
+                keyIndex: 1,
+            },
+        ],
+    }
+
+    const serving = (entries: [string, unknown][]) => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: entries.length,
+            items: Object.fromEntries(
+                entries.map(([key], index) => [
+                    key,
+                    active(1, `h${index}`, index + 1),
+                ]),
+            ),
+        })
+        readItems.mockResolvedValue(
+            entries.map(([key, payload]) => item(key, payload)),
+        )
+    }
+
+    beforeEach(() => {
+        fetchManifest.mockReset()
+        readItems.mockReset()
+        registerFakeBackupAdapter()
+        registerAlgorandAccountsAdapter()
+        registerEthereumAccountsAdapter()
+    })
+
+    it('returns one entry per readable chain, in chain order, under one group', async () => {
+        registerEthereumBackupChain()
+        serving([[recordKey(HD_IDENTITY), hdRecord]])
+
+        const result = await pull()
+
+        expect(
+            result.accounts.map(({ address, group, addressPayload }) => [
+                address,
+                group,
+                addressPayload.type,
+            ]),
+        ).toEqual([
+            ['ALGO', HD_IDENTITY, 'hdWallet'],
+            ['0xabc', HD_IDENTITY, 'hdChain'],
+        ])
+        expect(result.trackedByKey[recordKey(HD_IDENTITY)]).toEqual({
+            address: 'ALGO',
+            addresses: ['ALGO', '0xabc'],
+            accountType: 'hdWallet',
+            record: hdRecord,
+        })
+    })
+
+    it('restores only the chains this client reads, and still tracks every address', async () => {
+        serving([[recordKey(HD_IDENTITY), hdRecord]])
+
+        const result = await pull()
+
+        expect(result.accounts.map(account => account.address)).toEqual([
+            'ALGO',
+        ])
+        expect(result.trackedByKey[recordKey(HD_IDENTITY)]?.addresses).toEqual([
+            'ALGO',
+            '0xabc',
+        ])
+    })
+
+    it('ignores a legacy item for an account the record covers', async () => {
+        registerEthereumBackupChain()
+        serving([
+            [recordKey(HD_IDENTITY), hdRecord],
+            [
+                accountKey('ALGO'),
+                {
+                    type: 'hdWallet',
+                    address: 'ALGO',
+                    seedFirstDerivedAddress: 'SEED',
+                    publicKey: 'aa',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 1,
+                    derivationType: 9,
+                    customName: 'Old name',
+                },
+            ],
+        ])
+
+        const result = await pull()
+
+        expect(result.accounts.map(account => account.addressPayload)).toEqual([
+            expect.objectContaining({ customName: 'Both' }),
+            expect.objectContaining({ customName: 'Both' }),
+        ])
+    })
+
+    it('returns a watch record on two chains as one account', async () => {
+        registerEthereumBackupChain()
+        serving([
+            [
+                recordKey('WALGO'),
+                {
+                    formatVersion: 2,
+                    customName: null,
+                    chains: [
+                        { chain: 'algorand', type: 'watch', address: 'WALGO' },
+                        { chain: 'ethereum', type: 'watch', address: '0xw' },
+                    ],
+                },
+            ],
+        ])
+
+        const result = await pull()
+
+        expect(
+            result.accounts.map(({ group, addressPayload }) => [
+                group,
+                addressPayload.type,
+            ]),
+        ).toEqual([
+            ['WALGO', 'watch'],
+            ['WALGO', 'watch'],
+        ])
+    })
+
+    it("keeps an entry of a kind its chain's adapter doesn't decode out of the restore, but tracks its address", async () => {
+        registerEthereumBackupChain()
+        serving([
+            [
+                recordKey(HD_IDENTITY),
+                {
+                    ...hdRecord,
+                    chains: [
+                        { ...hdRecord.chains[0], type: 'futureKind' },
+                        hdRecord.chains[1],
+                    ],
+                },
+            ],
+        ])
+
+        const result = await pull()
+
+        expect(result.accounts.map(account => account.address)).toEqual([
+            '0xabc',
+        ])
+        expect(result.trackedByKey[recordKey(HD_IDENTITY)]?.addresses).toEqual([
+            'ALGO',
+            '0xabc',
+        ])
+    })
+
+    it('skips a record from a newer client and still tracks it', async () => {
+        serving([[recordKey('NEW'), { ...hdRecord, formatVersion: 3 }]])
+
+        const result = await pull()
+
+        expect(result.accounts).toEqual([])
+        expect(result.skipped).toEqual([
+            { key: recordKey('NEW'), reason: 'newer' },
+        ])
+        expect(result.trackedByKey[recordKey('NEW')]?.address).toBe('ALGO')
+    })
+})
 
 describe('pullBackupItems', () => {
     beforeEach(() => {
@@ -196,7 +392,7 @@ describe('pullBackupItems', () => {
         expect(result.skipped).toEqual([
             { key: accountKey('BAD'), reason: 'decrypt' },
         ])
-        expect(result.addressByKey).toEqual({})
+        expect(result.trackedByKey).toEqual({})
     })
 
     it('ignores IGNORED items (no read calls)', async () => {
@@ -260,7 +456,7 @@ describe('pullBackupItems', () => {
         const result = await pull()
 
         expect(result.accounts).toHaveLength(0)
-        expect(result.addressByKey).toEqual({})
+        expect(result.trackedByKey).toEqual({})
         expect(result.skipped).toEqual([
             { key: accountKey('NAMELESS'), reason: 'parse' },
         ])
@@ -294,7 +490,7 @@ describe('pullBackupItems', () => {
         })
     })
 
-    it('reports the address of every item it read', async () => {
+    it('reports what every item it read was filed under', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 5,
@@ -330,10 +526,10 @@ describe('pullBackupItems', () => {
 
         const result = await pull()
 
-        expect(result.addressByKey).toEqual({
-            [accountKey('ADDR')]: 'ADDR',
-            [secretsKey('ADDR')]: 'ADDR',
-            [contactKey('CADDR')]: 'CADDR',
+        expect(result.trackedByKey).toEqual({
+            [accountKey('ADDR')]: { address: 'ADDR', accountType: 'algo25' },
+            [secretsKey('ADDR')]: { address: 'ADDR', accountType: 'algo25' },
+            [contactKey('CADDR')]: { address: 'CADDR', accountType: null },
         })
     })
 
@@ -412,7 +608,7 @@ describe('pullBackupItems', () => {
             key,
             payload: { language: { value: 'de', updatedAt: 50 } },
         })
-        expect(result.addressByKey).toEqual({})
+        expect(result.trackedByKey).toEqual({})
     })
 
     it('skips an unreadable contact without sinking the pull', async () => {
@@ -501,9 +697,9 @@ describe('pullBackupItems', () => {
                 secret: null,
             },
         ])
-        expect(result.addressByKey['passkey-secrets/Y3JlZC1pZA==']).toBe(
-            'Y3JlZC1pZA==',
-        )
+        expect(
+            result.trackedByKey['passkey-secrets/Y3JlZC1pZA==']?.address,
+        ).toBe('Y3JlZC1pZA==')
     })
 
     it('records an unparseable passkey as skipped rather than throwing', async () => {
@@ -628,6 +824,7 @@ describe('pullBackupItems with an item kind it does not know', () => {
         expect(result.accounts).toEqual([
             {
                 address: 'ADDR',
+                group: 'ADDR',
                 addressPayload: {
                     type: 'algo25',
                     address: 'ADDR',
@@ -641,6 +838,7 @@ describe('pullBackupItems with an item kind it does not know', () => {
             },
             {
                 address: 'FIXADDR',
+                group: 'FIXADDR',
                 addressPayload: {
                     type: 'fixtureChainAccount',
                     address: 'FIXADDR',
@@ -694,58 +892,93 @@ describe('pullBackupItems with an item kind it does not know', () => {
 })
 
 describe('buildPulledAccounts', () => {
+    const seedSecret = {
+        type: 'hdSeed',
+        seed: 's',
+        entropy: 'e',
+        address: 'F',
+    } as const
+
     it('attaches a hdSeed secret to its matching hdWallet account', () => {
-        const addr = new Map<string, never>([
-            [
-                'F',
-                {
-                    type: 'hdWallet',
-                    address: 'F',
-                    seedFirstDerivedAddress: 'F',
-                    publicKey: 'p',
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                    customName: null,
-                } as never,
-            ],
-        ])
-        const sec = new Map<string, never>([
-            [
-                'F',
-                {
-                    type: 'hdSeed',
-                    seed: 's',
-                    entropy: 'e',
-                    address: 'F',
-                } as never,
-            ],
-        ])
-        const result = buildPulledAccounts(addr as never, sec as never)
+        const result = buildPulledAccounts({
+            records: [],
+            addressPayloads: new Map([
+                [
+                    'F',
+                    {
+                        type: 'hdWallet',
+                        address: 'F',
+                        seedFirstDerivedAddress: 'F',
+                        publicKey: 'aa',
+                        account: 0,
+                        change: 0,
+                        keyIndex: 0,
+                        derivationType: 9,
+                        customName: null,
+                    },
+                ],
+            ]),
+            secretsPayloads: new Map([['F', seedSecret]]),
+        })
+
         expect(result).toHaveLength(1)
-        expect(result[0].addressPayload.type).toBe('hdWallet')
-        expect(result[0].secretsPayload).toMatchObject({ type: 'hdSeed' })
+        expect(result[0]).toMatchObject({
+            group: 'F/0/0',
+            addressPayload: { type: 'hdWallet' },
+            secretsPayload: { type: 'hdSeed' },
+        })
     })
 
     it('synthesizes a standalone hdSeed entry for an orphan seed secret', () => {
-        const addr = new Map<string, never>()
-        const sec = new Map<string, never>([
-            [
-                'F',
-                {
-                    type: 'hdSeed',
-                    seed: 's',
-                    entropy: 'e',
+        const result = buildPulledAccounts({
+            records: [],
+            addressPayloads: new Map(),
+            secretsPayloads: new Map([['F', seedSecret]]),
+        })
+
+        expect(result).toEqual([
+            {
+                address: 'F',
+                group: 'F',
+                addressPayload: {
+                    type: BackupAccountType.hdSeed,
                     address: 'F',
-                } as never,
-            ],
+                },
+                secretsPayload: seedSecret,
+            },
         ])
-        const result = buildPulledAccounts(addr as never, sec as never)
+    })
+
+    it('attaches the seed to the record entry filed under the seed address', () => {
+        registerFakeBackupAdapter()
+        registerAlgorandAccountsAdapter()
+        const result = buildPulledAccounts({
+            records: [
+                {
+                    formatVersion: 2,
+                    customName: null,
+                    chains: [
+                        {
+                            chain: 'algorand',
+                            type: 'hdWallet',
+                            address: 'F',
+                            seedFirstDerivedAddress: 'F',
+                            publicKey: 'aa',
+                            account: 0,
+                            change: 0,
+                            keyIndex: 0,
+                            derivationType: 9,
+                        },
+                    ],
+                },
+            ],
+            addressPayloads: new Map(),
+            secretsPayloads: new Map([['F', seedSecret]]),
+        })
+
         expect(result).toHaveLength(1)
         expect(result[0]).toMatchObject({
-            address: 'F',
-            addressPayload: { type: BackupAccountType.hdSeed, address: 'F' },
+            group: 'F/0/0',
             secretsPayload: { type: 'hdSeed' },
         })
     })

@@ -69,6 +69,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
+        accountBackupAddresses: (account: {
+            chains: Record<string, { address: string }>
+        }) =>
+            Object.entries(account.chains)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([, entry]) => entry.address),
         deriveBackupAccountReview: () => reviewMock.current,
         backupBusyItemKey: (itemKind: string, id: string) =>
             `${itemKind}:${id}`,

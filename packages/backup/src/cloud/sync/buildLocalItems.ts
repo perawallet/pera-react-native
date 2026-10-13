@@ -11,6 +11,15 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    accountRecordAddresses,
+    accountRecordType,
+    isAccountRecordKey,
+    isNewerAccountRecord,
+    mergeAccountRecord,
+    type AccountRecordPayload,
+    type SyncState,
+} from '../models'
 import { itemContentHash } from './itemContentHash'
 import type {
     LocalItem,
@@ -28,8 +37,25 @@ export const withContentHash = (item: SerializedItem): LocalItem => {
             item.key,
             payload as Record<string, unknown>,
         ),
+        ...identifiersOf(payload),
+    }
+}
+
+/** What the tracked item caches so review rows and actions can name it: the
+ *  key itself is a hash. */
+const identifiersOf = (
+    payload: SerializedItem['payload'],
+): Pick<LocalItem, 'address' | 'addresses' | 'accountType'> => {
+    if ('chains' in payload) {
+        return {
+            address: payload.chains[0]?.address ?? '',
+            addresses: accountRecordAddresses(payload),
+            accountType: accountRecordType(payload),
+        }
+    }
+    return {
         // A passkey has no address; its credential id is the identifier the
-        // review buckets match on, since the key itself is a hash.
+        // review buckets match on.
         address: 'address' in payload ? payload.address : payload.credentialId,
         accountType: 'type' in payload ? payload.type : null,
     }
@@ -51,7 +77,7 @@ export const buildLocalItems = async (
             continue
         }
         const items: (SerializedItem | null)[] = [
-            serialized.address,
+            serialized.record,
             serialized.secrets,
             ...(serialized.extraItems ?? []),
         ]
@@ -62,4 +88,49 @@ export const buildLocalItems = async (
         }
     }
     return { items: [...byKey.values()], skipped }
+}
+
+/** Lays each account record over the content its tracked item last held, so
+ *  what this build can't read goes back to the server as it came. */
+export const withTrackedRecords = (
+    items: LocalItem[],
+    state: SyncState,
+): LocalItem[] =>
+    items.map(item => {
+        const remote = state.items[item.key]?.record
+        if (!remote || !isAccountRecordKey(item.key)) return item
+        return withContentHash({
+            key: item.key,
+            type: item.type,
+            payload: mergeAccountRecord(
+                remote,
+                item.payload as AccountRecordPayload,
+            ),
+        })
+    })
+
+/**
+ * Records went into reconcile laid over what the backup held before this
+ * sync's deltas, and a delta may have brought a newer one since. Re-lays each
+ * dirty record over that, so the push keeps what another device just wrote,
+ * and stands down a push over a record a newer client now owns.
+ */
+export const refreshRecordsForPush = (
+    state: SyncState,
+    accountItems: LocalItem[],
+): { state: SyncState; items: LocalItem[] } => {
+    const items = withTrackedRecords(accountItems, state)
+    const tracked = { ...state.items }
+    for (const item of items) {
+        const current = tracked[item.key]
+        if (!isAccountRecordKey(item.key) || !current?.isDirty) continue
+        tracked[item.key] = isNewerAccountRecord(current.record)
+            ? { ...current, isDirty: false }
+            : {
+                  ...current,
+                  localContentHash: item.contentHash,
+                  record: item.payload as Record<string, unknown>,
+              }
+    }
+    return { state: { ...state, items: tracked }, items }
 }

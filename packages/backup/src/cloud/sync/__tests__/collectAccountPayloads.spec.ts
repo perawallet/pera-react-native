@@ -11,12 +11,14 @@
  */
 
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
+    BackupAccountType,
     BackupItemStatus,
     BackupItemType,
     accountItemKey,
+    accountRecordItemKey,
     chainBackupKind,
     secretsItemKey,
     type BackupItemKey,
@@ -24,6 +26,10 @@ import {
     type SyncItemState,
 } from '../../models'
 import { collectAccountPayloads } from '../collectAccountPayloads'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
 
 const STANDALONE_KIND = chainBackupKind('algo25')
 
@@ -148,6 +154,27 @@ describe('collectAccountPayloads', () => {
         expect(items[ADDRESS_KEY].address).toBeUndefined()
     })
 
+    it.each([
+        [
+            'keeps the failed-import count for the same remote version',
+            'h-' + ADDRESS_KEY,
+            2,
+        ],
+        ['drops it for a new remote version', 'old', undefined],
+    ])('%s', (_label, lastRemoteHash, expected) => {
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [ADDRESS_KEY]: tracked({ lastRemoteHash, importFailures: 2 }),
+        }
+
+        collectAccountPayloads({
+            fetched: [fetched(ADDRESS_KEY)],
+            items,
+            deps: deps({ [ADDRESS_KEY]: addressPlaintext }),
+        })
+
+        expect(items[ADDRESS_KEY].importFailures).toBe(expected)
+    })
+
     it('leaves no tracked address when the item cannot be decrypted', () => {
         const items: Record<BackupItemKey, SyncItemState> = {
             [ADDRESS_KEY]: tracked(),
@@ -161,5 +188,159 @@ describe('collectAccountPayloads', () => {
 
         expect(accounts).toEqual([])
         expect(items[ADDRESS_KEY].address).toBeUndefined()
+    })
+})
+
+describe('collectAccountPayloads for an account record', () => {
+    const ETH_ADDRESS = '0xabc'
+    const RECORD_KEY = accountRecordItemKey(hashAddress(ETH_ADDRESS))
+    const record = {
+        formatVersion: 2,
+        customName: 'Eth watch',
+        updatedAt: 10,
+        chains: [{ chain: 'ethereum', type: 'watch', address: ETH_ADDRESS }],
+    }
+    const recordPlaintext = JSON.stringify(record)
+
+    beforeEach(() => {
+        registerEthereumAccountsAdapter()
+    })
+
+    it('imports a record on a chain this client can back up, caching every address', () => {
+        registerEthereumBackupChain()
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [RECORD_KEY]: tracked(),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(RECORD_KEY)],
+            items,
+            deps: deps({ [RECORD_KEY]: recordPlaintext }),
+        })
+
+        expect(accounts).toEqual([
+            expect.objectContaining({
+                address: ETH_ADDRESS,
+                chain: 'ethereum',
+                addressPayload: expect.objectContaining({
+                    type: BackupAccountType.watch,
+                }),
+            }),
+        ])
+        expect(items[RECORD_KEY]).toMatchObject({
+            address: ETH_ADDRESS,
+            addresses: [ETH_ADDRESS],
+            accountType: BackupAccountType.watch,
+            record,
+        })
+    })
+
+    it('adopts a record whose chain it cannot read, importing nothing from it', () => {
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [RECORD_KEY]: tracked(),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(RECORD_KEY)],
+            items,
+            deps: deps({ [RECORD_KEY]: recordPlaintext }),
+        })
+
+        expect(accounts).toEqual([])
+        expect(items[RECORD_KEY]?.localContentHash).not.toBeNull()
+        expect(items[RECORD_KEY]?.addresses).toEqual([ETH_ADDRESS])
+    })
+
+    it("tracks a newer client's record without importing or adopting it", () => {
+        registerEthereumBackupChain()
+        const newer = { ...record, formatVersion: 3 }
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [RECORD_KEY]: tracked(),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(RECORD_KEY)],
+            items,
+            deps: deps({ [RECORD_KEY]: JSON.stringify(newer) }),
+        })
+
+        expect(accounts).toEqual([])
+        expect(items[RECORD_KEY]).toMatchObject({
+            localContentHash: null,
+            record: newer,
+            knownVer: 1,
+            lastRemoteHash: `h-${RECORD_KEY}`,
+        })
+    })
+
+    it('caches the remote record when a newer local edit wins', () => {
+        registerEthereumBackupChain()
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [RECORD_KEY]: tracked({
+                isDirty: true,
+                localUpdatedAt: 99,
+                localContentHash: 'local',
+            }),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(RECORD_KEY)],
+            items,
+            deps: deps({ [RECORD_KEY]: recordPlaintext }),
+        })
+
+        expect(accounts).toEqual([])
+        expect(items[RECORD_KEY]).toMatchObject({
+            localContentHash: 'local',
+            addresses: [ETH_ADDRESS],
+            record,
+        })
+    })
+
+    it("drops a pending local edit over a newer client's record", () => {
+        registerEthereumBackupChain()
+        const newer = { ...record, formatVersion: 3 }
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [RECORD_KEY]: tracked({
+                isDirty: true,
+                localUpdatedAt: 99,
+                localContentHash: 'local',
+            }),
+        }
+
+        collectAccountPayloads({
+            fetched: [fetched(RECORD_KEY)],
+            items,
+            deps: deps({ [RECORD_KEY]: JSON.stringify(newer) }),
+        })
+
+        expect(items[RECORD_KEY]).toMatchObject({
+            isDirty: false,
+            record: newer,
+        })
+    })
+
+    it('leaves a secret on an unregistered chain unread', () => {
+        const SECRET_KEY = secretsItemKey(hashAddress(ETH_ADDRESS))
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [SECRET_KEY]: tracked({ localContentHash: 'was-set' }),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(SECRET_KEY)],
+            items,
+            deps: deps({
+                [SECRET_KEY]: JSON.stringify({
+                    type: BackupAccountType.standaloneKey,
+                    chain: 'ethereum',
+                    address: ETH_ADDRESS,
+                    privateKey: 'ab',
+                }),
+            }),
+        })
+
+        expect(accounts).toEqual([])
+        expect(items[SECRET_KEY]?.address).toBeUndefined()
+        expect(items[SECRET_KEY]?.localContentHash).toBeNull()
     })
 })

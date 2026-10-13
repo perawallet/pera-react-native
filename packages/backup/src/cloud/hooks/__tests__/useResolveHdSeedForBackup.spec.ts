@@ -186,6 +186,24 @@ describe('useResolveHdSeedForBackup', () => {
         )
     })
 
+    it('resolves an account with no key on the scope chain through another chain, with no public key', async () => {
+        const { result } = renderHook(() =>
+            useResolveHdSeedForBackup('algorand'),
+        )
+
+        const resolved = await result.current({
+            ...account,
+            chains: { ethereum: { address: '0xeth', keyPairId: 'child-1' } },
+        })
+
+        expect(resolved).toMatchObject({
+            seedFirstDerivedAddress: 'ADDR-1',
+            publicKeyHex: null,
+            seedHex: 'beef',
+        })
+        expect(deriveHdAccountMock).not.toHaveBeenCalled()
+    })
+
     it('reads no entropy when the seed ACL does not grant the backup domain', async () => {
         grantedDomain = 'pera.accounts'
         const { result } = renderHook(() =>

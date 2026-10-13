@@ -646,6 +646,9 @@
             "accounts": "Contas",
             "accounts_in_sync": "{{count}} contas sincronizadas",
             "accounts_in_sync_one": "{{count}} conta sincronizada",
+            "update_required": "Atualize o Pera",
+            "update_required_description": "{{count}} contas do seu backup foram salvas por uma versão mais recente do Pera. Atualize o app para restaurá-las.",
+            "update_required_description_one": "{{count}} conta do seu backup foi salva por uma versão mais recente do Pera. Atualize o app para restaurá-la.",
             "accounts_not_backed_up": "Você tem {{count}} contas sem backup",
             "accounts_not_backed_up_one": "Você tem {{count}} conta sem backup",
             "contacts": "Contatos",
@@ -696,6 +699,7 @@
             "not_backed_up_subtitle": "Neste dispositivo, não no seu Cloud Backup",
             "back_up_action": "Fazer backup",
             "add_action": "Adicionar",
+            "update_to_add": "Atualize o Pera para adicionar esta conta",
             "review_empty_title": "Nada para revisar",
             "review_empty_body": "Todas as contas deste dispositivo estão no seu Cloud Backup.",
             "back_up_success": "Backup da conta feito",
@@ -839,8 +843,10 @@
             "error_invalid_credentials": "Frase de backup ou chave de criptografia incorreta.",
             "error_unknown": "Algo deu errado. Tente novamente.",
             "success": "Backup restaurado",
-            "partial_success": "Não foi possível restaurar {{count}} contas.",
-            "partial_success_one": "Não foi possível restaurar {{count}} conta."
+            "partial_success": "Não foi possível restaurar completamente {{count}} contas.",
+            "partial_success_one": "Não foi possível restaurar completamente {{count}} conta.",
+            "update_to_restore": "Atualize o Pera para restaurar mais {{count}} contas.",
+            "update_to_restore_one": "Atualize o Pera para restaurar mais {{count}} conta."
         },
         "restore_scan": {
             "title": "Escanear código QR",

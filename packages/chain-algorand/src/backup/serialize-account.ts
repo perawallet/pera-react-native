@@ -184,6 +184,10 @@ const KIND_ID_BY_WIRE_TYPE: ReadonlyMap<BackupItemKind, AccountType> = new Map<
     [BackupAccountType.watch, AccountTypes.watch],
     [BackupAccountType.multisig, AccountTypes.multisig],
     [AlgorandBackupKinds.quantum, AccountTypes.quantum],
+    // An account record's entries on chains without an adapter of their own;
+    // a backup-only row still shows what kind of account it is.
+    [BackupAccountType.hdChain, AccountTypes.hdWallet],
+    [BackupAccountType.standaloneKey, AccountTypes.standalone],
 ])
 
 export const algorandBackupKindIdOf: BackupChainAdapter['kindIdOf'] = type => {

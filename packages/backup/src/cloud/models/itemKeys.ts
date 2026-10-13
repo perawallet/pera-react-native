@@ -30,6 +30,25 @@ export const secretsItemKey = (hash: ItemKeyHash): BackupItemKey =>
 export const isAccountItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
 
+/** One account across every chain, replacing the per-address `accounts/` items
+ *  for writing. A prefix of its own because clients that predate it skip an
+ *  unknown prefix outright, where an unknown `accounts/` payload would be one
+ *  they track and re-push. Still BackupItemType.ACCOUNT on the wire: older
+ *  clients reject the whole manifest on an item type they don't know. */
+export const BACKUP_ACCOUNT_RECORDS_KEY_PREFIX = 'account-records/'
+
+/** Hashes the account's identity (`accountIdentityOf`), not one of its
+ *  addresses, so the key holds still as chains come and go. */
+export const accountRecordItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_ACCOUNT_RECORDS_KEY_PREFIX}${hash}`
+
+export const isAccountRecordKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_ACCOUNT_RECORDS_KEY_PREFIX)
+
+/** Either shape of an account's non-secret item. */
+export const isAccountKey = (key: BackupItemKey): boolean =>
+    isAccountItemKey(key) || isAccountRecordKey(key)
+
 export const contactItemKey = (hash: ItemKeyHash): BackupItemKey =>
     `${BACKUP_CONTACTS_KEY_PREFIX}${hash}`
 

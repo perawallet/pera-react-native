@@ -38,6 +38,9 @@ export const useStyles = makeStyles(theme => ({
     addButton: {
         alignSelf: 'flex-start',
     },
+    updateHint: {
+        color: theme.colors.textGray,
+    },
     section: {
         gap: theme.spacing.sm,
     },

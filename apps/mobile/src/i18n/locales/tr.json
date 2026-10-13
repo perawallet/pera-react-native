@@ -646,6 +646,9 @@
             "accounts": "Hesaplar",
             "accounts_in_sync": "{{count}} hesap eşitlendi",
             "accounts_in_sync_one": "{{count}} hesap eşitlendi",
+            "update_required": "Pera’yı güncelle",
+            "update_required_description": "Yedeğindeki {{count}} hesap Pera’nın daha yeni bir sürümüyle kaydedildi. Geri yüklemek için uygulamayı güncelle.",
+            "update_required_description_one": "Yedeğindeki {{count}} hesap Pera’nın daha yeni bir sürümüyle kaydedildi. Geri yüklemek için uygulamayı güncelle.",
             "accounts_not_backed_up": "Yedeklenmemiş {{count}} hesabın var",
             "accounts_not_backed_up_one": "Yedeklenmemiş {{count}} hesabın var",
             "contacts": "Kişiler",
@@ -696,6 +699,7 @@
             "not_backed_up_subtitle": "Bu cihazda var, Cloud Backup'ında yok",
             "back_up_action": "Yedekle",
             "add_action": "Ekle",
+            "update_to_add": "Bu hesabı eklemek için Pera’yı güncelle",
             "review_empty_title": "İncelenecek bir şey yok",
             "review_empty_body": "Bu cihazdaki her hesap Cloud Backup'ında.",
             "back_up_success": "Hesap yedeklendi",
@@ -839,8 +843,10 @@
             "error_invalid_credentials": "Yedekleme ifadesi veya şifreleme anahtarı yanlış.",
             "error_unknown": "Bir şeyler ters gitti. Lütfen tekrar dene.",
             "success": "Yedekleme geri yüklendi",
-            "partial_success": "{{count}} hesap geri yüklenemedi.",
-            "partial_success_one": "{{count}} hesap geri yüklenemedi."
+            "partial_success": "{{count}} hesap tamamen geri yüklenemedi.",
+            "partial_success_one": "{{count}} hesap tamamen geri yüklenemedi.",
+            "update_to_restore": "{{count}} hesabı daha geri yüklemek için Pera’yı güncelle.",
+            "update_to_restore_one": "{{count}} hesabı daha geri yüklemek için Pera’yı güncelle."
         },
         "restore_scan": {
             "title": "QR kodu tara",

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { BackupItemKind, BackupSettings } from './payloads'
 import type {
     BackupGlobalHash,
@@ -50,6 +51,9 @@ export type SyncItemState = {
      *  account, then another device backed it up again. Held for the user to
      *  Add or delete rather than silently re-imported. */
     pendingImport?: boolean
+    /** Account family only: syncs in a row whose import of this remote version
+     *  failed. Capped by `MAX_IMPORT_ATTEMPTS`. */
+    importFailures?: number
     /** Epoch millis local content last diverged; written as payload.updatedAt. */
     localUpdatedAt?: number | null
     /** Display name cached for CONTACT and PASSKEY items, so an item that
@@ -57,8 +61,17 @@ export type SyncItemState = {
      *  downloading it there. Null for every other type; safe to cache because
      *  neither payload holds secret material. */
     label?: string | null
-    /** Null means never decrypted — unknown, never "not ours". */
+    /** Null means never decrypted — unknown, never "not ours". An account
+     *  record's primary address. */
     address?: string | null
+    /** Account records only: every chain's address, so an action on any of
+     *  them finds the record. */
+    addresses?: string[] | null
+    /** Account records only: the content last seen or written. A write is laid
+     *  over it (`mergeAccountRecord`) so what this build can't read survives,
+     *  and a record a newer client wrote is never overwritten. Holds no key
+     *  material; that lives in `secrets/` items. */
+    record?: Record<string, unknown> | null
     accountType?: BackupItemKind | null
     /** SETTINGS only. Unlike every other type, a settings push is built from
      *  this document rather than from the device's current values, so a
@@ -75,6 +88,9 @@ export type SyncState = {
     /** Epoch millis of the last completed sync; null until first sync. */
     lastSyncedAt: number | null
     lastSyncResult: BackupSyncResult | null
+    /** Sorted chains this client could read at its last sync. A change re-reads
+     *  the account items it skipped. Absent on state that predates it. */
+    readableChains?: ChainId[]
     items: Record<BackupItemKey, SyncItemState>
 }
 

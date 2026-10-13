@@ -10,19 +10,16 @@
  limitations under the License
  */
 
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { accountBackupAddresses } from '@perawallet/wallet-core-backup'
 
 /**
- * Backup items are keyed by the account's address on the chain the backup
- * carries, the same on every network. Undefined for an account with nothing on
- * that chain: it has no backup item.
+ * The address an account's backup row is named by: its first address on a
+ * chain the backup carries, which leads its record. Undefined for an account
+ * on no such chain: it has no backup record.
  */
 export const backupAddressOf = (account: WalletAccount): string | undefined =>
-    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+    accountBackupAddresses(account)[0]
 
 export type BackupAccount = {
     account: WalletAccount

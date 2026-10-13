@@ -12,12 +12,14 @@
 
 import type { z } from 'zod'
 import {
+    accountRecordPayloadSchema,
     addressBackupPayloadSchema,
     contactBackupPayloadSchema,
     passkeyBackupPayloadSchema,
     passkeySecretsBackupPayloadSchema,
     secretsBackupPayloadSchema,
     settingsBackupPayloadSchema,
+    type AccountRecordPayload,
     type AddressBackupPayload,
     type ContactBackupPayload,
     type PasskeyBackupPayload,
@@ -59,6 +61,9 @@ const parsePayload = <T>(
 
 export const parseAddressPayload = (raw: string): AddressBackupPayload =>
     parsePayload(addressBackupPayloadSchema, raw, 'account')
+
+export const parseAccountRecordPayload = (raw: string): AccountRecordPayload =>
+    parsePayload(accountRecordPayloadSchema, raw, 'account record')
 
 export const parseSecretsPayload = (raw: string): SecretsBackupPayload =>
     parsePayload(secretsBackupPayloadSchema, raw, 'secrets')
