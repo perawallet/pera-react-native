@@ -18,6 +18,7 @@ import {
     UserRejectedSigningError,
 } from '../useSignAndSubmitGroup'
 import type {
+    ChainScope,
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -32,6 +33,8 @@ vi.mock('../useSigningRequest', () => ({
         addSignRequest: mockAddSignRequest,
     }),
 }))
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const fakeTxn = {
     sender: { toString: () => 'A' },
@@ -56,7 +59,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
-                chainId: 'algorand',
+                scope: SCOPE,
                 unsignedTxs: [fakeTxn, fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -78,7 +81,9 @@ describe('useSignAndSubmitGroup', () => {
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])
         expect(captured).toMatchObject({ chainId: 'algorand' })
-        expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
+        expect(mockSubmitAndAutoRefresh).toHaveBeenCalledWith(SCOPE, signed, {
+            flow: 'sign-and-submit',
+        })
     })
 
     it('submits only the signed slots when the pipeline pads with null', async () => {
@@ -92,7 +97,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
-                chainId: 'algorand',
+                scope: SCOPE,
                 unsignedTxs: [fakeTxn, fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -104,7 +109,7 @@ describe('useSignAndSubmitGroup', () => {
         ] as unknown as PeraSignedTransaction[])
 
         await promise
-        expect(mockSubmitAndAutoRefresh.mock.calls[0][0]).toEqual([signed])
+        expect(mockSubmitAndAutoRefresh.mock.calls[0][1]).toEqual([signed])
     })
 
     it('rethrows a submit failure from approve so the transport fails the machine', async () => {
@@ -121,7 +126,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
-                chainId: 'algorand',
+                scope: SCOPE,
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -149,7 +154,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
-                chainId: 'algorand',
+                scope: SCOPE,
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-out', description: 'test' },
             }),
@@ -172,7 +177,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
-                chainId: 'algorand',
+                scope: SCOPE,
                 unsignedTxs: [fakeTxn],
                 source: { name: 'send', description: 'test' },
             }),
@@ -198,7 +203,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const promise = act(async () =>
             result.current.submit({
-                chainId: 'algorand',
+                scope: SCOPE,
                 unsignedTxs: [fakeTxn],
                 source: { name: 'opt-in', description: 'test' },
             }),
@@ -221,7 +226,7 @@ describe('useSignAndSubmitGroup', () => {
 
         const res = await act(async () =>
             result.current.submit({
-                chainId: 'algorand',
+                scope: SCOPE,
                 unsignedTxs: [],
                 source: { name: 'no-op', description: 'test' },
             }),

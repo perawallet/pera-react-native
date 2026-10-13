@@ -283,7 +283,7 @@ export const useTransactionSendFlow = (
                         amount: amountInBaseUnits,
                     })
                     const result = await submit({
-                        chainId: scope.chainId,
+                        scope,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
                     })
@@ -312,7 +312,7 @@ export const useTransactionSendFlow = (
                         senderMinFee,
                     })
                     const result = await submit({
-                        chainId: scope.chainId,
+                        scope,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
                     })
@@ -321,7 +321,7 @@ export const useTransactionSendFlow = (
                 case 'normal': {
                     const unsignedTxs = await buildNormalTxs(params)
                     const result = await submit({
-                        chainId: scope.chainId,
+                        scope,
                         unsignedTxs,
                         source: SEND_TRANSACTION_SOURCE,
                     })
@@ -372,7 +372,7 @@ export const useTransactionSendFlow = (
                     senderMinFee,
                 })
                 const result = await submit({
-                    chainId: scope.chainId,
+                    scope,
                     unsignedTxs,
                     source: SEND_TRANSACTION_SOURCE,
                 })
@@ -414,7 +414,7 @@ export const useTransactionSendFlow = (
                     senderMinFee,
                 })
                 const result = await submit({
-                    chainId: scope.chainId,
+                    scope,
                     unsignedTxs,
                     source: SEND_TRANSACTION_SOURCE,
                 })

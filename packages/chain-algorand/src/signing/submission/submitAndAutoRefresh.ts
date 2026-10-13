@@ -12,7 +12,6 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
@@ -301,20 +300,17 @@ const backgroundConfirmAndRefresh = async (
  * the user's signing-UX critical path. Confirmation timeouts and refresh
  * failures are swallowed and logged; the periodic sync is the safety net.
  *
- * Used by:
- * - `createAlgodTransport` (the pipeline's algod transport)
- * - `useSignAndSubmitGroup` (callback-transport flows)
- * - `executeAlgorandSwap` in `@perawallet/wallet-core-chain-algorand/swaps`
- *   (mixes pre-signed bytes with user-signed; submits its own assembled
- *   groups)
+ * Callers outside the broadcaster reach it through `submitAndAutoRefresh` in
+ * `@perawallet/wallet-core-signing`, never directly.
  */
 export const submitAndAutoRefresh = async (
+    // The network `algokit` points at; the selected one may have moved on since signing.
+    network: Network,
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
     signedTxns: PeraSignedTransaction[],
     options?: SubmitAndAutoRefreshOptions,
 ): Promise<string[]> => {
-    const network = useNetworkStore.getState().network
     const accounts = useAccountsStore.getState().accounts
     const walletAddresses = accounts.flatMap(a => algorandAddressOf(a) ?? [])
 

@@ -173,7 +173,10 @@ describe('Flow: offline submission reconnect', () => {
             account,
             scopeForLegacyNetwork(NETWORK),
         )
-        const txIds = await submitAndAutoRefresh(LEGACY_CHAIN_ID, signedTxns)
+        const txIds = await submitAndAutoRefresh(
+            scopeForLegacyNetwork(NETWORK),
+            signedTxns,
+        )
         expect(txIds).toHaveLength(1)
         // The ledger row records the locally-derived txid, while algod's
         // mocked POST echoes its own fixed txId — assert against the former.

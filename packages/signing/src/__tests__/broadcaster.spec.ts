@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import * as signing from '../index'
 import {
@@ -25,6 +26,8 @@ import {
     submitAndAutoRefresh,
 } from '../broadcaster'
 import { registerFakeBroadcaster } from './fakeBroadcaster'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('broadcaster wrappers', () => {
     it('forward their arguments to the adapter registered for the chain and return its result', async () => {
@@ -39,9 +42,9 @@ describe('broadcaster wrappers', () => {
         const bytes = [new Uint8Array([1])]
 
         await expect(
-            submitAndAutoRefresh(LEGACY_CHAIN_ID, [], { flow: 'swap' }),
+            submitAndAutoRefresh(SCOPE, [], { flow: 'swap' }),
         ).resolves.toEqual(['TX1'])
-        expect(adapter.submitAndAutoRefresh).toHaveBeenCalledWith([], {
+        expect(adapter.submitAndAutoRefresh).toHaveBeenCalledWith(SCOPE, [], {
             flow: 'swap',
         })
 
@@ -68,9 +71,7 @@ describe('broadcaster wrappers', () => {
         broadcasterChainAdapters.reset()
 
         await expect(
-            Promise.resolve().then(() =>
-                submitAndAutoRefresh(LEGACY_CHAIN_ID, []),
-            ),
+            Promise.resolve().then(() => submitAndAutoRefresh(SCOPE, [])),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             Promise.resolve().then(() =>

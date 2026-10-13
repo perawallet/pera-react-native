@@ -26,6 +26,7 @@ import {
     type AlgokitClientInterface,
     type EncodeSignedTransactionsFn,
 } from '../submission'
+import { algorandNetworkOf } from '../../legacy-network'
 
 /**
  * Creates a transport that submits transactions directly to algod.
@@ -60,6 +61,7 @@ export const createAlgodTransport = (
             let txIds: string[]
             try {
                 txIds = await submitAndAutoRefresh(
+                    algorandNetworkOf(capturedScope),
                     algokit,
                     encodeSignedTransactions,
                     signed,

@@ -169,7 +169,7 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
                 asset: assetId,
             })
             await submit({
-                chainId: scope.chainId,
+                scope,
                 unsignedTxs: txns,
                 source: {
                     name: 'card-autodraw-disable',

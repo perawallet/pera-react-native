@@ -267,7 +267,7 @@ describe('useSubmitRekeyMutation', () => {
         expect(request.txs).toEqual([unsignedTxn])
         expect(request.sourceType).toBe('local')
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledWith(
-            'algorand',
+            { chainId: 'algorand', networkId: 'testnet' },
             signedTxs,
             {
                 flow: 'rekey',

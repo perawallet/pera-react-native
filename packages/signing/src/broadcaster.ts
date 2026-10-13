@@ -95,8 +95,12 @@ export interface BroadcasterChainAdapter {
     ): Promise<void>
     /** The transport re-checks `capturedScope` with `assertScopeUnchanged` at send time. */
     createSubmitTransport(capturedScope: ChainScope): DataTransport
-    /** Resolves with the tx ids once the node accepts; confirmation is awaited in the background. */
+    /**
+     * Submits to `scope`'s node, not the selected network's, and resolves
+     * with the tx ids once it accepts; confirmation is awaited in the background.
+     */
     submitAndAutoRefresh(
+        scope: ChainScope,
         signedTxns: PeraSignedTransaction[],
         options?: SubmitAndAutoRefreshOptions,
     ): Promise<string[]>
@@ -131,9 +135,8 @@ export const broadcasterChainAdapters =
     createChainAdapterRegistry<BroadcasterChainAdapter>('broadcaster')
 
 export const submitAndAutoRefresh = (
-    chainId: ChainId,
     ...args: Parameters<BroadcasterChainAdapter['submitAndAutoRefresh']>
-) => broadcasterChainAdapters.get(chainId).submitAndAutoRefresh(...args)
+) => broadcasterChainAdapters.get(args[0].chainId).submitAndAutoRefresh(...args)
 
 export const reconcileOpenSubmissions = (chainId: ChainId) =>
     broadcasterChainAdapters.get(chainId).reconcileOpenSubmissions()

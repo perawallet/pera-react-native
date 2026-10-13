@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type {
+    ChainScope,
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -37,6 +38,7 @@ import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import '../../__tests__/registerAlgorandAccounts'
 
 const mockAddSignRequest = vi.fn()
+const mockSubmitAndAutoRefreshScope = vi.fn()
 const mockSubmitAndAutoRefreshOptions = vi.fn()
 const mockAccountInformation = vi.fn()
 const mockDecodeTransaction = vi.fn()
@@ -57,21 +59,20 @@ const { mockValidate, mockComputeShortfall, mockGetOpenSubmissionAttempts } =
         mockGetOpenSubmissionAttempts: vi.fn(),
     }))
 
-// Re-implements the few lines of `submitAndAutoRefresh` this flow relies on
-// instead of importing the signing package, whose store graph the narrow
-// shared mock below can't satisfy.
-vi.mock('../../signing/submission/submitAndAutoRefresh', () => ({
+// Re-implements the few lines of the broadcaster's `submitAndAutoRefresh` this
+// flow relies on instead of importing the signing package, whose store graph
+// this narrow mock can't satisfy.
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
+    STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
     submitAndAutoRefresh: async (
-        _algokit: unknown,
-        encodeSignedTransactions: (
-            txns: PeraSignedTransaction[],
-        ) => Uint8Array[],
+        scope: ChainScope,
         signedTxns: PeraSignedTransaction[],
         options?: unknown,
     ): Promise<string[]> => {
+        mockSubmitAndAutoRefreshScope(scope)
         mockSubmitAndAutoRefreshOptions(options)
-        const encoded = encodeSignedTransactions(signedTxns)
-        const response = (await mockSendRawTransaction(encoded)) as {
+        const response = (await mockSendRawTransaction(signedTxns)) as {
             txid?: string | string[]
         }
         const ids: string[] = []
@@ -89,11 +90,6 @@ vi.mock('../../signing/submission/submitAndAutoRefresh', () => ({
         }
         return ids
     },
-}))
-
-vi.mock('@perawallet/wallet-core-signing', () => ({
-    getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
-    STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
 vi.mock('../../blockchain', () => ({
@@ -403,10 +399,10 @@ describe('executeAlgorandSwap', () => {
         // `blockchain_error`.
         expect(request.groupContext).toHaveLength(3)
 
-        expect(mockEncodeSignedTransactions).toHaveBeenCalledTimes(1)
-        const encoded = mockEncodeSignedTransactions.mock
+        expect(mockSendRawTransaction).toHaveBeenCalledTimes(1)
+        const submitted = mockSendRawTransaction.mock
             .calls[0][0] as PeraSignedTransaction[]
-        expect(encoded).toEqual([preSigned1, userSigned, preSigned2])
+        expect(submitted).toEqual([preSigned1, userSigned, preSigned2])
     })
 
     it('submits multiple groups independently and aggregates txIds', async () => {
@@ -441,7 +437,7 @@ describe('executeAlgorandSwap', () => {
         })
         expect(mockSendRawTransaction).toHaveBeenCalledTimes(2)
         // Group order is submission order: each group goes out on its own.
-        expect(mockEncodeSignedTransactions.mock.calls).toEqual([
+        expect(mockSendRawTransaction.mock.calls).toEqual([
             [[signedA]],
             [[signedB]],
         ])
@@ -574,6 +570,10 @@ describe('executeAlgorandSwap', () => {
         const result = await run(makeQuote('quote-clear'))
 
         expect(result.kind).toBe('success')
+        expect(mockSubmitAndAutoRefreshScope).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith({
             flow: 'swap',
             intentKey: { kind: 'swap', swapId: 'SWAP1' },
@@ -1011,9 +1011,9 @@ describe('executeAlgorandSwap', () => {
         const result = await run(makeQuote('quote-null-slot'))
 
         expect(result.kind).toBe('success')
-        const encoded = mockEncodeSignedTransactions.mock
+        const submitted = mockSendRawTransaction.mock
             .calls[0][0] as PeraSignedTransaction[]
-        expect(encoded).toHaveLength(2)
+        expect(submitted).toHaveLength(2)
     })
 
     it('reports a submission failure with its error and a failed status', async () => {
