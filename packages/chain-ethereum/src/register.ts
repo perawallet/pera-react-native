@@ -22,6 +22,7 @@ import {
     addressCodecs,
     keyDerivations,
     transactionPlanners,
+    transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -35,6 +36,7 @@ import {
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
 import { ethereumPlannerAdapter } from './signing/adapter'
+import { ethereumReviewerAdapter } from './signing/review'
 import { createEthereumTransferAdapter } from './transfer'
 
 // The registries ignore a repeat of the same instance but reject a new one, so
@@ -51,6 +53,7 @@ export const registerChain = (ctx: ChainContext): void => {
     addressCodecs.register(ethereumAddressCodec)
     keyDerivations.register(ethereumKeyDerivation)
     transactionPlanners.register(ethereumPlannerAdapter)
+    transactionReviewers.register(ethereumReviewerAdapter)
     accountsChainAdapters.register(accountsAdapter)
     assetsChainAdapters.register(assetsAdapter)
     transferChainAdapters.register(transferAdapter)

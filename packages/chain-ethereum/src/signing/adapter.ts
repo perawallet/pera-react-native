@@ -41,12 +41,12 @@ export type EthereumTransactionPayload = {
     transaction: TransactionSerializableEIP1559
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
 
 // `payload` is `unknown` and may come from a dApp, so this is the trust boundary
 // for both `plan` and `assemble`.
-const readEthereumTransaction = (
+export const readEthereumTransaction = (
     unsigned: UnsignedTransaction,
 ): EthereumTransactionPayload => {
     const { scope, chainData, payload } = unsigned

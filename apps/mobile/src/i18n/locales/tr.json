@@ -3139,6 +3139,7 @@
             "asset_config": "Varlık yapılandırması",
             "asset_freeze": "Varlık dondurma",
             "app_call": "Uygulama çağrısı",
+            "contract_call": "Sözleşme çağrısı",
             "key_registration": "Anahtar kaydı",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

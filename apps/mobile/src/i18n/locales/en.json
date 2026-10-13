@@ -3139,6 +3139,7 @@
             "asset_config": "Asset Configuration",
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
+            "contract_call": "Contract Call",
             "key_registration": "Key Registration",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

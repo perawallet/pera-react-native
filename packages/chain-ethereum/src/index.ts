@@ -31,3 +31,8 @@ export {
     type EvmErrorParams,
 } from './blockchain'
 export { ethereumModule } from './module'
+export {
+    readEthereumNative,
+    toEthereumNative,
+    type EthereumTransactionView,
+} from './signing/transaction-view'
