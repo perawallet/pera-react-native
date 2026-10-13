@@ -43,9 +43,9 @@ export const AccountWithBalance = ({
         scope,
         true,
     )
-    const algoValue = accountValueTotals.get(
+    const nativeValue = accountValueTotals.get(
         addressOn(account, scope) ?? '',
-    )?.algoValue
+    )?.nativeValue
 
     return (
         <PWView
@@ -60,7 +60,7 @@ export const AccountWithBalance = ({
             <PWView style={styles.balanceContainer}>
                 <AssetAmount
                     asset={nativeAsset}
-                    value={algoValue}
+                    value={nativeValue}
                     density='compact'
                     variant='bodyLarge'
                     weight={500}
@@ -68,7 +68,7 @@ export const AccountWithBalance = ({
 
                 <PreferredAmount
                     sourceAssetId={nativeAsset.assetId}
-                    sourceAmount={algoValue}
+                    sourceAmount={nativeValue}
                     density='compact'
                     variant='footnoteMedium'
                     weight={400}

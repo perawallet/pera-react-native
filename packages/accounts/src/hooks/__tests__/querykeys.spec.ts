@@ -27,7 +27,7 @@ import {
     getAccountCollectiblesQueryKey,
     getAccountFundedNetworksQueryKey,
     getAccountHoldingsPageQueryKey,
-    getAccountOptInRoundsQueryKey,
+    getHoldingAcquisitionOrderQueryKey,
     getAccountSummaryQueryKey,
     getAssetHoldersQueryKey,
     getOnChainAccountStateQueryKey,
@@ -54,7 +54,10 @@ describe('query keys', () => {
             'on-chain-account-state',
             getOnChainAccountStateQueryKey('ADDR1', MAINNET),
         ],
-        ['opt-in-rounds', getAccountOptInRoundsQueryKey('ADDR1', MAINNET)],
+        [
+            'holding-acquisition-order',
+            getHoldingAcquisitionOrderQueryKey('ADDR1', MAINNET),
+        ],
         [
             'delegated-addresses',
             getDelegatedAddressesQueryKey('ADDR1', MAINNET),

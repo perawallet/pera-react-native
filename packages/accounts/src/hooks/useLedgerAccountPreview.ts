@@ -15,13 +15,10 @@ import { Decimal } from 'decimal.js'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
-    useNativeAsset,
+    nativeAssetFor,
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
-import {
-    ALGO_ASSET_NAME,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
@@ -30,6 +27,7 @@ import type {
     LedgerAccountDelegation,
     UseLedgerAccountPreviewResult,
 } from '../models'
+import { describeHolding } from '../chain-adapter'
 import { recordAuthority } from '../store/recordAuthority'
 import { useOnChainAccountStateQuery } from './useOnChainAccountStateQuery'
 import { useDelegatedAddressesQuery } from './useDelegatedAddressesQuery'
@@ -38,7 +36,7 @@ export const useLedgerAccountPreview = (
     address: string,
     scope: ChainScope,
 ): UseLedgerAccountPreviewResult => {
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = nativeAssetFor(scope.chainId)
     const onChain = useOnChainAccountStateQuery(address, scope)
     const delegated = useDelegatedAddressesQuery(address, scope)
     const { usdToPreferred } = useCurrency()
@@ -73,26 +71,26 @@ export const useLedgerAccountPreview = (
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
         if (!onChain.data) return undefined
 
-        const algoBalance = onChain.data.nativeBalance
-        const algoUsdPrice =
+        const nativeBalance = onChain.data.nativeBalance
+        const nativeUsdPrice =
             prices?.get(nativeAsset.assetId)?.usdPrice ?? new Decimal(0)
 
         const previewAssets: LedgerAccountPreviewAsset[] = []
-        let totalUsd = algoBalance.times(algoUsdPrice)
+        let totalUsd = nativeBalance.times(nativeUsdPrice)
 
         previewAssets.push({
             assetId: nativeAsset.assetId,
-            name: nativeAsset.name ?? 'Algo',
-            unitName: nativeAsset.unitName ?? ALGO_ASSET_NAME,
+            name: nativeAsset.name ?? '',
+            unitName: nativeAsset.unitName ?? '',
             decimals: nativeAsset.decimals,
             hasKnownDecimals: true,
-            amount: algoBalance,
-            fiatValue: usdToPreferred(algoBalance.times(algoUsdPrice)),
-            usdPrice: algoUsdPrice,
+            amount: nativeBalance,
+            fiatValue: usdToPreferred(nativeBalance.times(nativeUsdPrice)),
+            usdPrice: nativeUsdPrice,
             verificationTier: PeraAssetVerificationTier.verified,
             logo: undefined,
-            isAlgo: true,
-            isFrozen: false,
+            isNative: true,
+            restriction: null,
         })
 
         for (const holding of heldAssets) {
@@ -121,8 +119,11 @@ export const useLedgerAccountPreview = (
                     meta?.peraMetadata?.verificationTier ??
                     PeraAssetVerificationTier.unverified,
                 logo: meta?.peraMetadata?.logo ?? undefined,
-                isAlgo: false,
-                isFrozen: holding.isFrozen,
+                isNative: false,
+                restriction: describeHolding(
+                    scope.chainId,
+                    holding.native ?? null,
+                ).restriction,
             })
         }
 
@@ -142,13 +143,15 @@ export const useLedgerAccountPreview = (
 
         return {
             address,
-            algoBalance,
+            nativeBalance,
             totalFiatValue: usdToPreferred(totalUsd),
             assets: previewAssets,
             delegation,
         }
     }, [
         address,
+        scope.chainId,
+        nativeAsset,
         authorityAddress,
         onChain.data,
         heldAssets,

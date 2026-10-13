@@ -29,7 +29,7 @@ export type ResolveAssetHolderAddress = (
 /**
  * Which of the user's accounts to treat as the holder of `assetId`, preferring
  * the selected account when it holds the asset. Resolves to `null` when no
- * account holds it (including ALGO, which has no holdings row).
+ * account holds it (including the native asset, which has no holdings row).
  *
  * The asset and collectible detail screens are account-scoped but their routes
  * only carry an asset id, so they read the *selected* account. Any caller that

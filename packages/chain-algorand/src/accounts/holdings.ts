@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-export {
-    mockAccountsBalanceHistory,
-    mockAccountAssetBalanceHistory,
-    type MockAccountsBalanceHistoryParams,
-    type MockAccountAssetBalanceHistoryParams,
-} from './hooks/msw-handlers'
+import {
+    HoldingRestrictions,
+    type HoldingDescription,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainHoldingNative } from '@perawallet/wallet-core-chain-contract'
+
+export const describeAlgorandHolding = (
+    native: ChainHoldingNative,
+): HoldingDescription => ({
+    restriction: native.isFrozen ? HoldingRestrictions.transferBlocked : null,
+})

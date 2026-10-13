@@ -14,6 +14,7 @@ import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
+    type ChainHoldingNative,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -22,20 +23,22 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { describeHolding } from '../chain-adapter'
+import type { HoldingRestriction } from '../models'
+import { isEqualChainData } from '../store/accountChainState'
 import { AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
     assetId: string
     amount: Decimal
-    /** Holding-level freeze from algod — frozen assets can't be transferred. */
-    isFrozen: boolean
+    native: Nullable<ChainHoldingNative>
 }
 
 type UpsertHoldingInput = {
     assetId: string
     amount: Decimal
-    /** Holding-level freeze from algod. Defaults to false when omitted. */
-    isFrozen?: boolean
+    native?: ChainHoldingNative
 }
 
 type UpsertAccountHoldingsParams = {
@@ -64,7 +67,7 @@ export async function refreshAccountHoldings({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
-            isFrozen: AccountAssetHoldingsSchema.isFrozen,
+            native: AccountAssetHoldingsSchema.native,
         })
         .from(AccountAssetHoldingsSchema)
         .where(
@@ -78,7 +81,7 @@ export async function refreshAccountHoldings({
     const existing = new Map(
         existingRows.map(r => [
             r.assetId,
-            { amount: r.amount, isFrozen: r.isFrozen },
+            { amount: r.amount, native: r.native },
         ]),
     )
     const incomingIds = new Set(holdings.map(h => h.assetId))
@@ -91,7 +94,7 @@ export async function refreshAccountHoldings({
         return (
             prev === undefined ||
             prev.amount.toString() !== String(h.amount) ||
-            prev.isFrozen !== (h.isFrozen ?? false)
+            !isEqualChainData(prev.native, h.native ?? null)
         )
     })
     const removed = [...existing.keys()].filter(id => !incomingIds.has(id))
@@ -122,7 +125,7 @@ export async function refreshAccountHoldings({
             assetId: h.assetId,
             network,
             amount: h.amount,
-            isFrozen: h.isFrozen ?? false,
+            native: h.native ?? null,
             updatedAt: now,
         }))
         await forEachWriteChunk(rows, async chunk => {
@@ -137,7 +140,7 @@ export async function refreshAccountHoldings({
                     ],
                     set: {
                         amount: sql`excluded.amount`,
-                        isFrozen: sql`excluded.is_frozen`,
+                        native: sql`excluded.native`,
                         updatedAt: sql`excluded.updated_at`,
                     },
                 })
@@ -154,7 +157,7 @@ type InsertAssetHoldingParams = {
     assetId: string
     scope: ChainScope
     amount?: string
-    isFrozen?: boolean
+    native?: ChainHoldingNative
 }
 
 export async function insertAssetHolding({
@@ -163,7 +166,7 @@ export async function insertAssetHolding({
     assetId,
     scope,
     amount,
-    isFrozen,
+    native,
 }: InsertAssetHoldingParams): Promise<void> {
     const network = toScopeKey(scope)
     await db
@@ -173,7 +176,7 @@ export async function insertAssetHolding({
             assetId,
             network,
             amount: new Decimal(amount ?? '0'),
-            isFrozen: isFrozen ?? false,
+            native: native ?? null,
             updatedAt: Date.now(),
         })
         .onConflictDoNothing()
@@ -239,8 +242,8 @@ export type AccountHoldingsFilters = {
     hideZeroBalance?: boolean
     /** When true, NFTs (collectible asset type) are excluded entirely. */
     hideNfts?: boolean
-    /** When true, NFTs that are opted-in but have a zero balance are excluded. */
-    hideOptedInNfts?: boolean
+    /** When true, NFTs the account holds none of are excluded. */
+    hideZeroBalanceNfts?: boolean
     /** Asset types to exclude regardless of holding amount. */
     excludeAssetTypes?: string[]
 }
@@ -257,13 +260,13 @@ export async function getAccountHoldings({
     scope,
     hideZeroBalance,
     hideNfts,
-    hideOptedInNfts,
+    hideZeroBalanceNfts,
     excludeAssetTypes,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
     const network = toScopeKey(scope)
     const needsAssetJoin =
         hideNfts === true ||
-        hideOptedInNfts === true ||
+        hideZeroBalanceNfts === true ||
         !!excludeAssetTypes?.length
 
     const baseConditions = [
@@ -284,7 +287,7 @@ export async function getAccountHoldings({
             .select({
                 assetId: AccountAssetHoldingsSchema.assetId,
                 amount: AccountAssetHoldingsSchema.amount,
-                isFrozen: AccountAssetHoldingsSchema.isFrozen,
+                native: AccountAssetHoldingsSchema.native,
             })
             .from(AccountAssetHoldingsSchema)
             .where(and(...baseConditions))
@@ -293,7 +296,7 @@ export async function getAccountHoldings({
         return rows.map(r => ({
             assetId: r.assetId,
             amount: r.amount,
-            isFrozen: r.isFrozen,
+            native: r.native,
         }))
     }
 
@@ -308,7 +311,7 @@ export async function getAccountHoldings({
                 ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
             )!,
         )
-    } else if (hideOptedInNfts) {
+    } else if (hideZeroBalanceNfts) {
         // Keep all non-NFT holdings, plus NFT holdings with a non-zero balance.
         joinConditions.push(
             or(
@@ -332,7 +335,7 @@ export async function getAccountHoldings({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
-            isFrozen: AccountAssetHoldingsSchema.isFrozen,
+            native: AccountAssetHoldingsSchema.native,
         })
         .from(AccountAssetHoldingsSchema)
         .leftJoin(
@@ -354,11 +357,11 @@ export async function getAccountHoldings({
     return rows.map(r => ({
         assetId: r.assetId,
         amount: r.amount,
-        isFrozen: r.isFrozen,
+        native: r.native,
     }))
 }
 
-type IsAssetFrozenParams = {
+type GetHoldingRestrictionParams = {
     db?: Database
     accountAddress: string
     assetId: string
@@ -366,23 +369,24 @@ type IsAssetFrozenParams = {
 }
 
 /**
- * Whether this account's holding of `assetId` is frozen. A frozen holding can
- * neither send nor receive, so send and swap both gate on this before building.
+ * The restriction the chain places on this account's holding of `assetId`.
+ * A restricted holding can neither send nor receive, so send and swap both
+ * gate on this before building.
  *
  * Reads the same SQLite row the balance queries do — no request — and hits the
  * (account_address, asset_id, network) primary key, so it's a point lookup
  * rather than a scan of every holding the account has. An account that doesn't
- * hold the asset has no row, and nothing to be frozen.
+ * hold the asset has no row, and nothing restricting it.
  */
-export async function isAssetFrozen({
+export async function getHoldingRestriction({
     db = getDatabase(),
     accountAddress,
     assetId,
     scope,
-}: IsAssetFrozenParams): Promise<boolean> {
+}: GetHoldingRestrictionParams): Promise<Nullable<HoldingRestriction>> {
     const network = toScopeKey(scope)
     const rows = await db
-        .select({ isFrozen: AccountAssetHoldingsSchema.isFrozen })
+        .select({ native: AccountAssetHoldingsSchema.native })
         .from(AccountAssetHoldingsSchema)
         .where(
             and(
@@ -393,7 +397,7 @@ export async function isAssetFrozen({
         )
         .all()
 
-    return rows[0]?.isFrozen === true
+    return describeHolding(scope.chainId, rows[0]?.native ?? null).restriction
 }
 
 type DeleteAssetHoldingsParams = {
@@ -456,9 +460,9 @@ type GetAssetHolderAddressesParams = {
 }
 
 /**
- * Addresses of the user's accounts that hold, or are opted into, `assetId` on
- * `network` — owners (non-zero amount) first, then opted-in-with-zero rows, and
- * by address within each group so repeated lookups agree on the same account.
+ * Addresses of the user's accounts with a holding row for `assetId` on
+ * `network` — owners (non-zero amount) first, then zero-balance rows, and by
+ * address within each group so repeated lookups agree on the same account.
  */
 export async function getAssetHolderAddresses({
     db = getDatabase(),
@@ -482,16 +486,16 @@ export async function getAssetHolderAddresses({
         .all()
 
     const owned: string[] = []
-    const optedIn: string[] = []
+    const zeroBalance: string[] = []
     for (const row of rows) {
         if (row.amount.greaterThan(0)) {
             owned.push(row.accountAddress)
         } else {
-            optedIn.push(row.accountAddress)
+            zeroBalance.push(row.accountAddress)
         }
     }
 
-    return [...owned, ...optedIn]
+    return [...owned, ...zeroBalance]
 }
 
 export type HeldAssetRef = {
@@ -504,7 +508,7 @@ type GetHeldAssetIdsByAccountParams = {
     accountAddress: string
 }
 
-/** All (assetId, network) pairs the account holds or is opted into, across every network. */
+/** All (assetId, network) pairs the account has a holding row for, across every network. */
 export async function getHeldAssetIdsByAccount({
     db = getDatabase(),
     accountAddress,

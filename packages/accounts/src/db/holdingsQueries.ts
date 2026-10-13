@@ -20,12 +20,15 @@ import {
     PeraAssetType,
     isNativeAssetId,
     nativeAssetFor,
-    peraAssetFromColumns,
+    peraAssetFromJoinRow,
+    peraAssetJoinColumns,
     type PeraAsset,
+    type PeraAssetJoinRow,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import {
     toScopeKey,
+    type ChainHoldingNative,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -36,10 +39,10 @@ import type { AccountHoldingsFilters } from './holdingsRepository'
 
 export type AccountHoldingsPageRow = {
     assetId: string
-    /** Amount in base units (microalgos for ALGO). */
+    /** Amount in base units. */
     amount: Decimal
-    /** Holding-level freeze from algod — frozen assets can't be transferred. */
-    isFrozen: boolean
+    /** The chain's own data about the holding; read only through the adapter. */
+    native: Nullable<ChainHoldingNative>
     /** Joined asset metadata, or null until the asset metadata syncs. */
     asset: Nullable<PeraAsset>
     /** Joined USD price, or null until the price syncs. */
@@ -74,7 +77,7 @@ async function queryHoldingRows({
     search,
     hideZeroBalance,
     hideNfts,
-    hideOptedInNfts,
+    hideZeroBalanceNfts,
     excludeAssetTypes,
     limit,
     offset,
@@ -95,7 +98,7 @@ async function queryHoldingRows({
                 ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
             )!,
         )
-    } else if (hideOptedInNfts) {
+    } else if (hideZeroBalanceNfts) {
         conditions.push(
             or(
                 isNull(AssetsPeraSchema.assetType),
@@ -161,15 +164,8 @@ async function queryHoldingRows({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
-            isFrozen: AccountAssetHoldingsSchema.isFrozen,
-            decimals: AssetsNodeSchema.decimals,
-            creatorAddress: AssetsNodeSchema.creatorAddress,
-            totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
-            name: AssetsNodeSchema.name,
-            unitName: AssetsNodeSchema.unitName,
-            url: AssetsNodeSchema.url,
-            metadata: AssetsNodeSchema.metadata,
-            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
+            native: AccountAssetHoldingsSchema.native,
+            ...peraAssetJoinColumns(),
             isFavorited: AssetsPeraSchema.isFavorited,
             usdPrice: sql<Nullable<string>>`${AssetPricesSchema.usdPrice}`,
         })
@@ -199,43 +195,20 @@ export async function getAccountHoldingsPage(
     return rows.map(r => ({
         assetId: r.assetId,
         amount: r.amount,
-        isFrozen: r.isFrozen,
-        asset:
-            r.decimals !== null && r.totalSupply !== null
-                ? peraAssetFromColumns({
-                      assetId: r.assetId,
-                      decimals: r.decimals,
-                      creatorAddress: r.creatorAddress ?? '',
-                      totalSupply: new Decimal(r.totalSupply),
-                      name: r.name,
-                      unitName: r.unitName,
-                      url: r.url,
-                      metadata: r.metadata,
-                      peraMetadataJson: r.peraMetadataJson,
-                  })
-                : null,
+        native: r.native,
+        asset: peraAssetFromJoinRow(r),
         usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
         isFavorited: !!r.isFavorited,
     }))
 }
 
 /** Raw holdings row that defers `PeraAsset` materialization to the consumer. */
-export type AccountHoldingsLiteRow = {
-    assetId: string
-    /** Amount in base units (microalgos for ALGO). */
+export type AccountHoldingsLiteRow = PeraAssetJoinRow & {
+    /** Amount in base units. */
     amount: Decimal
-    decimals: Nullable<number>
-    creatorAddress: Nullable<string>
-    totalSupply: Nullable<string>
-    name: Nullable<string>
-    unitName: Nullable<string>
-    url: Nullable<string>
-    metadata: Nullable<string>
-    peraMetadataJson: Nullable<string>
     isFavorited: boolean
     /** USD price per whole unit, or null until the price syncs. */
     usdPrice: Nullable<Decimal>
-    isFrozen: boolean
 }
 
 /**
@@ -248,36 +221,12 @@ export async function getAccountHoldingsLite(
     params: GetAccountHoldingsPageParams,
 ): Promise<AccountHoldingsLiteRow[]> {
     const rows = await queryHoldingRows(params)
-    return rows.map(r => ({
-        assetId: r.assetId,
-        amount: r.amount,
-        decimals: r.decimals,
-        creatorAddress: r.creatorAddress,
-        totalSupply: r.totalSupply,
-        name: r.name,
-        unitName: r.unitName,
-        url: r.url,
-        metadata: r.metadata,
-        peraMetadataJson: r.peraMetadataJson,
+    return rows.map(({ native: _native, ...r }) => ({
+        ...r,
         isFavorited: !!r.isFavorited,
         usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
-        isFrozen: r.isFrozen,
     }))
 }
-
-/** The subset of a lite row that materializes into a `PeraAsset`. */
-export type AssetColumnsLite = Pick<
-    AccountHoldingsLiteRow,
-    | 'assetId'
-    | 'decimals'
-    | 'creatorAddress'
-    | 'totalSupply'
-    | 'name'
-    | 'unitName'
-    | 'url'
-    | 'metadata'
-    | 'peraMetadataJson'
->
 
 /**
  * Call only for rows you actually render — the parse is cached by raw JSON, so
@@ -289,37 +238,21 @@ export type AssetColumnsLite = Pick<
  * would render the native balance as a skeleton that never resolves.
  */
 export const assetFromHoldingLiteRow = (
-    row: AssetColumnsLite,
+    row: PeraAssetJoinRow,
     chainId: ChainId,
-): Nullable<PeraAsset> => {
-    if (row.decimals === null || row.totalSupply === null) {
-        return isNativeAssetId(chainId, row.assetId)
-            ? nativeAssetFor(chainId)
-            : null
-    }
+): Nullable<PeraAsset> =>
+    peraAssetFromJoinRow(row) ??
+    (isNativeAssetId(chainId, row.assetId) ? nativeAssetFor(chainId) : null)
 
-    return peraAssetFromColumns({
-        assetId: row.assetId,
-        decimals: row.decimals,
-        creatorAddress: row.creatorAddress ?? '',
-        totalSupply: new Decimal(row.totalSupply),
-        name: row.name,
-        unitName: row.unitName,
-        url: row.url,
-        metadata: row.metadata,
-        peraMetadataJson: row.peraMetadataJson,
-    })
-}
-
-/** SQL-expressible collectible orders. Opt-in-round order is applied by the caller. */
+/** SQL-expressible collectible orders. Acquisition order is applied by the caller. */
 export type CollectibleSqlSortMode =
     | 'titleAsc'
     | 'titleDesc'
     | 'newestFirst'
     | 'oldestFirst'
 
-export type AccountCollectibleLiteRow = AssetColumnsLite & {
-    /** Amount held, in base units. Zero means opted in but holding none. */
+export type AccountCollectibleLiteRow = PeraAssetJoinRow & {
+    /** Amount held, in base units. Zero means a holding row with none held. */
     amount: Decimal
     /** Pera collectible title; null when metadata hasn't synced. */
     title: Nullable<string>
@@ -335,7 +268,7 @@ export type GetAccountCollectiblesLiteParams = {
     /** Case-insensitive substring match against title / name / collection / asset id. */
     search?: string
     /** When false, collectibles the account holds none of are excluded. */
-    includeOptedInOnly?: boolean
+    includeZeroBalance?: boolean
 }
 
 /**
@@ -352,7 +285,7 @@ export async function getAccountCollectiblesLite({
     scope,
     sortMode,
     search,
-    includeOptedInOnly = true,
+    includeZeroBalance = true,
 }: GetAccountCollectiblesLiteParams): Promise<AccountCollectibleLiteRow[]> {
     const network = toScopeKey(scope)
     // Built here, not at module scope: a top-level `sql` template dereferences
@@ -385,7 +318,7 @@ export async function getAccountCollectiblesLite({
         eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
     ]
 
-    if (!includeOptedInOnly) {
+    if (!includeZeroBalance) {
         conditions.push(ne(AccountAssetHoldingsSchema.amount, new Decimal(0)))
     }
 
@@ -431,14 +364,7 @@ export async function getAccountCollectiblesLite({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
-            decimals: AssetsNodeSchema.decimals,
-            creatorAddress: AssetsNodeSchema.creatorAddress,
-            totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
-            name: AssetsNodeSchema.name,
-            unitName: AssetsNodeSchema.unitName,
-            url: AssetsNodeSchema.url,
-            metadata: AssetsNodeSchema.metadata,
-            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
+            ...peraAssetJoinColumns(),
             title: collectibleTitleExpr,
             collectionName: collectionNameExpr,
         })
@@ -477,18 +403,5 @@ export async function getAccountCollectiblesLite({
         .orderBy(...orderBy)
         .all()
 
-    return rows.map(row => ({
-        assetId: row.assetId,
-        amount: row.amount,
-        decimals: row.decimals,
-        creatorAddress: row.creatorAddress,
-        totalSupply: row.totalSupply,
-        name: row.name,
-        unitName: row.unitName,
-        url: row.url,
-        metadata: row.metadata,
-        peraMetadataJson: row.peraMetadataJson,
-        title: row.title,
-        collectionName: row.collectionName,
-    }))
+    return rows
 }

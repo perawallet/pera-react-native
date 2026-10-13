@@ -69,12 +69,8 @@ describe('syncAndEnrichNewAccount', () => {
                 totalAppsOptedIn: 0,
             },
             holdings: [
-                {
-                    assetId: '0',
-                    amount: new Decimal(1_000_000),
-                    isFrozen: false,
-                },
-                { assetId: '100', amount: new Decimal(5), isFrozen: false },
+                { assetId: '0', amount: new Decimal(1_000_000) },
+                { assetId: '100', amount: new Decimal(5) },
             ],
             observedRound: null,
         })

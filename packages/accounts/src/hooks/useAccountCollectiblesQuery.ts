@@ -29,7 +29,7 @@ export type UseAccountCollectiblesQueryParams = {
     sortMode?: CollectibleSqlSortMode
     search?: string
     /** When false, collectibles the account holds none of are excluded. */
-    includeOptedInOnly?: boolean
+    includeZeroBalance?: boolean
     enabled?: boolean
 }
 
@@ -60,7 +60,7 @@ export const useAccountCollectiblesQuery = (
     {
         sortMode,
         search,
-        includeOptedInOnly = true,
+        includeZeroBalance = true,
         enabled = true,
     }: UseAccountCollectiblesQueryParams = {},
 ): UseAccountCollectiblesQueryResult => {
@@ -68,7 +68,7 @@ export const useAccountCollectiblesQuery = (
         queryKey: getAccountCollectiblesQueryKey(address ?? '', scope, {
             sortMode,
             search,
-            includeOptedInOnly,
+            includeZeroBalance,
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
@@ -101,7 +101,7 @@ export const useAccountCollectiblesQuery = (
                 scope,
                 sortMode,
                 search,
-                includeOptedInOnly,
+                includeZeroBalance,
             })
         },
     })

@@ -129,7 +129,6 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
                     {
                         assetId: '0',
                         amount: new Decimal(5_000_000),
-                        isFrozen: false,
                     },
                 ],
             })
@@ -151,7 +150,6 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
                 {
                     assetId: '0',
                     amount: new Decimal(5_000_000),
-                    isFrozen: false,
                 },
             ],
         })

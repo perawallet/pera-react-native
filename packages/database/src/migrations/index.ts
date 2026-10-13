@@ -26,6 +26,7 @@ import m0010 from './0010_text_asset_ids.sql?raw'
 import m0011 from './0011_transactions_chain_data.sql?raw'
 import m0012 from './0012_account_chain_state.sql?raw'
 import m0013 from './0013_drop_account_balances.sql?raw'
+import m0014 from './0014_holdings_native.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -69,4 +70,6 @@ export const migrations: MigrationConfig = {
     '0012_account_chain_state': m0012,
     // Backfills the Algorand rows by string arithmetic, so no amount passes through a float; a row the dual-write already made wins.
     '0013_drop_account_balances': m0013,
+    // The backfill means the first sync after upgrade writes nothing.
+    '0014_holdings_native': m0014,
 }

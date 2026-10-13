@@ -48,7 +48,7 @@ const mockUpdateSwapStatus = vi.fn()
 const mockRegisterHandoff = vi.fn()
 const mockOnProgress = vi.fn()
 const mockIsMultisigAccount = vi.fn()
-const mockIsAssetFrozen = vi.fn()
+const mockGetHoldingRestriction = vi.fn()
 // Hoisted so they're initialized before the (hoisted) mock factories run.
 const { mockValidate, mockComputeShortfall, mockGetOpenSubmissionAttempts } =
     vi.hoisted(() => ({
@@ -120,7 +120,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     isMultisigAccount: (account: unknown) => mockIsMultisigAccount(account),
-    isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
+    getHoldingRestriction: (...args: unknown[]) =>
+        mockGetHoldingRestriction(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
@@ -279,11 +280,14 @@ const autoError = (err: Error) => {
     })
 }
 
-// Answers per asset, like the real `isAssetFrozen`. A test asserting a frozen
+// Answers per asset, like the real `getHoldingRestriction`. A test asserting a frozen
 // side therefore fails if the flow never asked about that side.
 const freezeHoldings = (...frozenIds: string[]) =>
-    mockIsAssetFrozen.mockImplementation(({ assetId }: { assetId: string }) =>
-        Promise.resolve(frozenIds.includes(assetId)),
+    mockGetHoldingRestriction.mockImplementation(
+        ({ assetId }: { assetId: string }) =>
+            Promise.resolve(
+                frozenIds.includes(assetId) ? 'transferBlocked' : null,
+            ),
     )
 
 const lastProgress = () => mockOnProgress.mock.calls.at(-1)?.[0]
@@ -487,7 +491,7 @@ describe('executeAlgorandSwap', () => {
             kind: 'failed',
             failure: { phase: 'prepare', reason: 'missing-quote-id' },
         })
-        expect(mockIsAssetFrozen).not.toHaveBeenCalled()
+        expect(mockGetHoldingRestriction).not.toHaveBeenCalled()
         expect(mockPrepareTransactions).not.toHaveBeenCalled()
     })
 
@@ -527,11 +531,11 @@ describe('executeAlgorandSwap', () => {
     it('reads holdings at execute time rather than from a balances subscription', async () => {
         await run(makeQuote('quote-reads-db'), { account: senderAccount })
 
-        const asked = mockIsAssetFrozen.mock.calls.map(
+        const asked = mockGetHoldingRestriction.mock.calls.map(
             ([args]) => (args as { assetId: string }).assetId,
         )
         expect(asked).toEqual(['0', '999'])
-        expect(mockIsAssetFrozen).toHaveBeenCalledWith({
+        expect(mockGetHoldingRestriction).toHaveBeenCalledWith({
             accountAddress: 'SENDER_ADDR',
             assetId: '0',
             scope: { chainId: 'algorand', networkId: 'mainnet' },

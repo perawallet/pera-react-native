@@ -13,7 +13,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
+import { Networks } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountBalancesHistoryQuery } from '../useAccountBalancesHistoryQuery'
 import { getAccountBalancesHistoryQueryKey } from '../querykeys'
@@ -21,6 +21,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -30,14 +31,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     ),
 }))
 
-// Mock endpoints
-const mocks = vi.hoisted(() => ({
-    fetchAccountsBalanceHistory: vi.fn(),
-}))
-
-vi.mock('../endpoints', () => ({
-    fetchAccountsBalanceHistory: mocks.fetchAccountsBalanceHistory,
-}))
+const portfolioHistory = () =>
+    vi.mocked(fakeAccountsChain().adapter.fetchPortfolioHistory)
 
 const mockNetwork = { network: 'mainnet' }
 
@@ -99,23 +94,18 @@ describe('useAccountBalancesHistoryQuery', () => {
 
     describe('hook behavior', () => {
         it('fetches and transforms balance history data', async () => {
-            const mockData = {
-                results: [
-                    {
-                        datetime: '2024-01-01T00:00:00Z',
-                        usd_value: '100.00',
-                        algo_value: '500.00',
-                        round: 12345,
-                    },
-                    {
-                        datetime: '2024-01-02T00:00:00Z',
-                        usd_value: '120.00',
-                        algo_value: '550.00',
-                        round: 12346,
-                    },
-                ],
-            }
-            mocks.fetchAccountsBalanceHistory.mockResolvedValue(mockData)
+            portfolioHistory().mockResolvedValue([
+                {
+                    timestamp: Date.parse('2024-01-01T00:00:00Z'),
+                    usdValue: new Decimal('100.00'),
+                    nativeValue: new Decimal('500.00'),
+                },
+                {
+                    timestamp: Date.parse('2024-01-02T00:00:00Z'),
+                    usdValue: new Decimal('120.00'),
+                    nativeValue: new Decimal('550.00'),
+                },
+            ])
 
             const { result } = renderHook(
                 () =>
@@ -133,21 +123,17 @@ describe('useAccountBalancesHistoryQuery', () => {
             expect(result.current.data?.[0]).toEqual({
                 datetime: new Date('2024-01-01T00:00:00Z'),
                 preferredValue: new Decimal(150), // 100 * 1.5
-                algoValue: new Decimal(500),
-                round: 12345,
+                nativeValue: new Decimal(500),
             })
             expect(result.current.data?.[1]).toEqual({
                 datetime: new Date('2024-01-02T00:00:00Z'),
                 preferredValue: new Decimal(180), // 120 * 1.5
-                algoValue: new Decimal(550),
-                round: 12346,
+                nativeValue: new Decimal(550),
             })
         })
 
-        it('handles empty results', async () => {
-            mocks.fetchAccountsBalanceHistory.mockResolvedValue({
-                results: null,
-            })
+        it('handles an empty history', async () => {
+            portfolioHistory().mockResolvedValue([])
 
             const { result } = renderHook(
                 () =>
@@ -165,9 +151,7 @@ describe('useAccountBalancesHistoryQuery', () => {
         })
 
         it('handles loading state', () => {
-            mocks.fetchAccountsBalanceHistory.mockReturnValue(
-                new Promise(() => {}),
-            )
+            portfolioHistory().mockReturnValue(new Promise(() => {}))
 
             const { result } = renderHook(
                 () =>
@@ -183,9 +167,7 @@ describe('useAccountBalancesHistoryQuery', () => {
         })
 
         it('handles error state', async () => {
-            mocks.fetchAccountsBalanceHistory.mockRejectedValue(
-                new Error('Network error'),
-            )
+            portfolioHistory().mockRejectedValue(new Error('Network error'))
 
             const { result } = renderHook(
                 () =>
@@ -201,9 +183,9 @@ describe('useAccountBalancesHistoryQuery', () => {
             expect(result.current.error).toEqual(new Error('Network error'))
         })
 
-        it('fetches with the legacy network of the selected scope', async () => {
+        it('fetches once with exactly the addresses, period and scope', async () => {
             mockNetwork.network = 'testnet'
-            mocks.fetchAccountsBalanceHistory.mockResolvedValue({ results: [] })
+            portfolioHistory().mockResolvedValue([])
 
             const { result } = renderHook(
                 () =>
@@ -217,10 +199,11 @@ describe('useAccountBalancesHistoryQuery', () => {
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-            expect(mocks.fetchAccountsBalanceHistory).toHaveBeenCalledWith(
+            expect(portfolioHistory()).toHaveBeenCalledTimes(1)
+            expect(portfolioHistory()).toHaveBeenCalledWith(
                 ['ADDR1'],
                 'one-day',
-                'testnet',
+                { chainId: 'algorand', networkId: 'testnet' },
             )
         })
 
@@ -244,7 +227,7 @@ describe('useAccountBalancesHistoryQuery', () => {
                     'algorand',
                     'balanceHistory',
                 )
-                expect(mocks.fetchAccountsBalanceHistory).not.toHaveBeenCalled()
+                expect(portfolioHistory()).not.toHaveBeenCalled()
             },
         )
 
@@ -252,9 +235,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             'leaves the query enabled and isUnavailableOnNetwork false on %s',
             async network => {
                 mockNetwork.network = network
-                mocks.fetchAccountsBalanceHistory.mockResolvedValue({
-                    results: [],
-                })
+                portfolioHistory().mockResolvedValue([])
 
                 const { result } = renderHook(
                     () =>
@@ -271,7 +252,7 @@ describe('useAccountBalancesHistoryQuery', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(false)
-                expect(mocks.fetchAccountsBalanceHistory).toHaveBeenCalled()
+                expect(portfolioHistory()).toHaveBeenCalled()
             },
         )
 
@@ -292,7 +273,7 @@ describe('useAccountBalancesHistoryQuery', () => {
 
                 await result.current.refetch()
 
-                expect(mocks.fetchAccountsBalanceHistory).not.toHaveBeenCalled()
+                expect(portfolioHistory()).not.toHaveBeenCalled()
             },
         )
 
@@ -300,9 +281,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             'still invokes the queryFn when refetch is called on %s',
             async network => {
                 mockNetwork.network = network
-                mocks.fetchAccountsBalanceHistory.mockResolvedValue({
-                    results: [],
-                })
+                portfolioHistory().mockResolvedValue([])
 
                 const { result } = renderHook(
                     () =>
@@ -315,11 +294,11 @@ describe('useAccountBalancesHistoryQuery', () => {
                 )
 
                 await waitFor(() => expect(result.current.isSuccess).toBe(true))
-                mocks.fetchAccountsBalanceHistory.mockClear()
+                portfolioHistory().mockClear()
 
                 await result.current.refetch()
 
-                expect(mocks.fetchAccountsBalanceHistory).toHaveBeenCalled()
+                expect(portfolioHistory()).toHaveBeenCalled()
             },
         )
 

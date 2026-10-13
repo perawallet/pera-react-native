@@ -31,7 +31,7 @@ import {
     getAllHeldAssetIdsForNetwork,
     getAssetHolderAddresses,
     insertAssetHolding,
-    isAssetFrozen,
+    getHoldingRestriction,
     refreshAccountHoldings,
 } from '../holdingsRepository'
 import { getAccountPortfolioTotals } from '../portfolioQueries'
@@ -64,7 +64,7 @@ describe('accounts repositories take a ChainScope', () => {
             ScopeOf<typeof getAccountHoldings>
         >().toEqualTypeOf<ChainScope>()
         expectTypeOf<
-            ScopeOf<typeof isAssetFrozen>
+            ScopeOf<typeof getHoldingRestriction>
         >().toEqualTypeOf<ChainScope>()
         expectTypeOf<
             ScopeOf<typeof deleteAssetHoldings>

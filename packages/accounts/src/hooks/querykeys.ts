@@ -23,7 +23,7 @@ export const isAccountQuery = (queryKey: QueryKey): boolean =>
 type AccountBalancesQueryKeyFilters = {
     hideZeroBalance?: boolean
     hideNfts?: boolean
-    hideOptedInNfts?: boolean
+    hideZeroBalanceNfts?: boolean
     excludeAssetTypes?: string[]
 }
 
@@ -64,7 +64,7 @@ export const getAccountCollectiblesQueryKey = (
     params?: {
         sortMode?: string
         search?: string
-        includeOptedInOnly?: boolean
+        includeZeroBalance?: boolean
     },
 ) => [MODULE_PREFIX, 'collectibles', { address, scope, ...params }]
 
@@ -90,11 +90,11 @@ export const getOnChainAccountStateQueryKey = (
 ) => [MODULE_PREFIX, 'on-chain-account-state', { address, scope }]
 
 // The { address } payload keeps this key inside the sync tick's scoped
-// invalidation, so a fresh opt-in reorders the gallery on the next sync.
-export const getAccountOptInRoundsQueryKey = (
+// invalidation, so a newly acquired asset reorders the gallery on the next sync.
+export const getHoldingAcquisitionOrderQueryKey = (
     address: string,
     scope: ChainScope,
-) => [MODULE_PREFIX, 'opt-in-rounds', { address, scope }]
+) => [MODULE_PREFIX, 'holding-acquisition-order', { address, scope }]
 
 export const getDelegatedAddressesQueryKey = (
     address: string,

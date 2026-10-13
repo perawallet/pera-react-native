@@ -241,7 +241,7 @@ describe('useCollectibleDetail', () => {
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         mockUseAllAccounts.mockReturnValue([mockAccount])
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(1), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(1), nativeValue: new Decimal(0) },
         })
         mockUseSingleAssetDetailsQuery.mockReturnValue({
             data: makeCollectibleAsset(),
@@ -289,7 +289,7 @@ describe('useCollectibleDetail', () => {
 
     it('reports opted-in-not-owned when balance exists with amount 0', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
 
         const { result } = renderHook(() => useCollectibleDetail('12345'))
@@ -311,7 +311,7 @@ describe('useCollectibleDetail', () => {
 
     it('opts out the asset and navigates back on success', async () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockResolvedValueOnce({ txIds: ['TX1'] })
@@ -333,7 +333,7 @@ describe('useCollectibleDetail', () => {
 
     it('shows an error toast when opt-out fails', async () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         const optOutError = new Error('signing rejected')
@@ -352,7 +352,7 @@ describe('useCollectibleDetail', () => {
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
-            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+            data: { amount: new Decimal(0), nativeValue: new Decimal(0) },
         })
         mockRequestBottomSheet.mockResolvedValueOnce('confirm')
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())

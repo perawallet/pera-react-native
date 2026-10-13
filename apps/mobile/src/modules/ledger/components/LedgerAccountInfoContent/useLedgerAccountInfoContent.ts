@@ -122,7 +122,7 @@ export const useLedgerAccountInfoContent = (
                   )
 
         // Extract usdPrice from the ALGO preview asset for the account row.
-        const algoPreviewAsset = preview.assets.find(a => a.isAlgo)
+        const algoPreviewAsset = preview.assets.find(a => a.isNative)
         const algoUsdPrice = algoPreviewAsset?.usdPrice ?? new Decimal(0)
 
         const list: LedgerInfoListItem[] = [
@@ -135,7 +135,7 @@ export const useLedgerAccountInfoContent = (
                 kind: 'account',
                 key: 'account',
                 account: synthAccount,
-                algoBalance: preview.algoBalance,
+                algoBalance: preview.nativeBalance,
                 algoUsdPrice,
                 // For the rekeyed-to case the synth is a watch + rekey,
                 // and the auth Ledger isn't in the store yet — force the
@@ -156,11 +156,11 @@ export const useLedgerAccountInfoContent = (
                 accountBalance: {
                     assetId: asset.assetId,
                     amount: asset.amount,
-                    isFrozen: asset.isFrozen,
+                    restriction: asset.restriction,
                     // Holding value in ALGOs (display units):
                     // amount * usdPrice / algoUsdPrice. Falls back to 0
                     // when the ALGO USD price is unknown (avoids /0).
-                    algoValue: algoUsdPrice.isZero()
+                    nativeValue: algoUsdPrice.isZero()
                         ? new Decimal(0)
                         : asset.amount.times(asset.usdPrice).div(algoUsdPrice),
                     // The preview's usdPrice is 0 when unknown, so it can't tell unpriced from worthless.

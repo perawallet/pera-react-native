@@ -64,7 +64,7 @@ export const SelectHDWalletScreen = () => {
                 sum.plus(
                     accountBalances.get(
                         chainAccountOf(acc, LEGACY_CHAIN_ID)?.address ?? '',
-                    )?.algoValue ?? new Decimal(0),
+                    )?.nativeValue ?? new Decimal(0),
                 ),
             new Decimal(0),
         )

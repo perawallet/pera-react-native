@@ -15,23 +15,31 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-import { useAccountOptInRoundsQuery } from '../useAccountOptInRoundsQuery'
+import { useHoldingAcquisitionOrderQuery } from '../useHoldingAcquisitionOrderQuery'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
 
-const fetchAssetOptInRounds = () =>
-    vi.mocked(fakeAccountsChain().adapter.fetchAssetOptInRounds)
+const capability = vi.hoisted(() => ({ manageAssets: true }))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: (_chainId: string, name: string) =>
+        name === 'manageAssets' ? capability.manageAssets : true,
+}))
+
+const fetchHoldingAcquisitionOrder = () =>
+    vi.mocked(fakeAccountsChain().adapter.fetchHoldingAcquisitionOrder)
 
 const mockAddress = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 
-describe('useAccountOptInRoundsQuery', () => {
+describe('useHoldingAcquisitionOrderQuery', () => {
     let queryClient: QueryClient
     let wrapper: React.FC<{ children: React.ReactNode }>
 
     beforeEach(() => {
         vi.clearAllMocks()
+        capability.manageAssets = true
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -43,8 +51,8 @@ describe('useAccountOptInRoundsQuery', () => {
             )
     })
 
-    test('fetches opt-in rounds for the address', async () => {
-        fetchAssetOptInRounds().mockResolvedValue(
+    test('fetches the acquisition order for the address', async () => {
+        fetchHoldingAcquisitionOrder().mockResolvedValue(
             new Map([
                 ['10', 100],
                 ['20', 200],
@@ -52,17 +60,17 @@ describe('useAccountOptInRoundsQuery', () => {
         )
 
         const { result } = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE),
+            () => useHoldingAcquisitionOrderQuery(mockAddress, MAINNET_SCOPE),
             { wrapper },
         )
 
         await waitFor(() =>
-            expect(result.current.optInRounds.get('10')).toBe(100),
+            expect(result.current.acquisitionOrder.get('10')).toBe(100),
         )
 
-        expect(result.current.optInRounds.get('20')).toBe(200)
+        expect(result.current.acquisitionOrder.get('20')).toBe(200)
         expect(result.current.isPending).toBe(false)
-        expect(fetchAssetOptInRounds()).toHaveBeenCalledWith(
+        expect(fetchHoldingAcquisitionOrder()).toHaveBeenCalledWith(
             mockAddress,
             MAINNET_SCOPE,
         )
@@ -70,56 +78,76 @@ describe('useAccountOptInRoundsQuery', () => {
 
     test('does not fetch when disabled and keeps a stable empty map', async () => {
         const { result, rerender } = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE, false),
+            () =>
+                useHoldingAcquisitionOrderQuery(
+                    mockAddress,
+                    MAINNET_SCOPE,
+                    false,
+                ),
             { wrapper },
         )
 
-        expect(result.current.optInRounds.size).toBe(0)
+        expect(result.current.acquisitionOrder.size).toBe(0)
         expect(result.current.isPending).toBe(false)
 
-        const firstMap = result.current.optInRounds
+        const firstMap = result.current.acquisitionOrder
         rerender()
-        expect(result.current.optInRounds).toBe(firstMap)
+        expect(result.current.acquisitionOrder).toBe(firstMap)
 
         await Promise.resolve()
-        expect(fetchAssetOptInRounds()).not.toHaveBeenCalled()
+        expect(fetchHoldingAcquisitionOrder()).not.toHaveBeenCalled()
+    })
+
+    test('makes no request while manageAssets is off', async () => {
+        capability.manageAssets = false
+
+        const { result } = renderHook(
+            () => useHoldingAcquisitionOrderQuery(mockAddress, MAINNET_SCOPE),
+            { wrapper },
+        )
+
+        expect(result.current.acquisitionOrder.size).toBe(0)
+        expect(result.current.isPending).toBe(false)
+
+        await Promise.resolve()
+        expect(fetchHoldingAcquisitionOrder()).not.toHaveBeenCalled()
     })
 
     test('does not fetch when the address is missing', async () => {
         const { result } = renderHook(
-            () => useAccountOptInRoundsQuery(undefined, MAINNET_SCOPE),
+            () => useHoldingAcquisitionOrderQuery(undefined, MAINNET_SCOPE),
             { wrapper },
         )
 
-        expect(result.current.optInRounds.size).toBe(0)
+        expect(result.current.acquisitionOrder.size).toBe(0)
         expect(result.current.isPending).toBe(false)
 
         await Promise.resolve()
-        expect(fetchAssetOptInRounds()).not.toHaveBeenCalled()
+        expect(fetchHoldingAcquisitionOrder()).not.toHaveBeenCalled()
     })
 
     test('serves the fresh cache on remount instead of refetching', async () => {
-        fetchAssetOptInRounds().mockResolvedValue(new Map([['10', 100]]))
+        fetchHoldingAcquisitionOrder().mockResolvedValue(new Map([['10', 100]]))
 
         const first = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE),
+            () => useHoldingAcquisitionOrderQuery(mockAddress, MAINNET_SCOPE),
             {
                 wrapper,
             },
         )
         await waitFor(() =>
-            expect(first.result.current.optInRounds.size).toBe(1),
+            expect(first.result.current.acquisitionOrder.size).toBe(1),
         )
         first.unmount()
 
         const second = renderHook(
-            () => useAccountOptInRoundsQuery(mockAddress, MAINNET_SCOPE),
+            () => useHoldingAcquisitionOrderQuery(mockAddress, MAINNET_SCOPE),
             { wrapper },
         )
         await waitFor(() =>
-            expect(second.result.current.optInRounds.size).toBe(1),
+            expect(second.result.current.acquisitionOrder.size).toBe(1),
         )
 
-        expect(fetchAssetOptInRounds()).toHaveBeenCalledTimes(1)
+        expect(fetchHoldingAcquisitionOrder()).toHaveBeenCalledTimes(1)
     })
 })

@@ -206,7 +206,7 @@ describe('Flow: Cold start with no connectivity', () => {
         )
 
         // Last-known balances, not zeros.
-        expect(result.current.summary.algoAmount.toString()).toBe('10')
+        expect(result.current.summary.nativeAmount.toString()).toBe('10')
         expect(result.current.totals.portfolioUsdValue?.toString()).toBe('3')
         expect(
             result.current.balances.accountBalances.get(addressOf(ACCOUNT))
@@ -282,8 +282,8 @@ describe('Flow: Cold start with no connectivity', () => {
             expect(result.current.isPending).toBe(false)
         })
 
-        // The ALGO-denominated total is real and price-independent.
-        expect(result.current.portfolioAlgoValue.toString()).toBe('10')
+        // The native-denominated total is real and price-independent.
+        expect(result.current.portfolioNativeValue.toString()).toBe('10')
 
         // The USD total is NOT 0 — we hold 10 ALGO and simply don't know
         // what it's worth. Reporting 0 here is the fake number the epic

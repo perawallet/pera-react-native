@@ -18,7 +18,7 @@ import {
     addressOn,
     useSelectedAccount,
     useAccountCollectiblesQuery,
-    useAccountOptInRoundsQuery,
+    useHoldingAcquisitionOrderQuery,
     useCanSignWith,
     type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
@@ -154,7 +154,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         }
     }, [requestBottomSheet, openSortSheet, openFilterSheet])
 
-    const { optInRounds } = useAccountOptInRoundsQuery(
+    const { acquisitionOrder } = useHoldingAcquisitionOrderQuery(
         address,
         scope,
         sortMode === 'recentlyAdded',
@@ -177,8 +177,8 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         SEARCH_DEBOUNCE_TIME_SHORT,
     )
 
-    // Opt-in round lives in a separate indexer-backed query, so that one order
-    // can't be expressed in SQL. Everything else — the collectible filter, the
+    // Acquisition order lives in a separate chain-backed query, so that one
+    // order can't be expressed in SQL. Everything else — the collectible filter, the
     // search, the sort — runs in the engine, and rows come back unparsed.
     const sqlSortMode = sortMode === 'recentlyAdded' ? undefined : sortMode
 
@@ -189,27 +189,27 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     } = useAccountCollectiblesQuery(address, scope, {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
-        includeOptedInOnly: showOptedIn,
+        includeZeroBalance: showOptedIn,
     })
 
     const collectibles = useMemo(() => {
         if (sortMode !== 'recentlyAdded') return rows
 
-        // A row with no known round is newer than the indexer's view: holdings
-        // mirror algod, so only a just-opted-in asset can be missing from the
-        // (lagging) indexer map. Float those to the top so a fresh opt-in
+        // A row with no known order is newer than the chain's view: holdings
+        // mirror the node, so only a just-acquired asset can be missing from
+        // the (lagging) map. Float those to the top so a fresh acquisition
         // lands first instantly. `sort` is stable, so ties keep
         // SQL's asset-id-descending order, which also covers the map's empty
         // pre-load state.
         return [...rows].sort((a, b) => {
-            const aRound = optInRounds.get(a.assetId)
-            const bRound = optInRounds.get(b.assetId)
-            if (aRound === bRound) return 0
-            if (aRound === undefined) return -1
-            if (bRound === undefined) return 1
-            return bRound - aRound
+            const aOrder = acquisitionOrder.get(a.assetId)
+            const bOrder = acquisitionOrder.get(b.assetId)
+            if (aOrder === bOrder) return 0
+            if (aOrder === undefined) return -1
+            if (bOrder === undefined) return 1
+            return bOrder - aOrder
         })
-    }, [rows, sortMode, optInRounds])
+    }, [rows, sortMode, acquisitionOrder])
 
     const handlePress = useCallback(
         (item: AccountCollectibleLiteRow) => {
@@ -234,9 +234,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         sortMode,
         debouncedSearchFilter,
         showOptedIn,
-        // recentlyAdded is ordered by a separate indexer query, whose rounds
-        // arrive after the rows: the map landing is its own reorder.
-        sortMode === 'recentlyAdded' ? optInRounds.size : '',
+        // recentlyAdded is ordered by a separate query, whose order arrives
+        // after the rows: the map landing is its own reorder.
+        sortMode === 'recentlyAdded' ? acquisitionOrder.size : '',
     ].join('|')
     const appliedViewRequestKeyRef = useRef(viewRequestKey)
     const hasRowsForRequest = collectibles.length > 0 && !isPlaceholderData

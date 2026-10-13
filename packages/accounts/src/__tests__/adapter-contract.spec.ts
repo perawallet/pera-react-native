@@ -70,12 +70,10 @@ const fixtureAdapter: AccountsChainAdapter = {
                 {
                     assetId: NATIVE_ASSET_ID,
                     amount: new Decimal(account.balance),
-                    isFrozen: false,
                 },
                 ...Object.entries(account.assets).map(([assetId, amount]) => ({
                     assetId,
                     amount: new Decimal(amount),
-                    isFrozen: false,
                 })),
             ],
             observedRound: null,

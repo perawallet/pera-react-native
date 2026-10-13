@@ -14,7 +14,7 @@ export { AccountAssetHoldingsSchema, AccountChainStateSchema } from './schema'
 export {
     refreshAccountHoldings,
     getAccountHoldings,
-    isAssetFrozen,
+    getHoldingRestriction,
     insertAssetHolding,
     addToAssetHolding,
     deleteAssetHoldings,
@@ -33,7 +33,6 @@ export {
     assetFromHoldingLiteRow,
     type AccountCollectibleLiteRow,
     type CollectibleSqlSortMode,
-    type AssetColumnsLite,
     type AccountHoldingsPageRow,
     type AccountHoldingsLiteRow,
     type GetAccountHoldingsPageParams,

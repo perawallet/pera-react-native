@@ -43,10 +43,10 @@ const makeAccount = (address: string, name?: string): WalletAccount =>
         ...(name === undefined ? {} : { name }),
     })
 
-const makeBalance = (algoValue: number): AccountBalance => ({
+const makeBalance = (nativeValue: number): AccountBalance => ({
     assetBalances: [],
-    algoValue: new Decimal(algoValue),
-    usdValue: new Decimal(algoValue),
+    nativeValue: new Decimal(nativeValue),
+    usdValue: new Decimal(nativeValue),
     isPending: false,
     isFetched: true,
     isRefetching: false,
@@ -125,12 +125,12 @@ describe('useSortedAccounts', () => {
         ])
     })
 
-    test('sorts by algoValue even when fiatValue is unknown', () => {
+    test('sorts by nativeValue even when fiatValue is unknown', () => {
         useAccountsStore.setState({ sortMode: 'balanceDesc' })
         const withNullFiat = new Map([
-            ['ADDR_A', { algoValue: new Decimal(100), fiatValue: null }],
-            ['ADDR_B', { algoValue: new Decimal(50), fiatValue: null }],
-            ['ADDR_C', { algoValue: new Decimal(200), fiatValue: null }],
+            ['ADDR_A', { nativeValue: new Decimal(100), fiatValue: null }],
+            ['ADDR_B', { nativeValue: new Decimal(50), fiatValue: null }],
+            ['ADDR_C', { nativeValue: new Decimal(200), fiatValue: null }],
         ])
         const { result } = renderHook(() =>
             useSortedAccounts(accounts, withNullFiat, FAKE_CHAIN_ID),

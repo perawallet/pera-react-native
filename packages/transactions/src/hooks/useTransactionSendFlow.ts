@@ -31,7 +31,7 @@ import {
     addressOn,
     addToAssetHolding,
     fetchOnChainAccountState,
-    isAssetFrozen,
+    getHoldingRestriction,
     useAccountBalancesInvalidator,
     useAllAccounts,
     type WalletAccount,
@@ -255,13 +255,13 @@ export const useTransactionSendFlow = (
             // Read at submit time rather than taking the caller's word: a
             // deeplink, a stale screen or a freeze that landed mid-flow would
             // all miss a flag passed in from the UI.
-            const frozen = await isAssetFrozen({
+            const restriction = await getHoldingRestriction({
                 accountAddress: senderAddress,
                 assetId: params.asset.assetId,
                 scope,
             })
 
-            if (frozen) {
+            if (restriction !== null) {
                 throw new AssetFrozenError(params.asset.assetId)
             }
 

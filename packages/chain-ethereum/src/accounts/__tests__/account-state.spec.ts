@@ -93,7 +93,6 @@ describe('createEthereumAccountStateOps', () => {
                 {
                     assetId: 'native',
                     amount: state.nativeBalanceBaseUnits,
-                    isFrozen: false,
                 },
             ])
             expect(state.observedRound).toBe(16)

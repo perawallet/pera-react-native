@@ -60,6 +60,15 @@ export type ChainAccountNative = {
     pq?: { scheme: Extract<SigningScheme, 'falcon-1024'>; publicKey: string }
 }
 
+/**
+ * Holding data only its own chain reads, persisted on the holding row. A chain
+ * package adds its member, discriminated by `family`.
+ */
+export type ChainHoldingNative = {
+    family: 'algorand'
+    isFrozen: boolean
+}
+
 export type AccountChainState =
     | {
           family: 'algorand'

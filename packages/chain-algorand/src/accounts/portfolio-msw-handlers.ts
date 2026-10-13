@@ -11,10 +11,15 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { AccountBalanceHistoryResponse } from '../models'
+import {
+    getHoldingBalanceHistoryEndpointPath,
+    getPortfolioHistoryEndpointPath,
+    type HoldingBalanceHistoryResponse,
+    type PortfolioHistoryResponse,
+} from './portfolio-history'
 
 export type MockAccountsBalanceHistoryParams = {
-    response: AccountBalanceHistoryResponse
+    response: PortfolioHistoryResponse
     status?: number
 }
 
@@ -22,14 +27,14 @@ export const mockAccountsBalanceHistory = ({
     response,
     status = 200,
 }: MockAccountsBalanceHistoryParams): HttpHandler =>
-    http.get('*/v1/wallet/wealth/', () =>
+    http.get(`*${getPortfolioHistoryEndpointPath()}`, () =>
         HttpResponse.json(response, { status }),
     )
 
 export type MockAccountAssetBalanceHistoryParams = {
     address: string
     assetId: string
-    response: AccountBalanceHistoryResponse
+    response: HoldingBalanceHistoryResponse
     status?: number
 }
 
@@ -39,7 +44,6 @@ export const mockAccountAssetBalanceHistory = ({
     response,
     status = 200,
 }: MockAccountAssetBalanceHistoryParams): HttpHandler =>
-    http.get(
-        `*/v1/accounts/${address}/assets/${assetId}/balance-history/`,
-        () => HttpResponse.json(response, { status }),
+    http.get(`*${getHoldingBalanceHistoryEndpointPath(address, assetId)}`, () =>
+        HttpResponse.json(response, { status }),
     )
