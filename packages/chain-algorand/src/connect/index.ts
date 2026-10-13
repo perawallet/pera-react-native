@@ -11,3 +11,4 @@
  */
 
 export { algorandDappRequestAdapter } from './dappRequestAdapter'
+export { ALGORAND_WC_V2_METHOD } from './walletConnect'

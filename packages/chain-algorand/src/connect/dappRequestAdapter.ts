@@ -17,6 +17,7 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     getNetworkConfig,
     Networks,
@@ -39,7 +40,10 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isArc60WirePayload } from '../signing/message/arc60-wire'
 import { useAlgorandTransactionSigning } from './transactionSigning'
 import { algorandEmptySignaturesFor } from './emptySignatures'
-import { algorandWalletConnectSupport } from './walletConnect'
+import {
+    algorandWalletConnectSupport,
+    createAlgorandWalletConnectV2Support,
+} from './walletConnect'
 
 /**
  * The resolver's own schema, not a copy: zod strips undeclared keys, so any
@@ -159,7 +163,13 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
 
     emptySignaturesFor: algorandEmptySignaturesFor,
 
-    walletConnect: algorandWalletConnectSupport,
+    walletConnect: {
+        ...algorandWalletConnectSupport,
+        // Through the adapter's own member, so empty signatures have one entry point.
+        v2: createAlgorandWalletConnectV2Support(addresses =>
+            algorandDappRequestAdapter.emptySignaturesFor(addresses),
+        ),
+    },
 
     validateTransactionPayload(payload) {
         const parsed = arc0001GroupSchema.safeParse(payload)
@@ -173,4 +183,8 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     },
 
     useEnqueueTransactionSigning: useAlgorandTransactionSigning,
+
+    switchChain(networkId) {
+        useNetworkStore.getState().selectNetwork(ALGORAND_CHAIN_ID, networkId)
+    },
 }

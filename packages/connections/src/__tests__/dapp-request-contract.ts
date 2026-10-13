@@ -145,6 +145,64 @@ export const dappRequestContractTests = (
                 ).toBeNull()
             })
 
+            const v2 = makeAdapter().walletConnect.v2
+            if (v2) {
+                describe('v2', () => {
+                    it('declares a non-empty list of distinct methods', () => {
+                        expect(v2.methods.length).toBeGreaterThan(0)
+                        expect(new Set(v2.methods).size).toBe(v2.methods.length)
+                    })
+
+                    it('declares signing methods that are all served methods', () => {
+                        expect(v2.signingMethods.length).toBeGreaterThan(0)
+                        for (const method of v2.signingMethods) {
+                            expect(v2.methods).toContain(method)
+                        }
+                    })
+
+                    it('routes every signing method to an operation', () => {
+                        for (const method of v2.signingMethods) {
+                            expect(v2.handleRequest(method, []).kind).toBe(
+                                'operation',
+                            )
+                        }
+                    })
+
+                    it('routes every other served method to public data', () => {
+                        const publicMethods = v2.methods.filter(
+                            method => !v2.signingMethods.includes(method),
+                        )
+                        for (const method of publicMethods) {
+                            expect(v2.handleRequest(method, []).kind).toBe(
+                                'public-data',
+                            )
+                        }
+                    })
+
+                    it('routes a method it does not serve as unsupported', () => {
+                        expect(v2.handleRequest('pera_notAMethod', [])).toEqual(
+                            { kind: 'unsupported' },
+                        )
+                    })
+
+                    it('answers public data for no addresses on a network with a CAIP-2 id', () => {
+                        const publicMethods = v2.methods.filter(
+                            method => !v2.signingMethods.includes(method),
+                        )
+                        for (const method of publicMethods) {
+                            const route = v2.handleRequest(method, [])
+                            if (route.kind !== 'public-data') continue
+                            const answer = route.answer(
+                                [],
+                                fixtures.walletConnect.networkWithCaip2,
+                            )
+                            expect(answer).not.toBeNull()
+                            expect(answer).not.toBeUndefined()
+                        }
+                    })
+                })
+            }
+
             if (fixtures.walletConnect.v1ChainId !== undefined) {
                 it('accepts a v1 chain id on every network its own networksFor names', () => {
                     const { v1ChainId } = fixtures.walletConnect

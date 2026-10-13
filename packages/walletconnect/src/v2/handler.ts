@@ -28,15 +28,17 @@ import {
 import type {
     ConnectionHandler,
     ConnectionProposal,
-    WalletOperationType,
 } from '@perawallet/wallet-core-connections'
+import {
+    dappRequestChainAdapters,
+    type WalletConnectV2ChainSupport,
+} from '@perawallet/wallet-core-connections/dappRequest'
 import type {
     Connection,
     ConnectionId,
     ConnectionOrigin,
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
-import { AlgorandPermission } from '../models'
 import {
     WalletConnectError,
     WalletConnectInvalidNetworkError,
@@ -44,16 +46,13 @@ import {
     WalletConnectPermissionError,
     WalletConnectRequestExpiredError,
 } from '../shared/errors'
-import {
-    emptySignaturesResult,
-    GET_EMPTY_SIGNATURES_METHOD,
-} from '../shared/emptySignatures'
 import { toPeer } from '../shared/peer'
 import {
     walletConnectSupportFor,
+    walletConnectV2SupportFor,
     type WalletConnectSupport,
 } from '../shared/chainSupport'
-import { parseCaip10AccountIn } from './caip'
+import { parseCaip10AccountIn, toCaip10Account } from './caip'
 import {
     createWalletKitClient,
     type ExpirerExpiredEvent,
@@ -77,47 +76,10 @@ import { loadWalletConnectSdk, type WalletConnectSdk } from './sdk'
 import { createWalletConnectV2Storage } from './storage'
 
 /**
- * The signing methods Pera answers over v2, one per operation, the same pair
- * v1 serves. v1's third permission (get-accounts) has no v2 equivalent: a v2
- * session discloses its accounts in the namespace itself.
- */
-const OPERATION_TYPE_BY_METHOD: Readonly<Record<string, WalletOperationType>> =
-    {
-        [AlgorandPermission.TX_PERMISSION]: 'sign-transactions',
-        [AlgorandPermission.DATA_PERMISSION]: 'sign-data',
-    }
-
-const PERA_V2_SIGNING_METHODS: readonly string[] = Object.keys(
-    OPERATION_TYPE_BY_METHOD,
-)
-
-const PERA_V2_METHODS: readonly string[] = [
-    ...PERA_V2_SIGNING_METHODS,
-    GET_EMPTY_SIGNATURES_METHOD,
-]
-
-/**
  * JSON-RPC's server-error code, which is what v1's connector sends for a
  * failed or rejected request — dApps are tuned to it on both protocols.
  */
 const JSON_RPC_SERVER_ERROR = -32_000
-
-/**
- * Takes the JSON-RPC envelope off, and nothing else. The transaction group
- * arrives in the first positional slot exactly as on v1; the chain adapter's
- * validator is what parses it, and a schema copy here would strip fields the
- * resolver needs to answer. A non-array reaches the validator as it arrived,
- * so the breadcrumb describes what the dApp actually sent. Sign-data carries
- * its payload directly on both protocols.
- */
-const toRawOperationParams = (
-    type: WalletOperationType,
-    params: unknown,
-): unknown => {
-    if (type !== 'sign-transactions' || !Array.isArray(params)) return params
-    const positional: unknown[] = params
-    return positional[0]
-}
 
 /**
  * The two session events the CAIP-25 namespace conventions define, and the
@@ -184,6 +146,7 @@ type ProposalRefusal =
  */
 const screenRequiredNamespaces = (
     support: WalletConnectSupport,
+    v2: WalletConnectV2ChainSupport,
     namespaces: ProposalNamespaces,
 ): Nullable<ProposalRefusal> => {
     if (
@@ -200,7 +163,7 @@ const screenRequiredNamespaces = (
     }
     if (
         !requestedMethods(support, namespaces).every(method =>
-            PERA_V2_METHODS.includes(method),
+            v2.methods.includes(method),
         )
     ) {
         return 'UNSUPPORTED_METHODS'
@@ -243,6 +206,64 @@ export type CreateWalletConnectV2HandlerOptions = {
 }
 
 const dedupe = (values: string[]): string[] => [...new Set(values)]
+
+/**
+ * The networks a proposal asks for on one chain. Network ids are chain-local,
+ * so each chain's are resolved through its own adapter and never compared
+ * across chains.
+ */
+const requestedNetworks = (
+    support: WalletConnectSupport,
+    proposal: WalletKitSessionProposal['params'],
+): NetworkId[] =>
+    dedupe([
+        ...requestedChains(support, proposal.requiredNamespaces),
+        ...requestedChains(support, proposal.optionalNamespaces),
+    ]).flatMap(chainId => {
+        const network = support.networkForCaip2ChainId(chainId)
+        return network === null ? [] : [network]
+    })
+
+type SupportedNamespace = {
+    chains: string[]
+    methods: string[]
+    events: string[]
+    accounts: string[]
+}
+
+/**
+ * One namespace per registered chain that serves v2 and that the proposal
+ * asks for, so a chain the dApp never named adds nothing to the session.
+ */
+const supportedNamespacesFor = (
+    proposal: WalletKitSessionProposal['params'],
+    addresses: readonly string[],
+): Record<string, SupportedNamespace> =>
+    Object.fromEntries(
+        dappRequestChainAdapters
+            .list()
+            .flatMap(({ walletConnect: support }) => {
+                if (!support.v2) return []
+                const chains = requestedNetworks(support, proposal).flatMap(
+                    network => {
+                        const chainId = support.caip2ChainIdFor(network)
+                        return chainId === null ? [] : [chainId]
+                    },
+                )
+                if (chains.length === 0) return []
+                const namespace: SupportedNamespace = {
+                    chains,
+                    methods: [...support.v2.methods],
+                    events: [...PERA_V2_EVENTS],
+                    accounts: chains.flatMap(chainId =>
+                        addresses.map(address =>
+                            toCaip10Account(chainId, address),
+                        ),
+                    ),
+                }
+                return [[support.namespace, namespace] as const]
+            }),
+    )
 
 /**
  * WalletConnect v2 as one implementation of {@link ConnectionHandler}. Unlike
@@ -429,9 +450,24 @@ export const createWalletConnectV2Handler = (
     ): Promise<void> => {
         const { id, topic } = event
         const { method } = event.params.request
+        // Typed `any` on the event; nothing here reads into it.
+        const rawParams: unknown = event.params.request.params
 
-        const type = OPERATION_TYPE_BY_METHOD[method]
-        if (!type && method !== GET_EMPTY_SIGNATURES_METHOD) {
+        const network = getNetwork()
+        const support = walletConnectSupportFor(network)
+        const v2 = walletConnectV2SupportFor(network)
+        if (!support || !v2) {
+            refuseRequest(
+                topic,
+                id,
+                'UNSUPPORTED_CHAINS',
+                new WalletConnectInvalidNetworkError(),
+            )
+            return
+        }
+
+        const route = v2.handleRequest(method, rawParams)
+        if (route.kind === 'unsupported') {
             refuseRequest(
                 topic,
                 id,
@@ -456,17 +492,11 @@ export const createWalletConnectV2Handler = (
             return
         }
 
-        const network = getNetwork()
-        const support = walletConnectSupportFor(network)
         // A session may be approved for several chains at once; only the
         // active network's may sign, or a mainnet dApp could have a testnet
         // group signed while the wallet shows mainnet.
-        const activeChainId = support?.caip2ChainIdFor(network) ?? null
-        if (
-            !support ||
-            activeChainId === null ||
-            event.params.chainId !== activeChainId
-        ) {
+        const activeChainId = support.caip2ChainIdFor(network)
+        if (activeChainId === null || event.params.chainId !== activeChainId) {
             refuseRequest(
                 topic,
                 id,
@@ -476,15 +506,8 @@ export const createWalletConnectV2Handler = (
             return
         }
 
-        // Typed `any` on the event; nothing here reads into it.
-        const rawParams: unknown = event.params.request.params
-
-        if (!type) {
-            answerEmptySignatures(
-                topic,
-                id,
-                emptySignaturesResult(rawParams, record.accounts, network),
-            )
+        if (route.kind === 'public-data') {
+            answerPublicData(topic, id, route.answer(record.accounts, network))
             return
         }
 
@@ -514,10 +537,7 @@ export const createWalletConnectV2Handler = (
             // dApp can update; it is the anti-spoofing `sourceMetadata`.
             peer: record.peer,
             verifiedOrigin: record.origin?.requesterOrigin,
-            rawOperation: {
-                type,
-                params: toRawOperationParams(type, rawParams),
-            },
+            rawOperation: { type: route.type, params: route.params },
             respond: async result =>
                 await respond({
                     id,
@@ -536,27 +556,29 @@ export const createWalletConnectV2Handler = (
         })
     }
 
-    // Never surfaced to the user: the dApp asks unprompted right after
-    // connecting, and a refusal only leaves its accounts unknown.
-    const answerEmptySignatures = (
+    // Never surfaced to the user: the dApp asks unprompted, and a refusal
+    // only leaves what it asked about unknown. Only an absent answer refuses,
+    // so a falsy result still reaches the dApp.
+    const answerPublicData = (
         topic: string,
         id: number,
-        result: Nullable<Record<string, string>>,
+        result: Nullable<unknown>,
     ): void => {
         if (!client || !sdk) return
         void client
             .respondSessionRequest({
                 topic,
-                response: result
-                    ? { id, jsonrpc: '2.0', result }
-                    : {
-                          id,
-                          jsonrpc: '2.0',
-                          error: sdk.getSdkError('UNSUPPORTED_CHAINS'),
-                      },
+                response:
+                    result === null || result === undefined
+                        ? {
+                              id,
+                              jsonrpc: '2.0',
+                              error: sdk.getSdkError('UNSUPPORTED_CHAINS'),
+                          }
+                        : { id, jsonrpc: '2.0', result },
             })
             .catch((deliveryError: unknown) => {
-                logger.warn('[WC v2] empty signatures delivery failed', {
+                logger.warn('[WC v2] public data delivery failed', {
                     connectionId: topic,
                     correlationId: String(id),
                     error: deliveryError,
@@ -616,7 +638,6 @@ export const createWalletConnectV2Handler = (
     const approveProposal = async (input: {
         id: number
         proposal: WalletKitSessionProposal['params']
-        networks: NetworkId[]
         accounts: string[]
     }): Promise<Connection> => {
         if (input.accounts.length === 0) {
@@ -643,7 +664,6 @@ export const createWalletConnectV2Handler = (
         input: {
             id: number
             proposal: WalletKitSessionProposal['params']
-            networks: NetworkId[]
             accounts: string[]
         },
         pairingId: string,
@@ -656,22 +676,12 @@ export const createWalletConnectV2Handler = (
             )
         }
 
-        const chains = input.networks.flatMap(network => {
-            const chainId = support.caip2ChainIdFor(network)
-            return chainId === null ? [] : [chainId]
-        })
         const namespaces = requireSdk().buildApprovedNamespaces({
             proposal: input.proposal,
-            supportedNamespaces: {
-                [support.namespace]: {
-                    chains,
-                    methods: [...PERA_V2_METHODS],
-                    events: [...PERA_V2_EVENTS],
-                    accounts: chains.flatMap(chainId =>
-                        input.accounts.map(address => `${chainId}:${address}`),
-                    ),
-                },
-            },
+            supportedNamespaces: supportedNamespacesFor(
+                input.proposal,
+                input.accounts,
+            ),
         })
 
         const session = await walletKit.approveSession({
@@ -803,8 +813,10 @@ export const createWalletConnectV2Handler = (
             return
         }
 
-        const support = walletConnectSupportFor(getNetwork())
-        if (!support) {
+        const network = getNetwork()
+        const support = walletConnectSupportFor(network)
+        const v2 = walletConnectV2SupportFor(network)
+        if (!support || !v2) {
             await deliverRejection(
                 id,
                 'UNSUPPORTED_CHAINS',
@@ -821,6 +833,7 @@ export const createWalletConnectV2Handler = (
 
         const refusal = screenRequiredNamespaces(
             support,
+            v2,
             params.requiredNamespaces,
         )
         if (refusal) {
@@ -837,14 +850,7 @@ export const createWalletConnectV2Handler = (
             return
         }
 
-        const chains = dedupe([
-            ...requestedChains(support, params.requiredNamespaces),
-            ...requestedChains(support, params.optionalNamespaces),
-        ])
-        const networks = chains.flatMap(chainId => {
-            const network = support.networkForCaip2ChainId(chainId)
-            return network === null ? [] : [network]
-        })
+        const networks = requestedNetworks(support, params)
         if (networks.length === 0) {
             // Surfacing it would offer the user a session that cannot be
             // built: every chain the dApp named is one Pera has no network for.
@@ -862,11 +868,11 @@ export const createWalletConnectV2Handler = (
             return
         }
 
-        // Empty signatures are public data, not a permission to show.
+        // Public-data methods are answered unprompted, not a permission to show.
         const methods = dedupe([
             ...requestedMethods(support, params.requiredNamespaces),
             ...requestedMethods(support, params.optionalNamespaces),
-        ]).filter(method => PERA_V2_SIGNING_METHODS.includes(method))
+        ]).filter(method => v2.signingMethods.includes(method))
         const peer: ConnectionPeer = toPeer(params.proposer.metadata)
 
         // Before the proposal is tracked: a torn-down handler has nobody to
@@ -882,7 +888,7 @@ export const createWalletConnectV2Handler = (
             // Seconds on the wire, milliseconds on the interface.
             expiresAt: params.expiryTimestamp * 1000,
             approve: accounts =>
-                approveProposal({ id, proposal: params, networks, accounts }),
+                approveProposal({ id, proposal: params, accounts }),
             reject: reason => rejectProposal(id, reason),
         }
         onProposal(proposal)

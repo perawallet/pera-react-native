@@ -35,6 +35,9 @@ export const parseCaip10Account = (
     return { chainId: `${namespace}:${reference}`, address }
 }
 
+export const toCaip10Account = (chainId: string, address: string): string =>
+    `${chainId}:${address}`
+
 /**
  * A CAIP-10 account this chain's adapter may claim authorisation for. A
  * namespace key does not constrain its members, so `namespaces.<key>.accounts`
