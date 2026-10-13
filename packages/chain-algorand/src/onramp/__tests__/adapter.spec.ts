@@ -91,7 +91,10 @@ describe('algorandRampAdapter', () => {
     it('reads the ASA id from the CAIP-19 id', () => {
         expect(
             adapter.toAssetId(
-                token({ id: 'USDC_ALGORAND', caip19: `${ALGORAND_CAIP2}/asa:42` }),
+                token({
+                    id: 'USDC_ALGORAND',
+                    caip19: `${ALGORAND_CAIP2}/asa:42`,
+                }),
                 MAINNET,
             ),
         ).toBe('42')
@@ -110,7 +113,10 @@ describe('algorandRampAdapter', () => {
         const usdc = token({ id: 'USDC_ALGORAND' })
 
         expect(
-            adapter.toAssetId(usdc, { chainId: 'algorand', networkId: 'betanet' }),
+            adapter.toAssetId(usdc, {
+                chainId: 'algorand',
+                networkId: 'betanet',
+            }),
         ).toBeNull()
     })
 

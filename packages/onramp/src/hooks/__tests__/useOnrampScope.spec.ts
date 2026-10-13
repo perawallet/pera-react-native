@@ -25,7 +25,10 @@ describe('onrampChainIdOf', () => {
         getProvider().chains.reset()
         registerFakeChain({ chainId: 'algorand', caip2: 'algorand:a' })
         registerFakeChain({ chainId: 'ethereum', caip2: 'eip155:1' })
-        registerFakeRampAdapters({ chainId: 'algorand' }, { chainId: 'ethereum' })
+        registerFakeRampAdapters(
+            { chainId: 'algorand' },
+            { chainId: 'ethereum' },
+        )
     })
 
     test('takes the first eligible chain in registry order', () => {
@@ -63,9 +66,7 @@ describe('useOnrampScope', () => {
     test("is the chain's selected network when it has onramp", () => {
         registerFakeChain({ chainId: 'algorand', caip2: 'algorand:a' })
 
-        const { result } = renderHook(() =>
-            useOnrampScope({ algorand: {} }),
-        )
+        const { result } = renderHook(() => useOnrampScope({ algorand: {} }))
 
         expect(result.current).toEqual({
             chainId: 'algorand',
@@ -80,9 +81,7 @@ describe('useOnrampScope', () => {
             onramp: false,
         })
 
-        const { result } = renderHook(() =>
-            useOnrampScope({ algorand: {} }),
-        )
+        const { result } = renderHook(() => useOnrampScope({ algorand: {} }))
 
         expect(result.current).toBeNull()
     })

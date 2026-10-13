@@ -112,7 +112,8 @@ describe('pairs transformers', () => {
         })
 
         it('maps caip19 when the backend sends it', () => {
-            const caip19 = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/slip44:283'
+            const caip19 =
+                'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/slip44:283'
             const pair = buildPair()
             const result = transformRampPair({
                 ...pair,

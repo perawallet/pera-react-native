@@ -48,7 +48,7 @@ describe('useAssetActionButtons', () => {
         },
     )
 
-    it("hides buying for an account with no address on an onramp chain", () => {
+    it('hides buying for an account with no address on an onramp chain', () => {
         const { result } = renderHook(() =>
             useAssetActionButtons({
                 id: 'elsewhere',

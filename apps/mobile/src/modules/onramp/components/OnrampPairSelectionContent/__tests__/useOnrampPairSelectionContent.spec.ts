@@ -103,7 +103,10 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('dedupes to one row per destination token', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         expect(result.current.items.map(i => i.token.id)).toEqual([
@@ -122,7 +125,10 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('filters by name or symbol (case-insensitive)', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         act(() => {
@@ -149,7 +155,10 @@ describe('useOnrampPairSelectionContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         const algo = result.current.items.find(i => i.token.id === 'ALGO')
@@ -174,7 +183,10 @@ describe('useOnrampPairSelectionContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         const usdc = result.current.items.find(
@@ -183,14 +195,17 @@ describe('useOnrampPairSelectionContent', () => {
         expect(usdc?.balance?.toString()).toBe('25')
     })
 
-    it('reads each token\'s asset for the network', () => {
+    it("reads each token's asset for the network", () => {
         const usdcAsset = { assetId: USDC_MAINNET_ASSET_ID, name: 'USDC' }
         mockUseAssetsQuery.mockReturnValue({
             data: new Map([[USDC_MAINNET_ASSET_ID, usdcAsset]]),
         })
 
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(
@@ -205,7 +220,10 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('returns null balance for tokens with no holding', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         result.current.items.forEach(item => {
@@ -215,7 +233,10 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('resolves the selected token id', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         const algoPair = PAIRS.find(
@@ -235,7 +256,10 @@ describe('useOnrampPairSelectionContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         expect(result.current.isLoading).toBe(true)

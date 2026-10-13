@@ -11,7 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import type { ChainId, ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainNetworkId,
     useChainCapabilityCheck,

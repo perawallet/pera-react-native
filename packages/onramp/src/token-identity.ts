@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainId, ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -36,7 +39,9 @@ export const rampTokenChainId = (
     token: RampTokenIdentity,
 ): Nullable<ChainId> => {
     if (token.caip19 !== undefined) {
-        return getProvider().chains.byCaip2(caip2Of(token.caip19))?.chainId ?? null
+        return (
+            getProvider().chains.byCaip2(caip2Of(token.caip19))?.chainId ?? null
+        )
     }
     return (
         rampChainAdapters

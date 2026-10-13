@@ -35,11 +35,7 @@ const ETHEREUM_MAINNET: ChainScope = {
     networkId: 'mainnet',
 }
 
-const token = (
-    id: string,
-    networkId: string,
-    caip19?: string,
-): RampToken => ({
+const token = (id: string, networkId: string, caip19?: string): RampToken => ({
     id,
     symbol: id,
     name: id,

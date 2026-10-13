@@ -11,11 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import {
-    AnalyticsMetadataKey,
-    trackEvent,
-    type OnrampEvent,
-} from '@analytics'
+import { AnalyticsMetadataKey, trackEvent, type OnrampEvent } from '@analytics'
 import { useOnrampAccount } from './useOnrampAccount'
 
 /** Tracks an onramp event with the chain Fund is buying onto; nothing while there is none. */

@@ -34,7 +34,9 @@ const KNOWN_RAMP_TOKEN_ASSETS: Readonly<Record<string, KnownAssetKey>> = {
 // provider gives a code instead. That fallback assumes the provider names its
 // own listings honestly, which holds for a brokered provider list and never
 // for an on-chain unit name.
-export const isAlgorandNativeRampToken = (token: RampTokenIdentity): boolean => {
+export const isAlgorandNativeRampToken = (
+    token: RampTokenIdentity,
+): boolean => {
     if (token.caip19 !== undefined) {
         return token.caip19.endsWith(`/${ALGO_CAIP19_ASSET}`)
     }

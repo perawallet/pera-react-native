@@ -29,7 +29,9 @@ describe('useOnrampAccount', () => {
     })
 
     it("buys onto the account's chain at its address", () => {
-        vi.mocked(useSelectedAccount).mockReturnValue(algorandAccountAt('ALGORAND_ADDRESS'))
+        vi.mocked(useSelectedAccount).mockReturnValue(
+            algorandAccountAt('ALGORAND_ADDRESS'),
+        )
 
         const { result } = renderHook(() => useOnrampAccount())
 
@@ -42,7 +44,9 @@ describe('useOnrampAccount', () => {
     })
 
     it("has no scope when the account's chain has onramp off", () => {
-        vi.mocked(useSelectedAccount).mockReturnValue(algorandAccountAt('ALGORAND_ADDRESS'))
+        vi.mocked(useSelectedAccount).mockReturnValue(
+            algorandAccountAt('ALGORAND_ADDRESS'),
+        )
         setCapabilityOverrides({ onramp: false })
 
         const { result } = renderHook(() => useOnrampAccount())

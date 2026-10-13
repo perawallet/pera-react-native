@@ -17,14 +17,19 @@ import type { RampQuote } from '../models'
 import type { WithRampScope } from './withRampScope'
 
 export type UseCreateRampQuoteMutationResult = {
-    mutateAsync: (params: WithRampScope<CreateRampQuoteParams>) => Promise<RampQuote[]>
+    mutateAsync: (
+        params: WithRampScope<CreateRampQuoteParams>,
+    ) => Promise<RampQuote[]>
     isSuccess: boolean
 }
 
 export const useCreateRampQuoteMutation =
     (): UseCreateRampQuoteMutationResult => {
         const mutation = useMutation({
-            mutationFn: ({ scope, ...params }: WithRampScope<CreateRampQuoteParams>) =>
+            mutationFn: ({
+                scope,
+                ...params
+            }: WithRampScope<CreateRampQuoteParams>) =>
                 createRampQuote(params, scope),
             // Quote errors (e.g. SourceAmountIsTooLow) are expected and handled
             // inline by the form. Mirrors `mutationDefaults`

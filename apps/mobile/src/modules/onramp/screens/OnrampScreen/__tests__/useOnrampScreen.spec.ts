@@ -98,7 +98,10 @@ const makePair = (
     ({
         id,
         sourceToken: { id: sourceTokenId, network: { id: 'FIAT' } },
-        destinationToken: { id: destinationTokenId, network: { id: 'ALGORAND' } },
+        destinationToken: {
+            id: destinationTokenId,
+            network: { id: 'ALGORAND' },
+        },
         provider: { id: 'provider' },
     }) as unknown as RampPair
 

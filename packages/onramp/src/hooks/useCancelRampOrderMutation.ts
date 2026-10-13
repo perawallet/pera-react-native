@@ -29,7 +29,10 @@ export const useCancelRampOrderMutation =
         const queryClient = useQueryClient()
 
         const mutation = useMutation({
-            mutationFn: ({ scope, ...params }: WithRampScope<CancelRampOrderParams>) =>
+            mutationFn: ({
+                scope,
+                ...params
+            }: WithRampScope<CancelRampOrderParams>) =>
                 cancelRampOrder(params, scope),
             // Handled inline by the caller (toast). Mirrors `mutationDefaults`
             // (@perawallet/wallet-core-shared), which already sets

@@ -69,7 +69,10 @@ export const useFundPicker = (): AccountDrawerPickerProps => {
         [signingFilter, onrampChainOf],
     )
 
-    return useMemo(() => ({ ...signing, accountFilter }), [signing, accountFilter])
+    return useMemo(
+        () => ({ ...signing, accountFilter }),
+        [signing, accountFilter],
+    )
 }
 
 /**

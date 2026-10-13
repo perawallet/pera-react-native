@@ -90,9 +90,12 @@ describe('onramp/useRampPairsQuery', () => {
     test('returns transformed pairs on success', async () => {
         server.use(mockRampPairs({ response: [apiPair] }))
 
-        const { result } = renderHook(() => useRampPairsQuery({ scope: SCOPE }), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useRampPairsQuery({ scope: SCOPE }),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.data).toHaveLength(1))
 
@@ -123,9 +126,12 @@ describe('onramp/useRampPairsQuery', () => {
             }),
         )
 
-        const { result } = renderHook(() => useRampPairsQuery({ scope: SCOPE }), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useRampPairsQuery({ scope: SCOPE }),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.data).toHaveLength(1))
         expect(requested).toBe('NATIVE,STABLE')

@@ -35,7 +35,9 @@ describe('useTrackOnrampEvent', () => {
     })
 
     it('names the chain Fund is buying onto', () => {
-        vi.mocked(useSelectedAccount).mockReturnValue(algorandAccountAt('ALGORAND_ADDRESS'))
+        vi.mocked(useSelectedAccount).mockReturnValue(
+            algorandAccountAt('ALGORAND_ADDRESS'),
+        )
         const { result } = renderHook(() => useTrackOnrampEvent())
 
         result.current(OnrampEvent.ProceedTap)

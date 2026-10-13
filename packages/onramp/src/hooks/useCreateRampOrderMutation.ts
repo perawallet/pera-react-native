@@ -18,7 +18,9 @@ import type { WithRampScope } from './withRampScope'
 
 export type UseCreateRampOrderMutationResult = {
     mutate: (params: WithRampScope<CreateRampOrderParams>) => void
-    mutateAsync: (params: WithRampScope<CreateRampOrderParams>) => Promise<RampOrder>
+    mutateAsync: (
+        params: WithRampScope<CreateRampOrderParams>,
+    ) => Promise<RampOrder>
     isSuccess: boolean
     isError: boolean
     isPaused: boolean
@@ -27,7 +29,10 @@ export type UseCreateRampOrderMutationResult = {
 export const useCreateRampOrderMutation =
     (): UseCreateRampOrderMutationResult => {
         const mutation = useMutation({
-            mutationFn: ({ scope, ...params }: WithRampScope<CreateRampOrderParams>) =>
+            mutationFn: ({
+                scope,
+                ...params
+            }: WithRampScope<CreateRampOrderParams>) =>
                 createRampOrder(params, scope),
             // Handled inline by the form's confirm flow (toast). Mirrors
             // `mutationDefaults` (@perawallet/wallet-core-shared), which already

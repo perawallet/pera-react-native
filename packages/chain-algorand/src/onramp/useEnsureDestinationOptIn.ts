@@ -25,7 +25,10 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandRampTokenAssetId, isAlgorandNativeRampToken } from './tokenAsset'
+import {
+    algorandRampTokenAssetId,
+    isAlgorandNativeRampToken,
+} from './tokenAsset'
 
 export type UseEnsureDestinationOptInResult = {
     ensureOptIn: EnsureCanReceive
