@@ -114,6 +114,7 @@ describe('onramp/useRampHistoryInfiniteQuery status filtering', () => {
         const { result, rerender } = renderHook(
             ({ status }: { status?: OnrampStatus }) =>
                 useRampHistoryInfiniteQuery({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
                     deviceId: 'device-1',
                     accountAddress: 'ADDRESS',
                     status,

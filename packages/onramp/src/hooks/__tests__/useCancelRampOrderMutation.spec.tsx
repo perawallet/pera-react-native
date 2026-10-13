@@ -54,6 +54,7 @@ describe('onramp/useCancelRampOrderMutation', () => {
         })
 
         await result.current.mutateAsync({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             swapOrderId: 'order-1',
             deviceId: 'device-1',
             accountAddress: 'ACCOUNT_ADDRESS',

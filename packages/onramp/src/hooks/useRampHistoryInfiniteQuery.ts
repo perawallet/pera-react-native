@@ -11,13 +11,13 @@
  */
 
 import { useMemo } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { skipToken, useInfiniteQuery } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { isNotFoundError, type Optional } from '@perawallet/wallet-core-shared'
+    isNotFoundError,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 import { getRampHistory, getRampHistoryByUrl } from '../api'
 import type { RampHistoryPage } from '../api/history/transformers'
@@ -43,6 +43,7 @@ export const getRampHistoryRefetchIntervalMs = (
 }
 
 export type UseRampHistoryInfiniteQueryParams = {
+    scope: Nullable<ChainScope>
     deviceId: string
     accountAddress: string
     status?: OnrampStatus
@@ -66,14 +67,12 @@ export type UseRampHistoryInfiniteQueryResult = {
 }
 
 export const useRampHistoryInfiniteQuery = ({
+    scope,
     deviceId,
     accountAddress,
     status,
     isActive = true,
 }: UseRampHistoryInfiniteQueryParams): UseRampHistoryInfiniteQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
     const query = useInfiniteQuery({
         queryKey: onrampQueryKeys.history(
             deviceId,
@@ -81,10 +80,16 @@ export const useRampHistoryInfiniteQuery = ({
             status,
             scope,
         ),
-        queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
-            pageParam
-                ? getRampHistoryByUrl(pageParam, network)
-                : getRampHistory({ deviceId, accountAddress, status }, network),
+        queryFn:
+            scope === null
+                ? skipToken
+                : ({ pageParam }: { pageParam: Optional<string> }) =>
+                      pageParam
+                          ? getRampHistoryByUrl(pageParam, scope)
+                          : getRampHistory(
+                                { deviceId, accountAddress, status },
+                                scope,
+                            ),
         initialPageParam: undefined as Optional<string>,
         getNextPageParam: (lastPage: RampHistoryPage) =>
             lastPage.next ?? undefined,
@@ -107,6 +112,9 @@ export const useRampHistoryInfiniteQuery = ({
         error: query.error,
         hasNextPage: query.hasNextPage ?? false,
         fetchNextPage: () => void query.fetchNextPage(),
-        refetch: () => void query.refetch(),
+        // A skipToken query rejects a manual refetch.
+        refetch: () => {
+            if (scope !== null) void query.refetch()
+        },
     }
 }

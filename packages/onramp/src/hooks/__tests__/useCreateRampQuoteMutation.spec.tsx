@@ -95,6 +95,7 @@ describe('onramp/useCreateRampQuoteMutation', () => {
         })
 
         const quotes = await result.current.mutateAsync({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             pair: 'pair-1',
             destinationAddress: 'DEST_ADDRESS',
             sourceAmount: 100,
@@ -115,6 +116,7 @@ describe('onramp/useCreateRampQuoteMutation', () => {
         })
 
         const quotes = await result.current.mutateAsync({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             pair: 'USD__ALGO',
             destinationAddress: 'DEST_ADDRESS',
             sourceAmount: 100,

@@ -11,13 +11,13 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { cancelRampOrder, type CancelRampOrderParams } from '../api'
 import { onrampQueryKeys } from './querykeys'
+import type { WithRampScope } from './withRampScope'
 
 export type UseCancelRampOrderMutationResult = {
-    mutateAsync: (params: CancelRampOrderParams) => Promise<void>
+    mutateAsync: (params: WithRampScope<CancelRampOrderParams>) => Promise<void>
     isPending: boolean
     isSuccess: boolean
     error: Error | null
@@ -26,12 +26,11 @@ export type UseCancelRampOrderMutationResult = {
 
 export const useCancelRampOrderMutation =
     (): UseCancelRampOrderMutationResult => {
-        const { network } = useNetwork()
         const queryClient = useQueryClient()
 
         const mutation = useMutation({
-            mutationFn: (params: CancelRampOrderParams) =>
-                cancelRampOrder(params, network),
+            mutationFn: ({ scope, ...params }: WithRampScope<CancelRampOrderParams>) =>
+                cancelRampOrder(params, scope),
             // Handled inline by the caller (toast). Mirrors `mutationDefaults`
             // (@perawallet/wallet-core-shared), which already sets
             // throwOnError: false.

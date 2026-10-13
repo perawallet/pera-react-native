@@ -111,6 +111,18 @@ describe('pairs transformers', () => {
             expect(result.destinationToken.countryCode).toBeUndefined()
         })
 
+        it('maps caip19 when the backend sends it', () => {
+            const caip19 = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/slip44:283'
+            const pair = buildPair()
+            const result = transformRampPair({
+                ...pair,
+                destination_token: { ...pair.destination_token, caip19 },
+            })
+
+            expect(result.destinationToken.caip19).toBe(caip19)
+            expect(result.sourceToken.caip19).toBeUndefined()
+        })
+
         it('maps network fields and preserves null logo', () => {
             const result = transformRampPair(buildPair())
 

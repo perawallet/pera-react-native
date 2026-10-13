@@ -10,16 +10,17 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 
 import type { RampRegion } from '../../models'
 import { rampRegionResponseSchema, type RampRegionApiResponse } from './schema'
 import { transformRampRegion } from './transformers'
 
-export const getRampRegion = async (network: Network): Promise<RampRegion> => {
+export const getRampRegion = async (scope: ChainScope): Promise<RampRegion> => {
     const response = await queryClient<RampRegionApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: '/v1/ramp/regions',
     })

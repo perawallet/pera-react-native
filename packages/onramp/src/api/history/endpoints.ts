@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 
 import type { OnrampStatus } from '../../models'
 import {
@@ -27,12 +28,12 @@ export type GetRampHistoryParams = {
 
 export const getRampHistory = async (
     params: GetRampHistoryParams,
-    network: Network,
+    scope: ChainScope,
     signal?: AbortSignal,
 ): Promise<RampHistoryPage> => {
     const response = await queryClient<RampHistoryPageApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/ramp/history/${params.deviceId}/${params.accountAddress}/`,
         params: params.status ? { status: params.status } : undefined,
@@ -48,11 +49,11 @@ export const getRampHistory = async (
 // ky unconditionally concatenates `prefix + input`, even when input is already
 // absolute, so the URL is stripped to `pathname + search` and the prefix
 // re-applied — that keeps the instrumented client (API keys, retry, logging,
-// MSW). `network` is required because the host alone doesn't distinguish
+// MSW). `scope` is required because the host alone doesn't distinguish
 // environments; the caller already holds it.
 export const getRampHistoryByUrl = async (
     url: string,
-    network: Network,
+    scope: ChainScope,
     signal?: AbortSignal,
 ): Promise<RampHistoryPage> => {
     const parsedUrl = new URL(url)
@@ -60,7 +61,7 @@ export const getRampHistoryByUrl = async (
 
     const response = await queryClient<RampHistoryPageApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: relativeUrl,
         signal,

@@ -61,6 +61,7 @@ describe('onramp/useCreateRampOrderMutation', () => {
         })
 
         const order = await result.current.mutateAsync({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             quote: 'quote-1',
             sourceAmount: '100',
             sourceAddress: 'SOURCE_ADDRESS',

@@ -41,6 +41,7 @@ const transformRampToken = (data: RampTokenApiResponse): RampToken => ({
     priceInUsd:
         data.price_in_usd === null ? null : new Decimal(data.price_in_usd),
     countryCode: data.extra.country_code,
+    caip19: data.caip19,
 })
 
 const transformRampProvider = (

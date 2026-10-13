@@ -45,9 +45,15 @@ describe('onramp/useRampRegionQuery', () => {
             }),
         )
 
-        const { result } = renderHook(() => useRampRegionQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () =>
+                useRampRegionQuery({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                }),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() =>
             expect(result.current.data).toEqual({

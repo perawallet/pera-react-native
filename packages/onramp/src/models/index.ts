@@ -31,7 +31,18 @@ export type RampToken = {
     network: RampNetwork
     priceInUsd: Nullable<Decimal>
     countryCode?: string
+    /**
+     * CAIP-19 asset id, when the backend sends one. Compare it exactly: only
+     * an `erc20` reference is lowercased upstream, base58 ids keep their case.
+     */
+    caip19?: string
 }
+
+/** What identifies a ramp token's chain and on-chain asset. */
+export type RampTokenIdentity = Pick<
+    RampToken,
+    'id' | 'symbol' | 'network' | 'caip19'
+>
 
 export type RampProviderLimits = {
     minSourceAmount: Decimal
