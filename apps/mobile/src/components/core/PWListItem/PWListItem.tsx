@@ -46,7 +46,7 @@ export const PWListItem = ({
                 <PWIcon name={icon} />
                 <PWText
                     style={styles.title}
-                    numberOfLines={1}
+                    numberOfLines={2}
                 >
                     {title}
                 </PWText>

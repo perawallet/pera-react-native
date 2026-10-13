@@ -39,6 +39,13 @@ describe('NavigationHeader', () => {
         expect(screen.getByText('Test Title')).toBeTruthy()
     })
 
+    it('lets a long title wrap to a second line', () => {
+        render(<NavigationHeader {...mockProps} />)
+        expect(
+            screen.getByText('Test Title').getAttribute('numberoflines'),
+        ).toBe('2')
+    })
+
     it('prioritizes headerTitle over title', () => {
         const props = {
             ...mockProps,

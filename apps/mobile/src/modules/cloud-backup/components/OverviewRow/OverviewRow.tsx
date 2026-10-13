@@ -45,7 +45,7 @@ export const OverviewRow = ({
     subtitle,
     subtitleIcon,
     subtitleIconVariant = 'primary',
-    subtitleLines = 1,
+    subtitleLines = 2,
     variant,
     tone = 'default',
     trailing,
@@ -71,7 +71,7 @@ export const OverviewRow = ({
                     variant='bodyLarge'
                     weight={500}
                     style={styles.title}
-                    numberOfLines={1}
+                    numberOfLines={2}
                 >
                     {title}
                 </PWText>

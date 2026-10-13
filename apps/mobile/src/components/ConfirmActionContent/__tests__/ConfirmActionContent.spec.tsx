@@ -49,6 +49,27 @@ describe('ConfirmActionContent', () => {
         expect(screen.getByText(baseProps.cancelLabel)).toBeTruthy()
     })
 
+    it('lets every action label wrap to a second line', () => {
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent
+                    {...baseProps}
+                    tertiaryLabel='Delete forever'
+                />
+            </BottomSheetIdContext.Provider>,
+        )
+
+        for (const label of [
+            baseProps.confirmLabel,
+            baseProps.cancelLabel,
+            'Delete forever',
+        ]) {
+            expect(screen.getByText(label).getAttribute('numberoflines')).toBe(
+                '2',
+            )
+        }
+    })
+
     it('resolves the caller promise with true when the confirm button is pressed', async () => {
         const promise = useBottomSheetStore
             .getState()

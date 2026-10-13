@@ -359,7 +359,7 @@
         "copy_address": "Copiar dirección",
         "shared_account_detail": "Detalle de cuenta compartida ({{count}})",
         "show_address": "Ver dirección",
-        "view_passphrase_hd": "Ver la passphrase de recuperación de la wallet raíz",
+        "view_passphrase_hd": "Ver la passphrase de recuperación",
         "view_passphrase_algo25": "Ver la passphrase de recuperación",
         "undo_rekey": "Deshacer rekey",
         "rekeyed_to": "Con rekey a",
@@ -574,7 +574,7 @@
             "storage_note": "Las copias de seguridad se guardan totalmente cifradas en los servidores de copias de seguridad de Pera. Algunos datos no sensibles también se guardan en tu cuenta de iCloud/Google Drive como medida de seguridad adicional."
         },
         "setup": {
-            "title": "Configurar una nueva copia de seguridad en la nube",
+            "title": "Configurar una nueva copia de seguridad",
             "description": "Guarda tu clave de 12 palabras y tus claves de cifrado en un lugar seguro para poder recuperar tu copia de seguridad en el futuro.",
             "passphrase_label": "Passphrase",
             "encryption_key_label": "Clave de cifrado",
@@ -665,7 +665,7 @@
             "credential_address": "Dirección de credenciales",
             "sync_devices": "Sincronizar con otros dispositivos",
             "sync_devices_description": "Accede a tus datos en todos tus dispositivos",
-            "turn_off": "Desactivar la copia de seguridad en la nube",
+            "turn_off": "Desactivar la copia de seguridad",
             "turn_off_description": "Dejar de sincronizar datos en la nube"
         },
         "sync_devices": {
@@ -805,7 +805,7 @@
             "confirm_checkbox_label": "Entiendo que mi copia de seguridad se eliminará del servidor de forma permanente y que esta acción no se puede deshacer."
         },
         "restore": {
-            "sheet_title": "Restaurar/recuperar una copia de seguridad",
+            "sheet_title": "Restaurar una copia de seguridad",
             "sheet_description": "Restaura tu copia de seguridad escaneando un código QR o introduciendo tus credenciales manualmente.",
             "sheet_description_with_import": "Restaura tu copia de seguridad escaneando un código QR, importando tu clave de cifrado desde donde la guardaste o introduciendo tus credenciales manualmente.",
             "sheet_scan": "Escanear código QR",

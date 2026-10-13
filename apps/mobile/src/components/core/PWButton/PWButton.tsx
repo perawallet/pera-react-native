@@ -40,6 +40,8 @@ export type PWButtonProps = TouchableOpacityProps & {
         | 'destructiveLight'
         | 'errorLink'
     title?: string
+    /** Lines the title may wrap to before truncating. Defaults to 1. */
+    titleLines?: number
     icon?: IconName
     iconRight?: IconName
     minWidth?: number
@@ -76,6 +78,7 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
 export const PWButton = ({
     variant,
     title,
+    titleLines,
     icon,
     iconRight,
     onPress,
@@ -127,6 +130,7 @@ export const PWButton = ({
                         weight={isTextButton ? 500 : undefined}
                         style={styles.titleStyle}
                         truncate
+                        numberOfLines={titleLines}
                     >
                         {title}
                     </PWText>
