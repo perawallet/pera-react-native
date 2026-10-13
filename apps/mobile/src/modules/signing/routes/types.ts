@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import type { StackScreenProps } from '@react-navigation/stack'
@@ -20,7 +20,7 @@ export type SigningStackParamList = {
     TransactionList: undefined
     TransactionDetails: {
         /**
-         * In-memory-only param. PeraDisplayableTransaction holds bigint /
+         * In-memory-only param. TransactionNative holds bigint /
          * Uint8Array / raw-txn fields that don't survive JSON serialization,
          * so this signing stack must NOT enable nav-state persistence or deep
          * linking — doing so would silently drop/corrupt the txn. Passing the
@@ -30,7 +30,7 @@ export type SigningStackParamList = {
          * TransactionHistoryItem is also non-serializable (holds Decimal fields),
          * so the same constraint applies.
          */
-        transaction?: PeraDisplayableTransaction
+        transaction?: TransactionNative
         transactionId?: string
         /**
          * The SQLite history row the user tapped. Lets the screen render

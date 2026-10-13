@@ -91,7 +91,10 @@ describe('useTransactionListScreen', () => {
         result.current.handleTransactionPress(mockItem)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockItem.transaction,
+            transaction: {
+                family: 'algorand',
+                transaction: mockItem.transaction,
+            },
             isExternal: false,
         })
     })

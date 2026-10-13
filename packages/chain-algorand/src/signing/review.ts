@@ -17,7 +17,6 @@ import {
     isAuthDataOriginMismatch,
     isUnsignedTransactionsData,
     TransactionRoundTripError,
-    type AlgorandTransactionSummary,
     type AnalysisContext,
     type AnalysisWarning,
     type DecodedGroup,
@@ -28,11 +27,7 @@ import {
     type WarningDetector,
 } from '@perawallet/wallet-core-signing'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import {
-    encodeAlgorandAddress,
-    classifyPeraTransaction,
-    getExpectedGenesisHash,
-} from '../blockchain'
+import { encodeAlgorandAddress, getExpectedGenesisHash } from '../blockchain'
 import { authorityOf } from '@perawallet/wallet-core-accounts'
 import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandNetworkOf } from '../legacy-network'
@@ -122,7 +117,6 @@ const decode = async (
         if (!algorand) {
             return {
                 totalFees: 0n,
-                transactionSummaries: [],
                 signableAddresses: context.accounts.flatMap(
                     a => algorandAddressOf(a) ?? [],
                 ),
@@ -155,9 +149,6 @@ const decode = async (
                 signableAddresses.length > 0
                     ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
                     : 0n,
-            transactionSummaries: transactions.map(tx =>
-                summarizeTransaction(tx),
-            ),
             signableAddresses,
         }
     } catch (error) {
@@ -202,40 +193,6 @@ const detect = (
     } catch (error) {
         throw toAnalysisError(error)
     }
-}
-
-const summarizeTransaction = (
-    tx: PeraTransaction,
-): AlgorandTransactionSummary => {
-    const type = classifyPeraTransaction(tx)
-    const senderAddress = tx.sender.toString()
-
-    const summary: AlgorandTransactionSummary = {
-        type,
-        sender: senderAddress,
-    }
-
-    // Like the close fields in detectWarnings, receiver/amount/assetIndex
-    // live under the type-specific payload on an algosdk v3 Transaction,
-    // never at the top level.
-    if (tx.payment) {
-        summary.receiver = tx.payment.receiver.toString()
-        summary.amount = tx.payment.amount
-    } else if (tx.assetTransfer) {
-        summary.receiver = tx.assetTransfer.receiver.toString()
-        summary.amount = tx.assetTransfer.amount
-        summary.assetId = tx.assetTransfer.assetIndex
-    }
-
-    if (tx.note) {
-        try {
-            summary.note = new TextDecoder().decode(tx.note)
-        } catch {
-            // Note is not valid UTF-8, skip it
-        }
-    }
-
-    return summary
 }
 
 const detectWarnings = (transactions: PeraTransaction[]): AnalysisWarning[] => {

@@ -11,40 +11,30 @@
  */
 
 import type { ComponentType } from 'react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainFamily,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 
-/** A transaction tagged with the chain family whose bodies render it; one member per registered family. */
-export type FamilyTransaction = {
-    family: 'algorand'
-    transaction: PeraDisplayableTransaction
-}
-
-export type TransactionFamily = FamilyTransaction['family']
-
-export type TransactionOfFamily<F extends TransactionFamily> = Extract<
-    FamilyTransaction,
-    { family: F }
->['transaction']
-
-export type ReviewBodyProps<T> = {
-    transaction: T
+export type ReviewBodyProps = {
+    transaction: TransactionNative
     source?: SignRequestSource
     /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
     verifiedOrigin?: string
 }
 
-export type DetailBodyProps<T> = {
-    transaction: T
+export type DetailBodyProps = {
+    transaction: TransactionNative
     /** A transaction reachable from this one's body, such as an inner transaction. */
-    onRelatedTransactionPress?: (transaction: T) => void
+    onRelatedTransactionPress?: (transaction: TransactionNative) => void
 }
 
-export type TransactionFamilyBodies<T> = {
-    reviewBody: ComponentType<ReviewBodyProps<T>>
-    detailBody: ComponentType<DetailBodyProps<T>>
+export type TransactionFamilyBodies = {
+    reviewBody: ComponentType<ReviewBodyProps>
+    detailBody: ComponentType<DetailBodyProps>
 }
 
-export type TransactionBodyRegistry = {
-    [F in TransactionFamily]: TransactionFamilyBodies<TransactionOfFamily<F>>
-}
+export type TransactionBodyRegistry = Partial<
+    Record<ChainFamily, TransactionFamilyBodies>
+>

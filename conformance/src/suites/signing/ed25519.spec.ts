@@ -145,7 +145,6 @@ describe('ed25519 signing conformance', () => {
             originalIndices: [0],
             analysis: {
                 totalFees: txn.fee,
-                transactionSummaries: [],
                 warnings: [],
                 signableAddresses: [sender.address],
                 riskLevel: 'low',

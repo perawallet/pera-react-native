@@ -13,7 +13,6 @@
 export { AssetClaimDetailScreen } from '../screens/claim-assets/AssetClaimDetailScreen'
 export { AssetTransferRequestsScreen } from '../screens/claim-assets/AssetTransferRequestsScreen'
 export { ClaimProcessingScreen } from '../screens/claim-assets/ClaimProcessingScreen'
-export { GroupTransactionListScreen } from '../screens/GroupTransactionListScreen'
 export { TransactionSuccessScreen } from '../screens/send-funds/TransactionSuccessScreen'
 export { ReceiveFundsContent } from '../components/receive-funds/ReceiveFundsContent'
 export {

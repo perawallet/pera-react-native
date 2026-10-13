@@ -16,7 +16,8 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { screen } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type {
     SignRequestSource,
     TransactionWarning,
@@ -36,6 +37,12 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
     ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/transactions')
     >('@packages/chain-algorand/src/blockchain/utils/transactions')),
+    ...(await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/models/transaction-view')
+    >('@packages/chain-algorand/src/blockchain/models/transaction-view')),
+    ...(await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/utils/warnings')
+    >('@packages/chain-algorand/src/blockchain/utils/warnings')),
     ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/addresses')
     >('@packages/chain-algorand/src/blockchain/utils/addresses')),
@@ -68,7 +75,7 @@ vi.mock('@components/AccountWithBalance', async () => {
 
 const mockPipeline = {
     currentRequest: null,
-    allTransactions: [] as PeraDisplayableTransaction[],
+    allTransactions: [] as AlgorandTransactionView[],
     signableAddresses: new Set<string>(),
     totalFee: new Decimal('0.001'),
     distinctWarnings: [] as TransactionWarning[],
@@ -87,13 +94,15 @@ const SIGNER_NAME = 'Fixture Signer'
 
 // FeeDisplay navigates to the details screen, so the body mounts inside a navigator.
 const renderReview = (
-    transaction: PeraDisplayableTransaction,
+    transaction: TransactionNative,
     origin: { source?: SignRequestSource; verifiedOrigin?: string } = {},
 ) => {
-    mockPipeline.allTransactions = [transaction]
+    mockPipeline.allTransactions = [
+        transaction.transaction as AlgorandTransactionView,
+    ]
     const Review = () => (
         <TransactionReviewBody
-            transaction={{ family: 'algorand', transaction }}
+            transaction={transaction}
             source={origin.source}
             verifiedOrigin={origin.verifiedOrigin}
         />

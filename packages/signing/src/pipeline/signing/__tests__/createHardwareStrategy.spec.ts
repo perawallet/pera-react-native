@@ -101,7 +101,6 @@ const makeGroup = (
     signerAddress,
     analysis: {
         totalFees: 0n,
-        transactionSummaries: [],
         warnings: [],
         signableAddresses: [],
         riskLevel: 'low',
@@ -915,7 +914,6 @@ describe('createHardwareStrategy', () => {
         originalIndices: [0],
         analysis: {
             totalFees: 0n,
-            transactionSummaries: [],
             warnings: [],
             signableAddresses: [],
             riskLevel: 'low',

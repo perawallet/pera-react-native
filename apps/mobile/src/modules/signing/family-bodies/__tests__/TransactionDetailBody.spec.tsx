@@ -13,7 +13,8 @@
 import React from 'react'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@test-utils/render'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import {
     buildAlgorandAssetTransferFixture,
     buildAlgorandDisplayFixture,
@@ -23,13 +24,18 @@ import {
     type AlgorandDisplayFixtureKind,
 } from '@test-utils/algorand-display-fixtures'
 import { TransactionDetailBody } from '../TransactionDetailBody'
-import type { FamilyTransaction } from '../types'
 
 // The global mock stubs the blockchain barrel; the bodies classify with the real utils.
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
     ...(await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/utils/warnings')
+    >('@packages/chain-algorand/src/blockchain/utils/warnings')),
+    ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/transactions')
     >('@packages/chain-algorand/src/blockchain/utils/transactions')),
+    ...(await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/models/transaction-view')
+    >('@packages/chain-algorand/src/blockchain/models/transaction-view')),
     ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/json')
     >('@packages/chain-algorand/src/blockchain/utils/json')),
@@ -54,12 +60,12 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 const renderDetail = (
-    transaction: PeraDisplayableTransaction,
-    onRelatedTransactionPress?: (related: FamilyTransaction) => void,
+    transaction: TransactionNative,
+    onRelatedTransactionPress?: (related: TransactionNative) => void,
 ) =>
     render(
         <TransactionDetailBody
-            transaction={{ family: 'algorand', transaction }}
+            transaction={transaction}
             onRelatedTransactionPress={onRelatedTransactionPress}
         />,
     )
@@ -213,7 +219,8 @@ describe('TransactionDetailBody', () => {
 
         expect(onRelatedTransactionPress).toHaveBeenCalledWith({
             family: 'algorand',
-            transaction: transaction.innerTxns?.[0],
+            transaction: (transaction.transaction as AlgorandTransactionView)
+                .innerTxns?.[0],
         })
     })
 

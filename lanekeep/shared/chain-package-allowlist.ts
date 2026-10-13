@@ -15,6 +15,14 @@ interface TransitionalEntry {
     reason: string
 }
 
+interface ChainUiModule {
+    // Repo-relative directory, with a trailing slash.
+    path: string
+    // The one chain package the module may import, at any subpath.
+    pkg: string
+    reason: string
+}
+
 const ALGORAND = '@perawallet/wallet-core-chain-algorand'
 
 export const COMPOSITION_ROOTS: ExemptPath[] = [
@@ -33,6 +41,16 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
     {
         glob: '**/apps/browser/src/background/index.ts',
         reason: "extension service-worker composition root: hands the Algorand descriptor's URI schemes to the push handlers",
+    },
+]
+
+// A chain's own UI: the app's only code that reads that chain's transaction and
+// account shapes, so the rest of the app stays chain-neutral.
+export const CHAIN_UI_MODULES: ChainUiModule[] = [
+    {
+        path: 'apps/mobile/src/modules/algorand/',
+        pkg: ALGORAND,
+        reason: "Algorand's review and detail UI: renders TransactionNative's algorand member with chain-algorand's view types and classifiers",
     },
 ]
 

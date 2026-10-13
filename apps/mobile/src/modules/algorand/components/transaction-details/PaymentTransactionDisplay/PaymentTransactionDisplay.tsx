@@ -1,0 +1,143 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { PWDivider, PWView } from '@components/core'
+import { AssetAmount } from '@components/AssetAmount'
+import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useStyles } from './styles'
+import { useLanguage } from '@hooks/useLanguage'
+import { AddressDisplay } from '@components/AddressDisplay'
+import { KeyValueRow } from '@components/KeyValueRow'
+import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
+import { useTheme } from '@rneui/themed'
+import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
+import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
+import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
+import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
+
+export type PaymentTransactionDisplayProps = {
+    referenceAddress?: string
+    transaction: AlgorandTransactionView
+    isInnerTransaction?: boolean
+}
+
+export const PaymentTransactionDisplay = ({
+    referenceAddress,
+    transaction,
+    isInnerTransaction = false,
+}: PaymentTransactionDisplayProps) => {
+    const nativeAsset = useNativeAsset()
+    const styles = useStyles()
+    const { theme } = useTheme()
+    const { t } = useLanguage()
+    const {
+        amount,
+        amountStyle,
+        showWarnings,
+        receiverAddress,
+        senderAddress,
+        closeToAddress,
+        closeAmountValue,
+        payment,
+    } = usePaymentTransactionDisplay(transaction, referenceAddress)
+
+    if (!payment) {
+        return null
+    }
+
+    return (
+        <PWView style={styles.container}>
+            <TransactionHeader
+                transaction={transaction}
+                isInnerTransaction={isInnerTransaction}
+            />
+
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <PWView style={styles.detailContainer}>
+                <KeyValueRow
+                    testID='transaction_detail_from'
+                    title={t('transactions.common.from')}
+                >
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={senderAddress} />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow
+                    testID='transaction_detail_to'
+                    title={t('transactions.common.sent_to')}
+                >
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={receiverAddress ?? ''} />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow
+                    testID='transaction_detail_amount'
+                    title={t('transactions.common.amount')}
+                >
+                    <AssetAmount
+                        asset={nativeAsset}
+                        value={amount}
+                        showSymbol
+                        style={amountStyle}
+                        ignorePrivacyMode
+                    />
+                </KeyValueRow>
+
+                {closeToAddress && (
+                    <KeyValueRow
+                        testID='transaction_detail_close_to'
+                        title={t('transactions.common.close_to')}
+                    >
+                        <PWView style={styles.detailRow}>
+                            <AddressDisplay address={closeToAddress} />
+                        </PWView>
+                    </KeyValueRow>
+                )}
+
+                {closeToAddress && closeAmountValue && (
+                    <KeyValueRow
+                        testID='transaction_detail_close_amount'
+                        title={t('transactions.common.close_amount')}
+                    >
+                        <AssetAmount
+                            asset={nativeAsset}
+                            value={closeAmountValue}
+                            showSymbol
+                            ignorePrivacyMode
+                        />
+                    </KeyValueRow>
+                )}
+
+                <TransactionFeeRow transaction={transaction} />
+
+                <TransactionNoteRow transaction={transaction} />
+            </PWView>
+
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <TransactionFooter transaction={transaction} />
+        </PWView>
+    )
+}

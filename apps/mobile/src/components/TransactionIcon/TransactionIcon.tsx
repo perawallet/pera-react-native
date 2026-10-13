@@ -17,47 +17,17 @@ import {
     type PWIconVariant,
     type PWRoundIconProps,
 } from '@components/core'
-import type { PeraTransactionType } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 
-export type TransactionIconType =
-    | PeraTransactionType
-    | 'group'
-    | 'send'
-    | 'receive'
-    | 'swap'
-
 export type TransactionIconProps = {
-    type: TransactionIconType
+    name: IconName
     size?: 'sm' | 'md' | 'lg' | 'xl'
     variant?: PWIconVariant
 } & Omit<PWRoundIconProps, 'icon' | 'size' | 'name' | 'variant'>
 
-const iconNameMap: Record<TransactionIconType, IconName> = {
-    payment: 'transactions/payment',
-    'asset-transfer': 'transactions/asset-transfer',
-    swap: 'transactions/swap',
-    'asset-config': 'transactions/asset-config',
-    'asset-freeze': 'transactions/asset-freeze',
-    'key-registration': 'transactions/key-registration',
-    'app-call': 'transactions/application-call',
-    'asset-opt-in': 'transactions/opt-in',
-    'asset-opt-out': 'transactions/opt-out',
-    group: 'transactions/group',
-    send: 'transactions/send',
-    receive: 'transactions/receive',
-    'asset-clawback': 'transactions/generic',
-    'state-proof': 'transactions/generic',
-    // Shares the key-registration glyph: a heartbeat is the other half of
-    // consensus participation, and the icon set has no heartbeat of its own.
-    heartbeat: 'transactions/key-registration',
-    unknown: 'transactions/generic',
-}
-
 export const TransactionIcon = (props: TransactionIconProps) => {
-    const { type, style, size = 'sm', variant = 'secondary', ...rest } = props
+    const { name, style, size = 'sm', variant = 'secondary', ...rest } = props
     const styles = useStyles({ size })
-    const name = iconNameMap[type] ?? 'transactions/generic'
 
     return (
         <PWView

@@ -44,7 +44,6 @@ const unsupportedAccount = hardwareAccount('ADDR')
 
 const emptyAnalysis = {
     totalFees: 0n,
-    transactionSummaries: [],
     warnings: [],
     signableAddresses: [],
     riskLevel: 'low' as const,

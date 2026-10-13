@@ -14,16 +14,13 @@ import { describe, it, expect } from 'vitest'
 import {
     mapToDisplayableTransaction,
     getTransactionType,
-    classifyPeraTransaction,
     classifyDisplayableTransaction,
     getAssetTransferType,
     getAssetConfigType,
 } from '../transactions'
 import { TransactionType, encodeAddress } from 'algosdk'
-import type {
-    PeraTransaction,
-    PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { AlgorandTransactionView } from '../../models/transaction-view'
 
 // Helper to create mock Address
 const mockAddress = (byteVal = 1) => ({
@@ -172,7 +169,7 @@ describe('transactions utils', () => {
     })
 
     describe('getTransactionType', () => {
-        it('should return correct PeraTransactionType', () => {
+        it('should return correct AlgorandTransactionKind', () => {
             expect(getTransactionType({ txType: 'pay' } as any)).toBe('payment')
             expect(getTransactionType({ txType: 'axfer' } as any)).toBe(
                 'asset-transfer',
@@ -395,7 +392,7 @@ describe('transactions utils', () => {
         it('should return unknown if not asset transfer', () => {
             const tx = {
                 txType: 'pay',
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetTransferType(tx)).toBe('unknown')
         })
 
@@ -408,7 +405,7 @@ describe('transactions utils', () => {
                     receiver: 'receiver-addr',
                     amount: 10n,
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetTransferType(tx)).toBe('clawback')
         })
 
@@ -420,7 +417,7 @@ describe('transactions utils', () => {
                     receiver: 'addr-1',
                     amount: 0n,
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetTransferType(tx)).toBe('opt-in')
         })
 
@@ -433,7 +430,7 @@ describe('transactions utils', () => {
                     amount: 0n,
                     closeTo: 'addr-3',
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetTransferType(tx)).toBe('opt-out')
         })
 
@@ -445,14 +442,14 @@ describe('transactions utils', () => {
                     receiver: 'addr-2',
                     amount: 10n,
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetTransferType(tx)).toBe('transfer')
         })
     })
 
     describe('getAssetConfigType', () => {
         it('should return update if no config', () => {
-            const tx = { txType: 'acfg' } as PeraDisplayableTransaction
+            const tx = { txType: 'acfg' } as AlgorandTransactionView
             expect(getAssetConfigType(tx)).toBe('update')
         })
 
@@ -460,7 +457,7 @@ describe('transactions utils', () => {
             const tx = {
                 txType: 'acfg',
                 assetConfigTransaction: { assetId: 0n },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetConfigType(tx)).toBe('create')
         })
 
@@ -471,7 +468,7 @@ describe('transactions utils', () => {
                     assetId: 100n,
                     params: {}, // all relevant fields undefined
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetConfigType(tx)).toBe('destroy')
         })
 
@@ -482,152 +479,8 @@ describe('transactions utils', () => {
                     assetId: 100n,
                     params: { manager: 'addr-1' },
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(getAssetConfigType(tx)).toBe('update')
-        })
-    })
-
-    describe('classifyPeraTransaction', () => {
-        it('should classify payment transaction', () => {
-            const tx = {
-                type: TransactionType.pay,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                payment: {
-                    amount: 5000n,
-                    receiver: mockAddress(2),
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('payment')
-        })
-
-        it('should classify app call transaction', () => {
-            const tx = {
-                type: TransactionType.appl,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                applicationCall: {
-                    appIndex: 1n,
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('app-call')
-        })
-
-        it('should classify asset config transaction', () => {
-            const tx = {
-                type: TransactionType.acfg,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                assetConfig: {
-                    assetIndex: 100n,
-                    params: { manager: mockAddress(2) },
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('asset-config')
-        })
-
-        it('should classify asset freeze transaction', () => {
-            const tx = {
-                type: TransactionType.afrz,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                assetFreeze: {
-                    assetIndex: 100n,
-                    freezeAccount: mockAddress(2),
-                    frozen: true,
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('asset-freeze')
-        })
-
-        it('should classify key registration transaction', () => {
-            const tx = {
-                type: TransactionType.keyreg,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                keyreg: {
-                    voteFirst: 1n,
-                    voteLast: 1000n,
-                    voteKeyDilution: 10n,
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('key-registration')
-        })
-
-        it('should classify regular asset transfer', () => {
-            const tx = {
-                type: TransactionType.axfer,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                assetTransfer: {
-                    assetIndex: 123n,
-                    amount: 50n,
-                    receiver: mockAddress(2),
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('asset-transfer')
-        })
-
-        it('should classify asset opt-in (sender === receiver, amount 0)', () => {
-            const tx = {
-                type: TransactionType.axfer,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                assetTransfer: {
-                    assetIndex: 123n,
-                    amount: 0n,
-                    receiver: mockAddress(1), // same as sender
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('asset-opt-in')
-        })
-
-        it('should classify asset opt-out (has closeRemainderTo)', () => {
-            const tx = {
-                type: TransactionType.axfer,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                assetTransfer: {
-                    assetIndex: 123n,
-                    amount: 0n,
-                    receiver: mockAddress(2),
-                    closeRemainderTo: mockAddress(3),
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('asset-opt-out')
-        })
-
-        it('should classify asset clawback (has assetSender)', () => {
-            const tx = {
-                type: TransactionType.axfer,
-                fee: 1000n,
-                firstValid: 1n,
-                lastValid: 2n,
-                sender: mockAddress(1),
-                assetTransfer: {
-                    assetIndex: 123n,
-                    amount: 50n,
-                    receiver: mockAddress(2),
-                    assetSender: mockAddress(3),
-                },
-            } as any
-            expect(classifyPeraTransaction(tx)).toBe('asset-clawback')
         })
     })
 
@@ -636,7 +489,7 @@ describe('transactions utils', () => {
             const tx = {
                 txType: 'pay',
                 paymentTransaction: { amount: 5000n, receiver: 'addr-2' },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('payment')
         })
 
@@ -644,7 +497,7 @@ describe('transactions utils', () => {
             const tx = {
                 txType: 'appl',
                 applicationTransaction: { applicationId: 1n },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('app-call')
         })
 
@@ -656,7 +509,7 @@ describe('transactions utils', () => {
                     receiver: 'addr-2',
                     amount: 10n,
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('asset-transfer')
         })
 
@@ -668,7 +521,7 @@ describe('transactions utils', () => {
                     receiver: 'addr-1',
                     amount: 0n,
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('asset-opt-in')
         })
 
@@ -681,7 +534,7 @@ describe('transactions utils', () => {
                     amount: 0n,
                     closeTo: 'addr-3',
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('asset-opt-out')
         })
 
@@ -694,7 +547,7 @@ describe('transactions utils', () => {
                     amount: 50n,
                     sender: 'addr-3',
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('asset-clawback')
         })
 
@@ -705,7 +558,7 @@ describe('transactions utils', () => {
                     assetId: 100n,
                     params: { manager: 'addr-1' },
                 },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('asset-config')
         })
 
@@ -713,12 +566,12 @@ describe('transactions utils', () => {
             const tx = {
                 txType: 'afrz',
                 assetFreezeTransaction: { assetId: 100n },
-            } as PeraDisplayableTransaction
+            } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('asset-freeze')
         })
 
         it('should classify key registration transaction', () => {
-            const tx = { txType: 'keyreg' } as PeraDisplayableTransaction
+            const tx = { txType: 'keyreg' } as AlgorandTransactionView
             expect(classifyDisplayableTransaction(tx)).toBe('key-registration')
         })
 

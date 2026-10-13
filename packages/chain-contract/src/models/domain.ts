@@ -16,7 +16,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type { ChainDescriptor } from './descriptor'
-import type { ChainId, ChainScope, NetworkId } from './identity'
+import type { ChainFamily, ChainId, ChainScope, NetworkId } from './identity'
 
 /** An i18n key plus its interpolation params, resolved by the UI. */
 export type LocalizedText = { key: string; params?: Record<string, string> }
@@ -192,6 +192,16 @@ export interface TransactionRecord {
     fee?: Decimal
     summary: TransactionSummary
     chainData: ChainTransactionData
+}
+
+/**
+ * A transaction as its own chain's review and detail UI reads it. Only the
+ * chain named by `family` reads `transaction`, the way only the owning
+ * adapter reads `UnsignedTransaction.payload`.
+ */
+export interface TransactionNative {
+    family: ChainFamily
+    transaction: unknown
 }
 
 export type TransferIntent = {

@@ -113,8 +113,9 @@ describe('useTransactionDetailsScreen', () => {
 
         expect(result.current.renderState.kind).toBe('content')
         if (result.current.renderState.kind === 'content') {
-            const { family, transaction } =
+            const { family, transaction: native } =
                 result.current.renderState.transaction
+            const transaction = native as PeraDisplayableTransaction
             expect(family).toBe('algorand')
             expect(transaction.id).toBe('TX123')
             expect(transaction.paymentTransaction?.amount).toBe(2_500_000n)
@@ -223,7 +224,9 @@ describe('useTransactionDetailsScreen', () => {
             id: undefined,
             txType: 'pay',
         } as unknown as PeraDisplayableTransaction
-        routeParams.current = { transaction: paramTransaction }
+        routeParams.current = {
+            transaction: { family: 'algorand', transaction: paramTransaction },
+        }
 
         const { result } = renderHook(() => useTransactionDetailsScreen())
 
@@ -282,12 +285,12 @@ describe('useTransactionDetailsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: inner,
+            transaction: { family: 'algorand', transaction: inner },
             groupId: 'GROUP1',
         })
     })
 
-    it('pushes a new details screen with the unwrapped related transaction', () => {
+    it('pushes the related transaction as tagged', () => {
         routeParams.current = {
             transactionId: 'TX123',
             historyTransaction: historyItem,
@@ -304,7 +307,7 @@ describe('useTransactionDetailsScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: inner,
+            transaction: { family: 'algorand', transaction: inner },
             groupId: 'GROUP1',
         })
     })

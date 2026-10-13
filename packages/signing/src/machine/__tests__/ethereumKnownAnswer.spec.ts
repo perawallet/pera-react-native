@@ -92,7 +92,6 @@ describe('signing an Ethereum transaction through the machine', () => {
                 decoder: {
                     decode: async () => ({
                         totalFees: 0n,
-                        transactionSummaries: [],
                         signableAddresses: [SENDER],
                     }),
                 },

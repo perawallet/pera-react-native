@@ -192,7 +192,6 @@ export {
     isInteractiveSource,
     isUnsignedTransactionsData,
     type AlgorandGroupData,
-    type AlgorandTransactionSummary,
     type AnalysisContext,
     type AnalysisWarning,
     type ArbitraryDataSignableData,

@@ -44,7 +44,7 @@ import {
     rekeyRequirementFor,
 } from '@hooks/capabilityRequirements'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
-import { GroupTransactionListScreen } from '@modules/transactions/routes'
+import { GroupTransactionListScreen } from '@modules/algorand/routes'
 import { StakingScreen } from '@modules/staking'
 import { BannersCarouselModalScreen } from '@modules/banners/routes'
 import { MultisigStackNavigator } from '@modules/multisig/routes'

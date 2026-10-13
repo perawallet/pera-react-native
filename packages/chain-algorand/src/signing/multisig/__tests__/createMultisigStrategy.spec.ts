@@ -77,7 +77,6 @@ const makeAnalyzedGroup = (): AnalyzedSignableGroup =>
         data: { type: 'transactions', transactions: [], indicesToSign: [] },
         analysis: {
             totalFees: 0n,
-            transactionSummaries: [],
             warnings: [],
             signableAddresses: [],
             riskLevel: 'low',
