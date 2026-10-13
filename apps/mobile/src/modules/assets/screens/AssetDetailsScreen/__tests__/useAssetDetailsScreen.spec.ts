@@ -82,7 +82,7 @@ describe('useAssetDetailsScreen', () => {
         registerEthereumChain()
         mocks.account = ethereumAccount()
         mocks.useResolvedAddress.mockReturnValue({
-            displayName: 'resolved',
+            displayName: TRUNCATED_ETH_ADDRESS,
             isNfd: false,
         })
     })
@@ -218,7 +218,7 @@ describe('useAssetDetailsScreen', () => {
         expect(mocks.trackEvent).not.toHaveBeenCalled()
     })
 
-    it("truncates a named account's secondary address with the chain's own codec", () => {
+    it("shows a named account's secondary address truncated for the asset's chain", () => {
         mocks.account = { ...ethereumAccount(), name: 'Savings' }
         mockAsset({ data: assetFixture(ERC20_ID) })
 
@@ -232,6 +232,10 @@ describe('useAssetDetailsScreen', () => {
 
         expect(result.current.headerPrimary).toBe('Savings')
         expect(result.current.headerSecondary).toBe(TRUNCATED_ETH_ADDRESS)
+        expect(mocks.useResolvedAddress).toHaveBeenCalledWith(ETH_ADDRESS, {
+            enabled: true,
+            chainId: 'ethereum',
+        })
     })
 
     it('still renders when the account has no address on the asset chain', () => {
@@ -248,6 +252,7 @@ describe('useAssetDetailsScreen', () => {
 
         expect(mocks.useResolvedAddress).toHaveBeenCalledWith('', {
             enabled: false,
+            chainId: 'ethereum',
         })
         expect(result.current.isLoading).toBe(false)
         expect(result.current.headerPrimary).toBe('No Address Found')

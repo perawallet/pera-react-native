@@ -52,7 +52,7 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useCapability } from '@hooks/useCapability'
 import { toDiscoverTokenDetailPath } from '@modules/discover'
 import type {
-    AssetAboutPresentation,
+    AssetAboutDisplay,
     AssetDetailsDisplay,
 } from '../../../types/asset-details-display'
 
@@ -60,7 +60,7 @@ export type AssetMarketsProps = {
     asset: PeraAsset
     scope: ChainScope
     assetDetailsDisplay: AssetDetailsDisplay
-    about: AssetAboutPresentation
+    about: AssetAboutDisplay
 }
 
 const Loading = () => {

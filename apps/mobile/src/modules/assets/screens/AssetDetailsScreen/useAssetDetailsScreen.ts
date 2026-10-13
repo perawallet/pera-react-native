@@ -22,7 +22,6 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
-    addressCodecs,
     isNativeAsset,
     type ChainId,
     type ChainScope,
@@ -38,7 +37,7 @@ import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { chainUiFor } from '@modules/chain-ui'
 import type {
-    AssetAboutPresentation,
+    AssetAboutDisplay,
     AssetDetailsDisplay,
 } from '../../types/asset-details-display'
 import { neutralAssetDetailsDisplay } from './neutralAssetDetailsDisplay'
@@ -58,7 +57,7 @@ export type UseAssetDetailsScreenResult = {
     headerPrimary: string
     headerSecondary: Optional<string>
     assetDetailsDisplay: AssetDetailsDisplay
-    about: Nullable<AssetAboutPresentation>
+    about: Nullable<AssetAboutDisplay>
 }
 
 export const useAssetDetailsScreen = ({
@@ -101,16 +100,10 @@ export const useAssetDetailsScreen = ({
     const address = account
         ? chainAccountOf(account, chainId)?.address
         : undefined
-    const { displayName: resolvedName, isNfd } = useResolvedAddress(
+    const { displayName: accountDisplayName } = useResolvedAddress(
         address ?? '',
-        { enabled: !!address },
+        { enabled: !!address, chainId },
     )
-    // useResolvedAddress truncates every address Algorand-style; a non-NFD label
-    // has to come from the chain's own codec to match headerPrimary.
-    const accountDisplayName =
-        !isNfd && address && addressCodecs.has(chainId)
-            ? addressCodecs.get(chainId).truncate(address)
-            : resolvedName
 
     // Screen-view tracking (screen_asset_detail) is centralized in the
     // navigator's screenListeners (see routes/listeners.ts). This effect only

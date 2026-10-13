@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { AssetAboutParams, AssetAboutPresentation } from '@modules/assets'
+import type { AssetAboutParams, AssetAboutDisplay } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
 import { AlgorandTransactionReviewBody } from './components/AlgorandTransactionReviewBody'
@@ -21,7 +21,7 @@ import { AssetVerificationCard } from './components/AssetVerificationCard'
 export const resolveAlgorandAssetAbout = ({
     asset,
     isNativeAsset,
-}: AssetAboutParams): AssetAboutPresentation => {
+}: AssetAboutParams): AssetAboutDisplay => {
     const explorerUrl = asset.peraMetadata?.explorerUrl
     return {
         idLabelKey: isNativeAsset ? null : 'asset_details.about.asa_id',

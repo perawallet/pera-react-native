@@ -24,7 +24,7 @@ export { OptInAccountSelectionContent } from './components/OptInAccountSelection
 export { OptInConfirmationContent } from './components/OptInConfirmationContent'
 export type {
     AssetAboutParams,
-    AssetAboutPresentation,
+    AssetAboutDisplay,
     AssetChainSectionProps,
     AssetDetailsDisplay,
     AssetExplorerLink,

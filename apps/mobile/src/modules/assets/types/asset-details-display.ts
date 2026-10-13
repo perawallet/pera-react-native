@@ -33,7 +33,7 @@ export type AssetAboutParams = {
 }
 
 /** Labels are i18n keys; a null `idLabelKey` hides the id row. */
-export type AssetAboutPresentation = {
+export type AssetAboutDisplay = {
     idLabelKey: Nullable<string>
     urlLabelKey: string
     explorerLink: Nullable<AssetExplorerLink>
@@ -45,5 +45,5 @@ export type AssetDetailsDisplay = {
     VerificationSection?: ComponentType<AssetChainSectionProps>
     /** Renders on the Markets tab, after the description. */
     IssuerControlsSection?: ComponentType<AssetChainSectionProps>
-    resolveAbout: (params: AssetAboutParams) => AssetAboutPresentation
+    resolveAbout: (params: AssetAboutParams) => AssetAboutDisplay
 }

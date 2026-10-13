@@ -19,12 +19,12 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { useClipboard } from '@hooks/useClipboard'
-import type { AssetAboutPresentation } from '../../../types/asset-details-display'
+import type { AssetAboutDisplay } from '../../../types/asset-details-display'
 import { extractDomain } from '../../../utils/extractDomain'
 
 export type AssetAboutProps = {
     assetDetails: PeraAsset
-    about: AssetAboutPresentation
+    about: AssetAboutDisplay
 }
 
 export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
