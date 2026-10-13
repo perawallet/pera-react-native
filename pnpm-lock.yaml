@@ -356,8 +356,8 @@ importers:
         specifier: 'catalog:'
         version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       fallow:
-        specifier: 3.30.0
-        version: 3.30.0
+        specifier: 3.31.0
+        version: 3.31.0
       lanekeep:
         specifier: 'catalog:'
         version: 0.12.0
@@ -384,7 +384,7 @@ importers:
         version: 4.23.15
       turbo:
         specifier: ^2.11.5
-        version: 2.11.5
+        version: 2.11.7
       util:
         specifier: 'catalog:'
         version: 0.12.5
@@ -5602,43 +5602,43 @@ packages:
     resolution: {integrity: sha512-4aQzz9vgxcNXFfo/iyNgDDYfsU5XGKKxWxZopw0cVotHiW+U8IJbIxMaxsINs6bHhtkG3StKNPcOrn3eBuxKPw==}
     hasBin: true
 
-  '@fallow-cli/darwin-arm64@3.30.0':
-    resolution: {integrity: sha512-u3MkZKaHH/dX3qm5ks44QRSsTIspDbaJhoNG5y0j7nl2LPo1ZcM5Feyt6lxta007KKH8YgS6TgwCFaYZjzdOvQ==}
+  '@fallow-cli/darwin-arm64@3.31.0':
+    resolution: {integrity: sha512-dF6yAuy27hmfRoVIAQd4DzF+o7kYZXk+iGree4fUDCmV8/4CBiy16UgS2lGRDOK5f+60rpxotHI8lZJxJVLhhw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@fallow-cli/darwin-x64@3.30.0':
-    resolution: {integrity: sha512-zufVDV7HaAcNBFPEKmERL6b/0lMIswFCSPq2EvzgtPke+1GQC/Vb7CzrSoWc/pHovnOcTL72yc3POFgd3ZOA/A==}
+  '@fallow-cli/darwin-x64@3.31.0':
+    resolution: {integrity: sha512-Ecc+iWGCdGPPzs5WZTMc7JR6hsk8fnz5FgW9OaBTGoEt+VXjaftgcczt5ZnQ0JGeoNkLMcGZoTRR3rgyIhGN2w==}
     cpu: [x64]
     os: [darwin]
 
-  '@fallow-cli/linux-arm64-gnu@3.30.0':
-    resolution: {integrity: sha512-/Gq+zVOc/s1tVAUhLoSA4nBhs4RK59u8pBjNzhJBPdwIAtDQ9jXpCAKPzG5JZuYXKoQ6hSpQDJnrH1v7pCsZxA==}
+  '@fallow-cli/linux-arm64-gnu@3.31.0':
+    resolution: {integrity: sha512-r3pP/05e166wHojqCsPd5VKcNuuaQqgI9Pn0wFHHn5z4IScnJ3+c/dtHoDiTycjbljelvA9BtPIHHGLpQwSCdA==}
     cpu: [arm64]
     os: [linux]
 
-  '@fallow-cli/linux-arm64-musl@3.30.0':
-    resolution: {integrity: sha512-T41dkQRNICfi17lJqchxJSsDtshcJdqMOPBKrLwIGs1At23qX6PBjmQGkCyHhyKMBFSOKFmISwzG722X7ZYi7w==}
+  '@fallow-cli/linux-arm64-musl@3.31.0':
+    resolution: {integrity: sha512-SGszyguijybUH+BF4Sw5G6ZwMN/dst8osnd1LZwNJU9RVMtXetzJkqgN6GEYH4WPc/sF/HnZzGdML5EECbt6Zw==}
     cpu: [arm64]
     os: [linux]
 
-  '@fallow-cli/linux-x64-gnu@3.30.0':
-    resolution: {integrity: sha512-+cEZI516t2POYTDeNhijjuHvToNgTobez71maiib6nxivoixl8M6hzj838/8/DTrLy3AxXBH6bfOax78F95FnA==}
+  '@fallow-cli/linux-x64-gnu@3.31.0':
+    resolution: {integrity: sha512-AwrK0b1TyImD/f3v84X1inxD2YqFDLM8VA8P7B9w5LvHnSuSoKAcbKURVevZHx7W3AbOPQabQ+oZTGNuRrqnyg==}
     cpu: [x64]
     os: [linux]
 
-  '@fallow-cli/linux-x64-musl@3.30.0':
-    resolution: {integrity: sha512-QX8ZUQSFEMhkGc0fBOcoSjHiv1mconxpWBu0XW+i/K+XlAnjAYsFrQ8lrKJajSzURgon7iTAy7NfFNY1zJVyTw==}
+  '@fallow-cli/linux-x64-musl@3.31.0':
+    resolution: {integrity: sha512-/tUsbshrv7ZjJAyhhBG179C48uY7UsQbyXBx2V7Z8rXtgS3ry+JchutFLn0wL0zoa0Kt9rlweM0CHCdr/dEWVA==}
     cpu: [x64]
     os: [linux]
 
-  '@fallow-cli/win32-arm64-msvc@3.30.0':
-    resolution: {integrity: sha512-LajU38z7LKbmBTGYuJPsxyIZs/tgqRkW6jFDdJJctd/VEexwuAC4tdODCdyXuYYbavjorgJQH2bB+XmicAPkmg==}
+  '@fallow-cli/win32-arm64-msvc@3.31.0':
+    resolution: {integrity: sha512-PitieOar3H5NgxSKQiB0wSJjuR/87/mlt5ZeI49gaEqiGnxKNH2E+EPE3LUQSLyBsCcNH0YsTBadpz3WpFoWzg==}
     cpu: [arm64]
     os: [win32]
 
-  '@fallow-cli/win32-x64-msvc@3.30.0':
-    resolution: {integrity: sha512-YgMSneNsCWUPuyOdseDVGQx9AhuOjzmUaoNILhBfu7MhdI4oOHEtBSftdTenp0E7tXRCzPpMMWuCL17l7IvwSg==}
+  '@fallow-cli/win32-x64-msvc@3.31.0':
+    resolution: {integrity: sha512-TubWjDJSNYB3O146k33xcXIhMl7txOKJyMcui+AFTC1jxfUF1awBoNuZT6fPR6/mDV5NV9Bo8SLWG/hJN8igBQ==}
     cpu: [x64]
     os: [win32]
 
@@ -7537,33 +7537,33 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@turbo/darwin-64@2.11.5':
-    resolution: {integrity: sha512-KdY4y7BBjIisl+jAkb3FFaRjClGqHyaeHCcVcCT8LBzFFwUu6thgfxyRZAx0uL4KoxLmH+iOan8UhVf/aDDcaA==}
+  '@turbo/darwin-64@2.11.7':
+    resolution: {integrity: sha512-Z2LFOxwbiJueD1miByXJS/BrW21vv6YaQXZustty5jEX4vQYw6zyh101Sz1QO7WG0mqBzKagZ/DoAeeujI0/Sw==}
     cpu: [x64]
     os: [darwin]
 
-  '@turbo/darwin-arm64@2.11.5':
-    resolution: {integrity: sha512-ToZDGi2u410+TfRtC/O1/LpujGgvNJoRBZnwVXob7oO0+3OSlwIO3zofXKUvwQvlba7a8ZXPyCZwufjAXd7f0w==}
+  '@turbo/darwin-arm64@2.11.7':
+    resolution: {integrity: sha512-Vhv8ybgIflosNDSSRD9fNXHlCFA60dsGyTqQmc7l28SEX5jOaweCCD4BBYNd8/p0WGkw3e7tZbfA9w6FsujGvw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@turbo/linux-64@2.11.5':
-    resolution: {integrity: sha512-Ub2d/nAbdWLaSytcEaPp1wm/YuIvHEIqNrCRMI/UgOGyFdOhgxm8VyWPAJilQWRYxYVrqEUoy2K5S5K8SG50rA==}
+  '@turbo/linux-64@2.11.7':
+    resolution: {integrity: sha512-rAqRp3blQKk1+ylMGlZHAW0eJjVNuuGUm4ZrC6RU1Im8tLryvaO4a2zLQ/FQi1TRlmKqKV9YXBki2YeytlLbXA==}
     cpu: [x64]
     os: [android, linux]
 
-  '@turbo/linux-arm64@2.11.5':
-    resolution: {integrity: sha512-JQjmGxp724Wuft9FAxPMtmBur1CEdUyxJ+FVoIvKkgj63rXHl9PYCWrsU2tMjVi609XTQ3M8vZD9Yc9qVAVYrw==}
+  '@turbo/linux-arm64@2.11.7':
+    resolution: {integrity: sha512-thVYGov7S+llXAxrl3kBb/efalav0xhrjl5NHCR6AfKx14JkbqaetvbVwyss4FvZ9rt+Pv3xsTb+8SIYix8DTg==}
     cpu: [arm64]
     os: [android, linux]
 
-  '@turbo/windows-64@2.11.5':
-    resolution: {integrity: sha512-AFkbPmXNd8XgCi/66YEHR2bVl3gtusXyDihTIVEPAuSB+7ulLmJePvz1unWPVKLHdbCTTIdKq2mpJ1B1e3lJXw==}
+  '@turbo/windows-64@2.11.7':
+    resolution: {integrity: sha512-ZIoKT7J7KutgYl4bGxmmgeUQjG+7E0nY8BF9dxUOiMH2vdTsM4JQ2uSwTYFkTR2Llbg6ghGjSmuZ8LQtkLEYjg==}
     cpu: [x64]
     os: [win32]
 
-  '@turbo/windows-arm64@2.11.5':
-    resolution: {integrity: sha512-52ziXYP3snGOxjv19xA3WL1WDKv9Q6uDAa/7EKIR5j4hocMlYURkrOHbJ2ZZI+VfPU5MwKpcGeRfHxHJu7Y/Pw==}
+  '@turbo/windows-arm64@2.11.7':
+    resolution: {integrity: sha512-88Xv2f7SLGVJ68lRRx8o375dKmnZYNdDtvlKcPA0kZpcF93eAQd8l96BKQ0/AMHG0bMJA0Z5QqoqtetxzNsC+g==}
     cpu: [arm64]
     os: [win32]
 
@@ -9121,13 +9121,13 @@ packages:
     resolution: {integrity: sha512-zKBiKGbAVmROFJNjy1iZ009V9wclL9lZkRAP7l7cfsHkZg14jyWgJk1XtAnmn2sxaKv2hsRTEVuTot/CSoQnSw==}
     engines: {node: '>=18'}
 
-  fallow-type-aware@3.30.0:
-    resolution: {integrity: sha512-I/PDTJVhQkgFzNiPiEpL6D7zmg8sjow55qIZYWu9bzpfwGt9zxepnGykTqmqLVHh4e7QWpjzjjNcPimQAVeDFw==}
+  fallow-type-aware@3.31.0:
+    resolution: {integrity: sha512-kE4l8so/qyyP2RHvmLwz9ch637xVHRGy8gyeKQ4X0DNhmdxvvctxqLzFNXrWOJaEaQkpAL+x3mZArtGzhG42MA==}
     engines: {node: '>=20'}
     hasBin: true
 
-  fallow@3.30.0:
-    resolution: {integrity: sha512-+TPkF4TjdmYuT3WC6NxLwnaIL6RWPtBIu8ue0RBSQWmLrATMc4lNm8jEhXIy2jbgTk3RTs+0i6NZZZo7AzK0SQ==}
+  fallow@3.31.0:
+    resolution: {integrity: sha512-grYLCk3DoKFR1jbdJhI6t2AXou0SecJa0Thg/rULTNd8tU9/eGLKRCwzmYqZhkWXEbxT7Oh4TGNNUZXO6+KzuQ==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -11291,8 +11291,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  turbo@2.11.5:
-    resolution: {integrity: sha512-qLXheqz3TUvJpHIV6MUBwkNkvwKxMVG/QsimyiKT9DfNWPHJ294G/i5nDaH+fbHJt3UH7orubNNxAqYkbUNGAQ==}
+  turbo@2.11.7:
+    resolution: {integrity: sha512-RhXHbqfvY6o3xt/zSHCwSNwLrZlXiqHzewi4eAj9PtZ1T1CqgMJ2yIDb7SKPTG9IikTm925mfzL6hldQVdyNWw==}
     hasBin: true
 
   tweetnacl@1.0.3:
@@ -13366,28 +13366,28 @@ snapshots:
       chalk: 4.1.2
       js-yaml: 5.4.2
 
-  '@fallow-cli/darwin-arm64@3.30.0':
+  '@fallow-cli/darwin-arm64@3.31.0':
     optional: true
 
-  '@fallow-cli/darwin-x64@3.30.0':
+  '@fallow-cli/darwin-x64@3.31.0':
     optional: true
 
-  '@fallow-cli/linux-arm64-gnu@3.30.0':
+  '@fallow-cli/linux-arm64-gnu@3.31.0':
     optional: true
 
-  '@fallow-cli/linux-arm64-musl@3.30.0':
+  '@fallow-cli/linux-arm64-musl@3.31.0':
     optional: true
 
-  '@fallow-cli/linux-x64-gnu@3.30.0':
+  '@fallow-cli/linux-x64-gnu@3.31.0':
     optional: true
 
-  '@fallow-cli/linux-x64-musl@3.30.0':
+  '@fallow-cli/linux-x64-musl@3.31.0':
     optional: true
 
-  '@fallow-cli/win32-arm64-msvc@3.30.0':
+  '@fallow-cli/win32-arm64-msvc@3.31.0':
     optional: true
 
-  '@fallow-cli/win32-x64-msvc@3.30.0':
+  '@fallow-cli/win32-x64-msvc@3.31.0':
     optional: true
 
   '@firebase/ai@2.13.1(@firebase/app-types@0.9.5)(@firebase/app@0.15.0)':
@@ -15366,22 +15366,22 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.18
 
-  '@turbo/darwin-64@2.11.5':
+  '@turbo/darwin-64@2.11.7':
     optional: true
 
-  '@turbo/darwin-arm64@2.11.5':
+  '@turbo/darwin-arm64@2.11.7':
     optional: true
 
-  '@turbo/linux-64@2.11.5':
+  '@turbo/linux-64@2.11.7':
     optional: true
 
-  '@turbo/linux-arm64@2.11.5':
+  '@turbo/linux-arm64@2.11.7':
     optional: true
 
-  '@turbo/windows-64@2.11.5':
+  '@turbo/windows-64@2.11.7':
     optional: true
 
-  '@turbo/windows-arm64@2.11.5':
+  '@turbo/windows-arm64@2.11.7':
     optional: true
 
   '@tybys/wasm-util@0.10.3':
@@ -17193,24 +17193,24 @@ snapshots:
 
   falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a): {}
 
-  fallow-type-aware@3.30.0:
+  fallow-type-aware@3.31.0:
     dependencies:
       typescript: 7.0.2
     optional: true
 
-  fallow@3.30.0:
+  fallow@3.31.0:
     dependencies:
       detect-libc: 2.1.2
     optionalDependencies:
-      '@fallow-cli/darwin-arm64': 3.30.0
-      '@fallow-cli/darwin-x64': 3.30.0
-      '@fallow-cli/linux-arm64-gnu': 3.30.0
-      '@fallow-cli/linux-arm64-musl': 3.30.0
-      '@fallow-cli/linux-x64-gnu': 3.30.0
-      '@fallow-cli/linux-x64-musl': 3.30.0
-      '@fallow-cli/win32-arm64-msvc': 3.30.0
-      '@fallow-cli/win32-x64-msvc': 3.30.0
-      fallow-type-aware: 3.30.0
+      '@fallow-cli/darwin-arm64': 3.31.0
+      '@fallow-cli/darwin-x64': 3.31.0
+      '@fallow-cli/linux-arm64-gnu': 3.31.0
+      '@fallow-cli/linux-arm64-musl': 3.31.0
+      '@fallow-cli/linux-x64-gnu': 3.31.0
+      '@fallow-cli/linux-x64-musl': 3.31.0
+      '@fallow-cli/win32-arm64-msvc': 3.31.0
+      '@fallow-cli/win32-x64-msvc': 3.31.0
+      fallow-type-aware: 3.31.0
 
   fast-base64-decode@1.0.0: {}
 
@@ -19713,14 +19713,14 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  turbo@2.11.5:
+  turbo@2.11.7:
     optionalDependencies:
-      '@turbo/darwin-64': 2.11.5
-      '@turbo/darwin-arm64': 2.11.5
-      '@turbo/linux-64': 2.11.5
-      '@turbo/linux-arm64': 2.11.5
-      '@turbo/windows-64': 2.11.5
-      '@turbo/windows-arm64': 2.11.5
+      '@turbo/darwin-64': 2.11.7
+      '@turbo/darwin-arm64': 2.11.7
+      '@turbo/linux-64': 2.11.7
+      '@turbo/linux-arm64': 2.11.7
+      '@turbo/windows-64': 2.11.7
+      '@turbo/windows-arm64': 2.11.7
 
   tweetnacl@1.0.3: {}
 
