@@ -14,6 +14,7 @@ import { PWScreen, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewBody } from '@modules/signing/family-bodies/TransactionReviewBody'
+import { transactionBodyRegistry } from '@modules/signing/family-bodies/registry'
 import { toAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useSigningPipeline,
@@ -40,7 +41,12 @@ export const SingleTransactionScreen = () => {
         return null
     }
 
-    if (!transaction) {
+    // The signing pipeline carries only Algorand transactions.
+    const native = transaction ? toAlgorandNative(transaction) : undefined
+
+    // A family with no review body would leave Approve live under an empty
+    // review, so it gets the footer-less invalid state instead.
+    if (!native || !transactionBodyRegistry[native.family]) {
         return (
             <EmptyView
                 title={t('signing.transaction_view.invalid_title')}
@@ -55,9 +61,8 @@ export const SingleTransactionScreen = () => {
             testID='signing_transaction_review'
         >
             <PWView style={styles.contentContainer}>
-                {/* The signing pipeline carries only Algorand transactions. */}
                 <TransactionReviewBody
-                    transaction={toAlgorandNative(transaction)}
+                    transaction={native}
                     source={request.sourceMetadata}
                     verifiedOrigin={request.verifiedOrigin}
                 />
