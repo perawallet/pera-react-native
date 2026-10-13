@@ -73,6 +73,14 @@ import { useEnsureDestinationOptIn } from '../useEnsureDestinationOptIn'
 
 const ADDRESS = 'TESTADDRESS'
 const ASSET_ID = 31566704n
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const RAMP_NETWORK = { id: 'ALGORAND', name: 'Algorand', logo: null }
+const ALGO_TOKEN = { id: 'ALGO', symbol: 'ALGO', network: RAMP_NETWORK }
+const USDC_TOKEN = {
+    id: 'USDC_ALGORAND',
+    symbol: 'USDC',
+    network: RAMP_NETWORK,
+}
 
 function createWrapper() {
     const queryClient = new QueryClient({
@@ -111,9 +119,26 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         await expect(
             result.current.ensureOptIn({
                 address: ADDRESS,
-                destinationAssetId: 'ALGO',
+                scope: MAINNET,
+                destinationToken: ALGO_TOKEN,
             }),
         ).resolves.toBe(true)
+
+        expect(accountInformationMock).not.toHaveBeenCalled()
+        expect(optInMock).not.toHaveBeenCalled()
+        expect(submitWithFeeDelegationMock).not.toHaveBeenCalled()
+    })
+
+    test('a token with no asset on the network resolves false and performs nothing', async () => {
+        const result = renderEnsure()
+
+        await expect(
+            result.current.ensureOptIn({
+                address: ADDRESS,
+                scope: MAINNET,
+                destinationToken: { ...USDC_TOKEN, id: 'NOT_LISTED' },
+            }),
+        ).resolves.toBe(false)
 
         expect(accountInformationMock).not.toHaveBeenCalled()
         expect(optInMock).not.toHaveBeenCalled()
@@ -132,7 +157,8 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         await expect(
             result.current.ensureOptIn({
                 address: ADDRESS,
-                destinationAssetId: ASSET_ID,
+                scope: MAINNET,
+                destinationToken: USDC_TOKEN,
             }),
         ).resolves.toBe(true)
 
@@ -152,7 +178,8 @@ describe('onramp/useEnsureDestinationOptIn', () => {
 
         await result.current.ensureOptIn({
             address: ADDRESS,
-            destinationAssetId: ASSET_ID,
+            scope: MAINNET,
+            destinationToken: USDC_TOKEN,
         })
 
         expect(optInMock).toHaveBeenCalledWith({
@@ -174,7 +201,8 @@ describe('onramp/useEnsureDestinationOptIn', () => {
 
         await result.current.ensureOptIn({
             address: ADDRESS,
-            destinationAssetId: ASSET_ID,
+            scope: MAINNET,
+            destinationToken: USDC_TOKEN,
         })
 
         expect(optInMock).not.toHaveBeenCalled()
@@ -211,7 +239,8 @@ describe('onramp/useEnsureDestinationOptIn', () => {
 
         await result.current.ensureOptIn({
             address: ADDRESS,
-            destinationAssetId: ASSET_ID,
+            scope: MAINNET,
+            destinationToken: USDC_TOKEN,
         })
 
         expect(optInMock).not.toHaveBeenCalled()
@@ -225,20 +254,21 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             assets: [],
         })
         optInMock.mockResolvedValue({ txIds: ['tx1'] })
-        const confirmOptIn = vi.fn().mockResolvedValue(true)
+        const confirm = vi.fn().mockResolvedValue(true)
 
         const result = renderEnsure()
 
         await expect(
             result.current.ensureOptIn({
                 address: ADDRESS,
-                destinationAssetId: ASSET_ID,
-                confirmOptIn,
+                scope: MAINNET,
+                destinationToken: USDC_TOKEN,
+                confirm,
             }),
         ).resolves.toBe(true)
 
-        expect(confirmOptIn).toHaveBeenCalledWith({
-            assetId: ASSET_ID,
+        expect(confirm).toHaveBeenCalledWith({
+            assetId: ASSET_ID.toString(),
             isSponsored: false,
         })
         expect(optInMock).toHaveBeenCalledTimes(1)
@@ -251,20 +281,21 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             assets: [],
         })
         submitWithFeeDelegationMock.mockResolvedValue(undefined)
-        const confirmOptIn = vi.fn().mockResolvedValue(true)
+        const confirm = vi.fn().mockResolvedValue(true)
 
         const result = renderEnsure()
 
         await expect(
             result.current.ensureOptIn({
                 address: ADDRESS,
-                destinationAssetId: ASSET_ID,
-                confirmOptIn,
+                scope: MAINNET,
+                destinationToken: USDC_TOKEN,
+                confirm,
             }),
         ).resolves.toBe(true)
 
-        expect(confirmOptIn).toHaveBeenCalledWith({
-            assetId: ASSET_ID,
+        expect(confirm).toHaveBeenCalledWith({
+            assetId: ASSET_ID.toString(),
             isSponsored: true,
         })
         expect(submitWithFeeDelegationMock).toHaveBeenCalledTimes(1)
@@ -276,15 +307,16 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             minBalance: 100_000n,
             assets: [],
         })
-        const confirmOptIn = vi.fn().mockResolvedValue(false)
+        const confirm = vi.fn().mockResolvedValue(false)
 
         const result = renderEnsure()
 
         await expect(
             result.current.ensureOptIn({
                 address: ADDRESS,
-                destinationAssetId: ASSET_ID,
-                confirmOptIn,
+                scope: MAINNET,
+                destinationToken: USDC_TOKEN,
+                confirm,
             }),
         ).resolves.toBe(false)
 
@@ -306,7 +338,8 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         await expect(
             result.current.ensureOptIn({
                 address: ADDRESS,
-                destinationAssetId: ASSET_ID,
+                scope: MAINNET,
+                destinationToken: USDC_TOKEN,
             }),
         ).rejects.toBe(failure)
     })
@@ -326,7 +359,8 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         await expect(
             result.current.ensureOptIn({
                 address: ADDRESS,
-                destinationAssetId: ASSET_ID,
+                scope: MAINNET,
+                destinationToken: USDC_TOKEN,
             }),
         ).rejects.toBeInstanceOf(RampAttestationRequiredError)
     })
