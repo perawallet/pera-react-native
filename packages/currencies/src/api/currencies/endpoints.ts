@@ -68,7 +68,7 @@ export const fetchCurrency = async (
         backend: 'pera',
         network,
         method: 'GET',
-        url: `/v1/currencies/${currencyId}`,
+        url: `/v1/currencies/${currencyId}/`,
         signal,
     })
 

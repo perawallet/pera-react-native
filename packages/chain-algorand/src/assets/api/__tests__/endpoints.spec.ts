@@ -107,7 +107,7 @@ describe('assets endpoints', () => {
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                url: '/v1/assets/123',
+                url: '/v1/assets/123/',
             }),
         )
     })
@@ -130,7 +130,7 @@ describe('assets endpoints', () => {
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                url: '/v1/public/assets/123',
+                url: '/v1/public/assets/123/',
             }),
         )
     })
