@@ -175,11 +175,15 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useWebAppShell } from '../useWebAppShell.web'
 
+// Read before any test runs: vitest clears mock calls before each one, and
+// this call happens only once, at import.
+const engineKeySourceCallsAtImport = [...mocks.setEngineKeySource.mock.calls]
+
 describe('useWebAppShell module import', () => {
     it('registers the vault session key as the engine key source at import', () => {
-        expect(mocks.setEngineKeySource).toHaveBeenCalledWith(
+        expect(engineKeySourceCallsAtImport).toContainEqual([
             mocks.requireSessionMasterKey,
-        )
+        ])
     })
 })
 

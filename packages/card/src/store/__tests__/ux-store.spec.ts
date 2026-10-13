@@ -14,11 +14,20 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { CardStatus, FundingType, OnboardingStep } from '../../models'
 
-const registerStoreMock = vi.fn()
+// Stores register once, at import, and vitest clears mock calls before every
+// test, so registrations are kept here rather than on a vi.fn().
+const registeredStores: Parameters<
+    typeof import('@perawallet/wallet-core-shared').registerStore
+>[0][] = []
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    return { ...original, registerStore: registerStoreMock }
+    return {
+        ...original,
+        registerStore: (entry: (typeof registeredStores)[number]) => {
+            registeredStores.push(entry)
+        },
+    }
 })
 
 describe('useCardStore', () => {
@@ -462,7 +471,7 @@ describe('useCardStore', () => {
     test('registers clearStorage and resetState under card-store', async () => {
         await import('../ux-store')
 
-        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        const registration = registeredStores.at(-1)!
         expect(registration?.name).toBe('card-store')
     })
 })
