@@ -17,6 +17,7 @@ import {
     canSignDirectly,
     canSignProgram,
     findAccountByAddressOn,
+    findAccountByAnyChainAddress,
     getAccountDisplayName,
     hasSigningKeys,
     isHardwareWalletAccount,
@@ -290,6 +291,24 @@ describe('services/accounts/utils - address lookups', () => {
         expect(findAccountByAddressOn([onFake], FAKE_CHAIN_ID, 'shared')).toBe(
             onFake,
         )
+    })
+
+    test('finds the account by its address on any of its chains', () => {
+        const onBoth = buildTestAccount(TEST_CUSTODY.watch, {
+            [FAKE_CHAIN_ID]: { address: 'FAKE_ADDRESS' },
+            [OTHER_CHAIN_ID]: { address: 'OTHER_ADDRESS' },
+        })
+        const accounts = [onFake, onBoth]
+
+        expect(findAccountByAnyChainAddress(accounts, 'FAKE_ADDRESS')).toBe(
+            onBoth,
+        )
+        expect(findAccountByAnyChainAddress(accounts, 'OTHER_ADDRESS')).toBe(
+            onBoth,
+        )
+        expect(
+            findAccountByAnyChainAddress(accounts, 'NOT_HELD'),
+        ).toBeUndefined()
     })
 
     test('falls back to string equality on a chain without a codec', () => {
