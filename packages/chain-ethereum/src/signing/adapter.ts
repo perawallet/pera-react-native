@@ -22,6 +22,7 @@ import type {
     Signature,
     SignedTransaction,
     SigningRequest,
+    TransactionPlanner,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -74,7 +75,7 @@ const readEthereumTransaction = (
     return { from: getAddress(payload.from), transaction }
 }
 
-export const ethereumPlannerAdapter = {
+export const ethereumPlannerAdapter: TransactionPlanner = {
     chainId: ETHEREUM_CHAIN_ID,
 
     plan: (unsigned: UnsignedTransaction): SigningRequest[] => {

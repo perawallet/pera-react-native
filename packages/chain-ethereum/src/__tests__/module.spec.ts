@@ -17,11 +17,13 @@ import {
     createChainRegistry,
     keyDerivations,
     registerChainSetup,
+    transactionPlanners,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule } from '..'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
+import { ethereumPlannerAdapter } from '../signing/adapter'
 
 const context: ChainContext = {
     getScope: vi.fn(),
@@ -52,7 +54,7 @@ describe('ethereumModule', () => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('registers its descriptor, address codec, key derivation, accounts adapter and defaults through the setup', () => {
+    it('registers its descriptor, address codec, key derivation, accounts adapter, planner and defaults through the setup', () => {
         const chains = createChainRegistry()
 
         registerChainSetup(
@@ -77,6 +79,7 @@ describe('ethereumModule', () => {
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
         expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
+        expect(transactionPlanners.get('ethereum')).toBe(ethereumPlannerAdapter)
         expect(chains.byCaip2('eip155:11155111')).toMatchObject({
             chainId: 'ethereum',
             network: { id: 'sepolia' },

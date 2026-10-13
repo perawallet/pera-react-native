@@ -17,16 +17,18 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     ScopeChangedError,
+    transactionPlanners,
     type ChainId,
     type ChainScope,
-    type SigningRequest,
+    type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    SignableGroup,
-    SigningResult,
-    SourceCallbacks,
-    SourceMetadata,
+import {
+    isUnsignedTransactionsData,
+    type SignableGroup,
+    type SigningResult,
+    type SourceCallbacks,
+    type SourceMetadata,
 } from '../pipeline/types'
 import {
     CannotSignError,
@@ -78,13 +80,18 @@ export const buildGroupSignerMap = (
                 'signer account not found in wallet',
             )
         }
-        const authAccount = resolveSigningAccount(
-            signerAccount,
-            group.source,
-            group.data.type,
-            allAccounts,
-            chainId,
-        )
+        // A planner already names the key holder, so a rekey isn't followed twice.
+        const authAccount =
+            group.data.type === 'transactions' &&
+            isUnsignedTransactionsData(group.data)
+                ? signerAccount
+                : resolveSigningAccount(
+                      signerAccount,
+                      group.source,
+                      group.data.type,
+                      allAccounts,
+                      chainId,
+                  )
         map.set(
             group.signerAddress,
             resolveSignerCredential(authAccount, chainId),
@@ -220,13 +227,7 @@ const buildUnsignedTransactionGroups = (
     scope: ChainScope,
     source: SourceMetadata,
 ): SignableGroup[] => {
-    const planner = plannerAdapterForScope(scope)
-    const plan = planner.plan?.bind(planner)
-    if (!plan) {
-        throw new InvalidSignableDataError(
-            `${scope.chainId} has no planner for chain-neutral transactions`,
-        )
-    }
+    const planner = transactionPlanners.get(scope.chainId)
 
     const bySigner = new Map<
         string,
@@ -237,27 +238,26 @@ const buildUnsignedTransactionGroups = (
             throw new InvalidSignableDataError(MIXED_SHAPES)
         }
         // Planned first: a planner refuses another chain's transaction.
-        const signers = new Set(planSigners(plan, tx))
+        const signers = new Set(planSigners(planner, tx))
         // Built for another network than the chain's selected one, by a dApp
         // or before the user switched.
         if (tx.scope.networkId !== scope.networkId) {
             throw new ScopeChangedError(tx.scope, scope)
         }
-        if (signers.size !== 1) {
-            throw new InvalidSignableDataError(
-                'a chain-neutral transaction must have exactly one signer',
-            )
-        }
-        const [signer] = signers
-        const account = findAccountByAddressOn(
-            allAccounts,
-            scope.chainId,
-            signer,
+        // Keyed to the first key the wallet can sign with here, else the first
+        // it holds; the review lists every held signer.
+        const held = [...signers].flatMap(
+            signer =>
+                findAccountByAddressOn(allAccounts, scope.chainId, signer) ??
+                [],
         )
+        const account =
+            held.find(candidate => candidate.custody.kind === 'local') ??
+            held[0]
         if (!account) continue
         // The wallet's spelling, so the group key and every later lookup agree.
-        const signerAddress =
-            chainAccountOf(account, scope.chainId)?.address ?? signer
+        const signerAddress = chainAccountOf(account, scope.chainId)?.address
+        if (!signerAddress) continue
 
         const entry = bySigner.get(signerAddress) ?? { txs: [], indices: [] }
         entry.txs.push(tx)
@@ -275,11 +275,11 @@ const buildUnsignedTransactionGroups = (
 
 // A payload the chain can't read is untrusted data, not an internal fault.
 const planSigners = (
-    plan: (transaction: UnsignedTransaction) => SigningRequest[],
+    planner: TransactionPlanner,
     transaction: UnsignedTransaction,
 ): string[] => {
     try {
-        return plan(transaction).map(entry => entry.signer)
+        return planner.plan(transaction).map(entry => entry.signer)
     } catch (error) {
         throw new InvalidSignableDataError(
             error instanceof Error ? error.message : String(error),
@@ -428,6 +428,7 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     scope: input.scope,
     encodeTransaction: input.encodeTransaction,
     hardwareWalletRegistry: input.hardwareWalletRegistry,
+    keyStore: input.keyStore,
 })
 
 /**

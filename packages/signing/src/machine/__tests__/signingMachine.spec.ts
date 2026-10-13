@@ -17,11 +17,11 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
-import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     makeUnsignedTransaction,
-    planFromPayload,
+    registerFakeTransactionPlanner,
 } from '../../__tests__/transactions'
+import { SIGNING_KEY_DOMAIN } from '../../constants'
 import {
     fakeReviewerAdapter,
     registerFakeReviewerAdapter,
@@ -30,6 +30,7 @@ import {
     plannerChainAdapters,
     reviewerChainAdapters,
 } from '../../chain-adapter'
+import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { signingMachine } from '../signingMachine'
 import { analyzerActor } from '../actors/analyzerActor'
 import {
@@ -1033,12 +1034,12 @@ describe('signingMachine', () => {
                     policy: { autoApproveLocal: secondAutoApproveLocal },
                 }),
             )
+            // The Algorand-shaped requests here validate through the chain's
+            // Algorand planner.
             plannerChainAdapters.register(
-                fakePlannerAdapter({
-                    chainId: SECOND_CHAIN_ID,
-                    plan: planFromPayload,
-                }),
+                fakePlannerAdapter({ chainId: SECOND_CHAIN_ID }),
             )
+            registerFakeTransactionPlanner()
         })
 
         it("reviews the request with its own chain's reviewer", async () => {
@@ -1066,14 +1067,29 @@ describe('signingMachine', () => {
             expect(state.can({ type: 'RETRY' })).toBe(false)
         })
 
-        it('carries a chain-neutral request through review, signing and delivery to completed', async () => {
+        it("plans, signs and assembles a chain-neutral request through its chain's planner", async () => {
             const transaction = makeUnsignedTransaction(
                 MOCK_ADDRESS,
                 secondScope,
             )
-            const actor = createActor(realAnalyzerMachine, {
+            const keyStore = {
+                sign: vi.fn(async (_keyPairId: string, payload: Uint8Array) =>
+                    payload.map(byte => byte ^ 0xff),
+                ),
+            }
+            // Only delivery is stubbed: review, signing and assembly are real.
+            const machine = signingMachine.provide({
+                actors: {
+                    transportActor: fromPromise(
+                        async (): Promise<TransportResult> =>
+                            mockTransportResult,
+                    ),
+                },
+            })
+            const actor = createActor(machine, {
                 input: {
                     ...secondChainInput(),
+                    keyStore,
                     request: { ...mockRequest, txs: [transaction] },
                 },
             })
@@ -1097,6 +1113,30 @@ describe('signingMachine', () => {
                 state.context.signableGroups?.[0],
                 expect.anything(),
             )
+            const planned = new Uint8Array(
+                new TextEncoder().encode(MOCK_ADDRESS),
+            )
+            expect(keyStore.sign).toHaveBeenCalledExactlyOnceWith(
+                'key-1',
+                planned,
+                SIGNING_KEY_DOMAIN,
+            )
+            expect(state.context.signingResults).toEqual([
+                {
+                    signedData: {
+                        type: 'signed-transactions',
+                        signed: [
+                            {
+                                scope: secondScope,
+                                id: `signed-by-${MOCK_ADDRESS}`,
+                                bytes: planned.map(byte => byte ^ 0xff),
+                            },
+                        ],
+                    },
+                    signers: [{ address: MOCK_ADDRESS }],
+                    originalIndices: [0],
+                },
+            ])
             expect(state.context.transportResult).toEqual(mockTransportResult)
         })
 
