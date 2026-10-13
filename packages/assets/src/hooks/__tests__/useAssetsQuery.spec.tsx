@@ -94,6 +94,22 @@ describe('useAssetsQuery', () => {
             )
         })
 
+        it('reads the requested scope instead of the selected network', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+            const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+            const { result } = renderHook(
+                () => useAssetsQuery(['123'], { scope }),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
+                assetIds: ['123'],
+                scope,
+            })
+        })
+
         it('falls back to the adapter native asset when the seeded row is absent', async () => {
             mocks.getAssetsByIds.mockReturnValue([])
 

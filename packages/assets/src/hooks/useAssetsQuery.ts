@@ -14,7 +14,10 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetsByIds } from '../db'
@@ -39,14 +42,16 @@ type UseAssetsQueryOptions = {
      * resolve to real names/units instead of falling back to the raw id.
      */
     fetchMissing?: boolean
+    /** The chain and network to read; defaults to the selected Algorand network. */
+    scope?: ChainScope
 }
 
 export const useAssetsQuery = (
     ids: string[],
-    { fetchMissing = false }: UseAssetsQueryOptions = {},
+    { fetchMissing = false, scope: requestedScope }: UseAssetsQueryOptions = {},
 ): UseAssetsQueryResult => {
     const { network } = useNetwork()
-    const scope = scopeForLegacyNetwork(network)
+    const scope = requestedScope ?? scopeForLegacyNetwork(network)
     const nativeAsset = useNativeAsset()
 
     // Keep a stable reference to ids — only update when the actual content
