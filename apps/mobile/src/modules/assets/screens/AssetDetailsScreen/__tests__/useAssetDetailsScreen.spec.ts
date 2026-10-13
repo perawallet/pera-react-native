@@ -18,6 +18,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { ethereumDescriptor } from '@packages/chain-ethereum/src/descriptor'
+import { ethereumAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { AnalyticsMetadataKey, AssetDetailsEvent } from '@analytics'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
@@ -48,6 +49,7 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 
 const ETH_ADDRESS = '0x52908400098527886E0F7030069857D2E4169EE7'
+const TRUNCATED_ETH_ADDRESS = ethereumAddressCodec.truncate(ETH_ADDRESS)
 const ERC20_ID = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 const ASA_ID = '31566704'
 
@@ -79,7 +81,10 @@ describe('useAssetDetailsScreen', () => {
         vi.clearAllMocks()
         registerEthereumChain()
         mocks.account = ethereumAccount()
-        mocks.useResolvedAddress.mockReturnValue({ displayName: 'resolved' })
+        mocks.useResolvedAddress.mockReturnValue({
+            displayName: 'resolved',
+            isNfd: false,
+        })
     })
 
     it('renders an ERC-20 from its own chain with the descriptor explorer link and no chain sections', () => {
@@ -116,7 +121,8 @@ describe('useAssetDetailsScreen', () => {
             urlLabelKey: 'asset_details.about.url',
             explorerLink: { url, label: new URL(url as string).hostname },
         })
-        expect(result.current.headerPrimary).toBe(ETH_ADDRESS)
+        expect(result.current.headerPrimary).toBe(TRUNCATED_ETH_ADDRESS)
+        expect(result.current.headerSecondary).toBeUndefined()
         expect(result.current.isLoading).toBe(false)
     })
 
@@ -210,6 +216,22 @@ describe('useAssetDetailsScreen', () => {
         )
 
         expect(mocks.trackEvent).not.toHaveBeenCalled()
+    })
+
+    it("truncates a named account's secondary address with the chain's own codec", () => {
+        mocks.account = { ...ethereumAccount(), name: 'Savings' }
+        mockAsset({ data: assetFixture(ERC20_ID) })
+
+        const { result } = renderHook(() =>
+            useAssetDetailsScreen({
+                assetId: ERC20_ID,
+                chainId: 'ethereum',
+                isCollectible: false,
+            }),
+        )
+
+        expect(result.current.headerPrimary).toBe('Savings')
+        expect(result.current.headerSecondary).toBe(TRUNCATED_ETH_ADDRESS)
     })
 
     it('still renders when the account has no address on the asset chain', () => {

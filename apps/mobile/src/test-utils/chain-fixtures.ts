@@ -11,6 +11,7 @@
  */
 
 import {
+    addressCodecs,
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
     type ChainDescriptor,
@@ -20,6 +21,7 @@ import {
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
 import { ethereumDescriptor } from '@packages/chain-ethereum/src/descriptor'
+import { ethereumAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
@@ -80,5 +82,8 @@ export const registerEthereumChain = (): void => {
     const { chains } = getProvider()
     if (!chains.has(ETHEREUM_CHAIN_ID)) {
         chains.register(ethereumDescriptor, ethereumCapabilityDefaults)
+    }
+    if (!addressCodecs.has(ETHEREUM_CHAIN_ID)) {
+        addressCodecs.register(ethereumAddressCodec)
     }
 }
