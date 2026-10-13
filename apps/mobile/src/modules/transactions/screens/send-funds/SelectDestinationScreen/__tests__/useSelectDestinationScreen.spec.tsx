@@ -60,6 +60,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
+    isDebug: false,
+    isStaging: false,
     getArc59Config: mockGetArc59Config,
 }))
 

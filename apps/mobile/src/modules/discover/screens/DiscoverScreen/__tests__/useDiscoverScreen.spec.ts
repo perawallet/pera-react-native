@@ -18,6 +18,8 @@ import { isSafeRelativePath } from '@modules/webview'
 import { useDiscoverScreen } from '../useDiscoverScreen'
 
 vi.mock('@perawallet/wallet-core-config', () => ({
+    isDebug: false,
+    isStaging: false,
     config: { discoverBaseUrl: 'https://discover.example/' },
 }))
 vi.mock('@react-navigation/native', () => ({

@@ -41,10 +41,11 @@ paths = [
 ]
 
 [[allowlists]]
-description = "Test fixtures use literal strings like 'test-algod-key-456' or 'algo25-key-ADDR' as dummy identifiers; real credentials never live in test files"
+description = "Test fixtures use literal strings like 'test-algod-key-456' or 'algo25-key-ADDR' as dummy identifiers; real credentials never live in test files. '.test.' is the pre-rename suffix: gone at HEAD, but history scans still walk those blobs"
 paths = [
     '''.*__tests__/.*''',
     '''.*\.spec\.(ts|tsx|js|jsx)$''',
+    '''.*\.test\.(ts|tsx|js|jsx)$''',
     '''.*/mocks/.*''',
     '''.*/__mocks__/.*''',
     '''.*/test-utils/.*''',

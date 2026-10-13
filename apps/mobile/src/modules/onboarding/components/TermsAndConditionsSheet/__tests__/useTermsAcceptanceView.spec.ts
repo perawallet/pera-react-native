@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
+    isDebug: false,
+    isStaging: false,
     config: { termsOfServiceUrl: 'https://perawallet.app/terms-and-services/' },
 }))
 
