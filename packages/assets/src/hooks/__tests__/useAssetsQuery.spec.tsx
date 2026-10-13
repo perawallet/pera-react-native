@@ -96,7 +96,7 @@ describe('useAssetsQuery', () => {
 
         it('reads the requested scope instead of the selected network', async () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
-            const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+            const scope = { chainId: 'algorand', networkId: 'testnet' } as const
 
             const { result } = renderHook(
                 () => useAssetsQuery(['123'], { scope }),

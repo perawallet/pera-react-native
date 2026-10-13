@@ -26,7 +26,7 @@ const rampTokenSchema = z.object({
     logo: z.string().nullable(),
     network: rampNetworkSchema,
     price_in_usd: z.string().nullable(),
-    caip19: z.string().optional(),
+    caip19: z.string().nullish(),
     extra: z.object({
         country_code: z.string().optional(),
     }),

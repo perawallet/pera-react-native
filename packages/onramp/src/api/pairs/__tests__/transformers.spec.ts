@@ -124,6 +124,16 @@ describe('pairs transformers', () => {
             expect(result.sourceToken.caip19).toBeUndefined()
         })
 
+        it('treats a null caip19 as absent', () => {
+            const pair = buildPair()
+            const result = transformRampPair({
+                ...pair,
+                source_token: { ...pair.source_token, caip19: null },
+            })
+
+            expect(result.sourceToken.caip19).toBeUndefined()
+        })
+
         it('maps network fields and preserves null logo', () => {
             const result = transformRampPair(buildPair())
 

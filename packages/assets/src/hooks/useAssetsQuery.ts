@@ -21,8 +21,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetsByIds } from '../db'
-import { fetchAndPersistAssets } from '../chain-adapter'
-import { useNativeAsset } from './useNativeAsset'
+import { fetchAndPersistAssets, nativeAssetFor } from '../chain-adapter'
 
 type UseAssetsQueryResult = {
     data: Map<string, PeraAsset>
@@ -52,7 +51,7 @@ export const useAssetsQuery = (
 ): UseAssetsQueryResult => {
     const { network } = useNetwork()
     const scope = requestedScope ?? scopeForLegacyNetwork(network)
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = nativeAssetFor(scope.chainId)
 
     // Keep a stable reference to ids — only update when the actual content
     // changes. This prevents query recomputation when callers pass a new array
