@@ -136,6 +136,7 @@ export const useOnrampSheets = ({
         selectedPaymentMethodId,
         destinationPriceInUsd,
         selectQuote,
+        trackOnrampEvent,
     ])
 
     const handleOpenPaymentMethod = useCallback(async () => {
@@ -181,7 +182,7 @@ export const useOnrampSheets = ({
             trackOnrampEvent(OnrampEvent.SenderAddressApply)
             setSenderAddress(resolvedAddress)
         }
-    }, [requestBottomSheet, senderAddress, setSenderAddress])
+    }, [requestBottomSheet, senderAddress, setSenderAddress, trackOnrampEvent])
 
     return {
         handleOpenSourceSelection,
