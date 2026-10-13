@@ -22,6 +22,9 @@ import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+
+const MAINNET = scopeForLegacyNetwork('mainnet')
 
 describe('Flow: Asset discovery (search)', () => {
     it('Given the search endpoint returns mixed-tier results, when the hook resolves, then all three verification tiers (verified, unverified, suspicious) round-trip onto the results so the UI can decorate them', async () => {
@@ -64,9 +67,12 @@ describe('Flow: Asset discovery (search)', () => {
             }),
         )
 
-        const { result } = renderHook(() => useAssetSearchQuery('coin'), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () => useAssetSearchQuery('coin', MAINNET),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         await waitFor(
             () => {
@@ -155,9 +161,12 @@ describe('Flow: Asset discovery (search)', () => {
             ),
         )
 
-        const { result } = renderHook(() => useAssetSearchQuery('asset'), {
-            wrapper: createQueryClientWrapper(),
-        })
+        const { result } = renderHook(
+            () => useAssetSearchQuery('asset', MAINNET),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
 
         // First page resolves, hasNextPage is true because the
         // server returned a `next` URL.
@@ -201,7 +210,7 @@ describe('Flow: Asset discovery (search)', () => {
         // the query is the gate the AddAssetView uses while the
         // search input is empty.
         const { result } = renderHook(
-            () => useAssetSearchQuery('', { enabled: false }),
+            () => useAssetSearchQuery('', MAINNET, { enabled: false }),
             { wrapper: createQueryClientWrapper() },
         )
 

@@ -18,10 +18,7 @@ import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     type ChainScope,
     LEGACY_CHAIN_ID,
@@ -53,7 +50,6 @@ export const useSeedSwapRouteAssets = ({
     assetOutId,
 }: UseSeedSwapRouteAssetsParams): void => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { network } = useNetwork()
     const isNativeAssetId = useIsNativeAssetId()
     const queryClient = useQueryClient()
 
@@ -64,20 +60,22 @@ export const useSeedSwapRouteAssets = ({
 
     const { data: outAsset } = useSingleAssetDetailsQuery(
         routeAssetId(assetOutId),
+        scope,
     )
     const { data: inAsset } = useSingleAssetDetailsQuery(
         routeAssetId(assetInId),
+        scope,
     )
 
     useEffect(() => {
         if (assetOutId && outAsset) {
             seedAssetCache(queryClient, scope, assetOutId, outAsset)
         }
-    }, [assetOutId, outAsset, network, queryClient, scope])
+    }, [assetOutId, outAsset, scope, queryClient])
 
     useEffect(() => {
         if (assetInId && inAsset) {
             seedAssetCache(queryClient, scope, assetInId, inAsset)
         }
-    }, [assetInId, inAsset, network, queryClient, scope])
+    }, [assetInId, inAsset, scope, queryClient])
 }

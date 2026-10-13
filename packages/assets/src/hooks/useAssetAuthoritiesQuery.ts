@@ -11,9 +11,12 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { assetsAdapterFor, type AssetAuthorities } from '../chain-adapter'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    assetsAdapterFor,
+    fetchAssetAuthorities,
+    type AssetAuthorities,
+} from '../chain-adapter'
 import { getAssetAuthoritiesQueryKey } from './querykeys'
 
 type UseAssetAuthoritiesQueryResult = AssetAuthorities & {
@@ -24,16 +27,15 @@ type UseAssetAuthoritiesQueryResult = AssetAuthorities & {
 
 export const useAssetAuthoritiesQuery = (
     assetId: string,
+    scope: ChainScope,
 ): UseAssetAuthoritiesQueryResult => {
-    const { network } = useNetwork()
-    const scope = scopeForLegacyNetwork(network)
     const adapter = assetsAdapterFor(scope)
     const enabled =
         assetId.length > 0 && assetId !== adapter.getNativeAsset().assetId
 
     const query = useQuery<AssetAuthorities, Error>({
         queryKey: getAssetAuthoritiesQueryKey(assetId, scope),
-        queryFn: () => adapter.fetchAssetAuthorities(assetId, scope),
+        queryFn: () => fetchAssetAuthorities(assetId, scope),
         enabled,
         staleTime: Infinity,
     })

@@ -56,7 +56,10 @@ export const AssetHoldings = ({
 }: AssetHoldingsProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
+    const { data: assetDetails } = useSingleAssetDetailsQuery(
+        asset.assetId,
+        scope,
+    )
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountAssetBalanceHistoryItem>()
 

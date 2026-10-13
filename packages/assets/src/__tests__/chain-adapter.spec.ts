@@ -16,13 +16,17 @@ import {
     scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    AssetSearchUnsupportedError,
     assetsAdapterFor,
     assetsChainAdapters,
     displayCurrencyToAssetId,
     fetchAndPersistAssets,
+    fetchAssetAuthorities,
+    fetchAssetMetadata,
     fetchOnChainAsset,
     isNativeAssetId,
     nativeAssetFor,
+    searchAssets,
 } from '../chain-adapter'
 import { fetchAndPersistPrices } from '../sync/price-syncer'
 import { FAKE_NATIVE_ASSET, registerFakeAssetsAdapter } from './fakeAssetsChain'
@@ -56,7 +60,7 @@ describe('assetsAdapterFor / nativeAssetFor', () => {
 })
 
 describe('scope wrappers', () => {
-    it('fetchAndPersistAssets hands the adapter the scope it was given', async () => {
+    it('fetchAndPersistAssets hands the adapter refs on the scope it was given', async () => {
         const syncAssets = vi.fn().mockResolvedValue(undefined)
         registerFakeAssetsAdapter({ syncAssets })
 
@@ -65,10 +69,95 @@ describe('scope wrappers', () => {
             scopeForLegacyNetwork('testnet'),
         )
 
-        expect(syncAssets).toHaveBeenCalledWith(['1', '2'], {
-            chainId: 'algorand',
-            networkId: 'testnet',
+        expect(syncAssets).toHaveBeenCalledWith(
+            [
+                { chainId: 'algorand', assetId: '1' },
+                { chainId: 'algorand', assetId: '2' },
+            ],
+            { chainId: 'algorand', networkId: 'testnet' },
+        )
+    })
+
+    it('fetchAssetMetadata returns the metadata the adapter resolves for the ref', async () => {
+        const getAssetMetadata = vi.fn().mockResolvedValue({ assetId: '7' })
+        registerFakeAssetsAdapter({ getAssetMetadata })
+
+        const asset = await fetchAssetMetadata(
+            '7',
+            scopeForLegacyNetwork('mainnet'),
+        )
+
+        expect(asset).toEqual({ assetId: '7' })
+        expect(getAssetMetadata).toHaveBeenCalledWith(
+            { chainId: 'algorand', assetId: '7' },
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
+    })
+
+    it('fetchAssetAuthorities hands the adapter a ref and returns its answer', async () => {
+        const authorities = {
+            hasFreeze: true,
+            hasClawback: false,
+            freezeAddress: 'FREEZE',
+            clawbackAddress: null,
+        }
+        const member = vi.fn().mockResolvedValue(authorities)
+        registerFakeAssetsAdapter({ fetchAssetAuthorities: member })
+
+        const result = await fetchAssetAuthorities(
+            '7',
+            scopeForLegacyNetwork('mainnet'),
+        )
+
+        expect(result).toEqual(authorities)
+        expect(member).toHaveBeenCalledWith(
+            { chainId: 'algorand', assetId: '7' },
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
+    })
+
+    it('fetchAssetAuthorities resolves to no authority on a chain that declares none', async () => {
+        registerFakeAssetsAdapter({ fetchAssetAuthorities: undefined })
+
+        await expect(
+            fetchAssetAuthorities('7', scopeForLegacyNetwork('mainnet')),
+        ).resolves.toEqual({
+            hasFreeze: false,
+            hasClawback: false,
+            freezeAddress: null,
+            clawbackAddress: null,
         })
+    })
+
+    it('searchAssets passes the params and scope through', async () => {
+        const page = { results: [], nextCursor: 'C2' }
+        const search = vi.fn().mockResolvedValue(page)
+        registerFakeAssetsAdapter({ search })
+
+        const result = await searchAssets(
+            { query: 'usdc', cursor: 'C1' },
+            scopeForLegacyNetwork('mainnet'),
+        )
+
+        expect(result).toBe(page)
+        expect(search).toHaveBeenCalledWith(
+            { query: 'usdc', cursor: 'C1' },
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
+    })
+
+    it('searchAssets rejects with AssetSearchUnsupportedError on a chain that declares no search', async () => {
+        registerFakeAssetsAdapter({ search: undefined })
+
+        const rejection = searchAssets(
+            { query: 'usdc' },
+            scopeForLegacyNetwork('mainnet'),
+        )
+
+        await expect(rejection).rejects.toBeInstanceOf(
+            AssetSearchUnsupportedError,
+        )
+        await expect(rejection).rejects.toMatchObject({ chainId: 'algorand' })
     })
 
     it("fetchOnChainAsset returns the adapter's on-chain record", async () => {
@@ -81,10 +170,10 @@ describe('scope wrappers', () => {
         )
 
         expect(asset).toEqual({ assetId: '7' })
-        expect(fetchOnChain).toHaveBeenCalledWith('7', {
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
+        expect(fetchOnChain).toHaveBeenCalledWith(
+            { chainId: 'algorand', assetId: '7' },
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
     })
 })
 
@@ -105,6 +194,15 @@ describe('with no adapter registered', () => {
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchOnChainAsset('1', scopeForLegacyNetwork('mainnet')),
+        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+        await expect(
+            fetchAssetMetadata('1', scopeForLegacyNetwork('mainnet')),
+        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+        await expect(
+            fetchAssetAuthorities('1', scopeForLegacyNetwork('mainnet')),
+        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+        await expect(
+            searchAssets({ query: 'a' }, scopeForLegacyNetwork('mainnet')),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAndPersistPrices(['1'], 'mainnet'),

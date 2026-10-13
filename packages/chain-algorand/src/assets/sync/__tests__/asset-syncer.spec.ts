@@ -37,7 +37,10 @@ vi.mock('../../api', () => ({
     transformIndexerAssetResponse: transformIndexerAssetResponseMock,
 }))
 
-vi.mock('@perawallet/wallet-core-assets', () => ({
+// Spread the real module: the adapter under test loads the native asset, which
+// reads PeraAssetType at import.
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<object>()),
     upsertAssets: upsertAssetsMock,
     upsertNodeAssets: upsertNodeAssetsMock,
     upsertPeraAssets: upsertPeraAssetsMock,
@@ -58,9 +61,11 @@ import {
     ASSET_NEWLY_SEEN_WINDOW_MS,
     ASSET_RECLASSIFY_TTL_MS,
 } from '../../constants'
+import { algorandAssetsAdapter } from '../../adapter'
 import { fetchAndPersistAssets } from '../asset-syncer'
 
 const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const ref = (assetId: string) => ({ chainId: 'algorand', assetId }) as const
 
 describe('fetchAndPersistAssets', () => {
     beforeEach(() => {
@@ -362,5 +367,64 @@ describe('fetchAndPersistAssets', () => {
         )
         expect(getStaleOrMissingAssetIdsMock).not.toHaveBeenCalled()
         expect(fetchAssetsMock).not.toHaveBeenCalled()
+    })
+})
+
+describe('through the adapter', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        getStaleOrMissingAssetIdsMock.mockImplementation(
+            async ({ assetIds }: { assetIds: string[] }) => assetIds,
+        )
+        getCollectibleIdsMissingUrlMock.mockResolvedValue([])
+        deviceIdGetMock.mockReturnValue('555')
+        fetchAssetsMock.mockResolvedValue({
+            results: [{ asset_id: 1 }, { asset_id: 2 }],
+        })
+        fetchIndexerAssetDetailsMock.mockImplementation(
+            async (assetId: string) => ({
+                assetId,
+                params: { decimals: 3 },
+            }),
+        )
+    })
+
+    test('writes the same rows as a direct sync on a Pera-backed network', async () => {
+        await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
+        const direct = [...upsertAssetsMock.mock.calls]
+        upsertAssetsMock.mockClear()
+
+        await algorandAssetsAdapter.syncAssets(
+            [ref('1'), ref('2')],
+            MAINNET_SCOPE,
+        )
+
+        expect(direct.length).toBeGreaterThan(0)
+        expect(upsertAssetsMock.mock.calls).toEqual(direct)
+    })
+
+    test('writes the same rows as a direct sync on a network with no Pera deployment', async () => {
+        const betanet = scopeForLegacyNetwork('betanet')
+        await fetchAndPersistAssets(['1', '2'], betanet)
+        const direct = [...upsertNodeAssetsMock.mock.calls]
+        upsertNodeAssetsMock.mockClear()
+
+        await algorandAssetsAdapter.syncAssets([ref('1'), ref('2')], betanet)
+
+        expect(direct.length).toBeGreaterThan(0)
+        expect(upsertNodeAssetsMock.mock.calls).toEqual(direct)
+        expect(upsertAssetsMock).not.toHaveBeenCalled()
+    })
+
+    test('rejects a foreign ref before any request', async () => {
+        await expect(
+            algorandAssetsAdapter.syncAssets(
+                [{ chainId: 'ethereum', assetId: '0xabc' }],
+                MAINNET_SCOPE,
+            ),
+        ).rejects.toThrow('Not an Algorand asset')
+
+        expect(fetchAssetsMock).not.toHaveBeenCalled()
+        expect(getStaleOrMissingAssetIdsMock).not.toHaveBeenCalled()
     })
 })

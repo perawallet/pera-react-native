@@ -12,8 +12,12 @@
 
 import { useMemo } from 'react'
 import { getAssetTransferType } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 
@@ -30,8 +34,9 @@ export const useAssetTransferDisplay = (
     const showWarnings = useMemo(() => !transaction.id, [transaction])
     const assetId = transaction.assetTransferTransaction?.assetId?.toString()
 
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: asset, isPending: isAssetPending } =
-        useSingleAssetDetailsQuery(assetId ?? '')
+        useSingleAssetDetailsQuery(assetId ?? '', scope)
 
     const assetTransfer = transaction.assetTransferTransaction
 

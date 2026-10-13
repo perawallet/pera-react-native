@@ -11,12 +11,9 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import {
-    useChainCapability,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { assetsAdapterFor } from '../chain-adapter'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { searchAssets } from '../chain-adapter'
 import type { DisplayableAsset } from '../models/assets'
 import { MODULE_PREFIX } from './querykeys'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -43,31 +40,26 @@ type UseAssetSearchQueryResult = {
 
 const getAssetSearchQueryKey = (
     query: string,
-    network: string,
+    scope: ChainScope,
     hasCollectible: boolean,
-) => [MODULE_PREFIX, 'search', { query, network, hasCollectible }]
+) => [MODULE_PREFIX, 'search', { query, scope, hasCollectible }]
 
 export const useAssetSearchQuery = (
     query: string,
+    scope: ChainScope,
     options?: UseAssetSearchQueryOptions,
 ): UseAssetSearchQueryResult => {
-    const { network } = useNetwork()
     const hasCollectible = options?.hasCollectible ?? false
     const isUnavailableOnNetwork = !useChainCapability(
-        scopeForLegacyNetwork(network).chainId,
+        scope.chainId,
         'assetSearch',
     )
     const enabled = (options?.enabled ?? true) && !isUnavailableOnNetwork
 
     const infiniteQuery = useInfiniteQuery({
-        queryKey: getAssetSearchQueryKey(query, network, hasCollectible),
-        queryFn: ({ pageParam }) => {
-            const scope = scopeForLegacyNetwork(network)
-            return assetsAdapterFor(scope).searchAssets(
-                { query, cursor: pageParam, hasCollectible },
-                scope,
-            )
-        },
+        queryKey: getAssetSearchQueryKey(query, scope, hasCollectible),
+        queryFn: ({ pageParam }) =>
+            searchAssets({ query, cursor: pageParam, hasCollectible }, scope),
         enabled,
         initialPageParam: undefined as Optional<string>,
         getNextPageParam: lastPage => lastPage.nextCursor,

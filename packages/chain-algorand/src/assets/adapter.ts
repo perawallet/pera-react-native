@@ -11,7 +11,9 @@
  */
 
 import type { AssetsChainAdapter } from '@perawallet/wallet-core-assets'
+import { isNativeAsset } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../legacy-network'
 import { ASSET_PRICES_MAX_IDS_PER_REQUEST } from '../pricing/endpoints'
 import { fetchPeraUsdPrices } from '../pricing/provider'
@@ -20,6 +22,7 @@ import {
     fetchAssetFromApis,
     fetchOnChainAsset,
 } from './details'
+import { algorandAssetIdOf } from './asset-ref'
 import { ALGORAND_NATIVE_ASSET } from './native-asset'
 import { searchAssetPage } from './search'
 import { fetchAndPersistAssets } from './sync/asset-syncer'
@@ -29,16 +32,24 @@ export const algorandAssetsAdapter: AssetsChainAdapter = {
     priceProvider: 'pera',
     maxPriceIdsPerRequest: ASSET_PRICES_MAX_IDS_PER_REQUEST,
     getNativeAsset: () => ALGORAND_NATIVE_ASSET,
-    // Async so a scope that is not Algorand's rejects rather than throwing
-    // past a caller's `.catch`.
-    syncAssets: async (assetIds, scope) =>
-        fetchAndPersistAssets(assetIds, scope),
-    fetchAsset: async (assetId, scope) => fetchAssetFromApis(assetId, scope),
-    fetchOnChainAsset: async (assetId, scope) =>
-        fetchOnChainAsset(assetId, algorandNetworkOf(scope)),
-    fetchAssetAuthorities: async (assetId, scope) =>
-        fetchAssetAuthorities(assetId, algorandNetworkOf(scope)),
-    searchAssets: async (params, scope) =>
+    // Async so a scope or ref that is not Algorand's rejects rather than
+    // throwing past a caller's `.catch`.
+    syncAssets: async (refs, scope) => {
+        const assetIds = refs.map(algorandAssetIdOf)
+        await fetchAndPersistAssets(assetIds, scope)
+    },
+    getAssetMetadata: async (ref, scope) => {
+        algorandNetworkOf(scope)
+        const assetId = algorandAssetIdOf(ref)
+        return isNativeAsset(ref, algorandDescriptor)
+            ? ALGORAND_NATIVE_ASSET
+            : fetchAssetFromApis(assetId, scope)
+    },
+    fetchOnChainAsset: async (ref, scope) =>
+        fetchOnChainAsset(algorandAssetIdOf(ref), algorandNetworkOf(scope)),
+    fetchAssetAuthorities: async (ref, scope) =>
+        fetchAssetAuthorities(algorandAssetIdOf(ref), algorandNetworkOf(scope)),
+    search: async (params, scope) =>
         searchAssetPage({ ...params, network: algorandNetworkOf(scope) }),
     getPrices: async (refs, scope) =>
         fetchPeraUsdPrices(refs, algorandNetworkOf(scope)),

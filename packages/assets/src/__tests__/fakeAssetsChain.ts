@@ -12,7 +12,10 @@
 
 import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type AssetRef,
+} from '@perawallet/wallet-core-chain-contract'
 import { assetsChainAdapters, type AssetsChainAdapter } from '../chain-adapter'
 import {
     DEFAULT_ASSET_METADATA,
@@ -44,13 +47,13 @@ export const fakeAssetsAdapter = (
     maxPriceIdsPerRequest: 100,
     getNativeAsset: () => FAKE_NATIVE_ASSET,
     syncAssets: vi.fn(async () => undefined),
-    fetchAsset: vi.fn(async (assetId: string) => ({
+    getAssetMetadata: vi.fn(async (ref: AssetRef) => ({
         ...FAKE_NATIVE_ASSET,
-        assetId,
+        assetId: ref.assetId,
     })),
-    fetchOnChainAsset: vi.fn(async (assetId: string) => ({
+    fetchOnChainAsset: vi.fn(async (ref: AssetRef) => ({
         ...FAKE_NATIVE_ASSET,
-        assetId,
+        assetId: ref.assetId,
     })),
     fetchAssetAuthorities: vi.fn(async () => ({
         hasFreeze: false,
@@ -58,7 +61,7 @@ export const fakeAssetsAdapter = (
         freezeAddress: null,
         clawbackAddress: null,
     })),
-    searchAssets: vi.fn(async () => ({ results: [], nextCursor: undefined })),
+    search: vi.fn(async () => ({ results: [], nextCursor: undefined })),
     getPrices: vi.fn(async () => []),
     ...overrides,
 })
