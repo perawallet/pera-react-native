@@ -87,6 +87,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
                             variant='h4'
                             style={styles.title}
                             truncate
+                            numberOfLines={2}
                         >
                             {title}
                         </PWText>

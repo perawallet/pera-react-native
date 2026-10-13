@@ -58,6 +58,7 @@ export const SettingsScreen = () => {
             <PWButton
                 variant='secondary'
                 title={t('settings.main.remove_all_accounts')}
+                titleLines={2}
                 onPress={() => void openDeleteConfirm()}
                 {...getTestProps('settings_remove_all_accounts_button')}
             />

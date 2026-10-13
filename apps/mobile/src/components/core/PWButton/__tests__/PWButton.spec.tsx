@@ -48,6 +48,29 @@ describe('PWButton', () => {
         expect(screen.queryByText('Click Me')).toBeNull()
     })
 
+    it('keeps the title to one line unless titleLines is set', () => {
+        render(
+            <>
+                <PWButton
+                    title='Single line'
+                    variant='secondary'
+                />
+                <PWButton
+                    title='Wrapping title'
+                    titleLines={2}
+                    variant='secondary'
+                />
+            </>,
+        )
+
+        expect(
+            screen.getByText('Single line').getAttribute('numberoflines'),
+        ).toBe('1')
+        expect(
+            screen.getByText('Wrapping title').getAttribute('numberoflines'),
+        ).toBe('2')
+    })
+
     it('forwards accessibilityLabel and testID to the native touchable', () => {
         render(
             <PWButton
