@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAssetTransactionList } from '../useAssetTransactionList'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
@@ -27,7 +27,6 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
 import {
     isPeraServiceUnavailableError,
-    type Network,
     type PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { Networks } from '@perawallet/wallet-core-config'
@@ -40,14 +39,6 @@ vi.mock('@modules/network', () => ({
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
-}))
-
-// Mock dependencies
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -98,6 +89,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+
 describe('useAssetTransactionList', () => {
     const ACCOUNT_ADDRESS =
         'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -116,7 +109,6 @@ describe('useAssetTransactionList', () => {
         creator: { address: 'CREATOR_ADDRESS' },
     } as PeraAsset
 
-    const mockNetwork = { network: 'mainnet' }
     const mockShowToast = vi.fn()
     const mockShowError = vi.fn()
     const mockExportCsv = vi.fn()
@@ -134,8 +126,6 @@ describe('useAssetTransactionList', () => {
             invalidateQueries: mockInvalidateQueries,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vi.mocked(useNetwork).mockReturnValue(mockNetwork as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
         vi.mocked(useErrorToast).mockReturnValue({
@@ -170,6 +160,7 @@ describe('useAssetTransactionList', () => {
         it('queries transactions with correct assetId as string', () => {
             renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -185,6 +176,22 @@ describe('useAssetTransactionList', () => {
             })
         })
 
+        it('reads the history on the scope it is given', () => {
+            const testnet = scopeForLegacyNetwork('testnet')
+
+            renderHook(() =>
+                useAssetTransactionList({
+                    scope: testnet,
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ scope: testnet }),
+            )
+        })
+
         it('passes assetId as string to query', () => {
             const assetWithStringId = {
                 ...mockAsset,
@@ -193,6 +200,7 @@ describe('useAssetTransactionList', () => {
 
             renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: assetWithStringId,
                 }),
@@ -213,6 +221,7 @@ describe('useAssetTransactionList', () => {
 
             renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: algoAsset,
                 }),
@@ -242,6 +251,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -258,6 +268,7 @@ describe('useAssetTransactionList', () => {
         it('returns no rows when no transactions', () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -276,6 +287,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -296,6 +308,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -316,6 +329,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -336,6 +350,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -354,6 +369,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -370,6 +386,7 @@ describe('useAssetTransactionList', () => {
             })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -393,6 +410,7 @@ describe('useAssetTransactionList', () => {
             })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -420,6 +438,7 @@ describe('useAssetTransactionList', () => {
             })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -441,6 +460,7 @@ describe('useAssetTransactionList', () => {
             })
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -473,6 +493,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -495,6 +516,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -517,6 +539,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -532,6 +555,7 @@ describe('useAssetTransactionList', () => {
         it('refreshes the holding account through the sync service', async () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -557,6 +581,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -579,6 +604,7 @@ describe('useAssetTransactionList', () => {
         it('calls exportCsv with assetId when handleExportCsv is called', () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -597,6 +623,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: accountWithoutAddress,
                     asset: mockAsset,
                 }),
@@ -615,6 +642,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: differentAsset,
                 }),
@@ -637,6 +665,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -662,6 +691,7 @@ describe('useAssetTransactionList', () => {
 
             renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -703,6 +733,7 @@ describe('useAssetTransactionList', () => {
 
             renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -738,6 +769,7 @@ describe('useAssetTransactionList', () => {
 
             renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -753,9 +785,7 @@ describe('useAssetTransactionList', () => {
         })
     })
 
-    const mockUnavailableNetwork = (network: Network) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vi.mocked(useNetwork).mockReturnValue({ network } as any)
+    const mockCsvUnavailable = () => {
         vi.mocked(useTransactionHistoryQuery).mockReturnValue({
             transactions: [{ id: '1', roundTime: 1_704_067_200 }],
             isLoading: false,
@@ -779,6 +809,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -790,10 +821,11 @@ describe('useAssetTransactionList', () => {
         it.each([Networks.betanet, Networks.custom])(
             'keeps the export action visible on %s',
             network => {
-                mockUnavailableNetwork(network)
+                mockCsvUnavailable()
 
                 const { result } = renderHook(() =>
                     useAssetTransactionList({
+                        scope: scopeForLegacyNetwork(network),
                         account: mockAccount,
                         asset: mockAsset,
                     }),
@@ -806,10 +838,11 @@ describe('useAssetTransactionList', () => {
         it.each([Networks.betanet, Networks.custom])(
             'explains why instead of exporting on %s',
             network => {
-                mockUnavailableNetwork(network)
+                mockCsvUnavailable()
 
                 const { result } = renderHook(() =>
                     useAssetTransactionList({
+                        scope: scopeForLegacyNetwork(network),
                         account: mockAccount,
                         asset: mockAsset,
                     }),
@@ -832,6 +865,7 @@ describe('useAssetTransactionList', () => {
         it('navigates to TransactionDetails with transactionId when handleTransactionPress is called', () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -867,6 +901,7 @@ describe('useAssetTransactionList', () => {
         it('navigates to TransactionDetails without groupId for a non-swap transaction with groupId', () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -906,6 +941,7 @@ describe('useAssetTransactionList', () => {
         it('navigates to GroupTransactionList for a swap transaction with groupId', () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -948,6 +984,7 @@ describe('useAssetTransactionList', () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),
@@ -974,6 +1011,7 @@ describe('useAssetTransactionList', () => {
 
             const { result } = renderHook(() =>
                 useAssetTransactionList({
+                    scope: MAINNET_SCOPE,
                     account: mockAccount,
                     asset: mockAsset,
                 }),

@@ -14,7 +14,7 @@ import { PWScreen, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewBody } from '@modules/signing/family-bodies/TransactionReviewBody'
-import { transactionBodyRegistry } from '@modules/signing/family-bodies/registry'
+import { chainUiFor } from '@modules/chain-ui'
 import { toAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useSigningPipeline,
@@ -46,7 +46,7 @@ export const SingleTransactionScreen = () => {
 
     // A family with no review body would leave Approve live under an empty
     // review, so it gets the footer-less invalid state instead.
-    if (!native || !transactionBodyRegistry[native.family]) {
+    if (!native || !chainUiFor(native.family).transactionBodies) {
         return (
             <EmptyView
                 title={t('signing.transaction_view.invalid_title')}

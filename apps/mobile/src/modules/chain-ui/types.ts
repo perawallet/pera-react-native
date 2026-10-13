@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import {
-    AlgorandTransactionDetailBody,
-    AlgorandTransactionReviewBody,
-} from '@modules/algorand'
-import type { TransactionBodyRegistry } from './types'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type { AssetDetailsChainUi } from '@modules/assets'
+import type { TransactionFamilyBodies } from '@modules/signing'
 
-export const transactionBodyRegistry: TransactionBodyRegistry = {
-    algorand: {
-        reviewBody: AlgorandTransactionReviewBody,
-        detailBody: AlgorandTransactionDetailBody,
-    },
+/** Each slot's type belongs to its feature, which decides what a missing slot renders. */
+export type ChainUi = {
+    transactionBodies?: TransactionFamilyBodies
+    assetDetails?: AssetDetailsChainUi
 }
+
+export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>

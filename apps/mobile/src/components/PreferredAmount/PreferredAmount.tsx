@@ -20,7 +20,10 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferredAmount } from './usePreferredAmount'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { displayCurrencyToAssetId } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 /**
  * How precisely a preferred-currency value (fiat or ALGO) is rendered:
@@ -46,6 +49,8 @@ type ConvertProps = SharedPreferredProps & {
     sourceAssetId: string
     forceFallback?: boolean
     usdPrice?: Decimal
+    /** The asset's chain, when it isn't the selected one. */
+    scope?: ChainScope
     value?: never
 }
 
@@ -56,6 +61,7 @@ type PrecomputedProps = SharedPreferredProps & {
     sourceAssetId?: never
     forceFallback?: never
     usdPrice?: never
+    scope?: never
 }
 
 export type PreferredAmountProps = ConvertProps | PrecomputedProps
@@ -68,15 +74,17 @@ const ConvertedPreferredAmount = ({
     sourceAssetId,
     forceFallback,
     usdPrice,
+    scope,
     density = 'detailed',
     ...displayProps
 }: ConvertProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { displayCurrency, convertedValue, isPending } = usePreferredAmount(
         sourceAmount,
         sourceAssetId,
         forceFallback,
         usdPrice,
+        scope,
     )
 
     return (
@@ -84,7 +92,10 @@ const ConvertedPreferredAmount = ({
             currency={displayCurrency}
             // The preferred/fallback currency is a settings value, so its ALGO
             // ticker is trusted — translate it into the id-keyed identity.
-            assetId={displayCurrencyToAssetId(displayCurrency, scope.chainId)}
+            assetId={displayCurrencyToAssetId(
+                displayCurrency,
+                currencyScope.chainId,
+            )}
             value={convertedValue}
             {...displayProps}
             isLoading={isPending || displayProps.isLoading}
@@ -98,13 +109,16 @@ const PrecomputedPreferredAmount = ({
     density = 'detailed',
     ...displayProps
 }: PrecomputedProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { preferredCurrency } = useCurrency()
 
     return (
         <CurrencyAmount
             currency={preferredCurrency}
-            assetId={displayCurrencyToAssetId(preferredCurrency, scope.chainId)}
+            assetId={displayCurrencyToAssetId(
+                preferredCurrency,
+                currencyScope.chainId,
+            )}
             value={value}
             {...displayProps}
             precision={precisionFor(density)}

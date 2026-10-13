@@ -20,6 +20,7 @@ import {
     useIsNativeAssetId,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgoAssetName,
     type Maybe,
@@ -37,6 +38,7 @@ export const usePreferredAmount = (
     sourceAssetId: string,
     forceFallback?: boolean,
     preFetchedUsdPrice?: Decimal,
+    scope?: ChainScope,
 ): UsePreferredAmountResult => {
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency()
@@ -58,7 +60,7 @@ export const usePreferredAmount = (
         [hasPreFetchedUsdPrice, sourceAssetId],
     )
     const { data: usdPrices, isPending: usdPricesPending } =
-        useAssetPricesQuery(priceIDs, !hasPreFetchedUsdPrice)
+        useAssetPricesQuery(priceIDs, !hasPreFetchedUsdPrice, scope)
 
     // Fallback exchange rate (needed when displaying in fallback currency)
     const { data: fallbackRate, isPending: fallbackRatePending } =

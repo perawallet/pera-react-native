@@ -14,4 +14,8 @@ export { ExternalTransactionInfoContent } from './components/ExternalTransaction
 export { GroupDetailHeader } from './screens/GroupDetailScreen/GroupDetailHeader'
 export { SourceMetadataBadge } from './components/SourceMetadataBadge'
 export { TransactionReviewLayout } from './family-bodies/TransactionReviewLayout'
-export type { DetailBodyProps, ReviewBodyProps } from './family-bodies/types'
+export type {
+    DetailBodyProps,
+    ReviewBodyProps,
+    TransactionFamilyBodies,
+} from './family-bodies/types'

@@ -15,21 +15,21 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import {
-    useIsNativeAssetId,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { useClipboard } from '@hooks/useClipboard'
+import type { AssetAboutPresentation } from '../../../types/chain-ui'
+import { extractDomain } from '../../../utils/extractDomain'
 
 export type AssetAboutProps = {
     assetDetails: PeraAsset
+    about: AssetAboutPresentation
 }
 
-export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
+export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
+    const { explorerLink } = about
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { copyToClipboard } = useClipboard()
@@ -37,17 +37,6 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
         assetDetails.creator?.address ?? '',
         { enabled: !!assetDetails.creator?.address },
     )
-
-    const extractDomain = (url: string) => {
-        try {
-            const urlObj = new URL(url)
-            return urlObj.hostname.startsWith('www.')
-                ? urlObj.hostname.slice(4)
-                : urlObj.hostname
-        } catch {
-            return url
-        }
-    }
 
     const openLink = (url: string) => {
         pushWebView({
@@ -67,24 +56,23 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 })}
             </PWText>
 
-            {!!assetDetails.assetId &&
-                !isNativeAssetId(assetDetails.assetId) && (
-                    <KeyValueRow
-                        title={t('asset_details.about.asa_id')}
-                        verticalAlignment='center'
-                    >
-                        <PWButton
-                            title={assetDetails.assetId.toString()}
-                            onPress={() =>
-                                void copyToClipboard(
-                                    assetDetails.assetId.toString(),
-                                )
-                            }
-                            variant='linkPositive'
-                            paddingStyle='none'
-                        />
-                    </KeyValueRow>
-                )}
+            {!!assetDetails.assetId && !!about.idLabelKey && (
+                <KeyValueRow
+                    title={t(about.idLabelKey)}
+                    verticalAlignment='center'
+                >
+                    <PWButton
+                        title={assetDetails.assetId.toString()}
+                        onPress={() =>
+                            void copyToClipboard(
+                                assetDetails.assetId.toString(),
+                            )
+                        }
+                        variant='linkPositive'
+                        paddingStyle='none'
+                    />
+                </KeyValueRow>
+            )}
 
             {!!assetDetails.creator?.address && (
                 <KeyValueRow
@@ -104,11 +92,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
             {!!assetDetails.url?.length && (
                 <KeyValueRow
-                    title={
-                        isNativeAssetId(assetDetails.assetId)
-                            ? t('asset_details.about.url')
-                            : t('asset_details.about.asa_url')
-                    }
+                    title={t(about.urlLabelKey)}
                     verticalAlignment='center'
                 >
                     <PWButton
@@ -120,21 +104,14 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.peraMetadata?.explorerUrl?.length && (
+            {!!explorerLink && (
                 <KeyValueRow
                     title={t('asset_details.about.show_on')}
                     verticalAlignment='center'
                 >
                     <PWButton
-                        onPress={() =>
-                            assetDetails.peraMetadata?.explorerUrl &&
-                            openLink(assetDetails.peraMetadata?.explorerUrl)
-                        }
-                        title={
-                            isNativeAssetId(assetDetails.assetId)
-                                ? 'Algoscan'
-                                : 'Pera Explorer'
-                        }
+                        onPress={() => openLink(explorerLink.url)}
+                        title={explorerLink.label}
                         variant='link'
                         paddingStyle='none'
                     />

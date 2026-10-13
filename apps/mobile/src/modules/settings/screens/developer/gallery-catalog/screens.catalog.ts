@@ -20,6 +20,7 @@ import {
     MOCK_TX_ID,
     mockAsaInbox,
 } from '@perawallet/wallet-core-dev-fixtures'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import type {
     GalleryEntry,
@@ -161,7 +162,10 @@ export const getScreenSections = (): GallerySection[] => [
                             screen: 'Home',
                             params: {
                                 screen: 'AssetDetails',
-                                params: { assetId: MOCK_ASSET_ID },
+                                params: {
+                                    assetId: MOCK_ASSET_ID,
+                                    chainId: LEGACY_CHAIN_ID,
+                                },
                             },
                         },
                     },

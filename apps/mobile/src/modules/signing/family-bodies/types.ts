@@ -11,10 +11,7 @@
  */
 
 import type { ComponentType } from 'react'
-import type {
-    ChainFamily,
-    TransactionNative,
-} from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 
 export type ReviewBodyProps = {
@@ -34,7 +31,3 @@ export type TransactionFamilyBodies = {
     reviewBody: ComponentType<ReviewBodyProps>
     detailBody: ComponentType<DetailBodyProps>
 }
-
-export type TransactionBodyRegistry = Partial<
-    Record<ChainFamily, TransactionFamilyBodies>
->

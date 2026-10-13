@@ -18,6 +18,9 @@ import {
     type ChainNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import { ethereumCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
+import { ethereumDescriptor } from '@packages/chain-ethereum/src/descriptor'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
 
@@ -66,4 +69,16 @@ export const fixtureEthereumDescriptor: ChainDescriptor = {
             status: 'deprecated',
         }),
     ],
+}
+
+/**
+ * The unit registry starts with Algorand alone; this adds the real Ethereum
+ * descriptor at its shipped defaults, read from source so specs that mock
+ * `wallet-core-assets` don't load the Ethereum adapters.
+ */
+export const registerEthereumChain = (): void => {
+    const { chains } = getProvider()
+    if (!chains.has(ETHEREUM_CHAIN_ID)) {
+        chains.register(ethereumDescriptor, ethereumCapabilityDefaults)
+    }
 }

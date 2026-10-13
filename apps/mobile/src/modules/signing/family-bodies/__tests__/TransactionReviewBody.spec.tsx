@@ -213,6 +213,19 @@ describe('TransactionReviewBody', () => {
         expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
     })
 
+    it('renders nothing for a family with no registered body', () => {
+        const { container } = renderWithNavigation(
+            () => (
+                <TransactionReviewBody
+                    transaction={{ family: 'evm', transaction: {} }}
+                />
+            ),
+            'Review',
+        )
+
+        expect(container.textContent).toBe('')
+    })
+
     it('shows the requesting dApp and the origin the platform observed', () => {
         renderReview(buildAlgorandDisplayFixture('payment'), {
             source: { name: 'Fixture dApp', url: 'https://dapp.test' },

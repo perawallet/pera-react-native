@@ -207,7 +207,7 @@ describe('useSearchScreen', () => {
             screen: 'Home',
             params: {
                 screen: 'AssetDetails',
-                params: { assetId: '31566704' },
+                params: { assetId: '31566704', chainId: 'algorand' },
             },
         })
     })

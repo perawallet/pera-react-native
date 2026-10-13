@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { formatWithUnits } from '@perawallet/wallet-core-shared'
@@ -57,6 +58,7 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     const onAssetIdPressed = useCallback(() => {
         navigate('AssetDetails', {
             assetId: asset.assetId,
+            chainId: LEGACY_CHAIN_ID,
             isCollectible: true,
         }) // Navigate to the Asset Details screen
     }, [asset.assetId, navigate])

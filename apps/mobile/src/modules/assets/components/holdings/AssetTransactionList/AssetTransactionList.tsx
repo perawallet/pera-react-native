@@ -22,6 +22,7 @@ import {
 } from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAssetTransactionList } from './useAssetTransactionList'
@@ -36,12 +37,14 @@ import {
 export type AssetTransactionListProps = {
     account: WalletAccount
     asset: PeraAsset
+    scope: ChainScope
     children?: React.ReactNode
 }
 
 export const AssetTransactionList = ({
     account,
     asset,
+    scope,
     children,
 }: AssetTransactionListProps) => {
     const styles = useStyles()
@@ -60,7 +63,7 @@ export const AssetTransactionList = ({
         isCsvExportVisible,
         handleTransactionPress,
         handleOpenFilter,
-    } = useAssetTransactionList({ account, asset })
+    } = useAssetTransactionList({ account, asset, scope })
 
     const renderItem = useCallback(
         ({ item }: { item: TransactionListRow }) =>

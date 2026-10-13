@@ -29,8 +29,10 @@ const mockAccount: WalletAccount = {
 
 const mockT = (key: string) => key
 
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
+
 vi.mock('@react-navigation/native', () => ({
-    useNavigation: () => ({ navigate: vi.fn() }),
+    useNavigation: () => ({ navigate: mockNavigate }),
     createNavigationContainerRef: () => ({
         isReady: () => false,
         navigate: vi.fn(),
@@ -183,6 +185,19 @@ describe('useAccountAssetList', () => {
 
         expect(result.current.canManageAssets).toBe(false)
         expect(result.current.renderItemProps.canManageAssets).toBe(false)
+    })
+
+    it("opens a holding's detail screen on the account's chain", () => {
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: mockAccount, t: mockT }),
+        )
+
+        act(() => result.current.goToAssetScreen(makeHolding('123')))
+
+        expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
+            assetId: '123',
+            chainId: 'algorand',
+        })
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {

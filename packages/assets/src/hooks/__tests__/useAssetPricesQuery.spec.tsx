@@ -196,6 +196,22 @@ describe('useAssetPricesQuery', () => {
         })
     })
 
+    it('reads prices on a scope it is given instead of the selected network', async () => {
+        const ethereum = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        const { result } = renderHook(
+            () => useAssetPricesQuery(['0xabc'], true, ethereum),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
+            assetIds: ['0xabc'],
+            scope: ethereum,
+        })
+    })
+
     it('respects the enabled parameter', () => {
         renderHook(() => useAssetPricesQuery(['123'], false), {
             wrapper: createWrapper(queryClient),

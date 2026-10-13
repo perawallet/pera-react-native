@@ -97,6 +97,7 @@ import {
 
 import { registerPreview } from './registry'
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Banner } from '@perawallet/wallet-core-banners'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
@@ -269,10 +270,12 @@ registerPreview({
         <PWView>
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isFavorite={false}
             />
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isFavorite={true}
             />
         </PWView>
@@ -285,10 +288,12 @@ registerPreview({
         <PWView>
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isNotificationsEnabled={false}
             />
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isNotificationsEnabled={true}
             />
         </PWView>

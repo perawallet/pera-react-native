@@ -12,13 +12,17 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAssetSecurityTags } from '../useAssetSecurityTags'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 const mockAuthorities = vi.fn()
 const mockRequest = vi.fn()
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetAuthoritiesQuery: (assetId: string) => mockAuthorities(assetId),
+    useAssetAuthoritiesQuery: (assetId: string, scope: unknown) =>
+        mockAuthorities(assetId, scope),
 }))
 vi.mock('@hooks/useLanguage')
 vi.mock('@modules/bottom-sheet', () => ({
@@ -57,7 +61,7 @@ describe('useAssetSecurityTags', () => {
             authorities({ hasFreeze: true, hasClawback: true }),
         )
 
-        const { result } = renderHook(() => useAssetSecurityTags('123'))
+        const { result } = renderHook(() => useAssetSecurityTags('123', SCOPE))
 
         expect(result.current.isVisible).toBe(true)
         expect(result.current.freezeTag).toMatchObject({
@@ -73,7 +77,7 @@ describe('useAssetSecurityTags', () => {
     it('returns neutral tags with "no" labels when authorities are absent', () => {
         mockAuthorities.mockReturnValue(authorities())
 
-        const { result } = renderHook(() => useAssetSecurityTags('123'))
+        const { result } = renderHook(() => useAssetSecurityTags('123', SCOPE))
 
         expect(result.current.freezeTag).toMatchObject({
             variant: 'neutral',
@@ -85,10 +89,18 @@ describe('useAssetSecurityTags', () => {
         })
     })
 
+    it('reads the authorities on the scope it is given', () => {
+        mockAuthorities.mockReturnValue(authorities())
+
+        renderHook(() => useAssetSecurityTags('123', SCOPE))
+
+        expect(mockAuthorities).toHaveBeenCalledWith('123', SCOPE)
+    })
+
     it('is not visible until the query has succeeded', () => {
         mockAuthorities.mockReturnValue(authorities({ isSuccess: false }))
 
-        const { result } = renderHook(() => useAssetSecurityTags('123'))
+        const { result } = renderHook(() => useAssetSecurityTags('123', SCOPE))
 
         expect(result.current.isVisible).toBe(false)
     })
@@ -98,7 +110,7 @@ describe('useAssetSecurityTags', () => {
             authorities({ hasFreeze: true, freezeAddress: 'FREEZEADDR' }),
         )
 
-        const { result } = renderHook(() => useAssetSecurityTags('123'))
+        const { result } = renderHook(() => useAssetSecurityTags('123', SCOPE))
         result.current.freezeTag.onPress()
 
         expect(mockRequest).toHaveBeenCalledTimes(1)
@@ -113,7 +125,7 @@ describe('useAssetSecurityTags', () => {
     it('opens the clawback explainer without an address when the asset has none', () => {
         mockAuthorities.mockReturnValue(authorities())
 
-        const { result } = renderHook(() => useAssetSecurityTags('123'))
+        const { result } = renderHook(() => useAssetSecurityTags('123', SCOPE))
         result.current.clawbackTag.onPress()
 
         const request = mockRequest.mock.calls[0][0]

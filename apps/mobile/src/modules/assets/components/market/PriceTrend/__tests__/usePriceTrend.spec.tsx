@@ -14,7 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { usePriceTrend } from '../usePriceTrend'
+
+const SCOPE = scopeForLegacyNetwork('mainnet')
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
@@ -47,11 +50,30 @@ describe('usePriceTrend', () => {
         vi.mocked(useAssetPriceHistoryQuery).mockReset()
     })
 
+    it('reads the price history on the scope it is given', () => {
+        mockQuery([point(100), point(150)], false)
+        const testnet = scopeForLegacyNetwork('testnet')
+
+        renderHook(() =>
+            usePriceTrend({
+                assetId: '123',
+                period: 'one-week',
+                scope: testnet,
+            }),
+        )
+
+        expect(useAssetPriceHistoryQuery).toHaveBeenCalledWith(
+            '123',
+            'one-week',
+            testnet,
+        )
+    })
+
     it('computes the percent and absolute change across the series', () => {
         mockQuery([point(100), point(150)], false)
 
         const { result } = renderHook(() =>
-            usePriceTrend({ assetId: '123', period: 'one-week' }),
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
         )
 
         expect(result.current.changePercentage.toNumber()).toBe(50)
@@ -67,6 +89,7 @@ describe('usePriceTrend', () => {
             usePriceTrend({
                 assetId: '123',
                 period: 'one-week',
+                scope: SCOPE,
                 selectedDataPoint: point(80),
             }),
         )
@@ -79,7 +102,7 @@ describe('usePriceTrend', () => {
         mockQuery(undefined, true)
 
         const { result } = renderHook(() =>
-            usePriceTrend({ assetId: '123', period: 'one-week' }),
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
         )
 
         expect(result.current.isHidden).toBe(true)
@@ -89,7 +112,7 @@ describe('usePriceTrend', () => {
         mockQuery([], true)
 
         const { result } = renderHook(() =>
-            usePriceTrend({ assetId: '123', period: 'one-week' }),
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
         )
 
         expect(result.current.isHidden).toBe(true)
@@ -99,7 +122,7 @@ describe('usePriceTrend', () => {
         mockQuery([point(100), point(150)], true)
 
         const { result } = renderHook(() =>
-            usePriceTrend({ assetId: '123', period: 'one-week' }),
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
         )
 
         expect(result.current.isHidden).toBe(false)
@@ -110,7 +133,7 @@ describe('usePriceTrend', () => {
         mockQuery(undefined, false, true)
 
         const { result } = renderHook(() =>
-            usePriceTrend({ assetId: '123', period: 'one-week' }),
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
         )
 
         expect(result.current.isHidden).toBe(true)
@@ -122,7 +145,7 @@ describe('usePriceTrend', () => {
         mockQuery([point(100), point(150)], false, true)
 
         const { result } = renderHook(() =>
-            usePriceTrend({ assetId: '123', period: 'one-week' }),
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
         )
 
         expect(result.current.isHidden).toBe(true)
@@ -132,7 +155,7 @@ describe('usePriceTrend', () => {
         mockQuery(undefined, false)
 
         const { result } = renderHook(() =>
-            usePriceTrend({ assetId: '123', period: 'one-week' }),
+            usePriceTrend({ assetId: '123', period: 'one-week', scope: SCOPE }),
         )
 
         expect(result.current.isHidden).toBe(false)

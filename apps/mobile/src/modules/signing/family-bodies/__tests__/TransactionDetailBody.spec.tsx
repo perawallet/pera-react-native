@@ -210,6 +210,15 @@ describe('TransactionDetailBody', () => {
         },
     )
 
+    it('renders nothing for a family with no registered body', () => {
+        const { container } = renderDetail({
+            family: 'evm',
+            transaction: {},
+        })
+
+        expect(container.textContent).toBe('')
+    })
+
     it('re-tags a pressed inner transaction with its family', () => {
         const onRelatedTransactionPress = vi.fn()
         const transaction = buildAlgorandDisplayFixture('app-call')

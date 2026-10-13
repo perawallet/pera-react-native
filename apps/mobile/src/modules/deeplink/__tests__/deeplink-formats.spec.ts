@@ -633,7 +633,7 @@ const cases: Case[] = [
                 screen: 'Home',
                 params: {
                     screen: 'AssetDetails',
-                    params: { assetId: ASSET_ID },
+                    params: { assetId: ASSET_ID, chainId: 'algorand' },
                 },
             })
             expect(mockSetSelectedAccountId).toHaveBeenCalledWith('mock-csv')

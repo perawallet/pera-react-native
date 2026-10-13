@@ -12,8 +12,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+} from '@test-utils/chain-fixtures'
 import { useAssetFavoriteButton } from '../useAssetFavoriteButton'
+
+const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const ETHEREUM_SCOPE = { chainId: ETHEREUM_CHAIN_ID, networkId: 'mainnet' }
 
 const mocks = vi.hoisted(() => ({
     toggleAssetFavorite: vi.fn(),
@@ -49,6 +57,7 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 describe('useAssetFavoriteButton', () => {
     beforeEach(() => {
+        registerEthereumChain()
         vi.clearAllMocks()
         mocks.isLoading = false
         mocks.isUnavailableOnNetwork = false
@@ -57,7 +66,7 @@ describe('useAssetFavoriteButton', () => {
 
     it('toggles the favorite mutation when the device id and current state are known', () => {
         const { result } = renderHook(() =>
-            useAssetFavoriteButton('123', false),
+            useAssetFavoriteButton('123', false, MAINNET_SCOPE),
         )
 
         result.current.handleToggleFavorite()
@@ -73,7 +82,7 @@ describe('useAssetFavoriteButton', () => {
 
     it('is disabled while the current favorite state is unknown', () => {
         const { result } = renderHook(() =>
-            useAssetFavoriteButton('123', undefined),
+            useAssetFavoriteButton('123', undefined, MAINNET_SCOPE),
         )
 
         expect(result.current.isDisabled).toBe(true)
@@ -83,7 +92,7 @@ describe('useAssetFavoriteButton', () => {
         mocks.isLoading = true
 
         const { result } = renderHook(() =>
-            useAssetFavoriteButton('123', false),
+            useAssetFavoriteButton('123', false, MAINNET_SCOPE),
         )
 
         expect(result.current.isDisabled).toBe(true)
@@ -93,7 +102,7 @@ describe('useAssetFavoriteButton', () => {
         mocks.isUnavailableOnNetwork = true
 
         const { result } = renderHook(() =>
-            useAssetFavoriteButton('123', false),
+            useAssetFavoriteButton('123', false, MAINNET_SCOPE),
         )
 
         result.current.handleToggleFavorite()
@@ -110,10 +119,28 @@ describe('useAssetFavoriteButton', () => {
         mocks.isUnavailableOnNetwork = true
 
         const { result } = renderHook(() =>
-            useAssetFavoriteButton('123', false),
+            useAssetFavoriteButton('123', false, MAINNET_SCOPE),
         )
 
         expect(result.current.isDisabled).toBe(false)
         expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
+    it('is unavailable on a chain without the capability, and a press explains why without toggling', () => {
+        const { result } = renderHook(() =>
+            useAssetFavoriteButton('123', false, ETHEREUM_SCOPE),
+        )
+
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
+        expect(result.current.isDisabled).toBe(false)
+
+        result.current.handleToggleFavorite()
+
+        expect(mocks.toggleAssetFavorite).not.toHaveBeenCalled()
+        const [error] = mocks.showError.mock.calls[0]
+        expect(error).toBeInstanceOf(PeraServiceUnavailableError)
+        expect((error as PeraServiceUnavailableError).scope).toEqual(
+            ETHEREUM_SCOPE,
+        )
     })
 })

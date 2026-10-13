@@ -196,6 +196,7 @@ export const useAccountAssetList = ({
             } else {
                 navigation.navigate('AssetDetails', {
                     assetId: item.assetId,
+                    chainId: scope.chainId,
                 })
             }
         },

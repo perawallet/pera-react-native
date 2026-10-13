@@ -183,6 +183,7 @@ describe('useCollectibleInfo', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
             assetId: '12345',
+            chainId: 'algorand',
             isCollectible: true,
         })
     })

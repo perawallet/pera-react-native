@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { transactionBodyRegistry } from '../registry'
+import { chainUiFor } from '@modules/chain-ui'
 import type { ReviewBodyProps } from '../types'
 
 export type TransactionReviewBodyProps = ReviewBodyProps
 
 export const TransactionReviewBody = (props: TransactionReviewBodyProps) => {
-    const ReviewBody =
-        transactionBodyRegistry[props.transaction.family]?.reviewBody
+    const ReviewBody = chainUiFor(props.transaction.family).transactionBodies
+        ?.reviewBody
 
     return ReviewBody ? <ReviewBody {...props} /> : null
 }

@@ -352,7 +352,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         screen: 'Home',
                         params: {
                             screen: 'AssetDetails',
-                            params: { assetId: parsedData.assetId },
+                            params: {
+                                assetId: parsedData.assetId,
+                                chainId: LEGACY_CHAIN_ID,
+                            },
                         },
                     })
                     break
