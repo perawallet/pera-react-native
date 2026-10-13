@@ -59,11 +59,14 @@ const tokenIntent: TransferIntent = {
     amount: new Decimal(250),
 }
 
-const feeHistory = (base: bigint[], tip: bigint): RpcFeeHistory => ({
+const feeHistory = (
+    base: bigint[],
+    tips: [bigint, bigint, bigint],
+): RpcFeeHistory => ({
     oldestBlock: '0x1',
     baseFeePerGas: base.map(fee => toHex(fee)),
     gasUsedRatio: [0.5],
-    reward: [[toHex(tip)]],
+    reward: [tips.map(tip => toHex(tip))],
 })
 
 const server = setupServer()
@@ -81,7 +84,7 @@ const useRpc = (responses: NonNullable<EvmRpcFixtures['responses']> = {}) =>
                 eth_getTransactionCount: '0x4',
                 eth_feeHistory: feeHistory(
                     [parseGwei('1'), parseGwei('2')],
-                    parseGwei('1'),
+                    [parseGwei('0.5'), parseGwei('1'), parseGwei('2')],
                 ),
                 ...responses,
             },
@@ -161,6 +164,40 @@ describe('Ethereum transfer adapter', () => {
         expect(
             estimate.amount.equals(new Decimal(21_000n * parseGwei('3'))),
         ).toBe(true)
+        expect(estimate.amount.equals(estimate.presets!.normal.amount)).toBe(
+            true,
+        )
+        expect(
+            estimate.presets!.slow.amount.equals(
+                new Decimal(21_000n * parseGwei('2.5')),
+            ),
+        ).toBe(true)
+        expect(
+            estimate.presets!.fast.amount.equals(
+                new Decimal(21_000n * parseGwei('4')),
+            ),
+        ).toBe(true)
+        expect(
+            estimate.presets!.fast.maxAmount.equals(
+                new Decimal(21_000n * parseGwei('6')),
+            ),
+        ).toBe(true)
+    })
+
+    it('builds at the preset the context picks', async () => {
+        useRpc()
+        const fastContext = { ...context, feePreset: 'fast' } as const
+
+        const [built] = await adapter.build(nativeIntent, fastContext)
+        const estimate = await adapter.getFeeEstimate(nativeIntent, fastContext)
+
+        expect(built.payload).toMatchObject({
+            transaction: {
+                maxPriorityFeePerGas: parseGwei('2'),
+                maxFeePerGas: parseGwei('6'),
+            },
+        })
+        expect(estimate.amount.equals(estimate.presets!.fast.amount)).toBe(true)
     })
 
     it('summarises a transfer to the same address in another case as a self transfer', async () => {

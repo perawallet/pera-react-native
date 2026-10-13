@@ -43,7 +43,7 @@ import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 import type { EthereumTransactionPayload } from '../signing/adapter'
-import { readTransferFees } from './fees'
+import { readTransferFees, toEthereumFeeEstimate } from './fees'
 
 const SEND_TITLE_KEY = 'transactions.list_item.send'
 
@@ -135,6 +135,7 @@ const buildEthereumTransfer = async (
     ]).catch((error: unknown) => {
         throw toEvmError(error)
     })
+    const prices = fees.presets[context.feePreset ?? 'normal']
     const payload: EthereumTransactionPayload = {
         from: call.from,
         transaction: {
@@ -145,8 +146,8 @@ const buildEthereumTransfer = async (
             value: call.value,
             data: call.data,
             gas: fees.gas,
-            maxFeePerGas: fees.maxFeePerGas,
-            maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+            maxFeePerGas: prices.maxFeePerGas,
+            maxPriorityFeePerGas: prices.maxPriorityFeePerGas,
         },
     }
     return [
@@ -170,18 +171,12 @@ const estimateEthereumTransferFee = async (
 ): Promise<FeeEstimate> => {
     const call = toEthereumTransferCall(intent, context)
     const client = createEvmClient(context.scope, ctx)
-    const { gas, baseFeePerGas, maxPriorityFeePerGas } = await readTransferFees(
-        client,
-        call,
-    ).catch((error: unknown) => {
-        throw toEvmError(error)
-    })
-    return {
-        assetRef: ethereumDescriptor.nativeAsset.ref,
-        amount: new Decimal(
-            (gas * (baseFeePerGas + maxPriorityFeePerGas)).toString(),
-        ),
-    }
+    const fees = await readTransferFees(client, call).catch(
+        (error: unknown) => {
+            throw toEvmError(error)
+        },
+    )
+    return toEthereumFeeEstimate(fees, context.feePreset ?? 'normal')
 }
 
 export const createEthereumTransferAdapter = (
