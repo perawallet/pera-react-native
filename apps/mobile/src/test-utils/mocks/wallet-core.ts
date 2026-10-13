@@ -529,6 +529,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             balanceDesc: 'balanceDesc',
             manual: 'manual',
         },
+        findAccountByAnyChainAddress: vi.fn(findInAnyChain),
         useAccountsStore: vi.fn((selector: (s: any) => any) =>
             selector({
                 accounts: [],
