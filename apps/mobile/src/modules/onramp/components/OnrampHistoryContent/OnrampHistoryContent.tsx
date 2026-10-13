@@ -15,7 +15,8 @@ import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { useLanguage } from '@hooks/useLanguage'
-import { trackEvent, OnrampEvent } from '@analytics'
+import { OnrampEvent } from '@analytics'
+import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
 import type {
     OnrampStatus,
     RampHistoryItem,
@@ -98,8 +99,10 @@ export const OnrampHistoryContent = ({
         [styles.itemSeparator],
     )
 
+    const trackOnrampEvent = useTrackOnrampEvent()
+
     const handleFilterPress = (value: Nullable<OnrampStatus>) => {
-        trackEvent(OnrampEvent.HistoryCategoryTap)
+        trackOnrampEvent(OnrampEvent.HistoryCategoryTap)
         setStatusFilter(value)
     }
 

@@ -12,9 +12,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform } from 'react-native'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useCreateRampQuoteMutation,
     toOnrampUserMessage,
@@ -32,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { ONRAMP_QUOTE_DEBOUNCE_TIME } from '@constants/ui'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { getExcludedPaymentMethodIds } from './onrampFormHelpers'
 
 type UseOnrampQuotesParams = {
@@ -75,11 +73,7 @@ export const useOnrampQuotes = ({
     sourceAmount,
 }: UseOnrampQuotesParams): UseOnrampQuotesResult => {
     const { t } = useLanguage()
-    const selectedAccount = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const selectedAccountAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
+    const { scope, address: selectedAccountAddress } = useOnrampAccount()
 
     const [quotes, setQuotes] = useState<RampQuote[]>([])
     const [selectedQuoteId, setSelectedQuoteId] =
@@ -100,7 +94,7 @@ export const useOnrampQuotes = ({
     // XO branch never reacts to amount edits.
     const meldAmountTrigger = isMeld ? sourceAmount : ''
     useEffect(() => {
-        if (!pairId || !selectedAccountAddress) {
+        if (!pairId || !selectedAccountAddress || scope === null) {
             return
         }
         // Empty or malformed (e.g. pasted) amount → no quote to fetch.
@@ -120,6 +114,7 @@ export const useOnrampQuotes = ({
             void (async () => {
                 try {
                     const result = await createQuote({
+                        scope,
                         pair: pairId,
                         destinationAddress: selectedAccountAddress,
                         sourceAmount: parsedMeldAmount?.toNumber() ?? null,
@@ -161,6 +156,7 @@ export const useOnrampQuotes = ({
     }, [
         pairId,
         selectedAccountAddress,
+        scope,
         isMeld,
         meldAmountTrigger,
         createQuote,

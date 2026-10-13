@@ -23,7 +23,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getOnrampDestinationCurrency } from '../onrampQuoteDisplay'
 import { useStyles } from './styles'
 import { displayCurrencyToAssetId } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 /** `priceInUsd` on the ramp token is USD-denominated, so the value line is too. */
 const USD_CURRENCY = 'USD'
@@ -56,6 +56,9 @@ export const ProviderSelectionItem = ({
     // Provider quote currencies are trusted codes (Meld fiat/crypto codes, XO
     // asset ids), so the ALGO ticker may translate to the glyph-earning id.
     const destinationCurrency = getOnrampDestinationCurrency(quote)
+    const chainId = useOnrampAccount().scope?.chainId ?? null
+    const assetIdOf = (code: string) =>
+        chainId === null ? null : displayCurrencyToAssetId(code, chainId)
     const destinationValueInUsd = quoteDestinationValueInUsd(
         quote,
         sourceAmount,
@@ -90,10 +93,7 @@ export const ProviderSelectionItem = ({
                 <PWView style={styles.rightColumn}>
                     <CurrencyAmount
                         currency={destinationCurrency}
-                        assetId={displayCurrencyToAssetId(
-                            destinationCurrency,
-                            LEGACY_CHAIN_ID,
-                        )}
+                        assetId={assetIdOf(destinationCurrency)}
                         value={quoteDestinationAmount(quote, sourceAmount)}
                         precision='compact'
                         showSymbol
@@ -104,10 +104,7 @@ export const ProviderSelectionItem = ({
                     {destinationValueInUsd ? (
                         <CurrencyAmount
                             currency={USD_CURRENCY}
-                            assetId={displayCurrencyToAssetId(
-                                USD_CURRENCY,
-                                LEGACY_CHAIN_ID,
-                            )}
+                            assetId={assetIdOf(USD_CURRENCY)}
                             value={destinationValueInUsd}
                             precision='compact'
                             showSymbol

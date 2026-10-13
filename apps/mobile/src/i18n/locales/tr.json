@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Pera’ya hoş geldin!",
             "get_started": "Başlamak için ALGO yatır",
-            "buy_algo": "Algo satın al",
+            "buy": "Kripto satın al",
             "receive": "Al",
             "more": "Daha fazla"
         }
@@ -3500,7 +3500,11 @@
         },
         "testnet": {
             "title": "TestNet’te kullanılamaz",
-            "body": "Cüzdanına fon eklemek yalnızca MainNet’te kullanılabilir. ALGO veya USDC satın almak için MainNet’e geç."
+            "body": "Cüzdanına fon eklemek yalnızca MainNet’te kullanılabilir. Kripto satın almak için MainNet’e geç."
+        },
+        "account_unsupported": {
+            "title": "Bu hesaba fon eklenemez",
+            "body": "Satın almayı destekleyen bir ağdaki hesabı seç."
         },
         "region": {
             "unknown": "--",
@@ -3513,8 +3517,8 @@
             "title": "Fon ekle",
             "new_chip": "YENİ",
             "continue": "Devam et",
-            "feature_buy": "Fiat veya kripto ile ALGO ya da USDC satın al",
-            "feature_swap": "Diğer ağlardaki varlıkları Algorand’a takas et",
+            "feature_buy": "Fiat veya başka kriptolarla kripto satın al",
+            "feature_swap": "Diğer ağlardaki varlıkları cüzdanına takas et",
             "feature_portal": "On-ramp ve zincirler arası swap işlemleri için tek portal"
         },
         "form": {

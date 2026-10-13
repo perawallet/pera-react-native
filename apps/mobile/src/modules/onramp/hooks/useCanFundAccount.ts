@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-/**
- * Ramp token ids are symbolic, not ASA ids; this is the Algorand USDC pair
- * the Fund tab seeds when asked for it (it falls back to ALGO if a network
- * does not offer it).
- */
-export const USDC_RAMP_TOKEN_ID = 'USDC_ALGORAND'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useOnrampScope } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+/** Whether Fund can buy onto the account, so its entry points show. */
+export const useCanFundAccount = (
+    account: Nullable<WalletAccount> | undefined,
+): boolean => useOnrampScope(account?.chains ?? null) !== null

@@ -28,9 +28,10 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCapability } from '@hooks/useCapability'
-import { USDC_RAMP_TOKEN_ID } from '@modules/onramp'
+import { useCanFundAccount } from '@modules/onramp'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
+import { USDC_RAMP_TOKEN_ID } from '../../utils/usdc'
 import {
     useCardEscrowBalance,
     useCardFundingAccount,
@@ -93,7 +94,6 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         : t('peraCard.account.funding_type_enabled_manual')
     const onChangeFundingType = useOpenFundingTypeSheet()
     const canSwap = useCapability({ anyChain: 'swap' })
-    const canBuy = useCapability({ anyChain: 'onramp' })
     const { transactions, isLoading } = useCardTransactionsQuery(scope)
 
     const transactionSections = useMemo(
@@ -108,6 +108,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // figure. Reading it from the chain also keeps it right on platforms Baanx
     // does not serve wallet balances to.
     const fundingAccount = useCardFundingAccount()
+    const canBuy = useCanFundAccount(fundingAccount)
     const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: linkedUsdc, isPending: isLinkedBalancePending } =
         useAccountAssetBalanceQuery(

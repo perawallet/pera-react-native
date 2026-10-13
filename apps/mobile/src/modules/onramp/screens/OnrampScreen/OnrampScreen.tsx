@@ -13,15 +13,15 @@
 import { useCallback } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
+import { useCapability } from '@hooks/useCapability'
 import { PWLoadingIndicator, PWView } from '@components/core'
-import { CapabilityGuard } from '@components/CapabilityGuard'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import {
     AccountSelection,
     AccountDrawerPager,
     useAccountDrawerPickerKind,
-    useSigningPicker,
+    useFundPicker,
 } from '@modules/accounts'
 import {
     OnrampCountryChip,
@@ -47,6 +47,8 @@ export const OnrampScreen = () => {
         destinationToken,
         selectedPair,
         region,
+        scope,
+        canFundSelectedAccount,
         activeTab,
         handleTabChange,
         handleRegionInfoPress,
@@ -59,8 +61,9 @@ export const OnrampScreen = () => {
     const isFocused = useIsFocused()
 
     // One definition behind the drawer and the sheet fallback alike.
-    const accountPicker = useSigningPicker()
-    useAccountDrawerPickerKind('select')
+    const accountPicker = useFundPicker()
+    useAccountDrawerPickerKind('fund')
+    const isOnrampOffered = useCapability({ anyChain: 'onramp' })
 
     // The pager is controlled off the active tab, so the header and a swipe are
     // two ways of setting the same value rather than two sources of truth.
@@ -74,39 +77,42 @@ export const OnrampScreen = () => {
         [handleTabChange],
     )
 
+    if (!isOnrampOffered) {
+        return (
+            <PWView style={styles.screen}>
+                <EmptyView
+                    icon='info'
+                    title={t('onramp.testnet.title')}
+                    body={t('onramp.testnet.body')}
+                />
+            </PWView>
+        )
+    }
+
     return (
-        <CapabilityGuard
-            requires={{ anyChain: 'onramp' }}
-            fallback={
-                <PWView style={styles.screen}>
-                    <EmptyView
-                        icon='info'
-                        title={t('onramp.testnet.title')}
-                        body={t('onramp.testnet.body')}
+        <PWView
+            style={styles.screen}
+            testID='onramp-screen'
+        >
+            <PWView style={styles.header}>
+                <PWView style={styles.headerRow}>
+                    <AccountSelection {...accountPicker} />
+                    <OnrampCountryChip
+                        countryCode={region?.countryCode}
+                        onInfoPress={handleRegionInfoPress}
                     />
                 </PWView>
-            }
-        >
-            <PWView
-                style={styles.screen}
-                testID='onramp-screen'
-            >
-                <PWView style={styles.header}>
-                    <PWView style={styles.headerRow}>
-                        <AccountSelection {...accountPicker} />
-                        <OnrampCountryChip
-                            countryCode={region?.countryCode}
-                            onInfoPress={handleRegionInfoPress}
-                        />
-                    </PWView>
 
+                {canFundSelectedAccount && (
                     <OnrampHeaderTabs
                         activeTab={activeTab}
                         onTabChange={handleTabChange}
                         badges={{ history: hasPendingHistory }}
                     />
-                </PWView>
+                )}
+            </PWView>
 
+            {canFundSelectedAccount ? (
                 <AccountDrawerPager
                     index={TAB_PAGES.indexOf(activeTab)}
                     onIndexChange={handleIndexChange}
@@ -116,7 +122,10 @@ export const OnrampScreen = () => {
                         style={styles.page}
                     >
                         {isReady ? (
+                            // The chain's receive preparation runs as hooks
+                            // inside the form, so a new chain remounts it.
                             <OnrampForm
+                                key={scope?.chainId}
                                 sourceToken={sourceToken}
                                 destinationToken={destinationToken}
                                 selectedPair={selectedPair}
@@ -143,7 +152,13 @@ export const OnrampScreen = () => {
                         />
                     </PWView>
                 </AccountDrawerPager>
-            </PWView>
-        </CapabilityGuard>
+            ) : (
+                <EmptyView
+                    icon='info'
+                    title={t('onramp.account_unsupported.title')}
+                    body={t('onramp.account_unsupported.body')}
+                />
+            )}
+        </PWView>
     )
 }

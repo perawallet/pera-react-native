@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "¡Bienvenido a Pera!",
             "get_started": "Para empezar, deposita ALGO",
-            "buy_algo": "Comprar Algo",
+            "buy": "Comprar cripto",
             "receive": "Recibir",
             "more": "Más"
         }
@@ -3500,7 +3500,11 @@
         },
         "testnet": {
             "title": "No disponible en TestNet",
-            "body": "Añadir fondos a tu wallet solo está disponible en MainNet. Cambia a MainNet para comprar ALGO o USDC."
+            "body": "Añadir fondos a tu wallet solo está disponible en MainNet. Cambia a MainNet para comprar cripto."
+        },
+        "account_unsupported": {
+            "title": "No se pueden añadir fondos a esta cuenta",
+            "body": "Elige una cuenta en una red que admita compras."
         },
         "region": {
             "unknown": "--",
@@ -3513,8 +3517,8 @@
             "title": "Añadir fondos",
             "new_chip": "NUEVO",
             "continue": "Continuar",
-            "feature_buy": "Compra ALGO o USDC con fiat o cripto",
-            "feature_swap": "Intercambia activos de otras redes a Algorand",
+            "feature_buy": "Compra cripto con fiat o con otras cripto",
+            "feature_swap": "Intercambia activos de otras redes a tu wallet",
             "feature_portal": "Un solo portal para on-ramps y swaps entre cadenas"
         },
         "form": {

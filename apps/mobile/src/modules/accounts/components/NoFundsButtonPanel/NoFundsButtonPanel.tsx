@@ -19,17 +19,17 @@ import { useNoFundsButtonPanel } from './useNoFundsButtonPanel'
 export const NoFundsButtonPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
-    const { canBuy, handleBuyAlgo, handleReceive, handleMore } =
+    const { canBuy, handleBuy, handleReceive, handleMore } =
         useNoFundsButtonPanel()
 
     return (
         <PWView style={themeStyle.container}>
             {canBuy && (
                 <RoundButton
-                    title={t('account_details.no_balance.buy_algo')}
+                    title={t('account_details.no_balance.buy')}
                     icon='algo'
                     variant='primary'
-                    onPress={handleBuyAlgo}
+                    onPress={handleBuy}
                     style={themeStyle.button}
                 />
             )}

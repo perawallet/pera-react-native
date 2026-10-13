@@ -11,7 +11,8 @@
  */
 
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
-import { trackEvent, OnrampEvent } from '@analytics'
+import { OnrampEvent } from '@analytics'
+import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampPair, RampToken } from '@perawallet/wallet-core-onramp'
@@ -63,13 +64,15 @@ export const OnrampForm = ({
         errorMessage === null &&
         !isConfirming
 
+    const trackOnrampEvent = useTrackOnrampEvent()
+
     const handleOpenSource = () => {
-        trackEvent(OnrampEvent.TopCurrencyTap)
+        trackOnrampEvent(OnrampEvent.TopCurrencyTap)
         void handleOpenSourceSelection()
     }
 
     const handleOpenDestination = () => {
-        trackEvent(OnrampEvent.BottomCurrencyTap)
+        trackOnrampEvent(OnrampEvent.BottomCurrencyTap)
         void handleOpenDestinationSelection()
     }
 

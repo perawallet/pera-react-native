@@ -14,7 +14,8 @@ import { useCallback } from 'react'
 import { Trans } from 'react-i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWButton, PWText, PWView } from '@components/core'
-import { trackEvent, OnrampEvent } from '@analytics'
+import { OnrampEvent } from '@analytics'
+import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useWebView, withLanguageParam } from '@modules/webview'
@@ -38,10 +39,12 @@ export const OnrampTermsContent = () => {
         [pushWebView],
     )
 
+    const trackOnrampEvent = useTrackOnrampEvent()
+
     const handleAccept = useCallback(() => {
-        trackEvent(OnrampEvent.TosAccept)
+        trackOnrampEvent(OnrampEvent.TosAccept)
         resolve(true)
-    }, [resolve])
+    }, [resolve, trackOnrampEvent])
 
     return (
         <SafeAreaView edges={['bottom']}>

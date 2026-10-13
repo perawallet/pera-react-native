@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Willkommen!",
             "get_started": "Zahle ALGO ein, um zu starten",
-            "buy_algo": "Algo kaufen",
+            "buy": "Krypto kaufen",
             "receive": "Empfangen",
             "more": "Mehr"
         }
@@ -3492,7 +3492,11 @@
         },
         "testnet": {
             "title": "Auf TestNet nicht verfügbar",
-            "body": "Das Aufladen deines Wallets ist nur auf MainNet verfügbar. Wechsle zu MainNet, um ALGO oder USDC zu kaufen."
+            "body": "Das Aufladen deines Wallets ist nur auf MainNet verfügbar. Wechsle zu MainNet, um Krypto zu kaufen."
+        },
+        "account_unsupported": {
+            "title": "Dieses Konto kann nicht aufgeladen werden",
+            "body": "Wähle ein Konto in einem Netzwerk, das Käufe unterstützt."
         },
         "region": {
             "unknown": "--",
@@ -3505,8 +3509,8 @@
             "title": "Aufladen",
             "new_chip": "NEU",
             "continue": "Weiter",
-            "feature_buy": "ALGO oder USDC mit Fiat oder Krypto kaufen",
-            "feature_swap": "Assets von anderen Netzwerken zu Algorand tauschen",
+            "feature_buy": "Krypto mit Fiat oder anderen Kryptowährungen kaufen",
+            "feature_swap": "Assets von anderen Netzwerken in dein Wallet tauschen",
             "feature_portal": "Ein Portal für On-Ramps und Cross-Chain-Swaps"
         },
         "form": {

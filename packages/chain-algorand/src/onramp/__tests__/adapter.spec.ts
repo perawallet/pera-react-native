@@ -106,6 +106,14 @@ describe('algorandRampAdapter', () => {
         )
     })
 
+    it('places USDC on no asset where the network has no known USDC', () => {
+        const usdc = token({ id: 'USDC_ALGORAND' })
+
+        expect(
+            adapter.toAssetId(usdc, { chainId: 'algorand', networkId: 'betanet' }),
+        ).toBeNull()
+    })
+
     it('places an unknown catalogue id on no asset', () => {
         expect(adapter.toAssetId(token({ id: 'UNKNOWN' }), MAINNET)).toBeNull()
     })
