@@ -15,6 +15,8 @@ import type { DeviceIdOrigin, DeviceState } from '../models'
 import {
     rekeyLegacyNetworkRecord,
     scopeKeyForLegacyNetwork,
+    toScopeKey,
+    type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -65,6 +67,11 @@ export const deviceIdFor = (
     network: Network,
 ): Nullable<string> =>
     state.deviceIDs?.get(scopeKeyForLegacyNetwork(network)) ?? null
+
+export const deviceIdForScope = (
+    state: Pick<DeviceState, 'deviceIDs'>,
+    scope: ChainScope,
+): Nullable<string> => state.deviceIDs?.get(toScopeKey(scope)) ?? null
 
 export const deviceIdOriginFor = (
     state: Pick<DeviceState, 'deviceIdOrigins'>,
