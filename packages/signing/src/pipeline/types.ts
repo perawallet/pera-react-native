@@ -223,8 +223,16 @@ export type RejectReason =
     | { kind: 'user' }
     | { kind: 'softReject'; error: Error }
 
+export interface SubmissionReceipt {
+    txIds: string[]
+}
+
 export interface SourceCallbacks {
-    approve?: (result: SigningResult) => Promise<void>
+    /** `submission` is set only when the transport broadcast the group before answering. */
+    approve?: (
+        result: SigningResult,
+        submission?: SubmissionReceipt,
+    ) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
     /**
@@ -410,6 +418,12 @@ export interface SubmittedTransportResult {
     txIds: string[]
 }
 
+/** Broadcast, then the source's `approve` callback accepted the submitted ids. */
+export interface SubmittedAndAnsweredTransportResult {
+    type: 'submitted-and-answered'
+    txIds: string[]
+}
+
 export interface CallbackTransportResult {
     type: 'callback-sent'
     requestId: string
@@ -449,6 +463,7 @@ export type SignRequestStatus =
 
 export type TransportResult =
     | SubmittedTransportResult
+    | SubmittedAndAnsweredTransportResult
     | CallbackTransportResult
     | ProposedTransportResult
     | SignaturesAddedTransportResult

@@ -28,6 +28,7 @@ import {
     type SignableGroup,
     type SigningResult,
     type SourceCallbacks,
+    type SubmissionReceipt,
     type SourceMetadata,
 } from '../pipeline/types'
 import {
@@ -138,9 +139,12 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 
     if (isTransactionRequest(request) && request.approve) {
         const txApprove = request.approve
-        approveCallback = async (result: SigningResult) => {
+        approveCallback = async (
+            result: SigningResult,
+            submission?: SubmissionReceipt,
+        ) => {
             if (result.signedData.type === 'transactions') {
-                await txApprove(result.signedData.signed)
+                await txApprove(result.signedData.signed, submission)
             }
         }
     } else if (

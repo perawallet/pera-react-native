@@ -210,6 +210,7 @@ export {
     type SignableAnalysis,
     type SignableGroup,
     type SourceType,
+    type SubmissionReceipt,
     type TransportResult,
 } from './pipeline/types'
 export { signingEventBus } from './pipeline/signingEventBus'

@@ -432,6 +432,6 @@ describe('quantum-signed transactions over the callback transport', () => {
             ],
         } as never)
 
-        expect(txApprove).toHaveBeenCalledWith(signed)
+        expect(txApprove).toHaveBeenCalledWith(signed, undefined)
     })
 })

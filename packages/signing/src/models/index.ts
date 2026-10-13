@@ -23,6 +23,7 @@ import type {
     SignableAnalysis,
     SignRequestTransportOptions,
     SourceType,
+    SubmissionReceipt,
     TransportResult,
 } from '../pipeline/types'
 import type { SignerCustody } from '../machine/utils/resolveSignerCredential'
@@ -113,7 +114,10 @@ type AlgorandRequestFields = {
      * (contract-signed / unresolved signer) with `null`, preserving the
      * original ARC-0001 slot order.
      */
-    approve?: (signedTxs: Nullable<PeraSignedTransaction>[]) => Promise<void>
+    approve?: (
+        signedTxs: Nullable<PeraSignedTransaction>[],
+        submission?: SubmissionReceipt,
+    ) => Promise<void>
     /** See {@link SourceCallbacks.approveSignedBytes}. */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
     /** See {@link SourceCallbacks.onProposed}. */

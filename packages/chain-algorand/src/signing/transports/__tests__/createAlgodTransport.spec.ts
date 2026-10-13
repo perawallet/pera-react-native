@@ -224,7 +224,7 @@ describe('createAlgodTransport', () => {
         expect(result).toEqual({ type: 'submitted', txIds: ['TX1'] })
     })
 
-    test('invokes source.callbacks.approve after successful submission', async () => {
+    test('passes the submitted ids to source.callbacks.approve and reports the source answered', async () => {
         const algokit = makeAlgokit('TX1')
         const transport = createAlgodTransport(
             algokit,
@@ -239,8 +239,13 @@ describe('createAlgodTransport', () => {
 
         const result = await transport.send(transactionResult, source)
 
-        expect(approve).toHaveBeenCalledWith(transactionResult)
-        expect(result).toEqual({ type: 'submitted', txIds: ['TX1'] })
+        expect(approve).toHaveBeenCalledWith(transactionResult, {
+            txIds: ['TX1'],
+        })
+        expect(result).toEqual({
+            type: 'submitted-and-answered',
+            txIds: ['TX1'],
+        })
     })
 
     test('returns submitted even when the approve callback throws', async () => {

@@ -204,7 +204,30 @@ describe('resolveInitialContext — source callbacks', () => {
             signedData: { type: 'transactions', signed },
         } as never)
 
-        expect(txApprove).toHaveBeenCalledWith(signed)
+        expect(txApprove).toHaveBeenCalledWith(signed, undefined)
+    })
+
+    it('hands the transport submission receipt to the transaction approve callback', async () => {
+        const txApprove = vi.fn(async () => undefined)
+        const request: TransactionSignRequest = {
+            id: 'req-tx-receipt',
+            type: 'transactions',
+            transport: 'algod',
+            sourceType: 'gift-card',
+            txs: [makePayment(userAddr, 1n)],
+            approve: txApprove,
+        }
+
+        const context = resolveInitialContext(baseInput(request))
+        const { callbacks } = context.signableGroups![0].source
+
+        const signed = [{ sig: new Uint8Array([1]) }] as never
+        await callbacks?.approve?.(
+            { signedData: { type: 'transactions', signed } } as never,
+            { txIds: ['TX1'] },
+        )
+
+        expect(txApprove).toHaveBeenCalledWith(signed, { txIds: ['TX1'] })
     })
 
     it('multisig-cosign without signRequestId throws SigningError', () => {

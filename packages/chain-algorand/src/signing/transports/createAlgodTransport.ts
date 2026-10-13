@@ -87,7 +87,8 @@ export const createAlgodTransport = (
             // must not fail the pipeline — log and return success.
             if (source.callbacks?.approve) {
                 try {
-                    await source.callbacks.approve(result)
+                    await source.callbacks.approve(result, { txIds })
+                    return { type: 'submitted-and-answered', txIds }
                 } catch (error) {
                     logger.error(
                         'Algod transport: approve callback failed after submission',
