@@ -61,6 +61,7 @@ import { fullScreenLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { SigningOverlays } from '@modules/signing/shell'
+import { MultisigOverlays } from '@modules/multisig/shell'
 import { OverlayErrorFallback } from '@components/RootComponent/OverlayErrorFallback'
 import { navigationRef } from './navigationRef'
 import { createAppStackNavigator } from './createAppStackNavigator'
@@ -286,12 +287,14 @@ export const WebMainRoutes = ({
             <PromptContainer />
             {/* Sibling of ConnectionsProvider: nothing else on web watches the
                 signing queue, so a connection-delivered sign request would enqueue
-                and never render. MultisigOverlays and SwapOverlays are native-only. */}
+                and never render. MultisigOverlays presents the shared-account
+                pending-signatures sheet; SwapOverlays is native-only. */}
             <ErrorBoundary
                 onError={handleOverlayError}
                 FallbackComponent={OverlayErrorFallback}
             >
                 <SigningOverlays />
+                <MultisigOverlays />
             </ErrorBoundary>
         </NavigationContainer>
     )
