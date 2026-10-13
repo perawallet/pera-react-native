@@ -24,6 +24,7 @@ import {
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
     submitAndAutoRefresh,
+    submitSignedGroup,
 } from '../broadcaster'
 import { registerFakeBroadcaster } from './fakeBroadcaster'
 
@@ -36,6 +37,7 @@ describe('broadcaster wrappers', () => {
         const handler = vi.fn()
         const adapter = registerFakeBroadcaster({
             submitAndAutoRefresh: vi.fn(async () => ['TX1']),
+            submit: vi.fn(async () => ['TX2']),
             reconcileOpenSubmissions: vi.fn(async () => summary),
             deriveSubmissionAttemptFromBytes: vi.fn(() => derived),
         })
@@ -47,6 +49,9 @@ describe('broadcaster wrappers', () => {
         expect(adapter.submitAndAutoRefresh).toHaveBeenCalledWith(SCOPE, [], {
             flow: 'swap',
         })
+
+        await expect(submitSignedGroup(SCOPE, bytes)).resolves.toEqual(['TX2'])
+        expect(adapter.submit).toHaveBeenCalledWith(SCOPE, bytes)
 
         await expect(reconcileOpenSubmissions(LEGACY_CHAIN_ID)).resolves.toBe(
             summary,
@@ -74,6 +79,9 @@ describe('broadcaster wrappers', () => {
             Promise.resolve().then(() => submitAndAutoRefresh(SCOPE, [])),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
+            Promise.resolve().then(() => submitSignedGroup(SCOPE, [])),
+        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+        await expect(
             Promise.resolve().then(() =>
                 reconcileOpenSubmissions(LEGACY_CHAIN_ID),
             ),
@@ -93,6 +101,7 @@ describe('broadcaster wrappers', () => {
 describe('signing root exports kept for other packages', () => {
     it.each([
         'submitAndAutoRefresh',
+        'submitSignedGroup',
         'STALE_OPEN_ATTEMPT_MS',
         'deriveSubmissionAttemptFromBytes',
         'setSubmissionSettledHandler',

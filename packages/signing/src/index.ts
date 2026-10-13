@@ -259,6 +259,7 @@ export {
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
     submitAndAutoRefresh,
+    submitSignedGroup,
     type BroadcasterChainAdapter,
     type DerivedSubmissionAttempt,
     type OnConfirmedHandler,

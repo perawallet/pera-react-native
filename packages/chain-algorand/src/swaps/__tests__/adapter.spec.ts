@@ -22,7 +22,6 @@ import { algorandSwapAdapter } from '../adapter'
 const mocks = vi.hoisted(() => ({
     executeAlgorandSwap: vi.fn(),
     getAlgorandClient: vi.fn(),
-    submitRawSignedTransactionGroup: vi.fn(),
     encodeSignedTransactions: vi.fn(),
 }))
 
@@ -34,9 +33,6 @@ vi.mock('../../blockchain', () => ({
     decodeTransaction: vi.fn(),
     decodeSignedTransaction: vi.fn(),
     encodeSignedTransactions: mocks.encodeSignedTransactions,
-}))
-vi.mock('../../signing', () => ({
-    submitRawSignedTransactionGroup: mocks.submitRawSignedTransactionGroup,
 }))
 
 const params = { quote: { quoteIdStr: 'q' } } as unknown as ExecuteSwapParams
@@ -93,21 +89,7 @@ describe('algorandSwapAdapter', () => {
         expect(algorandContext).not.toHaveProperty('assetOptInMinBalance')
     })
 
-    it('submits a co-signed group through algod for the scope it was given', async () => {
-        mocks.submitRawSignedTransactionGroup.mockResolvedValue(['TX1'])
-        const bytes = [new Uint8Array([1, 2])]
-        const mainnetScope = scopeForLegacyNetwork('mainnet')
-
-        const ids = await algorandSwapAdapter.submitSignedGroup?.(
-            mainnetScope,
-            bytes,
-        )
-
-        expect(ids).toEqual(['TX1'])
-        expect(mocks.getAlgorandClient).toHaveBeenCalledWith(mainnetScope)
-        expect(mocks.submitRawSignedTransactionGroup).toHaveBeenCalledWith(
-            { target: mainnetScope },
-            bytes,
-        )
+    it('finishes co-signed swaps, which its broadcaster submits', () => {
+        expect(algorandSwapAdapter.supportsCosignedSwaps).toBe(true)
     })
 })

@@ -138,6 +138,10 @@ export const submitAndAutoRefresh = (
     ...args: Parameters<BroadcasterChainAdapter['submitAndAutoRefresh']>
 ) => broadcasterChainAdapters.get(args[0].chainId).submitAndAutoRefresh(...args)
 
+export const submitSignedGroup = (
+    ...args: Parameters<BroadcasterChainAdapter['submit']>
+) => broadcasterChainAdapters.get(args[0].chainId).submit(...args)
+
 export const reconcileOpenSubmissions = (chainId: ChainId) =>
     broadcasterChainAdapters.get(chainId).reconcileOpenSubmissions()
 
