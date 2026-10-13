@@ -135,7 +135,10 @@ export interface HistoryChainAdapter {
      * The list row for a stored item, read from `address`'s side. Absent on a
      * chain whose history isn't cached as `TransactionHistoryItem` rows.
      */
-    summarize?(item: TransactionHistoryItem, address: string): TransactionSummary
+    summarize?(
+        item: TransactionHistoryItem,
+        address: string,
+    ): TransactionSummary
     /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
     toDisplayable?(
         item: TransactionHistoryItem,

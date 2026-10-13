@@ -14,6 +14,7 @@ import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
 import { EVM_ERROR_I18N_KEYS } from './blockchain'
 import { ethereumCapabilityDefaults } from './capability-defaults'
 import { ethereumDescriptor } from './descriptor'
+import { ETHEREUM_HISTORY_SUMMARY_KEYS } from './history'
 import { registerChain } from './register'
 import { ETHEREUM_REVIEW_TITLE_KEYS } from './signing/review'
 import { ETHEREUM_TRANSFER_TITLE_KEYS } from './transfer'
@@ -25,10 +26,11 @@ export const ethereumModule: ChainModule = {
     i18nKeys: () => [
         ...EVM_ERROR_I18N_KEYS,
         'errors.evm.invalid_private_key',
-        // The builder and the reviewer share the send title.
+        // The builder, the reviewer and history share the send title.
         ...new Set([
             ...ETHEREUM_TRANSFER_TITLE_KEYS,
             ...Object.values(ETHEREUM_REVIEW_TITLE_KEYS),
+            ...ETHEREUM_HISTORY_SUMMARY_KEYS,
         ]),
     ],
 }

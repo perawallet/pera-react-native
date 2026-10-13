@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     scopeForLegacyNetwork,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     assetFactsResolverFor,
@@ -131,7 +132,7 @@ describe('history adapter wrappers', () => {
 })
 
 describe('a chain whose history is not cached as rows', () => {
-    const scope = { chainId: 'ethereum', networkId: 'mainnet' }
+    const scope: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
     beforeEach(() => {
         historyChainAdapters.reset()

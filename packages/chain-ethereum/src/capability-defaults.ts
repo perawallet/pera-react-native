@@ -19,6 +19,7 @@ import {
 // Each needs an Ethereum adapter in every registry CAPABILITY_ADAPTERS lists for it; the app's parity spec fails otherwise.
 const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'receive',
+    'history',
     'assets',
     'pricing',
     'watchAccounts',
