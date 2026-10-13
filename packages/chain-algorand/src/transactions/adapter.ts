@@ -51,7 +51,7 @@ export const algorandTransferAdapter: TransferChainAdapter = {
     getFeeEstimate: estimateAlgorandTransferFee,
 }
 
-export const algorandHistoryAdapter: HistoryChainAdapter = {
+export const algorandHistoryAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     fetchHistory: async ({ scope, ...params }) =>
         fetchTransactionHistory({
@@ -66,4 +66,4 @@ export const algorandHistoryAdapter: HistoryChainAdapter = {
     summarize: summarizeAlgorandHistoryItem,
     toDisplayable: mapHistoryItemToDisplayableTransaction,
     resolveAssetFacts: resolveAlgorandAssetFacts,
-}
+} satisfies HistoryChainAdapter
