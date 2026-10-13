@@ -54,7 +54,7 @@ export const ProviderSelectionItem = ({
     const { t } = useLanguage()
     const styles = useStyles()
     // Provider quote currencies are trusted codes (Meld fiat/crypto codes, XO
-    // asset ids), so the ALGO ticker may translate to the glyph-earning id.
+    // asset ids), so the native ticker may translate to the glyph-earning id.
     const destinationCurrency = getOnrampDestinationCurrency(quote)
     const chainId = useOnrampAccount().scope?.chainId ?? null
     const assetIdOf = (code: string) =>

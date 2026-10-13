@@ -19,7 +19,7 @@ export const createRampOrderRequestSchema = z.object({
     source_address: z.string().nullable(),
 })
 
-// XO (crypto -> ALGO/USDC) order payload. The on-chain pay-in address lives at
+// XO (crypto -> crypto) order payload. The on-chain pay-in address lives at
 // the top level (`pay_in_address`); the provider response carries the
 // destination address and live status. `passthrough` tolerates the many extra
 // provider fields the app ignores (createdAt, fromAddress, rateId, ...).
