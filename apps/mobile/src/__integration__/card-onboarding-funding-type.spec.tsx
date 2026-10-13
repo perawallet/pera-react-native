@@ -322,11 +322,12 @@ describe('Flow: Card onboarding — select funding type', () => {
                 currency: 'usdc',
             }),
         )
-        // Baanx registers the delegated wallet, keyed by the funding address,
-        // and matches the single-use token against the nonce inside sigData.
+        // Baanx registers `address` as the delegated wallet, so it must be the
+        // card: delegator-lsig 403s otherwise. The funder is proven by sigData,
+        // whose nonce Baanx also matches against the single-use token.
         expect(approvalBody).toEqual(
             expect.objectContaining({
-                address: FUNDING_ADDRESS,
+                address: 'ESCROWCARD1',
                 network: 'algorand',
                 currency: 'usdc',
                 amount: '0',
