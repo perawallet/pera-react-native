@@ -42,6 +42,11 @@ export const useStyles = makeStyles(theme => {
             flexShrink: 0,
             maxWidth: '45%',
         },
+        rightColumnOverlay: {
+            position: 'absolute',
+            top: 0,
+            right: 0,
+        },
         dateTimeColumn: {
             alignItems: 'flex-end',
             flexShrink: 0,

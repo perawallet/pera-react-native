@@ -359,7 +359,7 @@
         "copy_address": "Copiar endereço",
         "shared_account_detail": "Detalhes da conta compartilhada ({{count}})",
         "show_address": "Ver endereço",
-        "view_passphrase_hd": "Ver passphrase de recuperação da wallet raiz",
+        "view_passphrase_hd": "Ver passphrase de recuperação",
         "view_passphrase_algo25": "Ver passphrase de recuperação",
         "undo_rekey": "Desfazer rekey",
         "rekeyed_to": "Rekey feito para",
@@ -450,7 +450,7 @@
     },
     "view_passphrase": {
         "acknowledge": {
-            "title": "Mantenha em segredo. Mantenha em segurança.",
+            "title": "Mantenha-a secreta e segura.",
             "description": "Confirme e reconheça o seguinte:",
             "row_screen": "Ninguém pode ver a minha tela.",
             "row_share": "Corro o risco de perder todos os meus fundos se eu compartilhar minha passphrase de recuperação com alguém.",

@@ -54,6 +54,7 @@ import { Decimal } from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
+import { usePortfolioTrendColumn } from './usePortfolioTrendColumn'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { TrendIndicator } from '@components/TrendIndicator'
 
@@ -132,17 +133,10 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         [setSelectedPoint, props],
     )
 
-    // Timed to the ExpandablePanel below so the trend column and the toggle
-    // chevron move together with the chart instead of popping instantly.
-    const trendColumnStyle = useAnimatedStyle(
-        () => ({
-            opacity: withTiming(isChartShown ? 1 : 0, {
-                duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-                easing: EXPANDABLE_PANEL_ANIMATION_EASING,
-            }),
-        }),
-        [isChartShown],
-    )
+    const { isTrendColumnInLayout, trendColumnStyle } =
+        usePortfolioTrendColumn(isChartShown)
+    // Timed to the ExpandablePanel below so the toggle chevron moves together
+    // with the chart instead of popping instantly.
     const chevronStyle = useAnimatedStyle(
         () => ({
             transform: [
@@ -170,6 +164,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                                 style={styles.valueTitle}
                                 variant='h4'
                                 truncate
+                                numberOfLines={2}
                             >
                                 {t('portfolio.title')}
                             </PWText>
@@ -213,7 +208,11 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                     sync with the panel collapse rather than unmount abruptly. */}
                 {!selectedPoint && (
                     <Animated.View
-                        style={[styles.rightColumn, trendColumnStyle]}
+                        style={[
+                            styles.rightColumn,
+                            !isTrendColumnInLayout && styles.rightColumnOverlay,
+                            trendColumnStyle,
+                        ]}
                         accessibilityElementsHidden={!isChartShown}
                         importantForAccessibility={
                             isChartShown ? 'auto' : 'no-hide-descendants'
