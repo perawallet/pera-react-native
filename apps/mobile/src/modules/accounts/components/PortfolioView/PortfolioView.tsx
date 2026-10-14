@@ -164,6 +164,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                                 style={styles.valueTitle}
                                 variant='h4'
                                 truncate
+                                numberOfLines={2}
                             >
                                 {t('portfolio.title')}
                             </PWText>
