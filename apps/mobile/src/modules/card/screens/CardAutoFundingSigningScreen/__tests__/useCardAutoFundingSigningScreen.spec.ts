@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    AutoDrawDelegationRejectedError,
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
     FundingType,
@@ -167,6 +168,26 @@ describe('useCardAutoFundingSigningScreen', () => {
     it('degrades to Manual funding when the bundled TEAL template fails its pin', async () => {
         mockEnableAutoDraw.mockRejectedValueOnce(
             new AutoDrawTealUnverifiedError(),
+        )
+
+        const { result } = renderHook(() => useCardAutoFundingSigningScreen())
+
+        act(() => {
+            result.current.handleApprove()
+        })
+
+        await waitFor(() =>
+            expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true),
+        )
+        expect(mockShowCardError).not.toHaveBeenCalled()
+        expect(result.current.error).toBeNull()
+    })
+
+    it('degrades to Manual funding when Baanx rejects the delegation', async () => {
+        mockEnableAutoDraw.mockRejectedValueOnce(
+            new AutoDrawDelegationRejectedError(
+                'Card address is not a delegated wallet of the authenticated user',
+            ),
         )
 
         const { result } = renderHook(() => useCardAutoFundingSigningScreen())

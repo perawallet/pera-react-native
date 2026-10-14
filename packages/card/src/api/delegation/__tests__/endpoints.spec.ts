@@ -19,9 +19,11 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchDelegationToken,
     fetchExternalWallets,
+    postAutoDrawDelegation,
     postCardDelegation,
     postDelegationApproval,
 } from '../endpoints'
+import { AutoDrawDelegationRejectedError } from '../errors'
 import { registerFakeCardAdapter } from '../../../__tests__/fakeCardAdapter'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
@@ -214,5 +216,65 @@ describe('postCardDelegation', () => {
                 postCardDelegation(delegation, scope),
             ).resolves.toBeUndefined()
         }
+    })
+})
+
+describe('postAutoDrawDelegation', () => {
+    beforeEach(() => vi.clearAllMocks())
+
+    const scope = scopeForLegacyNetwork('testnet')
+    const delegation = {
+        path: '/v1/delegation/chain/delegator-lsig',
+        data: { body: 'chain' },
+    }
+
+    it('registers the delegation on the authenticated direct route', async () => {
+        request.mockResolvedValue({ data: { success: true }, status: 201 })
+
+        await postAutoDrawDelegation(delegation, scope)
+
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/delegation/chain/delegator-lsig',
+                authenticated: true,
+            }),
+        )
+    })
+
+    it('turns a 403 into a non-recoverable rejection carrying the Baanx reason', async () => {
+        request.mockRejectedValue({
+            response: {
+                status: 403,
+                text: async () =>
+                    JSON.stringify({
+                        message:
+                            'Card address is not a delegated wallet of the authenticated user',
+                    }),
+            },
+        })
+
+        const error = await postAutoDrawDelegation(delegation, scope).catch(
+            (e: unknown) => e,
+        )
+
+        expect(error).toBeInstanceOf(AutoDrawDelegationRejectedError)
+        expect(error).toMatchObject({
+            metadata: {
+                recoverable: false,
+                params: {
+                    reason: 'Card address is not a delegated wallet of the authenticated user',
+                },
+            },
+        })
+    })
+
+    it('rethrows any other failure unchanged so the caller can retry', async () => {
+        const failure = { response: { status: 500, text: async () => '' } }
+        request.mockRejectedValue(failure)
+
+        await expect(postAutoDrawDelegation(delegation, scope)).rejects.toBe(
+            failure,
+        )
     })
 })

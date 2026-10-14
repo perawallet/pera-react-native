@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    AutoDrawDelegationRejectedError,
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
     FundingType,
@@ -38,6 +39,11 @@ import { findCardAccount } from '../../utils/cardAccountAddress'
 const isUserRejection = (error: Error): boolean =>
     error instanceof UserRejectedSigningError ||
     /user rejected/i.test(error.message)
+
+const isUnrecoverableAutoDrawFailure = (error: unknown): boolean =>
+    error instanceof AutoDrawProgramUnverifiedError ||
+    error instanceof AutoDrawTealUnverifiedError ||
+    error instanceof AutoDrawDelegationRejectedError
 
 export type UseCardAutoFundingSigningScreenResult = {
     isPending: boolean
@@ -101,16 +107,13 @@ export const useCardAutoFundingSigningScreen =
                     await enableAutoDraw(connectedAccount, escrowCardAddress)
                     finish(FundingType.Auto, false)
                 } catch (err) {
-                    // An unverified AutoDraw program or template can never
-                    // succeed on retry, so "please try again" would strand the
-                    // user on this screen. Degrade to Manual with the same
-                    // honest copy the decline path uses.
-                    if (
-                        err instanceof AutoDrawProgramUnverifiedError ||
-                        err instanceof AutoDrawTealUnverifiedError
-                    ) {
+                    // An unverified program or template never succeeds on retry,
+                    // and a delegation Baanx refused won't until the card is
+                    // linked, so "please try again" would strand the user here.
+                    // Degrade to Manual; Auto stays available from card settings.
+                    if (isUnrecoverableAutoDrawFailure(err)) {
                         logger.error(
-                            'AutoDraw program failed verification, degrading to Manual funding',
+                            'Auto funding cannot be enabled, degrading to Manual funding',
                             { error: err },
                         )
                         finish(FundingType.Manual, true)

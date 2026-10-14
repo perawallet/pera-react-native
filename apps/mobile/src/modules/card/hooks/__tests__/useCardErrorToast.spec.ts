@@ -14,6 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    AutoDrawDelegationRejectedError,
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
     CardAccountLinkedElsewhereError,
@@ -268,6 +269,10 @@ describe('resolveCardErrorCopy', () => {
         ],
         [
             new AutoDrawTealUnverifiedError(),
+            'peraCard.account.auto_funding_unavailable',
+        ],
+        [
+            new AutoDrawDelegationRejectedError(),
             'peraCard.account.auto_funding_unavailable',
         ],
     ])('maps %s to its own copy', (error, prefix) => {

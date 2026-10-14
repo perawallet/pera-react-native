@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    AutoDrawDelegationRejectedError,
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
     CardAccountLinkedElsewhereError,
@@ -107,7 +108,8 @@ export const resolveCardErrorCopy = (
     if (
         error instanceof CardEscrowNotConfiguredError ||
         error instanceof AutoDrawProgramUnverifiedError ||
-        error instanceof AutoDrawTealUnverifiedError
+        error instanceof AutoDrawTealUnverifiedError ||
+        error instanceof AutoDrawDelegationRejectedError
     ) {
         return {
             titleKey: 'peraCard.account.auto_funding_unavailable_title',

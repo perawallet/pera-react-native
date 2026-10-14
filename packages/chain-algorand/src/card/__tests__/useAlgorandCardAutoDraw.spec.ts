@@ -19,7 +19,7 @@ const {
     compileAutoDrawProgram,
     resolveEscrowChainConfig,
     autoDraw,
-    postCardDelegation,
+    postAutoDrawDelegation,
     signProgram,
     submit,
     submitWithFeeDelegation,
@@ -32,7 +32,7 @@ const {
         buildEnable: vi.fn(),
         buildKill: vi.fn(),
     },
-    postCardDelegation: vi.fn(),
+    postAutoDrawDelegation: vi.fn(),
     signProgram: vi.fn(),
     submit: vi.fn(),
     submitWithFeeDelegation: vi.fn(),
@@ -44,7 +44,7 @@ vi.mock('../escrow/lsig', () => ({
 vi.mock('../escrow/killswitch', () => ({ algorandAutoDraw: autoDraw }))
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
-    postCardDelegation,
+    postAutoDrawDelegation,
 }))
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
@@ -73,7 +73,7 @@ beforeEach(() => {
         mainAppId: '111',
     })
     signProgram.mockResolvedValue(new Uint8Array([1, 2, 3]))
-    postCardDelegation.mockResolvedValue(undefined)
+    postAutoDrawDelegation.mockResolvedValue(undefined)
     autoDraw.isConfigured.mockReturnValue(true)
     // Not enabled by default: enable proceeds, kill no-ops.
     autoDraw.isEnabled.mockResolvedValue(false)
@@ -96,7 +96,7 @@ describe('useAlgorandCardAutoDraw.enableAutoDraw', () => {
             account,
             new Uint8Array([7, 7, 7]),
         )
-        expect(postCardDelegation).toHaveBeenCalledWith(
+        expect(postAutoDrawDelegation).toHaveBeenCalledWith(
             {
                 path: '/v1/delegation/algorand/delegator-lsig',
                 data: {
@@ -124,7 +124,7 @@ describe('useAlgorandCardAutoDraw.enableAutoDraw', () => {
                 description: 'Enable auto funding',
             },
         })
-        expect(postCardDelegation.mock.invocationCallOrder[0]).toBeLessThan(
+        expect(postAutoDrawDelegation.mock.invocationCallOrder[0]).toBeLessThan(
             submitWithFeeDelegation.mock.invocationCallOrder[0],
         )
     })
@@ -139,7 +139,7 @@ describe('useAlgorandCardAutoDraw.enableAutoDraw', () => {
             render().current.enableAutoDraw(elsewhere, 'CARD', TESTNET),
         ).rejects.toThrow('no address on algorand')
         expect(signProgram).not.toHaveBeenCalled()
-        expect(postCardDelegation).not.toHaveBeenCalled()
+        expect(postAutoDrawDelegation).not.toHaveBeenCalled()
     })
 
     it('only registers the program while the switch contract is unconfigured', async () => {
@@ -147,7 +147,7 @@ describe('useAlgorandCardAutoDraw.enableAutoDraw', () => {
 
         await render().current.enableAutoDraw(account, 'CARD', TESTNET)
 
-        expect(postCardDelegation).toHaveBeenCalledTimes(1)
+        expect(postAutoDrawDelegation).toHaveBeenCalledTimes(1)
         expect(autoDraw.buildEnable).not.toHaveBeenCalled()
         expect(submitWithFeeDelegation).not.toHaveBeenCalled()
     })
@@ -159,7 +159,7 @@ describe('useAlgorandCardAutoDraw.enableAutoDraw', () => {
             render().current.enableAutoDraw(account, 'CARD', TESTNET),
         ).resolves.toBeUndefined()
 
-        expect(postCardDelegation).toHaveBeenCalledTimes(1)
+        expect(postAutoDrawDelegation).toHaveBeenCalledTimes(1)
         expect(autoDraw.buildEnable).not.toHaveBeenCalled()
         expect(submitWithFeeDelegation).not.toHaveBeenCalled()
     })
