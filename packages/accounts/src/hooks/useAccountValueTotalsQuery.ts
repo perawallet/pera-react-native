@@ -15,7 +15,11 @@ import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useStableIdList, type Nullable } from '@perawallet/wallet-core-shared'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    isTestTierScope,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../models'
 import { chainAccountOf } from '../credentials/accessors'
 import { getAccountSummaryQueryKey } from './querykeys'
@@ -47,8 +51,13 @@ export type AccountValueTotalsMap = Map<string, AccountValueTotals>
 export type UseAccountValueTotalsQueryResult = {
     accountValueTotals: AccountValueTotalsMap
     portfolioNativeValue: Decimal
-    /** `null` when any account's USD value is unknown — see `usdValue`. */
+    /**
+     * `null` when any account's USD value is unknown — see `usdValue`. `0`
+     * when `hasFiatTotal` is false.
+     */
     portfolioUsdValue: Nullable<Decimal>
+    /** False on a test-tier scope, whose value never counts toward the fiat total. */
+    hasFiatTotal: boolean
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -83,6 +92,10 @@ export const useAccountValueTotalsQuery = (
     // missing a price it ought to have.
     const hasPricing = useChainCapability(scope.chainId, 'pricing')
     const hasAccounts = !!accounts?.length
+    const hasFiatTotal = useMemo(
+        () => !isTestTierScope(getProvider().chains, scope),
+        [scope],
+    )
 
     // Call sites routinely pass fresh array literals per render; only
     // addresses are read below, so the memos key on this stable list instead
@@ -131,6 +144,7 @@ export const useAccountValueTotalsQuery = (
             return {
                 accountValueTotals: new Map() as AccountValueTotalsMap,
                 ...EMPTY_RESULT_BASE,
+                hasFiatTotal,
             }
         }
 
@@ -147,10 +161,12 @@ export const useAccountValueTotalsQuery = (
                 portfolioNativeValue = portfolioNativeValue.plus(nativeValue)
                 // One unknown account makes the portfolio total unknown —
                 // silently summing the rest would understate it.
-                portfolioUsdValue =
-                    portfolioUsdValue === null || usdValue === null
-                        ? null
-                        : portfolioUsdValue.plus(usdValue)
+                if (hasFiatTotal) {
+                    portfolioUsdValue =
+                        portfolioUsdValue === null || usdValue === null
+                            ? null
+                            : portfolioUsdValue.plus(usdValue)
+                }
 
                 return [
                     address,
@@ -171,6 +187,7 @@ export const useAccountValueTotalsQuery = (
             accountValueTotals,
             portfolioNativeValue,
             portfolioUsdValue,
+            hasFiatTotal,
             isPending: results.some(r => r.isPending),
             isFetched: results.every(r => r.isFetched),
             isRefetching: results.some(r => r.isRefetching),
@@ -180,5 +197,5 @@ export const useAccountValueTotalsQuery = (
         // `results` is read inside but deliberately not a dep — `resultsSig`
         // is its stable stand-in.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, addresses, hasAccounts, hasPricing])
+    }, [resultsSig, addresses, hasAccounts, hasPricing, hasFiatTotal])
 }
