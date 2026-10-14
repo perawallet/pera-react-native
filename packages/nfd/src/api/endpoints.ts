@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import {
-    queryClient,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient, logger } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
 import {
     nfdNamesListResponseSchema,
@@ -33,7 +30,7 @@ import {
 
 export type FetchNfdNamesForAddressParams = {
     address: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -41,14 +38,14 @@ export type FetchNfdNamesForAddressParams = {
 export const fetchNfdNamesForAddress = async (
     params: FetchNfdNamesForAddressParams,
 ): Promise<NfdName[]> => {
-    const { address, network, signal } = params
+    const { address, scope, signal } = params
 
-    // No Pera backend on betanet/custom: callers already treat [] as "no NFD match".
-    if (!isPeraBackedNetwork(network)) return []
+    // No Pera backend with no Pera backend: callers already treat [] as "no NFD match".
+    if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<NfdNamesListApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/accounts/${address}/names/`,
         signal,
@@ -66,7 +63,7 @@ export const fetchNfdNamesForAddress = async (
 
 export type FetchNfdBulkReadParams = {
     addresses: string[]
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -74,14 +71,14 @@ export type FetchNfdBulkReadParams = {
 export const fetchNfdBulkRead = async (
     params: FetchNfdBulkReadParams,
 ): Promise<NfdBulkResult[]> => {
-    const { addresses, network, signal } = params
+    const { addresses, scope, signal } = params
 
-    // No Pera backend on betanet/custom: callers already treat [] as "no NFD match".
-    if (!isPeraBackedNetwork(network)) return []
+    // No Pera backend with no Pera backend: callers already treat [] as "no NFD match".
+    if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<NfdBulkReadApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v1/accounts/names/bulk-read/`,
         data: { account_addresses: addresses },
@@ -100,7 +97,7 @@ export const fetchNfdBulkRead = async (
 
 export type FetchNfdSearchParams = {
     name: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -108,14 +105,14 @@ export type FetchNfdSearchParams = {
 export const fetchNfdSearch = async (
     params: FetchNfdSearchParams,
 ): Promise<NfdSearchResult[]> => {
-    const { name, network, signal } = params
+    const { name, scope, signal } = params
 
-    // No Pera backend on betanet/custom: callers already treat [] as "no NFD match".
-    if (!isPeraBackedNetwork(network)) return []
+    // No Pera backend with no Pera backend: callers already treat [] as "no NFD match".
+    if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<NfdSearchApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/name-services/search/`,
         params: { name },
@@ -129,5 +126,5 @@ export const fetchNfdSearch = async (
         })
         return []
     }
-    return transformSearchResults(result.data, network)
+    return transformSearchResults(result.data, scope)
 }

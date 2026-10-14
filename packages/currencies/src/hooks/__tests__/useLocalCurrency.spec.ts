@@ -15,6 +15,24 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useLocalCurrency } from '../useLocalCurrency'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const DESCRIPTORS = {
+    algorand: { displayName: 'Algorand', nativeAsset: { symbol: 'ALGO' } },
+    ethereum: { displayName: 'Ethereum', nativeAsset: { symbol: 'ETH' } },
+} as const
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        chains: {
+            get: (chainId: keyof typeof DESCRIPTORS) => ({
+                descriptor: DESCRIPTORS[chainId],
+            }),
+        },
+    }),
+}))
+
 const mockUseCurrency = vi.hoisted(() => vi.fn())
 vi.mock('../useCurrency', () => ({
     useCurrency: mockUseCurrency,
@@ -48,14 +66,14 @@ describe('useLocalCurrency', () => {
     })
 
     it('uses the preferred fiat with the usdToPreferred rate', () => {
-        const { result } = renderHook(() => useLocalCurrency())
+        const { result } = renderHook(() => useLocalCurrency(ALGORAND_TESTNET))
 
         expect(result.current.localCurrency).toBe('EUR')
         expect(result.current.localCurrencySymbol).toBe('€')
         expect(result.current.localRate?.toString()).toBe('0.9')
     })
 
-    it('falls back to the fallback fiat and its rate when ALGO is preferred', () => {
+    it('falls back to the fallback fiat and its rate when the native asset is preferred', () => {
         mockUseCurrency.mockReturnValue({
             preferredCurrency: 'ALGO',
             fallbackCurrency: 'USD',
@@ -65,12 +83,33 @@ describe('useLocalCurrency', () => {
             data: { id: 'USD', usdPrice: new Decimal(1) },
         })
 
-        const { result } = renderHook(() => useLocalCurrency())
+        const { result } = renderHook(() => useLocalCurrency(ALGORAND_TESTNET))
 
         expect(result.current.localCurrency).toBe('USD')
         expect(result.current.localCurrencySymbol).toBe('$')
         expect(result.current.localRate?.toString()).toBe('1')
         expect(mockUsePreferredCurrencyPriceQuery).toHaveBeenCalledWith(
+            ALGORAND_TESTNET,
+            'USD',
+            true,
+        )
+    })
+
+    it('treats the Ethereum native symbol as the native preference on an Ethereum scope', () => {
+        mockUseCurrency.mockReturnValue({
+            preferredCurrency: 'ETH',
+            fallbackCurrency: 'USD',
+            usdToPreferred: (usd: Decimal) => usd,
+        })
+        mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+            data: { id: 'USD', usdPrice: new Decimal(1) },
+        })
+
+        const { result } = renderHook(() => useLocalCurrency(ETHEREUM_SEPOLIA))
+
+        expect(result.current.localCurrency).toBe('USD')
+        expect(mockUsePreferredCurrencyPriceQuery).toHaveBeenCalledWith(
+            ETHEREUM_SEPOLIA,
             'USD',
             true,
         )
@@ -83,7 +122,7 @@ describe('useLocalCurrency', () => {
             usdToPreferred: (usd: Decimal) => usd,
         })
 
-        const { result } = renderHook(() => useLocalCurrency())
+        const { result } = renderHook(() => useLocalCurrency(ALGORAND_TESTNET))
 
         expect(result.current.localRate).toBeNull()
     })
@@ -98,7 +137,7 @@ describe('useLocalCurrency', () => {
             data: [{ id: 'EUR', name: 'Euro', symbol: '€' }],
         })
 
-        const { result } = renderHook(() => useLocalCurrency())
+        const { result } = renderHook(() => useLocalCurrency(ALGORAND_TESTNET))
 
         expect(result.current.localCurrencySymbol).toBe('AED')
     })

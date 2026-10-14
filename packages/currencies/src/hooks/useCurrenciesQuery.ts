@@ -12,38 +12,25 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchCurrenciesList } from '../api/currencies'
+import { nativeCurrencyFor } from './nativeCurrency'
 import { getCurrenciesQueryKey } from './querykeys'
 
-export const useCurrenciesQuery = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
+export const useCurrenciesQuery = (scope: ChainScope) => {
     const results = useQuery({
         queryKey: getCurrenciesQueryKey(scope),
-        queryFn: ({ signal }) => fetchCurrenciesList({ network, signal }),
+        queryFn: ({ signal }) => fetchCurrenciesList({ scope, signal }),
     })
 
-    const dataWithAlgo = useMemo(() => {
+    const dataWithNative = useMemo(() => {
         return results.data
-            ? [
-                  {
-                      id: ALGO_ASSET_NAME,
-                      name: 'Algorand',
-                      symbol: ALGO_ASSET_NAME,
-                  },
-                  ...results.data,
-              ]
+            ? [nativeCurrencyFor(scope), ...results.data]
             : undefined
-    }, [results.data])
+    }, [results.data, scope])
 
     return {
         ...results,
-        data: dataWithAlgo,
+        data: dataWithNative,
     }
 }

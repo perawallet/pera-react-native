@@ -13,11 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { closeSpotBanner } from '../../api/spot-banners'
 import { useDismissSpotBannerMutation } from '../useDismissSpotBannerMutation'
 import { getSpotBannersQueryKey } from '../querykeys'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import type { ReactNode } from 'react'
 
 vi.mock('../../api/spot-banners', () => ({
@@ -25,12 +24,10 @@ vi.mock('../../api/spot-banners', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn().mockReturnValue('dev-1'),
+    useScopedDeviceID: vi.fn().mockReturnValue('dev-1'),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-}))
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const buildWrapper = (qc: QueryClient) => {
     const Wrapper = ({ children }: { children: ReactNode }) => (
@@ -41,7 +38,7 @@ const buildWrapper = (qc: QueryClient) => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useDeviceID).mockReturnValue('dev-1')
+    vi.mocked(useScopedDeviceID).mockReturnValue('dev-1')
 })
 
 describe('useDismissSpotBannerMutation', () => {
@@ -49,10 +46,7 @@ describe('useDismissSpotBannerMutation', () => {
         const qc = new QueryClient({
             defaultOptions: { mutations: { retry: false } },
         })
-        const key = getSpotBannersQueryKey(
-            scopeForLegacyNetwork('mainnet'),
-            'dev-1',
-        )
+        const key = getSpotBannersQueryKey(SCOPE, 'dev-1')
         qc.setQueryData(key, [
             { id: 1, text: 'a', image: 'x', url: 'y' },
             { id: 2, text: 'b', image: 'x', url: 'y' },
@@ -63,9 +57,12 @@ describe('useDismissSpotBannerMutation', () => {
             () => new Promise<void>(resolve => (resolveClose = resolve)),
         )
 
-        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
-            wrapper: buildWrapper(qc),
-        })
+        const { result } = renderHook(
+            () => useDismissSpotBannerMutation(SCOPE),
+            {
+                wrapper: buildWrapper(qc),
+            },
+        )
 
         act(() => result.current.mutate(1))
 
@@ -75,17 +72,14 @@ describe('useDismissSpotBannerMutation', () => {
 
         resolveClose()
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(closeSpotBanner).toHaveBeenCalledWith('mainnet', 'dev-1', 1)
+        expect(closeSpotBanner).toHaveBeenCalledWith(SCOPE, 'dev-1', 1)
     })
 
     it('rolls back on server error', async () => {
         const qc = new QueryClient({
             defaultOptions: { mutations: { retry: false } },
         })
-        const key = getSpotBannersQueryKey(
-            scopeForLegacyNetwork('mainnet'),
-            'dev-1',
-        )
+        const key = getSpotBannersQueryKey(SCOPE, 'dev-1')
         const initial = [
             { id: 1, text: 'a', image: 'x', url: 'y' },
             { id: 2, text: 'b', image: 'x', url: 'y' },
@@ -94,9 +88,12 @@ describe('useDismissSpotBannerMutation', () => {
 
         vi.mocked(closeSpotBanner).mockRejectedValue(new Error('nope'))
 
-        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
-            wrapper: buildWrapper(qc),
-        })
+        const { result } = renderHook(
+            () => useDismissSpotBannerMutation(SCOPE),
+            {
+                wrapper: buildWrapper(qc),
+            },
+        )
 
         act(() => result.current.mutate(1))
 
@@ -111,14 +108,17 @@ describe('useDismissSpotBannerMutation', () => {
         })
         vi.mocked(closeSpotBanner).mockResolvedValue(undefined)
 
-        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
-            wrapper: buildWrapper(qc),
-        })
+        const { result } = renderHook(
+            () => useDismissSpotBannerMutation(SCOPE),
+            {
+                wrapper: buildWrapper(qc),
+            },
+        )
 
         act(() => result.current.mutate(7))
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        expect(closeSpotBanner).toHaveBeenCalledWith('mainnet', 'dev-1', 7)
+        expect(closeSpotBanner).toHaveBeenCalledWith(SCOPE, 'dev-1', 7)
     })
 
     it('does not crash on error when the cache was empty (nothing to roll back)', async () => {
@@ -127,35 +127,38 @@ describe('useDismissSpotBannerMutation', () => {
         })
         vi.mocked(closeSpotBanner).mockRejectedValue(new Error('nope'))
 
-        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
-            wrapper: buildWrapper(qc),
-        })
+        const { result } = renderHook(
+            () => useDismissSpotBannerMutation(SCOPE),
+            {
+                wrapper: buildWrapper(qc),
+            },
+        )
 
         act(() => result.current.mutate(7))
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        const key = getSpotBannersQueryKey(
-            scopeForLegacyNetwork('mainnet'),
-            'dev-1',
-        )
+        const key = getSpotBannersQueryKey(SCOPE, 'dev-1')
         expect(qc.getQueryData(key)).toBeUndefined()
     })
 
-    it('uses an empty deviceID when useDeviceID returns null', async () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+    it('uses an empty deviceID when useScopedDeviceID returns null', async () => {
+        vi.mocked(useScopedDeviceID).mockReturnValue(null)
 
         const qc = new QueryClient({
             defaultOptions: { mutations: { retry: false } },
         })
         vi.mocked(closeSpotBanner).mockResolvedValue(undefined)
 
-        const { result } = renderHook(() => useDismissSpotBannerMutation(), {
-            wrapper: buildWrapper(qc),
-        })
+        const { result } = renderHook(
+            () => useDismissSpotBannerMutation(SCOPE),
+            {
+                wrapper: buildWrapper(qc),
+            },
+        )
 
         act(() => result.current.mutate(1))
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        expect(closeSpotBanner).toHaveBeenCalledWith('mainnet', '', 1)
+        expect(closeSpotBanner).toHaveBeenCalledWith(SCOPE, '', 1)
     })
 })

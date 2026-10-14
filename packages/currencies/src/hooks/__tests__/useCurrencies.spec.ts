@@ -27,11 +27,11 @@ describe('getCurrenciesQueryKey', () => {
 })
 
 describe('currencyQueryKeys', () => {
-    it('nests the ALGO/USD price under the assets prices namespace with its scope', () => {
-        expect(currencyQueryKeys.algoUsdPrice(MAINNET)).toEqual([
+    it('nests the native/USD price under the assets prices namespace with its scope', () => {
+        expect(currencyQueryKeys.nativeUsdPrice(MAINNET)).toEqual([
             'assets',
             'prices',
-            'algo-usd',
+            'native-usd',
             { scope: MAINNET },
         ])
     })
@@ -40,7 +40,7 @@ describe('currencyQueryKeys', () => {
         for (const key of [
             currencyQueryKeys.list(MAINNET),
             currencyQueryKeys.price(MAINNET, 'EUR'),
-            currencyQueryKeys.algoUsdPrice(MAINNET),
+            currencyQueryKeys.nativeUsdPrice(MAINNET),
         ]) {
             expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
             expect(

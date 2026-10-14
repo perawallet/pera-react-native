@@ -20,12 +20,14 @@ import {
     fetchNotificationStatus,
 } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -34,8 +36,10 @@ const scopeState = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(scopeState.current.networkId),
+    useChainCapability: vi.fn(
+        () =>
+            scopeState.current.chainId !== 'algorand' ||
+            ['mainnet', 'testnet'].includes(scopeState.current.networkId),
     ),
 }))
 
@@ -53,7 +57,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
     return {
         ...actual,
-        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useScopedDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
 
@@ -66,7 +70,7 @@ describe('useInboxStatus', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockInbox(0)
-        scopeState.current = scopeForLegacyNetwork('mainnet')
+        scopeState.current = ALGORAND_MAINNET
     })
 
     it('surfaces the unread flags and inbox count from message-status', async () => {
@@ -89,7 +93,7 @@ describe('useInboxStatus', () => {
         })
 
         expect(fetchMessageStatus).toHaveBeenCalledWith(
-            'mainnet',
+            ALGORAND_MAINNET,
             'test-device-id',
         )
         expect(result.current.hasUnreadItems).toBe(true)
@@ -117,7 +121,7 @@ describe('useInboxStatus', () => {
 
         await waitFor(() => {
             expect(fetchNotificationStatus).toHaveBeenCalledWith(
-                'mainnet',
+                ALGORAND_MAINNET,
                 'test-device-id',
             )
         })
@@ -193,7 +197,7 @@ describe('useInboxStatus', () => {
     })
 
     it('returns strict false/0 defaults when deviceID is missing', () => {
-        vi.mocked(useDeviceID).mockReturnValueOnce(null)
+        vi.mocked(useScopedDeviceID).mockReturnValueOnce(null)
 
         const { result } = renderHook(
             () => useInboxStatus(scopeState.current),

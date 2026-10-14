@@ -11,7 +11,8 @@
  */
 
 import { z } from 'zod'
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     notificationStatusResponseSchema,
     notificationResponseSchema,
@@ -52,12 +53,12 @@ export const parseNotificationsListResponse = (
 }
 
 export const fetchNotificationStatus = async (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
 ): Promise<NotificationStatusResponse> => {
     const response = await queryClient<NotificationStatusResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: getNotificationStatusEndpoint(deviceID),
     })
@@ -66,13 +67,13 @@ export const fetchNotificationStatus = async (
 }
 
 export const fetchNotificationList = async (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
     cursor?: string,
 ): Promise<NotificationsListResponse> => {
     const response = await queryClient<NotificationsListResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: getNotificationListEndpoint(deviceID),
         params: { cursor },
@@ -82,13 +83,13 @@ export const fetchNotificationList = async (
 }
 
 export const updateLastSeenNotification = async (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
     lastSeenNotificationId: number,
 ): Promise<void> => {
     await queryClient({
         backend: 'pera',
-        network,
+        scope,
         method: 'PUT',
         url: `/v1/devices/${deviceID}/update-last-seen-notification/`,
         data: { last_seen_notification_id: lastSeenNotificationId },
@@ -96,12 +97,12 @@ export const updateLastSeenNotification = async (
 }
 
 export const fetchMessageStatus = async (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
 ): Promise<MessageStatusResponse> => {
     const response = await queryClient<MessageStatusResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/api/v3/devices/${deviceID}/message-status`,
     })

@@ -12,12 +12,9 @@
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     fetchMessageStatus,
@@ -45,8 +42,7 @@ type UseInboxStatusResult = {
 const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
 
 export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
-    const network = legacyNetworkOf(scope)
-    const deviceID = useDeviceID(network)
+    const deviceID = useScopedDeviceID(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'notifications',
@@ -56,7 +52,7 @@ export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
     // both the unread flags and the inbox count in a single call.
     const messageStatus = useQuery({
         queryKey: getMessageStatusQueryKey(scope, deviceID ?? ''),
-        queryFn: () => fetchMessageStatus(network, deviceID ?? ''),
+        queryFn: () => fetchMessageStatus(scope, deviceID ?? ''),
         enabled: !!deviceID && !isUnavailableOnNetwork,
         // Overrides the globally-pinned false: the badge should catch up as
         // soon as the app foregrounds — pushes that arrived while
@@ -85,7 +81,7 @@ export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
     // backend problem degrades gracefully rather than hiding the badge.
     const { data: notificationStatusData } = useQuery({
         queryKey: getNotificationStatusQueryKey(scope, deviceID ?? ''),
-        queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
+        queryFn: () => fetchNotificationStatus(scope, deviceID ?? ''),
         enabled: !!deviceID && shouldUseFallback && !isUnavailableOnNetwork,
         refetchInterval: config.pollingEnabled
             ? config.notificationRefreshTime

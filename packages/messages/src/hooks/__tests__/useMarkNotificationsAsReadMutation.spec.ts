@@ -16,12 +16,14 @@ import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -30,8 +32,10 @@ const scopeState = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(scopeState.current.networkId),
+    useChainCapability: vi.fn(
+        () =>
+            scopeState.current.chainId !== 'algorand' ||
+            ['mainnet', 'testnet'].includes(scopeState.current.networkId),
     ),
 }))
 
@@ -44,15 +48,15 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
     return {
         ...actual,
-        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useScopedDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
 
 describe('useMarkNotificationsAsReadMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        scopeState.current = scopeForLegacyNetwork('mainnet')
-        vi.mocked(useDeviceID).mockReturnValue('test-device-id')
+        scopeState.current = ALGORAND_MAINNET
+        vi.mocked(useScopedDeviceID).mockReturnValue('test-device-id')
     })
 
     it('calls updateLastSeenNotification with correct parameters', async () => {
@@ -69,7 +73,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
 
         await waitFor(() => {
             expect(updateLastSeenNotification).toHaveBeenCalledWith(
-                'mainnet',
+                ALGORAND_MAINNET,
                 'test-device-id',
                 12345,
             )
@@ -91,7 +95,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
 
         await waitFor(() => {
             expect(updateLastSeenNotification).toHaveBeenCalledWith(
-                'mainnet',
+                ALGORAND_MAINNET,
                 'test-device-id',
                 12345,
             )
@@ -99,7 +103,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
     })
 
     it('falls back to empty string when deviceID is null', async () => {
-        vi.mocked(useDeviceID).mockReturnValueOnce(null)
+        vi.mocked(useScopedDeviceID).mockReturnValueOnce(null)
         vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
 
         const { result } = renderHook(
@@ -111,7 +115,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
 
         await waitFor(() => {
             expect(updateLastSeenNotification).toHaveBeenCalledWith(
-                'mainnet',
+                ALGORAND_MAINNET,
                 '',
                 1,
             )

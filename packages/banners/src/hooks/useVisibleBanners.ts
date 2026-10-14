@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useBannersQuery } from './useBannersQuery'
 import { useBannersStore } from '../store'
 import type { Banner } from '../models'
@@ -26,8 +27,10 @@ export type UseVisibleBannersResult = {
     isError: boolean
 }
 
-export const useVisibleBanners = (): UseVisibleBannersResult => {
-    const { banners, isLoading, isError } = useBannersQuery()
+export const useVisibleBanners = (
+    scope: ChainScope,
+): UseVisibleBannersResult => {
+    const { banners, isLoading, isError } = useBannersQuery(scope)
     const dismissedBannerIds = useBannersStore(
         state => state.dismissedBannerIds,
     )

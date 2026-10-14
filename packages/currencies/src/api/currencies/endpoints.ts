@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { Decimal } from 'decimal.js'
 import {
     currenciesListResponseSchema,
@@ -22,22 +23,22 @@ import { transformCurrencyList, transformCurrencyToPrice } from './transformers'
 import type { Currency, CurrencyPrice } from '../../models'
 
 export type FetchCurrenciesListParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const fetchCurrenciesList = async (
     params: FetchCurrenciesListParams,
 ): Promise<Currency[]> => {
-    const { network, signal } = params
+    const { scope, signal } = params
 
     // No Pera backend on betanet/custom: the request would throw
     // PeraServiceUnavailableError. Fall back to the default (empty) list.
-    if (!isPeraBackedNetwork(network)) return []
+    if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<CurrencyApiResponse[]>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/currencies/`,
         signal,
@@ -49,24 +50,24 @@ export const fetchCurrenciesList = async (
 
 export type FetchCurrencyParams = {
     currencyId: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const fetchCurrency = async (
     params: FetchCurrencyParams,
 ): Promise<CurrencyPrice> => {
-    const { currencyId, network, signal } = params
+    const { currencyId, scope, signal } = params
 
     // No Pera backend on betanet/custom: fall back to a zero rate rather than
     // throwing, so fiat amounts simply render $0.
-    if (!isPeraBackedNetwork(network)) {
+    if (!hasPeraBackend(scope)) {
         return { id: currencyId, usdPrice: new Decimal(0) }
     }
 
     const response = await queryClient<CurrencyApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/currencies/${currencyId}/`,
         signal,

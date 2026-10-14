@@ -11,26 +11,20 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { closeSpotBanner } from '../api/spot-banners'
 import type { SpotBannerListResponse } from '../api/spot-banners'
 import { getSpotBannersQueryKey } from './querykeys'
 
-export const useDismissSpotBannerMutation = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-    const deviceID = useDeviceID(network)
+export const useDismissSpotBannerMutation = (scope: ChainScope) => {
+    const deviceID = useScopedDeviceID(scope)
     const queryClient = useQueryClient()
 
     return useMutation({
         throwOnError: false,
         mutationFn: (spotBannerID: string) =>
-            closeSpotBanner(network, deviceID ?? '', spotBannerID),
+            closeSpotBanner(scope, deviceID ?? '', spotBannerID),
         onMutate: async spotBannerID => {
             const key = getSpotBannersQueryKey(scope, deviceID ?? '')
             await queryClient.cancelQueries({ queryKey: key })

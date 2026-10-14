@@ -19,8 +19,8 @@ export const currencyQueryKeys = {
     list: (scope: ChainScope) => [MODULE_PREFIX, { scope }] as const,
     price: (scope: ChainScope, preferredFiatCurrency: string) =>
         [MODULE_PREFIX, { scope, preferredFiatCurrency }] as const,
-    algoUsdPrice: (scope: ChainScope) =>
-        ['assets', 'prices', 'algo-usd', { scope }] as const,
+    nativeUsdPrice: (scope: ChainScope) =>
+        ['assets', 'prices', 'native-usd', { scope }] as const,
 }
 
 // Aliases for backward compatibility

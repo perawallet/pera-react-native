@@ -12,12 +12,9 @@
 
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'
 
@@ -30,8 +27,7 @@ type UseMarkNotificationsAsReadMutationResult = {
 export const useMarkNotificationsAsReadMutation = (
     scope: ChainScope,
 ): UseMarkNotificationsAsReadMutationResult => {
-    const network = legacyNetworkOf(scope)
-    const deviceID = useDeviceID(network)
+    const deviceID = useScopedDeviceID(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'notifications',
@@ -41,7 +37,7 @@ export const useMarkNotificationsAsReadMutation = (
     const { mutate } = useMutation({
         mutationFn: (lastSeenNotificationId: number) =>
             updateLastSeenNotification(
-                network,
+                scope,
                 deviceID ?? '',
                 lastSeenNotificationId,
             ),

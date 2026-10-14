@@ -29,15 +29,22 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
 const scopeState = vi.hoisted(() => ({
     current: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(scopeState.current.networkId),
+    useChainCapability: vi.fn(
+        () =>
+            scopeState.current.chainId !== 'algorand' ||
+            ['mainnet', 'testnet'].includes(scopeState.current.networkId),
     ),
 }))
 
@@ -50,7 +57,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
     return {
         ...actual,
-        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useScopedDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
 
@@ -60,7 +67,10 @@ const account = (
 ): WalletAccount => ({
     id: address,
     custody,
-    chains: { algorand: { address, keyPairId: `key-${address}` } },
+    chains: {
+        algorand: { address, keyPairId: `key-${address}` },
+        ethereum: { address, keyPairId: `key-${address}` },
+    },
 })
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -80,71 +90,78 @@ beforeEach(() => {
         account('ADDR1'),
         account('ADDR2'),
     ])
-    scopeState.current = scopeForLegacyNetwork('mainnet')
+    scopeState.current = ALGORAND_MAINNET
 })
 
 describe('useInboxQuery', () => {
-    it('should fetch inbox and map response to InboxItem array', async () => {
-        const mockResponse = {
-            joint_account_import_requests: [
-                {
-                    custom_id: 'msig-1',
-                    creation_datetime: '2025-01-15T00:00:00Z',
-                    address: 'MSIG_ADDR1',
-                    version: 1,
-                    threshold: 2,
-                    participant_addresses: ['ADDR1', 'ADDR2'],
-                },
-            ],
-            joint_account_sign_requests: [
-                {
-                    id: '1',
-                    status: 'pending' as const,
-                    type: 'transfer',
-                    creation_datetime: '2025-01-20T00:00:00Z',
-                    expected_expire_datetime: '2025-01-21T00:00:00Z',
-                    fail_reason_display: null,
-                    joint_account: {
-                        custom_id: 'msig-2',
-                        creation_datetime: '2025-01-10T00:00:00Z',
-                        address: 'MSIG_ADDR2',
+    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'should fetch inbox and map response to InboxItem array for $chainId',
+        async scope => {
+            scopeState.current = scope
+            const mockResponse = {
+                joint_account_import_requests: [
+                    {
+                        custom_id: 'msig-1',
+                        creation_datetime: '2025-01-15T00:00:00Z',
+                        address: 'MSIG_ADDR1',
                         version: 1,
                         threshold: 2,
                         participant_addresses: ['ADDR1', 'ADDR2'],
                     },
-                    transaction_lists: [],
-                },
-            ],
-            asa_inboxes: [
+                ],
+                joint_account_sign_requests: [
+                    {
+                        id: '1',
+                        status: 'pending' as const,
+                        type: 'transfer',
+                        creation_datetime: '2025-01-20T00:00:00Z',
+                        expected_expire_datetime: '2025-01-21T00:00:00Z',
+                        fail_reason_display: null,
+                        joint_account: {
+                            custom_id: 'msig-2',
+                            creation_datetime: '2025-01-10T00:00:00Z',
+                            address: 'MSIG_ADDR2',
+                            version: 1,
+                            threshold: 2,
+                            participant_addresses: ['ADDR1', 'ADDR2'],
+                        },
+                        transaction_lists: [],
+                    },
+                ],
+                asa_inboxes: [
+                    {
+                        address: 'ADDR1',
+                        inbox_address: 'INBOX1',
+                        request_count: 3,
+                    },
+                ],
+            }
+            vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
+
+            const { result } = renderHook(
+                () => useInboxQuery(scopeState.current),
                 {
-                    address: 'ADDR1',
-                    inbox_address: 'INBOX1',
-                    request_count: 3,
+                    wrapper: createWrapper(),
                 },
-            ],
-        }
-        vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
+            )
 
-        const { result } = renderHook(() => useInboxQuery(scopeState.current), {
-            wrapper: createWrapper(),
-        })
+            await waitFor(() => {
+                expect(result.current.isPending).toBe(false)
+            })
 
-        await waitFor(() => {
-            expect(result.current.isPending).toBe(false)
-        })
+            expect(fetchInbox).toHaveBeenCalledWith(scope, 'test-device-id', [
+                'ADDR1',
+                'ADDR2',
+            ])
 
-        expect(fetchInbox).toHaveBeenCalledWith('mainnet', 'test-device-id', [
-            'ADDR1',
-            'ADDR2',
-        ])
+            const { data: inboxItems } = result.current
+            expect(inboxItems).toHaveLength(3)
 
-        const { data: inboxItems } = result.current
-        expect(inboxItems).toHaveLength(3)
-
-        expect(inboxItems?.[0].type).toBe('multisig_import')
-        expect(inboxItems?.[1].type).toBe('multisig_sign')
-        expect(inboxItems?.[2].type).toBe('asa_inbox')
-    })
+            expect(inboxItems?.[0].type).toBe('multisig_import')
+            expect(inboxItems?.[1].type).toBe('multisig_sign')
+            expect(inboxItems?.[2].type).toBe('asa_inbox')
+        },
+    )
 
     it('should map multi-sig account fields to camelCase', async () => {
         const mockResponse = {

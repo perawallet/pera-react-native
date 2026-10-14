@@ -11,11 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import {
@@ -80,8 +77,7 @@ export type UseNotificationsListQueryResult = {
 export const useNotificationsListQuery = (
     scope: ChainScope,
 ): UseNotificationsListQueryResult => {
-    const network = legacyNetworkOf(scope)
-    const deviceID = useDeviceID(network)
+    const deviceID = useScopedDeviceID(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'notifications',
@@ -92,7 +88,7 @@ export const useNotificationsListQuery = (
         queryKey: getNotificationsListQueryKey(scope, deviceID!),
         queryFn: ({ pageParam }) =>
             fetchNotificationList(
-                network,
+                scope,
                 deviceID ?? '',
                 pageParam as Optional<string>,
             ),

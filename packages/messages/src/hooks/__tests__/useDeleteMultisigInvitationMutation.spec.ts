@@ -21,6 +21,8 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { useDeleteMultisigInvitationMutation } from '../useDeleteMultisigInvitationMutation'
 import { invalidateAllPredicate } from '../querykeys'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     mutationFn: vi.fn(),
 }))
@@ -68,7 +70,7 @@ describe('useDeleteMultisigInvitationMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteMultisigInvitationMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                 }),
             { wrapper },
@@ -91,7 +93,7 @@ describe('useDeleteMultisigInvitationMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteMultisigInvitationMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                 }),
             { wrapper },

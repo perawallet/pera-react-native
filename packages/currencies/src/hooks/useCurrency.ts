@@ -11,17 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import {
-    isAlgoAssetName,
-    type Maybe,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useCurrenciesStore } from '../store'
 import { USD_CURRENCY_ID } from '../constants'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
-import { useAlgoUsdPriceQuery } from './useAlgoUsdPriceQuery'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useNativeUsdPriceQuery } from './useNativeUsdPriceQuery'
+import { nativeCurrencyFor } from './nativeCurrency'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { Decimal } from 'decimal.js'
 
 export type UseCurrencyResult = {
@@ -38,12 +35,11 @@ export type UseCurrencyResult = {
     usdToPreferred: (usdAmount: Maybe<Decimal>) => Nullable<Decimal>
     /** True while the rate `usdToPreferred` needs has not resolved. */
     isRatePending: boolean
-    /** `null` until the ALGO/USD rate is known. */
-    algoUsdPrice: Nullable<Decimal>
+    /** `null` until the native-asset/USD rate is known. */
+    nativeUsdPrice: Nullable<Decimal>
 }
 
-export const useCurrency = (): UseCurrencyResult => {
-    const { network } = useNetwork()
+export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
     const preferredCurrency = useCurrenciesStore(
         state => state.preferredCurrency,
     )
@@ -55,29 +51,34 @@ export const useCurrency = (): UseCurrencyResult => {
         state => state.setFallbackCurrency,
     )
 
-    const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
+    const isNativePreferred =
+        preferredCurrency === nativeCurrencyFor(scope).symbol
 
     const { data: preferredRate, isPending: preferredRatePending } =
-        usePreferredCurrencyPriceQuery(preferredCurrency, !isAlgoPreferred)
+        usePreferredCurrencyPriceQuery(
+            scope,
+            preferredCurrency,
+            !isNativePreferred,
+        )
 
-    const { data: algoUsdPrice, isPending: algoUsdPricePending } =
-        useAlgoUsdPriceQuery(isAlgoPreferred)
+    const { data: nativeUsdPrice, isPending: nativeUsdPricePending } =
+        useNativeUsdPriceQuery(scope, isNativePreferred)
 
     // A zero rate normally means "not synced yet" — no real currency trades at
     // 0 against USD. But on a network with no Pera backend the API layer
     // synthesizes a zero rate on purpose so fiat renders as 0, and
     // that is a resolved answer, not an absence. Treating it as pending there
     // would swap those networks' 0 for a placeholder while fully online.
-    const isZeroRateUnresolved = isPeraBackedNetwork(network)
+    const isZeroRateUnresolved = hasPeraBackend(scope)
 
     // USD needs no rate, so it is never pending.
     const isRatePending =
         preferredCurrency === USD_CURRENCY_ID
             ? false
-            : isAlgoPreferred
-              ? algoUsdPricePending ||
-                !algoUsdPrice ||
-                (algoUsdPrice.isZero() && isZeroRateUnresolved)
+            : isNativePreferred
+              ? nativeUsdPricePending ||
+                !nativeUsdPrice ||
+                (nativeUsdPrice.isZero() && isZeroRateUnresolved)
               : preferredRatePending ||
                 !preferredRate?.usdPrice ||
                 (preferredRate.usdPrice.isZero() && isZeroRateUnresolved)
@@ -98,11 +99,11 @@ export const useCurrency = (): UseCurrencyResult => {
                 return null
             }
 
-            if (isAlgoPreferred) {
+            if (isNativePreferred) {
                 // Only reachable with a deliberate zero rate (no Pera backend),
                 // where the pre-existing contract is to render 0 rather than
                 // divide by it.
-                const rate = algoUsdPrice as Decimal
+                const rate = nativeUsdPrice as Decimal
                 return rate.isZero() ? new Decimal(0) : usdAmount.div(rate)
             }
 
@@ -110,9 +111,9 @@ export const useCurrency = (): UseCurrencyResult => {
         },
         [
             preferredCurrency,
-            isAlgoPreferred,
+            isNativePreferred,
             isRatePending,
-            algoUsdPrice,
+            nativeUsdPrice,
             preferredRate,
         ],
     )
@@ -124,6 +125,6 @@ export const useCurrency = (): UseCurrencyResult => {
         setFallbackCurrency,
         usdToPreferred,
         isRatePending,
-        algoUsdPrice: algoUsdPrice ?? null,
+        nativeUsdPrice: nativeUsdPrice ?? null,
     }
 }

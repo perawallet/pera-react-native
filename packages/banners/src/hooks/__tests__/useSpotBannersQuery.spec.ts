@@ -15,71 +15,80 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useSpotBannersQuery } from '../useSpotBannersQuery'
 import { fetchSpotBanners } from '../../api/spot-banners'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/spot-banners', () => ({
     fetchSpotBanners: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn().mockReturnValue('device-1'),
+    useScopedDeviceID: vi.fn().mockReturnValue('device-1'),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-}))
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useDeviceID).mockReturnValue('device-1')
+    vi.mocked(useScopedDeviceID).mockReturnValue('device-1')
 })
 
 describe('useSpotBannersQuery', () => {
-    it('maps server response into SpotBanner domain objects', async () => {
-        vi.mocked(fetchSpotBanners).mockResolvedValue([
-            {
-                id: 1,
-                text: 'Hi',
-                image: 'https://cdn.test/x.png',
-                url: 'pera://x',
-                button_url_is_external: false,
-            },
-        ])
+    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'maps server response into SpotBanner domain objects for $chainId',
+        async scope => {
+            vi.mocked(fetchSpotBanners).mockResolvedValue([
+                {
+                    id: 1,
+                    text: 'Hi',
+                    image: 'https://cdn.test/x.png',
+                    url: 'pera://x',
+                    button_url_is_external: false,
+                },
+            ])
 
-        const { result } = renderHook(() => useSpotBannersQuery(), {
-            wrapper: createWrapper(),
-        })
+            const { result } = renderHook(() => useSpotBannersQuery(scope), {
+                wrapper: createWrapper(),
+            })
 
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(result.current.spotBanners).toEqual([
-            {
-                id: 1,
-                text: 'Hi',
-                imageUrl: 'https://cdn.test/x.png',
-                url: 'pera://x',
-                isUrlExternal: false,
-            },
-        ])
-    })
+            expect(fetchSpotBanners).toHaveBeenCalledWith(scope, 'device-1')
+            expect(result.current.spotBanners).toEqual([
+                {
+                    id: 1,
+                    text: 'Hi',
+                    imageUrl: 'https://cdn.test/x.png',
+                    url: 'pera://x',
+                    isUrlExternal: false,
+                },
+            ])
+        },
+    )
 
     it('returns an empty array on error', async () => {
         vi.mocked(fetchSpotBanners).mockRejectedValue(new Error('boom'))
 
-        const { result } = renderHook(() => useSpotBannersQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useSpotBannersQuery(ALGORAND_TESTNET),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.spotBanners).toEqual([])
     })
 
     it('stays disabled and returns empty when deviceID is null', async () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useScopedDeviceID).mockReturnValue(null)
 
-        const { result } = renderHook(() => useSpotBannersQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useSpotBannersQuery(ALGORAND_TESTNET),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await new Promise(resolve => setTimeout(resolve, 50))
 

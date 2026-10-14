@@ -36,7 +36,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
     return {
         ...actual,
-        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useScopedDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
 

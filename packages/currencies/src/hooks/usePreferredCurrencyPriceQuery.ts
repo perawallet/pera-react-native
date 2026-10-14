@@ -11,20 +11,15 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchCurrency } from '../api/currencies'
 import { getPreferredCurrencyPriceQueryKey } from './querykeys'
 
 export const usePreferredCurrencyPriceQuery = (
+    scope: ChainScope,
     preferredFiatCurrency: string,
     enabled: boolean = true,
 ) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
     return useQuery({
         queryKey: getPreferredCurrencyPriceQueryKey(
             scope,
@@ -33,7 +28,7 @@ export const usePreferredCurrencyPriceQuery = (
         queryFn: ({ signal }) =>
             fetchCurrency({
                 currencyId: preferredFiatCurrency,
-                network,
+                scope,
                 signal,
             }),
         enabled: enabled,

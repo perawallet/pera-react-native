@@ -14,6 +14,9 @@ import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { fetchSpotBanners, closeSpotBanner } from '../endpoints'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
     queryClient: vi.fn(),
@@ -29,11 +32,11 @@ describe('fetchSpotBanners', () => {
     test('calls queryClient with device URL', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: [] })
 
-        await fetchSpotBanners('testnet', DEVICE_ID)
+        await fetchSpotBanners(ALGORAND_TESTNET, DEVICE_ID)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'GET',
             url: `/v1/devices/${DEVICE_ID}/spot-banners/`,
         })
@@ -51,7 +54,7 @@ describe('fetchSpotBanners', () => {
         ]
         ;(queryClient as Mock).mockResolvedValue({ data })
 
-        const result = await fetchSpotBanners('mainnet', DEVICE_ID)
+        const result = await fetchSpotBanners(ALGORAND_MAINNET, DEVICE_ID)
 
         expect(result[0]).toMatchObject({
             id: '1',
@@ -72,7 +75,7 @@ describe('fetchSpotBanners', () => {
             ],
         })
 
-        const result = await fetchSpotBanners('mainnet', DEVICE_ID)
+        const result = await fetchSpotBanners(ALGORAND_MAINNET, DEVICE_ID)
 
         expect(result[0].id).toBe(bigId)
     })
@@ -82,7 +85,9 @@ describe('fetchSpotBanners', () => {
             data: [{ id: 'not-a-number' }],
         })
 
-        await expect(fetchSpotBanners('testnet', DEVICE_ID)).rejects.toThrow()
+        await expect(
+            fetchSpotBanners(ALGORAND_TESTNET, DEVICE_ID),
+        ).rejects.toThrow()
     })
 })
 
@@ -90,11 +95,11 @@ describe('closeSpotBanner', () => {
     test('PATCHes the close URL with no body', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: null })
 
-        await closeSpotBanner('testnet', DEVICE_ID, 17)
+        await closeSpotBanner(ALGORAND_TESTNET, DEVICE_ID, 17)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'PATCH',
             url: `/v1/devices/${DEVICE_ID}/spot-banners/17/close/`,
         })
@@ -102,8 +107,8 @@ describe('closeSpotBanner', () => {
 
     test('propagates errors', async () => {
         ;(queryClient as Mock).mockRejectedValue(new Error('nope'))
-        await expect(closeSpotBanner('testnet', DEVICE_ID, 1)).rejects.toThrow(
-            'nope',
-        )
+        await expect(
+            closeSpotBanner(ALGORAND_TESTNET, DEVICE_ID, 1),
+        ).rejects.toThrow('nope')
     })
 })
