@@ -32,7 +32,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -86,7 +85,7 @@ describe('useSettingsDeveloperAppIntegrity', () => {
         })
         expect(verifyMock).toHaveBeenCalledWith({
             integrityToken: 'jwt',
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            deployment: 'live',
         })
         await waitFor(() => expect(result.current.verifyResult?.ok).toBe(true))
     })

@@ -18,8 +18,8 @@ export const TEST_API_KEY = 'test-api-key'
 export const TEST_INTEGRITY_TOKEN = 'test-integrity-token'
 
 /**
- * A config-module mock giving every Ethereum scope a Pera deployment that
- * serves block following, assets, prices and history, and the client an API
+ * A config-module mock giving every Ethereum scope a Pera deployment, both
+ * deployments the test host, serving block following, assets, prices and history, and the client an API
  * key, for specs reaching it through queryClient:
  * `vi.mock('@perawallet/wallet-core-config', async original =>
  * (await import('./pera-backend')).withEthereumPeraBackend(original))`.
@@ -38,6 +38,16 @@ export const withEthereumPeraBackend = async (
                       backendUrl: PERA_URL,
                   }
                 : actual.getPeraServicesConfig(scope),
+        getPeraDeploymentConfig: deployment => ({
+            ...actual.getPeraDeploymentConfig(deployment),
+            backendUrl: PERA_URL,
+        }),
+        peraDeploymentOf: scope =>
+            scope.chainId === 'ethereum'
+                ? scope.networkId === 'mainnet'
+                    ? 'live'
+                    : 'developer'
+                : actual.peraDeploymentOf(scope),
         hasPeraService: (scope, service) =>
             scope.chainId === 'ethereum'
                 ? ['blockFollowing', 'assets', 'prices', 'history'].includes(

@@ -12,10 +12,13 @@
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { config } from '@perawallet/wallet-core-config'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useAnyEnabledChainHasCapability,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     fetchMessageStatus,
     fetchNotificationStatus,
@@ -41,18 +44,18 @@ type UseInboxStatusResult = {
 // both endpoints at full rate.
 const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
 
+/** `scope` picks the inbox the v1 fallback counts; the status endpoints are the deployment's. */
 export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
-    const deviceID = useScopedDeviceID(scope)
-    const isUnavailableOnNetwork = !useChainCapability(
-        scope.chainId,
-        'notifications',
-    )
+    const deployment = useNetworkStore(state => state.mode)
+    const deviceID = useDeploymentDeviceID(deployment)
+    const isUnavailableOnNetwork =
+        !useAnyEnabledChainHasCapability('notifications')
 
     // Primary source of truth: the unified v3 message-status endpoint returns
     // both the unread flags and the inbox count in a single call.
     const messageStatus = useQuery({
-        queryKey: getMessageStatusQueryKey(scope, deviceID ?? ''),
-        queryFn: () => fetchMessageStatus(scope, deviceID ?? ''),
+        queryKey: getMessageStatusQueryKey(deployment, deviceID ?? ''),
+        queryFn: () => fetchMessageStatus(deployment, deviceID ?? ''),
         enabled: !!deviceID && !isUnavailableOnNetwork,
         // Overrides the globally-pinned false: the badge should catch up as
         // soon as the app foregrounds — pushes that arrived while
@@ -80,8 +83,8 @@ export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
     // the inbox list. Fired only when the v3 endpoint is unavailable, so a
     // backend problem degrades gracefully rather than hiding the badge.
     const { data: notificationStatusData } = useQuery({
-        queryKey: getNotificationStatusQueryKey(scope, deviceID ?? ''),
-        queryFn: () => fetchNotificationStatus(scope, deviceID ?? ''),
+        queryKey: getNotificationStatusQueryKey(deployment, deviceID ?? ''),
+        queryFn: () => fetchNotificationStatus(deployment, deviceID ?? ''),
         enabled: !!deviceID && shouldUseFallback && !isUnavailableOnNetwork,
         refetchInterval: config.pollingEnabled
             ? config.notificationRefreshTime

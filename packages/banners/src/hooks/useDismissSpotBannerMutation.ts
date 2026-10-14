@@ -11,22 +11,23 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { closeSpotBanner } from '../api/spot-banners'
 import type { SpotBannerListResponse } from '../api/spot-banners'
 import { getSpotBannersQueryKey } from './querykeys'
 
-export const useDismissSpotBannerMutation = (scope: ChainScope) => {
-    const deviceID = useScopedDeviceID(scope)
+export const useDismissSpotBannerMutation = () => {
+    const deployment = useNetworkStore(state => state.mode)
+    const deviceID = useDeploymentDeviceID(deployment)
     const queryClient = useQueryClient()
 
     return useMutation({
         throwOnError: false,
         mutationFn: (spotBannerID: string) =>
-            closeSpotBanner(scope, deviceID ?? '', spotBannerID),
+            closeSpotBanner(deployment, deviceID ?? '', spotBannerID),
         onMutate: async spotBannerID => {
-            const key = getSpotBannersQueryKey(scope, deviceID ?? '')
+            const key = getSpotBannersQueryKey(deployment, deviceID ?? '')
             await queryClient.cancelQueries({ queryKey: key })
             const previous =
                 queryClient.getQueryData<SpotBannerListResponse>(key)
@@ -39,14 +40,14 @@ export const useDismissSpotBannerMutation = (scope: ChainScope) => {
             return { previous }
         },
         onError: (_err, _spotBannerID, context) => {
-            const key = getSpotBannersQueryKey(scope, deviceID ?? '')
+            const key = getSpotBannersQueryKey(deployment, deviceID ?? '')
             if (context?.previous) {
                 queryClient.setQueryData(key, context.previous)
             }
         },
         onSettled: () => {
             void queryClient.invalidateQueries({
-                queryKey: getSpotBannersQueryKey(scope, deviceID ?? ''),
+                queryKey: getSpotBannersQueryKey(deployment, deviceID ?? ''),
             })
         },
     })

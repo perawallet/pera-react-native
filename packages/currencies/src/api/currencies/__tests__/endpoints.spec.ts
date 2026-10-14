@@ -21,9 +21,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import { fetchCurrenciesList, fetchCurrency } from '../endpoints'
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-
 describe('currencies endpoints', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
@@ -47,12 +44,12 @@ describe('currencies endpoints', () => {
             ],
         })
 
-        const result = await fetchCurrenciesList({ scope: ALGORAND_MAINNET })
+        const result = await fetchCurrenciesList({ deployment: 'live' })
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                scope: ALGORAND_MAINNET,
+                deployment: 'live',
                 method: 'GET',
                 url: '/v1/currencies/',
             }),
@@ -68,13 +65,13 @@ describe('currencies endpoints', () => {
         const controller = new AbortController()
 
         await fetchCurrenciesList({
-            scope: ALGORAND_TESTNET,
+            deployment: 'developer',
             signal: controller.signal,
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                scope: ALGORAND_TESTNET,
+                deployment: 'developer',
                 signal: controller.signal,
             }),
         )
@@ -86,7 +83,7 @@ describe('currencies endpoints', () => {
         })
 
         await expect(
-            fetchCurrenciesList({ scope: ALGORAND_MAINNET }),
+            fetchCurrenciesList({ deployment: 'live' }),
         ).rejects.toThrow()
     })
 
@@ -102,7 +99,7 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'EUR',
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -125,7 +122,7 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'EUR',
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
 
         expect(result.usdPrice.toString()).toBe('12345678.123456789')
@@ -143,7 +140,7 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'EUR',
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
 
         expect(result.usdPrice).toBeInstanceOf(Decimal)
@@ -157,37 +154,9 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'USD',
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
 
         expect(result.usdPrice.toString()).toBe('0')
-    })
-
-    test('fetchCurrenciesList returns [] on non-Pera-backed networks without calling the client', async () => {
-        for (const networkId of ['betanet', 'custom'] as const) {
-            const result = await fetchCurrenciesList({
-                scope: { chainId: 'algorand', networkId },
-            })
-
-            expect(result).toEqual([])
-            expect(queryClientMock).not.toHaveBeenCalled()
-            queryClientMock.mockClear()
-        }
-    })
-
-    test('fetchCurrency returns a zero rate on non-Pera-backed networks without calling the client', async () => {
-        for (const networkId of ['betanet', 'custom'] as const) {
-            const result = await fetchCurrency({
-                currencyId: 'EUR',
-                scope: { chainId: 'algorand', networkId },
-            })
-
-            expect(result).toEqual({
-                id: 'EUR',
-                usdPrice: new Decimal(0),
-            })
-            expect(queryClientMock).not.toHaveBeenCalled()
-            queryClientMock.mockClear()
-        }
     })
 })

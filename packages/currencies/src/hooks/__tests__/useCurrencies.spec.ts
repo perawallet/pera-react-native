@@ -20,10 +20,15 @@ import { currencyQueryKeys, getCurrenciesQueryKey } from '../querykeys'
 const MAINNET = scopeForLegacyNetwork('mainnet')
 
 describe('getCurrenciesQueryKey', () => {
-    it('returns correct query keys', () => {
-        const keys = getCurrenciesQueryKey(MAINNET)
-        expect(keys).toEqual(['currencies', { scope: MAINNET }])
-    })
+    it.each(['live', 'developer'] as const)(
+        'keys the list by the %s deployment',
+        deployment => {
+            expect(getCurrenciesQueryKey(deployment)).toEqual([
+                'currencies',
+                { deployment },
+            ])
+        },
+    )
 })
 
 describe('currencyQueryKeys', () => {
@@ -36,16 +41,24 @@ describe('currencyQueryKeys', () => {
         ])
     })
 
-    it('every key references its scope', () => {
+    it('only the native/USD price key references a scope', () => {
+        expect(
+            queryKeyReferencesScope(
+                currencyQueryKeys.nativeUsdPrice(MAINNET),
+                MAINNET,
+            ),
+        ).toBe(true)
+        expect(
+            queryKeyReferencesScope(
+                currencyQueryKeys.nativeUsdPrice(MAINNET),
+                scopeForLegacyNetwork('testnet'),
+            ),
+        ).toBe(false)
         for (const key of [
-            currencyQueryKeys.list(MAINNET),
-            currencyQueryKeys.price(MAINNET, 'EUR'),
-            currencyQueryKeys.nativeUsdPrice(MAINNET),
+            currencyQueryKeys.list('live'),
+            currencyQueryKeys.price('live', 'EUR'),
         ]) {
-            expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
-            expect(
-                queryKeyReferencesScope(key, scopeForLegacyNetwork('testnet')),
-            ).toBe(false)
+            expect(queryKeyReferencesScope(key, MAINNET)).toBe(false)
         }
     })
 })

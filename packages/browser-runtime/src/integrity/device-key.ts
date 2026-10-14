@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+import {
+    networkTierForMode,
+    type WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
+
 export const INSTALL_KEY_DB_NAME = 'pera-integrity'
 
 const STORE_NAME = 'keys'
@@ -62,9 +67,11 @@ export type EnrolmentMarker = {
     enrolledAt: string
 }
 
-// Per network: mainnet and testnet are separate backend deployments with separate
-// databases, so an enrolment on one means nothing to the other.
-const enrolmentRecordKey = (network: string): string => `enrolment:${network}`
+// Per deployment: each has its own database, so an enrolment on one means
+// nothing to the other. Keyed by the deployment's tier name, the key these
+// records had while they were per network, so existing enrolments still match.
+const enrolmentRecordKey = (deployment: WalletMode): string =>
+    `enrolment:${networkTierForMode(deployment)}`
 
 /**
  * The installation keypair, generated on first use. `extractable: false`
@@ -123,10 +130,10 @@ export const getInstallKeyId = async (): Promise<string> => {
 }
 
 export const getEnrolmentMarker = async (
-    network: string,
+    deployment: WalletMode,
 ): Promise<EnrolmentMarker | null> => {
     const stored = await withStore<unknown>('readonly', store =>
-        store.get(enrolmentRecordKey(network)),
+        store.get(enrolmentRecordKey(deployment)),
     )
     const marker = stored as Partial<EnrolmentMarker> | undefined
     return typeof marker?.kid === 'string' &&
@@ -136,17 +143,19 @@ export const getEnrolmentMarker = async (
 }
 
 export const putEnrolmentMarker = async (
-    network: string,
+    deployment: WalletMode,
     marker: EnrolmentMarker,
 ): Promise<void> => {
     await withStore('readwrite', store =>
-        store.put(marker, enrolmentRecordKey(network)),
+        store.put(marker, enrolmentRecordKey(deployment)),
     )
 }
 
-export const clearEnrolmentMarker = async (network: string): Promise<void> => {
+export const clearEnrolmentMarker = async (
+    deployment: WalletMode,
+): Promise<void> => {
     await withStore('readwrite', store =>
-        store.delete(enrolmentRecordKey(network)),
+        store.delete(enrolmentRecordKey(deployment)),
     )
 }
 

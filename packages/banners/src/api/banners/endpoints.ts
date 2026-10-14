@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { bannerListResponseSchema, type BannerListResponse } from './schema'
 
@@ -18,12 +18,12 @@ const getBannersEndpoint = (deviceID: string) =>
     `/v1/devices/${deviceID}/banners/`
 
 export const fetchBanners = async (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
 ): Promise<BannerListResponse> => {
     const response = await queryClient<BannerListResponse>({
         backend: 'pera',
-        scope,
+        deployment,
         method: 'GET',
         url: getBannersEndpoint(deviceID),
     })

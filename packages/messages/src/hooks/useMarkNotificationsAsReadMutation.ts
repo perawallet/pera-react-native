@@ -12,9 +12,11 @@
 
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
+import {
+    useAnyEnabledChainHasCapability,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'
 
@@ -24,44 +26,42 @@ type UseMarkNotificationsAsReadMutationResult = {
     isUnavailableOnNetwork: boolean
 }
 
-export const useMarkNotificationsAsReadMutation = (
-    scope: ChainScope,
-): UseMarkNotificationsAsReadMutationResult => {
-    const deviceID = useScopedDeviceID(scope)
-    const isUnavailableOnNetwork = !useChainCapability(
-        scope.chainId,
-        'notifications',
-    )
-    const { invalidate } = useInboxInvalidator()
+export const useMarkNotificationsAsReadMutation =
+    (): UseMarkNotificationsAsReadMutationResult => {
+        const deployment = useNetworkStore(state => state.mode)
+        const deviceID = useDeploymentDeviceID(deployment)
+        const isUnavailableOnNetwork =
+            !useAnyEnabledChainHasCapability('notifications')
+        const { invalidate } = useInboxInvalidator()
 
-    const { mutate } = useMutation({
-        mutationFn: (lastSeenNotificationId: number) =>
-            updateLastSeenNotification(
-                scope,
-                deviceID ?? '',
-                lastSeenNotificationId,
-            ),
-        onSuccess: () => {
-            invalidate()
-        },
-        throwOnError: false,
-    })
+        const { mutate } = useMutation({
+            mutationFn: (lastSeenNotificationId: number) =>
+                updateLastSeenNotification(
+                    deployment,
+                    deviceID ?? '',
+                    lastSeenNotificationId,
+                ),
+            onSuccess: () => {
+                invalidate()
+            },
+            throwOnError: false,
+        })
 
-    // The caller is an unmount effect with no UI to explain a doomed
-    // request, so the guard lives here rather than at the call site.
-    // Identity must stay stable: that effect lists `markAsRead` as a
-    // dependency, so a fresh function each render would run its
-    // mark-as-read cleanup on every render instead of on unmount.
-    const markAsRead = useCallback(
-        (lastSeenNotificationId: number) => {
-            if (isUnavailableOnNetwork) return
-            mutate(lastSeenNotificationId)
-        },
-        [isUnavailableOnNetwork, mutate],
-    )
+        // The caller is an unmount effect with no UI to explain a doomed
+        // request, so the guard lives here rather than at the call site.
+        // Identity must stay stable: that effect lists `markAsRead` as a
+        // dependency, so a fresh function each render would run its
+        // mark-as-read cleanup on every render instead of on unmount.
+        const markAsRead = useCallback(
+            (lastSeenNotificationId: number) => {
+                if (isUnavailableOnNetwork) return
+                mutate(lastSeenNotificationId)
+            },
+            [isUnavailableOnNetwork, mutate],
+        )
 
-    return {
-        markAsRead,
-        isUnavailableOnNetwork,
+        return {
+            markAsRead,
+            isUnavailableOnNetwork,
+        }
     }
-}

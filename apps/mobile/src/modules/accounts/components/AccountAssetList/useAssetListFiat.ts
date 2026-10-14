@@ -55,7 +55,6 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
     // ALGO-denominated holdings can't price in ALGO, so they fall back to the
     // fiat currency — only fetch that rate when the preferred currency is ALGO.
     const { data: fallbackRate } = usePreferredCurrencyPriceQuery(
-        scope,
         fallbackCurrency,
         isPreferredAlgo,
     )

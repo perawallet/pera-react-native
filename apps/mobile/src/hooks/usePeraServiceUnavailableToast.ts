@@ -43,7 +43,7 @@ export const usePeraServiceUnavailableToast = (): void => {
 
     useEffect(() => {
         return setOnPeraBackendUnavailable(error => {
-            const scopeKey = `${error.scope.chainId}/${error.scope.networkId}`
+            const scopeKey = error.targetKey
             if (notifiedScopesRef.current.has(scopeKey)) {
                 return
             }

@@ -16,8 +16,6 @@ import {
     useVisibleBanners,
     type Banner,
 } from '@perawallet/wallet-core-banners'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 // Direct subpath, not the module barrel: the barrel deliberately excludes the
@@ -37,10 +35,9 @@ export const BANNER_PROMPT_ID = 'banner_prompt'
  * what it is.
  */
 export const BannerPrompt = ({ onHide }: PromptViewProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { banners, forcedBanner } = useVisibleBanners(scope)
+    const { banners, forcedBanner } = useVisibleBanners()
     const dismissBanner = useBannersStore(state => state.dismissBanner)
     const markAutoOpened = useBannersStore(state => state.markAutoOpened)
     const { route: routeUrl } = useBannerLinkRouter()

@@ -17,8 +17,11 @@ import { usePreferredCurrencyPriceQuery } from '../usePreferredCurrencyPriceQuer
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const mockMode = vi.hoisted(() => ({ current: 'live' }))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetworkStore: (selector: (state: { mode: string }) => unknown) =>
+        selector({ mode: mockMode.current }),
+}))
 
 // Mock the fetch function
 const mockFetchCurrency = vi.hoisted(() => vi.fn())
@@ -38,6 +41,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
             },
         })
         vi.clearAllMocks()
+        mockMode.current = 'live'
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -56,7 +60,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
         mockFetchCurrency.mockResolvedValue(mockData)
 
         const { result } = renderHook(
-            () => usePreferredCurrencyPriceQuery(ALGORAND_TESTNET, 'EUR'),
+            () => usePreferredCurrencyPriceQuery('EUR'),
             { wrapper },
         )
 
@@ -68,21 +72,22 @@ describe('usePreferredCurrencyPriceQuery', () => {
         })
     })
 
-    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
-        'requests the currency for $chainId',
-        async scope => {
+    it.each(['live', 'developer'])(
+        'requests the currency from the %s deployment',
+        async deployment => {
+            mockMode.current = deployment
             mockFetchCurrency.mockResolvedValue({
                 id: 'GBP',
                 usdPrice: new Decimal('1.25'),
             })
 
-            renderHook(() => usePreferredCurrencyPriceQuery(scope, 'GBP'), {
+            renderHook(() => usePreferredCurrencyPriceQuery('GBP'), {
                 wrapper,
             })
 
             await waitFor(() =>
                 expect(mockFetchCurrency).toHaveBeenCalledWith(
-                    expect.objectContaining({ currencyId: 'GBP', scope }),
+                    expect.objectContaining({ currencyId: 'GBP', deployment }),
                 ),
             )
         },
@@ -92,7 +97,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
         mockFetchCurrency.mockImplementation(() => new Promise(() => {}))
 
         const { result } = renderHook(
-            () => usePreferredCurrencyPriceQuery(ALGORAND_TESTNET, 'USD'),
+            () => usePreferredCurrencyPriceQuery('USD'),
             { wrapper },
         )
 
@@ -108,7 +113,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
         mockFetchCurrency.mockResolvedValue(mockData)
 
         const { result } = renderHook(
-            () => usePreferredCurrencyPriceQuery(ALGORAND_TESTNET, 'CAD'),
+            () => usePreferredCurrencyPriceQuery('CAD'),
             { wrapper },
         )
 

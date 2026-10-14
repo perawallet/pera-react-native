@@ -50,7 +50,6 @@ export const useLocalCurrency = (scope: ChainScope): UseLocalCurrencyResult => {
     )
 
     const { data: fallbackRate } = usePreferredCurrencyPriceQuery(
-        scope,
         fallbackCurrency,
         isNativePreferred,
     )

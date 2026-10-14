@@ -16,8 +16,6 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useVisibleBanners } from '@perawallet/wallet-core-banners'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useShouldPlayConfetti } from '@modules/onboarding'
 
 import { useAccountScreenAnimation } from './useAccountScreenAnimation'
@@ -43,7 +41,6 @@ import { routeCapabilities } from '@routes/capabilities'
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
 
 export const AccountScreen = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const account = useSelectedAccount()
@@ -55,7 +52,7 @@ export const AccountScreen = () => {
 
     const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const { banners: visibleBanners } = useVisibleBanners(scope)
+    const { banners: visibleBanners } = useVisibleBanners()
     const hasHomeBanner = visibleBanners.length > 0
     const { animatedCornerStyle } = useAccountScreenAnimation(hasHomeBanner)
     const { request: requestBottomSheet } = useBottomSheet()

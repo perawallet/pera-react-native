@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     spotBannerListResponseSchema,
@@ -24,12 +24,12 @@ const getCloseSpotBannerEndpoint = (deviceID: string, spotBannerID: string) =>
     `/v1/devices/${deviceID}/spot-banners/${spotBannerID}/close/`
 
 export const fetchSpotBanners = async (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
 ): Promise<SpotBannerListResponse> => {
     const response = await queryClient<SpotBannerListResponse>({
         backend: 'pera',
-        scope,
+        deployment,
         method: 'GET',
         url: getSpotBannersEndpoint(deviceID),
     })
@@ -38,13 +38,13 @@ export const fetchSpotBanners = async (
 }
 
 export const closeSpotBanner = async (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
     spotBannerID: string,
 ): Promise<void> => {
     await queryClient({
         backend: 'pera',
-        scope,
+        deployment,
         method: 'PATCH',
         url: getCloseSpotBannerEndpoint(deviceID, spotBannerID),
     })

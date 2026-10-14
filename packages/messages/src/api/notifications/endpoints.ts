@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     notificationStatusResponseSchema,
@@ -53,12 +53,12 @@ export const parseNotificationsListResponse = (
 }
 
 export const fetchNotificationStatus = async (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
 ): Promise<NotificationStatusResponse> => {
     const response = await queryClient<NotificationStatusResponse>({
         backend: 'pera',
-        scope,
+        deployment,
         method: 'GET',
         url: getNotificationStatusEndpoint(deviceID),
     })
@@ -67,13 +67,13 @@ export const fetchNotificationStatus = async (
 }
 
 export const fetchNotificationList = async (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
     cursor?: string,
 ): Promise<NotificationsListResponse> => {
     const response = await queryClient<NotificationsListResponse>({
         backend: 'pera',
-        scope,
+        deployment,
         method: 'GET',
         url: getNotificationListEndpoint(deviceID),
         params: { cursor },
@@ -83,13 +83,13 @@ export const fetchNotificationList = async (
 }
 
 export const updateLastSeenNotification = async (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
     lastSeenNotificationId: number,
 ): Promise<void> => {
     await queryClient({
         backend: 'pera',
-        scope,
+        deployment,
         method: 'PUT',
         url: `/v1/devices/${deviceID}/update-last-seen-notification/`,
         data: { last_seen_notification_id: lastSeenNotificationId },
@@ -97,12 +97,12 @@ export const updateLastSeenNotification = async (
 }
 
 export const fetchMessageStatus = async (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
 ): Promise<MessageStatusResponse> => {
     const response = await queryClient<MessageStatusResponse>({
         backend: 'pera',
-        scope,
+        deployment,
         method: 'GET',
         url: `/api/v3/devices/${deviceID}/message-status`,
     })

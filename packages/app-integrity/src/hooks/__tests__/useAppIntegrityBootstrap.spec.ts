@@ -13,7 +13,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
-const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const mockMode = vi.hoisted(() => ({ current: 'live' }))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetworkStore: (selector: (state: { mode: string }) => unknown) =>
+        selector({ mode: mockMode.current }),
+}))
 
 const registerMock = vi.fn()
 vi.mock('../../services/registerAppIntegrity', () => ({
@@ -35,20 +39,20 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 import { useAppIntegrityBootstrap } from '../useAppIntegrityBootstrap'
 import { useAppIntegrityStore } from '../../store'
 
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-
 describe('useAppIntegrityBootstrap', () => {
     beforeEach(() => {
         registerMock.mockReset().mockResolvedValue({ status: 'success' })
         useAppIntegrityStore.getState().resetState()
+        mockMode.current = 'live'
     })
 
-    it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
-        'registers on boot with the given scope when there is no valid token ($chainId)',
-        async scope => {
-            renderHook(() => useAppIntegrityBootstrap(scope))
+    it.each(['live', 'developer'])(
+        'registers on boot against the %s deployment when there is no valid token',
+        async deployment => {
+            mockMode.current = deployment
+            renderHook(() => useAppIntegrityBootstrap())
             await waitFor(() => expect(registerMock).toHaveBeenCalledOnce())
-            expect(registerMock).toHaveBeenCalledWith({ scope })
+            expect(registerMock).toHaveBeenCalledWith({ deployment })
         },
     )
 
@@ -59,7 +63,7 @@ describe('useAppIntegrityBootstrap', () => {
             keyId: null,
             deviceInstallationId: 'd1',
         })
-        renderHook(() => useAppIntegrityBootstrap(ALGORAND_MAINNET))
+        renderHook(() => useAppIntegrityBootstrap())
         await new Promise(r => setTimeout(r, 10))
         expect(registerMock).not.toHaveBeenCalled()
     })

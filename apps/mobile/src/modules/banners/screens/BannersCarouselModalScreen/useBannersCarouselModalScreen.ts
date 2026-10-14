@@ -22,8 +22,6 @@ import {
     useBannersStore,
     type Banner,
 } from '@perawallet/wallet-core-banners'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { RootStackParamList } from '@routes/types'
 import { useBannerLinkRouter } from '../../hooks'
 
@@ -41,11 +39,10 @@ type ModalRouteProp = RouteProp<RootStackParamList, 'BannersCarouselModal'>
 
 export const useBannersCarouselModalScreen =
     (): UseBannersCarouselModalScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const navigation = useNavigation()
         const route = useRoute<ModalRouteProp>()
         const focusedBannerId = route.params?.bannerId
-        const { banners, forcedBanner } = useVisibleBanners(scope)
+        const { banners, forcedBanner } = useVisibleBanners()
         const dismissBanner = useBannersStore(state => state.dismissBanner)
         const { route: routeUrl } = useBannerLinkRouter()
 

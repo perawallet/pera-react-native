@@ -56,18 +56,25 @@ describe('usePeraServiceUnavailableToast', () => {
         // Same network id on another chain: a different scope, so it gets its
         // own toast.
         const fixtureBetanet = new PeraServiceUnavailableError({
-            chainId:
-                'fixture' as unknown as PeraServiceUnavailableError['scope']['chainId'],
+            chainId: 'fixture' as unknown as NonNullable<
+                PeraServiceUnavailableError['scope']
+            >['chainId'],
             networkId: 'betanet',
         })
 
         capturedHandler?.(betanet)
         capturedHandler?.(betanet)
+        const developer = new PeraServiceUnavailableError({
+            deployment: 'developer',
+        })
+
         capturedHandler?.(custom)
         capturedHandler?.(fixtureBetanet)
         capturedHandler?.(betanet)
+        capturedHandler?.(developer)
+        capturedHandler?.(developer)
 
-        expect(mockShowError).toHaveBeenCalledTimes(3)
+        expect(mockShowError).toHaveBeenCalledTimes(4)
         expect(mockShowError).toHaveBeenNthCalledWith(
             1,
             betanet,

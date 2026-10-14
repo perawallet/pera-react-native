@@ -34,6 +34,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetworkStore: (selector: (state: { mode: string }) => unknown) =>
+        selector({ mode: 'live' }),
+}))
+
 const mockFetchCurrenciesList = vi.hoisted(() => vi.fn())
 vi.mock('../../api/currencies', () => ({
     fetchCurrenciesList: mockFetchCurrenciesList,
@@ -64,7 +69,7 @@ describe('useCurrenciesQuery', () => {
         [ALGORAND_TESTNET, { id: 'ALGO', name: 'Algorand', symbol: 'ALGO' }],
         [ETHEREUM_SEPOLIA, { id: 'ETH', name: 'Ethereum', symbol: 'ETH' }],
     ])(
-        'requests the scope and prepends its native currency (%o)',
+        'requests the deployment list and prepends the scope native currency (%o)',
         async (scope, nativeCurrency) => {
             const mockData = [
                 { id: 'USD', name: 'US Dollar', symbol: '$' },
@@ -79,7 +84,7 @@ describe('useCurrenciesQuery', () => {
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
             expect(mockFetchCurrenciesList).toHaveBeenCalledWith(
-                expect.objectContaining({ scope }),
+                expect.objectContaining({ deployment: 'live' }),
             )
             expect(result.current.data).toEqual([nativeCurrency, ...mockData])
         },

@@ -15,8 +15,6 @@ import {
     useBannersStore,
     useVisibleBanners,
 } from '@perawallet/wallet-core-banners'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseBannerPromptResult = {
     /** A banner wants to open itself and has not had its turn this session. */
@@ -41,8 +39,7 @@ export type UseBannerPromptResult = {
  * so a memo depending on it would not re-evaluate when a banner is marked.
  */
 export const useBannerPrompt = (): UseBannerPromptResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { banners, forcedBanner } = useVisibleBanners(scope)
+    const { banners, forcedBanner } = useVisibleBanners()
     const autoOpenedBannerIds = useBannersStore(
         state => state.autoOpenedBannerIds,
     )

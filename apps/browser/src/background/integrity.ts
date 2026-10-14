@@ -39,11 +39,8 @@ import {
 import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
 import { createSessionBackoff } from './session-backoff'
 import { withNamedLock } from './named-lock'
-import {
-    algorandScopeOf,
-    readActiveNetwork,
-    type ActiveNetwork,
-} from './network'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import { readActiveDeployment } from './network'
 
 export const INTEGRITY_RENEW_ALARM = 'pera-integrity-renew'
 
@@ -85,13 +82,13 @@ export const isIntegrityTokenStale = (
     return now >= mintedAt + (expiresAt - mintedAt) * REFRESH_AT_FRACTION
 }
 
-const mint = async (network: ActiveNetwork): Promise<void> => {
+const mint = async (deployment: WalletMode): Promise<void> => {
     const deviceInstallationId = await ensureDeviceInstallationID()
 
     const challenge = await requestChallenge({
         deviceInstallationId,
         platform: 'web',
-        scope: algorandScopeOf(network),
+        deployment,
     })
     const [publicKey, signature] = await Promise.all([
         exportInstallPublicKey(),
@@ -106,7 +103,7 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
             publicKey,
             signature,
         },
-        scope: algorandScopeOf(network),
+        deployment,
     })
 
     await putSessionIntegrityToken({
@@ -119,9 +116,9 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
     await mintBackoff.clear()
 }
 
-const isMarkedEnrolled = async (network: ActiveNetwork): Promise<boolean> => {
+const isMarkedEnrolled = async (deployment: WalletMode): Promise<boolean> => {
     const [marker, kid] = await Promise.all([
-        getEnrolmentMarker(network),
+        getEnrolmentMarker(deployment),
         getInstallKeyId(),
     ])
     return marker?.kid === kid
@@ -155,9 +152,9 @@ export const ensureIntegrityToken = async (): Promise<void> => {
 
             if (await mintBackoff.isBlocked()) return
 
-            const network = await readActiveNetwork()
+            const deployment = await readActiveDeployment()
             try {
-                await mint(network)
+                await mint(deployment)
             } catch (error) {
                 if (isForbidden(error)) {
                     const code = readIntegrityErrorCode(error)
@@ -165,10 +162,10 @@ export const ensureIntegrityToken = async (): Promise<void> => {
                         // The key is sound; this backend just has no enrolment for it. A marker
                         // for this key means the backend contradicts us (replica lag, a defect),
                         // so enrolment backs off rather than re-enrolling on the next page.
-                        if (await isMarkedEnrolled(network)) {
+                        if (await isMarkedEnrolled(deployment)) {
                             await enrolBackoff.recordFailure()
                         }
-                        await clearEnrolmentMarker(network)
+                        await clearEnrolmentMarker(deployment)
                         await markEnrolmentNeeded()
                     } else {
                         await clearInstallKey()

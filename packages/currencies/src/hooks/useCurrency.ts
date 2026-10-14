@@ -55,21 +55,18 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
         preferredCurrency === nativeCurrencyFor(scope).symbol
 
     const { data: preferredRate, isPending: preferredRatePending } =
-        usePreferredCurrencyPriceQuery(
-            scope,
-            preferredCurrency,
-            !isNativePreferred,
-        )
+        usePreferredCurrencyPriceQuery(preferredCurrency, !isNativePreferred)
 
     const { data: nativeUsdPrice, isPending: nativeUsdPricePending } =
         useNativeUsdPriceQuery(scope, isNativePreferred)
 
     // A zero rate normally means "not synced yet" — no real currency trades at
-    // 0 against USD. But on a network with no Pera backend the API layer
-    // synthesizes a zero rate on purpose so fiat renders as 0, and
-    // that is a resolved answer, not an absence. Treating it as pending there
-    // would swap those networks' 0 for a placeholder while fully online.
-    const isZeroRateUnresolved = hasPeraBackend(scope)
+    // 0 against USD. But on a network with no Pera backend the native price
+    // is synthesized as zero on purpose so fiat renders as 0, and that is a
+    // resolved answer, not an absence. Treating it as pending there would swap
+    // those networks' 0 for a placeholder while fully online. Fiat rates come
+    // from the wallet mode's deployment, which always has a backend.
+    const isZeroNativeRateUnresolved = hasPeraBackend(scope)
 
     // USD needs no rate, so it is never pending.
     const isRatePending =
@@ -78,10 +75,10 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
             : isNativePreferred
               ? nativeUsdPricePending ||
                 !nativeUsdPrice ||
-                (nativeUsdPrice.isZero() && isZeroRateUnresolved)
+                (nativeUsdPrice.isZero() && isZeroNativeRateUnresolved)
               : preferredRatePending ||
                 !preferredRate?.usdPrice ||
-                (preferredRate.usdPrice.isZero() && isZeroRateUnresolved)
+                preferredRate.usdPrice.isZero()
 
     const usdToPreferred = useCallback<
         (usdAmount: Maybe<Decimal>) => Nullable<Decimal>

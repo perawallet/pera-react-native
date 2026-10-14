@@ -18,6 +18,7 @@ import { useCurrenciesStore } from '../../store'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const ALGORAND_BETANET = { chainId: 'algorand', networkId: 'betanet' } as const
 
 const DESCRIPTORS = {
     algorand: { displayName: 'Algorand', nativeAsset: { symbol: 'ALGO' } },
@@ -207,6 +208,24 @@ describe('services/currencies/hooks', () => {
             const converted = result.current.usdToPreferred(usdAmount)
 
             expect(converted).toBeNull()
+        })
+
+        it('treats a zero fiat rate as pending even on a network without a Pera backend', () => {
+            // Fiat rates come from the wallet mode's deployment, so the
+            // network's missing backend never makes a zero fiat rate real.
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'EUR' }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: new Decimal('0') },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCurrency(ALGORAND_BETANET))
+
+            expect(result.current.isRatePending).toBe(true)
+            expect(result.current.usdToPreferred(new Decimal(100))).toBeNull()
         })
 
         it('passes an unknown USD amount through as unknown', () => {

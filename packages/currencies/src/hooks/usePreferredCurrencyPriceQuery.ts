@@ -11,24 +11,24 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { fetchCurrency } from '../api/currencies'
 import { getPreferredCurrencyPriceQueryKey } from './querykeys'
 
 export const usePreferredCurrencyPriceQuery = (
-    scope: ChainScope,
     preferredFiatCurrency: string,
     enabled: boolean = true,
 ) => {
+    const deployment = useNetworkStore(state => state.mode)
     return useQuery({
         queryKey: getPreferredCurrencyPriceQueryKey(
-            scope,
+            deployment,
             preferredFiatCurrency,
         ),
         queryFn: ({ signal }) =>
             fetchCurrency({
                 currencyId: preferredFiatCurrency,
-                scope,
+                deployment,
                 signal,
             }),
         enabled: enabled,

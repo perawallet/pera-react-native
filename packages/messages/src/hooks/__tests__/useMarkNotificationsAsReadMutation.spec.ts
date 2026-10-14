@@ -13,30 +13,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { Networks } from '@perawallet/wallet-core-config'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { useAnyEnabledChainHasCapability } from '@perawallet/wallet-core-chain-shared'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
-
-// Algorand switches its Pera-backed capabilities off on BetaNet and custom
-// nodes, the networks only a developer-mode override reaches.
-const scopeState = vi.hoisted(() => ({
-    current: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
-}))
+const modeState = vi.hoisted(() => ({ current: 'live' as WalletMode }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(
-        () =>
-            scopeState.current.chainId !== 'algorand' ||
-            ['mainnet', 'testnet'].includes(scopeState.current.networkId),
+    useAnyEnabledChainHasCapability: vi.fn(() => true),
+    useNetworkStore: vi.fn(
+        (selector: (state: { mode: WalletMode }) => unknown) =>
+            selector({ mode: modeState.current }),
     ),
 }))
 
@@ -49,22 +38,23 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
     return {
         ...actual,
-        useScopedDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useDeploymentDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
 
 describe('useMarkNotificationsAsReadMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        scopeState.current = ALGORAND_MAINNET
-        vi.mocked(useScopedDeviceID).mockReturnValue('test-device-id')
+        modeState.current = 'live'
+        vi.mocked(useAnyEnabledChainHasCapability).mockReturnValue(true)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('test-device-id')
     })
 
     it('calls updateLastSeenNotification with correct parameters', async () => {
         vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
 
         const { result } = renderHook(
-            () => useMarkNotificationsAsReadMutation(scopeState.current),
+            () => useMarkNotificationsAsReadMutation(),
             {
                 wrapper: createWrapper(),
             },
@@ -74,7 +64,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
 
         await waitFor(() => {
             expect(updateLastSeenNotification).toHaveBeenCalledWith(
-                ALGORAND_MAINNET,
+                'live',
                 'test-device-id',
                 12345,
             )
@@ -86,7 +76,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
         vi.mocked(updateLastSeenNotification).mockRejectedValue(mockError)
 
         const { result } = renderHook(
-            () => useMarkNotificationsAsReadMutation(scopeState.current),
+            () => useMarkNotificationsAsReadMutation(),
             {
                 wrapper: createWrapper(),
             },
@@ -96,7 +86,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
 
         await waitFor(() => {
             expect(updateLastSeenNotification).toHaveBeenCalledWith(
-                ALGORAND_MAINNET,
+                'live',
                 'test-device-id',
                 12345,
             )
@@ -104,11 +94,11 @@ describe('useMarkNotificationsAsReadMutation', () => {
     })
 
     it('falls back to empty string when deviceID is null', async () => {
-        vi.mocked(useScopedDeviceID).mockReturnValueOnce(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValueOnce(null)
         vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
 
         const { result } = renderHook(
-            () => useMarkNotificationsAsReadMutation(scopeState.current),
+            () => useMarkNotificationsAsReadMutation(),
             { wrapper: createWrapper() },
         )
 
@@ -116,19 +106,19 @@ describe('useMarkNotificationsAsReadMutation', () => {
 
         await waitFor(() => {
             expect(updateLastSeenNotification).toHaveBeenCalledWith(
-                ALGORAND_MAINNET,
+                'live',
                 '',
                 1,
             )
         })
     })
 
-    it('marks notifications read against an Ethereum scope', async () => {
-        scopeState.current = ETHEREUM
+    it('marks notifications read against the developer deployment', async () => {
+        modeState.current = 'developer'
         vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
 
         const { result } = renderHook(
-            () => useMarkNotificationsAsReadMutation(scopeState.current),
+            () => useMarkNotificationsAsReadMutation(),
             { wrapper: createWrapper() },
         )
 
@@ -136,38 +126,32 @@ describe('useMarkNotificationsAsReadMutation', () => {
 
         await waitFor(() => {
             expect(updateLastSeenNotification).toHaveBeenCalledWith(
-                ETHEREUM,
+                'developer',
                 'test-device-id',
                 12345,
             )
         })
+        expect(useDeploymentDeviceID).toHaveBeenCalledWith('developer')
     })
 
-    describe('non-Pera-backed networks', () => {
-        it.each([Networks.betanet, Networks.custom])(
-            'no-ops markAsRead and flags isUnavailableOnNetwork on %s',
-            async network => {
-                scopeState.current = scopeForLegacyNetwork(network)
+    it('no-ops markAsRead and flags isUnavailableOnNetwork when no enabled chain has notifications', async () => {
+        vi.mocked(useAnyEnabledChainHasCapability).mockReturnValue(false)
 
-                const { result } = renderHook(
-                    () =>
-                        useMarkNotificationsAsReadMutation(scopeState.current),
-                    { wrapper: createWrapper() },
-                )
-
-                expect(result.current.isUnavailableOnNetwork).toBe(true)
-                expect(useChainCapability).toHaveBeenCalledWith(
-                    'algorand',
-                    'notifications',
-                )
-
-                result.current.markAsRead(12345)
-
-                await new Promise(resolve => setTimeout(resolve, 0))
-
-                expect(updateLastSeenNotification).not.toHaveBeenCalled()
-            },
+        const { result } = renderHook(
+            () => useMarkNotificationsAsReadMutation(),
+            { wrapper: createWrapper() },
         )
+
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
+        expect(useAnyEnabledChainHasCapability).toHaveBeenCalledWith(
+            'notifications',
+        )
+
+        result.current.markAsRead(12345)
+
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(updateLastSeenNotification).not.toHaveBeenCalled()
     })
 
     // NotificationsScreen lists markAsRead as an effect dependency and marks
@@ -175,7 +159,7 @@ describe('useMarkNotificationsAsReadMutation', () => {
     // list read on every render instead of on unmount.
     it('keeps a stable markAsRead identity across re-renders', () => {
         const { result, rerender } = renderHook(
-            () => useMarkNotificationsAsReadMutation(scopeState.current),
+            () => useMarkNotificationsAsReadMutation(),
             { wrapper: createWrapper() },
         )
 

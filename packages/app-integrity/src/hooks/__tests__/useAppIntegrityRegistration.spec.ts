@@ -13,6 +13,12 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 
+const mockMode = vi.hoisted(() => ({ current: 'live' }))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetworkStore: (selector: (state: { mode: string }) => unknown) =>
+        selector({ mode: mockMode.current }),
+}))
+
 const registerMock = vi.fn()
 vi.mock('../../services/registerAppIntegrity', () => ({
     registerAppIntegrity: (...a: unknown[]) => registerMock(...a),
@@ -20,29 +26,24 @@ vi.mock('../../services/registerAppIntegrity', () => ({
 
 import { useAppIntegrityRegistration } from '../useAppIntegrityRegistration'
 
-const SCOPES = [
-    { chainId: 'algorand', networkId: 'mainnet' },
-    { chainId: 'ethereum', networkId: 'sepolia' },
-] as const
-
 describe('useAppIntegrityRegistration', () => {
     beforeEach(() => {
         registerMock.mockReset().mockResolvedValue({ status: 'success' })
+        mockMode.current = 'live'
     })
 
-    it.each(SCOPES)(
-        'registers with the given scope and returns the outcome ($chainId)',
-        async scope => {
-            const { result } = renderHook(() =>
-                useAppIntegrityRegistration(scope),
-            )
+    it.each(['live', 'developer'])(
+        'registers against the %s deployment and returns the outcome',
+        async deployment => {
+            mockMode.current = deployment
+            const { result } = renderHook(() => useAppIntegrityRegistration())
 
             let outcome: unknown
             await act(async () => {
                 outcome = await result.current.register()
             })
 
-            expect(registerMock).toHaveBeenCalledWith({ scope })
+            expect(registerMock).toHaveBeenCalledWith({ deployment })
             expect(outcome).toEqual({ status: 'success' })
         },
     )
@@ -54,9 +55,7 @@ describe('useAppIntegrityRegistration', () => {
                 reject = rej
             }),
         )
-        const { result } = renderHook(() =>
-            useAppIntegrityRegistration(SCOPES[0]),
-        )
+        const { result } = renderHook(() => useAppIntegrityRegistration())
 
         let pending: Promise<unknown> = Promise.resolve()
         act(() => {

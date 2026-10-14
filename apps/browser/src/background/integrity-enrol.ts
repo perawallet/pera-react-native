@@ -49,7 +49,7 @@ import {
 } from './enrol-attempt'
 import { resumeIntegrityMint } from './integrity'
 import { withNamedLock } from './named-lock'
-import { algorandScopeOf, readActiveNetwork } from './network'
+import { readActiveDeployment } from './network'
 
 export const INTEGRITY_ENROL_LOCK = 'pera-integrity-enrol'
 export const INTEGRITY_ENROL_DEADLINE_ALARM = 'pera-integrity-enrol-deadline'
@@ -162,9 +162,9 @@ export const requestEnrolment = async (
     if (!isEnrolmentEnabled()) return NO_ACTION
     try {
         return await withNamedLock(INTEGRITY_ENROL_LOCK, async () => {
-            const network = await readActiveNetwork()
+            const deployment = await readActiveDeployment()
             const kid = await getInstallKeyId()
-            const marker = await getEnrolmentMarker(network)
+            const marker = await getEnrolmentMarker(deployment)
             if (marker?.kid === kid) {
                 await clearEnrolmentNeeded()
                 return NO_ACTION
@@ -178,7 +178,7 @@ export const requestEnrolment = async (
             const attempt: EnrolAttempt = {
                 token: newCheckToken(),
                 kid,
-                network,
+                deployment,
                 startedAt: now,
                 deadlineAt: now + ENROL_DEADLINE_MS,
                 surface: 'frame',
@@ -197,7 +197,10 @@ export const requestEnrolment = async (
             })
             await writeAttempt(attempt)
             scheduleLivenessCheck(attempt.token)
-            logger.info('Web integrity enrolment started', { reason, network })
+            logger.info('Web integrity enrolment started', {
+                reason,
+                deployment,
+            })
             return { action: 'host', url, deadlineAt: attempt.deadlineAt }
         })
     } catch (error) {
@@ -303,7 +306,7 @@ const submitEnrolment = async (
         // another kid and count as a failure; the new key enrols on the next trigger.
         if ((await getInstallKeyId()) !== attempt.kid) {
             logger.info('Web integrity install key changed during enrolment', {
-                network: attempt.network,
+                deployment: attempt.deployment,
             })
             return 'abandoned'
         }
@@ -315,15 +318,15 @@ const submitEnrolment = async (
             deviceInstallationId,
             publicKey,
             turnstileToken,
-            scope: algorandScopeOf(attempt.network),
+            deployment: attempt.deployment,
         })
         if (kid !== attempt.kid) {
             logger.warn('Web integrity enrolment answered for another key', {
-                network: attempt.network,
+                deployment: attempt.deployment,
             })
             return 'failed'
         }
-        await putEnrolmentMarker(attempt.network, {
+        await putEnrolmentMarker(attempt.deployment, {
             kid,
             enrolledAt: new Date().toISOString(),
         })

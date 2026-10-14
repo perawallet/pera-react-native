@@ -16,8 +16,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useVisibleBanners, type Banner } from '@perawallet/wallet-core-banners'
 import { trackEvent, BannersEvent, AnalyticsMetadataKey } from '@analytics'
 import type { RootStackParamList } from '@routes/types'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseHomeBannersStripResult = {
     isVisible: boolean
@@ -28,8 +26,7 @@ export type UseHomeBannersStripResult = {
 }
 
 export const useHomeBannersStrip = (): UseHomeBannersStripResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { banners } = useVisibleBanners(scope)
+    const { banners } = useVisibleBanners()
     const navigation =
         useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 

@@ -13,8 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
-import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useBannersQuery } from '../useBannersQuery'
 import { fetchBanners } from '../../api/banners'
 
@@ -23,21 +22,27 @@ vi.mock('../../api/banners', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useScopedDeviceID: vi.fn().mockReturnValue('test-device-id'),
+    useDeploymentDeviceID: vi.fn().mockReturnValue('test-device-id'),
 }))
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const network = vi.hoisted(() => ({ mode: 'live' }))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useNetworkStore: (selector: (state: typeof network) => unknown) =>
+        selector(network),
+}))
 
 beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useScopedDeviceID).mockReturnValue('test-device-id')
+    network.mode = 'live'
+    vi.mocked(useDeploymentDeviceID).mockReturnValue('test-device-id')
 })
 
 describe('useBannersQuery', () => {
-    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
-        'maps server response into Banner domain objects for $chainId',
-        async scope => {
+    it.each(['live', 'developer'])(
+        'maps server response into Banner domain objects for the %s deployment',
+        async deployment => {
+            network.mode = deployment
             vi.mocked(fetchBanners).mockResolvedValue({
                 count: 1,
                 results: [
@@ -53,13 +58,17 @@ describe('useBannersQuery', () => {
                 ],
             })
 
-            const { result } = renderHook(() => useBannersQuery(scope), {
+            const { result } = renderHook(() => useBannersQuery(), {
                 wrapper: createWrapper(),
             })
 
             await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-            expect(fetchBanners).toHaveBeenCalledWith(scope, 'test-device-id')
+            expect(useDeploymentDeviceID).toHaveBeenCalledWith(deployment)
+            expect(fetchBanners).toHaveBeenCalledWith(
+                deployment,
+                'test-device-id',
+            )
             expect(result.current.banners).toEqual([
                 {
                     id: 1,
@@ -97,7 +106,7 @@ describe('useBannersQuery', () => {
             ],
         })
 
-        const { result } = renderHook(() => useBannersQuery(ALGORAND_TESTNET), {
+        const { result } = renderHook(() => useBannersQuery(), {
             wrapper: createWrapper(),
         })
 
@@ -110,20 +119,7 @@ describe('useBannersQuery', () => {
     it('returns an empty array on error', async () => {
         vi.mocked(fetchBanners).mockRejectedValue(new Error('boom'))
 
-        const { result } = renderHook(() => useBannersQuery(ALGORAND_TESTNET), {
-            wrapper: createWrapper(),
-        })
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(result.current.banners).toEqual([])
-    })
-
-    it('surfaces PeraServiceUnavailableError for a scope with no Pera backend', async () => {
-        vi.mocked(fetchBanners).mockRejectedValue(
-            new PeraServiceUnavailableError(ETHEREUM_SEPOLIA),
-        )
-
-        const { result } = renderHook(() => useBannersQuery(ETHEREUM_SEPOLIA), {
+        const { result } = renderHook(() => useBannersQuery(), {
             wrapper: createWrapper(),
         })
 
@@ -132,9 +128,9 @@ describe('useBannersQuery', () => {
     })
 
     it('stays disabled and returns empty when deviceID is null', async () => {
-        vi.mocked(useScopedDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
 
-        const { result } = renderHook(() => useBannersQuery(ALGORAND_TESTNET), {
+        const { result } = renderHook(() => useBannersQuery(), {
             wrapper: createWrapper(),
         })
 

@@ -89,7 +89,6 @@ describe('useLocalCurrency', () => {
         expect(result.current.localCurrencySymbol).toBe('$')
         expect(result.current.localRate?.toString()).toBe('1')
         expect(mockUsePreferredCurrencyPriceQuery).toHaveBeenCalledWith(
-            ALGORAND_TESTNET,
             'USD',
             true,
         )
@@ -109,7 +108,6 @@ describe('useLocalCurrency', () => {
 
         expect(result.current.localCurrency).toBe('USD')
         expect(mockUsePreferredCurrencyPriceQuery).toHaveBeenCalledWith(
-            ETHEREUM_SEPOLIA,
             'USD',
             true,
         )

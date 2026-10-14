@@ -12,14 +12,13 @@
 
 import React from 'react'
 import './i18n'
-import { LEGACY_CHAIN_ID, i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { ThemeProvider } from '@rneui/themed'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
 import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
 import type { ErrorMessageKeys } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { PWButton } from '@components/core'
@@ -46,7 +45,6 @@ const GENERIC_INIT_ERROR_KEYS: ErrorMessageKeys = {
 // Process-wide setup (Decimal config, network status, splash hold, sheet
 // registry) runs before this tree mounts: see bootstrap/preReact.ts.
 const AppContent = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
     const theme = useAppTheme()
@@ -57,7 +55,7 @@ const AppContent = () => {
     useSystemBarsAppearance(isDarkMode)
     useOrientationPolicy()
     usePasskeyAutofillLifecycle()
-    useAppIntegrityBootstrap(scope)
+    useAppIntegrityBootstrap()
     useCrashReporterBinding()
 
     if (initError) {

@@ -36,8 +36,6 @@ import {
     enrolDevice,
 } from '../endpoints'
 
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-
 describe('integrity endpoints', () => {
     beforeEach(() => queryClientMock.mockReset())
 
@@ -46,7 +44,7 @@ describe('integrity endpoints', () => {
         const challenge = await requestChallenge({
             deviceInstallationId: 'd1',
             platform: 'ios',
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
         expect(challenge).toBe('abc')
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -68,7 +66,7 @@ describe('integrity endpoints', () => {
                 requestChallenge({
                     deviceInstallationId: 'd1',
                     platform: 'ios',
-                    scope: ALGORAND_MAINNET,
+                    deployment: 'live',
                 }),
             { data: { challenge: 'abc' } },
         ],
@@ -81,7 +79,7 @@ describe('integrity endpoints', () => {
                         platform: 'android' as const,
                         attestation: 'att',
                     },
-                    scope: ALGORAND_MAINNET,
+                    deployment: 'live',
                 }),
             { data: { integrity_token: 'jwt', expires_at: '2026-07-01' } },
         ],
@@ -106,7 +104,7 @@ describe('integrity endpoints', () => {
                 keyId: 'k1',
                 attestation: 'att',
             },
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
         expect(result).toEqual({
             integrityToken: 'jwt',
@@ -135,7 +133,7 @@ describe('integrity endpoints', () => {
                 platform: 'android',
                 attestation: 'tok',
             },
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -154,7 +152,7 @@ describe('integrity endpoints', () => {
         })
         const result = await verifyIntegrityToken({
             integrityToken: 'jwt',
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
         expect(result).toEqual({
             ok: true,
@@ -189,7 +187,7 @@ describe('attestDevice web variant', () => {
                 publicKey: 'spki-base64',
                 signature: 'sig-base64',
             },
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -217,7 +215,7 @@ describe('attestDevice web variant', () => {
         const challenge = await requestChallenge({
             deviceInstallationId: 'install-1',
             platform: 'web',
-            scope: ALGORAND_MAINNET,
+            deployment: 'live',
         })
 
         expect(challenge).toBe('challenge-value')
@@ -234,7 +232,7 @@ describe('enrolDevice', () => {
         deviceInstallationId: 'd1',
         publicKey: 'spki-b64',
         turnstileToken: 'tok',
-        scope: ALGORAND_MAINNET,
+        deployment: 'live' as const,
     }
 
     it('posts snake_case fields with the single-use retry', async () => {
@@ -248,7 +246,7 @@ describe('enrolDevice', () => {
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                scope: ALGORAND_MAINNET,
+                deployment: 'live',
                 method: 'POST',
                 url: '/api/v3/public/integrity/enrol',
                 data: {

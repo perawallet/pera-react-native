@@ -14,9 +14,6 @@ import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { fetchBanners } from '../endpoints'
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
     queryClient: vi.fn(),
@@ -33,11 +30,11 @@ describe('fetchBanners', () => {
         const valid = { count: 0, results: [] }
         ;(queryClient as Mock).mockResolvedValue({ data: valid })
 
-        await fetchBanners(ALGORAND_TESTNET, DEVICE_ID)
+        await fetchBanners('developer', DEVICE_ID)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: ALGORAND_TESTNET,
+            deployment: 'developer',
             method: 'GET',
             url: `/v1/devices/${DEVICE_ID}/banners/`,
         })
@@ -61,7 +58,7 @@ describe('fetchBanners', () => {
         }
         ;(queryClient as Mock).mockResolvedValue({ data: valid })
 
-        const result = await fetchBanners(ALGORAND_MAINNET, DEVICE_ID)
+        const result = await fetchBanners('live', DEVICE_ID)
 
         expect(result.count).toBe(1)
         expect(result.results[0].id).toBe('1')
@@ -75,7 +72,7 @@ describe('fetchBanners', () => {
             data: { count: 1, results: [{ id: bigId, type: 'generic' }] },
         })
 
-        const result = await fetchBanners(ALGORAND_MAINNET, DEVICE_ID)
+        const result = await fetchBanners('live', DEVICE_ID)
 
         expect(result.results[0].id).toBe(bigId)
     })
@@ -93,7 +90,7 @@ describe('fetchBanners', () => {
         }
         ;(queryClient as Mock).mockResolvedValue({ data })
 
-        const result = await fetchBanners(ALGORAND_MAINNET, DEVICE_ID)
+        const result = await fetchBanners('live', DEVICE_ID)
         expect(result.results[0].type).toBe('generic')
     })
 
@@ -102,14 +99,12 @@ describe('fetchBanners', () => {
             data: { results: 'not-an-array' },
         })
 
-        await expect(
-            fetchBanners(ALGORAND_TESTNET, DEVICE_ID),
-        ).rejects.toThrow()
+        await expect(fetchBanners('developer', DEVICE_ID)).rejects.toThrow()
     })
 
     test('propagates queryClient errors', async () => {
         ;(queryClient as Mock).mockRejectedValue(new Error('boom'))
-        await expect(fetchBanners(ALGORAND_TESTNET, DEVICE_ID)).rejects.toThrow(
+        await expect(fetchBanners('developer', DEVICE_ID)).rejects.toThrow(
             'boom',
         )
     })

@@ -11,9 +11,9 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { registerAppIntegrity } from '../services/registerAppIntegrity'
 import { useAppIntegrityStore } from '../store'
-import type { IntegrityScope } from '../models'
 
 // Re-register when within this margin of expiry.
 const EXPIRY_MARGIN_MS = 12 * 60 * 60 * 1000
@@ -31,7 +31,8 @@ const hasValidToken = (): boolean => {
  * Attestation proceeds on distributed (staging + production) builds;
  * `registerAppIntegrity` no-ops with status `skipped` on development builds.
  */
-export const useAppIntegrityBootstrap = (scope: IntegrityScope): void => {
+export const useAppIntegrityBootstrap = (): void => {
+    const deployment = useNetworkStore(state => state.mode)
     const hasRun = useRef(false)
 
     useEffect(() => {
@@ -40,8 +41,8 @@ export const useAppIntegrityBootstrap = (scope: IntegrityScope): void => {
 
         if (hasValidToken()) return
 
-        void registerAppIntegrity({ scope })
-        // Boot-once handshake: `hasRun` makes later scope changes a no-op, so
-        // registration always uses the scope captured on the first run.
-    }, [scope])
+        void registerAppIntegrity({ deployment })
+        // Boot-once handshake: `hasRun` makes later mode changes a no-op, so
+        // registration always uses the deployment captured on the first run.
+    }, [deployment])
 }

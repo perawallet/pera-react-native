@@ -14,9 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useVisibleBanners } from '../useVisibleBanners'
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
-
 vi.mock('../useBannersQuery', () => ({
     useBannersQuery: vi.fn().mockReturnValue({
         banners: [
@@ -55,26 +52,15 @@ beforeEach(async () => {
 })
 
 describe('useVisibleBanners', () => {
-    it('reads and filters the banners of an Ethereum scope', async () => {
-        const { useBannersQuery } = await import('../useBannersQuery')
-        const { useBannersStore } = await import('../../store')
-        const { result } = renderHook(() => useVisibleBanners(ETHEREUM))
-
-        act(() => useBannersStore.getState().dismissBanner(1))
-
-        expect(useBannersQuery).toHaveBeenCalledWith(ETHEREUM)
-        expect(result.current.banners.map(b => b.id)).toEqual([2])
-    })
-
     it('returns all banners when none are dismissed and none are forced', () => {
-        const { result } = renderHook(() => useVisibleBanners(ALGORAND_TESTNET))
+        const { result } = renderHook(() => useVisibleBanners())
         expect(result.current.banners.map(b => b.id)).toEqual([1, 2])
         expect(result.current.forcedBanner).toBeNull()
     })
 
     it('filters out dismissed banner IDs', async () => {
         const { useBannersStore } = await import('../../store')
-        const { result } = renderHook(() => useVisibleBanners(ALGORAND_TESTNET))
+        const { result } = renderHook(() => useVisibleBanners())
 
         act(() => useBannersStore.getState().dismissBanner(1))
 
@@ -118,7 +104,7 @@ describe('useVisibleBanners', () => {
         // Dismiss the forced banner — should still be returned.
         act(() => useBannersStore.getState().dismissBanner(20))
 
-        const { result } = renderHook(() => useVisibleBanners(ALGORAND_TESTNET))
+        const { result } = renderHook(() => useVisibleBanners())
         expect(result.current.banners.map(b => b.id)).toEqual([20])
         expect(result.current.forcedBanner?.id).toBe(20)
     })

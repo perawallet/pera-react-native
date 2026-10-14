@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { config, Networks } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useInboxStatus } from '../useInboxStatus'
 import {
@@ -20,27 +20,20 @@ import {
     fetchNotificationStatus,
 } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import { useAnyEnabledChainHasCapability } from '@perawallet/wallet-core-chain-shared'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
-// Algorand switches its Pera-backed capabilities off on BetaNet and custom
-// nodes, the networks only a developer-mode override reaches.
-const scopeState = vi.hoisted(() => ({
-    current: { chainId: 'algorand', networkId: 'mainnet' } as ChainScope,
-}))
+const modeState = vi.hoisted(() => ({ current: 'live' as WalletMode }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(
-        () =>
-            scopeState.current.chainId !== 'algorand' ||
-            ['mainnet', 'testnet'].includes(scopeState.current.networkId),
+    useAnyEnabledChainHasCapability: vi.fn(() => true),
+    useNetworkStore: vi.fn(
+        (selector: (state: { mode: WalletMode }) => unknown) =>
+            selector({ mode: modeState.current }),
     ),
 }))
 
@@ -58,7 +51,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-device')>()
     return {
         ...actual,
-        useScopedDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useDeploymentDeviceID: vi.fn().mockReturnValue('test-device-id'),
     }
 })
 
@@ -71,7 +64,8 @@ describe('useInboxStatus', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockInbox(0)
-        scopeState.current = ALGORAND_MAINNET
+        modeState.current = 'live'
+        vi.mocked(useAnyEnabledChainHasCapability).mockReturnValue(true)
     })
 
     it('surfaces the unread flags and inbox count from message-status', async () => {
@@ -82,19 +76,16 @@ describe('useInboxStatus', () => {
             unreadInboxCount: 3,
         })
 
-        const { result } = renderHook(
-            () => useInboxStatus(scopeState.current),
-            {
-                wrapper: createWrapper(),
-            },
-        )
+        const { result } = renderHook(() => useInboxStatus(ALGORAND_MAINNET), {
+            wrapper: createWrapper(),
+        })
 
         await waitFor(() => {
             expect(result.current.unreadInboxCount).toBe(3)
         })
 
         expect(fetchMessageStatus).toHaveBeenCalledWith(
-            ALGORAND_MAINNET,
+            'live',
             'test-device-id',
         )
         expect(result.current.hasUnreadItems).toBe(true)
@@ -104,8 +95,8 @@ describe('useInboxStatus', () => {
         expect(fetchNotificationStatus).not.toHaveBeenCalled()
     })
 
-    it('reads the message status of an Ethereum scope', async () => {
-        scopeState.current = ETHEREUM
+    it('reads message status from the deployment and the fallback inbox from the scope', async () => {
+        modeState.current = 'developer'
         vi.mocked(fetchMessageStatus).mockResolvedValue({
             hasUnreadItems: true,
             hasUnreadNotifications: false,
@@ -113,18 +104,19 @@ describe('useInboxStatus', () => {
             unreadInboxCount: 1,
         })
 
-        const { result } = renderHook(
-            () => useInboxStatus(scopeState.current),
-            { wrapper: createWrapper() },
-        )
+        const { result } = renderHook(() => useInboxStatus(ETHEREUM), {
+            wrapper: createWrapper(),
+        })
 
         await waitFor(() => {
             expect(result.current.unreadInboxCount).toBe(1)
         })
+        expect(useDeploymentDeviceID).toHaveBeenCalledWith('developer')
         expect(fetchMessageStatus).toHaveBeenCalledWith(
-            ETHEREUM,
+            'developer',
             'test-device-id',
         )
+        expect(useInboxQuery).toHaveBeenCalledWith(ETHEREUM)
     })
 
     it('falls back to the legacy v1 source when message-status fails', async () => {
@@ -136,16 +128,13 @@ describe('useInboxStatus', () => {
         })
         mockInbox(2)
 
-        const { result } = renderHook(
-            () => useInboxStatus(scopeState.current),
-            {
-                wrapper: createWrapper(),
-            },
-        )
+        const { result } = renderHook(() => useInboxStatus(ALGORAND_MAINNET), {
+            wrapper: createWrapper(),
+        })
 
         await waitFor(() => {
             expect(fetchNotificationStatus).toHaveBeenCalledWith(
-                ALGORAND_MAINNET,
+                'live',
                 'test-device-id',
             )
         })
@@ -176,7 +165,7 @@ describe('useInboxStatus', () => {
                 unreadInboxCount: 0,
             })
 
-            renderHook(() => useInboxStatus(scopeState.current), {
+            renderHook(() => useInboxStatus(ALGORAND_MAINNET), {
                 wrapper: createWrapper(),
             })
 
@@ -196,7 +185,7 @@ describe('useInboxStatus', () => {
                 has_new_notification: false,
             })
 
-            renderHook(() => useInboxStatus(scopeState.current), {
+            renderHook(() => useInboxStatus(ALGORAND_MAINNET), {
                 wrapper: createWrapper(),
             })
 
@@ -221,14 +210,11 @@ describe('useInboxStatus', () => {
     })
 
     it('returns strict false/0 defaults when deviceID is missing', () => {
-        vi.mocked(useScopedDeviceID).mockReturnValueOnce(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValueOnce(null)
 
-        const { result } = renderHook(
-            () => useInboxStatus(scopeState.current),
-            {
-                wrapper: createWrapper(),
-            },
-        )
+        const { result } = renderHook(() => useInboxStatus(ALGORAND_MAINNET), {
+            wrapper: createWrapper(),
+        })
 
         expect(fetchMessageStatus).not.toHaveBeenCalled()
         expect(fetchNotificationStatus).not.toHaveBeenCalled()
@@ -242,31 +228,22 @@ describe('useInboxStatus', () => {
         expect(typeof result.current.unreadInboxCount).toBe('number')
     })
 
-    describe('non-Pera-backed networks', () => {
-        it.each([Networks.betanet, Networks.custom])(
-            'returns zeroed-out defaults and flags isUnavailableOnNetwork on %s without polling',
-            network => {
-                scopeState.current = scopeForLegacyNetwork(network)
+    it('returns zeroed-out defaults and flags isUnavailableOnNetwork without polling when no enabled chain has notifications', () => {
+        vi.mocked(useAnyEnabledChainHasCapability).mockReturnValue(false)
 
-                const { result } = renderHook(
-                    () => useInboxStatus(scopeState.current),
-                    {
-                        wrapper: createWrapper(),
-                    },
-                )
+        const { result } = renderHook(() => useInboxStatus(ALGORAND_MAINNET), {
+            wrapper: createWrapper(),
+        })
 
-                expect(fetchMessageStatus).not.toHaveBeenCalled()
-                expect(fetchNotificationStatus).not.toHaveBeenCalled()
-                expect(result.current.hasUnreadItems).toBe(false)
-                expect(result.current.hasUnreadInboxItems).toBe(false)
-                expect(result.current.hasUnreadNotifications).toBe(false)
-                expect(result.current.unreadInboxCount).toBe(0)
-                expect(result.current.isUnavailableOnNetwork).toBe(true)
-                expect(useChainCapability).toHaveBeenCalledWith(
-                    'algorand',
-                    'notifications',
-                )
-            },
+        expect(fetchMessageStatus).not.toHaveBeenCalled()
+        expect(fetchNotificationStatus).not.toHaveBeenCalled()
+        expect(result.current.hasUnreadItems).toBe(false)
+        expect(result.current.hasUnreadInboxItems).toBe(false)
+        expect(result.current.hasUnreadNotifications).toBe(false)
+        expect(result.current.unreadInboxCount).toBe(0)
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
+        expect(useAnyEnabledChainHasCapability).toHaveBeenCalledWith(
+            'notifications',
         )
     })
 })

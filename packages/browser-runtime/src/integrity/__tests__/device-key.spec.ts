@@ -20,6 +20,7 @@ import {
     getEnrolmentMarker,
     getInstallKeyId,
     getOrCreateInstallKey,
+    INSTALL_KEY_DB_NAME,
     putEnrolmentMarker,
     signChallenge,
 } from '../device-key'
@@ -32,6 +33,24 @@ const toBase64Url = (bytes: ArrayBuffer): string =>
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '')
+
+const readRawRecord = (key: string): Promise<unknown> =>
+    new Promise((resolve, reject) => {
+        const open = indexedDB.open(INSTALL_KEY_DB_NAME)
+        open.onerror = () => reject(open.error)
+        open.onsuccess = () => {
+            const db = open.result
+            const request = db
+                .transaction('keys', 'readonly')
+                .objectStore('keys')
+                .get(key)
+            request.onsuccess = () => {
+                db.close()
+                resolve(request.result)
+            }
+            request.onerror = () => reject(request.error)
+        }
+    })
 
 describe('install key', () => {
     beforeEach(() => {
@@ -157,30 +176,36 @@ describe('enrolment marker', () => {
     }
 
     it('is absent until written', async () => {
-        expect(await getEnrolmentMarker('mainnet')).toBeNull()
+        expect(await getEnrolmentMarker('live')).toBeNull()
     })
 
-    it('round-trips per network', async () => {
-        await putEnrolmentMarker('mainnet', marker)
+    it('round-trips per deployment', async () => {
+        await putEnrolmentMarker('live', marker)
 
-        expect(await getEnrolmentMarker('mainnet')).toEqual(marker)
-        expect(await getEnrolmentMarker('testnet')).toBeNull()
+        expect(await getEnrolmentMarker('live')).toEqual(marker)
+        expect(await getEnrolmentMarker('developer')).toBeNull()
     })
 
-    it('clears one network without touching another', async () => {
-        await putEnrolmentMarker('mainnet', marker)
-        await putEnrolmentMarker('testnet', marker)
+    it('clears one deployment without touching another', async () => {
+        await putEnrolmentMarker('live', marker)
+        await putEnrolmentMarker('developer', marker)
 
-        await clearEnrolmentMarker('mainnet')
+        await clearEnrolmentMarker('live')
 
-        expect(await getEnrolmentMarker('mainnet')).toBeNull()
-        expect(await getEnrolmentMarker('testnet')).toEqual(marker)
+        expect(await getEnrolmentMarker('live')).toBeNull()
+        expect(await getEnrolmentMarker('developer')).toEqual(marker)
+    })
+
+    it('stores a live marker under the mainnet record key', async () => {
+        await putEnrolmentMarker('live', marker)
+
+        expect(await readRawRecord('enrolment:mainnet')).toEqual(marker)
     })
 
     it('leaves the install key in place', async () => {
         const before = await exportInstallPublicKey()
-        await putEnrolmentMarker('mainnet', marker)
-        await clearEnrolmentMarker('mainnet')
+        await putEnrolmentMarker('live', marker)
+        await clearEnrolmentMarker('live')
 
         expect(await exportInstallPublicKey()).toBe(before)
     })

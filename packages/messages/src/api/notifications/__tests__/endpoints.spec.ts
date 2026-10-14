@@ -18,9 +18,6 @@ import {
 } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: vi.fn(),
 }))
@@ -36,11 +33,11 @@ describe('fetchNotificationStatus', () => {
         const validResponse = { has_new_notification: true }
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        await fetchNotificationStatus(ALGORAND_TESTNET, DEVICE_ID)
+        await fetchNotificationStatus('developer', DEVICE_ID)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: ALGORAND_TESTNET,
+            deployment: 'developer',
             method: 'GET',
             url: `/v1/devices/${DEVICE_ID}/notification-status/`,
         })
@@ -50,10 +47,7 @@ describe('fetchNotificationStatus', () => {
         const validResponse = { has_new_notification: false }
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        const result = await fetchNotificationStatus(
-            ALGORAND_MAINNET,
-            DEVICE_ID,
-        )
+        const result = await fetchNotificationStatus('live', DEVICE_ID)
         expect(result).toEqual(validResponse)
     })
 
@@ -62,7 +56,7 @@ describe('fetchNotificationStatus', () => {
         ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
 
         await expect(
-            fetchNotificationStatus(ALGORAND_TESTNET, DEVICE_ID),
+            fetchNotificationStatus('developer', DEVICE_ID),
         ).rejects.toThrow()
     })
 
@@ -70,7 +64,7 @@ describe('fetchNotificationStatus', () => {
         ;(queryClient as Mock).mockRejectedValue(new Error('Network error'))
 
         await expect(
-            fetchNotificationStatus(ALGORAND_TESTNET, DEVICE_ID),
+            fetchNotificationStatus('developer', DEVICE_ID),
         ).rejects.toThrow('Network error')
     })
 })
@@ -97,11 +91,11 @@ describe('fetchNotificationList', () => {
     test('calls queryClient with correct v2 endpoint', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        await fetchNotificationList(ALGORAND_TESTNET, DEVICE_ID)
+        await fetchNotificationList('developer', DEVICE_ID)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: ALGORAND_TESTNET,
+            deployment: 'developer',
             method: 'GET',
             url: `/v2/devices/${DEVICE_ID}/notifications/`,
             params: { cursor: undefined },
@@ -111,7 +105,7 @@ describe('fetchNotificationList', () => {
     test('passes cursor when provided', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        await fetchNotificationList(ALGORAND_TESTNET, DEVICE_ID, 'cursor-abc')
+        await fetchNotificationList('developer', DEVICE_ID, 'cursor-abc')
 
         expect(queryClient).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -123,7 +117,7 @@ describe('fetchNotificationList', () => {
     test('returns parsed response on success', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        const result = await fetchNotificationList(ALGORAND_TESTNET, DEVICE_ID)
+        const result = await fetchNotificationList('developer', DEVICE_ID)
         expect(result).toEqual(validResponse)
     })
 
@@ -132,7 +126,7 @@ describe('fetchNotificationList', () => {
         ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
 
         await expect(
-            fetchNotificationList(ALGORAND_TESTNET, DEVICE_ID),
+            fetchNotificationList('developer', DEVICE_ID),
         ).rejects.toThrow()
     })
 
@@ -149,7 +143,7 @@ describe('fetchNotificationList', () => {
             data: { ...validResponse, results: [rekeyRow] },
         })
 
-        const result = await fetchNotificationList(ALGORAND_TESTNET, DEVICE_ID)
+        const result = await fetchNotificationList('developer', DEVICE_ID)
 
         expect(result.results).toHaveLength(1)
         expect(result.results[0]).toEqual({ ...rekeyRow, id: '2' })
@@ -164,7 +158,7 @@ describe('fetchNotificationList', () => {
             },
         })
 
-        const result = await fetchNotificationList(ALGORAND_TESTNET, DEVICE_ID)
+        const result = await fetchNotificationList('developer', DEVICE_ID)
 
         expect(result.results).toEqual(validResponse.results)
     })
@@ -185,11 +179,11 @@ describe('fetchMessageStatus', () => {
     test('calls queryClient with correct v3 endpoint', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        await fetchMessageStatus(ALGORAND_TESTNET, DEVICE_ID)
+        await fetchMessageStatus('developer', DEVICE_ID)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: ALGORAND_TESTNET,
+            deployment: 'developer',
             method: 'GET',
             url: `/api/v3/devices/${DEVICE_ID}/message-status`,
         })
@@ -198,7 +192,7 @@ describe('fetchMessageStatus', () => {
     test('returns parsed response on success', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        const result = await fetchMessageStatus(ALGORAND_MAINNET, DEVICE_ID)
+        const result = await fetchMessageStatus('live', DEVICE_ID)
         expect(result).toEqual(validResponse)
     })
 
@@ -207,7 +201,7 @@ describe('fetchMessageStatus', () => {
         ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
 
         await expect(
-            fetchMessageStatus(ALGORAND_TESTNET, DEVICE_ID),
+            fetchMessageStatus('developer', DEVICE_ID),
         ).rejects.toThrow()
     })
 
@@ -215,7 +209,7 @@ describe('fetchMessageStatus', () => {
         ;(queryClient as Mock).mockRejectedValue(new Error('Network error'))
 
         await expect(
-            fetchMessageStatus(ALGORAND_TESTNET, DEVICE_ID),
+            fetchMessageStatus('developer', DEVICE_ID),
         ).rejects.toThrow('Network error')
     })
 })
