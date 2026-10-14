@@ -28,21 +28,17 @@ import {
     algorandDescriptor,
 } from '../descriptor'
 import {
+    afterFirstColon,
+    DIGITS,
+    MALFORMED,
     readArc90Uri,
     readUriQuery,
     toAlgorandAssetRef,
+    UNSUPPORTED_NETWORK,
     type Arc90Uri,
 } from './arc90'
 
 const SCHEMES = ['algorand', 'algo', 'algorand-wc'] as const
-
-const DIGITS = /^\d+$/
-
-const MALFORMED = { ok: false, reason: 'malformed' } as const
-const UNSUPPORTED_NETWORK = {
-    ok: false,
-    reason: 'unsupported-network',
-} as const
 
 const targetOf = (networkId?: NetworkId): ChainLinkTarget =>
     networkId === undefined
@@ -53,9 +49,6 @@ const ok = (intent: ChainDeeplinkIntent): DeeplinkParseResult => ({
     ok: true,
     intent,
 })
-
-const afterFirstColon = (input: string): string =>
-    input.slice(input.indexOf(':') + 1)
 
 // Digits when present, so a bad round or fee is refused here rather than at the keyreg sheet.
 const isDigitsOrAbsent = (value: string | undefined): boolean =>
@@ -159,7 +152,7 @@ const parseArc90 = (input: string): DeeplinkParseResult => {
 
     if (uri.kind === 'account') return parseAccount(uri)
 
-    // A link naming no network opens MainNet's explorer, as it always has.
+    // A link naming no network opens MainNet's explorer.
     const networkId = uri.networkId ?? Networks.mainnet
     const url =
         uri.kind === 'asset'

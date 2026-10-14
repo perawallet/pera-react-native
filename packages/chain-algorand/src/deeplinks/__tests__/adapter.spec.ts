@@ -119,6 +119,33 @@ describe('algorandDeeplinkAdapter', () => {
             })
         })
 
+        it('carries an asset ref and the unchangeable xnote on one payment', () => {
+            expect(
+                intentOf(
+                    `algorand://${RECEIVER}?amount=99999&asset=31566704&xnote=HELLO%20WORLD%20XNOTE`,
+                ),
+            ).toMatchObject({
+                kind: 'payment',
+                recipient: RECEIVER,
+                amount: new Decimal(99999),
+                assetRef: { chainId: ALGORAND, assetId: '31566704' },
+                chainData: { family: 'algorand', xnote: 'HELLO WORLD XNOTE' },
+            })
+        })
+
+        it('ignores unknown parameters', () => {
+            expect(
+                intentOf(`algorand://${ADDR}?unknown=param&amount=100`),
+            ).toMatchObject({ kind: 'payment', amount: new Decimal(100) })
+        })
+
+        it('drops an empty value rather than reading it', () => {
+            expect(intentOf(`algorand://${ADDR}?foo=`)).toMatchObject({
+                kind: 'address',
+                address: ADDR,
+            })
+        })
+
         it('reads an asset payment without an amount', () => {
             const intent = intentOf(`algorand://${ADDR}?asset=123456`)
 
@@ -308,6 +335,7 @@ describe('algorandDeeplinkAdapter', () => {
             },
         )
 
+        // A raw genesis id is not a network id, so the link resolves to `testnet`.
         it('names the network by genesis id, resolved to a network id', () => {
             expect(
                 intentOf(`algorand://net:testnet-v1.0/${ADDR}?type=keyreg`),
@@ -351,7 +379,7 @@ describe('algorandDeeplinkAdapter', () => {
             })
         })
 
-        // The app parser only recognised the literal `testnet`.
+        // The genesis id is the ARC-90 spelling, so it must resolve like the bare name.
         it('opens the TestNet explorer for the testnet genesis id', () => {
             expect(
                 intentOf('algorand://net:testnet-v1.0/asset/1'),
@@ -359,6 +387,11 @@ describe('algorandDeeplinkAdapter', () => {
                 target: { chainId: ALGORAND, networkId: 'testnet' },
                 url: 'https://testnet.explorer.perawallet.app/asset/1/',
             })
+        })
+
+        it('drops an empty query value', () => {
+            expect(intentOf('algorand://app/123?foo=').kind).toBe('explorer')
+            expect(intentOf('algorand://asset/123?foo=').kind).toBe('explorer')
         })
 
         it('ignores the query', () => {
@@ -375,6 +408,7 @@ describe('algorandDeeplinkAdapter', () => {
             'algorand://asset/1/2',
             'algorand://discover',
             'algorand://cards',
+            'algorand://staking',
             'algorand://INVALID_ADDRESS',
         ])('rejects %s', input => {
             expect(reasonOf(input)).toBe('malformed')
@@ -388,6 +422,7 @@ describe('algorandDeeplinkAdapter', () => {
             )
         })
 
+        // A hash that names no known network must never fall back to MainNet or pass through raw.
         it('rejects an unknown genesis hash', () => {
             expect(reasonOf(`algorand://gh:AAAA/${ADDR}`)).toBe(
                 'unsupported-network',
@@ -544,17 +579,20 @@ describe('algorandDeeplinkAdapter', () => {
             ['algorand://wc?uri=', undefined],
             ['algorand://wc?uri=', 'chrome'],
             ['algorand-wc://wc?uri=', undefined],
-        ])('unwraps %s with browser %s as before', (prefix, browserName) => {
-            const link = `${prefix}${wrapped}${browserName ? `&browser=${browserName}` : ''}`
+        ])(
+            'unwraps %s with browser %s the same as the original link',
+            (prefix, browserName) => {
+                const link = `${prefix}${wrapped}${browserName ? `&browser=${browserName}` : ''}`
 
-            expect(parseWalletConnectUri(pairing(link))).toEqual({
-                uri: WC,
-                browserName,
-            })
-            expect(parseWalletConnectUri(pairing(link))).toEqual(
-                parseWalletConnectUri(link),
-            )
-        })
+                expect(parseWalletConnectUri(pairing(link))).toEqual({
+                    uri: WC,
+                    browserName,
+                })
+                expect(parseWalletConnectUri(pairing(link))).toEqual(
+                    parseWalletConnectUri(link),
+                )
+            },
+        )
 
         it('keeps the focus hint a focus hint', () => {
             const uri = pairing('algorand://wc?browser=chrome')

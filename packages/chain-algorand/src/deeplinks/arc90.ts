@@ -23,7 +23,10 @@ import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 
-// `networkId` is set only when the URI names a network.
+export const afterFirstColon = (input: string): string =>
+    input.slice(input.indexOf(':') + 1)
+
+/** `networkId` is set only when the URI names a network. */
 export type Arc90Uri =
     | {
           kind: 'account'
@@ -46,10 +49,10 @@ export type Arc90ReadResult =
 const SCHEME = 'algorand://'
 
 // ARC-90's `1*DIGIT`, for amount, asset and application ids.
-const DIGITS = /^\d+$/
+export const DIGITS = /^\d+$/
 
-const MALFORMED = { ok: false, reason: 'malformed' } as const
-const UNSUPPORTED_NETWORK = {
+export const MALFORMED = { ok: false, reason: 'malformed' } as const
+export const UNSUPPORTED_NETWORK = {
     ok: false,
     reason: 'unsupported-network',
 } as const
@@ -172,7 +175,7 @@ const resolveNetwork = (
 /** Never throws. */
 export const readArc90Uri = (input: string): Arc90ReadResult => {
     if (uriSchemeOf(input) !== 'algorand') return MALFORMED
-    const rest = input.slice(input.indexOf(':') + 1)
+    const rest = afterFirstColon(input)
     if (!rest.startsWith('//')) return MALFORMED
 
     const body = rest.slice(2)
