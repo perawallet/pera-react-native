@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { NameServiceChainAdapter } from '@perawallet/wallet-core-nfd'
+import { isValidAlgorandAddress } from '../blockchain/utils/addresses'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { verifyNfdAddress } from './verifyNfdAddress'
 

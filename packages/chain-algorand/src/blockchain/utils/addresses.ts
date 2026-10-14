@@ -10,9 +10,18 @@
  limitations under the License
  */
 
-import { encodeAddress } from 'algosdk'
+import { decodeAddress, encodeAddress } from 'algosdk'
 
-export { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
+/** True only for a canonical Algorand address: base32, 58 chars, valid checksum. */
+export const isValidAlgorandAddress = (address?: string): boolean => {
+    if (!address) return false
+    try {
+        decodeAddress(address)
+        return true
+    } catch {
+        return false
+    }
+}
 
 export const encodeAlgorandAddress = (bytes: Uint8Array): string => {
     return encodeAddress(bytes)

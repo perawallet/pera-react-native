@@ -34,7 +34,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { isValidAlgorandAddress as isChecksummedAlgorandAddress } from '@perawallet/wallet-core-shared'
+// By source path: the bare subpath is mocked, and this is the real validator.
+import { isValidAlgorandAddress as isChecksummedAlgorandAddress } from '@packages/chain-algorand/src/blockchain/utils/addresses'
 import { parseDeeplink } from '../parser'
 import { parseDevLocaleTourUri } from '../dev-locale-tour-parser'
 

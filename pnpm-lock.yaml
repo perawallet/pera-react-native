@@ -3856,9 +3856,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.7.0
       base64-js:
         specifier: ^1.5.1
         version: 1.5.1
