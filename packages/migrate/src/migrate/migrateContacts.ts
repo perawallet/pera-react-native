@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_FAMILY } from '@perawallet/wallet-core-chain-contract'
 import {
     useContactsStore,
     type Contact,
@@ -26,11 +27,10 @@ export const migrateContacts = (
 ): ContactMigrationResult => {
     const store = useContactsStore.getState()
     const existingByAddress = new Map(
-        store.contacts.flatMap(c =>
-            c.addresses.algorand
-                ? [[c.addresses.algorand.toLowerCase(), c] as const]
-                : [],
-        ),
+        store.contacts.flatMap(c => {
+            const address = c.addresses[LEGACY_CHAIN_FAMILY]
+            return address ? [[address.toLowerCase(), c] as const] : []
+        }),
     )
 
     const next: Contact[] = [...store.contacts]
@@ -53,6 +53,6 @@ export const migrateContacts = (
 
 const toContact = (legacy: LegacyContact): Contact => ({
     name: legacy.name,
-    addresses: { algorand: legacy.address },
+    addresses: { [LEGACY_CHAIN_FAMILY]: legacy.address },
     image: legacy.avatar ?? undefined,
 })

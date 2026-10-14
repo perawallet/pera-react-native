@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { LEGACY_CHAIN_FAMILY } from '@perawallet/wallet-core-chain-contract'
 import {
     DuplicateAddressError,
     useContactsStore,
@@ -33,7 +34,7 @@ export const useCloudBackupContactImport =
                 const store = useContactsStore.getState()
                 try {
                     store.addContact({
-                        addresses: { algorand: payload.address },
+                        addresses: { [LEGACY_CHAIN_FAMILY]: payload.address },
                         name: payload.name,
                     })
                 } catch (error) {
@@ -57,15 +58,19 @@ export const useCloudBackupContactImport =
                     // address, so all three are carried over rather than lost.
                     const existing = store.contacts.find(
                         contact =>
-                            contact.addresses.algorand === payload.address,
+                            contact.addresses[LEGACY_CHAIN_FAMILY] ===
+                            payload.address,
                     )
                     store.editContact(
-                        { family: 'algorand', address: payload.address },
+                        {
+                            family: LEGACY_CHAIN_FAMILY,
+                            address: payload.address,
+                        },
                         {
                             ...existing,
                             addresses: {
                                 ...existing?.addresses,
-                                algorand: payload.address,
+                                [LEGACY_CHAIN_FAMILY]: payload.address,
                             },
                             name: payload.name,
                         },

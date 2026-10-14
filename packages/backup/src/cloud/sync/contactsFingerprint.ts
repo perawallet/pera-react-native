@@ -10,15 +10,17 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_FAMILY } from '@perawallet/wallet-core-chain-contract'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 
-/** The Algorand address and name are the only fields the contact payload
+/** The legacy family's address and name are the only fields the contact payload
  *  carries. `image` and `nfd` are deliberately absent: reacting to a
  *  re-resolved NFD would sync on a timer the user never touched. */
 export const contactsFingerprint = (contacts: readonly Contact[]): string =>
     contacts
-        .flatMap(({ addresses, name }) =>
-            addresses.algorand ? [`${addresses.algorand} ${name}`] : [],
-        )
+        .flatMap(({ addresses, name }) => {
+            const address = addresses[LEGACY_CHAIN_FAMILY]
+            return address ? [`${address} ${name}`] : []
+        })
         .sort()
         .join('')

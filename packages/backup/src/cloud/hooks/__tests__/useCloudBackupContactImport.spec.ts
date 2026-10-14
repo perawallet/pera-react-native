@@ -78,9 +78,9 @@ describe('useCloudBackupContactImport', () => {
         ])
     })
 
-    test('renames an existing contact without dropping its local fields or other-family addresses', async () => {
+    test('renames an existing contact without dropping its local fields or evm addresses', async () => {
         useContactsStore.getState().addContact({
-            addresses: { algorand: 'A', other: 'X' },
+            addresses: { algorand: 'A', evm: 'X' },
             name: 'Alice',
             image: 'file:///tmp/a.png',
             nfd: 'alice.algo',
@@ -91,7 +91,7 @@ describe('useCloudBackupContactImport', () => {
 
         expect(useContactsStore.getState().contacts).toEqual([
             {
-                addresses: { algorand: 'A', other: 'X' },
+                addresses: { algorand: 'A', evm: 'X' },
                 name: 'Alicia',
                 image: 'file:///tmp/a.png',
                 nfd: 'alice.algo',
