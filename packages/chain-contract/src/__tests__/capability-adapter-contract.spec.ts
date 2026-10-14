@@ -30,12 +30,24 @@ const allTrue = (): ChainCapabilities =>
         CHAIN_CAPABILITIES.map(capability => [capability, true]),
     ) as ChainCapabilities
 
+const allFalse = (): ChainCapabilities =>
+    Object.fromEntries(
+        CHAIN_CAPABILITIES.map(capability => [capability, false]),
+    ) as ChainCapabilities
+
 const fakeRegistry = (registered: boolean) => ({
     has: () => registered,
 })
 
 const registries = (registered: boolean): CapabilityAdapterRegistries => ({
     'send flow': fakeRegistry(registered),
+    planner: fakeRegistry(registered),
+    transactionPlanner: fakeRegistry(registered),
+    reviewer: fakeRegistry(registered),
+    'local-key signer': fakeRegistry(registered),
+    broadcaster: fakeRegistry(registered),
+    addressCodec: fakeRegistry(registered),
+    accounts: fakeRegistry(registered),
     'transaction history': fakeRegistry(registered),
     assets: fakeRegistry(registered),
     'message signer': fakeRegistry(registered),
@@ -74,26 +86,35 @@ describe('capabilityAdapterContractViolations', () => {
         ])
     })
 
-    it('names the capability and the registry when an enabled capability has no adapter', () => {
+    it('names every registry an enabled capability is missing', () => {
         const chains = createChainRegistry()
-        chains.register(descriptor('algorand'), allTrue())
+        chains.register(descriptor('algorand'), {
+            ...allFalse(),
+            send: true,
+        })
 
         expect(
             capabilityAdapterContractViolations(chains, registries(false)),
         ).toEqual([
             'chain "algorand" enables "send" but the "send flow" registry has no adapter for it',
-            'chain "algorand" enables "history" but the "transaction history" registry has no adapter for it',
-            'chain "algorand" enables "assets" but the "assets" registry has no adapter for it',
-            'chain "algorand" enables "pricing" but the "assets" registry has no adapter for it',
-            'chain "algorand" enables "messageSigning" but the "message signer" registry has no adapter for it',
-            'chain "algorand" enables "dappConnect" but the "dapp-request" registry has no adapter for it',
-            'chain "algorand" enables "ledger" but the "ledger app driver" registry has no adapter for it',
-            'chain "algorand" enables "multisig" but the "multisig" registry has no adapter for it',
-            'chain "algorand" enables "swap" but the "swap" registry has no adapter for it',
-            'chain "algorand" enables "card" but the "card" registry has no adapter for it',
-            'chain "algorand" enables "nameService" but the "name service" registry has no adapter for it',
-            'chain "algorand" enables "onramp" but the "ramp" registry has no adapter for it',
-            'chain "algorand" enables "secureBackup" but the "backup" registry has no adapter for it',
+            'chain "algorand" enables "send" but the "transactionPlanner" registry has no adapter for it',
+            'chain "algorand" enables "send" but the "reviewer" registry has no adapter for it',
+            'chain "algorand" enables "send" but the "local-key signer" registry has no adapter for it',
+            'chain "algorand" enables "send" but the "broadcaster" registry has no adapter for it',
+        ])
+    })
+
+    it('reports only the registry that is missing', () => {
+        const chains = createChainRegistry()
+        chains.register(descriptor('algorand'), allTrue())
+
+        expect(
+            capabilityAdapterContractViolations(chains, {
+                ...registries(true),
+                broadcaster: fakeRegistry(false),
+            }),
+        ).toEqual([
+            'chain "algorand" enables "send" but the "broadcaster" registry has no adapter for it',
         ])
     })
 

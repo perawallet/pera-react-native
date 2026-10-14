@@ -12,13 +12,12 @@
 
 import {
     type ChainCapabilityRequirement,
+    selectChainMode,
     useChainCapabilityCheck,
-    useSelectedChainMode,
+    useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    isRestrictedIn,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { isRestrictedIn } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     routeCapabilities,
     routeCapabilityRestrictions,
@@ -29,18 +28,39 @@ export type CapabilityRequirement = ChainCapabilityRequirement & {
     platform?: RouteCapability
 }
 
+const isRouteRestricted = (
+    platform: RouteCapability,
+    requirement: ChainCapabilityRequirement,
+): boolean => {
+    const chainIds = requirement.chain
+        ? [requirement.chain.chainId]
+        : getProvider()
+              .chains.list()
+              .map(({ id }) => id)
+    // useChainCapabilityCheck subscribes to every chain's mode, so this read is current on each render.
+    const state = useNetworkStore.getState()
+    return (
+        chainIds.length > 0 &&
+        chainIds.every(id =>
+            isRestrictedIn(
+                routeCapabilityRestrictions,
+                platform,
+                selectChainMode(state, id),
+            ),
+        )
+    )
+}
+
 /** A checker over one subscription, for a list of requirements or one chosen at call time. */
 export const useCapabilityCheck = (): ((
     requirement: CapabilityRequirement,
 ) => boolean) => {
     const checkChain = useChainCapabilityCheck()
-    // The active chain is Algorand while it is the only registered chain.
-    const mode = useSelectedChainMode(LEGACY_CHAIN_ID)
     return ({ platform, ...chainRequirement }) =>
         checkChain(chainRequirement) &&
         (platform === undefined ||
             (routeCapabilities[platform] &&
-                !isRestrictedIn(routeCapabilityRestrictions, platform, mode)))
+                !isRouteRestricted(platform, chainRequirement)))
 }
 
 /** True when every present part holds. A false capability hides; nothing renders disabled. */
