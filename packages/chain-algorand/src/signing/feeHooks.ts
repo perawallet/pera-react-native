@@ -17,8 +17,8 @@ import type {
 } from '@perawallet/wallet-core-signing'
 
 export const useAlgorandFeeConfig = (): ChainFeeConfig => {
-    const { minTxnFee, pqMultiplier, assetMbr } = useMinimumFeeConfig()
-    return { minTxnFee, pqMultiplier, assetOptInMinBalance: assetMbr }
+    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
+    return { minTxnFee, pqMultiplier }
 }
 
 export const useAlgorandSuggestedMinFeeQuery =

@@ -672,15 +672,12 @@ export type CompleteMultisigHandoffArgs = {
 }
 
 /**
- * `minTxnFee` and `assetOptInMinBalance` are in the native asset's base units.
- * `pqMultiplier` multiplies the fee when the effective signer is post-quantum.
- * `assetOptInMinBalance` is the extra balance an account must hold per asset
- * it opts into.
+ * `minTxnFee` is in the native asset's base units. `pqMultiplier` multiplies
+ * the fee when the effective signer is post-quantum.
  */
 export type ChainFeeConfig = {
     minTxnFee: bigint
     pqMultiplier: bigint
-    assetOptInMinBalance: bigint
 }
 
 export type UseSuggestedMinFeeQueryResult = {

@@ -73,7 +73,6 @@ export const fakePlannerAdapter = (
     useFeeConfig: vi.fn(() => ({
         minTxnFee: 0n,
         pqMultiplier: 1n,
-        assetOptInMinBalance: 0n,
     })),
     useSuggestedMinFeeQuery: vi.fn(() => ({
         suggestedMinFee: undefined,

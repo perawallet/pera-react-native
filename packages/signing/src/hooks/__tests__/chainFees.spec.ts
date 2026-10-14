@@ -24,7 +24,7 @@ import {
     useSuggestedMinFeeQuery,
 } from '../chainFees'
 
-const feeConfig = { minTxnFee: 1n, pqMultiplier: 2n, assetOptInMinBalance: 3n }
+const feeConfig = { minTxnFee: 1n, pqMultiplier: 2n }
 const suggestedMinFeeQuery = {
     suggestedMinFee: 4n,
     isPending: false,
@@ -71,7 +71,6 @@ describe('chainFees', () => {
         expect(config.result.current).toEqual({
             minTxnFee: 0n,
             pqMultiplier: 1n,
-            assetOptInMinBalance: 0n,
         })
         expect(query.result.current).toEqual({
             suggestedMinFee: undefined,
