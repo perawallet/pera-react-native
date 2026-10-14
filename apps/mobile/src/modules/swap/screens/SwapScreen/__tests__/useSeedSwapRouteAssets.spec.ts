@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSeedSwapRouteAssets } from '../useSeedSwapRouteAssets'
 
 const NATIVE_ASSET_ID = '0'
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const OUT_ID = '31566704'
 const IN_ID = '887406851'
@@ -26,20 +27,12 @@ const mockUseSingleAssetDetailsQuery = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
     isNativeAssetId: (_chainId: string, id: string) => id === '0',
     getAssetsQueryKey: (assetIDs: string[], scope: { networkId: string }) => [
         'assets',
         { assetIDs, network: scope.networkId },
     ],
     useSingleAssetDetailsQuery: mockUseSingleAssetDetailsQuery,
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -59,7 +52,9 @@ describe('useSeedSwapRouteAssets', () => {
     })
 
     it('seeds the asset cache for a non-opted-in output asset', () => {
-        renderHook(() => useSeedSwapRouteAssets({ assetOutId: OUT_ID }))
+        renderHook(() =>
+            useSeedSwapRouteAssets({ scope: SCOPE, assetOutId: OUT_ID }),
+        )
 
         expect(mockSetQueryData).toHaveBeenCalledTimes(1)
         const [key] = mockSetQueryData.mock.calls[0]
@@ -70,7 +65,9 @@ describe('useSeedSwapRouteAssets', () => {
     })
 
     it('appends the fetched asset, overwriting an already-cached empty result', () => {
-        renderHook(() => useSeedSwapRouteAssets({ assetOutId: OUT_ID }))
+        renderHook(() =>
+            useSeedSwapRouteAssets({ scope: SCOPE, assetOutId: OUT_ID }),
+        )
 
         const [, updater] = mockSetQueryData.mock.calls[0]
         expect(updater(undefined)).toEqual([mockOutAsset])
@@ -78,7 +75,9 @@ describe('useSeedSwapRouteAssets', () => {
     })
 
     it('does not duplicate an asset that is already cached', () => {
-        renderHook(() => useSeedSwapRouteAssets({ assetOutId: OUT_ID }))
+        renderHook(() =>
+            useSeedSwapRouteAssets({ scope: SCOPE, assetOutId: OUT_ID }),
+        )
 
         const [, updater] = mockSetQueryData.mock.calls[0]
         const existing = [{ assetId: OUT_ID, unitName: 'USDC', decimals: 6 }]
@@ -87,7 +86,10 @@ describe('useSeedSwapRouteAssets', () => {
 
     it('does not fetch or seed when the output asset is ALGO', () => {
         renderHook(() =>
-            useSeedSwapRouteAssets({ assetOutId: NATIVE_ASSET_ID }),
+            useSeedSwapRouteAssets({
+                scope: SCOPE,
+                assetOutId: NATIVE_ASSET_ID,
+            }),
         )
 
         // An ALGO route id is passed through as '' — the disabled sentinel.
@@ -98,15 +100,31 @@ describe('useSeedSwapRouteAssets', () => {
         expect(mockSetQueryData).not.toHaveBeenCalled()
     })
 
+    it('seeds nothing without a scope', () => {
+        renderHook(() =>
+            useSeedSwapRouteAssets({ scope: null, assetOutId: OUT_ID }),
+        )
+
+        expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith(
+            '',
+            expect.objectContaining({ chainId: 'algorand' }),
+        )
+        expect(mockSetQueryData).not.toHaveBeenCalled()
+    })
+
     it('does nothing when no route params are provided', () => {
-        renderHook(() => useSeedSwapRouteAssets({}))
+        renderHook(() => useSeedSwapRouteAssets({ scope: SCOPE }))
 
         expect(mockSetQueryData).not.toHaveBeenCalled()
     })
 
     it('seeds a non-ALGO input asset as well', () => {
         renderHook(() =>
-            useSeedSwapRouteAssets({ assetInId: IN_ID, assetOutId: OUT_ID }),
+            useSeedSwapRouteAssets({
+                scope: SCOPE,
+                assetInId: IN_ID,
+                assetOutId: OUT_ID,
+            }),
         )
 
         expect(mockSetQueryData).toHaveBeenCalledTimes(2)

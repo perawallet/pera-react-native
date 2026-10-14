@@ -12,23 +12,22 @@
 
 import { useState, useCallback, useRef } from 'react'
 import {
+    SwapAccountUnsupportedError,
+    SwapCosignUnsupportedError,
     useExecuteSwapMutation,
     type ExecuteSwapResult,
     type SwapExecutionFailure,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
     baseUnitsToDisplayUnits,
     formatNumber,
     isPeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
-import { useIsQuantumSwapEnabled } from '@hooks/useIsQuantumSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
@@ -119,17 +118,14 @@ const STATUS_BY_RESULT: Record<ExecuteSwapResult['kind'], SwapExecutionStatus> =
     }
 
 export const useSwapExecution = (): UseSwapExecutionResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const [status, setStatus] = useState<SwapExecutionStatus>('idle')
     const [error, setError] = useState<Nullable<SwapExecutionError>>(null)
     const [txIds, setTxIds] = useState<string[]>([])
 
     const { t } = useLanguage()
     const { getMessage } = useAlgodErrorMessage()
-    const isQuantumSwapEnabled = useIsQuantumSwapEnabled()
-    const { decimals: nativeDecimals } = useNativeAsset()
     const { mutateAsync: executeSwap, reset: resetMutation } =
-        useExecuteSwapMutation(scope)
+        useExecuteSwapMutation()
     const cancelRequestedRef = useRef(false)
 
     const describeFailure = useCallback(
@@ -151,20 +147,25 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     return { message: copy.body, title: copy.title }
                 }
                 case 'insufficient-native-balance': {
+                    const nativeAsset = nativeAssetFor(failure.chainId)
+                    const symbol = nativeAsset.unitName ?? ''
                     const { sign, integer, fraction } = formatNumber(
                         baseUnitsToDisplayUnits(
                             failure.shortfall,
-                            nativeDecimals,
+                            nativeAsset.decimals,
                         ),
-                        nativeDecimals,
+                        nativeAsset.decimals,
                         undefined,
                         0,
                     )
                     return {
-                        message: t('swap.execution.insufficient_algo_body', {
+                        message: t('swap.execution.insufficient_native_body', {
                             amount: `${sign}${integer}${fraction}`,
+                            symbol,
                         }),
-                        title: t('swap.execution.insufficient_algo_title'),
+                        title: t('swap.execution.insufficient_native_title', {
+                            symbol,
+                        }),
                     }
                 }
                 // The backend answered, so the chosen provider couldn't build
@@ -204,7 +205,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 }
             }
         },
-        [t, getMessage, nativeDecimals],
+        [t, getMessage],
     )
 
     const execute = useCallback(
@@ -213,16 +214,36 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             setTxIds([])
             cancelRequestedRef.current = false
 
-            const result = await executeSwap({
-                quote,
-                isQuantumSwapEnabled,
-                signingSource: {
-                    name: t('swap.signing.source_name'),
-                    description: t('swap.signing.source_description'),
-                },
-                onProgress: setStatus,
-                isCancelled: () => cancelRequestedRef.current,
-            })
+            let result: ExecuteSwapResult
+            try {
+                result = await executeSwap({
+                    quote,
+                    signingSource: {
+                        name: t('swap.signing.source_name'),
+                        description: t('swap.signing.source_description'),
+                    },
+                    onProgress: setStatus,
+                    isCancelled: () => cancelRequestedRef.current,
+                })
+            } catch (error) {
+                // Refused before anything ran: the account can't swap here.
+                // Anything else is unexpected and still escapes.
+                if (
+                    !(error instanceof SwapAccountUnsupportedError) &&
+                    !(error instanceof SwapCosignUnsupportedError)
+                ) {
+                    throw error
+                }
+                const copy = resolveErrorCopy(error, t, undefined, getMessage)
+                setStatus('error')
+                setError({ phase: 'prepare', message: copy.body })
+                return {
+                    kind: 'error',
+                    phase: 'prepare',
+                    message: copy.body,
+                    title: copy.title,
+                }
+            }
 
             setStatus(STATUS_BY_RESULT[result.kind])
             if (result.kind === 'success') {
@@ -246,7 +267,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
             return { kind: result.kind }
         },
-        [executeSwap, isQuantumSwapEnabled, t, describeFailure],
+        [executeSwap, t, getMessage, describeFailure],
     )
 
     const reset = useCallback(() => {

@@ -17,6 +17,7 @@ import {
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useSwapSigningAccounts } from '@perawallet/wallet-core-swaps'
 
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { AccountDrawerSelectHeader } from './AccountDrawerSelectHeader'
@@ -27,23 +28,25 @@ import type { AccountDrawerPickerProps } from './types'
  * than the props themselves: the props include a header element rebuilt on every
  * render, and pushing that through context state would re-render on a loop.
  */
-export type AccountPickerKind = 'portfolio' | 'select' | 'card' | 'fund'
+export type AccountPickerKind =
+    | 'portfolio'
+    | 'select'
+    | 'swap'
+    | 'card'
+    | 'fund'
 
 /** Browsing: portfolio value on top, search, and the Pera Card row. */
 export const usePortfolioPicker = (): AccountDrawerPickerProps =>
     useMemo(() => ({ showSearch: true, showPeraCardActivation: true }), [])
 
-/**
- * Picking an account to act with — only accounts this wallet can sign for, and
- * a prompt in place of the portfolio.
- */
-export const useSigningPicker = (): AccountDrawerPickerProps => {
-    const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
-
+/** Picking an account to act with, limited to `accounts`, with a prompt in place of the portfolio. */
+export const useAccountListPicker = (
+    accounts: readonly WalletAccount[],
+): AccountDrawerPickerProps => {
     const accountFilter = useCallback(
         (account: WalletAccount) =>
-            signingAccounts.some(signer => signer.id === account.id),
-        [signingAccounts],
+            accounts.some(candidate => candidate.id === account.id),
+        [accounts],
     )
 
     return useMemo(
@@ -55,6 +58,14 @@ export const useSigningPicker = (): AccountDrawerPickerProps => {
         [accountFilter],
     )
 }
+
+/** Picking an account to act with — only accounts this wallet can sign for. */
+export const useSigningPicker = (): AccountDrawerPickerProps =>
+    useAccountListPicker(useSigningAccounts(LEGACY_CHAIN_ID))
+
+/** Picking an account to swap with — only accounts that can sign on their swap chain. */
+export const useSwapPicker = (): AccountDrawerPickerProps =>
+    useAccountListPicker(useSwapSigningAccounts())
 
 /** Picking an account to fund: signing accounts that live on a chain Fund can buy onto. */
 export const useFundPicker = (): AccountDrawerPickerProps => {
@@ -111,11 +122,12 @@ export const useAccountPickers = (): Record<
 > => {
     const portfolio = usePortfolioPicker()
     const select = useSigningPicker()
+    const swap = useSwapPicker()
     const card = useCardPicker()
     const fund = useFundPicker()
 
     return useMemo(
-        () => ({ portfolio, select, card, fund }),
-        [portfolio, select, card, fund],
+        () => ({ portfolio, select, swap, card, fund }),
+        [portfolio, select, swap, card, fund],
     )
 }

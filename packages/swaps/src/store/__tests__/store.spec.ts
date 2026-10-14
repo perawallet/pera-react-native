@@ -37,7 +37,7 @@ describe('swaps/store', () => {
         const { result } = renderHook(() => useSwapsStore())
 
         expect(result.current.fromAsset).toBeNull()
-        expect(result.current.toAsset).toBe('31566704')
+        expect(result.current.toAsset).toBeNull()
     })
 
     test('setFromAsset updates fromAsset state', () => {
@@ -138,7 +138,7 @@ describe('swaps/store', () => {
         })
 
         expect(result.current.fromAsset).toBeNull()
-        expect(result.current.toAsset).toBe('31566704')
+        expect(result.current.toAsset).toBeNull()
         expect(result.current.slippage).toBe('2.5')
     })
 

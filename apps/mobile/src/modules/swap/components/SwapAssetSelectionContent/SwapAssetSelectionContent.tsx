@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
 import { PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
@@ -25,6 +26,7 @@ const filterSwappable = (item: AssetWithAccountBalance) =>
     isSwappableAsset(item.asset)
 
 type BaseProps = {
+    scope: ChainScope
     excludeAssetId?: string
 }
 
@@ -34,7 +36,7 @@ export type SwapAssetSelectionContentProps = BaseProps &
 export const SwapAssetSelectionContent = (
     props: SwapAssetSelectionContentProps,
 ) => {
-    const { variant, excludeAssetId } = props
+    const { scope, variant, excludeAssetId } = props
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<string>()
@@ -47,11 +49,14 @@ export const SwapAssetSelectionContent = (
                 variant === 'from'
                     ? SwapEvent.SelectTopAsset
                     : SwapEvent.SelectBottomAsset,
-                { [AnalyticsMetadataKey.AssetName]: assetName },
+                {
+                    [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    [AnalyticsMetadataKey.AssetName]: assetName,
+                },
             )
             resolve(asset.assetId)
         },
-        [resolve, variant],
+        [resolve, scope.chainId, variant],
     )
 
     const title =
@@ -65,6 +70,7 @@ export const SwapAssetSelectionContent = (
             <PWView style={styles.body}>
                 {props.variant === 'to' ? (
                     <SwapToAssetSelectionList
+                        scope={scope}
                         fromAssetId={props.fromAssetId}
                         onAssetSelected={handleAssetSelected}
                         isVisible

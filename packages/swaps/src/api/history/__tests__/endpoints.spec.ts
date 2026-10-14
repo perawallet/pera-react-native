@@ -71,7 +71,7 @@ describe('fetchSwapHistory', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/dex-swap/history/',
             params: { address: 'ADDRESS' },
@@ -98,7 +98,7 @@ describe('fetchSwapHistory', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/dex-swap/history/',
             params: {
@@ -128,7 +128,7 @@ describe('fetchDistinctPairsHistory', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/dex-swap/distinct-pairs-history/',
             params: { address: 'ADDRESS' },
@@ -150,7 +150,7 @@ describe('fetchDistinctPairsHistory', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/dex-swap/distinct-pairs-history/',
             params: { address: 'ADDRESS', statuses: 'completed' },

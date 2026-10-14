@@ -44,7 +44,7 @@ describe('useMarkSignRequestsConfirmedMutation', () => {
             children,
         )
 
-    test('calls the endpoint with the network and request payload from the input', async () => {
+    test('calls the endpoint with the scope and request payload from the input', async () => {
         mocks.markSignRequestsConfirmed.mockResolvedValue(undefined)
 
         const { result } = renderHook(
@@ -54,14 +54,14 @@ describe('useMarkSignRequestsConfirmedMutation', () => {
 
         await act(async () => {
             await result.current.markConfirmed({
-                network: 'testnet',
+                scope: { chainId: 'algorand', networkId: 'testnet' },
                 deviceId: 'device-1',
                 signRequestIds: ['sr-1', 'sr-2'],
             })
         })
 
         expect(mocks.markSignRequestsConfirmed).toHaveBeenCalledWith(
-            'testnet',
+            { chainId: 'algorand', networkId: 'testnet' },
             {
                 device_id: 'device-1',
                 proposed_sign_request_ids: ['sr-1', 'sr-2'],
@@ -80,7 +80,7 @@ describe('useMarkSignRequestsConfirmedMutation', () => {
         await act(async () => {
             await expect(
                 result.current.markConfirmed({
-                    network: 'mainnet',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
                     deviceId: 'device-1',
                     signRequestIds: ['sr-1'],
                 }),
@@ -103,7 +103,7 @@ describe('useMarkSignRequestsConfirmedMutation', () => {
 
         act(() => {
             void result.current.markConfirmed({
-                network: 'testnet',
+                scope: { chainId: 'algorand', networkId: 'testnet' },
                 deviceId: 'device-1',
                 signRequestIds: ['sr-1'],
             })

@@ -42,6 +42,7 @@ import { TransactionStatusBadge } from '@modules/algorand/components/Transaction
 
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
+import { SwapScopePreview } from './SwapScopePreview'
 import { SwapProviderRow } from '@modules/swap/components/SwapProviderRow'
 import { SwapQuoteDetails } from '@modules/swap/components/SwapQuoteDetails'
 
@@ -468,21 +469,31 @@ registerPreview({
 registerPreview({
     id: 'comp-swap-provider-display',
     render: () => (
-        <SwapProviderDisplay
-            providerName='Tinyman'
-            providerDisplayName='Tinyman'
-        />
+        <SwapScopePreview>
+            {scope => (
+                <SwapProviderDisplay
+                    scope={scope}
+                    providerName='Tinyman'
+                    providerDisplayName='Tinyman'
+                />
+            )}
+        </SwapScopePreview>
     ),
 })
 
 registerPreview({
     id: 'comp-swap-provider-row',
     render: () => (
-        <SwapProviderRow
-            quote={mockSwapQuote}
-            selectionMode='auto'
-            onPress={() => undefined}
-        />
+        <SwapScopePreview>
+            {scope => (
+                <SwapProviderRow
+                    scope={scope}
+                    quote={mockSwapQuote}
+                    selectionMode='auto'
+                    onPress={() => undefined}
+                />
+            )}
+        </SwapScopePreview>
     ),
 })
 

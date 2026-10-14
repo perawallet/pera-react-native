@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Swap flow. */
@@ -55,45 +56,50 @@ type SwapStatusPayload = {
     [Key.SwapAddress]: string
 }
 
-export interface SwapRequiredPayloads {
-    [SwapEvent.SelectTopAsset]: {
-        [Key.AssetName]: string
-    }
-    [SwapEvent.SelectBottomAsset]: {
-        [Key.AssetName]: string
-    }
-    [SwapEvent.SelectFromToken]: {
-        [Key.AssetId]: string
-    }
-    [SwapEvent.SelectToToken]: {
-        [Key.AssetId]: string
-    }
-    [SwapEvent.Completed]: SwapStatusPayload & {
-        [Key.PeraFeeAsAlgo]?: number
-        [Key.PeraFeeAsUsd]?: number
-        [Key.ExchangeFeeAsAlgo]?: number
-        [Key.NetworkFeeAsAlgo]?: number
-    }
-    [SwapEvent.Failed]: SwapStatusPayload
+/** Every swap event names the chain it ran on. */
+type SwapChainPayload = {
+    [Key.ChainId]: ChainId
 }
 
-export interface SwapOptionalPayloads {
-    [SwapEvent.SelectTopPair]: {
-        [Key.SwapPairing]?: string
+type SwapPairingPayload = SwapChainPayload & {
+    [Key.SwapPairing]?: string
+}
+
+type SwapRouterPayload = SwapChainPayload & {
+    [Key.RouterName]?: string
+}
+
+export interface SwapRequiredPayloads {
+    [SwapEvent.SelectTopAsset]: SwapChainPayload & {
+        [Key.AssetName]: string
     }
-    [SwapEvent.HistorySeeAll]: {
-        [Key.SwapPairing]?: string
+    [SwapEvent.SelectBottomAsset]: SwapChainPayload & {
+        [Key.AssetName]: string
     }
-    [SwapEvent.SelectHistory]: {
-        [Key.SwapPairing]?: string
+    [SwapEvent.SelectFromToken]: SwapChainPayload & {
+        [Key.AssetId]: string
     }
-    [SwapEvent.SelectHistoryInSeeAll]: {
-        [Key.SwapPairing]?: string
+    [SwapEvent.SelectToToken]: SwapChainPayload & {
+        [Key.AssetId]: string
     }
-    [SwapEvent.SelectProviderOpen]: {
-        [Key.RouterName]?: string
-    }
-    [SwapEvent.SelectProviderRouter]: {
-        [Key.RouterName]?: string
-    }
+    [SwapEvent.Completed]: SwapChainPayload &
+        SwapStatusPayload & {
+            [Key.PeraFeeAsAlgo]?: number
+            [Key.PeraFeeAsUsd]?: number
+            [Key.ExchangeFeeAsAlgo]?: number
+            [Key.NetworkFeeAsAlgo]?: number
+        }
+    [SwapEvent.Failed]: SwapChainPayload & SwapStatusPayload
+    [SwapEvent.SelectTopPair]: SwapPairingPayload
+    [SwapEvent.HistorySeeAll]: SwapPairingPayload
+    [SwapEvent.SelectHistory]: SwapPairingPayload
+    [SwapEvent.SelectHistoryInSeeAll]: SwapPairingPayload
+    [SwapEvent.SelectProviderOpen]: SwapRouterPayload
+    [SwapEvent.SelectProviderRouter]: SwapRouterPayload
+    [SwapEvent.SettingsApply]: SwapChainPayload
+    [SwapEvent.SettingsLocalCurrencyOn]: SwapChainPayload
+    [SwapEvent.SettingsLocalCurrencyOff]: SwapChainPayload
+    [SwapEvent.Confirm]: SwapChainPayload
+    [SwapEvent.ConfirmSwapButton]: SwapChainPayload
+    [SwapEvent.EnterNumbers]: SwapChainPayload
 }

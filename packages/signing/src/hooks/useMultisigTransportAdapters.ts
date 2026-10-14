@@ -192,7 +192,7 @@ export const useMultisigTransportAdapters =
                     for (const cosigner of cosigners) {
                         try {
                             const cosignResponse = await addSignature(
-                                network,
+                                scope,
                                 signRequestId,
                                 buildResponses([cosigner]),
                             )
@@ -344,7 +344,7 @@ export const useMultisigTransportAdapters =
 
                     const responses = buildResponses(signers)
                     const response = await addSignature(
-                        network,
+                        scope,
                         signRequestId,
                         responses,
                     )

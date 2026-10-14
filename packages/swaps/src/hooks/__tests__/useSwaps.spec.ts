@@ -14,7 +14,10 @@ import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { FAKE_NATIVE_ASSET_ID } from '../../__tests__/fakeSwapAdapter'
+import {
+    FAKE_NATIVE_ASSET_ID,
+    FAKE_RECEIVE_ASSET_ID,
+} from '../../__tests__/fakeSwapAdapter'
 import { useSwapsStore } from '../../store'
 import { useSwaps } from '../useSwaps'
 
@@ -25,11 +28,11 @@ describe('swaps/useSwaps', () => {
         useSwapsStore.getState().resetState()
     })
 
-    test("defaults fromAsset to the chain adapter's native asset", () => {
+    test("defaults the pair to the chain adapter's native and receive assets", () => {
         const { result } = renderHook(() => useSwaps(SCOPE))
 
         expect(result.current.fromAsset).toBe(FAKE_NATIVE_ASSET_ID)
-        expect(result.current.toAsset).toBe('31566704')
+        expect(result.current.toAsset).toBe(FAKE_RECEIVE_ASSET_ID)
     })
 
     test('setFromAsset updates fromAsset', () => {

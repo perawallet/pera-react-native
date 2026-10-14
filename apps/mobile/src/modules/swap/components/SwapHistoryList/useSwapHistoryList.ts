@@ -11,22 +11,20 @@
  */
 
 import { useCallback } from 'react'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import {
+    swapExplorerUrlFor,
     useSwapHistoryInfiniteQuery,
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
 
 export type UseSwapHistoryListParams = {
+    scope: ChainScope
     address: string
     onClose: () => void
 }
@@ -44,11 +42,10 @@ export type UseSwapHistoryListResult = {
 }
 
 export const useSwapHistoryList = ({
+    scope,
     address,
     onClose,
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { networkConfig } = useNetwork()
     const { pushWebView } = useWebView()
 
     const {
@@ -67,17 +64,16 @@ export const useSwapHistoryList = ({
 
     const handleItemPress = useCallback(
         (item: SwapHistoryItem) => {
-            if (!item.transactionGroupId || !networkConfig.explorerUrl) return
+            const url = swapExplorerUrlFor(scope, item)
+            if (!url) return
             trackEvent(SwapEvent.SelectHistoryInSeeAll, {
+                [AnalyticsMetadataKey.ChainId]: scope.chainId,
                 [AnalyticsMetadataKey.SwapPairing]: `${item.assetIn.unitName}/${item.assetOut.unitName}`,
             })
             onClose()
-            pushWebView({
-                url: `${networkConfig.explorerUrl}/tx-group/${item.transactionGroupId}/`,
-                id: generateUniqueId(),
-            })
+            pushWebView({ url, id: generateUniqueId() })
         },
-        [networkConfig.explorerUrl, onClose, pushWebView],
+        [scope, onClose, pushWebView],
     )
 
     const handleEndReached = useCallback(() => {

@@ -18,8 +18,10 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 let mockSlippage: Nullable<string> = null
 let mockIsLocalCurrencyInput = false
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwaps: () => ({
+    useSwapSettings: () => ({
         slippage: mockSlippage,
         isLocalCurrencyInput: mockIsLocalCurrencyInput,
     }),
@@ -34,7 +36,7 @@ describe('useSwapConfigurationContent', () => {
     it('initializes with defaults when no persisted slippage and local currency off', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         expect(result.current.balanceText).toBe('')
@@ -47,7 +49,7 @@ describe('useSwapConfigurationContent', () => {
         mockSlippage = '1.5'
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         expect(result.current.slippageText).toBe('1.5')
@@ -57,7 +59,7 @@ describe('useSwapConfigurationContent', () => {
         mockIsLocalCurrencyInput = true
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         expect(result.current.useLocalCurrency).toBe(true)
@@ -66,7 +68,7 @@ describe('useSwapConfigurationContent', () => {
     it('applying with 50% balance invokes onApply with balancePercentage 50', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         act(() => {
@@ -86,7 +88,7 @@ describe('useSwapConfigurationContent', () => {
     it('typing 150 in balance shows error and disables Apply', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         act(() => {
@@ -105,7 +107,7 @@ describe('useSwapConfigurationContent', () => {
     it('typing 11 in slippage shows error and disables Apply', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         act(() => {
@@ -119,7 +121,7 @@ describe('useSwapConfigurationContent', () => {
     it('accepts slippage within valid range', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         act(() => {
@@ -133,7 +135,7 @@ describe('useSwapConfigurationContent', () => {
     it('normalizes comma decimal separator to dot', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         act(() => {
@@ -147,7 +149,7 @@ describe('useSwapConfigurationContent', () => {
     it('handleApply with valid values emits expected SwapConfigurationResult', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         act(() => {
@@ -170,7 +172,7 @@ describe('useSwapConfigurationContent', () => {
         mockIsLocalCurrencyInput = true
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         expect(result.current.useLocalCurrency).toBe(true)
@@ -190,7 +192,7 @@ describe('useSwapConfigurationContent', () => {
     it('emits null balancePercentage when balance text is empty', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
-            useSwapConfigurationContent({ onApply }),
+            useSwapConfigurationContent({ scope: SCOPE, onApply }),
         )
 
         act(() => {

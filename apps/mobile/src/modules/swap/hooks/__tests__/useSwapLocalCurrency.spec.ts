@@ -27,7 +27,7 @@ let mockAssetDecimals: Nullable<number> = 6
 const ASSET_ID = '0'
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwaps: () => ({ isLocalCurrencyInput: mockIsLocalCurrencyInput }),
+    useSwapSettings: () => ({ isLocalCurrencyInput: mockIsLocalCurrencyInput }),
 }))
 
 // Only the hook is stubbed — the conversion utils stay real so the tests

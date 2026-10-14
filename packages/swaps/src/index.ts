@@ -19,6 +19,8 @@ export * from './utils'
 export * from './execution'
 export {
     swapChainAdapters,
+    swapExplorerUrlFor,
+    SwapAccountUnsupportedError,
     SwapCosignUnsupportedError,
     type SwapChainAdapter,
 } from './chain-adapter'

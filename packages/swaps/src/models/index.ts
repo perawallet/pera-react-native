@@ -19,7 +19,8 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 export type SwapsState = BaseStoreState & {
     /** null until the user picks one: the chain's native asset. */
     fromAsset: Nullable<string>
-    toAsset: string
+    /** null until the user picks one: the chain adapter's default receive asset. */
+    toAsset: Nullable<string>
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void

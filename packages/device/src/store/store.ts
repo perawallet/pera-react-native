@@ -14,6 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { DeviceIdOrigin, DeviceState } from '../models'
 import {
     rekeyLegacyNetworkRecord,
+    scopeForLegacyNetwork,
     scopeKeyForLegacyNetwork,
     toScopeKey,
     type ChainScope,
@@ -62,16 +63,15 @@ export const migrateDeviceState = (
     return state
 }
 
-export const deviceIdFor = (
-    state: Pick<DeviceState, 'deviceIDs'>,
-    network: Network,
-): Nullable<string> =>
-    state.deviceIDs?.get(scopeKeyForLegacyNetwork(network)) ?? null
-
 export const deviceIdForScope = (
     state: Pick<DeviceState, 'deviceIDs'>,
     scope: ChainScope,
 ): Nullable<string> => state.deviceIDs?.get(toScopeKey(scope)) ?? null
+
+export const deviceIdFor = (
+    state: Pick<DeviceState, 'deviceIDs'>,
+    network: Network,
+): Nullable<string> => deviceIdForScope(state, scopeForLegacyNetwork(network))
 
 export const deviceIdOriginFor = (
     state: Pick<DeviceState, 'deviceIdOrigins'>,

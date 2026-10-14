@@ -183,9 +183,17 @@ type StoredAccount = {
     id: string
     chains: Record<string, { address: string }>
 }
-const { mockSetSelectedAccountId, mockStoredAccounts } = vi.hoisted(() => ({
-    mockSetSelectedAccountId: vi.fn(),
-    mockStoredAccounts: { current: [] as StoredAccount[] },
+
+const SELECTED_ACCOUNT = {
+    id: 'selected',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'addr1' } },
+}
+
+const accountsState = vi.hoisted(() => ({
+    accounts: [] as unknown[],
+    selected: null as unknown,
+    setSelectedAccountId: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -195,10 +203,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chains: { algorand: { address: 'addr1' } },
     }),
     useSelectedAccountId: () => ({
-        setSelectedAccountId: mockSetSelectedAccountId,
+        setSelectedAccountId: accountsState.setSelectedAccountId,
     }),
     useAccountsStore: {
-        getState: () => ({ accounts: mockStoredAccounts.current }),
+        getState: () => ({
+            accounts: accountsState.accounts,
+            getSelectedAccount: () => accountsState.selected,
+        }),
     },
     findAccountByAnyChainAddress: (
         accounts: StoredAccount[],
@@ -461,6 +472,8 @@ describe('useDeepLink', () => {
         // handling doesn't suppress the next test's.
         resetDeeplinkListenerStateForTesting()
         capabilityState.reset()
+        accountsState.accounts = []
+        accountsState.selected = SELECTED_ACCOUNT
         mockRouteCapabilities.giftCards = true
         mockIsGiftCardsEnabled.mockReturnValue(true)
         mockRouteCapabilities.inAppWebView = true
@@ -1525,6 +1538,67 @@ describe('useDeepLink', () => {
         })
     })
 
+    it("selects the link's account before opening the swap", async () => {
+        const linked = {
+            id: 'linked',
+            custody: { kind: 'local', seed: null },
+            chains: { algorand: { address: 'LINKED' } },
+        }
+        accountsState.accounts = [linked]
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.SWAP,
+            address: 'LINKED',
+            assetInId: '0',
+            assetOutId: '123',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/swap',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
+            'linked',
+        )
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: { assetInId: '0', assetOutId: '123' },
+        })
+    })
+
+    it('refuses a swap link for an account with no address on a swap chain', async () => {
+        accountsState.selected = {
+            id: 'eth-only',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xabc' } },
+        }
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.SWAP,
+            assetInId: '0',
+            assetOutId: '123',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/swap',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'common.network_unavailable.title',
+            'common.network_unavailable.generic_body',
+        )
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
+    })
+
     it('should handle BUY deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.BUY,
@@ -1555,12 +1629,7 @@ describe('useDeepLink', () => {
         }
 
         beforeEach(() => {
-            mockStoredAccounts.current = [heldOnTwoChains]
-            mockSetSelectedAccountId.mockClear()
-        })
-
-        afterEach(() => {
-            mockStoredAccounts.current = []
+            accountsState.accounts = [heldOnTwoChains]
         })
 
         const openBuyLink = async (address: string) => {
@@ -1583,7 +1652,7 @@ describe('useDeepLink', () => {
             async address => {
                 await openBuyLink(address)
 
-                expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+                expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
                     'two-chains',
                 )
                 expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
@@ -1595,7 +1664,7 @@ describe('useDeepLink', () => {
         it('keeps the selection for an address the wallet does not hold', async () => {
             await openBuyLink('NOT_HELD')
 
-            expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+            expect(accountsState.setSelectedAccountId).not.toHaveBeenCalled()
         })
     })
 

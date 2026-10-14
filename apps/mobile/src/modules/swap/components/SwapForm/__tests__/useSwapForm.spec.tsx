@@ -16,6 +16,8 @@ import { Decimal } from 'decimal.js'
 import { useSwapForm } from '../useSwapForm'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mockSetFromAsset = vi.fn()
 const mockSetToAsset = vi.fn()
 const mockSetSlippage = vi.fn()
@@ -121,7 +123,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
+    nativeAssetFor: () => ({ assetId: '0', decimals: 6 }),
     useAssetsQuery: () => ({
         data: new Map([
             [
@@ -174,7 +176,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
-    useDeviceID: () => 'test-device-id',
+    useDeviceIdLookup: () => () => 'test-device-id',
 }))
 
 vi.mock('@hooks/useModalState', () => ({
@@ -244,7 +246,7 @@ describe('useSwapForm', () => {
     })
 
     it('initializes with null amounts and canSwap false', () => {
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         expect(result.current.payAmount).toBeNull()
         expect(result.current.receiveAmount).toBeNull()
@@ -253,14 +255,14 @@ describe('useSwapForm', () => {
     })
 
     it('returns asset IDs from swap store', () => {
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         expect(result.current.payAssetId).toBe('0')
         expect(result.current.receiveAssetId).toBe('31566704')
     })
 
     it('handlePayAmountChange updates payAmount', () => {
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         act(() => {
             result.current.handlePayAmountChange(new Decimal(5))
@@ -270,7 +272,7 @@ describe('useSwapForm', () => {
     })
 
     it('handleSwapDirection swaps assets and amounts', () => {
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         act(() => {
             result.current.handlePayAmountChange(new Decimal(10))
@@ -290,7 +292,7 @@ describe('useSwapForm', () => {
     // produces a wrong quote.
     it('handleOpenPayAssetSelection resets both amounts and the quote when a new asset is picked', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce('123')
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         act(() => {
             result.current.handlePayAmountChange(new Decimal(5))
@@ -309,7 +311,7 @@ describe('useSwapForm', () => {
 
     it('handleOpenPayAssetSelection no-ops when picker is dismissed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenPayAssetSelection()
@@ -322,7 +324,7 @@ describe('useSwapForm', () => {
         mockCreateQuotes.mockResolvedValue([])
         mockRequestBottomSheet.mockResolvedValueOnce('123')
 
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handlePayAmountChange(new Decimal(5))
@@ -341,7 +343,7 @@ describe('useSwapForm', () => {
     // Pair-history and top-pair taps write the pair straight into the store,
     // so the reset has to react to the store change, not just the sheet flow.
     it('clears the amounts when the pay asset changes outside the form', () => {
-        const { result, rerender } = renderHook(() => useSwapForm())
+        const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
 
         act(() => {
             result.current.handlePayAmountChange(new Decimal(5))
@@ -359,7 +361,7 @@ describe('useSwapForm', () => {
         // In a fresh tab the route's pay asset lands after mount, and that
         // change resets the amounts, so applying earlier would be wiped.
         const { result, rerender } = renderHook(() =>
-            useSwapForm({ assetId: '123', amount: '2.5' }),
+            useSwapForm(SCOPE, { assetId: '123', amount: '2.5' }),
         )
         expect(result.current.payAmount).toBeNull()
 
@@ -372,7 +374,7 @@ describe('useSwapForm', () => {
     it('applies a resumed amount once, not again on a later return to its asset', () => {
         mockFromAsset = '123'
         const { result, rerender } = renderHook(() =>
-            useSwapForm({ assetId: '123', amount: '2.5' }),
+            useSwapForm(SCOPE, { assetId: '123', amount: '2.5' }),
         )
         expect(result.current.payAmount).toEqual(new Decimal('2.5'))
 
@@ -399,7 +401,7 @@ describe('useSwapForm', () => {
 
         it('reopens the confirmation once, on a fresh quote', async () => {
             const { result } = renderHook(() =>
-                useSwapForm({ assetId: '0', amount: '5' }),
+                useSwapForm(SCOPE, { assetId: '0', amount: '5' }),
             )
             await act(async () => {})
 
@@ -409,7 +411,7 @@ describe('useSwapForm', () => {
 
         it('waits for the pay balance before reopening the confirmation', async () => {
             mockIsPayBalanceFetched = false
-            renderHook(() => useSwapForm({ assetId: '0', amount: '5' }))
+            renderHook(() => useSwapForm(SCOPE, { assetId: '0', amount: '5' }))
             await act(async () => {})
 
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
@@ -417,7 +419,7 @@ describe('useSwapForm', () => {
 
         it('leaves the confirmation closed once the user edits the amount', async () => {
             const { result } = renderHook(() =>
-                useSwapForm({ assetId: '0', amount: '5' }),
+                useSwapForm(SCOPE, { assetId: '0', amount: '5' }),
             )
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(3))
@@ -441,7 +443,7 @@ describe('useSwapForm', () => {
                 },
             },
         ])
-        const { result, rerender } = renderHook(() => useSwapForm())
+        const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handlePayAmountChange(new Decimal(5))
@@ -464,7 +466,7 @@ describe('useSwapForm', () => {
         mockCreateQuotes.mockResolvedValue([])
         mockRequestBottomSheet.mockResolvedValueOnce('456')
 
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handlePayAmountChange(new Decimal(5))
@@ -482,7 +484,7 @@ describe('useSwapForm', () => {
 
     it('handleOpenReceiveAssetSelection clears receive amount and quote when an asset is picked', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce('456')
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenReceiveAssetSelection()
@@ -496,7 +498,7 @@ describe('useSwapForm', () => {
 
     it('handleOpenReceiveAssetSelection no-ops when picker is dismissed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenReceiveAssetSelection()
@@ -510,7 +512,7 @@ describe('useSwapForm', () => {
             amount: new Decimal('5000000'),
         })
 
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handleMaxPress()
@@ -529,7 +531,7 @@ describe('useSwapForm', () => {
             amount: new Decimal(0),
         })
 
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handleMaxPress()
@@ -544,7 +546,7 @@ describe('useSwapForm', () => {
     it('tells the user instead of filling 0 when the response has no amount', async () => {
         mockCalculateSwapAmount.mockResolvedValueOnce({})
 
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handleMaxPress()
@@ -559,7 +561,7 @@ describe('useSwapForm', () => {
         mockCalculateSwapAmount.mockResolvedValueOnce({
             amount: new Decimal('5000000'),
         })
-        const { result, rerender } = renderHook(() => useSwapForm())
+        const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handleMaxPress()
@@ -575,7 +577,7 @@ describe('useSwapForm', () => {
     })
 
     it('clears the form when the screen loses focus', async () => {
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         act(() => {
             result.current.handlePayAmountChange(new Decimal(5))
@@ -592,7 +594,7 @@ describe('useSwapForm', () => {
 
     it('tells the user why MAX produced nothing when the account holds no pay asset', async () => {
         mockPayBalance = null
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handleMaxPress()
@@ -604,7 +606,7 @@ describe('useSwapForm', () => {
 
     it('surfaces an error toast when the percentage calculation fails', async () => {
         mockCalculateSwapAmount.mockRejectedValueOnce(new Error('boom'))
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handleMaxPress()
@@ -620,7 +622,7 @@ describe('useSwapForm', () => {
             balancePercentage: null,
             useLocalCurrency: false,
         })
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenConfig()
@@ -635,7 +637,7 @@ describe('useSwapForm', () => {
             balancePercentage: null,
             useLocalCurrency: false,
         })
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenConfig()
@@ -650,7 +652,7 @@ describe('useSwapForm', () => {
             balancePercentage: null,
             useLocalCurrency: true,
         })
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenConfig()
@@ -665,7 +667,7 @@ describe('useSwapForm', () => {
             balancePercentage: null,
             useLocalCurrency: false,
         })
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenConfig()
@@ -676,7 +678,7 @@ describe('useSwapForm', () => {
 
     it('handleOpenConfig no-ops when the config sheet is dismissed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenConfig()
@@ -690,7 +692,7 @@ describe('useSwapForm', () => {
         mockSlippage = '1'
         mockCreateQuotes.mockResolvedValueOnce([])
 
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handlePayAmountChange(new Decimal(2))
@@ -705,7 +707,7 @@ describe('useSwapForm', () => {
         mockSlippage = null
         mockCreateQuotes.mockResolvedValueOnce([])
 
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             result.current.handlePayAmountChange(new Decimal(2))
@@ -717,7 +719,7 @@ describe('useSwapForm', () => {
     })
 
     it('handleOpenConfirm is a no-op when there is no selected quote', async () => {
-        const { result } = renderHook(() => useSwapForm())
+        const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenConfirm()
@@ -740,7 +742,7 @@ describe('useSwapForm', () => {
                     },
                 },
             ])
-            const { result } = renderHook(() => useSwapForm())
+            const { result } = renderHook(() => useSwapForm(SCOPE))
             await act(async () => {
                 result.current.handlePayAmountChange(new Decimal(5))
             })
@@ -838,7 +840,7 @@ describe('useSwapForm', () => {
     describe('insufficient balance', () => {
         it('flags an amount larger than the holding and blocks the swap', () => {
             mockPayBalance = new Decimal(50)
-            const { result } = renderHook(() => useSwapForm())
+            const { result } = renderHook(() => useSwapForm(SCOPE))
 
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(1000))
@@ -850,7 +852,7 @@ describe('useSwapForm', () => {
 
         it('allows an amount within the holding', () => {
             mockPayBalance = new Decimal(50)
-            const { result } = renderHook(() => useSwapForm())
+            const { result } = renderHook(() => useSwapForm(SCOPE))
 
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(50))
@@ -863,7 +865,7 @@ describe('useSwapForm', () => {
         // where the balance query settles with no holding row.
         it('treats a settled query with no holding as a zero balance', () => {
             mockPayBalance = null
-            const { result } = renderHook(() => useSwapForm())
+            const { result } = renderHook(() => useSwapForm(SCOPE))
 
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(1))
@@ -875,7 +877,7 @@ describe('useSwapForm', () => {
         it('stays quiet until the balance query has settled', () => {
             mockPayBalance = null
             mockIsPayBalanceFetched = false
-            const { result } = renderHook(() => useSwapForm())
+            const { result } = renderHook(() => useSwapForm(SCOPE))
 
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(1))
@@ -891,7 +893,7 @@ describe('useSwapForm', () => {
             mockPayBalance = null
             mockIsPayBalanceFetched = true
             mockIsPayBalanceError = true
-            const { result } = renderHook(() => useSwapForm())
+            const { result } = renderHook(() => useSwapForm(SCOPE))
 
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(1))

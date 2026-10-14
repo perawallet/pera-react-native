@@ -18,6 +18,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapDistinctPairItem } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapPairChip } from './SwapPairChip'
@@ -26,7 +27,13 @@ import { useStyles } from './styles'
 
 const SKELETON_COUNT = 3
 
-export const SwapPairHistoryWidget = () => {
+export type SwapPairHistoryWidgetProps = {
+    scope: ChainScope
+}
+
+export const SwapPairHistoryWidget = ({
+    scope,
+}: SwapPairHistoryWidgetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
@@ -36,7 +43,7 @@ export const SwapPairHistoryWidget = () => {
         isEnabled,
         handlePairPress,
         handleSeeAllPress,
-    } = useSwapPairHistoryWidget()
+    } = useSwapPairHistoryWidget(scope)
 
     const renderPair = useCallback(
         ({ item }: { item: SwapDistinctPairItem }) => (

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
     getHttpStatus,
@@ -92,13 +93,13 @@ export const proposeSignRequest = async (
 }
 
 export const addSignature = async (
-    network: Network,
+    scope: ChainScope,
     signRequestId: string,
     params: AddSignatureRequest[],
 ): Promise<SignRequestDetailResponse> => {
     const response = await queryClient<SignRequestDetailResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v1/joint-accounts/sign-requests/${signRequestId}/responses/`,
         data: params,
@@ -165,12 +166,12 @@ export const deleteImportInbox = async (
  * participant per transaction.
  */
 export const getSignRequestsWithSignatures = async (
-    network: Network,
+    scope: ChainScope,
     params: GetSignRequestsWithSignaturesRequest,
 ): Promise<GetSignRequestsWithSignaturesResponse> => {
     const response = await queryClient<GetSignRequestsWithSignaturesResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/v1/joint-accounts/sign-requests/with-signatures/',
         data: params,
@@ -186,12 +187,12 @@ export const getSignRequestsWithSignatures = async (
  * has already received the signed bytes.
  */
 export const markSignRequestsConfirmed = async (
-    network: Network,
+    scope: ChainScope,
     params: MarkSignRequestsConfirmedRequest,
 ): Promise<void> => {
     await queryClient<void>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/v1/joint-accounts/sign-requests/mark-confirmed/',
         data: params,

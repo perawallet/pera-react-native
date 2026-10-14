@@ -25,7 +25,7 @@ vi.mock('../../api', () => ({
 }))
 
 describe('usePrefetchProviders', () => {
-    test('prefetches providers for the active network when the returned fn is called', async () => {
+    test('prefetches providers for the scope when the returned fn is called', async () => {
         const fetchMock = vi.mocked(fetchProviders)
         fetchMock.mockResolvedValue([])
 
@@ -48,8 +48,6 @@ describe('usePrefetchProviders', () => {
         })
 
         // prefetchQuery fires the queryFn asynchronously
-        await vi.waitFor(() =>
-            expect(fetchMock).toHaveBeenCalledWith('mainnet'),
-        )
+        await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledWith(SCOPE))
     })
 })

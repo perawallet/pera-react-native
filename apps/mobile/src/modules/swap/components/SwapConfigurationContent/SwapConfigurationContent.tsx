@@ -24,13 +24,16 @@ import { useLanguage } from '@hooks/useLanguage'
 import { BalancePercentageSection } from './BalancePercentageSection'
 import { SlippageToleranceSection } from './SlippageToleranceSection'
 import { PrimaryCurrencyToggle } from './PrimaryCurrencyToggle'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSwapConfigurationContent } from './useSwapConfigurationContent'
 
-export type SwapConfigurationContentProps = Record<string, never>
+export type SwapConfigurationContentProps = {
+    scope: ChainScope
+}
 
-export const SwapConfigurationContent = (
-    _: SwapConfigurationContentProps = {},
-) => {
+export const SwapConfigurationContent = ({
+    scope,
+}: SwapConfigurationContentProps) => {
     const { t } = useLanguage()
     const { resolve, dismiss } = useBottomSheetResult<SwapConfigurationResult>()
 
@@ -53,6 +56,7 @@ export const SwapConfigurationContent = (
         isApplyEnabled,
         handleApply,
     } = useSwapConfigurationContent({
+        scope,
         onApply: handleApplyInternal,
     })
 

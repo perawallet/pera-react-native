@@ -53,7 +53,7 @@ describe('updateSwapStatus', () => {
                 country_code: 'US',
                 swap_version: 'v2',
             },
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
         )
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -73,7 +73,10 @@ describe('updateSwapStatus', () => {
         queryClientMock.mockResolvedValue({ data: { status: 42 } })
 
         await expect(
-            updateSwapStatus('x', { status: 'failed' } as never, 'mainnet'),
+            updateSwapStatus('x', { status: 'failed' } as never, {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
         ).rejects.toThrow()
     })
 })

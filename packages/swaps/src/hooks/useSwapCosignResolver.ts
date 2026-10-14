@@ -12,15 +12,15 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import {
-    legacyNetworkOf,
+    toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
-    decodeFromBase64,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
+import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
 import {
     addSignature,
     getSignRequestsWithSignatures,
@@ -37,17 +37,14 @@ import {
     useHandoffResolver,
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
-import type { SwapStatusUpdateRequest } from '../api'
-import { submitCosignedSwapGroup } from '../chain-adapter'
+import { updateSwapStatus, type SwapStatusUpdateRequest } from '../api'
+import { submitCosignedSwapGroup, swapChainAdapters } from '../chain-adapter'
 import type { SwapHandoffRecord } from '../models'
 import { useSwapHandoffStore } from '../store'
 import { resolveSwapHandoffOutcome } from '../utils'
-import { useUpdateSwapStatusMutation } from './useUpdateSwapStatusMutation'
 
 /** Stable accessors (module-level so the core's filter memo isn't busted). */
 const handoffKey = (handoff: SwapHandoffRecord): string => handoff.signRequestId
-const handoffNetwork = (handoff: SwapHandoffRecord): Network =>
-    legacyNetworkOf(handoff.scope)
 
 const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
     const expiresAt = new Date(detail.expected_expire_datetime).getTime()
@@ -59,11 +56,12 @@ const handoffRegisteredAt = (handoff: SwapHandoffRecord): number =>
 
 export type SettleCosignAttemptDeps = {
     markConfirmed: (input: {
-        network: Network
+        scope: ChainScope
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>
     updateSwapStatus: (input: {
+        scope: ChainScope
         swapId: string
         data: SwapStatusUpdateRequest
     }) => Promise<unknown>
@@ -78,16 +76,18 @@ export type SettleCosignAttemptDeps = {
  */
 export const settleCosignAttempt = async (
     handoffs: Record<string, SwapHandoffRecord>,
+    settled: ChainScope,
     txIds: string[],
-    network: string,
     status: 'confirmed' | 'failed',
     deps: SettleCosignAttemptDeps,
 ): Promise<void> => {
-    const settled = new Set(txIds)
+    const settledTxIds = new Set(txIds)
+    const settledScopeKey = toScopeKey(settled)
     const matching = Object.values(handoffs).filter(
         handoff =>
-            handoffNetwork(handoff) === network &&
-            (handoff.submission?.txIds.some(id => settled.has(id)) ?? false),
+            toScopeKey(handoff.scope) === settledScopeKey &&
+            (handoff.submission?.txIds.some(id => settledTxIds.has(id)) ??
+                false),
     )
 
     for (const record of matching) {
@@ -95,7 +95,7 @@ export const settleCosignAttempt = async (
             await runBestEffort(
                 () =>
                     deps.markConfirmed({
-                        network: handoffNetwork(record),
+                        scope: record.scope,
                         deviceId: record.deviceId,
                         signRequestIds: [record.signRequestId],
                     }),
@@ -104,6 +104,7 @@ export const settleCosignAttempt = async (
             await runBestEffort(
                 () =>
                     deps.updateSwapStatus({
+                        scope: record.scope,
                         swapId: record.swapIdStr,
                         data: {
                             status: 'in_progress',
@@ -124,6 +125,7 @@ export const settleCosignAttempt = async (
             await runBestEffort(
                 () =>
                     deps.updateSwapStatus({
+                        scope: record.scope,
                         swapId: record.swapIdStr,
                         data: {
                             status: 'failed',
@@ -159,8 +161,6 @@ export type UseSwapCosignResolverArgs = {
      * (e.g. the error-toast dispatcher) so this hook stays free of UI deps.
      */
     reportError: (error: unknown) => void
-    /** The scope swaps run on: its network gates submission, its chain settles it. */
-    scope: ChainScope
 }
 
 /**
@@ -170,9 +170,9 @@ export type UseSwapCosignResolverArgs = {
  * the shared {@link useHandoffResolver}. It sources handoffs from the
  * **persisted** store (so a swap co-signed while the proposer's app was closed
  * is finished on next launch — iOS can't keep a background service alive the
- * way Android does), opts into the active-network filter (submission must never
- * target the wrong algod after a network switch — others wait until the user
- * switches back), and on a terminal outcome hands off to
+ * way Android does), drives only the handoffs on their chain's selected network
+ * (submission must never target the wrong node after a network switch — others
+ * wait until the user switches back), and on a terminal outcome hands off to
  * {@link resolveSwapHandoffOutcome}, which assembles the composite multisig,
  * interleaves the pre-signed slots, submits to algod, and reports swap status.
  *
@@ -182,12 +182,20 @@ export type UseSwapCosignResolverArgs = {
 export const useSwapCosignResolver = ({
     isAppActive,
     reportError,
-    scope,
 }: UseSwapCosignResolverArgs): void => {
-    const network = legacyNetworkOf(scope)
-    const deviceId = useDeviceID(network)
-    const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
+    const deviceIdOf = useDeviceIdLookup()
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
+    // A primitive, so the filter below re-runs only when some swap chain's
+    // selected network changes. Its entries are `chainId:networkId`.
+    const selectedNetworks = useNetworkStore(state =>
+        swapChainAdapters
+            .list()
+            .map(
+                ({ chainId }) =>
+                    `${chainId}:${selectChainNetworkId(state, chainId)}`,
+            )
+            .join(),
+    )
 
     const handoffsMap = useSwapHandoffStore(s => s.handoffs)
     const markHandoffSubmitted = useSwapHandoffStore(
@@ -195,7 +203,12 @@ export const useSwapCosignResolver = ({
     )
     const removeHandoff = useSwapHandoffStore(s => s.removeHandoff)
 
-    const handoffs = useMemo(() => Object.values(handoffsMap), [handoffsMap])
+    const handoffs = useMemo(() => {
+        const selected = new Set(selectedNetworks.split(','))
+        return Object.values(handoffsMap).filter(handoff =>
+            selected.has(`${handoff.scope.chainId}:${handoff.scope.networkId}`),
+        )
+    }, [handoffsMap, selectedNetworks])
 
     const poll = useCallback(
         (handoff: SwapHandoffRecord) => ({
@@ -204,15 +217,15 @@ export const useSwapCosignResolver = ({
                 handoff.signRequestId,
             ),
             queryFn: () =>
-                getSignRequestsWithSignatures(handoffNetwork(handoff), {
-                    device_id: deviceId ?? '',
+                getSignRequestsWithSignatures(handoff.scope, {
+                    device_id: deviceIdOf(handoff.scope) ?? '',
                     proposed_sign_request_ids: [handoff.signRequestId],
                 }),
             select: (data: SignRequestResponse[]) =>
                 data.find(item => item.id === handoff.signRequestId),
-            enabled: isAppActive && !!deviceId,
+            enabled: isAppActive && !!deviceIdOf(handoff.scope),
         }),
-        [deviceId, isAppActive],
+        [deviceIdOf, isAppActive],
     )
 
     const classify = useCallback(
@@ -261,7 +274,8 @@ export const useSwapCosignResolver = ({
                     markSubmitted: txIds =>
                         markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,
-                    updateSwapStatus,
+                    updateSwapStatus: ({ swapId, data }) =>
+                        updateSwapStatus(swapId, data, handoff.scope),
                     markConfirmed,
                     removeHandoff,
                     reportError,
@@ -270,18 +284,15 @@ export const useSwapCosignResolver = ({
                     // skipped if the backend didn't echo a proposer address or
                     // the device id isn't ready.
                     declineSignRequest: async (signRequestId: string) => {
+                        const deviceId = deviceIdOf(handoff.scope)
                         if (!proposerAddress || !deviceId) return
-                        await addSignature(
-                            handoffNetwork(handoff),
-                            signRequestId,
-                            [
-                                {
-                                    address: proposerAddress,
-                                    response: 'declined',
-                                    device_id: deviceId,
-                                },
-                            ],
-                        )
+                        await addSignature(handoff.scope, signRequestId, [
+                            {
+                                address: proposerAddress,
+                                response: 'declined',
+                                device_id: deviceId,
+                            },
+                        ])
                     },
                     recordSubmissionAttempt: params =>
                         recordSubmissionAttempt(params),
@@ -292,8 +303,7 @@ export const useSwapCosignResolver = ({
             })
         },
         [
-            deviceId,
-            updateSwapStatus,
+            deviceIdOf,
             markConfirmed,
             markHandoffSubmitted,
             removeHandoff,
@@ -302,20 +312,35 @@ export const useSwapCosignResolver = ({
     )
 
     useEffect(() => {
-        setSubmissionSettledHandler(
-            scope.chainId,
-            'cosign',
-            (txIds, network, status) =>
-                settleCosignAttempt(
-                    useSwapHandoffStore.getState().handoffs,
-                    txIds,
-                    network,
-                    status,
-                    { markConfirmed, updateSwapStatus, removeHandoff },
-                ),
-        )
-        return () => setSubmissionSettledHandler(scope.chainId, 'cosign', null)
-    }, [scope.chainId, markConfirmed, updateSwapStatus, removeHandoff])
+        const cosigningChains = swapChainAdapters
+            .list()
+            .filter(adapter => adapter.supportsCosignedSwaps)
+            .map(({ chainId }) => chainId)
+        for (const chainId of cosigningChains) {
+            setSubmissionSettledHandler(
+                chainId,
+                'cosign',
+                (txIds, networkId, status) =>
+                    settleCosignAttempt(
+                        useSwapHandoffStore.getState().handoffs,
+                        { chainId, networkId },
+                        txIds,
+                        status,
+                        {
+                            markConfirmed,
+                            updateSwapStatus: ({ scope, swapId, data }) =>
+                                updateSwapStatus(swapId, data, scope),
+                            removeHandoff,
+                        },
+                    ),
+            )
+        }
+        return () => {
+            for (const chainId of cosigningChains) {
+                setSubmissionSettledHandler(chainId, 'cosign', null)
+            }
+        }
+    }, [markConfirmed, removeHandoff])
 
     useHandoffResolver<
         SwapHandoffRecord,
@@ -327,8 +352,6 @@ export const useSwapCosignResolver = ({
         poll,
         classify,
         resolve,
-        activeNetwork: network,
-        networkOf: handoffNetwork,
         expiresAtOf: handoffExpiresAt,
         registeredAtOf: handoffRegisteredAt,
     })

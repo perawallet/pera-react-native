@@ -1,0 +1,75 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { vi, describe, test, expect, beforeEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+
+import { useDeviceStore } from '../../store'
+import { useDeviceIdLookup } from '../useDeviceIdLookup'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
+
+describe('device/hooks/useDeviceIdLookup', () => {
+    beforeEach(() => {
+        useDeviceStore.getState().resetState()
+    })
+
+    test('returns the id stored under the scope', () => {
+        act(() => {
+            useDeviceStore.getState().setDeviceID('testnet', 'device-test-456')
+        })
+
+        const { result } = renderHook(() => useDeviceIdLookup())
+
+        expect(
+            result.current({ chainId: 'algorand', networkId: 'testnet' }),
+        ).toBe('device-test-456')
+    })
+
+    test('returns null for a scope with no id', () => {
+        act(() => {
+            useDeviceStore.getState().setDeviceID('mainnet', 'device-main-123')
+        })
+
+        const { result } = renderHook(() => useDeviceIdLookup())
+
+        expect(
+            result.current({ chainId: 'algorand', networkId: 'testnet' }),
+        ).toBeNull()
+        expect(
+            result.current({ chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toBeNull()
+    })
+
+    test('returns a fresh lookup once an id is set', () => {
+        const { result } = renderHook(() => useDeviceIdLookup())
+
+        act(() => {
+            useDeviceStore.getState().setDeviceID('mainnet', 'device-new-123')
+        })
+
+        expect(
+            result.current({ chainId: 'algorand', networkId: 'mainnet' }),
+        ).toBe('device-new-123')
+    })
+})

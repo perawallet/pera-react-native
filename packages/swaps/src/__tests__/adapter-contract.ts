@@ -45,6 +45,14 @@ export const swapContractTests = (
             expect(makeAdapter().nativeAssetId).toMatch(/\S/)
         })
 
+        it('names a default receive asset other than the native one', () => {
+            const adapter = makeAdapter()
+            expect(adapter.defaultReceiveAssetId).toMatch(/\S/)
+            expect(adapter.defaultReceiveAssetId).not.toBe(
+                adapter.nativeAssetId,
+            )
+        })
+
         it('fails a quote without an id as a result, signing nothing', async () => {
             const { result, context } = await run({ quoteIdStr: '' })
 

@@ -14,10 +14,26 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSwapScreen } from '../useSwapScreen'
 
-const { routeParams, mockSetFromAsset, mockSetToAsset } = vi.hoisted(() => ({
+type Account = { id: string }
+
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+const {
+    routeParams,
+    mockSetFromAsset,
+    mockSetToAsset,
+    mockSetSelectedAccountId,
+    state,
+} = vi.hoisted(() => ({
     routeParams: { current: undefined as Record<string, string> | undefined },
     mockSetFromAsset: vi.fn(),
     mockSetToAsset: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
+    state: {
+        selected: null as Account | null,
+        signers: [] as Account[],
+        swapChainAccounts: new Set<string>(),
+    },
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -25,23 +41,38 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwaps: () => ({
-        setFromAsset: mockSetFromAsset,
-        setToAsset: mockSetToAsset,
-    }),
+    useSwapsStore: (
+        selector: (store: {
+            setFromAsset: typeof mockSetFromAsset
+            setToAsset: typeof mockSetToAsset
+        }) => unknown,
+    ) =>
+        selector({
+            setFromAsset: mockSetFromAsset,
+            setToAsset: mockSetToAsset,
+        }),
+    useSwapScope: (account: Account | null) =>
+        account && state.swapChainAccounts.has(account.id) ? SCOPE : null,
+    useSwapSigningAccounts: () => state.signers,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ id: 'acc-1' }),
-    useSigningAccounts: () => [{ id: 'acc-1' }],
-    useSelectedAccountId: () => ({ setSelectedAccountId: vi.fn() }),
+    useSelectedAccount: () => state.selected,
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
+    }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@modules/accounts', () => ({
+    useAccountListPicker: (accounts: Account[]) => ({
+        accountFilter: (account: Account) =>
+            accounts.some(candidate => candidate.id === account.id),
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    nativeAssetFor: () => ({ assetId: '0' }),
+    getKnownAssetId: () => '31566704',
 }))
 
 vi.mock('../useSeedSwapRouteAssets', () => ({
@@ -52,6 +83,50 @@ describe('useSwapScreen', () => {
     beforeEach(() => {
         routeParams.current = undefined
         vi.clearAllMocks()
+        state.selected = { id: 'acc-1' }
+        state.signers = [{ id: 'acc-1' }]
+        state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
+    })
+
+    it("swaps on the selected account's chain scope", () => {
+        const { result } = renderHook(() => useSwapScreen())
+
+        expect(result.current.scope).toEqual(SCOPE)
+    })
+
+    it('has no scope when the selected account is on no swap chain', () => {
+        state.selected = { id: 'eth-only' }
+        state.signers = []
+
+        const { result } = renderHook(() => useSwapScreen())
+
+        expect(result.current.scope).toBeNull()
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+    })
+
+    it('offers only accounts that can sign on their swap chain', () => {
+        state.signers = [{ id: 'acc-1' }, { id: 'acc-2' }]
+
+        const { result } = renderHook(() => useSwapScreen())
+
+        const { accountFilter } = result.current.accountPicker
+        expect(accountFilter?.({ id: 'acc-1' } as never)).toBe(true)
+        expect(accountFilter?.({ id: 'watch' } as never)).toBe(false)
+    })
+
+    it('opens on the first swap signer when the selected account cannot swap', () => {
+        state.selected = { id: 'watch' }
+        state.signers = [{ id: 'acc-2' }, { id: 'acc-1' }]
+
+        renderHook(() => useSwapScreen())
+
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('acc-2')
+    })
+
+    it('keeps a selected account that can swap', () => {
+        renderHook(() => useSwapScreen())
+
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
     })
 
     it('hands a resumed amount to the form, tied to the route pay asset', () => {

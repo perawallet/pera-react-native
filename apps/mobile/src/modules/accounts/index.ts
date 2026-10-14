@@ -18,6 +18,7 @@ export {
     AccountDrawer,
     AccountDrawerPager,
     useAccountDrawerPickerKind,
+    useAccountListPicker,
     useCardPicker,
     useSigningPicker,
     useFundPicker,

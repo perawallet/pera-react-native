@@ -48,12 +48,12 @@ describe('updateSwapStatus', () => {
                 submitted_transaction_ids: ['tx1', 'tx2'],
                 swap_version: 'v2',
             },
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
         )
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'PATCH',
             url: '/v2/dex-swap/swaps/42/',
             data: {

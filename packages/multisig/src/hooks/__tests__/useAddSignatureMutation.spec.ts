@@ -138,7 +138,7 @@ describe('useAddSignatureMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(mocks.addSignature).toHaveBeenCalledWith(
-            'testnet',
+            { chainId: 'algorand', networkId: 'testnet' },
             'sr-456',
             responses,
         )
@@ -275,7 +275,7 @@ describe('useAddSignatureMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(mocks.addSignature).toHaveBeenCalledWith(
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
             'sr-123',
             multipleResponses,
         )

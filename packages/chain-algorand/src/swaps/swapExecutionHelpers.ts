@@ -140,7 +140,7 @@ export const requestSwapSignatures = (
     groupContext: PeraTransaction[],
     options: {
         /**
-         * `enable_quantum_swap` remote flag (`useIsQuantumSwapEnabled`).
+         * The quantum-swap gate (`isAlgorandQuantumSwapEnabled`).
          * When false, quantum signers are rejected before signing — see
          * {@link QUANTUM_SWAP_FEE_BLOCKED_KEY}.
          */
