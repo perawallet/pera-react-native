@@ -11,128 +11,98 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import {
-    ALGO_ASSET_NAME,
-    type Nullable,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-shared'
-import type { TransactionBalanceImpact } from '@perawallet/wallet-core-transactions'
+import type {
+    AssetDisplayHint,
+    AssetRef,
+    TransactionSummary,
+} from '@perawallet/wallet-core-chain-contract'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 
 /** Maximum number of stacked amounts shown in a list row before overflow. */
 export const MAX_VISIBLE_AMOUNTS = 2
 
+type AmountPrefix = '+' | '-'
+
+export type AmountDisplay = {
+    /** Display units, unsigned. */
+    value: Decimal
+    /**
+     * On-chain asset id. Currency identity is decided from this, never from
+     * `currency`.
+     */
+    assetId: string
+    /** Unit name, display text only. */
+    currency: string
+    /** Also picks the colour; undefined for a zero or unsigned amount. */
+    prefix?: AmountPrefix
+}
+
+export type SummaryAmount = {
+    assetRef: AssetRef
+    /** Base units, unsigned. */
+    baseUnits: Decimal
+    prefix?: AmountPrefix
+    display?: AssetDisplayHint
+}
+
+const DIRECTION_PREFIX: Record<
+    TransactionSummary['direction'],
+    AmountPrefix | undefined
+> = { in: '+', out: '-', self: undefined, none: undefined }
+
+const signPrefix = (value: Decimal): AmountPrefix | undefined => {
+    if (value.isZero()) return undefined
+    return value.isNegative() ? '-' : '+'
+}
+
+export const summaryAmountsOf = (
+    summary: TransactionSummary,
+): SummaryAmount[] => {
+    if (summary.balanceChanges) {
+        return summary.balanceChanges.map(({ assetRef, value, display }) => ({
+            assetRef,
+            baseUnits: value.abs(),
+            prefix: signPrefix(value),
+            display,
+        }))
+    }
+    if (!summary.amount) return []
+    const { assetRef, value, display } = summary.amount
+    return [
+        {
+            assetRef,
+            baseUnits: value.abs(),
+            prefix: value.isZero()
+                ? undefined
+                : DIRECTION_PREFIX[summary.direction],
+            display,
+        },
+    ]
+}
+
 /**
- * Decimals reach here straight from the backend, which substitutes placeholder
- * asset facts when its enrichment fails. `Decimal.pow(10, …)` throws on a
- * non-number and happily inflates on a negative one, and this runs inside a
- * list row's memo, so one bad value would take out the whole list.
+ * Decimals can come straight from a backend that substitutes placeholder facts
+ * when its enrichment fails. `Decimal.pow(10, …)` throws on a non-number and
+ * inflates on a negative one, and this runs inside a list row's memo, so one
+ * bad value would take out the whole list.
  */
 export const safeDecimals = (decimals: number): number =>
     isNaN(decimals) ? 0 : Math.max(0, Math.min(19, decimals))
 
-export type AmountDisplay = {
-    /** Raw amount value for CurrencyAmount */
-    value: Decimal
-    /**
-     * On-chain asset id ('0' for ALGO, '' when the source row lacks one).
-     * Currency identity is decided from this, never from `currency`.
-     */
-    assetId: string
-    /** On-chain unit name (e.g., 'ALGO', 'USDC') — display text only */
-    currency: string
-    /** Prefix to show (e.g., '+', '-'). Also determines styling: '+' = positive (green), '-' = negative (red). Undefined for zero values. */
-    prefix?: '+' | '-'
-}
-
-/**
- * Creates an AmountDisplay for a native asset amount (in base units).
- */
-export const createNativeAmount = (
-    baseUnits: Decimal,
-    isOutgoing: boolean,
-    nativeAsset: { assetId: string; decimals: number },
+/** The asset store's facts win; the summary's own hint covers assets it doesn't hold. */
+export const toAmountDisplay = (
+    amount: SummaryAmount,
+    storedAsset: MinimalAsset | undefined,
 ): AmountDisplay => {
-    const absValue = baseUnitsToDisplayUnits(
-        baseUnits,
-        nativeAsset.decimals,
-    ).abs()
-
+    const decimals = storedAsset?.decimals ?? amount.display?.decimals ?? 0
     return {
-        value: absValue,
-        assetId: nativeAsset.assetId,
-        currency: ALGO_ASSET_NAME,
-        prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
-    }
-}
-
-/**
- * Creates an AmountDisplay for an asset amount (in base units).
- */
-export const createAssetAmount = (
-    amount: Decimal,
-    decimals: number,
-    unitName: string,
-    isOutgoing: boolean,
-    assetId: string,
-): AmountDisplay => {
-    const absValue = baseUnitsToDisplayUnits(
-        amount,
-        safeDecimals(decimals),
-    ).abs()
-
-    return {
-        value: absValue,
-        assetId,
-        currency: unitName,
-        prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
-    }
-}
-
-/**
- * Creates an AmountDisplay from a backend-computed balance impact. The impact
- * amount is signed (negative = sent, positive = received), so the direction is
- * read from its sign rather than from the account being sender/receiver.
- */
-export const createBalanceImpactAmount = (
-    impact: TransactionBalanceImpact,
-): AmountDisplay => {
-    const absValue = baseUnitsToDisplayUnits(
-        impact.amount.abs(),
-        safeDecimals(impact.fractionDecimals),
-    )
-
-    return {
-        value: absValue,
-        assetId: impact.assetId,
-        currency: impact.unitName,
-        prefix: impact.amount.isZero()
-            ? undefined
-            : impact.amount.isNegative()
-              ? '-'
-              : '+',
-    }
-}
-
-/**
- * Creates an AmountDisplay for a swap's output amount, always shown as received
- * (positive).
- */
-export const createSwapAmount = (
-    amountOut: Decimal,
-    decimals: number,
-    unitName: string,
-    assetId: Nullable<string>,
-): AmountDisplay => {
-    const absValue = baseUnitsToDisplayUnits(
-        amountOut,
-        safeDecimals(decimals),
-    ).abs()
-
-    return {
-        value: absValue,
-        // A swap side can arrive without an id; '' fails closed (no glyph).
-        assetId: assetId ?? '',
-        currency: unitName,
-        prefix: absValue.isZero() ? undefined : '+',
+        value: baseUnitsToDisplayUnits(
+            amount.baseUnits,
+            safeDecimals(decimals),
+        ),
+        assetId: amount.assetRef.assetId,
+        currency: storedAsset?.unitName ?? amount.display?.symbol ?? '',
+        prefix: amount.prefix,
     }
 }

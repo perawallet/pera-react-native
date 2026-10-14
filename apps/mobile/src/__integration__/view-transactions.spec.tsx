@@ -279,9 +279,8 @@ describe('Flow: View transactions → tap into details', () => {
             ],
         })
 
-        // The TransactionListItem renders its title via
-        // `getTitle()` which keys off direction relative to the
-        // selected account. Our seeded `TX_PAYMENT` has the
+        // The row's title comes from the history adapter's summary, read
+        // from the selected account's side. Our seeded `TX_PAYMENT` has the
         // selected account as sender → 'send'. The asset-transfer
         // tx has the selected account as receiver → 'receive'.
         // Both rows should mount once the DB read settles.
@@ -362,6 +361,35 @@ describe('Flow: View transactions → tap into details', () => {
             screen.getAllByText(truncateAlgorandAddress(TX_PAYMENT.id)).length,
         ).toBeGreaterThan(0)
         expect(screen.getByTestId('transaction_detail_explorer')).toBeTruthy()
+    })
+
+    it('Given seeded transactions, each row shows its summary: title, counterparty, signed amount and unit', async () => {
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+
+        const paymentRow = await screen.findByTestId(
+            `transaction_row_${TX_PAYMENT.id}`,
+            undefined,
+            { timeout: 5000 },
+        )
+        const transferRow = screen.getByTestId(
+            `transaction_row_${TX_ASSET_TRANSFER.id}`,
+        )
+
+        expect(paymentRow.textContent).toContain('transactions.list_item.send')
+        expect(paymentRow.textContent).toContain(
+            truncateAlgorandAddress(HD_TEST_ADDRESS),
+        )
+        // ALGO renders as its glyph, not its ticker.
+        expect(paymentRow.textContent).toMatch(/-\s*1\.00/)
+
+        // USDC isn't in the asset DB, so its facts come from the summary.
+        expect(transferRow.textContent).toContain(
+            'transactions.list_item.receive',
+        )
+        expect(transferRow.textContent).toContain(
+            truncateAlgorandAddress(HD_TEST_ADDRESS),
+        )
+        expect(transferRow.textContent).toMatch(/\+\s*2\.5\d*\s*USDC/)
     })
 
     it('Given a close-out payment ("send max"), the history list shows the swept amount and the details screen shows the close-remainder row', async () => {

@@ -10,26 +10,27 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    QueryClient,
-    QueryClientProvider,
-    type UseQueryResult,
-} from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { useTransactionListItem } from '../useTransactionListItem'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import {
-    useSingleAssetDetailsQuery,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { formatNumber } from '@perawallet/wallet-core-shared'
+import {
+    historyChainAdapters,
+    useOpenSubmissionTxIdsQuery,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
+import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
+import {
+    ALGORAND_HISTORY_SUMMARY_GOLDENS,
+    type HistorySummaryGolden,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { useCounterpartyName } from '../../../hooks/history/useCounterpartyName'
+import { useTransactionListItem } from '../useTransactionListItem'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
@@ -37,24 +38,19 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account.chains[chainId],
 }))
 
-vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
-    return {
-        ...actual,
-        useSingleAssetDetailsQuery: vi.fn(),
-        useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
-    }
-})
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    useAssetsQuery: vi.fn(),
+}))
 
-vi.mock(
-    '@perawallet/wallet-core-chain-algorand/blockchain',
-    async importOriginal => ({
-        ...(await importOriginal<
-            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
-        >()),
-    }),
-)
+vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-transactions')
+    >()),
+    useOpenSubmissionTxIdsQuery: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
@@ -64,671 +60,204 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 const mockCopyToClipboard = vi.fn()
-
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
 }))
 
-vi.mock('@hooks/useResolvedAddress', () => ({
-    useResolvedAddress: vi.fn(() => ({
-        displayName: '',
-        isNfd: false,
-        isResolving: false,
-    })),
+vi.mock('../../../hooks/history/useCounterpartyName', () => ({
+    useCounterpartyName: vi.fn(() => 'Counterparty'),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
-        t: (key: string) => key,
+        t: (key: string, params?: Record<string, string>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
         currentLanguage: 'en',
         changeLanguage: vi.fn(),
     }),
 }))
 
-const USER_ADDRESS = 'USER_ADDRESS'
-const OTHER_ADDRESS = 'OTHER_ADDRESS'
+const golden = (name: string): HistorySummaryGolden =>
+    ALGORAND_HISTORY_SUMMARY_GOLDENS.find(g => g.name === name)!
 
-const createPaymentTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem =>
-    ({
-        id: 'tx1',
-        txType: 'pay',
-        sender: USER_ADDRESS,
-        receiver: OTHER_ADDRESS,
-        amount: new Decimal('500000'),
-        fee: new Decimal('1000'),
-        confirmedRound: 100,
-        roundTime: 1_700_000_000,
-        asset: null,
-        swapGroupDetail: null,
-        interpretedMeaning: null,
-        applicationId: null,
-        innerTransactionCount: null,
-        groupId: null,
-        closeTo: null,
-        balanceImpacts: [],
-        ...overrides,
-    }) as TransactionHistoryItem
+const stored = (assets: Partial<PeraAsset>[]) =>
+    vi.mocked(useAssetsQuery).mockReturnValue({
+        data: new Map(assets.map(asset => [asset.assetId!, asset])),
+    } as ReturnType<typeof useAssetsQuery>)
 
-const createAssetTransferTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem =>
-    ({
-        id: 'tx2',
-        txType: 'axfer',
-        sender: USER_ADDRESS,
-        receiver: OTHER_ADDRESS,
-        amount: new Decimal('1000000'),
-        fee: new Decimal('1000'),
-        confirmedRound: 100,
-        roundTime: 1_700_000_000,
-        asset: {
-            assetId: '31566704',
-            name: 'USD Coin',
-            unitName: 'USDC',
-            decimals: 6,
-        },
-        swapGroupDetail: null,
-        interpretedMeaning: null,
-        applicationId: null,
-        innerTransactionCount: null,
-        groupId: null,
-        closeTo: null,
-        balanceImpacts: [],
-        ...overrides,
-    }) as TransactionHistoryItem
-
-const createAppCallTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem =>
-    ({
-        id: 'tx3',
-        txType: 'appl',
-        sender: USER_ADDRESS,
-        receiver: null,
-        amount: null,
-        fee: new Decimal('1000'),
-        confirmedRound: 100,
-        roundTime: 1_700_000_000,
-        asset: null,
-        swapGroupDetail: null,
-        interpretedMeaning: null,
-        applicationId: '123',
-        innerTransactionCount: 2,
-        groupId: null,
-        closeTo: null,
-        balanceImpacts: [],
-        ...overrides,
-    }) as TransactionHistoryItem
-
-// Sent by a proposer's heartbeat service on the user's behalf, so the sender
-// is a third party and there is no receiver, amount or fee.
-const createHeartbeatTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem =>
-    ({
-        id: 'tx4',
-        txType: 'hb',
-        sender: OTHER_ADDRESS,
-        receiver: null,
-        amount: null,
-        fee: new Decimal(0),
-        confirmedRound: 100,
-        roundTime: 1_700_000_000,
-        asset: null,
-        swapGroupDetail: null,
-        interpretedMeaning: null,
-        applicationId: null,
-        innerTransactionCount: null,
-        groupId: null,
-        closeTo: null,
-        balanceImpacts: [],
-        ...overrides,
-    }) as TransactionHistoryItem
-
-const createStateProofTx = (
-    overrides: Partial<TransactionHistoryItem> = {},
-): TransactionHistoryItem =>
-    ({
-        id: 'tx5',
-        txType: 'stpf',
-        sender: OTHER_ADDRESS,
-        receiver: null,
-        amount: null,
-        fee: new Decimal(0),
-        confirmedRound: 100,
-        roundTime: 1_700_000_000,
-        asset: null,
-        swapGroupDetail: null,
-        interpretedMeaning: null,
-        applicationId: null,
-        innerTransactionCount: null,
-        groupId: null,
-        closeTo: null,
-        balanceImpacts: [],
-        ...overrides,
-    }) as TransactionHistoryItem
-
-// The hook now reads the open-submission badge set via React Query.
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={new QueryClient()}>
         {children}
     </QueryClientProvider>
 )
 
+const renderRow = (
+    { account, item }: HistorySummaryGolden,
+    onPress?: (transaction: TransactionHistoryItem) => void,
+) => {
+    vi.mocked(useSelectedAccount).mockReturnValue({
+        chains: { algorand: { address: account } },
+    } as unknown as ReturnType<typeof useSelectedAccount>)
+    return renderHook(
+        () => useTransactionListItem({ transaction: item, onPress }),
+        { wrapper },
+    ).result.current
+}
+
 describe('useTransactionListItem', () => {
     beforeEach(() => {
-        vi.mocked(useSelectedAccount).mockReturnValue({
-            id: 'acc-1',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: USER_ADDRESS } },
-        })
-        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
-            data: undefined,
-        } as UseQueryResult<PeraAsset, Error>)
+        vi.clearAllMocks()
+        historyChainAdapters.reset()
+        historyChainAdapters.register(algorandHistoryAdapter)
+        stored([])
+        vi.mocked(useOpenSubmissionTxIdsQuery).mockReturnValue({
+            openTxIds: new Set(),
+        } as unknown as ReturnType<typeof useOpenSubmissionTxIdsQuery>)
     })
 
-    describe('title', () => {
-        it('returns send key for outgoing payment', () => {
-            const tx = createPaymentTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('transactions.list_item.send')
-        })
+    describe('transfers', () => {
+        it("names the counterparty on the selected account's chain", () => {
+            const row = renderRow(golden('payment sent'))
 
-        it('returns receive key for incoming payment', () => {
-            const tx = createPaymentTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
+            expect(useCounterpartyName).toHaveBeenCalledWith(
+                'ACCOUNT_B',
+                'algorand',
             )
-            expect(result.current.title).toBe('transactions.list_item.receive')
-        })
-
-        it('returns send key for outgoing asset transfer', () => {
-            const tx = createAssetTransferTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('transactions.list_item.send')
-        })
-
-        it('returns send key for the account a clawback drained', () => {
-            const tx = createAssetTransferTx({
-                sender: OTHER_ADDRESS,
-                assetSender: USER_ADDRESS,
-                receiver: 'THIRD_ADDRESS',
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('transactions.list_item.send')
-        })
-
-        it('names the drained holder, not the authority, to a clawback receiver', () => {
-            const tx = createAssetTransferTx({
-                sender: OTHER_ADDRESS,
-                assetSender: 'DRAINED_ADDRESS',
-                receiver: USER_ADDRESS,
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('transactions.list_item.receive')
-            expect(vi.mocked(useResolvedAddress)).toHaveBeenCalledWith(
-                'DRAINED_ADDRESS',
-                expect.anything(),
-            )
-        })
-
-        it('returns receive key for incoming asset transfer', () => {
-            const tx = createAssetTransferTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('transactions.list_item.receive')
-        })
-
-        it('returns opt_in key for self-transfer with zero amount', () => {
-            const tx = createAssetTransferTx({
-                sender: USER_ADDRESS,
-                receiver: USER_ADDRESS,
-                amount: new Decimal(0),
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('transactions.list_item.opt_in')
-        })
-
-        it('returns opt_out key for axfer with closeTo (close-out)', () => {
-            const tx = createAssetTransferTx({
-                sender: USER_ADDRESS,
-                receiver: OTHER_ADDRESS,
-                closeTo: OTHER_ADDRESS,
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('transactions.list_item.opt_out')
-        })
-
-        it('returns heartbeat key for a heartbeat', () => {
-            const { result } = renderHook(
-                () =>
-                    useTransactionListItem({
-                        transaction: createHeartbeatTx(),
-                    }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe(
-                'transactions.list_item.heartbeat',
-            )
-        })
-
-        it('returns state-proof key for a state proof', () => {
-            const { result } = renderHook(
-                () =>
-                    useTransactionListItem({
-                        transaction: createStateProofTx(),
-                    }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe(
-                'transactions.list_item.state_proof',
-            )
-        })
-
-        it('uses interpretedMeaning title when available', () => {
-            const tx = createPaymentTx({
-                interpretedMeaning: {
-                    title: 'Custom Title',
-                    description: '',
+            expect(row.subtitle).toBe('Counterparty')
+            expect(row.title).toBe('transactions.list_item.send')
+            expect(row.iconName).toBe('transactions/send')
+            expect(row.amounts).toEqual([
+                {
+                    value: new Decimal('0.5'),
+                    assetId: '0',
+                    currency: 'ALGO',
+                    prefix: '-',
                 },
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.title).toBe('Custom Title')
-        })
-    })
-
-    describe('iconType', () => {
-        it('returns "send" for outgoing payment', () => {
-            const tx = createPaymentTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('send')
+            ])
         })
 
-        it('returns "receive" for incoming payment', () => {
-            const tx = createPaymentTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('receive')
-        })
+        it('signs a received amount as incoming', () => {
+            const row = renderRow(golden('asset transfer received'))
 
-        it('returns "send" for outgoing asset transfer', () => {
-            const tx = createAssetTransferTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('send')
-        })
-
-        it('returns "receive" for incoming asset transfer', () => {
-            const tx = createAssetTransferTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('receive')
-        })
-
-        it('returns "swap" for swap transaction', () => {
-            const tx = createPaymentTx({
-                swapGroupDetail: {
-                    assetInId: '0',
-                    assetInUnitName: 'ALGO',
-                    assetInDecimals: 6,
-                    assetOutId: '31566704',
-                    assetOutUnitName: 'USDC',
-                    assetOutDecimals: 6,
-                    amountIn: new Decimal('1000000'),
-                    amountOut: new Decimal('500000'),
-                },
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('swap')
-        })
-
-        it('returns "asset-opt-in" for asset opt-in', () => {
-            const tx = createAssetTransferTx({
-                sender: USER_ADDRESS,
-                receiver: USER_ADDRESS,
-                amount: new Decimal(0),
-                closeTo: null,
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('asset-opt-in')
-        })
-
-        it('returns "asset-opt-out" for asset opt-out', () => {
-            const tx = createAssetTransferTx({
-                sender: USER_ADDRESS,
-                receiver: OTHER_ADDRESS,
-                closeTo: OTHER_ADDRESS,
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('asset-opt-out')
-        })
-
-        it('returns "heartbeat" for a heartbeat', () => {
-            const { result } = renderHook(
-                () =>
-                    useTransactionListItem({
-                        transaction: createHeartbeatTx(),
-                    }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('heartbeat')
-        })
-
-        it('returns "app-call" for application call', () => {
-            const tx = createPaymentTx({
-                txType: 'appl',
-                applicationId: '123',
-            } as Partial<TransactionHistoryItem>)
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.iconType).toBe('app-call')
-        })
-    })
-
-    describe('amounts', () => {
-        it('uses asset decimals from query when available', () => {
-            vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
-                data: {
-                    assetId: '31566704',
-                    decimals: 6,
-                    unitName: 'USDC',
-                },
-            } as UseQueryResult<PeraAsset, Error>)
-
-            const tx = createAssetTransferTx({
-                amount: new Decimal('1000000'),
-                asset: {
-                    assetId: '31566704',
-                    name: 'USD Coin',
-                    unitName: 'USDC',
-                    decimals: 0,
-                },
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-
-            expect(result.current.amounts[0].value.toNumber()).toBe(1)
-        })
-
-        it('falls back to transaction asset decimals when query has no data', () => {
-            vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
-                data: undefined,
-            } as UseQueryResult<PeraAsset, Error>)
-
-            const tx = createAssetTransferTx({
-                amount: new Decimal('1000000'),
-                asset: {
-                    assetId: '31566704',
-                    name: 'USD Coin',
-                    unitName: 'USDC',
-                    decimals: 6,
-                },
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-
-            expect(result.current.amounts[0].value.toNumber()).toBe(1)
-        })
-
-        it('shows negative prefix for outgoing transactions', () => {
-            const tx = createPaymentTx({
-                sender: USER_ADDRESS,
-                amount: new Decimal('500000'),
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.amounts[0].prefix).toBe('-')
-        })
-
-        it('shows positive prefix for incoming transactions', () => {
-            const tx = createPaymentTx({
-                sender: OTHER_ADDRESS,
-                amount: new Decimal('500000'),
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-            expect(result.current.amounts[0].prefix).toBe('+')
-        })
-    })
-
-    describe('handleLongPress', () => {
-        it('copies the transaction id', () => {
-            mockCopyToClipboard.mockClear()
-            const tx = createPaymentTx({ id: 'TXID123' })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-
-            result.current.handleLongPress()
-
-            expect(mockCopyToClipboard).toHaveBeenCalledWith('TXID123')
-        })
-    })
-
-    describe('app call balance impacts', () => {
-        it('stacks each balance impact with sign-derived direction', () => {
-            const tx = createAppCallTx({
-                balanceImpacts: [
-                    {
-                        assetId: '0',
-                        unitName: 'ALGO',
-                        fractionDecimals: 6,
-                        amount: new Decimal('-1500000'),
-                    },
-                    {
-                        assetId: '31566704',
-                        unitName: 'USDC',
-                        fractionDecimals: 6,
-                        amount: new Decimal('2000000'),
-                    },
-                ],
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-
-            expect(result.current.amounts).toHaveLength(2)
-            expect(result.current.amounts[0]).toMatchObject({
-                currency: 'ALGO',
-                prefix: '-',
-            })
-            expect(result.current.amounts[0].value.toNumber()).toBe(1.5)
-            expect(result.current.amounts[1]).toMatchObject({
+            expect(row.iconName).toBe('transactions/receive')
+            expect(row.amounts[0]).toMatchObject({
                 currency: 'USDC',
                 prefix: '+',
             })
-            expect(result.current.amounts[1].value.toNumber()).toBe(2)
-            expect(result.current.amountsOverflowCount).toBe(0)
         })
 
-        it('shows a negative ALGO amount for a fee-only app call', () => {
-            const tx = createAppCallTx({
-                balanceImpacts: [
-                    {
-                        assetId: '0',
-                        unitName: 'ALGO',
-                        fractionDecimals: 6,
-                        amount: new Decimal('-1000'),
-                    },
-                ],
+        it("prefers the stored asset's facts over the summary's own", () => {
+            stored([{ assetId: '31566704', unitName: 'USDCx', decimals: 2 }])
+
+            const row = renderRow(golden('asset transfer sent'))
+
+            expect(row.amounts[0]).toMatchObject({
+                currency: 'USDCx',
+                value: new Decimal(10_000),
             })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-
-            expect(result.current.amounts).toHaveLength(1)
-            expect(result.current.amounts[0]).toMatchObject({
-                currency: 'ALGO',
-                prefix: '-',
-            })
-            expect(result.current.amounts[0].value.toNumber()).toBe(0.001)
-        })
-
-        it('caps stacked amounts at two and reports the overflow count', () => {
-            const tx = createAppCallTx({
-                balanceImpacts: [
-                    {
-                        assetId: '0',
-                        unitName: 'ALGO',
-                        fractionDecimals: 6,
-                        amount: new Decimal('-1000000'),
-                    },
-                    {
-                        assetId: '1',
-                        unitName: 'USDC',
-                        fractionDecimals: 6,
-                        amount: new Decimal('2000000'),
-                    },
-                    {
-                        assetId: '2',
-                        unitName: 'USDT',
-                        fractionDecimals: 6,
-                        amount: new Decimal('3000000'),
-                    },
-                    {
-                        assetId: '3',
-                        unitName: 'GORA',
-                        fractionDecimals: 6,
-                        amount: new Decimal('4000000'),
-                    },
-                ],
-            })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-
-            expect(result.current.amounts).toHaveLength(2)
-            expect(result.current.amountsOverflowCount).toBe(2)
-        })
-
-        it('shows no amounts when an app call has no balance impacts', () => {
-            const tx = createAppCallTx({ balanceImpacts: [] })
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
-
-            expect(result.current.amounts).toEqual([])
-            expect(result.current.amountsOverflowCount).toBe(0)
         })
     })
 
-    describe('swap subtitle', () => {
-        beforeEach(async () => {
-            // The global setup mocks formatNumber down to String(value), which
-            // erases the very digits under test here. Restore the real one so
-            // the assertions read what a user actually sees.
-            const actual = await vi.importActual<
-                typeof import('@perawallet/wallet-core-shared')
-            >('@perawallet/wallet-core-shared')
-            vi.mocked(formatNumber).mockImplementation(actual.formatNumber)
+    describe('opt-ins', () => {
+        it('shows a zero amount without a sign', () => {
+            const row = renderRow(golden('asset opt-in with a zero amount'))
+
+            expect(row.iconName).toBe('transactions/opt-in')
+            expect(row.amounts[0].prefix).toBeUndefined()
+            expect(row.amounts[0].value.isZero()).toBe(true)
+        })
+    })
+
+    describe('swaps', () => {
+        it('shows its own subtitle and skips the counterparty lookup', () => {
+            const row = renderRow(golden('swap'))
+
+            expect(useCounterpartyName).toHaveBeenCalledWith('', 'algorand')
+            expect(row.subtitle).toMatch(
+                /^transactions\.list_item\.swap_subtitle /,
+            )
+            expect(row.amounts[0]).toMatchObject({
+                currency: 'USDC',
+                prefix: '+',
+            })
+        })
+    })
+
+    describe('app calls', () => {
+        it('stacks two balance changes, reports the rest and only looks up the visible assets', () => {
+            const row = renderRow(
+                golden(
+                    'app call with three balance impacts and three inner transactions',
+                ),
+            )
+
+            expect(row.amounts.map(a => [a.currency, a.prefix])).toEqual([
+                ['ALGO', '-'],
+                ['USDC', '+'],
+            ])
+            expect(row.amountsOverflowCount).toBe(1)
+            expect(useAssetsQuery).toHaveBeenCalledWith(['0', '31566704'], {
+                scope: expect.objectContaining({ chainId: 'algorand' }),
+            })
         })
 
-        afterEach(() => {
-            vi.mocked(formatNumber).mockReset()
-        })
-
-        it('scales each side by its own asset decimals', () => {
-            const tx = createPaymentTx({
-                swapGroupDetail: {
-                    assetInId: '0',
-                    assetInUnitName: 'ALGO',
-                    assetInDecimals: 6,
-                    assetOutId: '31566704',
-                    assetOutUnitName: 'USDC',
-                    assetOutDecimals: 2,
-                    amountIn: new Decimal('1000000'),
-                    amountOut: new Decimal('500000'),
+        it('survives decimals the backend could not resolve', () => {
+            const appCall = golden(
+                'app call with three balance impacts and three inner transactions',
+            )
+            const row = renderRow({
+                ...appCall,
+                item: {
+                    ...appCall.item,
+                    balanceImpacts: [
+                        {
+                            assetId: '777',
+                            unitName: 'XYZ',
+                            fractionDecimals: NaN,
+                            amount: new Decimal(-5),
+                        },
+                    ],
                 },
             })
 
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
+            expect(row.amounts[0].value).toEqual(new Decimal(5))
+        })
+    })
 
-            expect(result.current.subtitle).toBe('1.00 ALGO for 5,000.00 USDC')
+    describe('chain-specific kinds', () => {
+        it('has no subtitle or amount when nothing moved', () => {
+            const row = renderRow(golden('key registration'))
+
+            expect(row.title).toBe('transactions.list_item.key_registration')
+            expect(row.iconName).toBe('transactions/key-registration')
+            expect(row.subtitle).toBeNull()
+            expect(row.amounts).toEqual([])
+        })
+    })
+
+    describe('interactions', () => {
+        it('passes the transaction to onPress', () => {
+            const onPress = vi.fn()
+            const transfer = golden('payment sent')
+
+            renderRow(transfer, onPress).handlePress()
+
+            expect(onPress).toHaveBeenCalledWith(transfer.item)
         })
 
-        it('keeps enough digits for a sub-cent leg of a high-precision asset', () => {
-            const tx = createPaymentTx({
-                swapGroupDetail: {
-                    assetInId: '0',
-                    assetInUnitName: 'ALGO',
-                    assetInDecimals: 6,
-                    assetOutId: '31566704',
-                    assetOutUnitName: 'GEMS',
-                    assetOutDecimals: 8,
-                    amountIn: new Decimal('1000000'),
-                    amountOut: new Decimal('123456'),
-                },
-            })
+        it('copies the transaction id on long press', () => {
+            renderRow(golden('payment sent')).handleLongPress()
 
-            const { result } = renderHook(
-                () => useTransactionListItem({ transaction: tx }),
-                { wrapper },
-            )
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('TX')
+        })
 
-            expect(result.current.subtitle).toBe(
-                '1.00 ALGO for 0.00123456 GEMS',
+        it('flags a broadcast row that has not resolved yet', () => {
+            vi.mocked(useOpenSubmissionTxIdsQuery).mockReturnValue({
+                openTxIds: new Set(['TX']),
+            } as unknown as ReturnType<typeof useOpenSubmissionTxIdsQuery>)
+
+            expect(renderRow(golden('payment sent')).isPendingVerifying).toBe(
+                true,
             )
         })
     })

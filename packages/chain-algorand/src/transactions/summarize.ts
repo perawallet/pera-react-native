@@ -12,6 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 import type {
+    AssetDisplayHint,
     AssetRef,
     LocalizedText,
     PeraDisplayableTransaction,
@@ -119,6 +120,19 @@ const assetRefOf = (assetId: string): AssetRef => ({
     assetId,
 })
 
+const displayOf = (
+    assetId: string,
+    facts: { unitName: string; decimals: number },
+): AssetDisplayHint => {
+    const { unitName, decimals } = resolveAlgorandAssetFacts(assetId, facts)
+    return { symbol: unitName, decimals }
+}
+
+const NATIVE_DISPLAY: AssetDisplayHint = {
+    symbol: algorandDescriptor.nativeAsset.symbol,
+    decimals: algorandDescriptor.nativeAsset.decimals,
+}
+
 const swapSummary = (swap: TransactionSwapGroupDetail): TransactionSummary => {
     const assetIn = resolveAlgorandAssetFacts(swap.assetInId, {
         unitName: swap.assetInUnitName,
@@ -145,6 +159,10 @@ const swapSummary = (swap: TransactionSwapGroupDetail): TransactionSummary => {
                   amount: {
                       assetRef: assetRefOf(swap.assetOutId),
                       value: swap.amountOut,
+                      display: {
+                          symbol: assetOut.unitName,
+                          decimals: assetOut.decimals,
+                      },
                   },
               }),
     }
@@ -193,17 +211,22 @@ const classifiedSummary = (
     const hasAmount = item.amount !== null || item.closeAmount !== null
     const amountOn = (
         assetRef: AssetRef,
+        display: AssetDisplayHint,
     ): Pick<TransactionSummary, 'amount'> =>
         hasAmount
             ? {
                   amount: {
                       assetRef,
                       value: netTransferAmount(item, address, isOut),
+                      display,
                   },
               }
             : {}
     const assetAmount = item.asset
-        ? amountOn(assetRefOf(item.asset.assetId))
+        ? amountOn(
+              assetRefOf(item.asset.assetId),
+              displayOf(item.asset.assetId, item.asset),
+          )
         : {}
     const sendOrReceive = {
         title: text(isOut ? SEND : RECEIVE),
@@ -226,7 +249,7 @@ const classifiedSummary = (
             return {
                 kind: 'transfer',
                 ...sendOrReceive,
-                ...amountOn(algorandDescriptor.nativeAsset.ref),
+                ...amountOn(algorandDescriptor.nativeAsset.ref, NATIVE_DISPLAY),
             }
         }
         case 'asset-transfer':
@@ -269,6 +292,10 @@ const classifiedSummary = (
                 balanceChanges: item.balanceImpacts.map(impact => ({
                     assetRef: assetRefOf(impact.assetId),
                     value: impact.amount,
+                    display: displayOf(impact.assetId, {
+                        unitName: impact.unitName,
+                        decimals: impact.fractionDecimals,
+                    }),
                 })),
                 ...((item.innerTransactionCount ?? 0) > 0 && {
                     subtitle: text(INNER_TRANSACTION_COUNT, {
