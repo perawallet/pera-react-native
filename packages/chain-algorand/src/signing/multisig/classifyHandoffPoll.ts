@@ -27,7 +27,6 @@ import {
     type ResolveHandoffOutcomeArgs,
     type ResolverMessages,
 } from '@perawallet/wallet-core-signing'
-import { algorandNetworkOf } from '../../legacy-network'
 import { buildWalletConnectSignResult } from './buildWalletConnectSignResult'
 
 /**

@@ -143,12 +143,15 @@ describe('useSyncMultisigAccountsOnNetworkSwitch', () => {
         rerender()
 
         expect(createMultisigAccountMock).toHaveBeenCalledTimes(2)
-        expect(createMultisigAccountMock).toHaveBeenCalledWith({ chainId: 'algorand', networkId: 'mainnet' }, {
-            version: 1,
-            threshold: 2,
-            participant_addresses: ['P1', 'P2'],
-            device_id: 'device-mainnet',
-        })
+        expect(createMultisigAccountMock).toHaveBeenCalledWith(
+            { chainId: 'algorand', networkId: 'mainnet' },
+            {
+                version: 1,
+                threshold: 2,
+                participant_addresses: ['P1', 'P2'],
+                device_id: 'device-mainnet',
+            },
+        )
     })
 
     it('waits for the new network device id — registers only once it is available', () => {

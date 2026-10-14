@@ -13,9 +13,9 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
+import {
+    LEGACY_CHAIN_ID,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
@@ -26,7 +26,6 @@ import {
     type FeeAdjustment,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseFeeAdjustmentResult = {

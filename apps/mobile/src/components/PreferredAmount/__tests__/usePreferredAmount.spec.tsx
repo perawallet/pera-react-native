@@ -252,6 +252,10 @@ describe('usePreferredAmount', () => {
         expect(result.current.convertedValue).toEqual(new Decimal(12.75))
         expect(result.current.isPending).toBe(false)
 
-        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(expect.anything(), [], false)
+        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+            expect.anything(),
+            [],
+            false,
+        )
     })
 })
