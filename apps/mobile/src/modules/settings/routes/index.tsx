@@ -149,27 +149,31 @@ const DeveloperSettingsStackNavigator = () => {
                     />
                 </>
             )}
-            <DeveloperSettingsStack.Screen
-                name='MigrationViewer'
-                options={{
-                    title: 'Migration Viewer',
-                }}
-                component={SettingsDeveloperMigrationViewerScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='MigrationInfo'
-                options={{
-                    title: 'Migration reference',
-                }}
-                component={SettingsDeveloperMigrationInfoScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='MigrationSimulator'
-                options={{
-                    title: 'Migration simulator',
-                }}
-                component={SettingsDeveloperMigrationSimulatorScreen}
-            />
+            {routeCapabilities.migrationDevTools && (
+                <>
+                    <DeveloperSettingsStack.Screen
+                        name='MigrationViewer'
+                        options={{
+                            title: 'Migration Viewer',
+                        }}
+                        component={SettingsDeveloperMigrationViewerScreen}
+                    />
+                    <DeveloperSettingsStack.Screen
+                        name='MigrationInfo'
+                        options={{
+                            title: 'Migration reference',
+                        }}
+                        component={SettingsDeveloperMigrationInfoScreen}
+                    />
+                    <DeveloperSettingsStack.Screen
+                        name='MigrationSimulator'
+                        options={{
+                            title: 'Migration simulator',
+                        }}
+                        component={SettingsDeveloperMigrationSimulatorScreen}
+                    />
+                </>
+            )}
             <DeveloperSettingsStack.Screen
                 name='KeystoreMigrations'
                 options={{
@@ -367,16 +371,14 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsLanguageScreen}
             />
-            {routeCapabilities.developerSettings && (
-                <SettingsStack.Screen
-                    name='DeveloperSettings'
-                    options={{
-                        title: 'screens.developer_settings',
-                        headerShown: false,
-                    }}
-                    component={DeveloperSettingsStackNavigator}
-                />
-            )}
+            <SettingsStack.Screen
+                name='DeveloperSettings'
+                options={{
+                    title: 'screens.developer_settings',
+                    headerShown: false,
+                }}
+                component={DeveloperSettingsStackNavigator}
+            />
         </SettingsStack.Navigator>
     )
 }

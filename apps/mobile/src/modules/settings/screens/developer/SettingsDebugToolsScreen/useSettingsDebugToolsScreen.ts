@@ -22,6 +22,7 @@ import { routeCapabilities } from '@routes/capabilities'
 
 export type UseSettingsDebugToolsScreenResult = {
     isGalleryAvailable: boolean
+    isMigrationViewerAvailable: boolean
     isFeatureFlagsAvailable: boolean
     handleNavigate: (page: string) => void
     handleOpenTestingDapp: () => void
@@ -54,6 +55,7 @@ export const useSettingsDebugToolsScreen =
 
         return {
             isGalleryAvailable: routeCapabilities.developerGallery,
+            isMigrationViewerAvailable: routeCapabilities.migrationDevTools,
             isFeatureFlagsAvailable: !areConfigOverridesIgnored(),
             handleNavigate,
             handleOpenTestingDapp,

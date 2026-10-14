@@ -20,8 +20,6 @@ import { useDiscoverDetailScreen } from '../useDiscoverDetailScreen'
 const goBack = vi.fn()
 
 vi.mock('@perawallet/wallet-core-config', () => ({
-    isDebug: false,
-    isStaging: false,
     config: { discoverBaseUrl: 'https://discover.example/' },
 }))
 vi.mock('@react-navigation/native', () => ({

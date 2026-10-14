@@ -19,7 +19,7 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const { mockCapabilities, mockLock, restart } = vi.hoisted(() => ({
-    mockCapabilities: { developerGallery: true, developerSettings: true },
+    mockCapabilities: { developerGallery: true },
     mockLock: { fn: null as null | (() => Promise<void>) },
     restart: vi.fn(),
 }))
@@ -58,7 +58,6 @@ describe('useAccountHeaderMenu', () => {
     beforeEach(() => {
         ;(usePreferences as Mock).mockReset()
         mockCapabilities.developerGallery = true
-        mockCapabilities.developerSettings = true
         mockLock.fn = null
         restart.mockClear()
         useNetworkStore.getState().resetState()

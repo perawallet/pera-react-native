@@ -18,6 +18,7 @@ export const SettingsDebugToolsScreen = () => {
     const { t } = useLanguage()
     const {
         isGalleryAvailable,
+        isMigrationViewerAvailable,
         isFeatureFlagsAvailable,
         handleNavigate,
         handleOpenTestingDapp,
@@ -33,11 +34,13 @@ export const SettingsDebugToolsScreen = () => {
                     testID='debug_tools_feature_flags_item'
                 />
             )}
-            <PWListItem
-                onPress={() => handleNavigate('MigrationViewer')}
-                icon='code'
-                title='Migration Viewer'
-            />
+            {isMigrationViewerAvailable && (
+                <PWListItem
+                    onPress={() => handleNavigate('MigrationViewer')}
+                    icon='code'
+                    title='Migration Viewer'
+                />
+            )}
             <PWListItem
                 onPress={() => handleNavigate('KeystoreMigrations')}
                 icon='reload'

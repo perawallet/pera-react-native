@@ -43,11 +43,9 @@ export const useAccountHeaderMenu = ({
     const canSearch = useCapability({ anyChain: 'assetSearch' })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    // The preference alone isn't enough: it persists across upgrades, and
-    // store builds that used to expose developer settings may have it on.
-    const isDebugToolsEnabled =
-        routeCapabilities.developerSettings &&
-        !!getPreference(UserPreferences.debugToolsEnabled)
+    const isDebugToolsEnabled = !!getPreference(
+        UserPreferences.debugToolsEnabled,
+    )
 
     const handleModeToggle = useCallback(() => {
         setMode(isDeveloperMode ? 'live' : 'developer')

@@ -197,15 +197,16 @@ console.log(
 // deletes the real legacy stores and plants fixture accounts whose private
 // keys derive from a public repo constant, so unlike the gallery this gate is
 // fail-closed: unset APP_ENV and everything else falls through to stubbed.
-// The runtime `developerSettings` capability gate and the native
-// production-id refusal are the other two layers; QA exercises migration on
-// staging release builds, hence the APP_ENV carve-out. The barrels are the
-// only importers routes/index.tsx reaches, so stubbing them detaches each
-// screen's whole folder (store, hooks, subcomponents) from the graph.
+// The same swap flips routeCapabilities.migrationDevTools off, so the menu row
+// and routes vanish with the code; the native production-id refusal is the
+// backstop. QA exercises migration on staging release builds, hence the
+// APP_ENV carve-out. The barrels are the only importers routes/index.tsx
+// reaches, so stubbing them detaches each screen's whole folder.
 const migrationDevToolsEnabled =
     process.env.NODE_ENV === 'development' || process.env.APP_ENV === 'staging';
 
 const migrationDevToolsStubs = toStubMap(projectRoot, [
+    'src/routes/migration-dev-tools',
     'src/modules/settings/screens/developer/SettingsDeveloperMigrationSimulatorScreen/index',
     'src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/index',
 ]);

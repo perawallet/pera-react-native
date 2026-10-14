@@ -54,6 +54,10 @@ export type RouteCapabilities = {
     /** Developer screen gallery. Off in production bundles, where Metro drops
      * its code entirely (see metro-build-gates.js), not just its entry points. */
     developerGallery: boolean
+    /** Migration Viewer, Simulator and reference screens. Off outside dev and
+     * staging bundles: the simulator wipes the real legacy stores and plants
+     * fixture accounts with publicly-derivable keys (see metro.config.js). */
+    migrationDevTools: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean
     /** App-lock PIN and what hangs off it: the set-PIN prompt, PIN and

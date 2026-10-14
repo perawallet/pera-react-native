@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { isAndroid } from '@utils/platform'
 import type {
     RouteCapabilities,
     RouteCapabilityRestrictions,
 } from './capabilities-types'
 import { isDeveloperGalleryIncluded } from './developer-gallery'
+import { isMigrationDevToolsIncluded } from './migration-dev-tools'
 
 export type {
     RouteCapabilities,
@@ -43,12 +43,9 @@ export const routeCapabilities: RouteCapabilities = {
     storeRating: true,
     confirmationModeSetting: true,
     analyticsConsent: true,
-    // Carries destructive tooling (the migration simulator wipes the real
-    // legacy stores and plants fixture accounts with publicly-derivable keys),
-    // so the signed store build must not expose it. metro.config.js
-    // additionally strips those screens from non-dev/non-staging bundles.
-    developerSettings: isDebug || isStaging,
+    developerSettings: true,
     developerGallery: isDeveloperGalleryIncluded,
+    migrationDevTools: isMigrationDevToolsIncluded,
     vaultSecuritySettings: false,
     pin: true,
     quantum: true,

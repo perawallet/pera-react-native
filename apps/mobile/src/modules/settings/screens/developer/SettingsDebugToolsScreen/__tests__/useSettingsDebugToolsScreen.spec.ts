@@ -21,7 +21,11 @@ import { useSettingsDebugToolsScreen } from '../useSettingsDebugToolsScreen'
 const { mockPush, mockPushWebView, mockCapabilities } = vi.hoisted(() => ({
     mockPush: vi.fn(),
     mockPushWebView: vi.fn(),
-    mockCapabilities: { developerGallery: true, inAppWebView: true },
+    mockCapabilities: {
+        developerGallery: true,
+        migrationDevTools: true,
+        inAppWebView: true,
+    },
 }))
 
 vi.mock('@react-navigation/native', async importOriginal => ({
@@ -45,6 +49,7 @@ describe('useSettingsDebugToolsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockCapabilities.developerGallery = true
+        mockCapabilities.migrationDevTools = true
         mockCapabilities.inAppWebView = true
         vi.mocked(areConfigOverridesIgnored).mockReturnValue(false)
     })
@@ -61,6 +66,20 @@ describe('useSettingsDebugToolsScreen', () => {
         const { result } = renderHook(() => useSettingsDebugToolsScreen())
 
         expect(result.current.isGalleryAvailable).toBe(false)
+    })
+
+    it('offers the Migration Viewer where the build includes the migration tools', () => {
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
+
+        expect(result.current.isMigrationViewerAvailable).toBe(true)
+    })
+
+    it('hides the Migration Viewer in builds that strip the migration tools', () => {
+        mockCapabilities.migrationDevTools = false
+
+        const { result } = renderHook(() => useSettingsDebugToolsScreen())
+
+        expect(result.current.isMigrationViewerAvailable).toBe(false)
     })
 
     it('offers Feature Flags where saved overrides take effect', () => {

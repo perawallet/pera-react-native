@@ -46,8 +46,6 @@ vi.mock('react-native', () => ({
 vi.mock('react-native-webview', () => ({ default: {} }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
-    isDebug: false,
-    isStaging: false,
     config: {
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
