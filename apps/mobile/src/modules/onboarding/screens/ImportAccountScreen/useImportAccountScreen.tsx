@@ -19,7 +19,6 @@ import {
     isPostQuantumScheme,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
-import type { OnboardingStackParamList } from '../../routes/types'
 import {
     consumePendingImportMnemonic,
     DuplicateAccountError,
@@ -33,6 +32,7 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
+import type { OnboardingStackParamList } from '../../routes/types'
 import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'

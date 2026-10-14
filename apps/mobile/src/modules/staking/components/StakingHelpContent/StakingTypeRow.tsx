@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'

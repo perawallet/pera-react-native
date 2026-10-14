@@ -26,9 +26,9 @@ import {
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { getCardSettlementAssetId } from '@perawallet/wallet-core-card'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'

@@ -32,8 +32,8 @@ const EXCLUDED_KEYS = new Set([
 
 // A literal that could name a key: dotted, word characters and hyphens.
 const KEY_SHAPED = /^[A-Za-z][\w-]*(?:\.[\w-]+)+$/
-// A literal naming a key path claims the keys under it, e.g. an i18nBaseKey
-// completed at run time. Word characters only: hosts and package names are
+// A literal naming a key path claims the keys under it, e.g. a namespace
+// handed to a `${ns}.x` template. Word characters only: hosts and package names are
 // dotted and hyphenated, and keeping hyphens out of ancestor claims stops
 // them claiming a key subtree.
 const PATH_SHAPED = /^[A-Za-z]\w*(?:\.\w+)+$/

@@ -17,8 +17,7 @@ import { useRekeyToQuantumIntroScreen } from '../useRekeyToQuantumIntroScreen'
 import en from '@i18n/locales/en.json'
 
 describe('useRekeyToQuantumIntroScreen', () => {
-    // The keys are literals, but nothing ties the list to en.json: an extra
-    // expect_N line there would never render.
+    // Order only: an extra expect_N in en.json fails no-unused-translation-keys.
     it('lists every expect_N line in en.json, in order', () => {
         const { result } = renderHook(() => useRekeyToQuantumIntroScreen())
 

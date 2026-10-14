@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { isHTTPError, isNetworkError, isTimeoutError } from 'ky'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,

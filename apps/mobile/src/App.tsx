@@ -11,8 +11,8 @@
  */
 
 import React from 'react'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import './i18n'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { ThemeProvider } from '@rneui/themed'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'

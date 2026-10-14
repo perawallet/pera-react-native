@@ -11,10 +11,10 @@
  */
 
 import { useWindowDimensions } from 'react-native'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { type IconName, PWIcon } from '@components/core'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent } from '@analytics'
 import { isAndroid } from '@utils/platform'
 import { screenListeners } from './listeners'
