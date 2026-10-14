@@ -10,15 +10,11 @@
  limitations under the License
  */
 
-import type { ChainId } from './models/identity'
+import type {
+    ChainDescriptor,
+    ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
-// A Record so that adding a chain id stops this compiling. Must agree with the
-// chain's ChainDescriptor.nativeAsset.decimals.
-const NATIVE_ASSET_DECIMALS: Record<ChainId, number> = {
-    algorand: 6,
-    ethereum: 18,
-}
-
-/** Base units per display unit of the chain's native asset, as a power of ten. */
-export const nativeAssetDecimals = (chainId: ChainId): number =>
-    NATIVE_ASSET_DECIMALS[chainId]
+export const getChainDescriptor = (chainId: ChainId): ChainDescriptor =>
+    getProvider().chains.get(chainId).descriptor

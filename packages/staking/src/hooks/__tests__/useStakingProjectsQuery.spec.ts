@@ -60,10 +60,15 @@ const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 const mocks = vi.hoisted(() => ({
     fetchStakingProjectsInfo: vi.fn(),
     getStringValue: vi.fn(),
+    getChainDescriptor: vi.fn(() => ({ nativeAsset: { decimals: 6 } })),
 }))
 
 vi.mock('../endpoints', () => ({
     fetchStakingProjectsInfo: mocks.fetchStakingProjectsInfo,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: mocks.getChainDescriptor,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -230,6 +235,7 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.data[2].id).toBe('valar')
         // Algorand's native asset has six decimals, so 2000 base units is 0.002.
         expect(result.current.data[0].tvlInNative.toString()).toBe('0.002')
+        expect(mocks.getChainDescriptor).toHaveBeenCalledWith('algorand')
         expect(result.current.data[0].tvlInUsd.toString()).toBe('2500')
         expect(result.current.data.length).toBe(3)
     })

@@ -15,6 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountStateSnapshot } from '../../chain-adapter'
 import { getOnChainAccountStateQueryKey } from '../querykeys'
 import {
@@ -25,6 +26,7 @@ import {
     fakeAccountStateSnapshot,
     fakeAccountsChain,
     MAINNET_SCOPE,
+    registerFakeNativeAsset,
     TESTNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
 
@@ -47,6 +49,7 @@ describe('useOnChainAccountStateQuery', () => {
     let wrapper: React.FC<{ children: React.ReactNode }>
 
     beforeEach(() => {
+        registerFakeNativeAsset()
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -125,6 +128,10 @@ describe('useOnChainAccountStateQuery', () => {
 })
 
 describe('fetchOnChainAccountState', () => {
+    beforeEach(() => {
+        registerFakeNativeAsset()
+    })
+
     test('resolves what the chain reads', async () => {
         const snapshot = fakeAccountStateSnapshot(7)
         fetchAccountState().mockResolvedValue(snapshot)
@@ -132,5 +139,15 @@ describe('fetchOnChainAccountState', () => {
         await expect(
             fetchOnChainAccountState(ADDRESS, MAINNET_SCOPE),
         ).resolves.toEqual(summarized(snapshot))
+    })
+
+    test("reads base units at the chain descriptor's decimals", async () => {
+        getProvider().chains.reset()
+        registerFakeNativeAsset(2)
+        fetchAccountState().mockResolvedValue(fakeAccountStateSnapshot(12_345))
+
+        const state = await fetchOnChainAccountState(ADDRESS, MAINNET_SCOPE)
+
+        expect(state.nativeBalance).toEqual(new Decimal('123.45'))
     })
 })
