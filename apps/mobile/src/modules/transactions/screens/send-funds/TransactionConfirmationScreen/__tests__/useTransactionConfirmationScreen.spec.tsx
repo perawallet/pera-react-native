@@ -191,6 +191,8 @@ describe('useTransactionConfirmationScreen', () => {
         setNote: vi.fn(),
         setDestination: vi.fn(),
         setOnFinished: vi.fn(),
+        feePreset: 'normal',
+        setFeePreset: vi.fn(),
         reset: vi.fn(),
     }
 
@@ -740,10 +742,37 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.amount).toEqual(mockAmount)
             expect(result.current.destination).toEqual(mockDestination)
             expect(result.current.note).toEqual(mockNote)
-            expect(result.current.params).toEqual({ minFee: 1000n })
-            expect(result.current.paramsPending).toBe(false)
+            expect(result.current.feeAmount).toEqual(new Decimal(1000))
+            expect(result.current.isFeePending).toBe(false)
             expect(result.current.currentBalance).toEqual(mockCurrentBalance)
             expect(result.current.currentBalancePending).toBe(false)
+        })
+    })
+
+    describe('fee row inputs', () => {
+        it("prices the fee on the selected scope's chain", () => {
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.chainId).toBe('algorand')
+        })
+
+        it('passes the fee preset and its setter through from the send flow', () => {
+            const setFeePreset = vi.fn()
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                feePreset: 'fast',
+                setFeePreset,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+            result.current.setFeePreset('slow')
+
+            expect(result.current.feePreset).toBe('fast')
+            expect(setFeePreset).toHaveBeenCalledWith('slow')
         })
     })
 
@@ -775,8 +804,8 @@ describe('useTransactionConfirmationScreen', () => {
                 'TEST_ADDRESS',
                 'algorand',
             )
-            expect(result.current.params).toEqual({ minFee: 3000n })
-            expect(result.current.paramsPending).toBe(false)
+            expect(result.current.feeAmount).toEqual(new Decimal(3000))
+            expect(result.current.isFeePending).toBe(false)
         })
 
         it('exposes the base fee for a non-quantum sender (regression)', () => {
@@ -789,11 +818,11 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.params).toEqual({ minFee: 1000n })
-            expect(result.current.paramsPending).toBe(false)
+            expect(result.current.feeAmount).toEqual(new Decimal(1000))
+            expect(result.current.isFeePending).toBe(false)
         })
 
-        it('returns undefined params while the resolved fee is pending', () => {
+        it('returns no fee while the resolved fee is pending', () => {
             ;(useMinFeeForSender as Mock).mockReturnValue({
                 minFee: undefined,
                 isPending: true,
@@ -803,8 +832,8 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.params).toBeUndefined()
-            expect(result.current.paramsPending).toBe(true)
+            expect(result.current.feeAmount).toBeUndefined()
+            expect(result.current.isFeePending).toBe(true)
         })
 
         it('flags a quantum fee when the signer is a quantum account', () => {
@@ -822,7 +851,7 @@ describe('useTransactionConfirmationScreen', () => {
             )
 
             expect(result.current.isQuantumFee).toBe(true)
-            expect(result.current.params).toEqual({ minFee: 3000n })
+            expect(result.current.feeAmount).toEqual(new Decimal(3000))
         })
 
         it('does not flag a quantum fee for a standard signer', () => {
@@ -840,7 +869,7 @@ describe('useTransactionConfirmationScreen', () => {
             )
 
             expect(result.current.isQuantumFee).toBe(false)
-            expect(result.current.params).toEqual({ minFee: 1000n })
+            expect(result.current.feeAmount).toEqual(new Decimal(1000))
         })
 
         it('flags a quantum fee when a standard sender is rekeyed to a quantum signer', () => {

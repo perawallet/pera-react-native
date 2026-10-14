@@ -31,7 +31,9 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
-    ...(await importOriginal<typeof import('@perawallet/wallet-core-assets')>()),
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
     nativeAssetFor: vi.fn(),
     // CurrencyAmount asks whether the amount is the native asset of the
     // legacy network, which needs a registered assets adapter.

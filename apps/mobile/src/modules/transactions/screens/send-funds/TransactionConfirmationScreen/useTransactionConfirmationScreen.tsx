@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useAccountAssetBalanceQuery,
@@ -38,7 +38,11 @@ import {
     displayUnitsToBaseUnits,
     toBigInt,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+    type FeePreset,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useCapability } from '@hooks/useCapability'
@@ -57,8 +61,12 @@ type useTransactionConfirmationScreenResult = {
     destination: Optional<string>
     selectedAccount: Nullable<WalletAccount>
     selectedAssetId: Optional<string>
-    params: Optional<{ minFee: bigint }>
-    paramsPending: boolean
+    chainId: ChainId
+    /** Base units of the chain's native asset. */
+    feeAmount: Optional<Decimal>
+    isFeePending: boolean
+    feePreset: FeePreset
+    setFeePreset: (preset: FeePreset) => void
     isQuantumFee: boolean
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
@@ -81,8 +89,15 @@ export const useTransactionConfirmationScreen =
         const isNativeAssetId = useIsNativeAssetId()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-        const { selectedAssetId, amount, destination, note, isCloseAccount } =
-            useSendFunds()
+        const {
+            selectedAssetId,
+            amount,
+            destination,
+            note,
+            isCloseAccount,
+            feePreset,
+            setFeePreset,
+        } = useSendFunds()
         const { t } = useLanguage()
 
         const assetIDs = useMemo(
@@ -102,11 +117,17 @@ export const useTransactionConfirmationScreen =
         const selectedAddress = selectedAccount
             ? chainAccountOf(selectedAccount, scope.chainId)?.address
             : undefined
-        const { minFee, isPending: paramsPending } = useMinFeeForSender(
+        const { minFee, isPending: isFeePending } = useMinFeeForSender(
             selectedAddress,
             scope.chainId,
         )
-        const params = minFee !== undefined ? { minFee } : undefined
+        const feeAmount = useMemo(
+            () =>
+                minFee !== undefined
+                    ? new Decimal(minFee.toString())
+                    : undefined,
+            [minFee],
+        )
 
         // The quantum fee premium is driven by the effective signer (resolving
         // one rekey hop), matching the fee-multiplier logic — not the raw sender.
@@ -264,8 +285,11 @@ export const useTransactionConfirmationScreen =
             destination,
             selectedAccount,
             selectedAssetId,
-            params,
-            paramsPending,
+            chainId: scope.chainId,
+            feeAmount,
+            isFeePending,
+            feePreset,
+            setFeePreset,
             isQuantumFee,
             currentBalance,
             currentBalancePending,
