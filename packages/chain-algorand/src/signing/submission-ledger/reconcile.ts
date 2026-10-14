@@ -32,6 +32,7 @@ import {
     type SubmissionAttempt,
     type SubmissionFlow,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandNetworkOf } from '../../legacy-network'
 import { getSubmissionSettledHandler } from './settle-registry'
 
@@ -105,6 +106,8 @@ export const reconcileOpenSubmissions = async ({
     try {
         open = await getOpenSubmissionAttempts({
             db,
+            // Other chains' rows would fill the budget and fail every probe.
+            chainId: ALGORAND_CHAIN_ID,
             limit,
             // Rows with no validity window can never be proven either way.
             // Left in the pass they would fill the budget (createdAt ASC,

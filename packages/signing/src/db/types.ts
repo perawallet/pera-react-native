@@ -19,8 +19,15 @@
  * - `confirmed` — definitively on chain. Terminal.
  * - `failed` — definitively not on chain (node rejection, or lastValid
  *   expired without landing). Terminal.
+ * - `replaced` — another transaction was mined at this attempt's account
+ *   sequence number, so its bytes can never land. Terminal.
  */
-export type SubmissionStatus = 'submitted' | 'unknown' | 'confirmed' | 'failed'
+export type SubmissionStatus =
+    | 'submitted'
+    | 'unknown'
+    | 'confirmed'
+    | 'failed'
+    | 'replaced'
 
 export const OPEN_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
     'submitted',
@@ -82,6 +89,11 @@ export type SubmissionAttempt = {
     status: SubmissionStatus
     /** Validity window of the decoded txn, in rounds. */
     lastValid: number | null
+    /**
+     * The account sequence number the transaction consumes, on chains that
+     * order an account's transactions by one; null otherwise.
+     */
+    nonce: number | null
     createdAt: number
     resolvedAt: number | null
 }

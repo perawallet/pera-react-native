@@ -47,6 +47,7 @@ export type ReconcileSummary = {
     /** Rows this pass examined, whether or not they settled. */
     probed: number
     confirmed: number
+    /** Rows settled as not on chain: failed, or replaced by another transaction. */
     failed: number
 }
 

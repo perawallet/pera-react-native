@@ -126,6 +126,7 @@ describe('submission reconciler', () => {
         sender: null,
         status: 'submitted',
         lastValid: 100,
+        nonce: null,
         createdAt: 0,
         resolvedAt: null,
     })
@@ -370,6 +371,35 @@ describe('submission reconciler', () => {
         // for the life of the install.
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows).toHaveLength(0)
+    })
+
+    it("neither probes nor counts another chain's open rows", async () => {
+        const ethereumId = await record({
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            txIds: ['0xabc'],
+            flow: 'pipeline',
+        })
+        const algorandId = await record({ flow: 'rekey' })
+        const getClient = vi.fn(() =>
+            makeClient({ pending: { 'confirmed-round': 42 } }),
+        )
+
+        const summary = await reconcileOpenSubmissions({
+            db,
+            limit: 1,
+            getClient,
+        })
+
+        // limit 1 with the Ethereum row recorded first: it would have taken the slot.
+        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        expect(getClient).toHaveBeenCalledTimes(1)
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows.find(row => row.id === ethereumId)?.status).toBe(
+            'submitted',
+        )
+        expect(rows.find(row => row.id === algorandId)?.status).toBe(
+            'confirmed',
+        )
     })
 
     it('is a no-op when no open rows exist', async () => {
