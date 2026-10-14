@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-// The planner and its known-answer vectors, for suites outside this package
-// that run Ethereum signing end to end; aliased as
+// The planner, the reviewer and the known-answer vectors, for suites outside
+// this package that run Ethereum signing end to end; aliased as
 // `@perawallet/wallet-core-chain-ethereum/testing` by consumers, never built.
 export { ethereumDescriptor } from '../descriptor'
 export { ethereumLocalKeyKinds } from '../accounts/local-key-kinds'
@@ -19,6 +19,11 @@ export {
     ethereumPlannerAdapter,
     type EthereumTransactionPayload,
 } from '../signing/adapter'
+export {
+    createEthereumReviewer,
+    ethereumReviewerAdapter,
+} from '../signing/review'
+export { readEthereumNative } from '../signing/transaction-view'
 export {
     SENDER,
     TRANSFER,

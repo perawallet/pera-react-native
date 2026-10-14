@@ -15,6 +15,7 @@ import { createActor, fromPromise, waitFor } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     transactionPlanners,
+    transactionReviewers,
     type ChainScope,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -27,11 +28,10 @@ import {
     ethereumDescriptor,
     ethereumLocalKeyKinds,
     ethereumPlannerAdapter,
+    ethereumReviewerAdapter,
     type EthereumTransactionPayload,
 } from '@perawallet/wallet-core-chain-ethereum/testing'
 import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
-import { fakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
-import { reviewerChainAdapters } from '../../chain-adapter'
 import type { TransactionSignRequest } from '../../models'
 import type { TransportResult } from '../../pipeline/types'
 import type { SigningMachineInput } from '../context'
@@ -83,20 +83,10 @@ describe('signing an Ethereum transaction through the machine', () => {
             localKeyKinds: ethereumLocalKeyKinds,
         })
         transactionPlanners.register(ethereumPlannerAdapter)
+        transactionReviewers.register(ethereumReviewerAdapter)
     })
 
     it("produces exactly the raw transaction viem's signTransaction does", async () => {
-        reviewerChainAdapters.register(
-            fakeReviewerAdapter({
-                chainId: 'ethereum',
-                decoder: {
-                    decode: async () => ({
-                        totalFees: 0n,
-                        signableAddresses: [SENDER],
-                    }),
-                },
-            }),
-        )
         const { kms, calls } = createVectorKeyStore()
         const request: TransactionSignRequest = {
             id: 'eth-transfer',
@@ -122,6 +112,9 @@ describe('signing an Ethereum transaction through the machine', () => {
         actor.send({ type: 'USER_APPROVED' })
         const state = await waitFor(actor, s => s.matches('completed'))
 
+        const [analysis] = state.context.analyses ?? []
+        expect(analysis?.transactions?.[0]?.summary.kind).toBe('transfer')
+        expect(analysis?.signableAddresses).toEqual([SENDER])
         const [result] = state.context.signingResults ?? []
         expect(result.signedData.type).toBe('signed-transactions')
         const [signed] =

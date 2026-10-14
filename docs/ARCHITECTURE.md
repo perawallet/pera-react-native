@@ -269,6 +269,13 @@ with the key of the account the request names in the scheme it names, and `assem
 signed transaction. No other path hands chain-neutral bytes to the key store, so a request can't
 have arbitrary bytes signed, which is what `eth_sign` would allow.
 
+A chain whose review reads only chain-neutral transactions registers a `TransactionReviewer` in
+chain-contract's `transactionReviewers`, as with planners, and the signing pipeline bridges it into
+the machine's reviewer. A transaction's `summary` is the request's own claim, so a reviewer consults
+it only on a request the wallet built, and only once the chain proves it from the payload: Ethereum
+honours a token-transfer summary only when re-encoding it gives exactly the calldata, and every call
+it can't prove stays an unrecognised contract call that the app can't sign without review.
+
 A request's `signer` is the address whose key produces the signature, not the account it is for:
 the planner reads it from the payload (Ethereum's `from`; Algorand's sender, rekey authority, or one
 request per multisig participant), so the pipeline never follows a rekey a second time. Only keys

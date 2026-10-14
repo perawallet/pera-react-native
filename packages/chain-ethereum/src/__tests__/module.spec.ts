@@ -19,12 +19,14 @@ import {
     keyDerivations,
     registerChainSetup,
     transactionPlanners,
+    transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule } from '..'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
 import { ethereumPlannerAdapter } from '../signing/adapter'
+import { ethereumReviewerAdapter } from '../signing/review'
 import { ETHEREUM_TRANSFER_TITLE_KEYS } from '../transfer'
 
 const context: ChainContext = {
@@ -56,7 +58,7 @@ describe('ethereumModule', () => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('registers its descriptor, address codec, key derivation, accounts adapter, planner and defaults through the setup', () => {
+    it('registers its descriptor, address codec, key derivation, accounts adapter, planner, reviewer and defaults through the setup', () => {
         const chains = createChainRegistry()
 
         registerChainSetup(
@@ -82,6 +84,9 @@ describe('ethereumModule', () => {
         expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(transactionPlanners.get('ethereum')).toBe(ethereumPlannerAdapter)
+        expect(transactionReviewers.get('ethereum')).toBe(
+            ethereumReviewerAdapter,
+        )
         expect(transferChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(chains.byCaip2('eip155:11155111')).toMatchObject({
             chainId: 'ethereum',
@@ -101,5 +106,14 @@ describe('ethereumModule', () => {
         )
         const keys = ethereumModule.i18nKeys()
         expect(new Set(keys).size).toBe(keys.length)
+    })
+
+    it('declares the titles its reviewer gives transactions', () => {
+        expect(ethereumModule.i18nKeys()).toEqual(
+            expect.arrayContaining([
+                'transactions.list_item.send',
+                'transactions.list_item.contract_call',
+            ]),
+        )
     })
 })

@@ -14,6 +14,7 @@ import { assertType, describe, expectTypeOf, it } from 'vitest'
 import {
     addressCodecs,
     keyDerivations,
+    transactionReviewers,
     type AddressCodec,
     type ChainAdapterRegistry,
     type ChainKeyStore,
@@ -21,6 +22,7 @@ import {
     type KeyDerivation,
     type KeyDerivationRequest,
     type KeyImportRequest,
+    type TransactionReviewer,
 } from '../../index'
 
 const derivedKey: DerivedKey = {
@@ -35,6 +37,9 @@ describe('registries', () => {
         >()
         expectTypeOf(keyDerivations).toEqualTypeOf<
             ChainAdapterRegistry<KeyDerivation>
+        >()
+        expectTypeOf(transactionReviewers).toEqualTypeOf<
+            ChainAdapterRegistry<TransactionReviewer>
         >()
     })
 })

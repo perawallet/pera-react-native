@@ -36,7 +36,6 @@ import {
     UnsupportedTransactionIntentError,
     type TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
-import { ethereumAddressCodec } from '../accounts/address-codec'
 import { toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
@@ -44,8 +43,7 @@ import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { readTransferFees, toEthereumFeeEstimate } from './fees'
-
-const SEND_TITLE_KEY = 'transactions.list_item.send'
+import { SEND_TITLE_KEY, sendSummary } from './summary'
 
 /** Every i18n key a built transaction's summary can carry. */
 export const ETHEREUM_TRANSFER_TITLE_KEYS = [SEND_TITLE_KEY] as const
@@ -106,17 +104,16 @@ const toEthereumTransferCall = (
 const transferSummary = (
     intent: TransferIntent,
     isNative: boolean,
-): TransactionSummary => {
-    const isSelf = ethereumAddressCodec.areEqual(intent.from, intent.to)
-    return {
-        kind: isNative ? 'transfer' : 'token-transfer',
-        title: { key: SEND_TITLE_KEY },
-        direction: isSelf ? 'self' : 'out',
-        icon: isSelf ? 'self' : 'send',
-        counterparty: intent.to,
-        amount: { assetRef: intent.assetRef, value: intent.amount },
-    }
-}
+): TransactionSummary =>
+    sendSummary(
+        isNative ? 'transfer' : 'token-transfer',
+        intent.from,
+        intent.to,
+        {
+            assetRef: intent.assetRef,
+            value: intent.amount,
+        },
+    )
 
 const buildEthereumTransfer = async (
     ctx: ChainContext,

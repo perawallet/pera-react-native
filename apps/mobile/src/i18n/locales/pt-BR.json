@@ -3156,6 +3156,7 @@
             "asset_config": "Configuração de ativo",
             "asset_freeze": "Congelamento de ativo",
             "app_call": "Chamada de app",
+            "contract_call": "Chamada de contrato",
             "key_registration": "Registro de chave",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

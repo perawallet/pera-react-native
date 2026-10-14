@@ -3139,6 +3139,7 @@
             "asset_config": "Configuration d’actif",
             "asset_freeze": "Gel d’actif",
             "app_call": "Appel d’application",
+            "contract_call": "Appel de contrat",
             "key_registration": "Enregistrement de clé",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",

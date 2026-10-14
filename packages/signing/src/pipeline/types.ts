@@ -16,6 +16,8 @@ import type {
     ChainScope,
     PeraTransaction,
     PeraSignedTransaction,
+    ReviewedTransaction,
+    ReviewWarning,
     SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -276,20 +278,13 @@ export interface SignableGroup {
     originalIndices?: number[]
 }
 
-export interface AnalysisWarning {
-    type:
-        | 'high-fee'
-        | 'unknown-contract'
-        | 'large-amount'
-        | 'close-account'
-        | 'rekey'
-        | 'suspicious'
-    severity: 'info' | 'warning' | 'danger'
-    message: string
-}
+export type AnalysisWarning = ReviewWarning
 
 export interface SignableAnalysis {
     totalFees: bigint
+
+    /** Set by a chain-neutral reviewer; Algorand's UI reads its transactions from the request. */
+    transactions?: ReviewedTransaction[]
 
     warnings: AnalysisWarning[]
 
@@ -305,7 +300,7 @@ export interface SignableAnalysis {
 /** What a group does, before any warning or risk is attached. */
 export type DecodedGroup = Pick<
     SignableAnalysis,
-    'totalFees' | 'signableAddresses'
+    'totalFees' | 'transactions' | 'signableAddresses'
 >
 
 export interface AnalysisContext {

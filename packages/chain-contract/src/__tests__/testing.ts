@@ -23,11 +23,16 @@ export {
     fixtureCodec,
     fixtureDerivation,
     fixturePlanner,
+    fixtureReviewer,
 } from './fixture-chain'
 export {
     transactionPlannerContractTests,
     type TransactionPlannerContractFixtures,
 } from './transaction-planner-contract'
+export {
+    transactionReviewerContractTests,
+    type TransactionReviewerContractFixtures,
+} from './transaction-reviewer-contract'
 export {
     createFakeChainKeyStore,
     keyDerivationContractTests,
