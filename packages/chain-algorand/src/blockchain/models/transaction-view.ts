@@ -45,6 +45,7 @@ export interface AlgorandTransactionView {
     /** microAlgos. */
     fee: bigint
     note?: Uint8Array
+    group?: Uint8Array
     confirmedRound?: bigint
     /** Unix ms. */
     roundTimeMillis?: number

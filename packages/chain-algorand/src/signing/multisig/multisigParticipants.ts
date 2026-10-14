@@ -17,15 +17,15 @@ import {
     isHardwareWalletAccount,
     isMultisigAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    isUnsignedTransactionsData,
-    type AnalyzedSignableGroup,
-    type SigningResult,
+import type {
+    AnalyzedSignableGroup,
+    SigningResult,
 } from '@perawallet/wallet-core-signing'
 import {
     algorandMultisigOf,
     signableParticipantAt,
 } from '../../accounts/multisig-participants'
+import { algorandSignableDataOf } from '../algorandRequest'
 import { assembleSignedTransaction } from '../local-key/signTransactionsWithLocalKey'
 
 /**
@@ -104,12 +104,9 @@ export const shouldDeferPropose = (
 export const buildDeferredProposeSigningResult = (
     group: AnalyzedSignableGroup,
 ): SigningResult => {
-    if (
-        group.data.type !== 'transactions' ||
-        isUnsignedTransactionsData(group.data)
-    ) {
+    if (group.data.type !== 'transactions') {
         throw new Error(
-            'Deferred propose is only supported for Algorand transaction signing requests',
+            'Deferred propose is only supported for transaction signing requests',
         )
     }
     return {
@@ -117,7 +114,7 @@ export const buildDeferredProposeSigningResult = (
             type: 'transactions',
             // The transport in deferred mode reads `stx.txn` only — no sig
             // or msig is needed because nothing is actually signed yet.
-            signed: group.data.transactions.map(txn =>
+            signed: algorandSignableDataOf(group.data).transactions.map(txn =>
                 assembleSignedTransaction(txn),
             ),
         },

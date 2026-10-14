@@ -12,8 +12,17 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import '../../../__tests__/registerAlgorandAccounts'
-import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing'
-import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
+import {
+    InvalidSignableDataError,
+    type AnalyzedSignableGroup,
+} from '@perawallet/wallet-core-signing'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedAlgorandTransaction,
+} from '../../__tests__/transactions'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
@@ -244,19 +253,50 @@ describe('getProposeParticipants', () => {
 })
 
 describe('buildDeferredProposeSigningResult', () => {
-    test('refuses chain-neutral transactions', () => {
-        const group = {
-            data: {
-                type: 'transactions',
-                transactions: [makeUnsignedAlgorandTransaction()],
-                chainData: {},
-            },
+    const transactions = [1n, 2n].map(amount =>
+        makeTestPaymentTx(makeTestAddress(1), {
+            receiver: makeTestAddress(2),
+            amount,
+            genesisHash: MAINNET_GENESIS_HASH,
+        }),
+    )
+    const groupOf = (data: unknown): AnalyzedSignableGroup =>
+        ({
+            data,
             source: { type: 'local' },
             signerAddress: 'ADDR',
-        } as unknown as AnalyzedSignableGroup
+            originalIndices: [0, 1],
+        }) as unknown as AnalyzedSignableGroup
+
+    test('drafts a chain-neutral group as the Algorand transactions its payloads carry', () => {
+        const neutral = groupOf({
+            type: 'transactions',
+            transactions: transactions.map(transaction =>
+                asUnsignedAlgorandTransaction(transaction),
+            ),
+            chainData: { algorand: { indicesToSign: [0, 1] } },
+        })
+
+        expect(buildDeferredProposeSigningResult(neutral)).toEqual(
+            buildDeferredProposeSigningResult(
+                groupOf({
+                    type: 'transactions',
+                    transactions,
+                    indicesToSign: [0, 1],
+                }),
+            ),
+        )
+    })
+
+    test('refuses a chain-neutral payload it cannot read', () => {
+        const group = groupOf({
+            type: 'transactions',
+            transactions: [makeUnsignedAlgorandTransaction()],
+            chainData: {},
+        })
 
         expect(() => buildDeferredProposeSigningResult(group)).toThrow(
-            'only supported for Algorand transaction',
+            InvalidSignableDataError,
         )
     })
 })

@@ -133,7 +133,10 @@ const mockTransactions = (
     simulationFailed = false,
 ) => {
     vi.mocked(useImpactTransactions).mockReturnValue({
-        transactions,
+        transactions: transactions.map(transaction => ({
+            family: 'algorand',
+            transaction,
+        })),
         signableAddresses: new Set([USER]),
         isSimulating,
         simulationFailed,

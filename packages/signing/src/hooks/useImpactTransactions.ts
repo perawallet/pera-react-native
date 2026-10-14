@@ -13,20 +13,18 @@
 import { useMemo } from 'react'
 import type {
     ChainScope,
-    PeraDisplayableTransaction,
+    TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { needsSimulation } from '../chain-adapter'
-import {
-    isUnsignedTransactionRequest,
-    type TransactionSignRequest,
-} from '../models'
+import { isTransactionRequest, type SignRequest } from '../models'
+import { reviewGroupOf } from '../models/reviewGroup'
 import { useSigningPipeline } from './useSigningPipeline'
 import { useGroupSimulationQuery } from './useGroupSimulationQuery'
 
 type UseImpactTransactionsResult = {
     /** Top-level group plus any inner transactions surfaced by simulation. */
-    transactions: PeraDisplayableTransaction[]
+    transactions: TransactionNative[]
     signableAddresses: Set<string>
     isSimulating: boolean
     /**
@@ -52,13 +50,12 @@ export const useImpactTransactions = (
 ): UseImpactTransactionsResult => {
     const { allTransactions, signableAddresses, currentRequest } =
         useSigningPipeline()
-    const request = currentRequest as Optional<TransactionSignRequest>
+    const request = currentRequest as Optional<SignRequest>
 
-    // The full pre-filter group (or txs) in raw form, for the composer. A
-    // chain-neutral request has no Algorand group to simulate.
+    // The full pre-filter group (or txs) in raw form, for the composer.
     const groupTxs =
-        request && !isUnsignedTransactionRequest(request)
-            ? (request.groupContext ?? request.txs)
+        request && isTransactionRequest(request)
+            ? reviewGroupOf(request).transactions
             : undefined
 
     const hasAppCall = useMemo(

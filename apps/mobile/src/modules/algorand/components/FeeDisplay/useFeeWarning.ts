@@ -20,6 +20,7 @@ import {
     useRemoteConfig,
     RemoteConfigKeys,
 } from '@perawallet/wallet-core-remote-config'
+import { readAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 
 type UseFeeWarningResult = {
@@ -36,8 +37,10 @@ export const useFeeWarning = (): UseFeeWarningResult => {
 
     const signableTransactionCount = useMemo(
         () =>
-            allTransactions.filter(tx => signableAddresses.has(tx.sender))
-                .length,
+            allTransactions.filter(native => {
+                const sender = readAlgorandNative(native)?.sender
+                return sender !== undefined && signableAddresses.has(sender)
+            }).length,
         [allTransactions, signableAddresses],
     )
 

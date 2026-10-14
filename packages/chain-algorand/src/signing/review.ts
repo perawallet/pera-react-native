@@ -97,7 +97,11 @@ const algorandTransactionsOf = (
         }
         return read.transaction
     })
-    return { transactions, heldSigners: [...heldSigners] }
+    return {
+        transactions,
+        rawTransactionsBase64: data.chainData.algorand?.rawTransactionsBase64,
+        heldSigners: [...heldSigners],
+    }
 }
 
 /**

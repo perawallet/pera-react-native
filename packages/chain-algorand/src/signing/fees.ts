@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
+import type { AlgorandTransactionView } from '../blockchain'
 
 export const calculateTotalFee = (
-    transactions: PeraDisplayableTransaction[],
+    transactions: AlgorandTransactionView[],
     signableAddresses: Set<string>,
 ): Decimal =>
     transactions.reduce(
@@ -47,7 +47,7 @@ const DEFAULT_FEE_ALLOWANCE_MICRO_ALGO = 500_000n // 0.5 ALGO
  * keyregs could buy a huge unflagged budget (15 of them ≈ 75 ALGO).
  */
 export const maxReasonableGroupFee = (
-    transactions: PeraDisplayableTransaction[],
+    transactions: AlgorandTransactionView[],
     signableAddresses: Set<string>,
 ): bigint =>
     transactions.reduce(
@@ -67,7 +67,7 @@ export const maxReasonableGroupFee = (
  * warning, or null when the fee is within budget.
  */
 export const detectHighGroupFee = (
-    transactions: PeraDisplayableTransaction[],
+    transactions: AlgorandTransactionView[],
     signableAddresses: Set<string>,
 ): TransactionWarning | null => {
     const totalSignableFee = transactions.reduce(

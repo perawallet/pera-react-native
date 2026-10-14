@@ -14,8 +14,9 @@ import { useQuery } from '@tanstack/react-query'
 import {
     legacyNetworkOf,
     type ChainScope,
-    type PeraDisplayableTransaction,
     type PeraTransaction,
+    type TransactionNative,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { plannerAdapterForScope } from '../chain-adapter'
@@ -24,7 +25,7 @@ type UseGroupSimulationQueryParams = {
     /** Identifies the request for caching; the query is disabled without it. */
     requestId?: string
     /** Raw group to simulate (full group context, falling back to `txs`). */
-    groupTxs?: PeraTransaction[]
+    groupTxs?: PeraTransaction[] | UnsignedTransaction[]
     /** Caller-side gate — typically "the group contains an app call". */
     enabled?: boolean
     scope: ChainScope
@@ -32,7 +33,7 @@ type UseGroupSimulationQueryParams = {
 
 export type UseGroupSimulationQueryResult = {
     /** Flattened inner transactions; empty until (and unless) a simulation succeeds. */
-    data: PeraDisplayableTransaction[]
+    data: TransactionNative[]
     isFetching: boolean
     isSuccess: boolean
     isError: boolean

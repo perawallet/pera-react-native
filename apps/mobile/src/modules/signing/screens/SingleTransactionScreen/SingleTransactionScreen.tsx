@@ -15,7 +15,6 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewBody } from '@modules/signing/transactions/TransactionReviewBody'
 import { chainUiFor } from '@modules/chain-ui'
-import { toAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useSigningPipeline,
     type TransactionSignRequest,
@@ -31,7 +30,7 @@ export const SingleTransactionScreen = () => {
     const request = pipeline.currentRequest as Optional<TransactionSignRequest>
     const { allTransactions } = pipeline
 
-    const transaction = allTransactions[0]
+    const native = allTransactions.at(0)
 
     // After signing completes, the actor clears the request from the store
     // before the bottom sheet finishes animating closed. Suppressing the
@@ -40,9 +39,6 @@ export const SingleTransactionScreen = () => {
     if (!request) {
         return null
     }
-
-    // The signing pipeline carries only Algorand transactions.
-    const native = transaction ? toAlgorandNative(transaction) : undefined
 
     // A family with no review body would leave Approve live under an empty
     // review, so it gets the footer-less invalid state instead.

@@ -22,17 +22,17 @@ import type {
 } from '@perawallet/wallet-core-hardware-wallet'
 
 import { encodeToBase64, withTimeout } from '@perawallet/wallet-core-shared'
-import type {
-    SigningStrategy,
-    AnalyzedSignableGroup,
-    PeraTransactionsSignableData,
-    AuthData,
-    AuthDataMetadata,
-    SigningResult,
-    SigningCallbacks,
-    SignerInfo,
+import {
+    isUnsignedTransactionsData,
+    type SigningStrategy,
+    type AnalyzedSignableGroup,
+    type PeraTransactionsSignableData,
+    type AuthData,
+    type AuthDataMetadata,
+    type SigningResult,
+    type SigningCallbacks,
+    type SignerInfo,
 } from '../types'
-import { isUnsignedTransactionsData } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 import {
     LEDGER_CONNECTION_TIMEOUT_MS,
@@ -102,6 +102,7 @@ const toHardwareSigner = (
  */
 const validateAndExtract = (
     group: AnalyzedSignableGroup,
+    chainId: ChainId,
 ): PeraTransactionsSignableData => {
     if (group.data.type === 'arbitrary-data') {
         throw new SigningError(
@@ -112,15 +113,16 @@ const validateAndExtract = (
         )
     }
 
-    // The device's Algorand app signs Algorand transactions only.
-    if (
-        group.data.type !== 'transactions' ||
-        isUnsignedTransactionsData(group.data)
-    ) {
+    if (group.data.type !== 'transactions') {
         throw new HardwareWalletError('unsupported_data_type')
     }
+    if (!isUnsignedTransactionsData(group.data)) return group.data
 
-    return group.data
+    // Only a chain's planner adapter reads its transactions out of a payload.
+    if (!plannerChainAdapters.has(chainId)) {
+        throw new HardwareWalletError('unsupported_data_type')
+    }
+    return plannerChainAdapters.get(chainId).readTransactionsData(group.data)
 }
 
 /**
@@ -328,7 +330,7 @@ export const createHardwareStrategy = (
                 }
             }
 
-            const data = validateAndExtract(group)
+            const data = validateAndExtract(group, chainId)
 
             const signed = await signTransactionsOnHardwareWallet(
                 signer,

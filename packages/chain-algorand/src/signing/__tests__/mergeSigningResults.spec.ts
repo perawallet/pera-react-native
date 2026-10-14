@@ -12,13 +12,70 @@
 
 import { describe, test, expect } from 'vitest'
 import { mergeSigningResults } from '../mergeSigningResults'
-import type { SigningResult } from '@perawallet/wallet-core-signing'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    SigningError,
+    type SigningResult,
+} from '@perawallet/wallet-core-signing'
+import type {
+    PeraSignedTransaction,
+    SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 
 const makeSigned = (id: string): PeraSignedTransaction =>
     ({ txID: id, blob: new Uint8Array() }) as unknown as PeraSignedTransaction
 
+const makePlannerSigned = (id: string): SignedTransaction => ({
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    id,
+    bytes: new Uint8Array(),
+})
+
+const plannerResult = (
+    ids: string[],
+    originalIndices: number[],
+): SigningResult => ({
+    signedData: {
+        type: 'signed-transactions',
+        signed: ids.map(makePlannerSigned),
+    },
+    signers: [{ address: `ADDR_${ids[0]}` }],
+    originalIndices,
+})
+
 describe('mergeSigningResults', () => {
+    test('reassembles planner-signed groups in request order', () => {
+        const merged = mergeSigningResults([
+            plannerResult(['tx0', 'tx2'], [0, 2]),
+            plannerResult(['tx1'], [1]),
+        ])
+
+        expect(merged).toEqual({
+            signedData: {
+                type: 'signed-transactions',
+                signed: ['tx0', 'tx1', 'tx2'].map(makePlannerSigned),
+            },
+            signers: [{ address: 'ADDR_tx0' }, { address: 'ADDR_tx1' }],
+        })
+    })
+
+    test('refuses for good to merge planner-signed and Algorand-signed groups rather than drop either', () => {
+        const algorandSigned: SigningResult = {
+            signedData: { type: 'transactions', signed: [makeSigned('tx1')] },
+            signers: [{ address: 'ADDR_B' }],
+            originalIndices: [1],
+        }
+
+        const merge = () =>
+            mergeSigningResults([plannerResult(['tx0'], [0]), algorandSigned])
+
+        expect(merge).toThrow(SigningError)
+        expect(merge).toThrow(
+            expect.objectContaining({
+                metadata: expect.objectContaining({ retryable: false }),
+            }),
+        )
+    })
+
     test('returns the single result unchanged when given one result', () => {
         const single: SigningResult = {
             signedData: {

@@ -13,6 +13,7 @@
 import type { AssetAboutParams, AssetAboutDisplay } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
+import { AlgorandTransactionPreviewRow } from './components/AlgorandTransactionPreviewRow'
 import { AlgorandTransactionReviewBody } from './components/AlgorandTransactionReviewBody'
 import { AssetSecurityTags } from './components/AssetSecurityTags'
 import { AssetVerificationCard } from './components/AssetVerificationCard'
@@ -41,6 +42,7 @@ export const algorandChainUi: ChainUi = {
     transactionDetails: {
         ReviewBody: AlgorandTransactionReviewBody,
         DetailBody: AlgorandTransactionDetailBody,
+        PreviewRow: AlgorandTransactionPreviewRow,
     },
     assetDetails: {
         VerificationSection: AssetVerificationCard,

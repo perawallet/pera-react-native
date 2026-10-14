@@ -16,20 +16,29 @@ import {
     encodeTransactionRaw,
     mapToDisplayableTransaction,
     resolveArc0001SignTxnRequest,
+    toAlgorandNative,
     useFetchSuggestedMinFee,
 } from '../blockchain'
-import type {
-    LocalKeySignerChainAdapter,
-    MessageSignerChainAdapter,
-    PlannerChainAdapter,
-    ReviewerChainAdapter,
+import {
+    isUnsignedTransaction,
+    type LocalKeySignerChainAdapter,
+    type MessageSignerChainAdapter,
+    type PlannerChainAdapter,
+    type ReviewerChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
 import { canSignArc60, isQuantumAccount } from '../accounts/vocabulary'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import {
+    algorandSignableDataOf,
+    algorandSignedForAddresses,
+    algorandTransactionsOf,
+    readableAlgorandTransaction,
+} from './algorandRequest'
 import { decodeArbitraryDataForDisplay } from './arbitraryDataDisplay'
 import { computeBalanceImpact } from './balanceImpact'
 import {
+    algorandViewOf,
     classifyRequestStructure,
     createTransactionListItems,
 } from './classification'
@@ -93,11 +102,18 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     policy: algorandReviewPolicy,
     createTransactionListItems,
     classifyRequestStructure,
-    aggregateTransactionWarnings,
+    aggregateTransactionWarnings: (transactions, ...rest) =>
+        aggregateTransactionWarnings(transactions.map(algorandViewOf), ...rest),
     resolveAllSignerAddresses,
     getDelegatedUnsignableReason: getRekeyedUnsignableReason,
     decodeArbitraryDataForDisplay,
-    toDisplayableTransaction: mapToDisplayableTransaction,
+    toTransactionNative: transaction => {
+        const algorand = isUnsignedTransaction(transaction)
+            ? readableAlgorandTransaction(transaction)
+            : transaction
+        const view = algorand && mapToDisplayableTransaction(algorand)
+        return view ? toAlgorandNative(view) : null
+    },
 }
 
 export const algorandPlannerAdapter: PlannerChainAdapter = {
@@ -111,20 +127,34 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     useMinFeeForSender,
     useAssignFeeToGroup,
     encodeUnsignedTransaction: encodeTransactionRaw,
-    reviewGroupFees: (transactions, signableAddresses) => ({
-        totalFee: calculateTotalFee(transactions, signableAddresses),
-        highFeeWarning: detectHighGroupFee(transactions, signableAddresses),
-    }),
-    computeBalanceImpact,
+    reviewGroupFees: (transactions, signableAddresses) => {
+        const views = transactions.map(algorandViewOf)
+        return {
+            totalFee: calculateTotalFee(views, signableAddresses),
+            highFeeWarning: detectHighGroupFee(views, signableAddresses),
+        }
+    },
+    computeBalanceImpact: (transactions, userAddresses) =>
+        computeBalanceImpact(transactions.map(algorandViewOf), userAddresses),
     needsSimulation: transactions =>
-        transactions.some(tx => tx.txType === 'appl'),
-    simulateGroup: simulateInnerTransactions,
+        transactions.some(tx => algorandViewOf(tx).txType === 'appl'),
+    simulateGroup: async (groupTxs, network) =>
+        (
+            await simulateInnerTransactions(
+                algorandTransactionsOf(groupTxs),
+                network,
+            )
+        ).map(toAlgorandNative),
     programPayload: programSigningPayload,
     encodeProgramAccount: encodeDelegatedLsigAccount,
-    validateGroup: (transactions, { isCosigner }) =>
-        isCosigner
-            ? validateCosignSubsetIntegrity(transactions)
-            : validateTransactionGroupIntegrity(transactions),
+    validateGroup: (transactions, { isCosigner }) => {
+        const algorand = algorandTransactionsOf(transactions)
+        return isCosigner
+            ? validateCosignSubsetIntegrity(algorand)
+            : validateTransactionGroupIntegrity(algorand)
+    },
+    readTransactionsData: algorandSignableDataOf,
+    signedForAddresses: algorandSignedForAddresses,
     mergeSigningResults,
     assembleSignedTransaction,
     createMultisigStrategy,

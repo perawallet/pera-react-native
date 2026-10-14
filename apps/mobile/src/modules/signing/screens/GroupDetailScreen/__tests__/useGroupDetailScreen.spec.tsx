@@ -14,7 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupDetailScreen } from '../useGroupDetailScreen'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 
 const mockNavigate = vi.fn()
 const mockRouteParams = { groupIndex: 0 }
@@ -28,12 +28,19 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockTx1 = { id: 'tx-1', sender: 'ADDR1' } as PeraDisplayableTransaction
-const mockTx2 = { id: 'tx-2', sender: 'ADDR1' } as PeraDisplayableTransaction
+const mockTx1: TransactionNative = {
+    family: 'algorand',
+    transaction: { id: 'tx-1', sender: 'ADDR1' },
+}
+const mockTx2: TransactionNative = {
+    family: 'algorand',
+    transaction: { id: 'tx-2', sender: 'ADDR1' },
+}
 
 const mockItem1: SingleTransactionItem = {
     type: 'transaction',
     transaction: mockTx1,
+    id: 'tx-1',
     groupIndex: 1,
     isExternal: false,
 }
@@ -41,6 +48,7 @@ const mockItem1: SingleTransactionItem = {
 const mockItem2: SingleTransactionItem = {
     type: 'transaction',
     transaction: mockTx2,
+    id: 'tx-2',
     groupIndex: 2,
     isExternal: false,
 }
@@ -48,6 +56,7 @@ const mockItem2: SingleTransactionItem = {
 const mockItemExternal: SingleTransactionItem = {
     type: 'transaction',
     transaction: mockTx1,
+    id: 'tx-1',
     groupIndex: 1,
     isExternal: true,
 }
@@ -57,7 +66,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         listItems: [
             {
                 type: 'transaction',
-                transaction: { id: 'tx-0' },
+                id: 'tx-0',
                 groupIndex: 0,
                 isExternal: false,
             },
@@ -71,7 +80,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
                 transactions: [
                     {
                         type: 'transaction',
-                        transaction: { id: 'tx-3' },
+                        id: 'tx-3',
                         groupIndex: 3,
                         isExternal: false,
                     },
@@ -92,8 +101,8 @@ describe('useGroupDetailScreen', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
         expect(result.current.transactions).toHaveLength(2)
-        expect(result.current.transactions[0]?.transaction.id).toBe('tx-1')
-        expect(result.current.transactions[1]?.transaction.id).toBe('tx-2')
+        expect(result.current.transactions[0]?.id).toBe('tx-1')
+        expect(result.current.transactions[1]?.id).toBe('tx-2')
     })
 
     it('returns empty array when group is not found', () => {
@@ -110,7 +119,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItem1)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: { family: 'algorand', transaction: mockTx1 },
+            transaction: mockTx1,
             isExternal: false,
         })
     })
@@ -121,7 +130,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItemExternal)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: { family: 'algorand', transaction: mockTx1 },
+            transaction: mockTx1,
             isExternal: true,
         })
     })
@@ -139,7 +148,7 @@ describe('useGroupDetailScreen', () => {
 
         const itemWithoutId: SingleTransactionItem = {
             type: 'transaction',
-            transaction: {} as PeraDisplayableTransaction,
+            transaction: mockTx1,
             groupIndex: 0,
             isExternal: false,
         }
@@ -155,6 +164,6 @@ describe('useGroupDetailScreen', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
         expect(result.current.transactions).toHaveLength(1)
-        expect(result.current.transactions[0]?.transaction.id).toBe('tx-3')
+        expect(result.current.transactions[0]?.id).toBe('tx-3')
     })
 })

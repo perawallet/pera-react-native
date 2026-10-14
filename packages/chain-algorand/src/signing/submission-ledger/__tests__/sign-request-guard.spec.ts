@@ -25,7 +25,11 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { deriveRequestGroupTxIds, isRequestGroupAlreadySubmitted } from '..'
-import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeUnsignedAlgorandTransaction,
+} from '../../__tests__/transactions'
 import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
@@ -134,7 +138,33 @@ describe('isRequestGroupAlreadySubmitted', () => {
         vi.restoreAllMocks()
     })
 
-    it('is false for a chain-neutral request, which the Algorand ledger never records', async () => {
+    it('matches a chain-neutral request by the Algorand group its payloads carry', async () => {
+        const txs = makeGroup().map(txn => {
+            txn.genesisHash = MAINNET_GENESIS_HASH
+            return txn
+        })
+        await recordSubmissionAttempt({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            txIds: submitTimeTxIds(txs),
+            flow: 'generic',
+        })
+        const request = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs: txs.map(txn => asUnsignedAlgorandTransaction(txn)),
+        } as SignRequest
+
+        await expect(
+            isRequestGroupAlreadySubmitted(request, {
+                db,
+                scope: scopeForLegacyNetwork('mainnet'),
+            }),
+        ).resolves.toBe(true)
+    })
+
+    it("is false for a chain-neutral payload it can't read", async () => {
         const request = {
             id: 'req-neutral',
             type: 'transactions',

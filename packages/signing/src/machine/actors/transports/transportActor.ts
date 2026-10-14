@@ -35,6 +35,7 @@ export type TransportActorInput = {
      * Looked up in allAccounts to determine transport routing.
      */
     signerAddress: string
+    isKeyedByPlanner: boolean
     /** All user accounts — used to resolve the signer WalletAccount */
     allAccounts: WalletAccount[]
     /** Selects the correct transport (algod, callback, multisig, etc.) */
@@ -53,6 +54,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             signingResults,
             source,
             signerAddress,
+            isKeyedByPlanner,
             allAccounts,
             createTransport,
             scope,
@@ -69,7 +71,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             )
         }
 
-        // Planned results already name the key holder (below). Otherwise,
+        // A group keyed by its planner already names the key holder. Otherwise,
         // transport routing and multisig-template keying must follow the SAME
         // account the signing dispatcher routed on: the account whose key (or
         // multisig template) authorizes the signature. resolveSigningAccount
@@ -80,17 +82,17 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         // participants or off-chain data (`arbitrary-data`, `auth-data`).
         // Non-rekeyed accounts self-resolve.
         const signedType = signingResults[0]?.signedData.type ?? 'transactions'
-        // A planner already named the key holder, so a rekey isn't followed twice.
-        const authAccount =
-            signedType === 'signed-transactions'
-                ? signerAccount
-                : resolveSigningAccount(
-                      signerAccount,
-                      source,
-                      signedType,
-                      allAccounts,
-                      scope.chainId,
-                  )
+        const authAccount = isKeyedByPlanner
+            ? signerAccount
+            : resolveSigningAccount(
+                  signerAccount,
+                  source,
+                  signedType === 'signed-transactions'
+                      ? 'transactions'
+                      : signedType,
+                  allAccounts,
+                  scope.chainId,
+              )
 
         const authAddress = chainAccountOf(authAccount, scope.chainId)?.address
         if (authAddress === undefined) {

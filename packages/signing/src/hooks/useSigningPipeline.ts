@@ -12,7 +12,7 @@
 
 import type {
     ChainId,
-    PeraDisplayableTransaction,
+    TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
@@ -24,12 +24,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import {
-    isUnsignedTransactionRequest,
-    type PeraTransactionSignRequest,
-    type PipelineStage,
-    type TransactionSignRequest,
-} from '../models'
+import type { PipelineStage, TransactionSignRequest } from '../models'
+import { reviewGroupOf } from '../models/reviewGroup'
 import {
     aggregateTransactionWarnings,
     classifyRequestStructure,
@@ -80,7 +76,7 @@ const addressesOn = (
  * warnings, structure). At 1000 transactions this is ~800ms of work.
  */
 const computeDisplayData = (
-    txRequest: PeraTransactionSignRequest,
+    txRequest: TransactionSignRequest,
     accounts: WalletAccount[],
 ) => {
     // Show the FULL atomic group when the source filtered down to a
@@ -88,17 +84,17 @@ const computeDisplayData = (
     // requests (e.g. cross-account atomic flows). `signableIndices`
     // tells the UI which slots are actually being signed.
     const chainId = chainIdOfSignRequest(txRequest)
-    const source = txRequest.groupContext ?? txRequest.txs
+    const group = reviewGroupOf(txRequest)
     const reviewer = reviewerChainAdapters.get(chainId)
-    const allTransactions = source
-        .map(tx => reviewer.toDisplayableTransaction(tx))
-        .filter((tx): tx is PeraDisplayableTransaction => !!tx)
+    const allTransactions = group.transactions
+        .map(tx => reviewer.toTransactionNative(tx))
+        .filter((tx): tx is TransactionNative => !!tx)
 
     // Default to "every index is signable" when groupContext is absent
     // (internal flows) — keeps the UI's "is this slot signable" check
     // working without per-caller bookkeeping.
     const signableIndices = new Set<number>(
-        txRequest.signableIndices ?? allTransactions.map((_, i) => i),
+        group.signableIndices ?? allTransactions.map((_, i) => i),
     )
 
     const listItems = createTransactionListItems(
@@ -125,11 +121,11 @@ const computeDisplayData = (
     // index space — `signableIndices` maps that position to its slot in
     // `groupContext` when the full group is shown.
     const authorizerByIndex = new Map<number, string>()
-    if (txRequest.signerOverrides) {
-        const usingGroupContext = !!txRequest.groupContext
-        for (const [subsetIndex, authorizer] of txRequest.signerOverrides) {
+    if (group.signerOverrides) {
+        const usingGroupContext = !!group.groupContext
+        for (const [subsetIndex, authorizer] of group.signerOverrides) {
             const displayIndex = usingGroupContext
-                ? (txRequest.signableIndices?.[subsetIndex] ?? subsetIndex)
+                ? (group.signableIndices?.[subsetIndex] ?? subsetIndex)
                 : subsetIndex
             authorizerByIndex.set(displayIndex, authorizer)
         }
@@ -201,16 +197,17 @@ let displayDataCache: {
 } | null = null
 
 const getSharedDisplayData = (
-    txRequest: PeraTransactionSignRequest,
+    txRequest: TransactionSignRequest,
     accounts: WalletAccount[],
 ): DisplayData => {
+    const group = reviewGroupOf(txRequest)
     if (
         displayDataCache &&
         displayDataCache.requestId === txRequest.id &&
         displayDataCache.txs === txRequest.txs &&
-        displayDataCache.groupContext === txRequest.groupContext &&
-        displayDataCache.signableIndices === txRequest.signableIndices &&
-        displayDataCache.signerOverrides === txRequest.signerOverrides &&
+        displayDataCache.groupContext === group.groupContext &&
+        displayDataCache.signableIndices === group.signableIndices &&
+        displayDataCache.signerOverrides === group.signerOverrides &&
         displayDataCache.accounts === accounts
     ) {
         return displayDataCache.result
@@ -219,9 +216,9 @@ const getSharedDisplayData = (
     displayDataCache = {
         requestId: txRequest.id,
         txs: txRequest.txs,
-        groupContext: txRequest.groupContext,
-        signableIndices: txRequest.signableIndices,
-        signerOverrides: txRequest.signerOverrides,
+        groupContext: group.groupContext,
+        signableIndices: group.signableIndices,
+        signerOverrides: group.signerOverrides,
         accounts,
         result,
     }
@@ -264,11 +261,12 @@ export const useSigningPipeline = (
             ? (currentRequest as TransactionSignRequest)
             : undefined
 
-    // A chain-neutral request is reviewed by its own chain, not this view,
-    // whose reviewer and planner read Algorand-shaped transactions.
+    // Fees and the list come from the chain's planner, so a chain without one
+    // (Ethereum) is reviewed by its own body alone.
     const displayData = useMemo(
         () =>
-            txRequest && !isUnsignedTransactionRequest(txRequest)
+            txRequest &&
+            plannerChainAdapters.has(chainIdOfSignRequest(txRequest))
                 ? getSharedDisplayData(txRequest, accounts)
                 : EMPTY_DISPLAY_DATA,
         [txRequest, accounts],
@@ -493,7 +491,9 @@ export const useSigningPipeline = (
             ? displayData.distinctWarnings
             : EMPTY_WARNINGS,
         requestStructure: txRequest ? displayData.requestStructure : 'single',
-        feeAdjustments: txRequest?.feeAdjustments ?? EMPTY_FEE_ADJUSTMENTS,
+        feeAdjustments:
+            (txRequest && reviewGroupOf(txRequest).feeAdjustments) ??
+            EMPTY_FEE_ADJUSTMENTS,
         next,
         fail,
         retry,

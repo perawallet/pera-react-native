@@ -13,7 +13,12 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTransactionListScreen } from '../useTransactionListScreen'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+
+const native: TransactionNative = {
+    family: 'algorand',
+    transaction: { id: 'tx-1' },
+}
 import type {
     SingleTransactionItem,
     TransactionListItem,
@@ -83,7 +88,8 @@ describe('useTransactionListScreen', () => {
         const { result } = renderHook(() => useTransactionListScreen())
         const mockItem: SingleTransactionItem = {
             type: 'transaction',
-            transaction: { id: 'tx-1' } as PeraDisplayableTransaction,
+            transaction: native,
+            id: 'tx-1',
             groupIndex: 0,
             isExternal: false,
         }
@@ -91,10 +97,7 @@ describe('useTransactionListScreen', () => {
         result.current.handleTransactionPress(mockItem)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: {
-                family: 'algorand',
-                transaction: mockItem.transaction,
-            },
+            transaction: native,
             isExternal: false,
         })
     })
@@ -114,7 +117,8 @@ describe('useTransactionListScreen', () => {
 
         const txItem: TransactionListItem = {
             type: 'transaction',
-            transaction: { id: 'tx-1' } as PeraDisplayableTransaction,
+            transaction: native,
+            id: 'tx-1',
             groupIndex: 0,
             isExternal: false,
         }
@@ -141,7 +145,7 @@ describe('useTransactionListScreen', () => {
 
         const txItem: TransactionListItem = {
             type: 'transaction',
-            transaction: {} as PeraDisplayableTransaction,
+            transaction: native,
             groupIndex: 5,
             isExternal: false,
         }

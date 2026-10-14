@@ -24,6 +24,7 @@ import {
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    isKeyedByPlanner,
     isUnsignedTransactionsData,
     type SignableGroup,
     type SigningResult,
@@ -37,7 +38,8 @@ import {
     InvalidSignableDataError,
     SigningError,
 } from '../pipeline/errors'
-import { plannerAdapterForScope } from '../chain-adapter'
+import { plannerAdapterForScope, plannerChainAdapters } from '../chain-adapter'
+import { isPlannerSigned } from './utils/isPlannerSigned'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import { resolveSignerCredential } from './utils/resolveSignerCredential'
 import type {
@@ -81,18 +83,15 @@ export const buildGroupSignerMap = (
                 'signer account not found in wallet',
             )
         }
-        // A planner already names the key holder, so a rekey isn't followed twice.
-        const authAccount =
-            group.data.type === 'transactions' &&
-            isUnsignedTransactionsData(group.data)
-                ? signerAccount
-                : resolveSigningAccount(
-                      signerAccount,
-                      group.source,
-                      group.data.type,
-                      allAccounts,
-                      chainId,
-                  )
+        const authAccount = isKeyedByPlanner(group.data)
+            ? signerAccount
+            : resolveSigningAccount(
+                  signerAccount,
+                  group.source,
+                  group.data.type,
+                  allAccounts,
+                  chainId,
+              )
         map.set(
             group.signerAddress,
             resolveSignerCredential(authAccount, chainId),
@@ -220,10 +219,12 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 
 const MIXED_SHAPES = 'the request mixes Algorand and chain-neutral transactions'
 
+const isChainNeutralTransactions = (group: SignableGroup): boolean =>
+    group.data.type === 'transactions' && isUnsignedTransactionsData(group.data)
+
 /**
- * Groups chain-neutral transactions by the signer the chain's planner reads off
- * each one. As on the Algorand path, a transaction no wallet account signs is
- * left out.
+ * Groups chain-neutral transactions by signer. As on the Algorand path, a
+ * transaction no wallet account signs is left out.
  */
 const buildUnsignedTransactionGroups = (
     request: UnsignedTransactionSignRequest,
@@ -232,35 +233,31 @@ const buildUnsignedTransactionGroups = (
     source: SourceMetadata,
 ): SignableGroup[] => {
     const planner = transactionPlanners.get(scope.chainId)
+    const plannedSigners = request.txs.map(tx => {
+        if (!isUnsignedTransaction(tx)) {
+            throw new InvalidSignableDataError(MIXED_SHAPES)
+        }
+        // Planned first: a planner refuses another chain's transaction.
+        const signers = planSigners(planner, tx)
+        // Built for another network than the chain's selected one, by a dApp
+        // or before the user switched.
+        if (tx.scope.networkId !== scope.networkId) {
+            throw new ScopeChangedError(tx.scope, scope)
+        }
+        return signers
+    })
+
+    const signedForKeys = signedForAddresses(request, allAccounts, scope)
+    const rawBytes = request.chainData?.algorand?.rawTransactionsBase64
 
     const bySigner = new Map<
         string,
         { txs: UnsignedTransaction[]; indices: number[] }
     >()
     for (const [i, tx] of request.txs.entries()) {
-        if (!isUnsignedTransaction(tx)) {
-            throw new InvalidSignableDataError(MIXED_SHAPES)
-        }
-        // Planned first: a planner refuses another chain's transaction.
-        const signers = new Set(planSigners(planner, tx))
-        // Built for another network than the chain's selected one, by a dApp
-        // or before the user switched.
-        if (tx.scope.networkId !== scope.networkId) {
-            throw new ScopeChangedError(tx.scope, scope)
-        }
-        // Keyed to the first key the wallet can sign with here, else the first
-        // it holds; the review lists every held signer.
-        const held = [...signers].flatMap(
-            signer =>
-                findAccountByAddressOn(allAccounts, scope.chainId, signer) ??
-                [],
-        )
-        const account =
-            held.find(candidate => candidate.custody.kind === 'local') ??
-            held[0]
-        if (!account) continue
-        // The wallet's spelling, so the group key and every later lookup agree.
-        const signerAddress = chainAccountOf(account, scope.chainId)?.address
+        const signerAddress = signedForKeys
+            ? signedForKeys[i]
+            : heldPlannedSigner(plannedSigners[i], allAccounts, scope)
         if (!signerAddress) continue
 
         const entry = bySigner.get(signerAddress) ?? { txs: [], indices: [] }
@@ -270,11 +267,67 @@ const buildUnsignedTransactionGroups = (
     }
 
     return [...bySigner.entries()].map(([signerAddress, { txs, indices }]) => ({
-        data: { type: 'transactions', transactions: txs, chainData: {} },
+        data: {
+            type: 'transactions',
+            transactions: txs,
+            chainData: signedForKeys
+                ? {
+                      algorand: {
+                          indicesToSign: txs.map((_, i) => i),
+                          ...(rawBytes && {
+                              rawTransactionsBase64: indices.map(
+                                  i => rawBytes[i],
+                              ),
+                          }),
+                      },
+                  }
+                : {},
+        },
         source,
         signerAddress,
         originalIndices: indices,
     }))
+}
+
+// Keyed to the first key the wallet can sign with here, else the first it
+// holds; the review lists every held signer.
+const heldPlannedSigner = (
+    signers: string[],
+    allAccounts: WalletAccount[],
+    scope: ChainScope,
+): string | undefined => {
+    const held = [...new Set(signers)].flatMap(
+        signer =>
+            findAccountByAddressOn(allAccounts, scope.chainId, signer) ?? [],
+    )
+    const account =
+        held.find(candidate => candidate.custody.kind === 'local') ?? held[0]
+    // The wallet's spelling, so the group key and every later lookup agree.
+    return account && chainAccountOf(account, scope.chainId)?.address
+}
+
+// Undefined for a chain that keys by planned signer; see `signedForAddresses` on the planner adapter.
+const signedForAddresses = (
+    request: UnsignedTransactionSignRequest,
+    allAccounts: WalletAccount[],
+    scope: ChainScope,
+): (string | undefined)[] | undefined => {
+    if (!plannerChainAdapters.has(scope.chainId)) return undefined
+    const adapter = plannerChainAdapters.get(scope.chainId)
+    const addresses = adapter.signedForAddresses(request)
+    if (!addresses) return undefined
+    adapter.validateGroup(
+        request.chainData?.algorand?.groupContext ?? request.txs,
+        { isCosigner: request.sourceType === 'multisig-cosign' },
+    )
+    const knownAddresses = new Set(
+        allAccounts.flatMap(
+            a => chainAccountOf(a, scope.chainId)?.address ?? [],
+        ),
+    )
+    return addresses.map(address =>
+        knownAddresses.has(address) ? address : undefined,
+    )
 }
 
 // A payload the chain can't read is untrusted data, not an internal fault.
@@ -464,6 +517,24 @@ export const resolveInitialContext = (
         allAccounts,
         input.scope.chainId,
     )
+
+    // A planner-signed group and one the chain's own signer signs have no
+    // common signed shape to deliver in, so refuse before anything is signed.
+    const chainNeutral = signableGroups.filter(isChainNeutralTransactions)
+    const planned = chainNeutral.filter(group =>
+        isPlannerSigned(
+            group,
+            groupSigners.get(group.signerAddress),
+            input.scope.chainId,
+        ),
+    )
+    if (planned.length > 0 && planned.length < chainNeutral.length) {
+        throw new SigningError(
+            'This request needs signers that sign in different ways, so it cannot be delivered as one group',
+            undefined,
+            { retryable: false },
+        )
+    }
 
     const hasHardwareSigners = [...groupSigners.values()].some(
         signer => signer.custody === 'hardware',

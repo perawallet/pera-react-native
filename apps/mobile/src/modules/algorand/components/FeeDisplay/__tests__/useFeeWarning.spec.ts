@@ -68,7 +68,10 @@ describe('useFeeWarning', () => {
     ) => {
         ;(useSigningPipeline as Mock).mockReturnValue({
             totalFee,
-            allTransactions: transactions,
+            allTransactions: transactions.map(transaction => ({
+                family: 'algorand',
+                transaction,
+            })),
             signableAddresses,
         })
     }

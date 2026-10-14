@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import type {
+    GroupSignerMap,
     SigningMachineContext,
     SigningMachineEvent,
     SigningMachineInput,
@@ -26,7 +27,7 @@ import type {
 import type { SignerCustody } from './utils/resolveSignerCredential'
 import {
     isInteractiveSource,
-    isUnsignedTransactionsData,
+    isKeyedByPlanner,
     type AnalyzedSignableGroup,
     type SignableAnalysis,
     type SigningResult,
@@ -41,6 +42,7 @@ import { transportActor } from './actors/transports/transportActor'
 import { hardwareSigningMachine } from './children/hardwareSigningMachine'
 import type { HardwareSigningOutput } from './children/hardwareSigningMachine.context'
 import { resolveInitialContext, makeFailedContext } from './actions'
+import { isPlannerSigned } from './utils/isPlannerSigned'
 import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
 import { broadcasterChainAdapters } from '../broadcaster'
@@ -51,10 +53,32 @@ import {
     type MultisigSignerInput,
 } from '../chain-adapter'
 
-type LocalSignerInput = LocalKeySignerInput & PlannedSignerInput
+type LocalSignerInput = LocalKeySignerInput &
+    PlannedSignerInput & { groupSigners: GroupSignerMap }
 
-const isPlannedGroup = (group: AnalyzedSignableGroup): boolean =>
-    group.data.type === 'transactions' && isUnsignedTransactionsData(group.data)
+const signLocalKeyGroups = async (
+    input: LocalSignerInput,
+): Promise<SigningResult[]> => {
+    const planned = input.groups.filter(group =>
+        isPlannerSigned(
+            group,
+            input.groupSigners.get(group.signerAddress),
+            input.scope.chainId,
+        ),
+    )
+    const others = input.groups.filter(group => !planned.includes(group))
+    return [
+        ...(planned.length > 0
+            ? await signPlannedGroups({ ...input, groups: planned })
+            : []),
+        ...(others.length > 0
+            ? await localKeySignerAdapterFor(input.scope).signGroups({
+                  ...input,
+                  groups: others,
+              })
+            : []),
+    ]
+}
 
 /** The next custody with groups left to sign, or undefined once all are done. */
 const getNextPendingCustody = (
@@ -99,10 +123,7 @@ export const signingMachine = setup({
     actors: {
         analyzerActor,
         localKeySignerActor: fromPromise<SigningResult[], LocalSignerInput>(
-            ({ input }) =>
-                input.groups.length > 0 && input.groups.every(isPlannedGroup)
-                    ? signPlannedGroups(input)
-                    : localKeySignerAdapterFor(input.scope).signGroups(input),
+            ({ input }) => signLocalKeyGroups(input),
         ),
         hardwareSigningMachine,
         multisigSignerActor: fromPromise<SigningResult[], MultisigSignerInput>(
@@ -379,6 +400,10 @@ export const signingMachine = setup({
                             signAuthData: context.deps.signAuthData,
                             scope: context.deps.scope,
                             keyStore: context.deps.keyStore,
+                            groupSigners: assertDefined(
+                                context.groupSigners,
+                                'groupSigners',
+                            ),
                         }),
                         onDone: {
                             target: 'dispatching',
@@ -529,6 +554,12 @@ export const signingMachine = setup({
                     signerAddress: assertDefined(
                         context.signerAddress,
                         'signerAddress',
+                    ),
+                    isKeyedByPlanner: isKeyedByPlanner(
+                        assertDefined(
+                            context.signableGroups,
+                            'signableGroups',
+                        )[0].data,
                     ),
                     allAccounts: context.allAccounts,
                     scope: context.deps.scope,

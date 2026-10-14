@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import { bytesToHex, toBytes } from '@perawallet/wallet-core-shared'
+import { readAlgorandNative, type AlgorandTransactionView } from '../blockchain'
 import type {
     GroupTransactionItem,
     RequestStructure,
@@ -19,8 +20,20 @@ import type {
     TransactionListItem,
 } from '@perawallet/wallet-core-signing'
 
+export const algorandViewOf = (
+    native: TransactionNative,
+): AlgorandTransactionView => {
+    const view = readAlgorandNative(native)
+    if (!view) {
+        throw new Error(
+            `The Algorand reviewer was handed a ${native.family} transaction`,
+        )
+    }
+    return view
+}
+
 export const createTransactionListItems = (
-    transactions: PeraDisplayableTransaction[],
+    transactions: TransactionNative[],
     signableIndices?: ReadonlySet<number>,
 ): TransactionListItem[] => {
     const items: TransactionListItem[] = []
@@ -28,34 +41,41 @@ export const createTransactionListItems = (
     let groupIndex = 0
 
     const toSingle = (
-        tx: PeraDisplayableTransaction,
+        native: TransactionNative,
+        view: AlgorandTransactionView,
         i: number,
     ): SingleTransactionItem => ({
         type: 'transaction',
-        transaction: tx,
+        transaction: native,
+        id: view.id,
         groupIndex: i,
         isExternal: signableIndices ? !signableIndices.has(i) : false,
     })
 
     for (let i = 0; i < transactions.length; i++) {
-        const tx = transactions[i]
-        if (tx.group) {
-            const groupKey = encodeToBase64(tx.group)
+        const native = transactions[i]
+        const tx = algorandViewOf(native)
+        // A request rehydrated from storage holds its group as a plain object
+        // rather than bytes.
+        const group = toBytes(tx.group)
+        if (group) {
+            const groupKey = bytesToHex(group)
             const existingGroup = groupMap.get(groupKey)
 
             if (existingGroup) {
-                existingGroup.transactions.push(toSingle(tx, i))
+                existingGroup.transactions.push(toSingle(native, tx, i))
             } else {
                 const newGroup: GroupTransactionItem = {
                     type: 'group',
-                    transactions: [toSingle(tx, i)],
+                    transactions: [toSingle(native, tx, i)],
                     groupIndex: groupIndex++,
+                    groupId: groupKey,
                 }
                 groupMap.set(groupKey, newGroup)
                 items.push(newGroup)
             }
         } else {
-            items.push(toSingle(tx, i))
+            items.push(toSingle(native, tx, i))
         }
     }
 

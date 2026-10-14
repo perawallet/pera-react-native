@@ -16,7 +16,7 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type {
     ChainScope,
-    PeraDisplayableTransaction,
+    TransactionNative,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
@@ -44,7 +44,7 @@ const groupTxs = [{ id: 'top-1' }] as unknown as PeraTransaction[]
 const inner = [
     { id: 'inner-1' },
     { id: 'inner-2' },
-] as unknown as PeraDisplayableTransaction[]
+] as unknown as TransactionNative[]
 
 describe('useGroupSimulationQuery', () => {
     beforeEach(() => {

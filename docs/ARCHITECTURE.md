@@ -261,15 +261,29 @@ told apart by `isUnsignedTransactionRequest`. A chain-neutral request takes its 
 transactions' scope and its signers from the chain planner's `plan`, because only the chain can read
 its payload. One built for a network other than its chain's selected one fails with
 `ScopeChangedError`. The Algorand-only request fields are typed out of a chain-neutral request, so a
-source can't set one the pipeline would ignore. Algorand's own signing paths sign only Algorand
-transactions.
+source can't set one the pipeline would ignore; Algorand's group facts (the full group, signer
+overrides, request bytes, fee adjustments) ride in its `chainData.algorand` instead.
+
+An Algorand chain-neutral request is checked and grouped as its `PeraTransaction` form would be:
+group integrity over the full group, and one group per account each transaction signs for, whose
+rekey is followed once. That keeps either shape signing the same indices with the same custody. The
+planner adapter's `signedForAddresses` decides that key, and refuses a signer override that names
+neither the sender nor an account the payload signs with.
+Every Algorand signer and guard reads the transaction from the payload through
+`readAlgorandTransaction`, the trust boundary for a payload a dApp may have built.
 
 A chain-neutral transaction is signed through its chain's `TransactionPlanner`, registered in
 `transactionPlanners` in chain-contract so a chain package registers it without depending on
 packages/signing. `plan` names each signature and its exact bytes, the wallet signs only those, each
 with the key of the account the request names in the scheme it names, and `assemble` builds the
-signed transaction. No other path hands chain-neutral bytes to the key store, so a request can't
-have arbitrary bytes signed, which is what `eth_sign` would allow.
+signed transaction. The key store never signs bytes a payload supplies, so a request can't have
+arbitrary bytes signed, which is what `eth_sign` would allow.
+
+The planner signs a local key only in the scheme it plans and assembles only a complete signature
+set. An Algorand quantum key, a Ledger, a multisig proposal and a multisig cosignature therefore sign
+through Algorand's own strategies, which sign the transaction they read from the payload, never its
+bytes. Their result is `PeraSignedTransaction`, the planner's is `SignedTransaction`, and one request
+can't be delivered as a mix of the two, so the machine refuses such a request before anything signs.
 
 A chain whose review reads only chain-neutral transactions registers a `TransactionReviewer` in
 chain-contract's `transactionReviewers`, as with planners, and the signing pipeline bridges it into
@@ -280,12 +294,12 @@ it can't prove stays an unrecognised contract call that the app can't sign witho
 
 A request's `signer` is the address whose key produces the signature, not the account it is for:
 the planner reads it from the payload (Ethereum's `from`; Algorand's sender, rekey authority, or one
-request per multisig participant), so the pipeline never follows a rekey a second time. Only keys
+request per multisig participant). A group keyed by that signer (`isKeyedByPlanner`) never has its
+rekey followed a second time. Only keys
 the review lists as `signableAddresses` sign, so a payload can't add a signer the user never
 approved: Algorand's reviewer lists every planned signer the wallet holds and refuses an authority a
 wallet sender isn't rekeyed to. A listed key the wallet can't use locally is left to its holder.
-Algorand's
-payload names its multisig parameters, and planning refuses ones that don't derive to the address
+Algorand's payload names its multisig parameters, and planning refuses ones that don't derive to the address
 that signs; assembly needs the threshold, so co-signing below it stays with the multisig transports.
 
 ## State management

@@ -13,7 +13,6 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { toAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useSigningPipeline,
     type TransactionSignRequest,
@@ -37,7 +36,7 @@ export const useTransactionListScreen = () => {
     const handleTransactionPress = useCallback(
         (item: SingleTransactionItem) => {
             navigation.navigate('TransactionDetails', {
-                transaction: toAlgorandNative(item.transaction),
+                transaction: item.transaction,
                 isExternal: item.isExternal,
             })
         },
@@ -56,7 +55,7 @@ export const useTransactionListScreen = () => {
             if (item.type === 'group') {
                 return `group-${item.groupIndex}`
             }
-            return item.transaction.id ?? `tx-${index}`
+            return item.id ?? `tx-${index}`
         },
         [],
     )

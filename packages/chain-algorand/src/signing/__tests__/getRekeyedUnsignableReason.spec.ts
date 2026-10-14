@@ -23,7 +23,13 @@ import {
     resolveAllSignerAddresses,
 } from '../getRekeyedUnsignableReason'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import { makeUnsignedAlgorandTransaction } from './transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedAlgorandTransaction,
+} from './transactions'
 
 const OK_SENDER = 'OK_SENDER'
 const REKEYED_EXTERNAL = 'REKEYED_EXTERNAL'
@@ -185,7 +191,46 @@ describe('getRekeyedUnsignableReason', () => {
 })
 
 describe('resolveAllSignerAddresses', () => {
-    it("names no signers for a chain-neutral request, whose chain's planner names them", () => {
+    const SENDER = makeTestAddress(5)
+    const AUTH = makeTestAddress(6).toString()
+    const neutralRequest = (overrides: object = {}): SignRequest =>
+        ({
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [1n, 2n].map(amount =>
+                asUnsignedAlgorandTransaction(
+                    makeTestPaymentTx(SENDER, {
+                        receiver: makeTestAddress(7),
+                        amount,
+                        genesisHash: MAINNET_GENESIS_HASH,
+                    }),
+                ),
+            ),
+            ...overrides,
+        }) as SignRequest
+
+    it("names a chain-neutral request's Algorand senders", () => {
+        expect(resolveAllSignerAddresses(neutralRequest())).toEqual([
+            SENDER.toString(),
+            SENDER.toString(),
+        ])
+    })
+
+    it('names the signer its Algorand group facts give instead of the sender', () => {
+        const request = neutralRequest({
+            chainData: {
+                algorand: { signerOverrides: new Map([[1, AUTH]]) },
+            },
+        })
+
+        expect(resolveAllSignerAddresses(request)).toEqual([
+            SENDER.toString(),
+            AUTH,
+        ])
+    })
+
+    it("names no signers for a chain-neutral payload it can't read", () => {
         const request = {
             id: 'req-neutral',
             type: 'transactions',

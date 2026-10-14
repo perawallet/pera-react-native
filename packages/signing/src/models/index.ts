@@ -139,15 +139,30 @@ export type PeraTransactionSignRequest = AlgorandRequestFields &
         txs: PeraTransaction[]
     }
 
+/** The Algorand group facts an external request sends beside the transactions it asks to sign. */
+export type AlgorandRequestData = {
+    /** As {@link AlgorandRequestFields.groupContext}: the pre-filter group, when `txs` is a subset. */
+    groupContext?: UnsignedTransaction[]
+    /** Which `groupContext` slots `txs` maps to. */
+    signableIndices?: number[]
+    /** As {@link AlgorandRequestFields.signerOverrides}: index in `txs` -> the account that signs for it. */
+    signerOverrides?: Map<number, string>
+    /** Each of `txs` as the request sent it, for the round-trip check. */
+    rawTransactionsBase64?: string[]
+    /** Indexed in `groupContext` space, as {@link FeeAdjustment.index}. */
+    feeAdjustments?: FeeAdjustment[]
+}
+
 /**
  * Each transaction names its scope, so the request's chain comes from them.
  * The Algorand fields and the chain stamp are typed out so a source can't set
- * one the pipeline would ignore.
+ * one the pipeline would ignore; Algorand's group facts ride in `chainData`.
  */
 export type UnsignedTransactionSignRequest = {
     [Field in keyof (AlgorandRequestFields & ChainStamp)]?: never
 } & TransactionRequestCallbacks & {
         txs: UnsignedTransaction[]
+        chainData?: { algorand?: AlgorandRequestData }
     }
 
 export type TransactionSignRequest =
@@ -258,3 +273,4 @@ export {
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
 } from './guards'
+export { reviewGroupOf, type ReviewGroup } from './reviewGroup'

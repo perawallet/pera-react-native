@@ -78,6 +78,22 @@ export const makeTestAssetTransferTx = (
         suggestedParams: TEST_SUGGESTED_PARAMS,
     })
 
+export const asUnsignedAlgorandTransaction = (
+    transaction: Transaction,
+    payload: { authorizer?: string } = {},
+    scope: ChainScope = { chainId: 'algorand', networkId: 'mainnet' },
+): UnsignedTransaction => ({
+    scope,
+    payload: { transaction, ...payload },
+    summary: {
+        kind: 'transfer',
+        title: { key: 'transfer' },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'algorand' },
+})
+
 export const SECOND_CHAIN_SCOPE: ChainScope = {
     chainId: 'ethereum',
     networkId: 'mainnet',
@@ -131,6 +147,38 @@ export const fakeTransactionPlanner = (
     assemble: (transaction, signatures) => ({
         scope: transaction.scope,
         id: `signed-by-${signatures.map(s => s.signer).join(',')}`,
+        bytes: new Uint8Array(signatures.flatMap(s => [...s.bytes])),
+    }),
+})
+
+/**
+ * Plans an Algorand payload's one signer, its authorizer or else its sender,
+ * as Algorand's planner does a single-signature transaction.
+ */
+export const fakeAlgorandTransactionPlanner = (): TransactionPlanner => ({
+    chainId: 'algorand',
+    plan: unsigned => {
+        if (unsigned.chainData.family !== 'algorand') {
+            throw new Error('Not an Algorand transaction')
+        }
+        const { transaction, authorizer } = unsigned.payload as {
+            transaction: Transaction
+            authorizer?: string
+        }
+        return [
+            {
+                requestIndex: 0,
+                signer: authorizer ?? transaction.sender.toString(),
+                scheme: 'ed25519',
+                payload: transaction.bytesToSign(),
+            },
+        ]
+    },
+    assemble: (unsigned, signatures) => ({
+        scope: unsigned.scope,
+        id: (
+            unsigned.payload as { transaction: Transaction }
+        ).transaction.txID(),
         bytes: new Uint8Array(signatures.flatMap(s => [...s.bytes])),
     }),
 })
