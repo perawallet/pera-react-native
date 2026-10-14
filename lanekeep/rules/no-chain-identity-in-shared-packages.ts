@@ -31,6 +31,7 @@ const SHARED_PACKAGES = [
     'card',
     'onramp',
     'nfd',
+    'deeplinks',
     'staking',
     'dapp',
     'multisig',
