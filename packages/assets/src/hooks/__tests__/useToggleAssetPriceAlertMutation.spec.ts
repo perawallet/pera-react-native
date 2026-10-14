@@ -370,7 +370,9 @@ describe('useToggleAssetPriceAlertMutation', () => {
                     releaseWrite = resolve
                 }),
         )
-        vi.mocked(toggleAssetPriceAlert).mockRejectedValue(new Error('Network error'))
+        vi.mocked(toggleAssetPriceAlert).mockRejectedValue(
+            new Error('Network error'),
+        )
 
         const { result, rerender } = renderHook(
             ({ scope }) => useToggleAssetPriceAlertMutation({ scope }),

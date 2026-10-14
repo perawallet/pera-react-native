@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { create } from 'zustand'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import type { MultiSigAccount, MultisigProposeMode } from '../models'
 

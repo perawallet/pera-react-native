@@ -368,7 +368,9 @@ describe('useToggleAssetFavoriteMutation', () => {
                     releaseWrite = resolve
                 }),
         )
-        vi.mocked(toggleAssetFavorite).mockRejectedValue(new Error('Network error'))
+        vi.mocked(toggleAssetFavorite).mockRejectedValue(
+            new Error('Network error'),
+        )
 
         const { result, rerender } = renderHook(
             ({ scope }) => useToggleAssetFavoriteMutation({ scope }),

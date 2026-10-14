@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useEffect, useState } from 'react'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useScopedDeviceID } from '@perawallet/wallet-core-device'
