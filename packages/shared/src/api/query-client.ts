@@ -23,7 +23,6 @@ import ky, {
 import {
     scopeForLegacyNetwork,
     WALLET_MODES,
-    type ChainScope,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -45,7 +44,6 @@ import {
 } from '../errors/network'
 import { PeraServiceUnavailableError } from '../errors/pera-service'
 import { readIntegrityToken } from './integrity-token-provider'
-import { nodeBackendAdapters, type NodeBackendName } from './node-backends'
 
 type DiagnosticContext = {
     startTime?: number
@@ -400,34 +398,6 @@ const createBackupClient = (): KyInstance =>
         timeout: BACKUP_REQUEST_TIMEOUT_MS,
     })
 
-const createTokenHeaderClient = (
-    prefix: string,
-    headerName: string,
-    token: string,
-): KyInstance =>
-    ky.create({
-        hooks: {
-            ...standardHooks,
-            beforeRequest: [
-                ({ request }) => {
-                    request.headers.set('Content-Type', 'application/json')
-                    if (token.length) {
-                        request.headers.set(headerName, token)
-                    }
-                },
-                ...standardHooks.beforeRequest,
-            ],
-        },
-        prefix,
-        retry: peraRetryConfig,
-    })
-
-// An in-memory key, deliberately not toScopeKey: that validates the chain id
-// against the compiled-in union and throws for a test's fixture chain, and
-// nothing keyed by it is persisted.
-const scopeClientKey = (scope: ChainScope): string =>
-    `${scope.chainId}/${scope.networkId}`
-
 /**
  * Deployments with a non-empty Pera `backendUrl`. Recorded by the same pass
  * that builds the clients, from the same read `createPeraClient` is given, so
@@ -449,42 +419,6 @@ const ensureClientsBuilt = (): void => {
         if (backendUrl !== '') deploymentsWithPeraBackend.add(deployment)
         peraClients.set(deployment, createPeraClient(backendUrl))
     }
-}
-
-// Keyed by scopeClientKey and backend. Built from the chain's registered
-// backends on first use, so a chain registering after the Pera clients were
-// built is still reached; updateBackendHeaders never touches these, so a Pera
-// credential can't reach a chain node.
-const nodeClients = new Map<string, KyInstance>()
-
-const nodeClientFor = (
-    scope: ChainScope,
-    backend: NodeBackendName,
-): KyInstance => {
-    const key = `${scopeClientKey(scope)}/${backend}`
-    const cached = nodeClients.get(key)
-    if (cached) return cached
-    const node = nodeBackendAdapters.get(scope.chainId).backendsFor(scope)[
-        backend
-    ]
-    if (!node) {
-        throw new Error(`${scopeClientKey(scope)} has no ${backend} node`)
-    }
-    const client = createTokenHeaderClient(
-        node.url,
-        node.tokenHeader,
-        node.token,
-    )
-    nodeClients.set(key, client)
-    return client
-}
-
-/**
- * Drops every node client, so the next request re-reads the chain's backends.
- * A chain calls it when its endpoints change, e.g. a custom node is saved.
- */
-export const resetNodeClients = (): void => {
-    nodeClients.clear()
 }
 
 const servedPeraClient = (
@@ -514,9 +448,6 @@ const clientFor = (
         requestConfig.scope !== undefined
             ? requestConfig.scope
             : scopeForLegacyNetwork(requestConfig.network)
-    if (requestConfig.backend !== 'pera') {
-        return nodeClientFor(scope, requestConfig.backend)
-    }
     // A scope reaches the deployment holding its chain's data, and must list
     // any service it names.
     const { service } = requestConfig

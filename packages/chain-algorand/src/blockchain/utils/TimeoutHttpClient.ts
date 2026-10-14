@@ -209,19 +209,50 @@ export class TimeoutHttpClient implements BaseHTTPClient {
         }
     }
 
+    /**
+     * Bounds one request, body included, by the timeout and the caller's
+     * signal, whichever fires first. A failure after either fires rethrows that
+     * signal's reason: Expo's fetch rejects any cancelled request as a generic
+     * `FetchError`, which would read as offline rather than `TimeoutError` or
+     * the caller's `AbortError`.
+     */
+    private static async send(
+        url: string,
+        init: RequestInit,
+        timeoutMs: number,
+        caller: unknown,
+    ): Promise<BaseHTTPClientResponse> {
+        const timeout = AbortSignal.timeout(timeoutMs)
+        const signal =
+            caller instanceof AbortSignal
+                ? AbortSignal.any([caller, timeout])
+                : timeout
+        // Rejecting before fetch also covers a runtime whose fetch ignores a
+        // signal that is already aborted.
+        if (signal.aborted) throw signal.reason
+        try {
+            const res = await fetch(url, { ...init, signal })
+            return await TimeoutHttpClient.formatFetchResponse(res)
+        } catch (error) {
+            throw signal.aborted ? (signal.reason ?? error) : error
+        }
+    }
+
     async get(
         relativePath: string,
         query?: Query,
         requestHeaders?: Record<string, string>,
         customOptions?: Record<string, unknown>,
     ): Promise<BaseHTTPClientResponse> {
-        const res = await fetch(this.getURL(relativePath, query), {
-            ...(customOptions ?? {}),
-            headers: this.buildHeaders(requestHeaders),
-            signal: AbortSignal.timeout(this.readTimeoutMs),
-        })
-
-        return TimeoutHttpClient.formatFetchResponse(res)
+        return TimeoutHttpClient.send(
+            this.getURL(relativePath, query),
+            {
+                ...(customOptions ?? {}),
+                headers: this.buildHeaders(requestHeaders),
+            },
+            this.readTimeoutMs,
+            customOptions?.signal,
+        )
     }
 
     async post(
@@ -231,15 +262,17 @@ export class TimeoutHttpClient implements BaseHTTPClient {
         requestHeaders?: Record<string, string>,
         customOptions?: Record<string, unknown>,
     ): Promise<BaseHTTPClientResponse> {
-        const res = await fetch(this.getURL(relativePath, query), {
-            ...(customOptions ?? {}),
-            method: 'POST',
-            body: data as BodyInit,
-            headers: this.buildHeaders(requestHeaders),
-            signal: AbortSignal.timeout(this.submitTimeoutMs),
-        })
-
-        return TimeoutHttpClient.formatFetchResponse(res)
+        return TimeoutHttpClient.send(
+            this.getURL(relativePath, query),
+            {
+                ...(customOptions ?? {}),
+                method: 'POST',
+                body: data as BodyInit,
+                headers: this.buildHeaders(requestHeaders),
+            },
+            this.submitTimeoutMs,
+            customOptions?.signal,
+        )
     }
 
     async delete(
@@ -249,14 +282,16 @@ export class TimeoutHttpClient implements BaseHTTPClient {
         requestHeaders?: Record<string, string>,
         customOptions?: Record<string, unknown>,
     ): Promise<BaseHTTPClientResponse> {
-        const res = await fetch(this.getURL(relativePath, query), {
-            ...(customOptions ?? {}),
-            method: 'DELETE',
-            body: data as BodyInit | undefined,
-            headers: this.buildHeaders(requestHeaders),
-            signal: AbortSignal.timeout(this.readTimeoutMs),
-        })
-
-        return TimeoutHttpClient.formatFetchResponse(res)
+        return TimeoutHttpClient.send(
+            this.getURL(relativePath, query),
+            {
+                ...(customOptions ?? {}),
+                method: 'DELETE',
+                body: data as BodyInit | undefined,
+                headers: this.buildHeaders(requestHeaders),
+            },
+            this.readTimeoutMs,
+            customOptions?.signal,
+        )
     }
 }

@@ -11,21 +11,30 @@
  */
 
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts/chain-adapter'
-import type { ChainRegistry } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainContext,
+    ChainRegistry,
+} from '@perawallet/wallet-core-chain-contract'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
 import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from '@perawallet/wallet-core-chain-algorand/capability-defaults'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { algorandNodeBackends } from '@perawallet/wallet-core-chain-algorand/blockchain/node-backends'
-import { nodeBackendAdapters } from '@perawallet/wallet-core-shared/api/node-backends'
+import { config } from '@perawallet/wallet-core-config'
+import { setAlgorandChainContext } from '@perawallet/wallet-core-chain-algorand/chain-context'
 
 // Signer resolution routes through the adapter registered for the chain being
 // signed on, so suites that resolve a signer need Algorand's registered.
 accountsChainAdapters.register(algorandAccountsAdapter)
-// queryClient's algod and indexer clients come from the chain's registered nodes.
-nodeBackendAdapters.register(algorandNodeBackends)
+// Algorand's node clients take their request ceilings from the registered context.
+setAlgorandChainContext({
+    getScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+    getEndpoints: () => ({}),
+    getPeraBackend: () => ({ baseUrl: '', services: new Set() }),
+    timeouts: config.chainRequestTimeouts.algorand,
+    kms: {} as ChainContext['kms'],
+})
 
 /** Registers Algorand as the app's composition root does; signer dispatch reads its schemes. */
 export const registerAlgorandChain = (chains: ChainRegistry): void =>

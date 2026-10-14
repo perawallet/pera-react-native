@@ -12,6 +12,8 @@
 
 import { vi, beforeEach } from 'vitest'
 import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
+import { setAlgorandChainContext } from './src/chain-context'
+import { testChainContext } from './src/__tests__/context'
 // Patches BigInt.prototype.microAlgo() globally; the patch outlives a spec's own
 // mock of algokit-utils, which the transaction builders rely on.
 import '@algorandfoundation/algokit-utils'
@@ -30,6 +32,10 @@ beforeEach(() => {
     store.clear()
     chains.reset()
 })
+
+// Every Algorand request is bounded by the registered context, which specs
+// otherwise never register. A spec that resets modules sets its own.
+setAlgorandChainContext(testChainContext())
 
 const keyValueStorage = {
     getItem: (key: string) => store.get(key) ?? null,

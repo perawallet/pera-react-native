@@ -69,6 +69,21 @@ const createResolvingFetch = (
     return { fetch: fetchMock as unknown as typeof fetch, calls }
 }
 
+/** Rejects a cancelled request the way Expo's fetch does: a generic error, not the signal's reason. */
+const createGenericCancelFetch = (): typeof fetch =>
+    vi.fn(
+        (_url: string, { signal }: RequestInit) =>
+            new Promise<Response>((_resolve, reject) => {
+                signal?.addEventListener('abort', () => {
+                    reject(
+                        new Error(
+                            'fetch failed: Fetch request has been canceled',
+                        ),
+                    )
+                })
+            }),
+    ) as unknown as typeof fetch
+
 const buildClient = () =>
     new TimeoutHttpClient(
         TOKEN_HEADER,
@@ -143,6 +158,104 @@ describe('TimeoutHttpClient', () => {
             // fetch never resolves on its own; only the read-ceiling abort can
             // settle this promise.
             await expect(buildClient().get('/v2/status')).rejects.toThrow()
+        })
+    })
+
+    describe("a caller's AbortSignal", () => {
+        it('aborts a get before the timeout, rejecting as an AbortError', async () => {
+            const { fetch } = createAbortAwareFetch()
+            vi.stubGlobal('fetch', fetch)
+            const caller = new AbortController()
+
+            const promise = buildClient().get(
+                '/v2/status',
+                undefined,
+                undefined,
+                { signal: caller.signal },
+            )
+            caller.abort()
+
+            await expect(promise).rejects.toThrow(
+                expect.objectContaining({ name: 'AbortError' }),
+            )
+        })
+
+        it('aborts a post before the timeout, rejecting as an AbortError', async () => {
+            const { fetch } = createAbortAwareFetch()
+            vi.stubGlobal('fetch', fetch)
+            const caller = new AbortController()
+
+            const promise = buildClient().post(
+                '/v2/transactions',
+                new Uint8Array([1]),
+                undefined,
+                undefined,
+                { signal: caller.signal },
+            )
+            caller.abort()
+
+            await expect(promise).rejects.toThrow(
+                expect.objectContaining({ name: 'AbortError' }),
+            )
+        })
+
+        it('still times out when a caller signal that never aborts is present', async () => {
+            const { fetch } = createAbortAwareFetch()
+            vi.stubGlobal('fetch', fetch)
+
+            await expect(
+                buildClient().get('/v2/status', undefined, undefined, {
+                    signal: new AbortController().signal,
+                }),
+            ).rejects.toThrow(expect.objectContaining({ name: 'TimeoutError' }))
+        })
+
+        it('rejects without calling fetch when the signal is already aborted', async () => {
+            const { fetch, calls } = createAbortAwareFetch()
+            vi.stubGlobal('fetch', fetch)
+            const caller = new AbortController()
+            caller.abort()
+
+            await expect(
+                buildClient().get('/v2/status', undefined, undefined, {
+                    signal: caller.signal,
+                }),
+            ).rejects.toThrow(expect.objectContaining({ name: 'AbortError' }))
+            expect(calls).toHaveLength(0)
+        })
+    })
+
+    describe('a fetch that rejects a cancel with a generic error', () => {
+        it('rejects a timed-out get as a TimeoutError', async () => {
+            vi.stubGlobal('fetch', createGenericCancelFetch())
+
+            await expect(buildClient().get('/v2/status')).rejects.toThrow(
+                expect.objectContaining({ name: 'TimeoutError' }),
+            )
+        })
+
+        it("rejects a caller's cancel as an AbortError", async () => {
+            vi.stubGlobal('fetch', createGenericCancelFetch())
+            const caller = new AbortController()
+
+            const promise = buildClient().get(
+                '/v2/status',
+                undefined,
+                undefined,
+                { signal: caller.signal },
+            )
+            caller.abort()
+
+            await expect(promise).rejects.toThrow(
+                expect.objectContaining({ name: 'AbortError' }),
+            )
+        })
+
+        it('passes a failure before either signal fires through unchanged', async () => {
+            const failure = new TypeError('Network request failed')
+            vi.stubGlobal('fetch', vi.fn().mockRejectedValue(failure))
+
+            await expect(buildClient().get('/v2/status')).rejects.toBe(failure)
         })
     })
 

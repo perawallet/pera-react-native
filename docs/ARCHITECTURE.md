@@ -233,12 +233,13 @@ the integrity token only as the web build's Bearer, so a call to an integrity-gu
 card, fee-delegation and EVM routes) also passes `headers: buildIntegrityHeaders()` from
 `@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
 
-A chain's ky-based node backends (`algod`, `indexer`) come from the `NodeBackendsAdapter` it
-registers (`packages/shared/src/api/node-backends.ts`): URL, token header and token. `queryClient`
-builds and caches each client on first use and never adds the Pera headers to it, so a Pera
-credential cannot reach a third-party node. A chain whose endpoints change at runtime calls
-`resetNodeClients()`; Algorand does so when a custom node is saved or cleared. Ethereum's JSON-RPC
-is a viem client the chain builds from `ctx.getEndpoints()`, outside `queryClient`.
+`queryClient` serves the Pera and backup backends only, never a chain's nodes, so a Pera credential
+cannot reach a third-party node. Each chain builds its own node clients from the `ChainContext` it
+registered with: its endpoints, and the request ceilings in `ctx.timeouts`, which come from the
+chain's row in config's `chainRequestTimeouts`. Algorand keeps the context in
+`packages/chain-algorand/src/chain-context.ts` and builds every algod and indexer client, for algosdk
+and for raw JSON reads alike, through `createNodeHttpClient` (`blockchain/utils/nodeHttp.ts`).
+Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`.
 
 ## Account types share one signing path
 
