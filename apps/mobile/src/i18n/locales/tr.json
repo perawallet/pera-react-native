@@ -4213,5 +4213,11 @@
             "decline": "İzin verme"
         },
         "settings_label": "Kullanım analizlerini paylaş"
+    },
+    "widgets": {
+        "updated": "Güncellendi",
+        "hidden": "Gizli",
+        "algo_price": "ALGO fiyatı",
+        "nfts_empty": "Henüz NFT yok"
     }
 }

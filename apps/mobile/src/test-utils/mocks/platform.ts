@@ -65,6 +65,11 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             save: vi.fn().mockResolvedValue('saved'),
             read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
         },
+        widgets: {
+            writeSnapshot: vi.fn().mockResolvedValue(undefined),
+            clearSnapshot: vi.fn().mockResolvedValue(undefined),
+            syncImages: vi.fn().mockResolvedValue([]),
+        },
         appLifecycle: {
             getCurrentState: () => 'active',
             addChangeListener: vi.fn(() => vi.fn()),
@@ -208,6 +213,11 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
                 .mockReturnValue(['icloud', 'googleDrive']),
             save: vi.fn().mockResolvedValue('saved'),
             read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
+        },
+        widgets: {
+            writeSnapshot: vi.fn().mockResolvedValue(undefined),
+            clearSnapshot: vi.fn().mockResolvedValue(undefined),
+            syncImages: vi.fn().mockResolvedValue([]),
         },
         appLifecycle: {
             getCurrentState: () => 'active',

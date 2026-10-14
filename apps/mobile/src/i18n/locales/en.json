@@ -4213,5 +4213,11 @@
             "decline": "Don’t allow"
         },
         "settings_label": "Share usage analytics"
+    },
+    "widgets": {
+        "updated": "Updated",
+        "hidden": "Hidden",
+        "algo_price": "ALGO price",
+        "nfts_empty": "No NFTs yet"
     }
 }

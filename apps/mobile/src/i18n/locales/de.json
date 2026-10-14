@@ -4213,5 +4213,11 @@
             "decline": "Nicht erlauben"
         },
         "settings_label": "Nutzungsanalysen teilen"
+    },
+    "widgets": {
+        "updated": "Aktualisiert",
+        "hidden": "Ausgeblendet",
+        "algo_price": "ALGO-Preis",
+        "nfts_empty": "Noch keine NFTs"
     }
 }

@@ -4213,5 +4213,11 @@
             "decline": "No permitir"
         },
         "settings_label": "Compartir analíticas de uso"
+    },
+    "widgets": {
+        "updated": "Actualizado",
+        "hidden": "Oculto",
+        "algo_price": "Precio de ALGO",
+        "nfts_empty": "Aún no hay NFTs"
     }
 }

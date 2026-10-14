@@ -27,6 +27,7 @@ import type { DatabaseService } from './database'
 import type { CrashReportingService } from './reporting'
 import type { KeyValueStorageService } from './storage'
 import type { WalletProvisioningService } from './wallet-provisioning'
+import type { WidgetsService } from './widgets'
 
 export interface PlatformServices {
     keyValueStorage: KeyValueStorageService
@@ -43,6 +44,7 @@ export interface PlatformServices {
     migration: MigrationService
     walletProvisioning: WalletProvisioningService
     cloudFileStorage: CloudFileStorageService
+    widgets: WidgetsService
 }
 
 /**

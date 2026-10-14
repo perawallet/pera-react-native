@@ -36,6 +36,7 @@ import type {
     WalletProvisioningCardStatus,
     WalletProvisioningService,
     WalletProvisioningTokenizationStatus,
+    WidgetsService,
 } from '@perawallet/wallet-extension-platform'
 
 /**
@@ -154,5 +155,14 @@ export class ChromeCloudFileStorageService implements CloudFileStorageService {
     }
     async read(): Promise<CloudFileReadResult> {
         throw new Error('Cloud file storage is unavailable on web')
+    }
+}
+
+// Browsers have no home-screen widgets.
+export class ChromeWidgetsService implements WidgetsService {
+    async writeSnapshot(_json: string): Promise<void> {}
+    async clearSnapshot(): Promise<void> {}
+    async syncImages(): Promise<string[]> {
+        return []
     }
 }

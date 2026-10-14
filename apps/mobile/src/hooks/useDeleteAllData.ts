@@ -106,6 +106,10 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             }
         }
 
+        // The widget snapshot and NFT images live in the App Group, outside
+        // every store below. The service never throws.
+        await getProvider().widgets.clearSnapshot()
+
         // 5. Notify peers, then drop their records. Read at wipe time: the provider
         // may not have mounted when `AutoLockGuard` first rendered. `clear()` is
         // the backstop; these records are not in `clearAllStores`.

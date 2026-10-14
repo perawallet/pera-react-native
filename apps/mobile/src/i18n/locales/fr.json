@@ -4213,5 +4213,11 @@
             "decline": "Ne pas autoriser"
         },
         "settings_label": "Partager les statistiques d’utilisation"
+    },
+    "widgets": {
+        "updated": "Mis à jour",
+        "hidden": "Masqué",
+        "algo_price": "Prix de l’ALGO",
+        "nfts_empty": "Aucun NFT pour l’instant"
     }
 }
