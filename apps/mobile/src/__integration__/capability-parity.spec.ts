@@ -19,6 +19,7 @@ import {
     addressCodecs,
     CHAIN_IDS,
     createChainRegistry,
+    transactionPlanners,
     type ChainDescriptor,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
@@ -66,6 +67,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 const registries: CapabilityAdapterRegistries = {
     'send flow': sendFlowChainAdapters,
     planner: plannerChainAdapters,
+    transactionPlanner: transactionPlanners,
     reviewer: reviewerChainAdapters,
     'local-key signer': localKeySignerChainAdapters,
     broadcaster: broadcasterChainAdapters,

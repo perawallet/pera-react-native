@@ -22,11 +22,14 @@ import type { ChainCapability } from '../models/capabilities'
  * chain adapter of its own (chain-neutral code or the Pera backend serves it)
  * or its feature has no registry yet (`staking`, …); add an entry whenever a
  * chain could enable it without an adapter it needs.
+ *
+ * Send and dApp signing go through the chain-neutral `transactionPlanner`;
+ * Ledger and multisig still sign through signing's Algorand-only `planner`.
  */
 export const CAPABILITY_ADAPTERS = {
     send: [
         'send flow',
-        'planner',
+        'transactionPlanner',
         'reviewer',
         'local-key signer',
         'broadcaster',
@@ -36,7 +39,12 @@ export const CAPABILITY_ADAPTERS = {
     assets: ['assets'],
     pricing: ['assets'],
     messageSigning: ['message signer'],
-    dappConnect: ['dapp-request', 'planner', 'reviewer', 'local-key signer'],
+    dappConnect: [
+        'dapp-request',
+        'transactionPlanner',
+        'reviewer',
+        'local-key signer',
+    ],
     watchAccounts: ['accounts', 'addressCodec'],
     ledger: ['ledger app driver', 'planner', 'reviewer'],
     multisig: ['multisig', 'planner', 'reviewer'],
