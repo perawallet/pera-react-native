@@ -35,6 +35,7 @@ type UseToggleAssetPriceAlertMutationParams = {
 }
 
 type ToggleAssetPriceAlertMutationContext = {
+    scope: ChainScope
     previousData: Optional<PeraAsset>
     previousRemoteData: Optional<PeraAsset>
     previousIsPriceAlertEnabled: boolean
@@ -125,6 +126,7 @@ export const useToggleAssetPriceAlertMutation = ({
             invalidateAssetQueries(queryClient)
 
             return {
+                scope,
                 previousData,
                 previousRemoteData,
                 previousIsPriceAlertEnabled,
@@ -134,7 +136,7 @@ export const useToggleAssetPriceAlertMutation = ({
             if (context) {
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
-                    scope,
+                    scope: context.scope,
                     updates: {
                         isPriceAlertEnabled:
                             context.previousIsPriceAlertEnabled,
@@ -142,13 +144,19 @@ export const useToggleAssetPriceAlertMutation = ({
                 })
                 if (context.previousData) {
                     queryClient.setQueryData(
-                        getAssetDetailsQueryKey(variables.assetID, scope),
+                        getAssetDetailsQueryKey(
+                            variables.assetID,
+                            context.scope,
+                        ),
                         context.previousData,
                     )
                 }
                 if (context.previousRemoteData) {
                     queryClient.setQueryData(
-                        getRemoteAssetDetailsQueryKey(variables.assetID, scope),
+                        getRemoteAssetDetailsQueryKey(
+                            variables.assetID,
+                            context.scope,
+                        ),
                         context.previousRemoteData,
                     )
                 }

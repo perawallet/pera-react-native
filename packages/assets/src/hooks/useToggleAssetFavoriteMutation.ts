@@ -35,6 +35,7 @@ type UseToggleAssetFavoriteMutationParams = {
 }
 
 type ToggleAssetFavoriteMutationContext = {
+    scope: ChainScope
     previousData: Optional<PeraAsset>
     previousRemoteData: Optional<PeraAsset>
     previousIsFavorited: boolean
@@ -127,26 +128,37 @@ export const useToggleAssetFavoriteMutation = ({
             invalidateAssetQueries(queryClient)
             onLocalWrite?.()
 
-            return { previousData, previousRemoteData, previousIsFavorited }
+            return {
+                scope,
+                previousData,
+                previousRemoteData,
+                previousIsFavorited,
+            }
         },
         onError: async (error, variables, context) => {
             if (context) {
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
-                    scope,
+                    scope: context.scope,
                     updates: {
                         isFavorited: context.previousIsFavorited,
                     },
                 })
                 if (context.previousData) {
                     queryClient.setQueryData(
-                        getAssetDetailsQueryKey(variables.assetID, scope),
+                        getAssetDetailsQueryKey(
+                            variables.assetID,
+                            context.scope,
+                        ),
                         context.previousData,
                     )
                 }
                 if (context.previousRemoteData) {
                     queryClient.setQueryData(
-                        getRemoteAssetDetailsQueryKey(variables.assetID, scope),
+                        getRemoteAssetDetailsQueryKey(
+                            variables.assetID,
+                            context.scope,
+                        ),
                         context.previousRemoteData,
                     )
                 }
