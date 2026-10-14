@@ -122,7 +122,7 @@ export const runMigrationLoop = async (
             ) {
                 // Key-bearing imports (incl. the watch-reconcile reimport
                 // above) don't record the legacy authAddress themselves. Do it
-                // here so a rekeyed account is never presented as
+                // here so an account that delegates its signing is never presented as
                 // directly-signable before the first sync observes it.
                 adapter.recordLegacyAuthority(account)
             }

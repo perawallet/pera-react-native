@@ -15,7 +15,7 @@
  * entry for the same reason `./native` and `./webauthn` exist: the package
  * root (and `./crypto/derivePasskeyCredential`, via the provider's
  * `keystoreSubtle`) pulls in native modules that have no loadable build under
- * Node. `packages/migrate` needs only these two pure functions, not those
- * modules.
+ * Node. `packages/migrate` needs only these pure functions, not those modules.
  */
+export * from './crypto/p256Credential'
 export * from './crypto/p256Spki'

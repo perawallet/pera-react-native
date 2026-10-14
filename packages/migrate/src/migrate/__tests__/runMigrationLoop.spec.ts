@@ -114,6 +114,7 @@ beforeEach(() => {
         migrateAccount: migrateLegacyAccount,
         classifyAccountRoute: classifyLegacyAccountRoute,
         recordLegacyAuthority,
+        legacyPreferenceFlags: () => ({}),
         isKeylessAccount: a =>
             a.type === 'watch' || a.joint !== null || a.ledger !== null,
     })

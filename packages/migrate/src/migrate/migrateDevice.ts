@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     deviceIdFor,
     deviceIdOriginFor,
@@ -60,7 +59,7 @@ export const migrateDeviceIdentifiers = (
     const mainnetDeviceId =
         identifiers.mainnetDeviceId ?? identifiers.legacyFallbackDeviceId
     if (mainnetDeviceId) {
-        applyMigratedDeviceId(Networks.mainnet, mainnetDeviceId)
+        applyMigratedDeviceId('mainnet', mainnetDeviceId)
     }
     // legacyFallbackDeviceId deliberately does NOT fall back to testnet.
     // Device ids are primary keys of a per-network backend deployment
@@ -71,7 +70,7 @@ export const migrateDeviceIdentifiers = (
     // 404 → recreate (a false "migrated id replaced" signal), at worst a
     // collision with an unrelated device's testnet record.
     if (identifiers.testnetDeviceId) {
-        applyMigratedDeviceId(Networks.testnet, identifiers.testnetDeviceId)
+        applyMigratedDeviceId('testnet', identifiers.testnetDeviceId)
     }
 
     const settings = useSettingsStore.getState()
