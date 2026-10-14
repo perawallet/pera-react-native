@@ -15,7 +15,7 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '../models'
 import { useAccountsStore } from '../store'
 import { chainAccountOf } from '../credentials/accessors'
-import { otherRegisteredChainIds } from './accountChainEntries'
+import { useOtherRegisteredChainIds } from './accountChainEntries'
 
 /**
  * What accounts are ranked and summed by: `native` while every account values
@@ -26,26 +26,24 @@ export type AccountValueBasis = 'native' | 'fiat'
 
 export const accountValueBasisOf = (
     accounts: readonly WalletAccount[],
-    homeChainId: ChainId,
+    otherChainIds: readonly ChainId[],
 ): AccountValueBasis => {
-    const others = otherRegisteredChainIds(homeChainId)
     const isOnOtherChain = accounts.some(account =>
-        others.some(chainId => chainAccountOf(account, chainId) !== undefined),
+        otherChainIds.some(
+            chainId => chainAccountOf(account, chainId) !== undefined,
+        ),
     )
     return isOnOtherChain ? 'fiat' : 'native'
 }
 
-/**
- * Wallet-wide rather than per list, so every list and the portfolio header
- * agree. Registration is fixed at bootstrap, so only the accounts can change
- * the answer.
- */
+/** Wallet-wide rather than per list, so every list and the portfolio header agree. */
 export const useAccountValueBasis = (
     homeChainId: ChainId,
 ): AccountValueBasis => {
     const accounts = useAccountsStore(state => state.accounts)
+    const otherChainIds = useOtherRegisteredChainIds(homeChainId)
     return useMemo(
-        () => accountValueBasisOf(accounts, homeChainId),
-        [accounts, homeChainId],
+        () => accountValueBasisOf(accounts, otherChainIds),
+        [accounts, otherChainIds],
     )
 }

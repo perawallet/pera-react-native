@@ -28,7 +28,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../models'
 import {
     accountChainEntries,
-    otherRegisteredChainIds,
+    useOtherRegisteredChainIds,
 } from './accountChainEntries'
 import { getAccountSummaryQueryKey } from './querykeys'
 import { readAccountSummary } from './useAccountSummaryQuery'
@@ -120,10 +120,7 @@ export const useAccountValueTotalsQuery = (
         [scope],
     )
     const check = useChainCapabilityCheck()
-    const otherChainIds = useMemo(
-        () => otherRegisteredChainIds(scope.chainId),
-        [scope.chainId],
-    )
+    const otherChainIds = useOtherRegisteredChainIds(scope.chainId)
     // See `valueAccountTotals`: only a chain with a price source can be
     // missing a price it ought to have. Joined so the memo below keys on a
     // primitive rather than the per-render checker.

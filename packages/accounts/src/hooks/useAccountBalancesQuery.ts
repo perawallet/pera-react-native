@@ -35,7 +35,7 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
-import { otherRegisteredChainIds } from './accountChainEntries'
+import { useOtherRegisteredChainIds } from './accountChainEntries'
 import { chainAccountOf } from '../credentials/accessors'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
@@ -101,6 +101,10 @@ export const useAccountBalancesQuery = (
             a => chainAccountOf(a, scope.chainId)?.address ?? [],
         ) ?? [],
     )
+
+    // See `valueAccountTotals`: single-chain wallets keep today's figures.
+    const isUnconvertibleUnknown =
+        useOtherRegisteredChainIds(scope.chainId).length > 0
 
     const queries = useMemo(() => {
         return addresses.map(address => {
@@ -174,10 +178,6 @@ export const useAccountBalancesQuery = (
             }
         }
 
-        // Single-chain wallets keep today's native figures; see
-        // `valueAccountTotals`.
-        const isUnconvertibleUnknown =
-            otherRegisteredChainIds(scope.chainId).length > 0
         const accountBalanceList = results.map(r => {
             const holdings = r.data?.holdings ?? []
             // The native asset is itself a holding row; its joined price is the
@@ -303,7 +303,14 @@ export const useAccountBalancesQuery = (
         // `results` is read inside but deliberately not a dep — `resultsSig`
         // is its stable stand-in; see the comment where it is built.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, addresses, hasAccounts, nativeAsset, scope.chainId])
+    }, [
+        resultsSig,
+        addresses,
+        hasAccounts,
+        nativeAsset,
+        scope.chainId,
+        isUnconvertibleUnknown,
+    ])
 
     return {
         accountBalances,

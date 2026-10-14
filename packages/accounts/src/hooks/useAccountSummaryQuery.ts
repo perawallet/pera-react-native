@@ -19,7 +19,7 @@ import type { Decimal } from 'decimal.js'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountSummaryQueryKey } from './querykeys'
-import { otherRegisteredChainIds } from './accountChainEntries'
+import { useOtherRegisteredChainIds } from './accountChainEntries'
 import { valueAccountTotals } from './valueAccountTotals'
 
 export type UseAccountSummaryResult = {
@@ -73,6 +73,9 @@ export const useAccountSummaryQuery = (
     scope: ChainScope,
 ): UseAccountSummaryResult => {
     const hasPricing = useChainCapability(scope.chainId, 'pricing')
+    // See `valueAccountTotals`: single-chain wallets keep today's figures.
+    const isUnconvertibleUnknown =
+        useOtherRegisteredChainIds(scope.chainId).length > 0
 
     const query = useQuery({
         queryKey: getAccountSummaryQueryKey(address ?? '', scope),
@@ -90,7 +93,7 @@ export const useAccountSummaryQuery = (
         const { nativeAmount, nativeValue, usdValue } = valueAccountTotals(
             query.data,
             hasPricing,
-            otherRegisteredChainIds(scope.chainId).length > 0,
+            isUnconvertibleUnknown,
         )
 
         return {
@@ -112,6 +115,6 @@ export const useAccountSummaryQuery = (
         query.isError,
         query.isPaused,
         hasPricing,
-        scope.chainId,
+        isUnconvertibleUnknown,
     ])
 }

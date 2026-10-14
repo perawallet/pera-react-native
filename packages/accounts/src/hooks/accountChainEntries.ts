@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { chainAccountOf } from '../credentials/accessors'
@@ -23,7 +24,7 @@ export type AccountChainEntry = {
 }
 
 /** Registered chains other than `homeChainId`, in registry order. */
-export const otherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
+const otherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
     const others = new Set(
         getProvider()
             .chains.list()
@@ -31,6 +32,16 @@ export const otherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
     )
     others.delete(homeChainId)
     return [...others]
+}
+
+/**
+ * Re-read every render, since the registry can change under a mounted hook;
+ * the result keeps its identity until the set of chains does, so memos keyed
+ * on it hold.
+ */
+export const useOtherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
+    const key = otherRegisteredChainIds(homeChainId).join()
+    return useMemo(() => (key ? (key.split(',') as ChainId[]) : []), [key])
 }
 
 /**

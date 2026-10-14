@@ -52,8 +52,17 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     >()),
     useChainCapabilityCheck:
         () =>
-        ({ chain }: { chain?: { chainId: ChainId; capability: string } }) =>
-            chain?.capability === 'pricing' ? capability.pricing : true,
+        ({ chain }: { chain?: { chainId: ChainId; capability: string } }) => {
+            // Like the real registry: asking an unregistered chain throws.
+            if (
+                chain &&
+                getProvider().chains.list().length > 0 &&
+                !getProvider().chains.has(chain.chainId)
+            ) {
+                throw new Error(`${chain.chainId} is not registered`)
+            }
+            return chain?.capability === 'pricing' ? capability.pricing : true
+        },
 }))
 
 const createWrapper = () => {
@@ -359,6 +368,47 @@ describe('useAccountValueTotalsQuery', () => {
             ).toEqual(new Decimal(3000))
             expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
+        })
+
+        it('drops a chain un-registered while the hook stays mounted instead of throwing', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(10, 20))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+            const { result, rerender } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            getProvider().chains.reset()
+            getProvider().chains.register(
+                {
+                    id: 'algorand',
+                    networks: [
+                        {
+                            id: 'mainnet',
+                            tier: 'mainnet',
+                            isDefaultForTier: true,
+                        },
+                    ],
+                } as unknown as ChainDescriptor,
+                ALL_ON,
+            )
+            rerender()
+
+            await waitFor(() =>
+                expect(result.current.accountValueTotals.has('0xE')).toBe(
+                    false,
+                ),
+            )
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(40))
         })
 
         it('leaves the fiat total unknown, not zero, while the ALGO price is unloaded', async () => {

@@ -21,7 +21,7 @@ import { chainAccountOf } from '../credentials'
 import { useAccountValueBasis } from './useAccountValueBasis'
 import {
     accountChainEntries,
-    otherRegisteredChainIds,
+    useOtherRegisteredChainIds,
 } from './accountChainEntries'
 
 type UseSortedAccountsResult = {
@@ -55,10 +55,7 @@ export const useSortedAccounts = (
     chainId: ChainId,
 ): UseSortedAccountsResult => {
     const basis = useAccountValueBasis(chainId)
-    const otherChainIds = useMemo(
-        () => otherRegisteredChainIds(chainId),
-        [chainId],
-    )
+    const otherChainIds = useOtherRegisteredChainIds(chainId)
     const sortMode = useAccountsStore(state => state.sortMode)
     const manualAccountOrder = useAccountsStore(
         state => state.manualAccountOrder,
