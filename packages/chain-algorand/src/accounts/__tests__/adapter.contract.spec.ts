@@ -261,3 +261,9 @@ describe('Algorand authority delegation', () => {
         expect(algorandAccountsAdapter.authority?.capability).toBe('rekey')
     })
 })
+
+describe('Algorand account-state reads', () => {
+    it('caps a sync at six concurrent reads, since each one is its own algod request', () => {
+        expect(algorandAccountsAdapter.maxConcurrentStateReads).toBe(6)
+    })
+})

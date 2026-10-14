@@ -19,3 +19,9 @@ export const ALGORAND_HD_DERIVATION_TYPE = DerivationTypes.Peikert
 // Max holdings per indexer page; the split account read and the opt-in-rounds
 // read share it.
 export const HOLDINGS_PAGE_LIMIT = 1000
+
+// Each read is one algod request (more for large accounts), so an unbounded
+// fan-out scales the burst with the wallet and trips the rate limiter on large
+// ones. That is self-sustaining: a 429 freezes the sync checkpoint, so the next
+// tick re-reads every account and bursts again.
+export const ALGORAND_MAX_CONCURRENT_STATE_READS = 6

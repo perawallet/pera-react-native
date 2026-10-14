@@ -331,6 +331,12 @@ export interface AccountsChainAdapter {
         scope: ChainScope,
         cursor: Nullable<number>,
     ): Promise<AccountChangeSignal>
+    /**
+     * The most `fetchAccountState` calls a sync keeps in flight on one scope.
+     * Absent: every address's read starts at once, for a chain that batches
+     * concurrent reads.
+     */
+    readonly maxConcurrentStateReads?: number
     /** Any on-chain footprint counts, not only a funded balance. */
     accountExists(address: string, scope: ChainScope): Promise<boolean>
     /**

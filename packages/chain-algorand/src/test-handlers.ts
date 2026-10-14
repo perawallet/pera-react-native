@@ -27,6 +27,11 @@ export {
 } from './assets/api/search-msw-handlers'
 
 export {
+    mockShouldRefresh,
+    type MockShouldRefreshParams,
+} from './accounts/change-signal-msw-handlers'
+
+export {
     mockAccountsBalanceHistory,
     mockAccountAssetBalanceHistory,
     type MockAccountsBalanceHistoryParams,

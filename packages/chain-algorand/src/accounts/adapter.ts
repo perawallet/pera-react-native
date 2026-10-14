@@ -19,7 +19,10 @@ import {
     toAlgorandChainState,
 } from './chain-state'
 import { assertAlgorandBip44PathMatches } from './bip44'
-import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
+import {
+    ALGORAND_HD_DERIVATION_TYPE,
+    ALGORAND_MAX_CONCURRENT_STATE_READS,
+} from './constants'
 import { hdDerivedKeyId } from './hd-derivation'
 import {
     algorandAccountExists,
@@ -52,6 +55,7 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
         fetchAlgorandAccountState(address, algorandNetworkOf(scope), hint),
     fetchChangeSignal: (addresses, scope, cursor) =>
         fetchAlgorandChangeSignal(addresses, algorandNetworkOf(scope), cursor),
+    maxConcurrentStateReads: ALGORAND_MAX_CONCURRENT_STATE_READS,
     toChainState: toAlgorandChainState,
     summarizeChainState: summarizeAlgorandChainState,
     // Algorand's opt-in round orders the collectibles gallery.
