@@ -120,7 +120,7 @@ describe('algorandAddressCodec payment URIs', () => {
             `algorand://${VALID}?note=%E0%A4%A`,
             `algorand://${VALID}?amount=1&amount=2`,
             `algorand://${VALID}?type=keyreg&votekey=x`,
-            `algorand://net:testnet-v1.0/${VALID}?amount=1`,
+            `algorand://net:foonet-v1.0/${VALID}`,
             `algorand://gh:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=/${VALID}`,
             'algorand://asset/123',
             'algorand://?amount=0&asset=123',
@@ -133,6 +133,18 @@ describe('algorandAddressCodec payment URIs', () => {
     describe('parsePaymentUri accepts', () => {
         const parse = (search: string, path = VALID) =>
             parsePaymentUri(`algorand://${path}${search}`)
+
+        it('the network the URI names', () => {
+            expect(
+                parsePaymentUri(
+                    `algorand://net:testnet-v1.0/${VALID}?amount=1`,
+                ),
+            ).toEqual({
+                address: VALID,
+                amount: new Decimal(1),
+                networkId: 'testnet',
+            })
+        })
 
         it('a trailing slash', () => {
             expect(parse('/?amount=1')?.amount).toEqual(new Decimal(1))

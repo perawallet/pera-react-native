@@ -76,6 +76,8 @@ const explorerLink =
         return explorerUrl ? `${explorerUrl}/${path}/${id}` : undefined
     }
 
+export const algorandApplicationExplorerUrl = explorerLink('application')
+
 export const algorandDescriptor: ChainDescriptor = {
     id: ALGORAND_CHAIN_ID,
     family: 'algorand',
