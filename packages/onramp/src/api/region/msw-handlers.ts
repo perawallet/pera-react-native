@@ -25,7 +25,7 @@ export const mockRampRegion = ({
     status = 200,
 }: MockRampRegionParams): HttpHandler => {
     validateMockResponse(rampRegionResponseSchema, response, 'mockRampRegion')
-    return http.get('*/v1/ramp/regions', () =>
+    return http.get('*/v1/ramp/regions/', () =>
         HttpResponse.json(response, { status }),
     )
 }

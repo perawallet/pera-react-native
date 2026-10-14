@@ -10,20 +10,15 @@
  limitations under the License
  */
 
-import {
-    addressOn,
-    useAccountValueTotalsQuery,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { PWView, type PWViewProps } from '@components/core'
-import { useStyles } from './styles'
-
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { useLanguage } from '@hooks/useLanguage'
+import { useStyles } from './styles'
+import { useAccountWithBalance } from './useAccountWithBalance'
 
 export type AccountWithBalanceProps = {
     account: WalletAccount
@@ -35,17 +30,10 @@ export const AccountWithBalance = ({
     isHighlighted,
     ...rest
 }: AccountWithBalanceProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const styles = useStyles({ isHighlighted })
-    const { accountValueTotals } = useAccountValueTotalsQuery(
-        [account],
-        scope,
-        true,
-    )
-    const nativeValue = accountValueTotals.get(
-        addressOn(account, scope) ?? '',
-    )?.nativeValue
+    const { t } = useLanguage()
+    const { nativeValue, isTestTier } = useAccountWithBalance(account)
 
     return (
         <PWView
@@ -56,7 +44,14 @@ export const AccountWithBalance = ({
                 account={account}
                 showChevron={false}
                 showAccountType
+                style={styles.accountDisplay}
             />
+            {isTestTier && (
+                <PWBadge
+                    variant='testnet'
+                    value={t('common.network_label.testnet')}
+                />
+            )}
             <PWView style={styles.balanceContainer}>
                 <AssetAmount
                     asset={nativeAsset}

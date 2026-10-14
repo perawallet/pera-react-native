@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import {
     DEFAULT_CARD_CURRENCY,
-    postCardDelegation,
+    postAutoDrawDelegation,
     type CardAutoDrawOperations,
 } from '@perawallet/wallet-core-card'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -79,7 +79,7 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
                 await signProgram(account, program),
                 address,
             )
-            await postCardDelegation(
+            await postAutoDrawDelegation(
                 autoDrawDelegationRequest({
                     currency: DEFAULT_CARD_CURRENCY.toLowerCase(),
                     delegatorAddress: address,

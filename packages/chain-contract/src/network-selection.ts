@@ -10,10 +10,12 @@
  limitations under the License
  */
 
+import type { ChainRegistry } from './chain-registry'
 import type { ChainDescriptor } from './models/descriptor'
 import type {
     ChainMode,
     ChainNetwork,
+    ChainScope,
     NetworkId,
     NetworkTier,
     WalletMode,
@@ -39,6 +41,27 @@ const defaultForTier = (
     }
     return network.id
 }
+
+/** Undefined for a network the descriptor doesn't list, such as a saved custom network. */
+export const networkTierOf = (
+    descriptor: ChainDescriptor,
+    networkId: NetworkId,
+): NetworkTier | undefined =>
+    descriptor.networks.find(candidate => candidate.id === networkId)?.tier
+
+/**
+ * Test-tier value is kept apart from mainnet value only once a second chain
+ * is registered; a lone chain keeps every scope counted. A custom network
+ * counts as test tier, since only developer mode can select one.
+ */
+export const isTestTierScope = (
+    chains: ChainRegistry,
+    scope: ChainScope,
+): boolean =>
+    chains.list().length > 1 &&
+    chains.has(scope.chainId) &&
+    networkTierOf(chains.get(scope.chainId).descriptor, scope.networkId) !==
+        'mainnet'
 
 export const networkTierForMode = (mode: WalletMode): NetworkTier =>
     mode === 'live' ? 'mainnet' : 'testnet'

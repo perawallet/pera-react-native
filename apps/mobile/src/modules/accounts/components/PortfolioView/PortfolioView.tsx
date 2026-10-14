@@ -71,6 +71,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         basis,
         portfolioNativeValue,
         portfolioPreferredValue,
+        hasFiatTotal,
         isPending,
     } = usePortfolioView()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
@@ -202,25 +203,27 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                                 style={styles.primaryCurrency}
                                 isLoading={isPending}
                             />
-                            <PreferredAmount
-                                variant='h4'
-                                style={styles.valueTitle}
-                                value={
-                                    selectedPoint
-                                        ? selectedPoint.preferredValue
-                                        : portfolioPreferredValue
-                                }
-                                prefix='≈ '
-                                density='compact'
-                                isLoading={isPending}
-                            />
+                            {hasFiatTotal && (
+                                <PreferredAmount
+                                    variant='h4'
+                                    style={styles.valueTitle}
+                                    value={
+                                        selectedPoint
+                                            ? selectedPoint.preferredValue
+                                            : portfolioPreferredValue
+                                    }
+                                    prefix='≈ '
+                                    density='compact'
+                                    isLoading={isPending}
+                                />
+                            )}
                         </>
                     )}
                 </PWView>
 
                 {/* Stays mounted while the chart is hidden so it can fade in
                     sync with the panel collapse rather than unmount abruptly. */}
-                {!selectedPoint && (
+                {hasFiatTotal && !selectedPoint && (
                     <Animated.View
                         style={[
                             styles.rightColumn,

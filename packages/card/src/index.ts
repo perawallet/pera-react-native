@@ -50,7 +50,10 @@ export {
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
 } from './api/escrow'
-export { postCardDelegation } from './api/delegation'
+export {
+    AutoDrawDelegationRejectedError,
+    postAutoDrawDelegation,
+} from './api/delegation'
 
 // API error normalization — lets screens attribute a Baanx failure to a field.
 export {

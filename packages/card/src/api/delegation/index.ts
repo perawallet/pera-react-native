@@ -15,6 +15,8 @@ export {
     fetchExternalWallets,
     postDelegationApproval,
     postCardDelegation,
+    postAutoDrawDelegation,
     type DelegationRequestParams,
     type PostDelegationApprovalParams,
 } from './endpoints'
+export { AutoDrawDelegationRejectedError } from './errors'

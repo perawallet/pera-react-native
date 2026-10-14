@@ -91,7 +91,6 @@ vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
         parseDeeplink: mockParseDeeplink,
         handleDeepLink: vi.fn(),
         isValidDeepLink: vi.fn(),
-        buildAccountDeeplink: vi.fn(),
     }),
 }))
 

@@ -22,7 +22,7 @@ export const getRampRegion = async (scope: ChainScope): Promise<RampRegion> => {
         backend: 'pera',
         scope,
         method: 'GET',
-        url: '/v1/ramp/regions',
+        url: '/v1/ramp/regions/',
     })
 
     const parsed = rampRegionResponseSchema.parse(response.data)

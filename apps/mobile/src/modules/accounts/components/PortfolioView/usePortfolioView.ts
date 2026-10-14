@@ -36,6 +36,8 @@ export type UsePortfolioViewResult = {
     portfolioNativeValue: Nullable<Decimal>
     /** `null` while any account is unpriced or the rate is unresolved — renders as a placeholder, not 0. */
     portfolioPreferredValue: Nullable<Decimal>
+    /** False on a test-tier scope, whose value never counts toward the fiat total. */
+    hasFiatTotal: boolean
     isPending: boolean
 }
 
@@ -49,6 +51,7 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         portfolioNativeValue,
         portfolioUsdValue,
         portfolioFiatValue,
+        hasFiatTotal,
         isPending,
     } = useAccountValueTotalsQuery(accounts, scope)
     const portfolioPreferredValue = useMemo(
@@ -65,6 +68,7 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         basis,
         portfolioNativeValue,
         portfolioPreferredValue,
+        hasFiatTotal,
         isPending,
     }
 }
