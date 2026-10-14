@@ -387,9 +387,6 @@ importers:
       '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
         version: link:../../packages/chain-algorand
-      '@perawallet/wallet-core-chain-contract':
-        specifier: workspace:*
-        version: link:../../packages/chain-contract
       '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
         version: link:../../packages/chain-shared
@@ -1815,9 +1812,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
-      '@perawallet/wallet-core-chain-contract':
+      '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
-        version: link:../chain-contract
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2132,6 +2129,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2251,6 +2251,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2793,6 +2796,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -3611,6 +3617,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -4020,6 +4029,9 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-remote-config':
         specifier: workspace:*
         version: link:../remote-config

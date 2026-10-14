@@ -11,14 +11,17 @@
  */
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { isConnectivityError, logger } from '@perawallet/wallet-core-shared'
 import { requestChallenge, attestDevice } from '../api/integrity'
 import { useAppIntegrityStore } from '../store'
-import type { AppIntegrityStatus, AttestPayload } from '../models'
+import type {
+    AppIntegrityStatus,
+    AttestPayload,
+    IntegrityScope,
+} from '../models'
 
 export type RegisterAppIntegrityParams = {
-    scope: ChainScope
+    scope: IntegrityScope
     signal?: AbortSignal
 }
 

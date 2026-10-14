@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
     IDEMPOTENT_POST_RETRY,
@@ -33,12 +32,13 @@ import type {
     IntegrityRegistration,
     IntegrityVerification,
     IntegrityEnrolment,
+    IntegrityScope,
 } from '../../models'
 
 export type RequestChallengeParams = {
     deviceInstallationId: string
     platform: IntegrityPlatform
-    scope: ChainScope
+    scope: IntegrityScope
     signal?: AbortSignal
 }
 
@@ -66,7 +66,7 @@ export const requestChallenge = async ({
 
 export type AttestDeviceParams = {
     payload: AttestPayload
-    scope: ChainScope
+    scope: IntegrityScope
     signal?: AbortSignal
 }
 
@@ -120,7 +120,7 @@ export const attestDevice = async ({
 
 export type VerifyIntegrityTokenParams = {
     integrityToken: string
-    scope: ChainScope
+    scope: IntegrityScope
     signal?: AbortSignal
 }
 
@@ -144,7 +144,7 @@ export type EnrolDeviceParams = {
     deviceInstallationId: string
     publicKey: string
     turnstileToken: string
-    scope: ChainScope
+    scope: IntegrityScope
     signal?: AbortSignal
 }
 

@@ -11,11 +11,11 @@
  */
 
 import { useCallback, useState } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     registerAppIntegrity,
     type RegisterAppIntegrityResult,
 } from '../services/registerAppIntegrity'
+import type { IntegrityScope } from '../models'
 
 export type UseAppIntegrityRegistrationResult = {
     register: () => Promise<RegisterAppIntegrityResult>
@@ -27,7 +27,7 @@ export type UseAppIntegrityRegistrationResult = {
  * a run is in flight. The persisted result is exposed via useAppIntegrityStore.
  */
 export const useAppIntegrityRegistration = (
-    scope: ChainScope,
+    scope: IntegrityScope,
 ): UseAppIntegrityRegistrationResult => {
     const [isRegistering, setIsRegistering] = useState(false)
 

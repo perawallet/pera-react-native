@@ -11,9 +11,9 @@
  */
 
 import { useEffect, useRef } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { registerAppIntegrity } from '../services/registerAppIntegrity'
 import { useAppIntegrityStore } from '../store'
+import type { IntegrityScope } from '../models'
 
 // Re-register when within this margin of expiry.
 const EXPIRY_MARGIN_MS = 12 * 60 * 60 * 1000
@@ -31,7 +31,7 @@ const hasValidToken = (): boolean => {
  * Attestation proceeds on distributed (staging + production) builds;
  * `registerAppIntegrity` no-ops with status `skipped` on development builds.
  */
-export const useAppIntegrityBootstrap = (scope: ChainScope): void => {
+export const useAppIntegrityBootstrap = (scope: IntegrityScope): void => {
     const hasRun = useRef(false)
 
     useEffect(() => {

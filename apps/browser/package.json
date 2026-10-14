@@ -18,7 +18,6 @@
     "@perawallet/wallet-core-background": "workspace:*",
     "@perawallet/wallet-core-browser-runtime": "workspace:*",
     "@perawallet/wallet-core-chain-algorand": "workspace:*",
-    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-chain-shared": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-connections": "workspace:*",

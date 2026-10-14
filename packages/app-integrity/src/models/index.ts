@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type {
+    BaseStoreState,
+    RequestConfiguration,
+} from '@perawallet/wallet-core-shared'
+
+// Borrowed from the request model: this package does not depend on chain-contract.
+export type IntegrityScope = NonNullable<RequestConfiguration['scope']>
 
 export type IntegrityPlatform = 'ios' | 'android' | 'web'
 
