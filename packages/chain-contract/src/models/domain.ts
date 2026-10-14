@@ -136,10 +136,20 @@ export type TransactionIconKind =
     | 'consensus'
     | 'unknown'
 
+/**
+ * The source's own facts for an asset it reports, so an amount still renders
+ * when the asset store doesn't hold that asset. The store's facts win when it does.
+ */
+export interface AssetDisplayHint {
+    symbol: string
+    decimals: number
+}
+
 export interface BalanceChange {
     assetRef: AssetRef
     /** Signed base units: negative left the account, positive arrived. */
     value: Decimal
+    display?: AssetDisplayHint
 }
 
 export interface TransactionSummary {
@@ -157,7 +167,7 @@ export interface TransactionSummary {
     /** Shown instead of the counterparty's name when set. */
     subtitle?: LocalizedText
     /** Unsigned: the sign comes from `direction`. `balanceChanges` carry their own sign. */
-    amount?: { assetRef: AssetRef; value: Decimal }
+    amount?: { assetRef: AssetRef; value: Decimal; display?: AssetDisplayHint }
     /** Shown instead of `amount` when set. */
     balanceChanges?: BalanceChange[]
     icon: TransactionIconKind

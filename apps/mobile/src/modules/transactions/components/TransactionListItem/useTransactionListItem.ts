@@ -11,34 +11,33 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    LEGACY_CHAIN_ID,
+    type LocalizedText,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    getDebitedAddress,
-    isOutgoingFor,
+    summarizeHistoryItem,
     useOpenSubmissionTxIdsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import {
-    formatNumber,
-    type Nullable,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { IconName } from '@components/core'
+import { transactionIconName } from '@components/TransactionIcon'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
-import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { getTransactionIconType } from './utils'
-import { safeDecimals, type AmountDisplay } from './amounts'
-import { useTransactionAmounts } from './useTransactionAmounts'
-
-import type { AlgorandTransactionIconType } from '@modules/algorand/icons'
-
-type TFunction = ReturnType<typeof useLanguage>['t']
+import { useCounterpartyName } from '../../hooks/history/useCounterpartyName'
+import {
+    MAX_VISIBLE_AMOUNTS,
+    summaryAmountsOf,
+    toAmountDisplay,
+    type AmountDisplay,
+} from './amounts'
 
 export type UseTransactionListItemParams = {
     transaction: TransactionHistoryItem
@@ -46,7 +45,7 @@ export type UseTransactionListItemParams = {
 }
 
 export type UseTransactionListItemResult = {
-    iconType: AlgorandTransactionIconType
+    iconName: IconName
     title: string
     subtitle: Nullable<string>
     amounts: AmountDisplay[]
@@ -62,89 +61,6 @@ export type UseTransactionListItemResult = {
     handleLongPress: () => void
 }
 
-/** Trailing zeros below this are trimmed, so whole amounts stay short. */
-const MIN_FRACTION_DIGITS = 2
-
-/**
- * A swap leg can be worth a fraction of a cent, which a flat 2-digit format
- * renders as a bare `0.00` — and now disagrees with the amount column beside
- * it. Show up to the asset's own precision instead, trimmed back to 2.
- */
-const formatAmount = (baseUnits: Decimal, decimals: number): string => {
-    const precision = safeDecimals(decimals)
-    const displayAmount = baseUnitsToDisplayUnits(baseUnits, precision)
-    const { sign, integer, fraction } = formatNumber(
-        displayAmount,
-        precision,
-        undefined,
-        MIN_FRACTION_DIGITS,
-    )
-    return `${sign}${integer}${fraction}`
-}
-
-/**
- * Gets the display title for a transaction.
- */
-const getTitle = (
-    tx: TransactionHistoryItem,
-    userAddress: string,
-    t: TFunction,
-): string => {
-    if (tx.interpretedMeaning?.title) {
-        return tx.interpretedMeaning.title
-    }
-
-    if (tx.swapGroupDetail) return t('transactions.list_item.swap')
-
-    const isOutgoing = isOutgoingFor(tx, userAddress)
-    const sendOrReceive = isOutgoing
-        ? t('transactions.list_item.send')
-        : t('transactions.list_item.receive')
-
-    switch (tx.txType) {
-        case 'pay': {
-            return sendOrReceive
-        }
-        case 'axfer': {
-            if (tx.closeTo) {
-                return t('transactions.list_item.opt_out')
-            }
-            if (
-                tx.sender === tx.receiver &&
-                tx.amount !== null &&
-                tx.amount.isZero()
-            ) {
-                return t('transactions.list_item.opt_in')
-            }
-            return sendOrReceive
-        }
-        case 'acfg': {
-            return t('transactions.list_item.asset_config')
-        }
-        case 'afrz': {
-            return t('transactions.list_item.asset_freeze')
-        }
-        case 'appl': {
-            return t('transactions.list_item.app_call')
-        }
-        case 'keyreg': {
-            return t('transactions.list_item.key_registration')
-        }
-        case 'hb': {
-            return t('transactions.list_item.heartbeat')
-        }
-        case 'stpf': {
-            return t('transactions.list_item.state_proof')
-        }
-        default: {
-            return t('transactions.list_item.default')
-        }
-    }
-}
-
-/**
- * Hook that computes display values for a transaction list item.
- */
 export const useTransactionListItem = ({
     transaction,
     onPress,
@@ -154,76 +70,51 @@ export const useTransactionListItem = ({
     const { t } = useLanguage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { openTxIds } = useOpenSubmissionTxIdsQuery({ scope })
-    const userAddress = account
+    const address = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
-    const isPendingVerifying = openTxIds.has(transaction.id)
 
-    const isOutgoing = useMemo(
-        () => isOutgoingFor(transaction, userAddress),
-        [transaction, userAddress],
+    const summary = useMemo(
+        () => summarizeHistoryItem(transaction, address, scope.chainId),
+        [transaction, address, scope.chainId],
     )
 
-    const counterpartyAddress = useMemo(() => {
-        if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
-            return isOutgoing
-                ? transaction.receiver
-                : getDebitedAddress(transaction)
-        }
-        return undefined
-    }, [transaction, isOutgoing])
-
-    const { displayName: counterpartyDisplayName } = useResolvedAddress(
-        counterpartyAddress ?? '',
-        { enabled: !!counterpartyAddress },
+    const counterpartyName = useCounterpartyName(
+        summary.subtitle ? '' : (summary.counterparty ?? ''),
+        scope.chainId,
     )
 
-    const iconType = useMemo(
-        (): AlgorandTransactionIconType =>
-            getTransactionIconType(transaction, isOutgoing),
-        [transaction, isOutgoing],
+    const render = useCallback(
+        ({ key, params }: LocalizedText) => t(key, params),
+        [t],
     )
 
-    const title = useMemo(
-        () => getTitle(transaction, userAddress, t),
-        [transaction, userAddress, t],
-    )
+    const title = useMemo(() => render(summary.title), [render, summary])
 
     const subtitle = useMemo(() => {
-        // For swaps, show the exchange details
-        if (transaction.swapGroupDetail) {
-            const {
-                amountIn,
-                assetInDecimals,
-                assetInUnitName,
-                amountOut,
-                assetOutDecimals,
-                assetOutUnitName,
-            } = transaction.swapGroupDetail
+        if (summary.subtitle) return render(summary.subtitle)
+        return summary.counterparty ? counterpartyName : null
+    }, [render, summary, counterpartyName])
 
-            const inAmount = formatAmount(amountIn, assetInDecimals)
-            const outAmount = formatAmount(amountOut, assetOutDecimals)
-
-            return `${inAmount} ${assetInUnitName} for ${outAmount} ${assetOutUnitName}`
-        }
-
-        // For app calls with inner transactions
-        if (
-            transaction.txType === 'appl' &&
-            transaction.innerTransactionCount
-        ) {
-            return `${transaction.innerTransactionCount} inner txns`
-        }
-
-        // For payments and transfers, show the counterparty
-        if (counterpartyAddress) {
-            return counterpartyDisplayName
-        }
-
-        return null
-    }, [transaction, counterpartyAddress, counterpartyDisplayName])
-
-    const { amounts, amountsOverflowCount } = useTransactionAmounts(transaction)
+    const allAmounts = useMemo(() => summaryAmountsOf(summary), [summary])
+    const visibleAmounts = useMemo(
+        () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),
+        [allAmounts],
+    )
+    const { data: storedAssets } = useAssetsQuery(
+        visibleAmounts.map(amount => amount.assetRef.assetId),
+        { scope },
+    )
+    const amounts = useMemo(
+        () =>
+            visibleAmounts.map(amount =>
+                toAmountDisplay(
+                    amount,
+                    storedAssets.get(amount.assetRef.assetId),
+                ),
+            ),
+        [visibleAmounts, storedAssets],
+    )
 
     const handlePress = useCallback(() => {
         onPress?.(transaction)
@@ -235,12 +126,15 @@ export const useTransactionListItem = ({
     )
 
     return {
-        iconType,
+        iconName: transactionIconName(summary.icon),
         title,
         subtitle,
         amounts,
-        amountsOverflowCount,
-        isPendingVerifying,
+        amountsOverflowCount: Math.max(
+            0,
+            allAmounts.length - MAX_VISIBLE_AMOUNTS,
+        ),
+        isPendingVerifying: openTxIds.has(transaction.id),
         handlePress,
         handleLongPress,
     }

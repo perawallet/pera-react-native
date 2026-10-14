@@ -36,6 +36,10 @@ const ALGO: AssetRef = { chainId: 'algorand', assetId: '0' }
 const USDC: AssetRef = { chainId: 'algorand', assetId: '31566704' }
 const OTHER: AssetRef = { chainId: 'algorand', assetId: '777' }
 
+const ALGO_DISPLAY = { symbol: 'ALGO', decimals: 6 }
+const USDC_DISPLAY = { symbol: 'USDC', decimals: 6 }
+const OTHER_DISPLAY = { symbol: 'XYZ', decimals: 0 }
+
 const USDC_SUMMARY = {
     assetId: '31566704',
     name: 'USD Coin',
@@ -92,7 +96,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'out',
                 icon: 'send',
                 counterparty: B,
-                amount: { assetRef: ALGO, value: new Decimal(500_000) },
+                amount: {
+                    assetRef: ALGO,
+                    value: new Decimal(500_000),
+                    display: ALGO_DISPLAY,
+                },
             },
         },
         {
@@ -109,7 +117,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'in',
                 icon: 'receive',
                 counterparty: B,
-                amount: { assetRef: ALGO, value: new Decimal(500_000) },
+                amount: {
+                    assetRef: ALGO,
+                    value: new Decimal(500_000),
+                    display: ALGO_DISPLAY,
+                },
             },
         },
         {
@@ -122,7 +134,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'out',
                 icon: 'send',
                 counterparty: A,
-                amount: { assetRef: ALGO, value: new Decimal(500_000) },
+                amount: {
+                    assetRef: ALGO,
+                    value: new Decimal(500_000),
+                    display: ALGO_DISPLAY,
+                },
             },
         },
         {
@@ -141,7 +157,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'in',
                 icon: 'receive',
                 counterparty: B,
-                amount: { assetRef: ALGO, value: new Decimal(900_000) },
+                amount: {
+                    assetRef: ALGO,
+                    value: new Decimal(900_000),
+                    display: ALGO_DISPLAY,
+                },
             },
         },
         {
@@ -158,7 +178,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'out',
                 icon: 'send',
                 counterparty: B,
-                amount: { assetRef: USDC, value: new Decimal(1_000_000) },
+                amount: {
+                    assetRef: USDC,
+                    value: new Decimal(1_000_000),
+                    display: USDC_DISPLAY,
+                },
             },
         },
         {
@@ -177,7 +201,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'in',
                 icon: 'receive',
                 counterparty: B,
-                amount: { assetRef: USDC, value: new Decimal(1_000_000) },
+                amount: {
+                    assetRef: USDC,
+                    value: new Decimal(1_000_000),
+                    display: USDC_DISPLAY,
+                },
             },
         },
         {
@@ -192,7 +220,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
             summary: {
                 ...none('opt_in', 'opt-in'),
                 counterparty: A,
-                amount: { assetRef: USDC, value: new Decimal(0) },
+                amount: {
+                    assetRef: USDC,
+                    value: new Decimal(0),
+                    display: USDC_DISPLAY,
+                },
             },
         },
         {
@@ -210,7 +242,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 ...none('opt_out', 'opt-out'),
                 direction: 'out',
                 counterparty: B,
-                amount: { assetRef: USDC, value: new Decimal(250) },
+                amount: {
+                    assetRef: USDC,
+                    value: new Decimal(250),
+                    display: USDC_DISPLAY,
+                },
             },
         },
         {
@@ -230,7 +266,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'out',
                 icon: 'send',
                 counterparty: B,
-                amount: { assetRef: USDC, value: new Decimal(400) },
+                amount: {
+                    assetRef: USDC,
+                    value: new Decimal(400),
+                    display: USDC_DISPLAY,
+                },
             },
         },
         {
@@ -302,9 +342,21 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                     params: { innerCount: '3' },
                 },
                 balanceChanges: [
-                    { assetRef: ALGO, value: new Decimal(-1000) },
-                    { assetRef: USDC, value: new Decimal(250) },
-                    { assetRef: OTHER, value: new Decimal(-5) },
+                    {
+                        assetRef: ALGO,
+                        value: new Decimal(-1000),
+                        display: ALGO_DISPLAY,
+                    },
+                    {
+                        assetRef: USDC,
+                        value: new Decimal(250),
+                        display: USDC_DISPLAY,
+                    },
+                    {
+                        assetRef: OTHER,
+                        value: new Decimal(-5),
+                        display: OTHER_DISPLAY,
+                    },
                 ],
             },
         },
@@ -345,7 +397,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                         assetOut: 'USDC',
                     },
                 },
-                amount: { assetRef: USDC, value: new Decimal(1_500_000) },
+                amount: {
+                    assetRef: USDC,
+                    value: new Decimal(1_500_000),
+                    display: USDC_DISPLAY,
+                },
             },
         },
         {
@@ -369,7 +425,11 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'in',
                 icon: 'receive',
                 counterparty: B,
-                amount: { assetRef: ALGO, value: new Decimal(500_000) },
+                amount: {
+                    assetRef: ALGO,
+                    value: new Decimal(500_000),
+                    display: ALGO_DISPLAY,
+                },
             },
         },
     ]

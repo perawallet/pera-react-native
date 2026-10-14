@@ -23,6 +23,7 @@ import {
     fetchTransactionHistory,
     historyChainAdapters,
     mapHistoryItemToDisplayableTransaction,
+    summarizeHistoryItem,
     TransactionHistoryRowsUnsupportedError,
     type HistoryChainAdapter,
 } from '../history-adapter'
@@ -94,6 +95,18 @@ describe('history adapter wrappers', () => {
         expect(adapter.toDisplayable).toHaveBeenCalledWith(item)
     })
 
+    it("summarises a stored row with the chain adapter, from the address's side", () => {
+        const summary = { kind: 'transfer' }
+        const adapter = makeAdapter({
+            summarize: vi.fn().mockReturnValue(summary),
+        })
+        historyChainAdapters.register(adapter)
+        const item = { id: 'TX' } as TransactionHistoryItem
+
+        expect(summarizeHistoryItem(item, 'ADDR', 'algorand')).toBe(summary)
+        expect(adapter.summarize).toHaveBeenCalledWith(item, 'ADDR')
+    })
+
     it('asks the adapter for a close amount', async () => {
         const lookup = vi.fn().mockResolvedValue('500')
         historyChainAdapters.register(makeAdapter({ fetchCloseAmount: lookup }))
@@ -152,6 +165,16 @@ describe('a chain whose history is not cached as rows', () => {
         await expect(
             fetchMoreTransactions({ url: 'NEXT', scope }),
         ).rejects.toBeInstanceOf(TransactionHistoryRowsUnsupportedError)
+    })
+
+    it('refuses to summarise a stored row', () => {
+        expect(() =>
+            summarizeHistoryItem(
+                { id: 'TX' } as TransactionHistoryItem,
+                'A',
+                'ethereum',
+            ),
+        ).toThrow(TransactionHistoryRowsUnsupportedError)
     })
 
     it('has nothing to display for a stored row', () => {

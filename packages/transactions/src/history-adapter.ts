@@ -196,6 +196,22 @@ export const fetchCloseAmount = async (
         .get(scope.chainId)
         .fetchCloseAmount?.(txId, scope)) ?? null
 
+/**
+ * Throws {@link TransactionHistoryRowsUnsupportedError} on a chain with no
+ * `summarize`: such a chain never stores the rows this reads.
+ */
+export const summarizeHistoryItem = (
+    item: TransactionHistoryItem,
+    address: string,
+    chainId: ChainId,
+): TransactionSummary => {
+    const adapter = historyChainAdapters.get(chainId)
+    if (!adapter.summarize) {
+        throw new TransactionHistoryRowsUnsupportedError(adapter.chainId)
+    }
+    return adapter.summarize(item, address)
+}
+
 /** Null when the chain has no `toDisplayable`. */
 export const mapHistoryItemToDisplayableTransaction = (
     item: TransactionHistoryItem,

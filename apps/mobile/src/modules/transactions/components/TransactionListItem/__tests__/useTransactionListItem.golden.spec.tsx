@@ -10,23 +10,16 @@
  limitations under the License
  */
 
-// Proves the adapter's summaries equal what the row renders today, so the
-// row can switch to them without a visible change.
+// Every Algorand kind rendered through the real history adapter must equal its
+// HISTORY-01 golden, and keep the glyph the row drew before it read summaries.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    QueryClient,
-    QueryClientProvider,
-    type UseQueryResult,
-} from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type {
     LocalizedText,
     TransactionIconKind,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useSingleAssetDetailsQuery,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
     useSelectedAccount,
     type WalletAccount,
@@ -35,11 +28,16 @@ import {
     baseUnitsToDisplayUnits,
     formatNumber,
 } from '@perawallet/wallet-core-shared'
+import { historyChainAdapters } from '@perawallet/wallet-core-transactions'
+import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
 import {
     ALGORAND_HISTORY_SUMMARY_GOLDENS,
     type HistorySummaryGolden,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import type { AlgorandTransactionIconType } from '@modules/algorand/icons'
+import {
+    algorandTransactionIconName,
+    type AlgorandTransactionIconType,
+} from '@modules/algorand/icons'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTransactionListItem } from '../useTransactionListItem'
 
@@ -49,24 +47,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account.chains[chainId],
 }))
 
-vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
-    return {
-        ...actual,
-        useSingleAssetDetailsQuery: vi.fn(),
-        useNativeAsset: () => ({ assetId: '0', decimals: 6 }),
-    }
-})
-
-vi.mock(
-    '@perawallet/wallet-core-chain-algorand/blockchain',
-    async importOriginal => ({
-        ...(await importOriginal<
-            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
-        >()),
-    }),
-)
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    useAssetsQuery: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
@@ -79,12 +65,8 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: vi.fn() }),
 }))
 
-vi.mock('@hooks/useResolvedAddress', () => ({
-    useResolvedAddress: (address: string) => ({
-        displayName: `name:${address}`,
-        isNfd: false,
-        isResolving: false,
-    }),
+vi.mock('../../../hooks/history/useCounterpartyName', () => ({
+    useCounterpartyName: (address: string) => `name:${address}`,
 }))
 
 // Resolves against the real en.json, so a missing key or an unfilled
@@ -119,8 +101,8 @@ vi.mock('@hooks/useLanguage', async () => {
     }
 })
 
-// Icon types that share a glyph with a summary icon.
-const ROW_ICON_TYPES: Record<
+// The Algorand glyphs the row drew for each summary icon before it read summaries.
+const PREVIOUS_ROW_ICONS: Record<
     TransactionIconKind,
     readonly AlgorandTransactionIconType[]
 > = {
@@ -144,17 +126,18 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
     </QueryClientProvider>
 )
 
-const decimalsOf = (
-    { item }: HistorySummaryGolden,
-    assetId: string,
-): number => {
-    if (item.swapGroupDetail) return item.swapGroupDetail.assetOutDecimals
-    if (assetId === '0') return 6
-    if (item.asset?.assetId === assetId) return item.asset.decimals
-    return (
-        item.balanceImpacts.find(impact => impact.assetId === assetId)
-            ?.fractionDecimals ?? 0
-    )
+// Read from the stored row, independently of the summary's display hint.
+const factsOf = ({ item }: HistorySummaryGolden, assetId: string) => {
+    if (item.swapGroupDetail) {
+        return {
+            decimals: item.swapGroupDetail.assetOutDecimals,
+            unitName: item.swapGroupDetail.assetOutUnitName,
+        }
+    }
+    if (assetId === '0') return { decimals: 6, unitName: 'ALGO' }
+    if (item.asset?.assetId === assetId) return item.asset
+    const impact = item.balanceImpacts.find(i => i.assetId === assetId)!
+    return { decimals: impact.fractionDecimals, unitName: impact.unitName }
 }
 
 const expectedAmounts = (golden: HistorySummaryGolden) => {
@@ -180,15 +163,17 @@ const expectedAmounts = (golden: HistorySummaryGolden) => {
 
 describe('useTransactionListItem against the history summary goldens', () => {
     beforeEach(async () => {
+        historyChainAdapters.reset()
+        historyChainAdapters.register(algorandHistoryAdapter)
         // The global setup mocks formatNumber down to String(value), which
         // erases the digits the swap subtitle is compared on.
         const actual = await vi.importActual<
             typeof import('@perawallet/wallet-core-shared')
         >('@perawallet/wallet-core-shared')
         vi.mocked(formatNumber).mockImplementation(actual.formatNumber)
-        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
-            data: undefined,
-        } as UseQueryResult<PeraAsset, Error>)
+        vi.mocked(useAssetsQuery).mockReturnValue({
+            data: new Map(),
+        } as ReturnType<typeof useAssetsQuery>)
     })
 
     it.each(ALGORAND_HISTORY_SUMMARY_GOLDENS)(
@@ -207,7 +192,12 @@ describe('useTransactionListItem against the history summary goldens', () => {
             const { t } = useLanguage()
             const render = ({ key, params }: LocalizedText) => t(key, params)
 
-            expect(ROW_ICON_TYPES[summary.icon]).toContain(row.iconType)
+            expect(
+                PREVIOUS_ROW_ICONS[summary.icon].map(
+                    algorandTransactionIconName,
+                ),
+            ).toContain(row.iconName)
+            expect(row.title).toBe(render(summary.title))
             expect(row.subtitle).toBe(
                 summary.subtitle
                     ? render(summary.subtitle)
@@ -215,19 +205,19 @@ describe('useTransactionListItem against the history summary goldens', () => {
                       ? `name:${summary.counterparty}`
                       : null,
             )
-            expect(row.title).toBe(render(summary.title))
 
             const expected = expectedAmounts(golden)
             expect(row.amounts).toHaveLength(Math.min(expected.length, 2))
             expected.slice(0, 2).forEach((amount, index) => {
-                expect(row.amounts[index].assetId).toBe(amount.assetId)
-                expect(row.amounts[index].prefix).toBe(amount.prefix)
+                const { decimals, unitName } = factsOf(golden, amount.assetId)
+                expect(row.amounts[index]).toMatchObject({
+                    assetId: amount.assetId,
+                    currency: unitName,
+                    prefix: amount.prefix,
+                })
                 expect(
                     row.amounts[index].value.equals(
-                        baseUnitsToDisplayUnits(
-                            amount.base,
-                            decimalsOf(golden, amount.assetId),
-                        ),
+                        baseUnitsToDisplayUnits(amount.base, decimals),
                     ),
                 ).toBe(true)
             })
