@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '../utils/types'
 
 export enum ErrorSeverity {
@@ -35,14 +36,9 @@ export enum ErrorCategory {
 }
 
 export type ErrorMessageKeys = {
-    titleKey: string
-    bodyKey: string
+    titleKey: I18nKey
+    bodyKey: I18nKey
 }
-
-export const messageKeysFor = (base: string): ErrorMessageKeys => ({
-    titleKey: `${base}.title`,
-    bodyKey: `${base}.body`,
-})
 
 export interface ErrorMetadata {
     severity: ErrorSeverity
@@ -53,12 +49,12 @@ export interface ErrorMetadata {
      * `errors.general.*` and its `message` stays log-only. Resolved in the app
      * layer — packages must never import i18n.
      */
-    messageKey?: string
+    messageKey?: I18nKey
     /**
      * Overrides the category title. Only for errors specific enough to name the
      * situation ("Asset frozen"); leaving it unset is the norm.
      */
-    titleKey?: string
+    titleKey?: I18nKey
     /** Interpolation values for `messageKey`; also attached to logs. */
     params?: Record<string, unknown>
     recoverable: boolean

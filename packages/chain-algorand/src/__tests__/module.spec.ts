@@ -26,7 +26,6 @@ import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
-    TRANSACTION_STATUS_NOTICE_KEYS,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
@@ -42,10 +41,6 @@ import {
     algorandSendFlowAdapter,
     algorandTransferAdapter,
 } from '../transactions'
-import { ALGORAND_MESSAGE_TITLE_KEYS } from '../signing/message/messageSigner'
-import { ALGORAND_HISTORY_SUMMARY_KEYS } from '../transactions/summarize'
-import { ALGORAND_SPEND_NOTICE_KEYS } from '../transactions/spendable-balance'
-import { ALGORAND_TRANSFER_TITLE_KEYS } from '../transactions/transfer-builder'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 import { algorandAssetsAdapter } from '../assets'
@@ -164,21 +159,6 @@ describe('chainModule', () => {
         expect(() => cardChainAdapters.get('algorand')).toThrow(notRegistered)
         expect(() => transferChainAdapters.get('algorand')).toThrow(
             notRegistered,
-        )
-    })
-
-    it('declares every i18n key its summaries carry, once each', () => {
-        const keys = chainModule.i18nKeys()
-
-        expect(new Set(keys).size).toBe(keys.length)
-        expect(keys).toEqual(
-            expect.arrayContaining([
-                ...ALGORAND_TRANSFER_TITLE_KEYS,
-                ...ALGORAND_SPEND_NOTICE_KEYS,
-                ...ALGORAND_MESSAGE_TITLE_KEYS,
-                ...ALGORAND_HISTORY_SUMMARY_KEYS,
-                ...TRANSACTION_STATUS_NOTICE_KEYS,
-            ]),
         )
     })
 })

@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import type { CloudFileStore } from './models'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 // A user setting rather than a fault, so it files no crash report.
 export class ICloudUnavailableError extends AppError {
@@ -25,8 +26,8 @@ export class ICloudUnavailableError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            titleKey: 'cloud_backup.icloud.unavailable_title',
-            messageKey: 'cloud_backup.icloud.unavailable',
+            titleKey: i18nKey('cloud_backup.icloud.unavailable_title'),
+            messageKey: i18nKey('cloud_backup.icloud.unavailable'),
         })
     }
 }
@@ -41,7 +42,7 @@ export class ICloudNotConfiguredError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.icloud.not_configured',
+            messageKey: i18nKey('cloud_backup.icloud.not_configured'),
         })
     }
 }
@@ -54,7 +55,7 @@ export class GoogleDriveNotConfiguredError extends AppError {
         super(message, {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
-            messageKey: 'cloud_backup.google_drive.unavailable',
+            messageKey: i18nKey('cloud_backup.google_drive.unavailable'),
         })
     }
 }
@@ -67,7 +68,7 @@ export class GooglePlayServicesUnavailableError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.google_drive.play_services',
+            messageKey: i18nKey('cloud_backup.google_drive.play_services'),
         })
     }
 }
@@ -79,7 +80,7 @@ export class GoogleDriveAuthFailedError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.google_drive.sign_in_failed',
+            messageKey: i18nKey('cloud_backup.google_drive.sign_in_failed'),
         })
     }
 }
@@ -90,7 +91,7 @@ export class GoogleDriveUnreachableError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.google_drive.unreachable',
+            messageKey: i18nKey('cloud_backup.google_drive.unreachable'),
         })
     }
 }
@@ -103,7 +104,9 @@ export class CloudFileNotDownloadedError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.restore.import_still_downloading',
+            messageKey: i18nKey(
+                'cloud_backup.restore.import_still_downloading',
+            ),
         })
     }
 }
@@ -116,8 +119,10 @@ export class CloudFileNotFoundError extends AppError {
             expected: true,
             messageKey:
                 store === 'icloud'
-                    ? 'cloud_backup.restore.import_not_found_icloud'
-                    : 'cloud_backup.restore.import_not_found_google_drive',
+                    ? i18nKey('cloud_backup.restore.import_not_found_icloud')
+                    : i18nKey(
+                          'cloud_backup.restore.import_not_found_google_drive',
+                      ),
         })
     }
 }

@@ -36,7 +36,6 @@ import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { decodeArbitraryDataForDisplay } from '../../arbitraryDataDisplay'
 import { Arc60BadJsonError, Arc60InvalidSignerError } from '../arc60-errors'
 import {
-    ALGORAND_MESSAGE_TITLE_KEYS,
     assembleAlgorandMessage,
     describeAlgorandMessage,
     planAlgorandMessage,
@@ -156,18 +155,6 @@ describe('algorand message signer', () => {
             expect(() =>
                 describeAlgorandMessage({ ...mxRequest('x'), method: 'other' }),
             ).toThrow()
-        })
-
-        it('only emits keys the chain module declares', () => {
-            const emitted = [
-                describeAlgorandMessage(mxRequest(b64('hello'))),
-                describeAlgorandMessage(authRequest()),
-                describeAlgorandMessage({ ...authRequest(), payload: null }),
-            ].map(summary => summary.title.key)
-
-            for (const key of emitted) {
-                expect(ALGORAND_MESSAGE_TITLE_KEYS).toContain(key)
-            }
         })
     })
 

@@ -1431,6 +1431,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../../packages/chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -3120,6 +3123,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

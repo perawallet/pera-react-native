@@ -19,6 +19,7 @@ import {
     isDelegatedAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    i18nKey,
     isNativeAsset,
     nativeAssetDecimals,
     type ChainScope,
@@ -39,30 +40,16 @@ import { getMinimumFeeConfig } from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
 
-const MIN_BALANCE_TITLE_KEY = 'send_funds.input.min_balance_title'
-const MIN_BALANCE_AMOUNT_KEY = 'send_funds.input.min_balance_amount'
-const MIN_BALANCE_BODY_KEY = 'send_funds.input.min_balance_body'
-const REKEYED_TITLE_KEY = 'send_funds.input.rekeyed_min_balance_title'
-const REKEYED_AMOUNT_KEY = 'send_funds.input.rekeyed_min_balance_amount'
-const REKEYED_BODY_KEY = 'send_funds.input.rekeyed_min_balance_body'
-const CLOSE_ACCOUNT_TITLE_KEY = 'send_funds.close_account.title'
-const CLOSE_ACCOUNT_BODY_KEY = 'send_funds.close_account.body'
-const RECIPIENT_TITLE_KEY = 'send_funds.confirmation.recipient_below_mbr.title'
-const RECIPIENT_BODY_KEY = 'send_funds.confirmation.recipient_below_mbr.body'
-
-/** Every i18n key a spendable balance or recipient warning can carry. */
-export const ALGORAND_SPEND_NOTICE_KEYS = [
-    MIN_BALANCE_TITLE_KEY,
-    MIN_BALANCE_AMOUNT_KEY,
-    MIN_BALANCE_BODY_KEY,
-    REKEYED_TITLE_KEY,
-    REKEYED_AMOUNT_KEY,
-    REKEYED_BODY_KEY,
-    CLOSE_ACCOUNT_TITLE_KEY,
-    CLOSE_ACCOUNT_BODY_KEY,
-    RECIPIENT_TITLE_KEY,
-    RECIPIENT_BODY_KEY,
-] as const
+const MIN_BALANCE_TITLE_KEY = i18nKey('send_funds.input.min_balance_title')
+const MIN_BALANCE_AMOUNT_KEY = i18nKey('send_funds.input.min_balance_amount')
+const MIN_BALANCE_BODY_KEY = i18nKey('send_funds.input.min_balance_body')
+const REKEYED_TITLE_KEY = i18nKey('send_funds.input.rekeyed_min_balance_title')
+const REKEYED_AMOUNT_KEY = i18nKey('send_funds.input.rekeyed_min_balance_amount')
+const REKEYED_BODY_KEY = i18nKey('send_funds.input.rekeyed_min_balance_body')
+const CLOSE_ACCOUNT_TITLE_KEY = i18nKey('send_funds.close_account.title')
+const CLOSE_ACCOUNT_BODY_KEY = i18nKey('send_funds.close_account.body')
+const RECIPIENT_TITLE_KEY = i18nKey('send_funds.confirmation.recipient_below_mbr.title')
+const RECIPIENT_BODY_KEY = i18nKey('send_funds.confirmation.recipient_below_mbr.body')
 
 const ZERO = new Decimal(0)
 

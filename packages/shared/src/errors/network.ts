@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { isHTTPError, isNetworkError, isTimeoutError } from 'ky'
 import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
-    messageKeysFor as keysFor,
     type ErrorMessageKeys,
 } from './base'
 import { isRawPlatformNetworkError } from './expected'
@@ -204,6 +204,35 @@ export const isConnectivityError = (error: unknown): boolean => {
 
 export type NetworkErrorMessageKeys = ErrorMessageKeys
 
+const GENERAL_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.general.title'),
+    bodyKey: i18nKey('errors.general.body'),
+}
+const NO_CONNECTION_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.network.no_connection.title'),
+    bodyKey: i18nKey('errors.network.no_connection.body'),
+}
+const TIMEOUT_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.network.timeout.title'),
+    bodyKey: i18nKey('errors.network.timeout.body'),
+}
+const SERVER_ERROR_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.api.server_error.title'),
+    bodyKey: i18nKey('errors.api.server_error.body'),
+}
+const NOT_FOUND_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.api.not_found.title'),
+    bodyKey: i18nKey('errors.api.not_found.body'),
+}
+const UNAUTHORIZED_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.api.unauthorized.title'),
+    bodyKey: i18nKey('errors.api.unauthorized.body'),
+}
+const API_GENERIC_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.api.generic.title'),
+    bodyKey: i18nKey('errors.api.generic.body'),
+}
+
 /**
  * Single source of truth mapping a typed network error to the i18n *keys* for
  * its title/body. Returns keys (not localized strings) so this stays i18n-free;
@@ -213,31 +242,31 @@ export const getNetworkErrorMessageKeys = (
     error: unknown,
 ): NetworkErrorMessageKeys => {
     if (error instanceof NoConnectionError) {
-        return keysFor('errors.network.no_connection')
+        return NO_CONNECTION_KEYS
     }
 
-    if (!isPeraNetworkError(error)) return keysFor('errors.general')
+    if (!isPeraNetworkError(error)) return GENERAL_KEYS
 
     switch (error.kind) {
         case 'offline': {
-            return keysFor('errors.network.no_connection')
+            return NO_CONNECTION_KEYS
         }
         case 'timeout': {
-            return keysFor('errors.network.timeout')
+            return TIMEOUT_KEYS
         }
         case 'server': {
-            return keysFor('errors.api.server_error')
+            return SERVER_ERROR_KEYS
         }
         case 'client': {
-            if (error.status === 404) return keysFor('errors.api.not_found')
+            if (error.status === 404) return NOT_FOUND_KEYS
             if (error.status === 401 || error.status === 403) {
-                return keysFor('errors.api.unauthorized')
+                return UNAUTHORIZED_KEYS
             }
-            return keysFor('errors.api.generic')
+            return API_GENERIC_KEYS
         }
         case 'unknown':
         default: {
-            return keysFor('errors.general')
+            return GENERAL_KEYS
         }
     }
 }

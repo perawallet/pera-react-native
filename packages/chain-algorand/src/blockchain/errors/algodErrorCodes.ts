@@ -10,13 +10,16 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { ErrorMessageKeys } from '@perawallet/wallet-core-shared'
+
 /**
  * Stable codes identifying a translated algod/indexer error.
  *
- * Each code maps 1:1 to an i18n key (`errors.algod.<code>.title` /
- * `errors.algod.<code>.body`). When adding a new code, add the matching
- * regex to {@link ./parseAlgodMessage.ts}, the params shape to
- * {@link AlgodErrorParamsByCode}, and the translation strings to the mobile
+ * Each code maps 1:1 to its copy in {@link ALGOD_ERROR_MESSAGE_KEYS}. When
+ * adding a new code, add the matching regex to {@link ./parseAlgodMessage.ts},
+ * the params shape to {@link AlgodErrorParamsByCode}, its keys to
+ * {@link ALGOD_ERROR_MESSAGE_KEYS}, and the translation strings to the mobile
  * `en.json`.
  */
 export const AlgodErrorCode = {
@@ -54,6 +57,68 @@ export const AlgodErrorCode = {
 
 export type AlgodErrorCode =
     (typeof AlgodErrorCode)[keyof typeof AlgodErrorCode]
+
+/**
+ * Title and body copy for each code. `network_unavailable` shares the
+ * offline copy with `PeraNetworkError`'s `offline` kind.
+ */
+export const ALGOD_ERROR_MESSAGE_KEYS: Record<
+    AlgodErrorCode,
+    ErrorMessageKeys
+> = {
+    overspend: {
+        titleKey: i18nKey('errors.algod.overspend.title'),
+        bodyKey: i18nKey('errors.algod.overspend.body'),
+    },
+    below_min_balance: {
+        titleKey: i18nKey('errors.algod.below_min_balance.title'),
+        bodyKey: i18nKey('errors.algod.below_min_balance.body'),
+    },
+    missing_opt_in: {
+        titleKey: i18nKey('errors.algod.missing_opt_in.title'),
+        bodyKey: i18nKey('errors.algod.missing_opt_in.body'),
+    },
+    asset_frozen: {
+        titleKey: i18nKey('errors.algod.asset_frozen.title'),
+        bodyKey: i18nKey('errors.algod.asset_frozen.body'),
+    },
+    duplicate_txn: {
+        titleKey: i18nKey('errors.algod.duplicate_txn.title'),
+        bodyKey: i18nKey('errors.algod.duplicate_txn.body'),
+    },
+    expired_txn: {
+        titleKey: i18nKey('errors.algod.expired_txn.title'),
+        bodyKey: i18nKey('errors.algod.expired_txn.body'),
+    },
+    not_authorized: {
+        titleKey: i18nKey('errors.algod.not_authorized.title'),
+        bodyKey: i18nKey('errors.algod.not_authorized.body'),
+    },
+    logic_error: {
+        titleKey: i18nKey('errors.algod.logic_error.title'),
+        bodyKey: i18nKey('errors.algod.logic_error.body'),
+    },
+    logic_eval_error: {
+        titleKey: i18nKey('errors.algod.logic_eval_error.title'),
+        bodyKey: i18nKey('errors.algod.logic_eval_error.body'),
+    },
+    unavailable_resource: {
+        titleKey: i18nKey('errors.algod.unavailable_resource.title'),
+        bodyKey: i18nKey('errors.algod.unavailable_resource.body'),
+    },
+    group_fee_too_small: {
+        titleKey: i18nKey('errors.algod.group_fee_too_small.title'),
+        bodyKey: i18nKey('errors.algod.group_fee_too_small.body'),
+    },
+    network_unavailable: {
+        titleKey: i18nKey('errors.network.no_connection.title'),
+        bodyKey: i18nKey('errors.network.no_connection.body'),
+    },
+    unknown_node_error: {
+        titleKey: i18nKey('errors.algod.unknown_node_error.title'),
+        bodyKey: i18nKey('errors.algod.unknown_node_error.body'),
+    },
+}
 
 /**
  * Shape of the typed `params` object carried by an AlgodError, discriminated

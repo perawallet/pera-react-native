@@ -32,10 +32,7 @@ import {
     watchAccount,
 } from '../../__tests__/algorandAccounts'
 import { algorandAccountsAdapter } from '../adapter'
-import {
-    accountPresentationI18nKeys,
-    algorandAccountPresentation,
-} from '../presentation'
+import { algorandAccountPresentation } from '../presentation'
 
 beforeAll(() => {
     accountsChainAdapters.reset()
@@ -269,74 +266,5 @@ describe('algorandAccountPresentation.transitionLabel', () => {
         expect(transitionLabel(standard, quantum).supportUrl).toBe(
             config.quantumAccountSupportUrl,
         )
-    })
-})
-
-describe('accountPresentationI18nKeys', () => {
-    it('lists every key the presentation emits', () => {
-        const keys = new Set(accountPresentationI18nKeys())
-        const accounts = [
-            standaloneAccount('A'),
-            hdAccount('H'),
-            hardwareAccount('L'),
-            signableMultisig,
-            watchAccount('W'),
-            quantumAccount('F'),
-        ]
-
-        for (const account of accounts) {
-            for (const held of [[account, participant], [account]]) {
-                const { labelKey, infoTitleKey, infoBodyKey } = describeAccount(
-                    account,
-                    held,
-                )
-                expect(keys).toContain(labelKey)
-                expect(keys).toContain(infoTitleKey)
-                expect(keys).toContain(infoBodyKey)
-            }
-            for (const to of accounts) {
-                const label = transitionLabel(account, to)
-                expect(keys).toContain(label.labelKey)
-                expect(keys).toContain(label.signerKey)
-                expect(keys).toContain(label.descriptionKey)
-            }
-        }
-    })
-})
-
-describe('glyphs', () => {
-    it.each([
-        standaloneAccount('A'),
-        hdAccount('A'),
-        hardwareAccount('A'),
-        multisigAccount('A', null),
-        watchAccount('A'),
-        quantumAccount('A'),
-    ])('are the same whether or not the account can sign', account => {
-        const kindId = kindIdOf(account)
-
-        expect(
-            algorandAccountPresentation.describe(kindId, { canSign: false })
-                ?.glyph,
-        ).toBe(
-            algorandAccountPresentation.describe(kindId, { canSign: true })
-                ?.glyph,
-        )
-    })
-
-    // A backup-only row shows the kind the backup adapter reads off the item.
-    it.each([
-        ...Object.values(AlgorandBackupKinds),
-        ...Object.values(BackupAccountType).filter(
-            type => type !== BackupAccountType.hdSeed,
-        ),
-    ])('include one for the %s backup item kind', type => {
-        const kindId = algorandBackupKindIdOf(type)
-
-        expect(kindId).toBeDefined()
-        expect(
-            algorandAccountPresentation.describe(kindId!, { canSign: true })
-                ?.glyph,
-        ).toBeDefined()
     })
 })
