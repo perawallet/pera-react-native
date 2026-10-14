@@ -142,6 +142,16 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The chains a build enables when its environment names none.',
     },
     {
+        file: 'apps/mobile/src/modules/assets/components/holdings/AssetActionButtons/useAssetActionButtons.ts',
+        text: 'useSwapScope(account ?? null)?.chainId === chainId',
+        reason: "Checks the account's swap scope lands on whichever asset chain the caller passes, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/assets/components/holdings/AssetActionButtons/useAssetActionButtons.ts',
+        text: 'useOnrampScope(account?.chains ?? null)?.chainId === chainId',
+        reason: "Checks the account's onramp scope lands on whichever asset chain the caller passes, never a named chain.",
+    },
+    {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',
         text: "'algorand'",
         reason: "Bidali's payment-currency code, not a ChainId.",
