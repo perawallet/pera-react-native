@@ -55,7 +55,10 @@ export const readEthereumSpendableBalance = async ({
         return { balance, max: balance, reserved: ZERO }
     }
 
-    const row = await getAccountChainStateRow({ accountAddress: address, scope })
+    const row = await getAccountChainStateRow({
+        accountAddress: address,
+        scope,
+    })
     const balance = row?.nativeBalance ?? ZERO
     return {
         balance,

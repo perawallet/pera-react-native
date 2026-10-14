@@ -160,7 +160,10 @@ export const useInputScreen = () => {
             selectedAccount && selectedAssetId
                 ? {
                       account: selectedAccount,
-                      asset: { chainId: scope.chainId, assetId: selectedAssetId },
+                      asset: {
+                          chainId: scope.chainId,
+                          assetId: selectedAssetId,
+                      },
                       scope,
                       fee: new Decimal((minFee ?? 0n).toString()),
                   }
@@ -179,7 +182,9 @@ export const useInputScreen = () => {
 
     const maxAmount = useMemo(
         () =>
-            asset && spendable ? toWholeUnits(spendable.max, asset) : new Decimal(0),
+            asset && spendable
+                ? toWholeUnits(spendable.max, asset)
+                : new Decimal(0),
         [asset, spendable],
     )
 

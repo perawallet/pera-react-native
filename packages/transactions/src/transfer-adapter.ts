@@ -94,7 +94,9 @@ export interface TransferChainAdapter {
     /** Reads synced state only, so it answers offline. */
     spendableBalance(input: SpendableBalanceInput): Promise<SpendableBalance>
     /** Why the send would leave the recipient unable to hold what it receives; undefined when it can. */
-    recipientWarning?(input: RecipientWarningInput): Promise<Optional<ChainNotice>>
+    recipientWarning?(
+        input: RecipientWarningInput,
+    ): Promise<Optional<ChainNotice>>
     /** Base units of the native asset an account must lock to hold one more asset. */
     holdingReserve?(scope: ChainScope): Optional<Decimal>
 }

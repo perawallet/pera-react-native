@@ -179,13 +179,7 @@ export const useTransactionSendFlow = (
                     receiverFee > suggestedMinFee ? receiverFee : undefined,
             })
         },
-        [
-            accounts,
-            fetchSuggestedMinFee,
-            minTxnFee,
-            pqMultiplier,
-            scope,
-        ],
+        [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier, scope],
     )
 
     /**

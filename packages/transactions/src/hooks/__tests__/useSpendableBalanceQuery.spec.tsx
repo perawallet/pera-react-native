@@ -135,7 +135,10 @@ describe('useSpendableBalanceQuery', () => {
         const { result, rerender } = renderHook(
             ({ account }: { account: WalletAccount }) =>
                 useSpendableBalanceQuery({ ...inputWith(0), account }),
-            { wrapper: wrapper(queryClient), initialProps: { account: ACCOUNT } },
+            {
+                wrapper: wrapper(queryClient),
+                initialProps: { account: ACCOUNT },
+            },
         )
         await waitFor(() => expect(result.current.data).toEqual(SPENDABLE))
 
