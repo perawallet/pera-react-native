@@ -57,6 +57,17 @@ const scrubEvent = (event: Sentry.ErrorEvent): Sentry.ErrorEvent => {
     return event
 }
 
+// Error capture and grouping only. Everything else in Sentry's defaults
+// records context we either strip in `scrubEvent` or never want sent.
+const KEPT_INTEGRATIONS = new Set([
+    'EventFilters',
+    'FunctionToString',
+    'GlobalHandlers',
+    'LinkedErrors',
+    'Dedupe',
+    'BrowserSession',
+])
+
 /**
  * Firebase has no Crashlytics Web SDK, so crash/error reporting on the
  * extension goes through Sentry instead (plain fetch/sendBeacon transport —
@@ -82,19 +93,30 @@ export class ChromeCrashReportingService implements CrashReportingService {
             // traffic as breadcrumbs. In a wallet that is a standing risk:
             // nothing logs key material today, but one careless
             // `console.log(seed)` or a signing error whose message quotes its
-            // payload would ship it to a third party. Off entirely rather than
-            // scrubbed — this extension has no need for either.
+            // payload would ship it to a third party. An allowlist, because a
+            // denylist silently misses whatever a Sentry release adds or splits
+            // out (v11 moved console capture into its own `Console` integration).
             integrations: integrations =>
-                integrations.filter(
-                    integration =>
-                        integration.name !== 'Breadcrumbs' &&
-                        integration.name !== 'BrowserApiErrors',
+                integrations.filter(integration =>
+                    KEPT_INTEGRATIONS.has(integration.name),
                 ),
-            // Belt and braces for the payload that does get sent. `sendDefaultPii`
-            // is already false by default; this drops the request/user blocks
-            // outright and redacts anything mnemonic- or key-shaped that reached
-            // an exception message.
-            sendDefaultPii: false,
+            // Unset, v11 collects user info (and lets Sentry infer the client
+            // IP), cookies, headers and bodies. Turn every category off.
+            dataCollection: {
+                userInfo: false,
+                cookies: false,
+                httpHeaders: false,
+                httpBodies: [],
+                urlQueryParams: false,
+                graphQL: { document: false, variables: false },
+                genAI: { inputs: false, outputs: false },
+                databaseQueryData: false,
+                queues: false,
+                stackFrameVariables: false,
+            },
+            // Belt and braces for the payload that does get sent: drops the
+            // request/user blocks outright and redacts anything mnemonic- or
+            // key-shaped that reached an exception message.
             beforeSend: scrubEvent,
         })
         this.initialized = true

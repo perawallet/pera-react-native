@@ -108,7 +108,7 @@ describe('event scrubbing before send', () => {
         integrations: (
             defaults: Array<{ name: string }>,
         ) => Array<{ name: string }>
-        sendDefaultPii: boolean
+        dataCollection: Record<string, unknown>
     } => {
         configMock.config.sentryDsn = 'https://key@example.ingest.sentry.io/1'
         configMock.isDebug = false
@@ -179,16 +179,34 @@ describe('event scrubbing before send', () => {
         )
     })
 
-    it('removes the console and fetch breadcrumb integrations', () => {
-        const { integrations, sendDefaultPii } = initAndGetOptions()
+    it('keeps only the error-capture integrations from the real defaults', async () => {
+        const { integrations } = initAndGetOptions()
+        const actual =
+            await vi.importActual<typeof import('@sentry/browser')>(
+                '@sentry/browser',
+            )
 
-        const kept = integrations([
-            { name: 'Breadcrumbs' },
-            { name: 'BrowserApiErrors' },
-            { name: 'GlobalHandlers' },
-        ]).map(i => i.name)
+        const kept = integrations(actual.getDefaultIntegrations({})).map(
+            i => i.name,
+        )
 
-        expect(kept).toEqual(['GlobalHandlers'])
-        expect(sendDefaultPii).toBe(false)
+        expect(kept).not.toContain('Console')
+        expect(kept).not.toContain('Breadcrumbs')
+        expect(kept).not.toContain('BrowserApiErrors')
+        expect(kept).toEqual(
+            expect.arrayContaining(['GlobalHandlers', 'LinkedErrors']),
+        )
+    })
+
+    it('turns off user info and request data collection', () => {
+        const { dataCollection } = initAndGetOptions()
+
+        expect(dataCollection).toMatchObject({
+            userInfo: false,
+            cookies: false,
+            httpHeaders: false,
+            httpBodies: [],
+            urlQueryParams: false,
+        })
     })
 })
