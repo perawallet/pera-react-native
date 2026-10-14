@@ -297,7 +297,7 @@ describe('Flow: Cold start with no connectivity', () => {
         await seedPreviouslySyncedAccount()
         useCurrenciesStore.getState().setPreferredCurrency('EUR')
         server.use(
-            http.get('*/v1/currencies/EUR', () =>
+            http.get('*/v1/currencies/EUR/', () =>
                 HttpResponse.json(
                     {
                         currency_id: 'EUR',

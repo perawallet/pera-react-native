@@ -56,7 +56,7 @@ export const mockGetCurrency = ({
     status = 200,
 }: MockGetCurrencyParams): HttpHandler => {
     validateMockResponse(currencyResponseSchema, response, 'mockGetCurrency')
-    return http.get(`*/v1/currencies/${id}`, () =>
+    return http.get(`*/v1/currencies/${id}/`, () =>
         HttpResponse.json(response, { status }),
     )
 }

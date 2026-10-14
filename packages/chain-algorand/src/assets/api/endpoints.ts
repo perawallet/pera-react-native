@@ -70,7 +70,7 @@ export const fetchAssetDetails = async (assetID: string, network: Network) => {
         backend: 'pera',
         network: network,
         method: 'GET',
-        url: `/v1/assets/${assetID}`,
+        url: `/v1/assets/${assetID}/`,
     })
 
     return assetResponseSchema.parse(response.data)
@@ -84,7 +84,7 @@ export const fetchPublicAssetDetails = async (
         backend: 'pera',
         network: network,
         method: 'GET',
-        url: `/v1/public/assets/${assetID}`,
+        url: `/v1/public/assets/${assetID}/`,
     })
 
     return publicAssetResponseSchema.parse(response.data)

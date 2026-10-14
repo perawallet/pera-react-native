@@ -103,7 +103,7 @@ describe('currencies endpoints', () => {
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
-            expect.objectContaining({ url: '/v1/currencies/EUR' }),
+            expect.objectContaining({ url: '/v1/currencies/EUR/' }),
         )
         expect(result.id).toBe('EUR')
         expect(result.usdPrice).toBeInstanceOf(Decimal)

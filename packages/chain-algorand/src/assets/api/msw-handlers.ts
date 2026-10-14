@@ -53,7 +53,7 @@ export const mockAssetDetails = ({
     status = 200,
 }: MockAssetDetailsParams): HttpHandler => {
     validateMockResponse(assetResponseSchema, response, 'mockAssetDetails')
-    return http.get(`*/v1/assets/${assetID}`, () =>
+    return http.get(`*/v1/assets/${assetID}/`, () =>
         HttpResponse.json(response, { status }),
     )
 }
@@ -74,7 +74,7 @@ export const mockPublicAssetDetails = ({
         response,
         'mockPublicAssetDetails',
     )
-    return http.get(`*/v1/public/assets/${assetID}`, () =>
+    return http.get(`*/v1/public/assets/${assetID}/`, () =>
         HttpResponse.json(response, { status }),
     )
 }
