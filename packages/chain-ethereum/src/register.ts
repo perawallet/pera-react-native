@@ -26,6 +26,7 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    historyChainAdapters,
     transferChainAdapters,
     type TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
@@ -35,6 +36,7 @@ import {
     ethereumKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { ethereumHistoryAdapter } from './history'
 import { ethereumPlannerAdapter } from './signing/adapter'
 import { ethereumReviewerAdapter } from './signing/review'
 import { createEthereumTransferAdapter } from './transfer'
@@ -57,4 +59,5 @@ export const registerChain = (ctx: ChainContext): void => {
     accountsChainAdapters.register(accountsAdapter)
     assetsChainAdapters.register(assetsAdapter)
     transferChainAdapters.register(transferAdapter)
+    historyChainAdapters.register(ethereumHistoryAdapter)
 }

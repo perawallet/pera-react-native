@@ -31,6 +31,11 @@ export {
     nativeWhitelistItem,
     unknownAssetItem,
 } from './assets/api/msw-handlers'
+export {
+    evmHistoryItem,
+    type PeraEvmHistoryFixtures,
+} from './history/api/msw-handlers'
+export type { EvmHistoryItemResponse } from './history/api/schema'
 export type {
     AssetItemResponse,
     WhitelistItemResponse,

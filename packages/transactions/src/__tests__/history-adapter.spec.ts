@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     scopeForLegacyNetwork,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     assetFactsResolverFor,
@@ -22,6 +23,7 @@ import {
     fetchTransactionHistory,
     historyChainAdapters,
     mapHistoryItemToDisplayableTransaction,
+    TransactionHistoryRowsUnsupportedError,
     type HistoryChainAdapter,
 } from '../history-adapter'
 import type { TransactionHistoryItem } from '../models/types'
@@ -126,6 +128,39 @@ describe('history adapter wrappers', () => {
                 'algorand',
             ),
         ).toThrow('No transaction history adapter is registered')
+    })
+})
+
+describe('a chain whose history is not cached as rows', () => {
+    const scope: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+
+    beforeEach(() => {
+        historyChainAdapters.reset()
+        historyChainAdapters.register({
+            chainId: 'ethereum',
+            getTransactionHistory: vi.fn(),
+        })
+    })
+
+    it('rejects both row fetches with an error naming the chain', async () => {
+        await expect(
+            fetchTransactionHistory({ accountAddress: 'A', scope }),
+        ).rejects.toMatchObject({
+            name: 'TransactionHistoryRowsUnsupportedError',
+            chainId: 'ethereum',
+        })
+        await expect(
+            fetchMoreTransactions({ url: 'NEXT', scope }),
+        ).rejects.toBeInstanceOf(TransactionHistoryRowsUnsupportedError)
+    })
+
+    it('has nothing to display for a stored row', () => {
+        expect(
+            mapHistoryItemToDisplayableTransaction(
+                { id: 'TX' } as TransactionHistoryItem,
+                'ethereum',
+            ),
+        ).toBeNull()
     })
 })
 
