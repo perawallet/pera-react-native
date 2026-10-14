@@ -26,13 +26,19 @@ vi.mock('../../api/card-creation', async importOriginal => ({
 const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
 vi.mock('../../api/user', () => ({ fetchUser }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { CardUserUnavailableError } from '../../api/card-creation'
 import { useFundingAddressLinkMutation } from '../useFundingAddressLinkMutation'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('testnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useFundingAddressLinkMutation', () => {
+describe.each(SCOPES)('useFundingAddressLinkMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

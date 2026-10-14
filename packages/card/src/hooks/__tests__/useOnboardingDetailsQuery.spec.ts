@@ -20,13 +20,19 @@ const { fetchOnboardingDetails } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/onboarding', () => ({ fetchOnboardingDetails }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useOnboardingDetailsQuery } from '../useOnboardingDetailsQuery'
 import { VerificationState } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useOnboardingDetailsQuery', () => {
+describe.each(SCOPES)('useOnboardingDetailsQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

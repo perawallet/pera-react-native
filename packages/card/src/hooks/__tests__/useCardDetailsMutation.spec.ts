@@ -25,12 +25,18 @@ const { fetchCardDetailsToken } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/card-sensitive', () => ({ fetchCardDetailsToken }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardDetailsMutation } from '../useCardDetailsMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useCardDetailsMutation', () => {
+describe.each(SCOPES)('useCardDetailsMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

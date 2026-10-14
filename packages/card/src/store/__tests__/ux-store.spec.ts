@@ -518,3 +518,35 @@ describe('migrateCardUxState', () => {
         expect(migrateCardUxState(state, 1)).toEqual(state)
     })
 })
+
+describe('card store cold start', () => {
+    beforeEach(() => {
+        vi.resetModules()
+    })
+
+    test('rehydrating a v0 blob lands the escrow network as a scope key', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        getProvider().keyValueStorage.setItem(
+            'card-store',
+            JSON.stringify({
+                state: {
+                    escrowCardAddress: 'CARD',
+                    escrowCardOwner: 'OWNER',
+                    escrowCardNetwork: 'testnet',
+                    escrowCardApproved: true,
+                },
+                version: 0,
+            }),
+        )
+
+        const { useCardStore } = await import('../ux-store')
+        await useCardStore.persist.rehydrate()
+
+        const state = useCardStore.getState()
+        expect(state.escrowCardAddress).toBe('CARD')
+        expect(state.escrowCardApproved).toBe(true)
+        expect(state.escrowCardScopeKey).toBe('algorand/testnet')
+        expect(state).not.toHaveProperty('escrowCardNetwork')
+    })
+})

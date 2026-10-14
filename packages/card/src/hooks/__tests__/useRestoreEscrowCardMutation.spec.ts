@@ -35,13 +35,19 @@ vi.mock('../../store', () => ({
     },
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { CardUserUnavailableError } from '../../api/card-creation'
 import { useRestoreEscrowCardMutation } from '../useRestoreEscrowCardMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useRestoreEscrowCardMutation', () => {
+describe.each(SCOPES)('useRestoreEscrowCardMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

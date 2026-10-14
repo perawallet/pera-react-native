@@ -20,13 +20,19 @@ const { exportCardStatement } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/transactions', () => ({ exportCardStatement }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useExportCardStatementMutation } from '../useExportCardStatementMutation'
 import { StatementFormat } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useExportCardStatementMutation', () => {
+describe.each(SCOPES)('useExportCardStatementMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

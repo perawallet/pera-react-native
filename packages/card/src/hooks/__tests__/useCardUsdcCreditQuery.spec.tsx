@@ -15,33 +15,40 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     useCardUsdcCreditQuery,
     UsdcCreditTimeoutError,
 } from '../useCardUsdcCreditQuery'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('testnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 const mocks = {
     getAssetBalance: vi.fn(),
     settlementAsset: vi.fn(),
 }
 
-const renderCredit = () => {
+const renderCredit = (scope: ChainScope) => {
     const client = new QueryClient()
     const wrapper = ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={client}>{children}</QueryClientProvider>
     )
-    return renderHook(() => useCardUsdcCreditQuery(SCOPE), { wrapper })
+    return renderHook(() => useCardUsdcCreditQuery(scope), { wrapper })
 }
 
-describe('useCardUsdcCreditQuery', () => {
+describe.each(SCOPES)('useCardUsdcCreditQuery ($chainId)', SCOPE => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.settlementAsset.mockReturnValue('10458941')
         registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
             getAssetBalance: mocks.getAssetBalance,
             settlementAsset: mocks.settlementAsset,
         })
@@ -54,7 +61,7 @@ describe('useCardUsdcCreditQuery', () => {
     it('reads the USDC holding fresh each time', async () => {
         mocks.getAssetBalance.mockResolvedValueOnce(2_500_000n)
         mocks.getAssetBalance.mockResolvedValueOnce(0n)
-        const { result } = renderCredit()
+        const { result } = renderCredit(SCOPE)
 
         await expect(result.current.readUsdcBalance('ADDR')).resolves.toBe(
             2_500_000n,
@@ -70,7 +77,7 @@ describe('useCardUsdcCreditQuery', () => {
 
     it('reads zero without asking the chain on a network with no known USDC', async () => {
         mocks.settlementAsset.mockReturnValue(null)
-        const { result } = renderCredit()
+        const { result } = renderCredit(SCOPE)
 
         await expect(result.current.readUsdcBalance('ADDR')).resolves.toBe(0n)
         expect(mocks.getAssetBalance).not.toHaveBeenCalled()
@@ -81,7 +88,7 @@ describe('useCardUsdcCreditQuery', () => {
             .mockResolvedValueOnce(1_000_000n)
             .mockResolvedValueOnce(1_000_000n)
             .mockResolvedValueOnce(61_000_000n)
-        const { result } = renderCredit()
+        const { result } = renderCredit(SCOPE)
 
         const pending = result.current.waitForUsdcCredit({
             address: 'ADDR',
@@ -98,7 +105,7 @@ describe('useCardUsdcCreditQuery', () => {
         mocks.getAssetBalance
             .mockResolvedValueOnce(1_500_000n)
             .mockResolvedValueOnce(3_000_000n)
-        const { result } = renderCredit()
+        const { result } = renderCredit(SCOPE)
 
         const pending = result.current.waitForUsdcCredit({
             address: 'ADDR',
@@ -112,7 +119,7 @@ describe('useCardUsdcCreditQuery', () => {
 
     it('stops polling once the credit lands', async () => {
         mocks.getAssetBalance.mockResolvedValue(5_000_000n)
-        const { result } = renderCredit()
+        const { result } = renderCredit(SCOPE)
 
         await expect(
             (async () => {
@@ -132,7 +139,7 @@ describe('useCardUsdcCreditQuery', () => {
 
     it('gives up once the deadline passes', async () => {
         mocks.getAssetBalance.mockResolvedValue(1_000_000n)
-        const { result } = renderCredit()
+        const { result } = renderCredit(SCOPE)
 
         const pending = result.current.waitForUsdcCredit({
             address: 'ADDR',
@@ -151,7 +158,7 @@ describe('useCardUsdcCreditQuery', () => {
 
     it('surfaces a failed read at once instead of polling past it', async () => {
         mocks.getAssetBalance.mockRejectedValue(new Error('algod down'))
-        const { result } = renderCredit()
+        const { result } = renderCredit(SCOPE)
 
         const outcome = result.current
             .waitForUsdcCredit({

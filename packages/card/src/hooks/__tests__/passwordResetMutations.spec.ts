@@ -27,14 +27,20 @@ vi.mock('../../api/auth', () => ({
     confirmPasswordReset,
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useRequestPasswordResetMutation } from '../useRequestPasswordResetMutation'
 import { useVerifyPasswordResetMutation } from '../useVerifyPasswordResetMutation'
 import { useConfirmPasswordResetMutation } from '../useConfirmPasswordResetMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('password reset mutations', () => {
+describe.each(SCOPES)('password reset mutations ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

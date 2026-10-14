@@ -33,7 +33,10 @@ vi.mock('../../session', () => session)
 const auth = vi.hoisted(() => ({ acquireCardSessionTokens: vi.fn() }))
 vi.mock('../../api/auth', () => auth)
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSendEmailVerificationMutation } from '../useSendEmailVerificationMutation'
 import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
 import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMutation'
@@ -46,13 +49,16 @@ import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 import { OnboardingNotVerifiedError } from '../../api/errors'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
-describe('onboarding mutation hooks', () => {
+describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
     beforeEach(() => {
         queryClient = new QueryClient({
             defaultOptions: {
