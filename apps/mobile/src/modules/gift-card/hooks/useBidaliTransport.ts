@@ -18,10 +18,7 @@ import {
     type AccountBalances,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    isValidAlgorandAddress,
-    useAlgorandClient,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getKnownAssetId,
     isNativeAssetId,
@@ -29,6 +26,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    addressCodecs,
     LEGACY_CHAIN_ID,
     type ChainMode,
     type ChainScope,
@@ -234,7 +232,7 @@ export const useBidaliTransport = (
 
             if (
                 typeof address !== 'string' ||
-                !isValidAlgorandAddress(address) ||
+                !addressCodecs.get(scope.chainId).isValid(address) ||
                 typeof amount !== 'string' ||
                 typeof protocol !== 'string'
             ) {

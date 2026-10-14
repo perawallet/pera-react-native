@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { renderHook, act } from '@testing-library/react'
 import type {
     WalletAccount,
@@ -65,7 +70,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({
         newGroup: () => mockComposer,
     }),
@@ -138,6 +142,19 @@ const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
     method,
     params,
     id: 'bidali-1234',
+})
+
+// Stands in for the Algorand codec; this spec mocks the Algorand blockchain module.
+beforeEach(() => {
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: LEGACY_CHAIN_ID,
+        isValid: address => /^[A-Z2-7]{58}$/.test(address),
+    })
+})
+
+afterEach(() => {
+    addressCodecs.reset()
 })
 
 describe('useBidaliTransport', () => {

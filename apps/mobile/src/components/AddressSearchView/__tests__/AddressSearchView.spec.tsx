@@ -11,12 +11,16 @@
  */
 
 import { render, screen, fireEvent } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -45,10 +49,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         })),
     }
 })
-
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: vi.fn(),
-}))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -92,6 +92,21 @@ vi.mock('../AccountResultRow', () => ({
         account?.name || null,
 }))
 
+const mockIsValidAddress = vi.fn<(address: string) => boolean>()
+
+// A stand-in for the Algorand codec, so each test decides what counts as valid.
+beforeEach(() => {
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: LEGACY_CHAIN_ID,
+        isValid: address => mockIsValidAddress(address),
+    })
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
+
 describe('AddressSearchView', () => {
     const mockOnSelected = vi.fn()
     const mockFindContacts = vi.fn()
@@ -104,7 +119,7 @@ describe('AddressSearchView', () => {
         } as unknown as ReturnType<typeof useContacts>)
 
         vi.mocked(useAllAccounts).mockReturnValue([])
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+        mockIsValidAddress.mockReturnValue(false)
         mockFindContacts.mockReturnValue([])
     })
 
@@ -204,7 +219,7 @@ describe('AddressSearchView', () => {
     })
 
     it('shows valid address option when input is a valid address', () => {
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
         const validAddress = 'VALID_ALGO_ADDRESS_123'
 
         render(
@@ -226,7 +241,7 @@ describe('AddressSearchView', () => {
     })
 
     it('renders + add icon for foreign address rows when showAddIcon is true', () => {
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
 
         render(
             <AddressSearchView
@@ -248,7 +263,7 @@ describe('AddressSearchView', () => {
     })
 
     it('does not render + add icon when showAddIcon is false', () => {
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
 
         render(
             <AddressSearchView
@@ -279,7 +294,7 @@ describe('AddressSearchView', () => {
         mockFindContacts.mockReturnValue([
             { addresses: { algorand: 'CONT12345' }, name: 'Friend' },
         ])
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
 
         render(
             <AddressSearchView

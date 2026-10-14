@@ -41,9 +41,11 @@ import {
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -256,7 +258,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         })
 
         const addHardware = (acc: HardwareWalletDerivedAccount) => {
-            if (!isValidAlgorandAddress(acc.address)) return
+            if (!addressCodecs.get(LEGACY_CHAIN_ID).isValid(acc.address)) return
             if (added.has(acc.address)) return
             const collision = byAddress.get(acc.address)
             if (collision) {
@@ -316,7 +318,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     (presentAuth !== undefined && !isWatchAccount(presentAuth))
                 if (
                     authPresent &&
-                    isValidAlgorandAddress(sel.address) &&
+                    addressCodecs.get(LEGACY_CHAIN_ID).isValid(sel.address) &&
                     !byAddress.has(sel.address) &&
                     !added.has(sel.address)
                 ) {

@@ -12,8 +12,13 @@
 
 import React from 'react'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+    type ChainFamily,
+} from '@perawallet/wallet-core-chain-contract'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import {
     useAddressSearchView,
     type AddressSearchItem,
@@ -28,7 +33,6 @@ import {
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -51,10 +55,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useAccountValueTotalsQuery: vi.fn(),
     }
 })
-
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: vi.fn(),
-}))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -87,6 +87,21 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 const itemsOfType = (items: AddressSearchItem[], type: string) =>
     items.filter(i => i.type === type)
 
+const mockIsValidAddress = vi.fn<(address: string) => boolean>()
+
+// A stand-in for the Algorand codec, so each test decides what counts as valid.
+beforeEach(() => {
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: LEGACY_CHAIN_ID,
+        isValid: address => mockIsValidAddress(address),
+    })
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
+
 describe('useAddressSearchView', () => {
     const mockFindContacts = vi.fn()
 
@@ -107,7 +122,7 @@ describe('useAddressSearchView', () => {
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
             accountValueTotals: new Map(),
         } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+        mockIsValidAddress.mockReturnValue(false)
         vi.mocked(useNfdSearchQuery).mockReturnValue({
             data: [],
             isLoading: false,
@@ -350,7 +365,7 @@ describe('useAddressSearchView', () => {
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
         mockFindContacts.mockReturnValue([
             { addresses: { algorand: 'CONT123' }, name: 'Friend' },
         ])
@@ -390,7 +405,7 @@ describe('useAddressSearchView', () => {
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
         )
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
 
         const { result } = renderHook(() =>
             useAddressSearchView({ chainFamily: 'algorand' }),
@@ -709,7 +724,7 @@ describe('useAddressSearchView', () => {
             mockReadText.mockResolvedValue(
                 'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
             )
-            vi.mocked(isValidAlgorandAddress).mockImplementation(
+            mockIsValidAddress.mockImplementation(
                 addr =>
                     addr ===
                     'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
@@ -738,7 +753,7 @@ describe('useAddressSearchView', () => {
 
         it('ignores clipboard contents that are not an address', async () => {
             mockReadText.mockResolvedValue('just some copied text')
-            vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+            mockIsValidAddress.mockReturnValue(false)
 
             const { result } = renderHook(() =>
                 useAddressSearchView({
@@ -759,7 +774,7 @@ describe('useAddressSearchView', () => {
             mockReadText.mockResolvedValue(
                 'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
             )
-            vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+            mockIsValidAddress.mockReturnValue(true)
 
             const { result } = renderHook(() =>
                 useAddressSearchView({ chainFamily: 'algorand' }),
@@ -775,7 +790,7 @@ describe('useAddressSearchView', () => {
             mockReadText.mockResolvedValue(
                 'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
             )
-            vi.mocked(isValidAlgorandAddress).mockImplementation(
+            mockIsValidAddress.mockImplementation(
                 addr =>
                     addr ===
                     'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
