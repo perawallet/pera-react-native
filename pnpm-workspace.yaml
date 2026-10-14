@@ -49,14 +49,14 @@ catalog:
   "@tanstack/query-async-storage-persister": ^5.99.0
   "@tanstack/react-query": ^5.99.0
   "@tanstack/react-query-persist-client": ^5.99.0
-  "@tanstack/store": 0.11.1
+  "@tanstack/store": 0.11.2
   "@testing-library/react": 16.3.3
   "@types/chrome": ^0.3.0
   "@types/node": ^20.19.39
   "@types/react": ~19.2.14
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.21
-  "@vitejs/plugin-react": 6.1.1
+  "@vitejs/plugin-react": 6.1.2
   "@vitest/coverage-v8": ^4.1.9
   # Kept in step with "@reown/walletkit" above; see the note there.
   "@walletconnect/core": 2.25.0
@@ -95,7 +95,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.12.0
   msw: ^2.14.6
-  oxfmt: ^0.70.0
+  oxfmt: ^0.72.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
@@ -110,7 +110,7 @@ catalog:
   uuid: 14.0.2
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
-  viem: 2.57.0
+  viem: 2.57.3
   vite: ^8.2.1
   vitest: ^4.1.9
   xstate: ^5.28.0
@@ -130,33 +130,21 @@ packageExtensions:
 
 minimumReleaseAge: 10080
 
-# image-size has no patched release: GitHub reports first_patched_version: null
-# on both advisories and npm's latest is 2.0.2 (Apr 2025), so there is nothing to
-# override to. It reaches the --prod graph only because react-native declares
-# @react-native/community-cli-plugin as a runtime dep; the sole consumer is
-# metro's build-time asset sizer (metro/src/Assets.js), never shipped to a
-# device. Exploiting it means committing a malformed ICNS/JXL/HEIF to our own
-# assets to stall a bundle. Drop these two once image-size publishes a fix.
+# image-size is patched only on its 2.x line (2.0.3), whose API metro's
+# `require('image-size')(buffer)` call can't use, so 1.x can't be overridden up.
+# The sole consumer is metro 0.84.4's build-time asset sizer (metro/src/Assets.js),
+# pinned exactly by @expo/metro, never shipped to a device. Metro 0.84.6 dropped
+# the dependency, so these two go once the Expo SDK moves @expo/metro past 0.84.4.
+# Exploiting it means committing a malformed ICNS/JXL/HEIF to our own assets to
+# stall a bundle.
 auditConfig:
   ignoreGhsas:
     - GHSA-5p2g-fcmc-qvqq # image-size: JXL/HEIF parsers infinite loop
     - GHSA-w3rx-r6r6-pgpr # image-size: ICNS parser infinite loop
-    # decode-uri-component DoS via malformed percent-encoding. Reaches us only
-    # through @react-navigation/core → query-string@7 → getStateFromPath, and
-    # no NavigationContainer here has a `linking` config, so the vulnerable
-    # decode never executes (the app parses deeplinks with its own parser).
-    # Unfixable by override: the advisory's ">=0.4.3" names versions that were
-    # never published, and the only real patched release (0.5.0) is ESM-only —
-    # query-string@7's CJS require gets the module namespace instead of the
-    # function and throws at parse time (verified under Node 24; Metro's babel
-    # interop breaks the same way). Drop this entry when the react-navigation
-    # chain resolves a patched version itself — and revisit immediately if a
-    # `linking` config is ever added.
-    - GHSA-vcc3-ghjq-m6fr # decode-uri-component: exponential-time decoding
     # node-forge has no patched release (first_patched_version: null; npm's
     # latest is 1.4.0). Its only consumers are @expo/cli and
     # @expo/code-signing-certificates, dev/build tooling that never ships to a
-    # device. Drop this entry and bump the node-forge@1 override once a fix lands.
+    # device. Drop this entry once a fix lands.
     - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
     # braces has no patched release (first_patched_version: null; npm's latest
     # is 3.0.3). Its only consumer is micromatch under metro-file-map and
@@ -184,10 +172,6 @@ minimumReleaseAgeExclude:
   - '@joe-p/react-native-falcon'
   - '@perawallet/walletconnect'
   - falcon-1024
-  # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
-  # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.17, no install scripts,
-  # SLSA provenance on both.
-  - nanoid
   # First-party: sole maintainer fredamsouza, SLSA provenance on the launcher and
   # all four platform packages, no install scripts (checked for 0.12.0). Repeat
   # those checks before adopting a release younger than the gate.
@@ -197,10 +181,6 @@ minimumReleaseAgeExclude:
   - expo-*
   - '@expo/*'
   - babel-preset-expo
-  # 1.2.2 is the GHSA-68fv-2mgg-jv7q fix and is younger than the 7-day gate.
-  # Same sole maintainer and publisher (7rulnik) as 1.2.1, no install scripts,
-  # and the code diff is the fix. Scoped to that version; drop once it ages out.
-  - source-map-js@1.2.2
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -309,7 +289,6 @@ overrides:
   # 'catalog:' through the override, so bumping line 16 alone changes nothing.
   # Move both together, or not at all.
   '@algorandfoundation/wallet-provider': 1.0.0-canary.6
-  '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   # Force the SDK-bundled versions across the tree. Both reach us only
   # transitively with floating ranges that drift past the installed SDK
@@ -345,21 +324,6 @@ overrides:
   # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
   # Stay on the 0.8 line — 0.9 changed the package's API surface.
   '@xmldom/xmldom': 0.8.15
-  bn.js@4: 4.12.3
-  # GHSA-rgw5-rvv9-x895 is patched per major line, not by one version: the 1.x
-  # and 2.x consumers (minimatch@3/@9 via eslint, glob, @expo/cli) default-import
-  # brace-expansion, and 5.x only ships a named `expand` export — so they have to
-  # stay on their own patched lines rather than all pointing at 5.x. Each line is
-  # pinned to its floor for GHSA-6j4f-fj2g-mc7p, GHSA-qhr7-859c-m2p7 and
-  # GHSA-q2hr-2g5m-vwhr (DoS on crafted patterns), which 5.0.12 also covers.
-  brace-expansion@1: 1.1.21
-  brace-expansion@2: 2.1.7
-  brace-expansion@3: 5.0.12
-  brace-expansion@4: 5.0.12
-  brace-expansion@5: 5.0.12
-  # GHSA-vc2v-76pw-4v95 (memory DoS: zlib streams outlive a disconnected
-  # client). Dev-server only, via @expo/cli.
-  compression@<1.8.2: 1.8.2
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -374,63 +338,24 @@ overrides:
   # the resolution stays behind the minimumReleaseAge window without an exclude
   # entry.
   fast-uri@<4.1.5: 4.1.5
-  flatted@3: 3.4.2
-  glob@>=10.2.0 <10.5.0: '>=10.5.0'
-  happy-dom@<20.0.0: '>=20.0.0'
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
-  js-yaml@<3.14.2: '>=3.14.2'
   # The 4.x consumers already resolve to 5.x through this open range; the floor
   # names the patched 5.x so a stale lock entry cannot hold them below it.
   js-yaml@>=4.0.0 <4.3.1: '>=5.4.1'
-  js-yaml@>=5.0.0 <5.4.1: '>=5.4.1'
-  lodash@4: 4.18.1
-  # GHSA-2v37-7h3g-55p8 (custom generators loop forever when size is 0). Exact
-  # target, not '>=3.3.18': an open range resolves to nanoid 6.
-  #
-  # 3.3.17 was an incomplete backport — it guarded the sync entrypoints but left
-  # async/index.native.js unguarded, so GitHub re-ranged the advisory to <3.3.18
-  # and our old pin became the vulnerable version. Check the advisory range, not
-  # our last target, before assuming this line is still patched.
-  #
-  # pnpm matches this selector against the *declared* spec, not the resolved
-  # version, so `^3.3.1` is captured too — which is how the old '>=3.3.8' entry
-  # silently pulled @gorhom/portal up to nanoid 6. That resolution shipped in
-  # v7.0.0 and is not vulnerable (the advisory covers <3.3.18 and >=4.0.0 <5.1.6,
-  # and 6.x is outside both), so it is pinned below rather than dragged back to
-  # 3.x by this line.
-  nanoid@<3.3.18: 3.3.18
   # Keep the production-proven resolution: in the tree since #996 and shipped in
   # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
   '@gorhom/portal>nanoid': 6.0.0
-  node-fetch@<2.6.7: '>=2.6.7'
-  node-forge@1: 1.4.0
-  picomatch@2: 2.3.2
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
-  # GHSA-fxqj-rqcc-2cmp (arbitrary .map file read via sourceMappingURL when `from` is unset).
-  postcss@<8.5.23: '>=8.5.23'
-  protobufjs@7: 7.6.5
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
   react-native-nitro-modules: 0.36.5
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
-  shell-quote@<1.11.0: 1.11.0
-  # GHSA-68fv-2mgg-jv7q (event-loop DoS). Build tooling only, via postcss,
-  # css-tree and magicast.
-  source-map-js@<1.2.2: 1.2.2
-  # Stay on the v3 line: @svgr/plugin-svgo declares svgo ^3.0.2 and configures
-  # `removeViewBox`, which svgo v4 dropped from preset-default. An open
-  # `>=3.3.4` here resolved to 4.x and made every SVG import log a
-  # "trying to configure removeViewBox" warning during bundling.
-  svgo@>=3.0.0 <3.3.5: ^3.3.5
-  # GHSA-3wwx-pv8p-q78v (DoS via WebSocket permessage-deflate); dev-only via jsdom.
-  undici@>=8.1.0 <8.10.2: 8.10.2
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'
-  yaml@1: 1.10.3
   yaml@2: 2.8.3
 
 supportedArchitectures:
