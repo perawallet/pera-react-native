@@ -30,6 +30,7 @@ import {
     BackupItemType,
     accountItemKey,
     contactItemKey,
+    contactRecordItemKey,
     createEmptySyncState,
     secretsItemKey,
     type BackupItemKey,
@@ -61,6 +62,8 @@ const secretsKey = (address: string): BackupItemKey =>
     secretsItemKey(hashAddress(address))
 const contactKey = (address: string): BackupItemKey =>
     contactItemKey(hashAddress(address))
+const contactRecordKey = (address: string): BackupItemKey =>
+    contactRecordItemKey(hashAddress(address))
 
 const tracked = (
     address: string,
@@ -176,7 +179,7 @@ describe('markAccountForBackup', () => {
         expect(next.items[secretsKey('B')]).toBeDefined()
     })
 
-    it('leaves a legacy item alone, since only records are written', () => {
+    it('drops a legacy tombstone, which would otherwise hold back the record', () => {
         const state = createEmptySyncState('b')
         state.items[accountKey('A')] = tracked('A', {
             status: BackupItemStatus.IGNORED,
@@ -184,7 +187,7 @@ describe('markAccountForBackup', () => {
 
         expect(
             markAccountForBackup(state, 'A').items[accountKey('A')],
-        ).toBeDefined()
+        ).toBeUndefined()
     })
 
     it('leaves an item the device has never decrypted alone', () => {
@@ -593,10 +596,24 @@ describe('contact review actions', () => {
         return deps
     }
 
-    it('markContactForBackup forgets the tracked item so it re-uploads as new', () => {
-        const next = markContactForBackup(contact({ knownVer: 3 }), 'A')
+    it('markContactForBackup clears the hold on a legacy item the backup still has', () => {
+        const next = markContactForBackup(
+            contact({ pendingImport: true, pendingDelete: true }),
+            'A',
+        )
 
-        expect(next.items[contactKey('A')]).toBeUndefined()
+        expect(next.items[contactKey('A')]).toMatchObject({
+            pendingImport: false,
+            pendingDelete: false,
+        })
+    })
+
+    it('markContactForBackup drops a deleted legacy item, which would otherwise hold back the record', () => {
+        const state = contact({ status: BackupItemStatus.IGNORED })
+
+        expect(
+            markContactForBackup(state, 'A').items[contactKey('A')],
+        ).toBeUndefined()
     })
 
     it('keepContactInBackup holds it for review with its name', () => {
@@ -617,7 +634,7 @@ describe('contact review actions', () => {
     it('keepContactInBackup leaves a contact the backup never held alone', () => {
         const state = contact({ status: BackupItemStatus.IGNORED })
 
-        expect(keepContactInBackup(state, 'A', 'Alice')).toBe(state)
+        expect(keepContactInBackup(state, 'A', 'Alice')).toEqual(state)
     })
 
     it('importContactFromBackup re-reads the item and imports it', async () => {
@@ -630,7 +647,7 @@ describe('contact review actions', () => {
         })
 
         expect(deps.importContacts).toHaveBeenCalledWith([
-            { address: 'A', name: 'Alice' },
+            { addresses: { algorand: 'A' }, name: 'Alice' },
         ])
         expect(summary.imported).toBe(1)
         expect(next.items[contactKey('A')]).toMatchObject({
@@ -686,6 +703,191 @@ describe('contact review actions', () => {
         })
 
         expect(deps.deleteItem).not.toHaveBeenCalled()
+    })
+})
+
+describe('contact review actions on a record', () => {
+    const REC = contactRecordKey('A')
+    const record = {
+        formatVersion: 1,
+        name: 'Alice',
+        addresses: [
+            { family: 'algorand', address: 'A' },
+            { family: 'evm', address: '0xB' },
+        ],
+    }
+    // Reached through its EVM address, which the record caches.
+    const held = (overrides: Partial<SyncItemState> = {}): SyncState => {
+        const state = createEmptySyncState('b')
+        state.items[REC] = tracked('A', {
+            type: BackupItemType.CONTACT,
+            addresses: ['A', '0xB'],
+            ...overrides,
+        })
+        return state
+    }
+    const withLegacy = (
+        state: SyncState,
+        over: Partial<SyncItemState> = {},
+    ) => {
+        state.items[contactKey('A')] = tracked('A', {
+            type: BackupItemType.CONTACT,
+            ...over,
+        })
+        state.items[contactKey('0xB')] = tracked('0xB', {
+            type: BackupItemType.CONTACT,
+            ...over,
+        })
+        return state
+    }
+
+    it('mark clears the hold on a live record', () => {
+        const next = markContactForBackup(
+            held({ pendingImport: true, pendingDelete: true }),
+            '0xB',
+        )
+
+        expect(next.items[REC]).toMatchObject({
+            pendingImport: false,
+            pendingDelete: false,
+        })
+    })
+
+    it('mark drops a dead record so it re-uploads as new, and its dead legacy items', () => {
+        const state = withLegacy(held({ status: BackupItemStatus.IGNORED }), {
+            status: BackupItemStatus.IGNORED,
+        })
+
+        const next = markContactForBackup(state, '0xB')
+
+        expect(next.items[REC]).toBeUndefined()
+        expect(next.items[contactKey('A')]).toBeUndefined()
+        expect(next.items[contactKey('0xB')]).toBeUndefined()
+    })
+
+    it('keep holds the record and every live legacy item, naming each', () => {
+        const state = withLegacy(held({ isDirty: true }))
+
+        const next = keepContactInBackup(state, '0xB', 'Alice')
+
+        for (const key of [REC, contactKey('A'), contactKey('0xB')]) {
+            expect(next.items[key]).toMatchObject({
+                pendingImport: true,
+                isDirty: false,
+                label: 'Alice',
+            })
+        }
+    })
+
+    it('delete removes the record and the legacy items of its addresses', async () => {
+        const deps = baseDeps()
+
+        const { state: next, keys } = await deleteContactFromBackup({
+            state: withLegacy(held()),
+            address: '0xB',
+            deps,
+        })
+
+        expect(keys.sort()).toEqual(
+            [REC, contactKey('A'), contactKey('0xB')].sort(),
+        )
+        expect(deps.deleteItem).toHaveBeenCalledTimes(3)
+        expect(next.items[REC]).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+        })
+    })
+
+    it('delete also removes an older record that shares an address, which a restore would merge back in', async () => {
+        const deps = baseDeps()
+        const state = held()
+        // The record left behind when the contact's algorand address moved from A2 to A.
+        state.items[contactRecordKey('A2')] = tracked('A2', {
+            type: BackupItemType.CONTACT,
+            addresses: ['A2', '0xB'],
+        })
+
+        const { keys } = await deleteContactFromBackup({
+            state,
+            address: 'A',
+            deps,
+        })
+
+        expect(keys.sort()).toEqual([REC, contactRecordKey('A2')].sort())
+    })
+
+    it('import reads only the record when one is live, and clears every live key', async () => {
+        const deps = baseDeps()
+        deps.readItems = readsFor([REC, contactKey('A')])
+        deps.decrypt = servingPlaintext({
+            [REC]: record,
+            [contactKey('A')]: { address: 'A', name: 'Stale' },
+        })
+
+        const { state: next, summary } = await importContactFromBackup({
+            state: withLegacy(held({ pendingImport: true }), {
+                pendingImport: true,
+            }),
+            address: '0xB',
+            deps,
+        })
+
+        expect(deps.readItems).toHaveBeenCalledWith(
+            'mainnet',
+            'did:pera:ADDR',
+            'dev',
+            [REC],
+        )
+        expect(deps.importContacts).toHaveBeenCalledWith([
+            { name: 'Alice', addresses: { algorand: 'A', evm: '0xB' } },
+        ])
+        expect(summary.imported).toBe(1)
+        for (const key of [REC, contactKey('A')]) {
+            expect(next.items[key]).toMatchObject({
+                pendingImport: false,
+                label: 'Alice',
+            })
+        }
+    })
+
+    it('import refuses a record from a newer format and leaves the state as it was', async () => {
+        const deps = baseDeps()
+        deps.readItems = readsFor([REC])
+        deps.decrypt = servingPlaintext({
+            [REC]: { ...record, formatVersion: 2 },
+        })
+        const state = held({ pendingImport: true })
+
+        const { state: next, summary } = await importContactFromBackup({
+            state,
+            address: 'A',
+            deps,
+        })
+
+        expect(deps.importContacts).not.toHaveBeenCalled()
+        expect(summary.failed).toEqual([
+            { address: 'A', reason: 'Needs a newer version of Pera' },
+        ])
+        expect(next).toBe(state)
+    })
+
+    it('import refuses a record holding no family this build reads', async () => {
+        const deps = baseDeps()
+        deps.readItems = readsFor([REC])
+        deps.decrypt = servingPlaintext({
+            [REC]: {
+                ...record,
+                addresses: [{ family: 'solana', address: 'S' }],
+            },
+        })
+
+        const { summary } = await importContactFromBackup({
+            state: held({ pendingImport: true }),
+            address: 'A',
+            deps,
+        })
+
+        expect(deps.importContacts).not.toHaveBeenCalled()
+        expect(summary.imported).toBe(0)
     })
 })
 

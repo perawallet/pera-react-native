@@ -315,8 +315,8 @@ export const accountRecordPayloadSchema = z.looseObject({
 })
 export type AccountRecordPayload = z.infer<typeof accountRecordPayloadSchema>
 
-/** No discriminant: the `contacts/` prefix and the CONTACT item type already
- *  identify the shape. `image` is a device-local `file://` URI and `nfd` is
+/** The shape clients before contact records wrote under `contacts/`, which
+ *  this build only reads. `image` is a device-local `file://` URI and `nfd` is
  *  re-resolvable from the address, so neither is backed up. */
 export const contactBackupPayloadSchema = z.object({
     address,
@@ -325,6 +325,29 @@ export const contactBackupPayloadSchema = z.object({
 })
 
 export type ContactBackupPayload = z.infer<typeof contactBackupPayloadSchema>
+
+/** The record shape this build reads and writes. A record of a higher version
+ *  is never imported and never overwritten; a newer client owns it. */
+export const CONTACT_RECORD_FORMAT_VERSION = 1
+
+/** Loose, with `family` a plain string, so an entry for a family this build
+ *  doesn't know is kept by `mergeContactRecord` rather than dropped. */
+export const contactRecordAddressSchema = z.looseObject({
+    family: z.string().min(1),
+    address,
+})
+export type ContactRecordAddress = z.infer<typeof contactRecordAddressSchema>
+
+/** One contact, every chain family's address, in `CHAIN_FAMILIES` order so two
+ *  devices holding it write the same bytes. `image` and `nfd` stay out for the
+ *  reasons above. */
+export const contactRecordPayloadSchema = z.looseObject({
+    formatVersion: nonNegativeInt,
+    name: z.string(),
+    updatedAt,
+    addresses: z.array(contactRecordAddressSchema).min(1),
+})
+export type ContactRecordPayload = z.infer<typeof contactRecordPayloadSchema>
 
 /** No discriminant: the `passkeys/` prefix and the PASSKEY item type already
  *  identify the shape. Holds no key material; that is `passkey-secrets/`.

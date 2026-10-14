@@ -17,6 +17,7 @@ import {
     parseAccountRecordPayload,
     parseAddressPayload,
     parseContactPayload,
+    parseContactRecordPayload,
     parsePasskeyPayload,
     parsePasskeySecretsPayload,
     parseSecretsPayload,
@@ -26,6 +27,8 @@ import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import {
     accountRecordSeedReference,
     cachedRecordSeedReference,
+    contactRecordEntries,
+    isContactRecordKey,
     isAccountRecordReadable,
     isAccountItemKey,
     isAccountKey,
@@ -34,6 +37,7 @@ import {
     secretsItemKey,
     BACKUP_ACCOUNT_RECORDS_KEY_PREFIX,
     BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_CONTACT_RECORDS_KEY_PREFIX,
     BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
@@ -44,13 +48,15 @@ import {
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
+    type ContactBackupPayload,
+    type ContactRecordPayload,
     type DeviceId,
     type FetchedItem,
     type SecretsBackupPayload,
     type SyncItemState,
     type SyncState,
 } from '../models'
-import { buildPulledAccounts } from '../restore'
+import { buildPulledAccounts, buildPulledContacts } from '../restore'
 import { deleteItemIfPresent } from './pushDirty'
 import type {
     ContactImportFn,
@@ -188,8 +194,8 @@ const liveKeysFor = (state: SyncState, address: string): BackupItemKey[] =>
  * what makes the re-upload correct: the server deleted these keys, so they
  * have to go back at version 0. An item the server still holds keeps its
  * version instead, since tracking it at 0 would conflict on every push; that
- * covers a seed another account still uses. Legacy items are left alone, since
- * records are all this build writes.
+ * covers a seed another account still uses. A legacy tombstone goes too:
+ * reconcile holds back a record whose legacy items were all deleted.
  */
 export const markAccountForBackup = (
     state: SyncState,
@@ -204,7 +210,6 @@ export const markAccountForBackup = (
         ? trackedKeysUnder(state, seedReference, BACKUP_SECRETS_KEY_PREFIX)
         : []
     for (const key of new Set([...keysFor(state, address), ...seedKeys])) {
-        if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)) continue
         const item = items[key] as SyncItemState
         if (item.status === BackupItemStatus.ACTIVE && item.knownVer > 0) {
             items[key] = { ...item, pendingDelete: false, pendingImport: false }
@@ -586,6 +591,36 @@ const legacyKeysToDelete = async (
     return secretKey === null ? [addressKey] : [addressKey, secretKey]
 }
 
+/** Every record linked to `address` through a shared address, and the legacy
+ *  `contacts/` items of every address they hold. The importer merges records
+ *  that share an address into one contact, and a restore would bring that
+ *  contact back from any of them. */
+const contactKeysFor = (state: SyncState, address: string): BackupItemKey[] => {
+    const addresses = new Set([address])
+    const recordKeys = new Set<BackupItemKey>()
+    // A Set visits entries added mid-loop, so this walks to every linked record.
+    for (const each of addresses) {
+        for (const key of trackedKeysUnder(
+            state,
+            each,
+            BACKUP_CONTACT_RECORDS_KEY_PREFIX,
+        )) {
+            recordKeys.add(key)
+            for (const held of state.items[key]?.addresses ?? []) {
+                addresses.add(held)
+            }
+        }
+    }
+    return [
+        ...recordKeys,
+        ...new Set(
+            [...addresses].flatMap(each =>
+                trackedKeysUnder(state, each, BACKUP_CONTACTS_KEY_PREFIX),
+            ),
+        ),
+    ]
+}
+
 export const deleteContactFromBackup = async ({
     state,
     address,
@@ -595,26 +630,28 @@ export const deleteContactFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<BackupDeleteResult> => {
-    const key = liveKeyUnder(state, address, BACKUP_CONTACTS_KEY_PREFIX)
-    const keys = key === null ? [] : [key]
+    const keys = contactKeysFor(state, address).filter(isLiveIn(state))
 
     return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
 }
 
-/** Mirror of `markAccountForBackup`: dropping the tombstone rather than
- *  reviving it is what makes the re-upload correct, since the server deleted
- *  the key and it has to go back at version 0. */
+/** Mirror of `markAccountForBackup`: dropping a dead record's tombstone rather
+ *  than reviving it is what makes the re-upload correct, since the server
+ *  deleted the key and it has to go back at version 0. A dead legacy item
+ *  goes too, since reconcile holds back a record whose legacy items were all
+ *  deleted. */
 export const markContactForBackup = (
     state: SyncState,
     address: string,
 ): SyncState => {
     const items = { ...state.items }
-    for (const key of trackedKeysUnder(
-        state,
-        address,
-        BACKUP_CONTACTS_KEY_PREFIX,
-    )) {
-        delete items[key]
+    for (const key of contactKeysFor(state, address)) {
+        const item = items[key] as SyncItemState
+        if (item.status === BackupItemStatus.ACTIVE && item.knownVer > 0) {
+            items[key] = { ...item, pendingDelete: false, pendingImport: false }
+        } else {
+            delete items[key]
+        }
     }
     return { ...state, items }
 }
@@ -627,37 +664,31 @@ export const keepContactInBackup = (
     address: string,
     name: string,
 ): SyncState => {
-    const key = liveKeyUnder(state, address, BACKUP_CONTACTS_KEY_PREFIX)
-    if (key === null) return state
-
-    return {
-        ...state,
-        items: {
-            ...state.items,
-            [key]: {
-                ...(state.items[key] as SyncItemState),
-                pendingImport: true,
-                isDirty: false,
-                pendingDelete: false,
-                label: name,
-            },
-        },
+    const items = { ...state.items }
+    for (const key of contactKeysFor(state, address).filter(isLiveIn(state))) {
+        items[key] = {
+            ...(items[key] as SyncItemState),
+            pendingImport: true,
+            isDirty: false,
+            pendingDelete: false,
+            label: name,
+        }
     }
+    return { ...state, items }
 }
 
-const contactNotInBackup = (
+const contactImportFailure = (
     state: SyncState,
     address: string,
+    reason: string,
 ): { state: SyncState; summary: ContactImportSummary } => ({
     state,
-    summary: {
-        imported: 0,
-        failed: [{ address, reason: 'Not present in the backup' }],
-    },
+    summary: { imported: 0, failed: [{ address, reason }] },
 })
 
-/** Re-reads the item rather than trusting the cached `label`, so `label` stays
- *  a pure display concern and imports have one code path. */
+/** Re-reads the items rather than trusting the cached `label`, so `label` stays
+ *  a pure display concern and imports have one code path. A record is the
+ *  whole contact, so a legacy item is read only when no record is live. */
 export const importContactFromBackup = async ({
     state,
     address,
@@ -667,62 +698,58 @@ export const importContactFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<{ state: SyncState; summary: ContactImportSummary }> => {
-    const key = liveKeyUnder(state, address, BACKUP_CONTACTS_KEY_PREFIX)
-    if (key === null) return contactNotInBackup(state, address)
+    const liveKeys = contactKeysFor(state, address).filter(isLiveIn(state))
+    const hasRecord = liveKeys.some(isContactRecordKey)
+    const readKeys = liveKeys.filter(
+        key => !hasRecord || isContactRecordKey(key),
+    )
+    if (readKeys.length === 0)
+        return contactImportFailure(state, address, 'Not present in the backup')
 
-    const [fetched] = await deps.readItems(
+    const fetched = await deps.readItems(
         deps.network,
         deps.backupId,
         deps.deviceId,
-        [key],
+        readKeys,
     )
-    if (!fetched) return contactNotInBackup(state, address)
+    if (fetched.length === 0)
+        return contactImportFailure(state, address, 'Not present in the backup')
 
-    let payload
-    try {
-        payload = parseContactPayload(
-            deps.decrypt(fetched.payload, {
-                encryptionKey: deps.encryptionKey,
-                backupId: deps.backupId,
-                key,
-            }),
-        )
-    } catch (error) {
-        logger.warn('reviewActions: unreadable contact', { key })
-        return {
-            state,
-            summary: {
-                imported: 0,
-                failed: [
-                    {
-                        address,
-                        reason:
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                    },
-                ],
-            },
+    const records: ContactRecordPayload[] = []
+    const legacy: ContactBackupPayload[] = []
+    for (const item of fetched) {
+        try {
+            const plaintext = decryptWithDeps(item, deps)
+            if (isContactRecordKey(item.key))
+                records.push(parseContactRecordPayload(plaintext))
+            else legacy.push(parseContactPayload(plaintext))
+        } catch (error) {
+            logger.warn('reviewActions: unreadable contact', { key: item.key })
+            return contactImportFailure(
+                state,
+                address,
+                error instanceof Error ? error.message : String(error),
+            )
         }
     }
+    if (records.some(record => contactRecordEntries(record).length === 0))
+        return contactImportFailure(
+            state,
+            address,
+            'Needs a newer version of Pera',
+        )
 
-    const summary = await deps.importContacts([payload])
-    return {
-        state: {
-            ...state,
-            items: {
-                ...state.items,
-                [key]: {
-                    ...clearReviewed(
-                        state.items[key] as SyncItemState,
-                        fetched,
-                    ),
-                    label: payload.name,
-                },
-            },
-        },
-        summary,
+    const contacts = buildPulledContacts({ records, legacy })
+    const summary = await deps.importContacts(contacts)
+    const byKey = new Map(fetched.map(item => [item.key, item]))
+    const items = { ...state.items }
+    for (const key of liveKeys) {
+        items[key] = {
+            ...clearReviewed(items[key] as SyncItemState, byKey.get(key)),
+            label: contacts[0]?.name ?? items[key]?.label,
+        }
     }
+    return { state: { ...state, items }, summary }
 }
 
 /** Each tracked record with its secret. The secret is named from the

@@ -28,6 +28,7 @@ vi.mock('../../api', async importOriginal => ({
 }))
 
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { FromSeqTooOldError, UpsertResult } from '../../api'
@@ -42,6 +43,7 @@ import {
     DeltaOperation,
     accountRecordItemKey,
     contactItemKey,
+    contactRecordItemKey,
     createEmptySyncState,
     passkeyItemKey,
     passkeySecretsItemKey,
@@ -68,6 +70,8 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const recordKey = (address: string) =>
     accountRecordItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
+const contactRecordKey = (address: string) =>
+    contactRecordItemKey(hashAddress(address))
 const settingsKey = settingsItemKey(hashAddress(SETTINGS_ITEM_ID))
 
 /** Settings the server already holds, so they add no push of their own. */
@@ -496,7 +500,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: contactKey('C1'),
+                    key: contactRecordKey('C1'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 2,
@@ -517,8 +521,8 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual([recordKey('W'), contactKey('C1'), settingsKey].sort())
-        expect(next.items[contactKey('C1')]).toMatchObject({
+        ).toEqual([recordKey('W'), contactRecordKey('C1'), settingsKey].sort())
+        expect(next.items[contactRecordKey('C1')]).toMatchObject({
             type: BackupItemType.CONTACT,
             isDirty: false,
             knownVer: 1,
@@ -541,7 +545,7 @@ describe('syncBackup', () => {
                     seq: 1,
                 },
                 {
-                    key: contactKey('C1'),
+                    key: contactRecordKey('C1'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 2,
@@ -566,7 +570,7 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual([recordKey('W'), contactKey('C1'), settingsKey].sort())
+        ).toEqual([recordKey('W'), contactRecordKey('C1'), settingsKey].sort())
         expect(next.lastSyncResult).toBe('SUCCESS')
         expect(warn).toHaveBeenCalledWith(
             'syncBackup: listPasskeys failed, skipping passkeys',
@@ -1053,5 +1057,235 @@ describe('syncBackup writing an account record', () => {
             { chain: 'algorand', type: 'watch', address: 'W' },
             { chain: 'ethereum', type: 'watch', address: '0xabc' },
         ])
+    })
+})
+
+describe('syncBackup writing a contact record', () => {
+    const KEY = contactRecordKey('C1')
+    const LEGACY_KEY = contactKey('C1')
+    const alice = { addresses: { algorand: 'C1' }, name: 'Alice' }
+
+    // No local accounts, so only the contact items can move the sync.
+    const contactDeps = (contacts: Contact[]) => ({
+        ...deps(),
+        listAccounts: () => [],
+        listContacts: () => contacts,
+    })
+
+    const settledContact = (
+        key: string,
+        record: Record<string, unknown>,
+    ): SyncState['items'][string] => ({
+        ...settledRecord(key, {
+            ...record,
+            chains: (record.addresses as { address: string }[]).map(a => ({
+                address: a.address,
+            })),
+        }),
+        type: BackupItemType.CONTACT,
+        localContentHash: itemContentHash(key, record),
+        record,
+    })
+
+    const stateHolding = (
+        record: Record<string, unknown> | null,
+    ): SyncState => {
+        const state = createEmptySyncState('b')
+        state.lastKnownBackupHash = 'g'
+        state.lastSyncedSeq = 4
+        state.readableChains = ['algorand']
+        if (record) state.items[KEY] = settledContact(KEY, record)
+        return withSyncedSettings(state)
+    }
+
+    const pushedRecord = (): Record<string, unknown> => {
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const entry = request.items.find(
+            (item: { key: string }) => item.key === KEY,
+        )
+        return JSON.parse(
+            decryptItemPayload(entry.payload, {
+                encryptionKey,
+                backupId: 'b',
+                key: KEY,
+            }),
+        )
+    }
+
+    const remoteRecord = {
+        formatVersion: 1,
+        name: 'Old name',
+        updatedAt: 1,
+        addresses: [{ family: 'algorand', address: 'C1' }],
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g2',
+            lastSeq: 4,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                { key: KEY, result: UpsertResult.OK, new_ver: 3, seq: 5 },
+            ],
+        })
+    })
+
+    it('writes only records, leaving a legacy item where it was', async () => {
+        const state = stateHolding(null)
+        state.items[LEGACY_KEY] = {
+            type: BackupItemType.CONTACT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'legacy',
+            localContentHash: null,
+            localUpdatedAt: null,
+            address: 'C1',
+        }
+
+        const next = await syncBackup(contactDeps([alice]), state)
+
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        expect(
+            request.items.map((entry: { key: string }) => entry.key),
+        ).toContain(KEY)
+        expect(
+            request.items.map((entry: { key: string }) => entry.key),
+        ).not.toContain(LEGACY_KEY)
+        expect(next.items[LEGACY_KEY]).toEqual(state.items[LEGACY_KEY])
+    })
+
+    it('keeps a family this build does not know through a rename', async () => {
+        await syncBackup(
+            contactDeps([alice]),
+            stateHolding({
+                ...remoteRecord,
+                futureField: 'kept',
+                addresses: [
+                    { family: 'algorand', address: 'C1' },
+                    { family: 'solana', address: 'S1', memo: 'm' },
+                ],
+            }),
+        )
+
+        expect(pushedRecord()).toMatchObject({
+            name: 'Alice',
+            futureField: 'kept',
+            addresses: [
+                { family: 'algorand', address: 'C1' },
+                { family: 'solana', address: 'S1', memo: 'm' },
+            ],
+        })
+    })
+
+    it('pushes the family a contact gained since the record was written', async () => {
+        await syncBackup(
+            contactDeps([
+                {
+                    addresses: { algorand: 'C1', evm: '0xC1' },
+                    name: 'Old name',
+                },
+            ]),
+            stateHolding(remoteRecord),
+        )
+
+        expect(pushedRecord().addresses).toEqual([
+            { family: 'algorand', address: 'C1' },
+            { family: 'evm', address: '0xC1' },
+        ])
+    })
+
+    it('never writes over a record a newer client wrote', async () => {
+        const next = await syncBackup(
+            contactDeps([alice]),
+            stateHolding({ ...remoteRecord, formatVersion: 2 }),
+        )
+
+        expect(batchUpsertItems).not.toHaveBeenCalled()
+        expect(next.items[KEY]?.isDirty).toBe(false)
+    })
+
+    it("drops the local edit when a newer client's record arrives", async () => {
+        fetchDelta.mockResolvedValue([
+            {
+                seq: 5,
+                key: KEY,
+                type: BackupItemType.CONTACT,
+                ver: 3,
+                status: BackupItemStatus.ACTIVE,
+                op: DeltaOperation.UPSERT,
+                hash: 'r2',
+            },
+        ])
+        readItems.mockResolvedValue([
+            {
+                key: KEY,
+                ver: 3,
+                hash: 'r2',
+                payload: encryptItemPayload(
+                    JSON.stringify({
+                        ...remoteRecord,
+                        formatVersion: 2,
+                        updatedAt: 5,
+                    }),
+                    { encryptionKey, backupId: 'b', key: KEY },
+                ),
+            },
+        ])
+
+        const next = await syncBackup(
+            contactDeps([alice]),
+            stateHolding(remoteRecord),
+        )
+
+        expect(batchUpsertItems).not.toHaveBeenCalled()
+        expect(next.items[KEY]?.isDirty).toBe(false)
+    })
+
+    it('does not touch a record of unknown families that no local contact matches', async () => {
+        const next = await syncBackup(
+            contactDeps([]),
+            stateHolding({
+                ...remoteRecord,
+                addresses: [{ family: 'solana', address: 'S1' }],
+            }),
+        )
+
+        const pushedKeys = batchUpsertItems.mock.calls.flatMap(
+            ([, , , request]) =>
+                request.items.map((entry: { key: string }) => entry.key),
+        )
+        expect(pushedKeys).not.toContain(KEY)
+        expect(next.items[KEY]?.isDirty).toBe(false)
+    })
+
+    it('short-circuits even with a legacy item left dirty before the upgrade', async () => {
+        const state = stateHolding(null)
+        state.items[LEGACY_KEY] = {
+            type: BackupItemType.CONTACT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'legacy',
+            localContentHash: 'h',
+            localUpdatedAt: 3,
+            address: 'C1',
+        }
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 4,
+            items: {},
+        })
+
+        const next = await syncBackup(contactDeps([]), state)
+
+        expect(fetchDelta).not.toHaveBeenCalled()
+        expect(next.items[LEGACY_KEY]?.isDirty).toBe(false)
     })
 })

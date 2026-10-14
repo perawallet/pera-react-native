@@ -11,12 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import { LEGACY_CHAIN_FAMILY } from '@perawallet/wallet-core-chain-contract'
-import {
-    DuplicateAddressError,
-    useContactsStore,
-} from '@perawallet/wallet-core-contacts'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { logger } from '@perawallet/wallet-core-shared'
+import { contactAddressEntries } from '../models'
 import type { ContactImportFn, ContactImportSummary } from '../sync/types'
 
 export type UseCloudBackupContactImportResult = {
@@ -25,56 +22,48 @@ export type UseCloudBackupContactImportResult = {
 
 export const useCloudBackupContactImport =
     (): UseCloudBackupContactImportResult => {
-        const importContacts = useCallback<ContactImportFn>(async payloads => {
+        const importContacts = useCallback<ContactImportFn>(async incoming => {
             const summary: ContactImportSummary = { imported: 0, failed: [] }
 
-            for (const payload of payloads) {
+            for (const contact of incoming) {
                 // Read the live store each time: appends earlier in this loop
-                // must be visible to the duplicate check below.
+                // must be visible to the match below.
                 const store = useContactsStore.getState()
+                const entries = contactAddressEntries(contact.addresses)
+                const matched = entries.find(({ family, address }) =>
+                    store.contacts.some(c => c.addresses[family] === address),
+                )
                 try {
-                    store.addContact({
-                        addresses: { [LEGACY_CHAIN_FAMILY]: payload.address },
-                        name: payload.name,
-                    })
-                } catch (error) {
-                    if (!(error instanceof DuplicateAddressError)) {
-                        logger.warn(
-                            'useCloudBackupContactImport: import failed',
-                            { address: payload.address },
+                    if (matched) {
+                        // Last-write-wins already picked the incoming name, so
+                        // it is authoritative. Neither shape carries `image` or
+                        // `nfd`, and a legacy item carries a single address,
+                        // so the existing contact's are carried over.
+                        const existing = store.contacts.find(
+                            c =>
+                                c.addresses[matched.family] === matched.address,
                         )
-                        summary.failed.push({
-                            address: payload.address,
-                            reason:
-                                error instanceof Error
-                                    ? error.message
-                                    : String(error),
-                        })
-                        continue
-                    }
-                    // Last-write-wins already picked the incoming record, so it
-                    // is authoritative. `image` is device-local, `nfd` is
-                    // re-resolvable and the payload carries no other family's
-                    // address, so all three are carried over rather than lost.
-                    const existing = store.contacts.find(
-                        contact =>
-                            contact.addresses[LEGACY_CHAIN_FAMILY] ===
-                            payload.address,
-                    )
-                    store.editContact(
-                        {
-                            family: LEGACY_CHAIN_FAMILY,
-                            address: payload.address,
-                        },
-                        {
+                        store.editContact(matched, {
                             ...existing,
+                            name: contact.name,
                             addresses: {
                                 ...existing?.addresses,
-                                [LEGACY_CHAIN_FAMILY]: payload.address,
+                                ...contact.addresses,
                             },
-                            name: payload.name,
-                        },
-                    )
+                        })
+                    } else {
+                        store.addContact(contact)
+                    }
+                } catch (error) {
+                    logger.warn('useCloudBackupContactImport: import failed')
+                    summary.failed.push({
+                        address: entries[0]?.address ?? '',
+                        reason:
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                    })
+                    continue
                 }
                 summary.imported += 1
             }

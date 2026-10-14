@@ -55,35 +55,42 @@ describe('contactsFingerprint', () => {
         )
     })
 
-    it('pins the fingerprint of a legacy-only contact set', () => {
+    it('pins the fingerprint of a contact set', () => {
         expect(
             contactsFingerprint([
                 { addresses: { algorand: 'B' }, name: 'Bob' },
-                { addresses: { algorand: 'A' }, name: 'Alice' },
+                { addresses: { algorand: 'A', evm: '0xA' }, name: 'Alice' },
             ]),
-        ).toBe('A AliceB Bob')
+        ).toBe('algorand:A evm:0xA Alicealgorand:B Bob')
     })
 
-    it('is unchanged by a second family on a contact', () => {
+    it('changes when an address is added in another family', () => {
         expect(
             contactsFingerprint([
                 { addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' },
             ]),
-        ).toBe(
+        ).not.toBe(
             contactsFingerprint([
                 { addresses: { algorand: 'A' }, name: 'Alice' },
             ]),
         )
     })
 
-    it('ignores a contact without a legacy-family address', () => {
-        const alice = { addresses: { algorand: 'A' }, name: 'Alice' }
-
+    it('does not depend on the order the families were inserted in', () => {
         expect(
             contactsFingerprint([
-                alice,
-                { addresses: { evm: '0xB' }, name: 'Bob' },
+                { addresses: { evm: '0xB', algorand: 'A' }, name: 'Alice' },
             ]),
-        ).toBe(contactsFingerprint([alice]))
+        ).toBe(
+            contactsFingerprint([
+                { addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' },
+            ]),
+        )
+    })
+
+    it('covers a contact holding only a non-legacy family', () => {
+        expect(
+            contactsFingerprint([{ addresses: { evm: '0xB' }, name: 'Bob' }]),
+        ).not.toBe(contactsFingerprint([]))
     })
 })

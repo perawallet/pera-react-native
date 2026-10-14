@@ -27,6 +27,7 @@ import {
     accountItemKey,
     accountRecordItemKey,
     contactItemKey,
+    contactRecordItemKey,
     passkeyItemKey,
     secretsItemKey,
 } from '../itemKeys'
@@ -55,6 +56,8 @@ const recordKey = (identity: string) =>
     accountRecordItemKey(hashAddress(identity))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
+const contactRecordKey = (address: string) =>
+    contactRecordItemKey(hashAddress(address))
 const passkeyKey = (credentialId: string) =>
     passkeyItemKey(hashAddress(credentialId))
 
@@ -381,7 +384,7 @@ describe('isContactBackedUp', () => {
         state.items[contactKey('A')] = contact('A', { pendingImport: true })
 
         expect(isContactBackedUp(state, 'A')).toBe(false)
-        expect(deriveBackupContactReview(state, ['A']).backedUp.size).toBe(0)
+        expect(deriveBackupContactReview(state, [['A']]).backedUp.size).toBe(0)
     })
 })
 
@@ -555,7 +558,7 @@ describe('deriveBackupContactReview', () => {
                 [contactKey('A')]: contact('A'),
                 [accountKey('A')]: tracked('A'),
             }),
-            ['A', 'B'],
+            [['A'], ['B']],
         )
 
         expect([...review.backedUp]).toEqual(['A'])
@@ -597,11 +600,86 @@ describe('deriveBackupContactReview', () => {
                     label: 'Alice',
                 }),
             }),
-            ['A'],
+            [['A']],
         )
 
         expect(review.availableFromBackup).toEqual([])
         expect(review.notBackedUp).toEqual(['A'])
+    })
+
+    describe('with contact records', () => {
+        const record = (
+            addresses: string[],
+            overrides: Partial<SyncItemState> = {},
+        ): SyncItemState =>
+            contact(addresses[0] as string, { addresses, ...overrides })
+
+        it('backs up an EVM-only contact through its record', () => {
+            const review = deriveBackupContactReview(
+                stateWith({ [contactRecordKey('0xB')]: record(['0xB']) }),
+                [['0xB']],
+            )
+
+            expect([...review.backedUp]).toEqual(['0xB'])
+            expect(review.notBackedUp).toEqual([])
+        })
+
+        it('finds a contact through any family its record holds', () => {
+            const state = stateWith({
+                [contactRecordKey('A')]: record(['A', '0xB']),
+            })
+
+            expect(isContactBackedUp(state, '0xB')).toBe(true)
+            expect([
+                ...deriveBackupContactReview(state, [['A', '0xB']]).backedUp,
+            ]).toEqual(['A'])
+        })
+
+        it('names a held record from its cached label', () => {
+            const review = deriveBackupContactReview(
+                stateWith({
+                    [contactRecordKey('A')]: record(['A', '0xB'], {
+                        pendingImport: true,
+                        label: 'Alice',
+                    }),
+                }),
+                [],
+            )
+
+            expect(review.availableFromBackup).toEqual([
+                { address: 'A', name: 'Alice' },
+            ])
+        })
+
+        it('shows no second row for a held legacy item a live record covers', () => {
+            const review = deriveBackupContactReview(
+                stateWith({
+                    [contactRecordKey('A')]: record(['A', '0xB'], {
+                        pendingImport: true,
+                        label: 'Alice',
+                    }),
+                    [contactKey('A')]: contact('A', {
+                        pendingImport: true,
+                        label: 'Alice',
+                    }),
+                }),
+                [],
+            )
+
+            expect(review.availableFromBackup).toHaveLength(1)
+        })
+
+        it('counts a legacy item the record does not cover as its own contact', () => {
+            const review = deriveBackupContactReview(
+                stateWith({
+                    [contactRecordKey('A')]: record(['A']),
+                    [contactKey('C')]: contact('C'),
+                }),
+                [['A'], ['C']],
+            )
+
+            expect([...review.backedUp]).toEqual(['A', 'C'])
+        })
     })
 })
 

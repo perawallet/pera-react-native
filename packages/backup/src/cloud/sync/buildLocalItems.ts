@@ -14,10 +14,15 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     accountRecordAddresses,
     accountRecordType,
+    contactRecordAddresses,
     isAccountRecordKey,
+    isContactRecordKey,
     isNewerAccountRecord,
+    isNewerContactRecord,
     mergeAccountRecord,
+    mergeContactRecord,
     type AccountRecordPayload,
+    type ContactRecordPayload,
     type SyncState,
 } from '../models'
 import { itemContentHash } from './itemContentHash'
@@ -41,17 +46,31 @@ export const withContentHash = (item: SerializedItem): LocalItem => {
     }
 }
 
+// Both records are loose objects, which TypeScript won't narrow on `in`, so
+// the guards say which key identifies each.
+const isAccountRecordPayload = (
+    payload: SerializedItem['payload'],
+): payload is AccountRecordPayload => 'chains' in payload
+
+const isContactRecordPayload = (
+    payload: SerializedItem['payload'],
+): payload is ContactRecordPayload => 'addresses' in payload
+
 /** What the tracked item caches so review rows and actions can name it: the
  *  key itself is a hash. */
 const identifiersOf = (
     payload: SerializedItem['payload'],
 ): Pick<LocalItem, 'address' | 'addresses' | 'accountType'> => {
-    if ('chains' in payload) {
+    if (isAccountRecordPayload(payload)) {
         return {
             address: payload.chains[0]?.address ?? '',
             addresses: accountRecordAddresses(payload),
             accountType: accountRecordType(payload),
         }
+    }
+    if (isContactRecordPayload(payload)) {
+        const addresses = contactRecordAddresses(payload)
+        return { address: addresses[0] ?? '', addresses, accountType: null }
     }
     return {
         // A passkey has no address; its credential id is the identifier the
@@ -90,22 +109,38 @@ export const buildLocalItems = async (
     return { items: [...byKey.values()], skipped }
 }
 
-/** Lays each account record over the content its tracked item last held, so
- *  what this build can't read goes back to the server as it came. */
+const isRecordKey = (key: string): boolean =>
+    isAccountRecordKey(key) || isContactRecordKey(key)
+
+const isNewerRecord = (
+    key: string,
+    record: Record<string, unknown> | null | undefined,
+): boolean =>
+    isContactRecordKey(key)
+        ? isNewerContactRecord(record)
+        : isNewerAccountRecord(record)
+
+/** Lays each account and contact record over the content its tracked item last
+ *  held, so what this build can't read goes back to the server as it came. */
 export const withTrackedRecords = (
     items: LocalItem[],
     state: SyncState,
 ): LocalItem[] =>
     items.map(item => {
         const remote = state.items[item.key]?.record
-        if (!remote || !isAccountRecordKey(item.key)) return item
+        if (!remote || !isRecordKey(item.key)) return item
         return withContentHash({
             key: item.key,
             type: item.type,
-            payload: mergeAccountRecord(
-                remote,
-                item.payload as AccountRecordPayload,
-            ),
+            payload: isContactRecordKey(item.key)
+                ? mergeContactRecord(
+                      remote,
+                      item.payload as ContactRecordPayload,
+                  )
+                : mergeAccountRecord(
+                      remote,
+                      item.payload as AccountRecordPayload,
+                  ),
         })
     })
 
@@ -117,14 +152,14 @@ export const withTrackedRecords = (
  */
 export const refreshRecordsForPush = (
     state: SyncState,
-    accountItems: LocalItem[],
+    recordItems: LocalItem[],
 ): { state: SyncState; items: LocalItem[] } => {
-    const items = withTrackedRecords(accountItems, state)
+    const items = withTrackedRecords(recordItems, state)
     const tracked = { ...state.items }
     for (const item of items) {
         const current = tracked[item.key]
-        if (!isAccountRecordKey(item.key) || !current?.isDirty) continue
-        tracked[item.key] = isNewerAccountRecord(current.record)
+        if (!isRecordKey(item.key) || !current?.isDirty) continue
+        tracked[item.key] = isNewerRecord(item.key, current.record)
             ? { ...current, isDirty: false }
             : {
                   ...current,

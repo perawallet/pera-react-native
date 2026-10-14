@@ -408,6 +408,20 @@ describe('restoreCloudBackup', () => {
         expect(newerAccountCount).toBe(2)
     })
 
+    test('leaves a newer contact record out of the count of accounts', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            skipped: [
+                { key: 'contact-records/a', reason: 'newer' },
+                { key: 'account-records/b', reason: 'newer' },
+            ],
+        })
+
+        const { newerAccountCount } = await restoreCloudBackup(params())
+
+        expect(newerAccountCount).toBe(1)
+    })
+
     test('marks the items of an account that failed to import for the first syncs to retry', async () => {
         importAccounts.mockResolvedValue({
             ...SUMMARY,

@@ -21,7 +21,7 @@ import {
 import { encryptItemPayload } from '../crypto/itemPayload'
 import {
     isAccountKey,
-    isContactItemKey,
+    isContactKey,
     isPasskeyItemKey,
     isSettingsItemKey,
     BackupItemStatus,
@@ -104,7 +104,7 @@ const withUpdatedAt = (
 ): string => {
     const carriesUpdatedAt =
         isAccountKey(item.key) ||
-        isContactItemKey(item.key) ||
+        isContactKey(item.key) ||
         isPasskeyItemKey(item.key)
     const payload =
         carriesUpdatedAt && updatedAt != null

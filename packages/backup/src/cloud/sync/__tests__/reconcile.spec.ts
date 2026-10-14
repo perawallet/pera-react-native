@@ -214,6 +214,175 @@ describe('reconcile', () => {
         })
     })
 
+    describe('a contact record', () => {
+        const KEY = 'contact-records/R'
+        const record = (formatVersion: number) => ({
+            formatVersion,
+            name: 'Alice',
+            addresses: [{ family: 'algorand', address: 'ADDR' }],
+        })
+        const recordItem = (): LocalItem => ({
+            key: KEY,
+            type: BackupItemType.CONTACT,
+            contentHash: 'h2',
+            address: 'ADDR',
+            addresses: ['ADDR'],
+            accountType: null,
+            payload: record(1),
+        })
+        const trackedRecord = (
+            over: Partial<SyncItemState>,
+        ): SyncItemState => ({
+            type: BackupItemType.CONTACT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h1',
+            localUpdatedAt: null,
+            ...over,
+        })
+
+        it('caches every address and the content it writes', () => {
+            const next = reconcile(
+                createEmptySyncState('b'),
+                snapshot([recordItem()]),
+                NOW,
+            )
+
+            expect(next.items[KEY]).toMatchObject({
+                addresses: ['ADDR'],
+                record: record(1),
+                accountType: null,
+            })
+        })
+
+        it('never writes over a record a newer client wrote', () => {
+            const base = createEmptySyncState('b')
+            base.items[KEY] = trackedRecord({ record: record(2) })
+
+            const next = reconcile(base, snapshot([recordItem()]), NOW)
+
+            expect(next.items[KEY]).toEqual(base.items[KEY])
+        })
+    })
+
+    describe('a record whose legacy items were deleted from the backup', () => {
+        const legacy = (
+            status: BackupItemStatus,
+            address = 'ADDR',
+        ): SyncItemState => ({
+            type: BackupItemType.CONTACT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            status,
+            lastRemoteHash: 'r',
+            localContentHash: null,
+            localUpdatedAt: null,
+            address,
+        })
+        const recordItem = (key: string): LocalItem => ({
+            ...item(key, 'h1'),
+            addresses: ['ADDR', '0xB'],
+        })
+        const cases = [
+            ['account-records/R', 'accounts/A'],
+            ['contact-records/R', 'contacts/A'],
+        ]
+
+        it.each(cases)(
+            'holds back %s while %s is tombstoned',
+            (recordKey, legacyKey) => {
+                const base = createEmptySyncState('b')
+                base.items[legacyKey] = legacy(BackupItemStatus.IGNORED)
+
+                const next = reconcile(
+                    base,
+                    snapshot([recordItem(recordKey)]),
+                    NOW,
+                )
+
+                expect(next.items[recordKey]).toBeUndefined()
+            },
+        )
+
+        it.each(cases)(
+            'holds back %s while %s is being deleted',
+            (recordKey, legacyKey) => {
+                const base = createEmptySyncState('b')
+                base.items[legacyKey] = {
+                    ...legacy(BackupItemStatus.ACTIVE),
+                    pendingDelete: true,
+                }
+
+                const next = reconcile(
+                    base,
+                    snapshot([recordItem(recordKey)]),
+                    NOW,
+                )
+
+                expect(next.items[recordKey]).toBeUndefined()
+            },
+        )
+
+        it.each(cases)(
+            'tracks %s when another of its addresses still has a live %s',
+            (recordKey, legacyKey) => {
+                const base = createEmptySyncState('b')
+                base.items[legacyKey] = legacy(BackupItemStatus.IGNORED)
+                base.items[`${legacyKey}-live`] = legacy(
+                    BackupItemStatus.ACTIVE,
+                    '0xB',
+                )
+
+                const next = reconcile(
+                    base,
+                    snapshot([recordItem(recordKey)]),
+                    NOW,
+                )
+
+                expect(next.items[recordKey]).toMatchObject({ isDirty: true })
+            },
+        )
+    })
+
+    describe('a legacy item this build no longer writes', () => {
+        const stranded = (): SyncItemState => ({
+            type: BackupItemType.CONTACT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: 5,
+        })
+
+        it.each(['contacts/C', 'accounts/A'])(
+            'clears the dirty flag on %s, which nothing local writes',
+            key => {
+                const base = createEmptySyncState('b')
+                base.items[key] = stranded()
+
+                const next = reconcile(base, snapshot([]), NOW)
+
+                expect(next.items[key].isDirty).toBe(false)
+                expect(next.items[key].status).toBe(BackupItemStatus.ACTIVE)
+            },
+        )
+
+        it('keeps a dirty record dirty even when it is not local right now', () => {
+            const base = createEmptySyncState('b')
+            base.items['contact-records/R'] = stranded()
+
+            const next = reconcile(base, snapshot([]), NOW)
+
+            expect(next.items['contact-records/R'].isDirty).toBe(true)
+        })
+    })
+
     describe('a secret another device deleted', () => {
         const SECRET_KEY = 'secrets/S'
         const RECORD_KEY = 'account-records/R'

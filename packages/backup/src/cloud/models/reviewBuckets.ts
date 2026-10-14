@@ -13,7 +13,8 @@
 import {
     isAccountKey,
     isAccountRecordKey,
-    isContactItemKey,
+    isContactKey,
+    isContactRecordKey,
     isPasskeyItemKey,
 } from './itemKeys'
 import { isNewerAccountRecord } from './accountRecord'
@@ -91,31 +92,32 @@ const addressesOfItem = (item: SyncItemState): string[] =>
     item.addresses ?? (item.address == null ? [] : [item.address])
 
 /**
- * Reads account records and legacy address items only: a secret-bearing
- * account also stores key material under the same item type, so counting every
- * ACCOUNT item would double it. A legacy item a record covers is that account
- * as written before records, so the record speaks for it.
+ * Reads records and legacy items of one kind. A legacy item a record covers is
+ * that entity as written before records, so the record speaks for it.
  *
- * `localAccounts` holds each account's addresses, primary first; the buckets
- * name an account by its primary, and a row from the backup by its record's.
+ * `localRecords` holds each entity's addresses, primary first; the buckets
+ * name an entity by its primary, and a row from the backup by its record's.
  */
-export const deriveBackupAccountReview = (
+const deriveRecordReview = <TAvailable>(
     syncState: SyncState | null,
-    localAccounts: readonly (readonly string[])[],
-): BackupAccountReview => {
+    localRecords: readonly (readonly string[])[],
+    isKey: (key: BackupItemKey) => boolean,
+    isRecordKey: (key: BackupItemKey) => boolean,
+    toAvailable: (item: SyncItemState) => TAvailable,
+): ReviewBuckets<TAvailable> => {
     const live = Object.entries(syncState?.items ?? {}).filter(
         ([key, item]) =>
-            isAccountKey(key) && item.address != null && isLiveInBackup(item),
+            isKey(key) && item.address != null && isLiveInBackup(item),
     )
     const recordAddresses = new Set(
         live
-            .filter(([key]) => isAccountRecordKey(key))
+            .filter(([key]) => isRecordKey(key))
             .flatMap(([, item]) => addressesOfItem(item)),
     )
     const shown = live
         .filter(
             ([key, item]) =>
-                isAccountRecordKey(key) ||
+                isRecordKey(key) ||
                 !recordAddresses.has(item.address as string),
         )
         .map(([, item]) => item)
@@ -125,8 +127,8 @@ export const deriveBackupAccountReview = (
             .filter(item => item.pendingImport !== true)
             .flatMap(addressesOfItem),
     )
-    const local = new Set(localAccounts.flat())
-    const primaries = localAccounts.flatMap(([primary]) =>
+    const local = new Set(localRecords.flat())
+    const primaries = localRecords.flatMap(([primary]) =>
         primary === undefined ? [] : [primary],
     )
     return {
@@ -138,13 +140,28 @@ export const deriveBackupAccountReview = (
                     item.pendingImport === true &&
                     !addressesOfItem(item).some(address => local.has(address)),
             )
-            .map(item => ({
-                address: item.address as string,
-                type: item.accountType ?? null,
-                needsUpdate: isNewerAccountRecord(item.record),
-            })),
+            .map(toAvailable),
     }
 }
+
+/** Reads account records and legacy address items only: a secret-bearing
+ *  account also stores key material under the same item type, so counting every
+ *  ACCOUNT item would double it. */
+export const deriveBackupAccountReview = (
+    syncState: SyncState | null,
+    localAccounts: readonly (readonly string[])[],
+): BackupAccountReview =>
+    deriveRecordReview(
+        syncState,
+        localAccounts,
+        isAccountKey,
+        isAccountRecordKey,
+        item => ({
+            address: item.address as string,
+            type: item.accountType ?? null,
+            needsUpdate: isNewerAccountRecord(item.record),
+        }),
+    )
 
 /** Accounts the backup holds that only a newer version of the app can
  *  restore. This device keeps them as they are and never writes over them. */
@@ -161,13 +178,14 @@ export const countNewerAccountRecords = (syncState: SyncState | null): number =>
  *  the whole record. */
 export const deriveBackupContactReview = (
     syncState: SyncState | null,
-    localAddresses: readonly string[],
+    localContacts: readonly (readonly string[])[],
 ): BackupContactReview =>
-    deriveReview(
+    deriveRecordReview(
         syncState,
-        localAddresses,
-        isContactItemKey,
-        (address, item) => ({ address, name: item.label ?? '' }),
+        localContacts,
+        isContactKey,
+        isContactRecordKey,
+        item => ({ address: item.address as string, name: item.label ?? '' }),
     )
 
 /** `label` comes from the cached display name for the same reason a contact's
@@ -208,7 +226,7 @@ export const isAddressBackedUp = (
 export const isContactBackedUp = (
     syncState: SyncState | null,
     address: string,
-): boolean => isAddressLiveUnder(syncState, address, isContactItemKey)
+): boolean => isAddressLiveUnder(syncState, address, isContactKey)
 
 /** The credential id rides in `item.address`, the same local-only field an
  *  account's address uses: the key itself is a hash and cannot be read back. */

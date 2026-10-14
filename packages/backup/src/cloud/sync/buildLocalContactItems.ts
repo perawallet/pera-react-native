@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_FAMILY } from '@perawallet/wallet-core-chain-contract'
 import type { Contact } from '@perawallet/wallet-core-contacts'
-import { BackupItemType, contactItemKey } from '../models'
+import {
+    BackupItemType,
+    CONTACT_RECORD_FORMAT_VERSION,
+    contactAddressEntries,
+    contactRecordItemKey,
+} from '../models'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import { withContentHash } from './buildLocalItems'
 import type { LocalItem } from './types'
@@ -20,25 +24,27 @@ import type { LocalItem } from './types'
 /** Kept separate from `buildLocalItems` so the account builder's `skipped`
  *  count stays account-only: a contact has no key material and can never fail
  *  to serialize. `updatedAt` is epoch millis; `pushDirty` overwrites it with
- *  the tracked `localUpdatedAt` before encrypting. The payload's bare address
- *  predates chain families, so only the legacy family's goes in and a contact
- *  without one is not backed up. */
+ *  the tracked `localUpdatedAt` before encrypting. The record is keyed on the
+ *  hash of the contact's first address, which every device derives the same
+ *  way; a contact with no address is not backed up. */
 export const buildLocalContactItems = (
     contacts: readonly Contact[],
     updatedAt: number,
     hashAddress: ItemKeyHasher,
 ): LocalItem[] =>
     contacts.flatMap(contact => {
-        const address = contact.addresses[LEGACY_CHAIN_FAMILY]
-        if (!address) return []
+        const addresses = contactAddressEntries(contact.addresses)
+        const [primary] = addresses
+        if (!primary) return []
         return [
             withContentHash({
-                key: contactItemKey(hashAddress(address)),
+                key: contactRecordItemKey(hashAddress(primary.address)),
                 type: BackupItemType.CONTACT,
                 payload: {
-                    address,
+                    formatVersion: CONTACT_RECORD_FORMAT_VERSION,
                     name: contact.name,
                     updatedAt,
+                    addresses,
                 },
             }),
         ]

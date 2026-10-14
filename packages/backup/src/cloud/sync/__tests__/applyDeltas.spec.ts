@@ -514,7 +514,7 @@ describe('applyDeltas: contacts', () => {
         })
 
         expect(deps.importContacts).toHaveBeenCalledWith([
-            { address: 'C1', name: 'Alice' },
+            { addresses: { algorand: 'C1' }, name: 'Alice' },
         ])
         expect(next.items['contacts/C1']).toMatchObject({
             label: 'Alice',
@@ -584,8 +584,159 @@ describe('applyDeltas: contacts', () => {
         await applyDeltas({ state, deltas: [contactDelta()], deps })
 
         expect(deps.importContacts).toHaveBeenCalledWith([
-            { address: 'C1', name: 'Remote', updatedAt: 1000 },
+            { addresses: { algorand: 'C1' }, name: 'Remote' },
         ])
+    })
+
+    describe('records', () => {
+        const KEY = 'contact-records/R1'
+        const record = (over: Record<string, unknown> = {}) => ({
+            formatVersion: 1,
+            name: 'Alice',
+            updatedAt: 1000,
+            addresses: [
+                { family: 'algorand', address: 'C1' },
+                { family: 'evm', address: '0xC1' },
+            ],
+            ...over,
+        })
+        const servingRecord = (payload: Record<string, unknown>) => {
+            const deps = baseDeps()
+            deps.readItems.mockResolvedValue([
+                { key: KEY, ver: 3, hash: 'rh', payload: 'enc' },
+            ])
+            deps.decrypt.mockReturnValue(JSON.stringify(payload))
+            return deps
+        }
+
+        it('imports a record as one contact holding every family', async () => {
+            const deps = servingRecord(record())
+
+            const next = await applyDeltas({
+                state: createEmptySyncState('b'),
+                deltas: [contactDelta({ key: KEY })],
+                deps,
+            })
+
+            expect(deps.importContacts).toHaveBeenCalledWith([
+                {
+                    name: 'Alice',
+                    addresses: { algorand: 'C1', evm: '0xC1' },
+                },
+            ])
+            expect(next.items[KEY]).toMatchObject({
+                label: 'Alice',
+                address: 'C1',
+                addresses: ['C1', '0xC1'],
+                isDirty: false,
+                knownVer: 3,
+                record: { name: 'Alice' },
+            })
+        })
+
+        it('imports a record and a legacy item of one contact once', async () => {
+            const deps = baseDeps()
+            deps.readItems.mockResolvedValue([
+                { key: 'contacts/C1', ver: 1, hash: 'l', payload: 'legacy' },
+                { key: KEY, ver: 3, hash: 'rh', payload: 'record' },
+            ])
+            deps.decrypt.mockImplementation((payload: string) =>
+                JSON.stringify(
+                    payload === 'legacy'
+                        ? { address: 'C1', name: 'Old name' }
+                        : record(),
+                ),
+            )
+
+            await applyDeltas({
+                state: createEmptySyncState('b'),
+                deltas: [
+                    contactDelta({ key: 'contacts/C1', ver: 1, hash: 'l' }),
+                    contactDelta({ key: KEY, seq: 6 }),
+                ],
+                deps,
+            })
+
+            expect(deps.importContacts).toHaveBeenCalledWith([
+                {
+                    name: 'Alice',
+                    addresses: { algorand: 'C1', evm: '0xC1' },
+                },
+            ])
+        })
+
+        it('holds a record this device deleted, caching its label', async () => {
+            const deps = servingRecord(record())
+            const state = createEmptySyncState('b')
+            state.items[KEY] = trackedContact({
+                status: BackupItemStatus.IGNORED,
+            })
+
+            const next = await applyDeltas({
+                state,
+                deltas: [contactDelta({ key: KEY, ver: 4 })],
+                deps,
+            })
+
+            expect(deps.importContacts).not.toHaveBeenCalled()
+            expect(next.items[KEY]).toMatchObject({
+                pendingImport: true,
+                label: 'Alice',
+                addresses: ['C1', '0xC1'],
+            })
+        })
+
+        it('tracks a record from a newer format without importing it, dropping a local edit', async () => {
+            const deps = servingRecord(record({ formatVersion: 2 }))
+            const state = createEmptySyncState('b')
+            state.items[KEY] = trackedContact({
+                isDirty: true,
+                localUpdatedAt: 2000,
+            })
+
+            const next = await applyDeltas({
+                state,
+                deltas: [contactDelta({ key: KEY })],
+                deps,
+            })
+
+            expect(deps.importContacts).not.toHaveBeenCalled()
+            expect(next.items[KEY]).toMatchObject({
+                isDirty: false,
+                knownVer: 3,
+                record: { formatVersion: 2 },
+            })
+        })
+
+        it('keeps a strictly newer local edit but caches the remote content', async () => {
+            const deps = servingRecord(
+                record({
+                    updatedAt: 1000,
+                    addresses: [
+                        { family: 'algorand', address: 'C1' },
+                        { family: 'solana', address: 'S1' },
+                    ],
+                }),
+            )
+            const state = createEmptySyncState('b')
+            state.items[KEY] = trackedContact({
+                isDirty: true,
+                localUpdatedAt: 2000,
+            })
+
+            const next = await applyDeltas({
+                state,
+                deltas: [contactDelta({ key: KEY })],
+                deps,
+            })
+
+            expect(deps.importContacts).not.toHaveBeenCalled()
+            expect(next.items[KEY]).toMatchObject({
+                isDirty: true,
+                baseVer: 3,
+                addresses: ['C1', 'S1'],
+            })
+        })
     })
 })
 

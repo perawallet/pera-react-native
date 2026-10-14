@@ -104,12 +104,12 @@ export const syncBackup = async (
     } finally {
         for (const passkey of passkeys) zeroBytes(passkey.privateKey)
     }
-    const otherItems = [
+    const recordItems = [
+        ...accounts.items,
         ...buildLocalContactItems(deps.listContacts(), now, deps.hashAddress),
-        ...passkeyItems,
     ]
     const local: LocalSnapshot = {
-        items: [...withTrackedRecords(accounts.items, state), ...otherItems],
+        items: [...withTrackedRecords(recordItems, state), ...passkeyItems],
         // Account-only: a contact cannot fail to serialize, and a credential
         // that could not be re-derived never reaches this list.
         skipped: accounts.skipped,
@@ -184,10 +184,10 @@ export const syncBackup = async (
 
     // 5. Push local changes (use the freshly-built local items).
     abortIfStopped(deps)
-    const refreshed = refreshRecordsForPush(next, accounts.items)
+    const refreshed = refreshRecordsForPush(next, recordItems)
     next = await pushDirty({
         state: refreshed.state,
-        localItems: [...refreshed.items, ...otherItems],
+        localItems: [...refreshed.items, ...passkeyItems],
         deps: {
             network: deps.network,
             backupId: deps.backupId,

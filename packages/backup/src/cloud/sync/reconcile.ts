@@ -14,8 +14,12 @@ import {
     BACKUP_SECRETS_KEY_PREFIX,
     BackupItemStatus,
     cachedRecordSeedReference,
+    isAccountItemKey,
     isAccountRecordKey,
+    isContactItemKey,
+    isContactRecordKey,
     isNewerAccountRecord,
+    isNewerContactRecord,
     type SyncItemState,
     type SyncState,
 } from '../models'
@@ -82,6 +86,36 @@ const isSecretOfLiveRecord = (state: SyncState, item: LocalItem): boolean =>
                 cachedRecordSeedReference(tracked.record) === item.address),
     )
 
+/**
+ * A record this build has not pushed yet, for an account or contact the user
+ * deleted from the backup before records existed. Its legacy items are all
+ * tombstoned, and uploading the record would bring it back on every restore.
+ * "Back up" drops those tombstones, which lets the record go up.
+ */
+const isDeletedBeforeRecords = (state: SyncState, item: LocalItem): boolean => {
+    const isLegacyOfItem = isAccountRecordKey(item.key)
+        ? isAccountItemKey
+        : isContactRecordKey(item.key)
+          ? isContactItemKey
+          : null
+    if (!isLegacyOfItem || !item.addresses) return false
+    const addresses = new Set(item.addresses)
+    const legacy = Object.entries(state.items).filter(
+        ([key, tracked]) =>
+            isLegacyOfItem(key) &&
+            tracked.address != null &&
+            addresses.has(tracked.address),
+    )
+    return (
+        legacy.length > 0 &&
+        legacy.every(
+            ([, tracked]) =>
+                tracked.status === BackupItemStatus.IGNORED ||
+                tracked.pendingDelete === true,
+        )
+    )
+}
+
 /** Absence is deliberately not a signal. An account missing locally is not a
  *  request to delete it from the server — only the user is, through the removal
  *  flow. That keeps a device wipe from emptying the backup. */
@@ -100,7 +134,11 @@ export const reconcile = (
             continue
         }
         // A newer client wrote it in a shape this build would downgrade.
-        if (isNewerAccountRecord(tracked?.record)) continue
+        if (
+            isNewerAccountRecord(tracked?.record) ||
+            isNewerContactRecord(tracked?.record)
+        )
+            continue
         // Left unread for an import retry. The account may be here in part,
         // and writing that part back would mark the record read before the
         // retry runs. An edit made meanwhile goes out once the retries end.
@@ -111,13 +149,26 @@ export const reconcile = (
         )
             continue
 
-        if (!tracked) items[item.key] = trackNewItem(item, now)
-        else if (hasChanged(tracked, item))
+        if (!tracked) {
+            if (!isDeletedBeforeRecords(state, item))
+                items[item.key] = trackNewItem(item, now)
+        } else if (hasChanged(tracked, item))
             items[item.key] = markChanged(tracked, item, now)
         // The account is on the device again, so there is nothing left to
         // review — however it got here, Add or a plain re-import.
         else if (tracked.pendingImport)
             items[item.key] = { ...tracked, pendingImport: false }
+    }
+    // This build never writes a legacy item, so one left dirty by an edit made
+    // before the upgrade would never push and would hold `hasPendingWork` open.
+    const localKeys = new Set(local.items.map(item => item.key))
+    for (const [key, tracked] of Object.entries(items)) {
+        if (
+            tracked.isDirty &&
+            (isAccountItemKey(key) || isContactItemKey(key)) &&
+            !localKeys.has(key)
+        )
+            items[key] = { ...tracked, isDirty: false }
     }
     return { ...state, items }
 }

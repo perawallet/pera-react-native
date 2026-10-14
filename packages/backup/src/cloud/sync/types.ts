@@ -23,7 +23,7 @@ import type {
     BackupItemKey,
     BackupItemType,
     BackupSettings,
-    ContactBackupPayload,
+    ContactRecordPayload,
     DeviceId,
     PasskeyBackupPayload,
     PasskeySecretsBackupPayload,
@@ -97,7 +97,7 @@ export type SerializedItem = {
     payload:
         | AccountRecordPayload
         | SecretsBackupPayload
-        | ContactBackupPayload
+        | ContactRecordPayload
         | PasskeyBackupPayload
         | PasskeySecretsBackupPayload
 }
@@ -163,7 +163,7 @@ export type SerializePrivateKeyResolver = (
 export type LocalItem = SerializedItem & {
     contentHash: string
     address: string
-    /** An account record's every chain address; absent for anything else. */
+    /** A record's every address; absent for anything else. */
     addresses?: string[]
     accountType: BackupItemKind | null
 }
@@ -194,8 +194,12 @@ export type ContactImportSummary = {
     failed: { address: string; reason: string }[]
 }
 
+/** One contact as a restore or sync hands it to the importer: every family
+ *  this build reads. */
+export type PulledContact = Pick<Contact, 'name' | 'addresses'>
+
 export type ContactImportFn = (
-    contacts: ContactBackupPayload[],
+    contacts: PulledContact[],
 ) => Promise<ContactImportSummary>
 
 /** Why a credential in the backup was not written to this device. */
