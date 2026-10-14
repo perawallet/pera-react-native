@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
     verifyPhone: vi.fn(),
     submitPersonalDetails: vi.fn(),
     submitAddress: vi.fn(),
+    submitMailingAddress: vi.fn(),
     submitOnboardingConsent: vi.fn(),
     linkOnboardingConsent: vi.fn(),
 }))
@@ -43,11 +44,13 @@ import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMut
 import { useVerifyPhoneMutation } from '../useVerifyPhoneMutation'
 import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMutation'
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
+import { useSubmitMailingAddressMutation } from '../useSubmitMailingAddressMutation'
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
 import { useLinkConsentMutation } from '../useLinkConsentMutation'
 import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 import { OnboardingNotVerifiedError } from '../../api/errors'
+import { cardQueryKeys } from '../querykeys'
 
 const SCOPES: ChainScope[] = [
     scopeForLegacyNetwork('mainnet'),
@@ -70,6 +73,11 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         Object.values(api).forEach(fn => fn.mockResolvedValue(undefined))
         // The address step returns a token-bearing body the mutation reads.
         api.submitAddress.mockResolvedValue({
+            accessToken: 'tok',
+            onboardingId: 'ob_1',
+            userId: 'user_1',
+        })
+        api.submitMailingAddress.mockResolvedValue({
             accessToken: 'tok',
             onboardingId: 'ob_1',
             userId: 'user_1',
@@ -192,7 +200,7 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
         )
     })
 
-    it('useSubmitPersonalDetailsMutation wraps the details with the network', async () => {
+    it('useSubmitPersonalDetailsMutation wraps the details with the scope', async () => {
         const details = {
             onboardingId: 'ob_1',
             firstName: 'Jane',
@@ -282,6 +290,53 @@ describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
                 queryKey: expect.arrayContaining(['onboarding-details']),
             }),
         )
+        expect(session.setCardSession).not.toHaveBeenCalled()
+    })
+
+    const mailingAddress = {
+        onboardingId: 'ob_1',
+        addressLine1: '23 Werrington Bridge Rd',
+        city: 'Peterborough',
+        zip: 'PE6 7PP',
+        usState: 'NY',
+    }
+
+    it('useSubmitMailingAddressMutation forwards the scope and completes registration on it', async () => {
+        const { result } = renderHook(
+            () => useSubmitMailingAddressMutation(SCOPE),
+            { wrapper },
+        )
+        result.current.mutate(mailingAddress)
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.submitMailingAddress).toHaveBeenCalledWith({
+            address: mailingAddress,
+            scope: SCOPE,
+        })
+        expect(auth.acquireCardSessionTokens).toHaveBeenCalledWith({
+            accessToken: 'tok',
+            scope: SCOPE,
+        })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
+        )
+    })
+
+    it('useSubmitMailingAddressMutation types a not-verified refusal and refreshes the onboarding record for its scope', async () => {
+        api.submitMailingAddress.mockRejectedValue(NOT_VERIFIED_FAILURE)
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(
+            () => useSubmitMailingAddressMutation(SCOPE),
+            { wrapper },
+        )
+
+        result.current.mutate(mailingAddress)
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(OnboardingNotVerifiedError)
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            queryKey: cardQueryKeys.onboardingDetails(SCOPE, 'ob_1'),
+        })
         expect(session.setCardSession).not.toHaveBeenCalled()
     })
 
