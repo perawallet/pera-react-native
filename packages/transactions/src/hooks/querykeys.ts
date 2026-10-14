@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AssetRef,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'transactions'
@@ -62,6 +65,32 @@ export const transactionQueryKeys = {
      */
     openSubmissionTxIds: (scope: ChainScope) =>
         [MODULE_PREFIX, 'open-submission-txids', { scope }] as const,
+
+    /** `fee` is the base-unit fee as a string, so the key stays serialisable. */
+    spendableBalance: (
+        address: string,
+        asset: AssetRef,
+        scope: ChainScope,
+        fee: string,
+    ) =>
+        [
+            MODULE_PREFIX,
+            'spendable-balance',
+            { accountAddress: address, asset, scope, fee },
+        ] as const,
+
+    /** `amount` is the base-unit amount as a string. */
+    recipientWarning: (
+        recipient: string,
+        asset: AssetRef,
+        scope: ChainScope,
+        amount: string,
+    ) =>
+        [
+            MODULE_PREFIX,
+            'recipient-warning',
+            { recipient, asset, scope, amount },
+        ] as const,
 }
 
 export function invalidateTransactionQueries(queryClient: QueryClient): void {

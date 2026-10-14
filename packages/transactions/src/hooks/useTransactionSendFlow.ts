@@ -43,6 +43,7 @@ import {
     toBigInt,
 } from '@perawallet/wallet-core-shared'
 import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
+import { holdingReserveOf } from '../transfer-adapter'
 import { AssetFrozenError, InvalidSendParamsError } from '../errors'
 
 type BaseSendParams = {
@@ -108,9 +109,7 @@ export const useTransactionSendFlow = (
     const { submit } = useSignAndSubmitGroup()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier, assetOptInMinBalance } = useFeeConfig(
-        scope.chainId,
-    )
+    const { minTxnFee, pqMultiplier } = useFeeConfig(scope.chainId)
     const fetchSuggestedMinFee = useFetchSuggestedMinFee(scope.chainId)
 
     /**
@@ -138,7 +137,7 @@ export const useTransactionSendFlow = (
             const currentBalance = toBigInt(
                 receiverState.nativeBalanceBaseUnits,
             )
-            const currentMbr = toBigInt(receiverState.reserveBalance)
+            const currentReserve = toBigInt(receiverState.reserveBalance)
 
             const suggestedMinFee = await fetchSuggestedMinFee()
             const senderFee = resolveMinFeeForSender(scope.chainId, {
@@ -156,12 +155,13 @@ export const useTransactionSendFlow = (
                 pqMultiplier,
             })
 
-            // After opt-in the receiver's MBR increases by assetOptInMinBalance. The
+            // Opting in raises the receiver's reserve by one holding. The
             // opt-in tx fee is paid from the receiver's balance at the
             // receiver's own (PQ-aware) rate, so reserve exactly that
             // instead of the flat network minimum.
-            const mbrAfterOptIn = currentMbr + assetOptInMinBalance
-            const balanceNeeded = mbrAfterOptIn + receiverFee
+            const reserveAfterOptIn =
+                currentReserve + toBigInt(holdingReserveOf(scope))
+            const balanceNeeded = reserveAfterOptIn + receiverFee
             const funding =
                 balanceNeeded > currentBalance
                     ? balanceNeeded - currentBalance
@@ -184,7 +184,6 @@ export const useTransactionSendFlow = (
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
-            assetOptInMinBalance,
             scope,
         ],
     )
