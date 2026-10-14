@@ -44,8 +44,8 @@ export const useShouldPromptMnemonicBackup = (
     )
 
     // An unfunded account still holds the keys for anything that delegates its
-    // signing to it, so losing its passphrase strands those accounts — funding is not the only
-    // reason to prompt.
+    // signing to it, so losing its passphrase strands those accounts: funding
+    // is not the only reason to prompt.
     return (
         canBackUpMnemonic &&
         requiresBackup &&

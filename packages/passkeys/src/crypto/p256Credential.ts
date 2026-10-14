@@ -17,9 +17,8 @@ import {
     p256RawPublicKeyToSpkiDer,
 } from './p256Spki'
 
-// Split out from `derivePasskeyCredential.ts` so `packages/migrate` can derive
-// a credential without the provider import `derivePasskeyMainKey` defaults to,
-// which has no loadable build under Node.
+// Kept free of the provider import `derivePasskeyMainKey` defaults to, which
+// has no Node build, so `packages/migrate` can derive a credential.
 
 const dp256 = new DeterministicP256()
 

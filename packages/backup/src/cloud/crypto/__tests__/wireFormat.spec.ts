@@ -28,6 +28,11 @@ const AUTH_PUBLIC_KEY = Uint8Array.from(
     ),
 )
 
+afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+})
+
 describe('BACKUP_PROOF_PREFIX', () => {
     test('is the prefix the backend verifies', () => {
         expect(BACKUP_PROOF_PREFIX).toBe('MX')
@@ -59,11 +64,6 @@ describe('BACKUP_PROOF_PREFIX', () => {
                 '+GPeqX6mXQ97HdBPSmyWLQZIAmVws2o2Q4DDUxbj9G1IQapqbsf877lwyGcAgHTWodnbDnTWLBrBdlu/u2pHDw==',
         })
     })
-})
-
-afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
 })
 
 describe('encodeBackupId', () => {

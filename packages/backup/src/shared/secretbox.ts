@@ -32,9 +32,9 @@ const NONCE_LENGTH = 24
  *
  * Returns null when the MAC fails (wrong key, corrupted bytes) or the input
  * is too short. Returning null rather than throwing lets each caller map
- * "decryption failed" to its own typed error — `SecureBackupImportError` for secure-backup,
- * `PeraWebImportError` for Pera Web — without conflating MAC failures with
- * programmer errors.
+ * "decryption failed" to its own typed error (`SecureBackupImportError` for
+ * secure-backup, `PeraWebImportError` for Pera Web) without conflating MAC
+ * failures with programmer errors.
  *
  * Secure-memory: the two heap copies this function makes (`normalized` of
  * the ciphertext+nonce and `normalizedKey` of the secretbox key) are zeroed

@@ -16,10 +16,12 @@ import { base32nopad } from '@scure/base'
 import type { BackupId } from '../models'
 import { BACKUP_ID_PREFIX } from './constants'
 
-// Frozen backend format: the backend verifies the register proof as an Algorand signBytes message.
+// Frozen backend format: the backend verifies the register proof as an
+// Algorand signBytes message.
 export const BACKUP_PROOF_PREFIX = 'MX'
 
-// Frozen backend format: `did:pera:` + the Algorand address of the auth public key, which the backend decodes back to verify the proof.
+// Frozen backend format: `did:pera:` + the Algorand address of the auth public
+// key, which the backend decodes back to verify the proof.
 export const encodeBackupId = (authPublicKey: Uint8Array): BackupId =>
     `${BACKUP_ID_PREFIX}${base32nopad.encode(
         concatBytes(authPublicKey, sha512_256(authPublicKey).slice(-4)),

@@ -19,11 +19,9 @@ import {
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 import { backupIndicesToKey, generateBackupCipherKey } from '../asb-crypto'
 import {
+    SecureBackupAccountKind,
     SecureBackupErrorReason,
     SecureBackupImportError,
-} from '@perawallet/wallet-core-backup'
-import {
-    SecureBackupAccountKind,
     type SecureBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
 import { decryptBackupPayload } from '../decrypt-backup-payload'
