@@ -119,7 +119,7 @@ describe('useAccountValueTotalsQuery', () => {
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(44))
     })
 
-    it('falls back to the raw native amount when no native price is known', async () => {
+    it('falls back to the raw native amount when no native price is known on a single-chain wallet', async () => {
         mockGetAccountPortfolioTotals.mockResolvedValue(totals(7, 30, null))
 
         const { result } = renderHook(
@@ -243,7 +243,7 @@ describe('useAccountValueTotalsQuery', () => {
         })
     })
 
-    describe('with an Ethereum account', () => {
+    describe('with a second chain registered', () => {
         const ALL_ON = Object.fromEntries(
             CHAIN_CAPABILITIES.map(capability => [capability, true]),
         ) as ChainCapabilities
@@ -299,6 +299,62 @@ describe('useAccountValueTotalsQuery', () => {
             // A1: native 10 + 20/2 = 20 ALGO; the ETH balance doesn't add.
             expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
             expect(result.current.portfolioUsdValue).toEqual(new Decimal(40))
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
+        })
+
+        it('leaves the native total unknown, not ASA-less, while the ALGO price is unloaded and no Ethereum account exists', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(0.1, 500, null))
+                        : Promise.resolve(totals(5, 0, null)),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), makeAccount('A2')],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(
+                result.current.accountValueTotals.get('A1')?.nativeValue,
+            ).toBeNull()
+            // No non-native holdings, so nothing is missing from it.
+            expect(
+                result.current.accountValueTotals.get('A2')?.nativeValue,
+            ).toEqual(new Decimal(5))
+            expect(result.current.portfolioNativeValue).toBeNull()
+        })
+
+        it('values an account derived on both chains on each of them', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(10, 20))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+            const bothChains: WalletAccount = {
+                ...makeAccount('A1'),
+                chains: {
+                    algorand: { address: 'A1' },
+                    ethereum: { address: '0xE' },
+                },
+            }
+
+            const { result } = renderHook(
+                () => useAccountValueTotalsQuery([bothChains], SCOPE),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(
+                result.current.accountValueTotals.get('0xE')?.fiatValue,
+            ).toEqual(new Decimal(3000))
+            expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
         })
 

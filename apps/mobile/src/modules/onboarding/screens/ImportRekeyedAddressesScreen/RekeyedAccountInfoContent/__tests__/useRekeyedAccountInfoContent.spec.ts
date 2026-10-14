@@ -95,7 +95,7 @@ describe('useRekeyedAccountInfoContent', () => {
         )
 
         expect(result.current.address).toBe('REKEYED_ADDR')
-        expect(result.current.rekeyedAccountAlgoValue.toString()).toBe('5')
+        expect(result.current.rekeyedAccountAlgoValue?.toString()).toBe('5')
     })
 
     it('looks up no auth account when the account is not rekeyed', () => {

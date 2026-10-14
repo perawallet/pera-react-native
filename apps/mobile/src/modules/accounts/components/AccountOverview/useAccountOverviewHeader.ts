@@ -28,7 +28,8 @@ import { useChartInteraction } from '@hooks/useChartInteraction'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewHeaderResult = {
-    portfolioNativeValue: Decimal
+    /** `null` when unknown — renders as a placeholder, not 0. */
+    portfolioNativeValue: Nullable<Decimal>
     /** `null` while the preferred-currency rate is unresolved — renders as a placeholder, not 0. */
     portfolioPreferredValue: Nullable<Decimal>
     /** False while held assets are still enriching — the total is still settling. */

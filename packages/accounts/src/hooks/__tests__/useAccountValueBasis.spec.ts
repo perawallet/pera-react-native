@@ -11,7 +11,7 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
@@ -20,8 +20,22 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models'
+import { useAccountsStore } from '../../store'
 import { testAccount } from '../../__tests__/accountFactory'
 import { useAccountValueBasis } from '../useAccountValueBasis'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 const ALL_ON = Object.fromEntries(
     CHAIN_CAPABILITIES.map(capability => [capability, true]),
@@ -43,34 +57,43 @@ const ethereumAccount: WalletAccount = {
     chains: { ethereum: { address: '0xabc' } },
 }
 
+const basisWith = (accounts: WalletAccount[]) => {
+    useAccountsStore.setState({ accounts })
+    return renderHook(() => useAccountValueBasis('algorand')).result.current
+}
+
 describe('useAccountValueBasis', () => {
     it('stays native with only Algorand registered', () => {
         register('algorand')
 
-        const { result } = renderHook(() =>
-            useAccountValueBasis([algorandAccount, ethereumAccount]),
-        )
-
-        expect(result.current).toBe('native')
+        expect(basisWith([algorandAccount, ethereumAccount])).toBe('native')
     })
 
     it('stays native with a second chain registered but only Algorand accounts', () => {
         register('algorand', 'ethereum')
 
-        const { result } = renderHook(() =>
-            useAccountValueBasis([algorandAccount]),
-        )
-
-        expect(result.current).toBe('native')
+        expect(basisWith([algorandAccount])).toBe('native')
     })
 
-    it('switches to fiat once an account is on the second chain', () => {
+    it('switches to fiat once any wallet account is on the second chain', () => {
         register('algorand', 'ethereum')
 
-        const { result } = renderHook(() =>
-            useAccountValueBasis([algorandAccount, ethereumAccount]),
-        )
+        expect(basisWith([algorandAccount, ethereumAccount])).toBe('fiat')
+    })
 
-        expect(result.current).toBe('fiat')
+    it('switches to fiat for an account derived on both chains', () => {
+        register('algorand', 'ethereum')
+
+        expect(
+            basisWith([
+                {
+                    ...algorandAccount,
+                    chains: {
+                        ...algorandAccount.chains,
+                        ethereum: { address: '0xboth' },
+                    },
+                },
+            ]),
+        ).toBe('fiat')
     })
 })

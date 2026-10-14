@@ -15,7 +15,6 @@ import type { Decimal } from 'decimal.js'
 import {
     useAccountValueBasis,
     useAccountValueTotalsQuery,
-    useAllAccounts,
     useSigningAccounts,
     type AccountValueBasis,
     type WalletAccount,
@@ -33,7 +32,8 @@ export type UsePortfolioViewResult = {
     accounts: WalletAccount[]
     /** `fiat` leads with the preferred-currency total and drops the native one, which can't sum across chains. */
     basis: AccountValueBasis
-    portfolioNativeValue: Decimal
+    /** `null` when unknown — renders as a placeholder, not 0. */
+    portfolioNativeValue: Nullable<Decimal>
     /** `null` while any account is unpriced or the rate is unresolved — renders as a placeholder, not 0. */
     portfolioPreferredValue: Nullable<Decimal>
     isPending: boolean
@@ -42,7 +42,7 @@ export type UsePortfolioViewResult = {
 export const usePortfolioView = (): UsePortfolioViewResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency()
-    const basis = useAccountValueBasis(useAllAccounts())
+    const basis = useAccountValueBasis(scope.chainId)
 
     const accounts = useSigningAccounts(scope.chainId)
     const {

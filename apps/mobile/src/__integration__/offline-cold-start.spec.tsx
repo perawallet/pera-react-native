@@ -283,7 +283,7 @@ describe('Flow: Cold start with no connectivity', () => {
         })
 
         // The native-denominated total is real and price-independent.
-        expect(result.current.portfolioNativeValue.toString()).toBe('10')
+        expect(result.current.portfolioNativeValue?.toString()).toBe('10')
 
         // The USD total is NOT 0 — we hold 10 ALGO and simply don't know
         // what it's worth. Reporting 0 here is the fake number the epic

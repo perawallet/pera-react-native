@@ -11,34 +11,41 @@
  */
 
 import { useMemo } from 'react'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '../models'
+import { useAccountsStore } from '../store'
+import { chainAccountOf } from '../credentials/accessors'
+import { otherRegisteredChainIds } from './accountChainEntries'
 
 /**
  * What accounts are ranked and summed by: `native` while every account values
- * in ALGO, `fiat` once one values in another chain's native asset, since ALGO
- * and ETH amounts don't compare.
+ * in `homeChainId`'s native asset, `fiat` once one also values in another
+ * registered chain's, since amounts of two native assets don't compare.
  */
 export type AccountValueBasis = 'native' | 'fiat'
 
 export const accountValueBasisOf = (
     accounts: readonly WalletAccount[],
+    homeChainId: ChainId,
 ): AccountValueBasis => {
-    const { chains } = getProvider()
-    if (chains.list().length < 2) return 'native'
-    const hasOtherChain = accounts.some(account =>
-        (Object.keys(account.chains) as ChainId[]).some(
-            chainId => chainId !== LEGACY_CHAIN_ID && chains.has(chainId),
-        ),
+    const others = otherRegisteredChainIds(homeChainId)
+    const isOnOtherChain = accounts.some(account =>
+        others.some(chainId => chainAccountOf(account, chainId) !== undefined),
     )
-    return hasOtherChain ? 'fiat' : 'native'
+    return isOnOtherChain ? 'fiat' : 'native'
 }
 
-/** Registration is fixed at bootstrap, so only the accounts can change the answer. */
+/**
+ * Wallet-wide rather than per list, so every list and the portfolio header
+ * agree. Registration is fixed at bootstrap, so only the accounts can change
+ * the answer.
+ */
 export const useAccountValueBasis = (
-    accounts: readonly WalletAccount[],
-): AccountValueBasis => useMemo(() => accountValueBasisOf(accounts), [accounts])
+    homeChainId: ChainId,
+): AccountValueBasis => {
+    const accounts = useAccountsStore(state => state.accounts)
+    return useMemo(
+        () => accountValueBasisOf(accounts, homeChainId),
+        [accounts, homeChainId],
+    )
+}

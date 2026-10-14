@@ -19,6 +19,10 @@ import { getAccountDisplayName } from '../utils'
 import { useAccountsStore } from '../store'
 import { chainAccountOf } from '../credentials'
 import { useAccountValueBasis } from './useAccountValueBasis'
+import {
+    accountChainEntries,
+    otherRegisteredChainIds,
+} from './accountChainEntries'
 
 type UseSortedAccountsResult = {
     sortedAccounts: WalletAccount[]
@@ -41,16 +45,20 @@ const compareNullable = (
 }
 
 /**
- * `accountBalances` is keyed by each account's address on `chainId`, which
- * also names unnamed accounts; an account not on `chainId` is looked up by its
- * address on its own chain. See `AccountValueBasis` for which value ranks.
+ * `accountBalances` is keyed by address, one entry per chain an account is on;
+ * the address on `chainId` also names unnamed accounts. See
+ * `AccountValueBasis` for which value ranks.
  */
 export const useSortedAccounts = (
     accounts: WalletAccount[],
     accountBalances: AccountValues,
     chainId: ChainId,
 ): UseSortedAccountsResult => {
-    const basis = useAccountValueBasis(accounts)
+    const basis = useAccountValueBasis(chainId)
+    const otherChainIds = useMemo(
+        () => otherRegisteredChainIds(chainId),
+        [chainId],
+    )
     const sortMode = useAccountsStore(state => state.sortMode)
     const manualAccountOrder = useAccountsStore(
         state => state.manualAccountOrder,
@@ -64,29 +72,29 @@ export const useSortedAccounts = (
         const sorted = [...accounts]
         const nameOf = (account: WalletAccount) =>
             getAccountDisplayName(account, chainId)
-        const valuesOf = (account: WalletAccount) => {
-            const address =
-                chainAccountOf(account, chainId)?.address ??
-                Object.values(account.chains).find(entry => entry)?.address
-            return address ? accountBalances.get(address) : undefined
+        // Summed over every chain the account is on; unknown if any part is.
+        const fiatOf = (account: WalletAccount): Nullable<Decimal> => {
+            const entries = accountChainEntries(account, chainId, otherChainIds)
+            if (entries.length === 0) return null
+            return entries.reduce<Nullable<Decimal>>((sum, { address }) => {
+                const fiatValue = accountBalances.get(address)?.fiatValue
+                return sum === null || !fiatValue ? null : sum.plus(fiatValue)
+            }, new Decimal(0))
+        }
+        const nativeOf = (account: WalletAccount): Nullable<Decimal> => {
+            const address = chainAccountOf(account, chainId)?.address
+            const values = address ? accountBalances.get(address) : undefined
+            // -1 only marks totals that haven't loaded, which keeps the
+            // single-chain order as it was; `null` is a known unknown.
+            return values ? values.nativeValue : new Decimal(-1)
         }
         const compareByValue = (
             a: WalletAccount,
             b: WalletAccount,
             direction: 1 | -1,
         ) => {
-            if (basis === 'fiat') {
-                return compareNullable(
-                    valuesOf(a)?.fiatValue ?? null,
-                    valuesOf(b)?.fiatValue ?? null,
-                    direction,
-                )
-            }
-            // Native values are never unpriced; -1 only marks an account whose
-            // totals haven't loaded, which keeps the single-chain order as it was.
-            const nativeOf = (account: WalletAccount) =>
-                valuesOf(account)?.nativeValue ?? new Decimal(-1)
-            return nativeOf(a).comparedTo(nativeOf(b)) * direction
+            const valueOf = basis === 'fiat' ? fiatOf : nativeOf
+            return compareNullable(valueOf(a), valueOf(b), direction)
         }
 
         switch (sortMode) {
@@ -127,6 +135,7 @@ export const useSortedAccounts = (
         manualAccountOrder,
         chainId,
         basis,
+        otherChainIds,
     ])
 
     return {

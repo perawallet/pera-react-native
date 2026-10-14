@@ -35,6 +35,7 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
+import { otherRegisteredChainIds } from './accountChainEntries'
 import { chainAccountOf } from '../credentials/accessors'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
@@ -173,6 +174,10 @@ export const useAccountBalancesQuery = (
             }
         }
 
+        // Single-chain wallets keep today's native figures; see
+        // `valueAccountTotals`.
+        const isUnconvertibleUnknown =
+            otherRegisteredChainIds(scope.chainId).length > 0
         const accountBalanceList = results.map(r => {
             const holdings = r.data?.holdings ?? []
             // The native asset is itself a holding row; its joined price is the
@@ -183,6 +188,7 @@ export const useAccountBalancesQuery = (
             const nativeUsdPrice = nativeHolding?.usdPrice ?? new Decimal(0)
 
             let nativeValue = new Decimal(0)
+            let hasUnconvertible = false
             // Accumulated in the same pass as `nativeValue`: the portfolio
             // roll-up used to re-walk every account's holdings to derive this,
             // doubling the accounts×holdings Decimal work on every price poll.
@@ -226,6 +232,8 @@ export const useAccountBalancesQuery = (
                           : assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
                     if (nativeAssetValue) {
                         nativeValue = nativeValue.plus(nativeAssetValue)
+                    } else if (!usdAssetPrice.isZero()) {
+                        hasUnconvertible = true
                     }
                     usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
                     return {
@@ -250,7 +258,10 @@ export const useAccountBalancesQuery = (
 
             return {
                 assetBalances,
-                nativeValue,
+                nativeValue:
+                    isUnconvertibleUnknown && hasUnconvertible
+                        ? null
+                        : nativeValue,
                 usdValue,
                 fiatValue: isNativeUnpriced ? null : usdValue,
                 isPending: r.isPending,
@@ -264,8 +275,13 @@ export const useAccountBalancesQuery = (
             addresses.map((address, i) => [address, accountBalanceList[i]]),
         )
 
-        const portfolioNativeValue = accountBalanceList.reduce(
-            (acc, cur) => acc.plus(cur.nativeValue),
+        const portfolioNativeValue = accountBalanceList.reduce<
+            Nullable<Decimal>
+        >(
+            (acc, cur) =>
+                acc === null || cur.nativeValue === null
+                    ? null
+                    : acc.plus(cur.nativeValue),
             new Decimal(0),
         )
 

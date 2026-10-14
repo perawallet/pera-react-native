@@ -19,6 +19,7 @@ import type { Decimal } from 'decimal.js'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountSummaryQueryKey } from './querykeys'
+import { otherRegisteredChainIds } from './accountChainEntries'
 import { valueAccountTotals } from './valueAccountTotals'
 
 export type UseAccountSummaryResult = {
@@ -29,8 +30,8 @@ export type UseAccountSummaryResult = {
      * is held but its price has never synced, so the value is unknown — not 0.
      */
     portfolioUsdValue: Nullable<Decimal>
-    /** Total portfolio value expressed in the native asset. */
-    portfolioNativeValue: Decimal
+    /** Total portfolio value expressed in the native asset; `null` when unknown — see `valueAccountTotals`. */
+    portfolioNativeValue: Nullable<Decimal>
     /** Number of holdings (includes the native holding). */
     holdingsCount: number
     /**
@@ -89,6 +90,7 @@ export const useAccountSummaryQuery = (
         const { nativeAmount, nativeValue, usdValue } = valueAccountTotals(
             query.data,
             hasPricing,
+            otherRegisteredChainIds(scope.chainId).length > 0,
         )
 
         return {
@@ -104,5 +106,12 @@ export const useAccountSummaryQuery = (
             isError: query.isError,
             isPaused: query.isPaused,
         }
-    }, [query.data, query.isPending, query.isError, query.isPaused, hasPricing])
+    }, [
+        query.data,
+        query.isPending,
+        query.isError,
+        query.isPaused,
+        hasPricing,
+        scope.chainId,
+    ])
 }

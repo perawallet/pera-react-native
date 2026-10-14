@@ -47,7 +47,8 @@ export type AssetWithAccountBalance = {
 
 export type AccountBalancesWithTotals = {
     accountBalances: AccountBalances
-    portfolioNativeValue: Decimal
+    /** `null` when any account's `nativeValue` is. */
+    portfolioNativeValue: Nullable<Decimal>
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -57,7 +58,12 @@ export type AccountBalancesWithTotals = {
 
 export type AccountBalance = {
     assetBalances: AssetWithAccountBalance[]
-    nativeValue: Decimal
+    /**
+     * Total in the native asset (display units); `null` once a second chain is
+     * registered and priced holdings can't be converted for want of a native
+     * price — see `valueAccountTotals`.
+     */
+    nativeValue: Nullable<Decimal>
     /** Total value of the account's holdings in USD (display units). */
     usdValue: Decimal
     /**
