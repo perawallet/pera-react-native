@@ -10,13 +10,17 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createChainRegistry } from '../chain-registry'
+import type { ChainCapabilities } from '../models/capabilities'
 import type { ChainDescriptor } from '../models/descriptor'
 import type { ChainId, ChainNetwork, NetworkTier } from '../models/identity'
 import {
     chainModeFor,
+    isTestTierScope,
     networkIdForMode,
     networkTierForMode,
+    networkTierOf,
 } from '../network-selection'
 
 const network = (
@@ -103,5 +107,88 @@ describe('chainModeFor', () => {
         expect(chainModeFor(descriptor('algorand', []), 'developer')).toBe(
             'developer',
         )
+    })
+})
+
+describe('networkTierOf', () => {
+    it.each([
+        [algorandLike, 'mainnet', 'mainnet'],
+        [algorandLike, 'testnet', 'testnet'],
+        [ethereumLike, 'sepolia', 'testnet'],
+        [ethereumLike, 'goerli', 'testnet'],
+    ] as const)(
+        'chain %#: %s is %s',
+        (chain, networkId, expected) => {
+            expect(networkTierOf(chain, networkId)).toBe(expected)
+        },
+    )
+
+    it('has no tier for a network the descriptor does not list', () => {
+        expect(networkTierOf(ethereumLike, 'custom')).toBeUndefined()
+    })
+})
+
+describe('isTestTierScope', () => {
+    const chains = createChainRegistry()
+    const build = {} as ChainCapabilities
+
+    beforeEach(() => {
+        chains.reset()
+    })
+
+    it('is false with one chain registered, whatever its network', () => {
+        chains.register(algorandLike, build)
+
+        expect(
+            isTestTierScope(chains, {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }),
+        ).toBe(false)
+    })
+
+    it('is false while no chain is registered', () => {
+        expect(
+            isTestTierScope(chains, {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }),
+        ).toBe(false)
+    })
+
+    describe('with a second chain registered', () => {
+        beforeEach(() => {
+            chains.register(algorandLike, build)
+            chains.register(ethereumLike, build)
+        })
+
+        it.each([
+            ['algorand', 'mainnet', false],
+            ['ethereum', 'mainnet', false],
+            ['algorand', 'testnet', true],
+            ['ethereum', 'sepolia', true],
+            ['ethereum', 'goerli', true],
+            ['algorand', 'my-node', true],
+        ] as const)('%s/%s is %s', (chainId, networkId, expected) => {
+            expect(isTestTierScope(chains, { chainId, networkId })).toBe(
+                expected,
+            )
+        })
+
+        it('is false for a chain that is not registered', () => {
+            chains.reset()
+            chains.register(algorandLike, build)
+            chains.register(
+                descriptor('fixture', [network('mainnet', 'mainnet', true)]),
+                build,
+            )
+
+            expect(
+                isTestTierScope(chains, {
+                    chainId: 'ethereum',
+                    networkId: 'sepolia',
+                }),
+            ).toBe(false)
+        })
     })
 })
