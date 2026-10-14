@@ -14,7 +14,7 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
 import type { Argon2idConfig, BackupId } from '../models'
 import { decodeBase64Salt } from './argon2idConfig'
 import { deriveBackupAuthKeypair } from './deriveBackupAuthKeypair'
-import { deriveBackupId } from './deriveBackupId'
+import { encodeBackupId } from './wireFormat'
 import {
     deriveBackupChildKeys,
     type BackupChildKeys,
@@ -70,7 +70,7 @@ export const deriveBackupKeys = async ({
         secretKey = authSecretKey
 
         return {
-            backupId: deriveBackupId(publicKey),
+            backupId: encodeBackupId(publicKey),
             encryptionKey: childKeys.encryptionKey,
             authPublicKey: publicKey,
             authSecretKey: secretKey,

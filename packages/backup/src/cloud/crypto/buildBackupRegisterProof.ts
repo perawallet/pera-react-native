@@ -13,13 +13,9 @@
 import nacl from 'tweetnacl'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { BackupId, DeviceId } from '../models'
+import { BACKUP_PROOF_PREFIX } from './wireFormat'
 
 const NONCE_RANDOM_BYTES = 16
-
-// Algorand `signData` (signBytes) domain-separation prefix. The backend verifies
-// the registration proof as an Algorand-signed message, so the signed bytes are
-// `"MX" || message` — matching the wallet's signData behaviour.
-const ALGORAND_SIGN_PREFIX = 'MX'
 
 type BackupRegisterMessageParams = {
     backupId: BackupId
@@ -64,7 +60,7 @@ export const buildBackupRegisterProof = ({
         publicKey,
     })
     const signedBytes = new TextEncoder().encode(
-        `${ALGORAND_SIGN_PREFIX}${message}`,
+        `${BACKUP_PROOF_PREFIX}${message}`,
     )
     const signature = encodeToBase64(
         nacl.sign.detached(signedBytes, authSecretKey),
