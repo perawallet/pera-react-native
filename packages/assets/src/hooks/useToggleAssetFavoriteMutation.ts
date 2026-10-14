@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
@@ -34,8 +35,13 @@ type UseToggleAssetFavoriteMutationParams = {
     enabled: boolean
 }
 
-type ToggleAssetFavoriteMutationContext = {
+// TanStack swaps a pending mutation's options on every render, so the scope
+// travels in the variables to keep one toggle on a single scope.
+type ToggleAssetFavoriteVariables = UseToggleAssetFavoriteMutationParams & {
     scope: ChainScope
+}
+
+type ToggleAssetFavoriteMutationContext = {
     previousData: Optional<PeraAsset>
     previousRemoteData: Optional<PeraAsset>
     previousIsFavorited: boolean
@@ -75,12 +81,13 @@ export const useToggleAssetFavoriteMutation = ({
     const mutation = useMutation<
         ToggleStatusResponse,
         Error,
-        UseToggleAssetFavoriteMutationParams,
+        ToggleAssetFavoriteVariables,
         ToggleAssetFavoriteMutationContext
     >({
-        mutationFn: variables => toggleAssetFavorite({ ...variables, scope }),
+        mutationFn: variables => toggleAssetFavorite(variables),
         throwOnError: false,
         onMutate: async variables => {
+            const { scope } = variables
             const queryKey = getAssetDetailsQueryKey(variables.assetID, scope)
             const remoteQueryKey = getRemoteAssetDetailsQueryKey(
                 variables.assetID,
@@ -129,7 +136,6 @@ export const useToggleAssetFavoriteMutation = ({
             onLocalWrite?.()
 
             return {
-                scope,
                 previousData,
                 previousRemoteData,
                 previousIsFavorited,
@@ -139,7 +145,7 @@ export const useToggleAssetFavoriteMutation = ({
             if (context) {
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
-                    scope: context.scope,
+                    scope: variables.scope,
                     updates: {
                         isFavorited: context.previousIsFavorited,
                     },
@@ -148,7 +154,7 @@ export const useToggleAssetFavoriteMutation = ({
                     queryClient.setQueryData(
                         getAssetDetailsQueryKey(
                             variables.assetID,
-                            context.scope,
+                            variables.scope,
                         ),
                         context.previousData,
                     )
@@ -157,7 +163,7 @@ export const useToggleAssetFavoriteMutation = ({
                     queryClient.setQueryData(
                         getRemoteAssetDetailsQueryKey(
                             variables.assetID,
-                            context.scope,
+                            variables.scope,
                         ),
                         context.previousRemoteData,
                     )
@@ -172,8 +178,15 @@ export const useToggleAssetFavoriteMutation = ({
         },
     })
 
+    const { mutate } = mutation
+    const toggle = useCallback(
+        (params: UseToggleAssetFavoriteMutationParams) =>
+            mutate({ ...params, scope }),
+        [mutate, scope],
+    )
+
     return {
-        toggleAssetFavorite: mutation.mutate,
+        toggleAssetFavorite: toggle,
         isLoading: mutation.isPending,
         isError: mutation.isError,
         error: mutation.error,

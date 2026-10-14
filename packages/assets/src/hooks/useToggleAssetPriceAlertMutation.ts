@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
@@ -34,8 +35,13 @@ type UseToggleAssetPriceAlertMutationParams = {
     enabled: boolean
 }
 
-type ToggleAssetPriceAlertMutationContext = {
+// TanStack swaps a pending mutation's options on every render, so the scope
+// travels in the variables to keep one toggle on a single scope.
+type ToggleAssetPriceAlertVariables = UseToggleAssetPriceAlertMutationParams & {
     scope: ChainScope
+}
+
+type ToggleAssetPriceAlertMutationContext = {
     previousData: Optional<PeraAsset>
     previousRemoteData: Optional<PeraAsset>
     previousIsPriceAlertEnabled: boolean
@@ -69,16 +75,17 @@ export const useToggleAssetPriceAlertMutation = ({
     const mutation = useMutation<
         ToggleStatusResponse,
         Error,
-        UseToggleAssetPriceAlertMutationParams,
+        ToggleAssetPriceAlertVariables,
         ToggleAssetPriceAlertMutationContext
     >({
-        mutationFn: variables => toggleAssetPriceAlert({ ...variables, scope }),
+        mutationFn: variables => toggleAssetPriceAlert(variables),
         throwOnError: false,
         // Persist to the DB *before* invalidating: list views (useAssetsQuery)
         // and any other asset queries refetch from the DB on invalidation, so
         // the DB must already hold the new value or the refetch will clobber
         // the optimistic state.
         onMutate: async variables => {
+            const { scope } = variables
             const queryKey = getAssetDetailsQueryKey(variables.assetID, scope)
             const remoteQueryKey = getRemoteAssetDetailsQueryKey(
                 variables.assetID,
@@ -126,7 +133,6 @@ export const useToggleAssetPriceAlertMutation = ({
             invalidateAssetQueries(queryClient)
 
             return {
-                scope,
                 previousData,
                 previousRemoteData,
                 previousIsPriceAlertEnabled,
@@ -136,7 +142,7 @@ export const useToggleAssetPriceAlertMutation = ({
             if (context) {
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
-                    scope: context.scope,
+                    scope: variables.scope,
                     updates: {
                         isPriceAlertEnabled:
                             context.previousIsPriceAlertEnabled,
@@ -146,7 +152,7 @@ export const useToggleAssetPriceAlertMutation = ({
                     queryClient.setQueryData(
                         getAssetDetailsQueryKey(
                             variables.assetID,
-                            context.scope,
+                            variables.scope,
                         ),
                         context.previousData,
                     )
@@ -155,7 +161,7 @@ export const useToggleAssetPriceAlertMutation = ({
                     queryClient.setQueryData(
                         getRemoteAssetDetailsQueryKey(
                             variables.assetID,
-                            context.scope,
+                            variables.scope,
                         ),
                         context.previousRemoteData,
                     )
@@ -169,8 +175,15 @@ export const useToggleAssetPriceAlertMutation = ({
         },
     })
 
+    const { mutate } = mutation
+    const toggle = useCallback(
+        (params: UseToggleAssetPriceAlertMutationParams) =>
+            mutate({ ...params, scope }),
+        [mutate, scope],
+    )
+
     return {
-        toggleAssetPriceAlert: mutation.mutate,
+        toggleAssetPriceAlert: toggle,
         isLoading: mutation.isPending,
         isError: mutation.isError,
         error: mutation.error,

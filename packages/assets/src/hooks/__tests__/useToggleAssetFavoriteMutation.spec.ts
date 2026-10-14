@@ -360,6 +360,48 @@ describe('useToggleAssetFavoriteMutation', () => {
         })
     })
 
+    it('keeps one toggle on the scope it started on when the scope changes mid-flight', async () => {
+        let releaseWrite: () => void = () => {}
+        vi.mocked(updateAssetPeraMetadata).mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    releaseWrite = resolve
+                }),
+        )
+        vi.mocked(toggleAssetFavorite).mockRejectedValue(new Error('Network error'))
+
+        const { result, rerender } = renderHook(
+            ({ scope }) => useToggleAssetFavoriteMutation({ scope }),
+            {
+                initialProps: { scope: ALGORAND_MAINNET } as {
+                    scope: typeof ALGORAND_MAINNET | typeof ALGORAND_TESTNET
+                },
+                wrapper: createWrapper(queryClient),
+            },
+        )
+
+        result.current.toggleAssetFavorite({
+            assetID: '123',
+            deviceId: 'device-123',
+            enabled: true,
+        })
+        await waitFor(() => expect(updateAssetPeraMetadata).toHaveBeenCalled())
+        rerender({ scope: ALGORAND_TESTNET })
+        releaseWrite()
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(toggleAssetFavorite).toHaveBeenCalledWith(
+            expect.objectContaining({ scope: ALGORAND_MAINNET }),
+        )
+        expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({
+                scope: ALGORAND_MAINNET,
+                updates: { isFavorited: false },
+            }),
+        )
+    })
+
     it('invalidates the asset list cache on success so list views refetch', async () => {
         vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 

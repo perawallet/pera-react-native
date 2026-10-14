@@ -362,6 +362,48 @@ describe('useToggleAssetPriceAlertMutation', () => {
         })
     })
 
+    it('keeps one toggle on the scope it started on when the scope changes mid-flight', async () => {
+        let releaseWrite: () => void = () => {}
+        vi.mocked(updateAssetPeraMetadata).mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    releaseWrite = resolve
+                }),
+        )
+        vi.mocked(toggleAssetPriceAlert).mockRejectedValue(new Error('Network error'))
+
+        const { result, rerender } = renderHook(
+            ({ scope }) => useToggleAssetPriceAlertMutation({ scope }),
+            {
+                initialProps: { scope: ALGORAND_MAINNET } as {
+                    scope: typeof ALGORAND_MAINNET | typeof ALGORAND_TESTNET
+                },
+                wrapper: createWrapper(queryClient),
+            },
+        )
+
+        result.current.toggleAssetPriceAlert({
+            assetID: '123',
+            deviceId: 'device-123',
+            enabled: true,
+        })
+        await waitFor(() => expect(updateAssetPeraMetadata).toHaveBeenCalled())
+        rerender({ scope: ALGORAND_TESTNET })
+        releaseWrite()
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(toggleAssetPriceAlert).toHaveBeenCalledWith(
+            expect.objectContaining({ scope: ALGORAND_MAINNET }),
+        )
+        expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(
+            2,
+            expect.objectContaining({
+                scope: ALGORAND_MAINNET,
+                updates: { isPriceAlertEnabled: false },
+            }),
+        )
+    })
+
     it('invalidates the asset list cache on success so list views refetch', async () => {
         vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
 
