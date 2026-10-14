@@ -10,8 +10,9 @@ import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 const CHAIN_NEUTRAL_PACKAGES = ['backup', 'migrate']
 
 // Word-bounded `Networks` so `useNetworks` stays legal; the rest match inside
-// names (`rekeyed`, `arc59…` compounds, `AsbImport…`).
-const TERMS = /\bNetworks\b|algorand|Algorand|rekey|arc59|asb|Asb|ASB/
+// names (`rekeyed`, `onRekey`, `ARC59_APP_ID`, `AsbImport…`, `ALGORAND_…`).
+const TERMS =
+    /\bNetworks\b|algorand|Algorand|ALGORAND|rekey|Rekey|REKEY|arc59|Arc59|ARC59|asb|Asb|ASB/
 
 type Allowed = {
     file: string

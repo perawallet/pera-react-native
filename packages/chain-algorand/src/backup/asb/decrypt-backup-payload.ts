@@ -78,8 +78,8 @@ const parseAccount = (raw: unknown): SecureBackupAccount | null => {
 
 /**
  * Decrypt + decode an ARC-35 backup payload using the user's 12-word recovery
- * phrase. Throws `SecureBackupImportError` for every user-fixable failure mode so the
- * UI can map a single error type to localized copy.
+ * phrase. Throws `SecureBackupImportError` for every user-fixable failure mode
+ * so the UI can map a single error type to localized copy.
  *
  * Account-level shape errors (missing fields, unknown `account_type`, malformed
  * base64 key) are silently dropped: a single broken row should not block

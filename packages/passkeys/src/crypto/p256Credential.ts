@@ -22,7 +22,7 @@ import {
 
 const dp256 = new DeterministicP256()
 
-/** The uncompressed public point; throws on a scalar that is not a valid P-256 private key. */
+/** 64-byte X||Y point, no SEC1 0x04 prefix; throws on an invalid P-256 scalar. */
 export const p256RawPublicKey = (privateKey: Uint8Array): Uint8Array =>
     dp256.getPurePKBytes(privateKey)
 

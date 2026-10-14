@@ -40,8 +40,8 @@ beforeEach(() => {
 const sealPlaintext = (plaintext: object, key: Uint8Array): string => {
     const nonce = nacl.randomBytes(24)
     // jsdom's TextEncoder produces a Uint8Array from a different realm than
-    // tweetnacl's internal Uint8Array; wrap defensively (mirrors the secure-backup
-    // fixture helper).
+    // tweetnacl's internal Uint8Array; wrap defensively (mirrors the
+    // secure-backup fixture helper).
     const text = Uint8Array.from(
         new TextEncoder().encode(JSON.stringify(plaintext)),
     )

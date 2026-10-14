@@ -26,6 +26,8 @@ describe('pera/no-algorand-terms-in-chain-neutral-packages', () => {
             'algorand-terms.bad.ts:7',
             'algorand-terms.bad.ts:9',
             'algorand-terms.bad.ts:11',
+            'algorand-terms.bad.ts:15',
+            'algorand-terms.bad.ts:17',
         ])
     })
 

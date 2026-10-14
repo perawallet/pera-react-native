@@ -11,3 +11,7 @@ export const fileKind = `asb-${flag}`
 export class AsbImportError extends Error {}
 
 export const useNetworks = () => sign
+
+export const ALGORAND_SIGN_PREFIX = 'MX'
+
+export const onRekey = () => sign
