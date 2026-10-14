@@ -69,11 +69,12 @@ describe('Flow: Receive funds', () => {
         // The react-native-qrcode-svg mock keys every QR under the
         // hardcoded 'QRCode' testid; the production `receive_qr_code`
         // testid is on the wrapping component but doesn't reach the DOM
-        // through the mock. Assert on the mock's testid plus the deeplink
-        // value the QR encodes — that's what the user actually scans.
+        // through the mock. Assert on the mock's testid plus the payment
+        // URI the QR encodes — that's what the user actually scans.
         const qr = screen.getByTestId('QRCode') as HTMLElement
-        expect(qr).toBeTruthy()
-        expect(qr.getAttribute('value')).toContain(addressOf(PRIMARY_ACCOUNT))
+        expect(qr.getAttribute('value')).toBe(
+            `algorand://${addressOf(PRIMARY_ACCOUNT)}`,
+        )
         expect(screen.getByTestId('receive_copy_address_button')).toBeTruthy()
         expect(screen.getByTestId('receive_share_address_button')).toBeTruthy()
     })

@@ -10,14 +10,39 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import {
+    afterEach,
+    describe,
+    it,
+    expect,
+    beforeEach,
+    vi,
+    type Mock,
+} from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useQRViewScreen } from '../useQRViewScreen'
+
+import {
+    useAccountCapabilityScope,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    addressCodecs,
+    type AddressCodec,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { shareText } from '@utils/shareText'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
-import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
+import { useQRViewScreen } from '../useQRViewScreen'
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useAccountCapabilityScope: vi.fn(),
+}))
 
 vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(),
@@ -29,10 +54,6 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: vi.fn(),
-}))
-
-vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
-    useDeepLink: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -49,89 +70,169 @@ vi.mock('@utils/shareText', () => ({
     shareText: vi.fn(),
 }))
 
-const mockAccount = {
+const ALGORAND_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETHEREUM_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
+
+const ALGORAND_ADDRESS =
+    'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
+
+const algorandAccount: WalletAccount = {
     id: 'watch-1',
     name: 'Test Account',
     custody: { kind: 'watch' },
-    chains: { algorand: { address: 'test-address-123' } },
+    chains: { algorand: { address: ALGORAND_ADDRESS } },
 }
+
+const ethereumAccount: WalletAccount = {
+    id: 'watch-2',
+    name: 'Ethereum Account',
+    custody: { kind: 'watch' },
+    chains: { ethereum: { address: '0xabc' } },
+}
+
+const stubEthereumCodec = {
+    chainId: 'ethereum',
+    isValid: (address: string) => address.startsWith('0x'),
+    normalize: (address: string) => address.toUpperCase(),
+    toPaymentUri: (address: string, opts?: { networkId?: string }) =>
+        `stub:${address}@${opts?.networkId}`,
+} as unknown as AddressCodec
 
 describe('useQRViewScreen', () => {
     const mockShowError = vi.fn()
     const mockCopyToClipboard = vi.fn()
-    const mockBuildAccountDeeplink = vi.fn()
+
+    const givenAccount = (
+        account: WalletAccount | undefined,
+        scope: ChainScope | null,
+    ) => {
+        ;(useReceiveFunds as Mock).mockReturnValue({
+            selectedAccount: account,
+        })
+        vi.mocked(useAccountCapabilityScope).mockReturnValue(scope)
+    }
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useReceiveFunds as Mock).mockReturnValue({
-            selectedAccount: mockAccount,
-        })
+        registerAlgorandAddressCodec()
+        addressCodecs.register(stubEthereumCodec)
+        givenAccount(algorandAccount, ALGORAND_SCOPE)
         ;(useErrorToast as Mock).mockReturnValue({
             showError: mockShowError,
         })
         ;(useClipboard as Mock).mockReturnValue({
             copyToClipboard: mockCopyToClipboard,
         })
-        mockBuildAccountDeeplink.mockReturnValue('algorand://test-address-123')
-        ;(useDeepLink as Mock).mockReturnValue({
-            buildAccountDeeplink: mockBuildAccountDeeplink,
-        })
     })
 
-    it('returns account from store', () => {
-        const { result } = renderHook(() => useQRViewScreen())
-
-        expect(result.current.account).toEqual(mockAccount)
-        expect(result.current.address).toBe('test-address-123')
+    afterEach(() => {
+        addressCodecs.reset()
     })
 
-    it('returns empty deeplink when no account', () => {
-        ;(useReceiveFunds as Mock).mockReturnValue({
-            selectedAccount: undefined,
-        })
+    it('resolves the account chain for receiving', () => {
+        renderHook(() => useQRViewScreen())
 
-        const { result } = renderHook(() => useQRViewScreen())
-
-        expect(result.current.deeplink).toBe('')
-    })
-
-    it('returns deeplink for account', () => {
-        const { result } = renderHook(() => useQRViewScreen())
-
-        expect(result.current.deeplink).toBe('algorand://test-address-123')
-        expect(mockBuildAccountDeeplink).toHaveBeenCalledWith(
-            mockAccount,
-            'algorand',
+        expect(useAccountCapabilityScope).toHaveBeenCalledWith(
+            algorandAccount,
+            'receive',
         )
     })
 
-    it('copies address to clipboard', () => {
+    it('encodes an Algorand account through its chain codec', () => {
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.account).toEqual(algorandAccount)
+        expect(result.current.accountName).toBe('Test Account')
+        expect(result.current.address).toBe(ALGORAND_ADDRESS)
+        expect(result.current.paymentUri).toBe(
+            'algorand://CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA',
+        )
+        expect(result.current.canReceive).toBe(true)
+    })
+
+    it('encodes an account on another chain through that chain codec at its network', () => {
+        givenAccount(ethereumAccount, ETHEREUM_SCOPE)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.accountName).toBe('Ethereum Account')
+        expect(result.current.address).toBe('0XABC')
+        expect(result.current.paymentUri).toBe('stub:0XABC@sepolia')
+        expect(result.current.canReceive).toBe(true)
+    })
+
+    it('cannot receive when there is no account', () => {
+        givenAccount(undefined, null)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.canReceive).toBe(false)
+        expect(result.current.accountName).toBe('')
+        expect(result.current.address).toBe('')
+        expect(result.current.paymentUri).toBe('')
+    })
+
+    it('cannot receive when the account has no chain with receive on', () => {
+        givenAccount(algorandAccount, null)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.canReceive).toBe(false)
+        expect(result.current.address).toBe('')
+        expect(result.current.paymentUri).toBe('')
+    })
+
+    it('cannot receive when no codec is registered for the account chain', () => {
+        addressCodecs.reset()
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.canReceive).toBe(false)
+        expect(result.current.address).toBe('')
+        expect(result.current.paymentUri).toBe('')
+    })
+
+    it('cannot receive when the stored address fails its chain codec validation', () => {
+        givenAccount(
+            {
+                ...ethereumAccount,
+                chains: { ethereum: { address: 'corrupt' } },
+            },
+            ETHEREUM_SCOPE,
+        )
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.canReceive).toBe(false)
+        expect(result.current.address).toBe('')
+        expect(result.current.paymentUri).toBe('')
+    })
+
+    it('copies the normalized address to the clipboard', () => {
+        givenAccount(ethereumAccount, ETHEREUM_SCOPE)
         const { result } = renderHook(() => useQRViewScreen())
 
         act(() => {
             result.current.handleCopyAddress()
         })
 
-        expect(mockCopyToClipboard).toHaveBeenCalledWith('test-address-123')
+        expect(mockCopyToClipboard).toHaveBeenCalledWith('0XABC')
     })
 
-    it('copies empty string when no account', () => {
-        ;(useReceiveFunds as Mock).mockReturnValue({
-            selectedAccount: undefined,
-        })
-
+    it('copies nothing when the account cannot receive', () => {
+        givenAccount(algorandAccount, null)
         const { result } = renderHook(() => useQRViewScreen())
 
         act(() => {
             result.current.handleCopyAddress()
         })
 
-        expect(mockCopyToClipboard).toHaveBeenCalledWith('')
+        expect(mockCopyToClipboard).not.toHaveBeenCalled()
     })
 
-    it('shares address via shareText', async () => {
+    it('shares the normalized address under the account name on its chain', async () => {
         vi.mocked(shareText).mockResolvedValue()
-
+        givenAccount(ethereumAccount, ETHEREUM_SCOPE)
         const { result } = renderHook(() => useQRViewScreen())
 
         await act(async () => {
@@ -139,16 +240,24 @@ describe('useQRViewScreen', () => {
         })
 
         expect(shareText).toHaveBeenCalledWith({
-            title: 'Test Account',
-            message: 'test-address-123',
+            title: 'Ethereum Account',
+            message: '0XABC',
         })
     })
 
-    it('does not share when no account', async () => {
-        ;(useReceiveFunds as Mock).mockReturnValue({
-            selectedAccount: undefined,
+    it('does not share when there is no account', async () => {
+        givenAccount(undefined, null)
+        const { result } = renderHook(() => useQRViewScreen())
+
+        await act(async () => {
+            await result.current.handleShareAddress()
         })
 
+        expect(shareText).not.toHaveBeenCalled()
+    })
+
+    it('does not share when the account cannot receive', async () => {
+        givenAccount(algorandAccount, null)
         const { result } = renderHook(() => useQRViewScreen())
 
         await act(async () => {

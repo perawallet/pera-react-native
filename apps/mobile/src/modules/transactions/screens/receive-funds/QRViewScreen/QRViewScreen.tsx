@@ -19,8 +19,6 @@ import { CopyableText } from '@components/CopyableText'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useQRViewScreen } from './useQRViewScreen'
 import { useStyles } from './styles'
@@ -34,8 +32,10 @@ export const QRViewScreen = () => {
     const { onFinished } = useReceiveFunds()
     const {
         account,
+        accountName,
         address,
-        deeplink,
+        paymentUri,
+        canReceive,
         canSelectAccount,
         handleBack,
         handleCopyAddress,
@@ -49,19 +49,19 @@ export const QRViewScreen = () => {
                 onPress={handleBack}
             />
         ),
-        title: account ? (
+        title: accountName ? (
             <PWText
                 variant='h3'
                 numberOfLines={1}
             >
-                {getAccountDisplayName(account, LEGACY_CHAIN_ID)}
+                {accountName}
             </PWText>
         ) : (
             ''
         ),
     })
 
-    if (!account) {
+    if (!account || !canReceive) {
         return (
             <EmptyView
                 title={t('receive_funds.qrview.error_title')}
@@ -103,7 +103,7 @@ export const QRViewScreen = () => {
                 <PWView style={styles.qrContainer}>
                     <QRCode
                         {...getTestProps('receive_qr_code')}
-                        value={deeplink}
+                        value={paymentUri}
                         size={width - theme.spacing['5xl'] * 2}
                         color='black'
                         backgroundColor='white'
