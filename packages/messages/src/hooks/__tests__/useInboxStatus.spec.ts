@@ -20,14 +20,15 @@ import {
     fetchNotificationStatus,
 } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -101,6 +102,29 @@ describe('useInboxStatus', () => {
         expect(result.current.hasUnreadInboxItems).toBe(true)
         // Happy path must not touch the legacy fallback endpoint.
         expect(fetchNotificationStatus).not.toHaveBeenCalled()
+    })
+
+    it('reads the message status of an Ethereum scope', async () => {
+        scopeState.current = ETHEREUM
+        vi.mocked(fetchMessageStatus).mockResolvedValue({
+            hasUnreadItems: true,
+            hasUnreadNotifications: false,
+            hasUnreadInboxItems: true,
+            unreadInboxCount: 1,
+        })
+
+        const { result } = renderHook(
+            () => useInboxStatus(scopeState.current),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => {
+            expect(result.current.unreadInboxCount).toBe(1)
+        })
+        expect(fetchMessageStatus).toHaveBeenCalledWith(
+            ETHEREUM,
+            'test-device-id',
+        )
     })
 
     it('falls back to the legacy v1 source when message-status fails', async () => {

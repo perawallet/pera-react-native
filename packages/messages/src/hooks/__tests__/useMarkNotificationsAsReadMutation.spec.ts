@@ -16,14 +16,15 @@ import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -118,6 +119,26 @@ describe('useMarkNotificationsAsReadMutation', () => {
                 ALGORAND_MAINNET,
                 '',
                 1,
+            )
+        })
+    })
+
+    it('marks notifications read against an Ethereum scope', async () => {
+        scopeState.current = ETHEREUM
+        vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
+
+        const { result } = renderHook(
+            () => useMarkNotificationsAsReadMutation(scopeState.current),
+            { wrapper: createWrapper() },
+        )
+
+        result.current.markAsRead(12345)
+
+        await waitFor(() => {
+            expect(updateLastSeenNotification).toHaveBeenCalledWith(
+                ETHEREUM,
+                'test-device-id',
+                12345,
             )
         })
     })

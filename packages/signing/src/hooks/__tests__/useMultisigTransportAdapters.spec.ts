@@ -37,6 +37,8 @@ const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const TESTNET = scopeForLegacyNetwork('testnet')
 
+const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
+
 // Fake signed-transaction node. The transport reads only `txn` (passed to the
 // mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
 // to algosdk's SignedTransaction class without needing a real instance.
@@ -192,6 +194,41 @@ describe('useMultisigTransportAdapters', () => {
             expect(
                 result.current.adaptersFor(SCOPE).getMsigMetadata('MSIG'),
             ).toBeUndefined()
+        })
+    })
+
+    describe('on an Ethereum scope', () => {
+        test('reads the device id registered for that scope', () => {
+            mocks.deviceIdForScope.mockReturnValue('eth-device')
+            const { result } = renderTransportFns()
+
+            expect(result.current.adaptersFor(ETHEREUM).getDeviceId()).toBe(
+                'eth-device',
+            )
+            expect(mocks.deviceIdForScope).toHaveBeenCalledWith(ETHEREUM)
+        })
+
+        test("proposes through the scope's planner adapter and backend", async () => {
+            registerFakePlannerAdapter({
+                chainId: ETHEREUM.chainId,
+                encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+            })
+            mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
+            const { result } = renderTransportFns()
+
+            await result.current.adaptersFor(ETHEREUM).proposeSignRequest({
+                multisigAddress: 'MSIG',
+                signedData: {
+                    type: 'transactions',
+                    signed: [fakeSigned('TXN_1', new Uint8Array([1]))],
+                },
+                signers: [
+                    { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
+                ],
+                type: 'async',
+            })
+
+            expect(mocks.proposeSignRequest.mock.calls[0][0]).toEqual(ETHEREUM)
         })
     })
 

@@ -15,15 +15,15 @@ import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { Networks } from '@perawallet/wallet-core-config'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
-import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 

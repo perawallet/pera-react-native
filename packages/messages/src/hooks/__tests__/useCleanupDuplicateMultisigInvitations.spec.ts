@@ -26,6 +26,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 vi.mock('../../api/inbox', () => ({
     fetchInbox: vi.fn(),
@@ -193,5 +194,44 @@ describe('useCleanupDuplicateMultisigInvitations', () => {
         rerender()
 
         expect(mutateMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads the inbox of an Ethereum scope and deletes its duplicates', async () => {
+        const evmAccount = (
+            address: string,
+            custody: WalletAccount['custody'] = { kind: 'local', seed: null },
+        ): WalletAccount => ({
+            id: address,
+            custody,
+            chains: { ethereum: { address, keyPairId: `key-${address}` } },
+        })
+        vi.mocked(useSigningAccounts).mockReturnValue([evmAccount('0xA')])
+        vi.mocked(useAllAccounts).mockReturnValue([
+            evmAccount('0xDUP', { kind: 'multisig' }),
+        ])
+        vi.mocked(fetchInbox).mockResolvedValue({
+            joint_account_import_requests: [
+                {
+                    custom_id: 'a',
+                    creation_datetime: '2025-01-15T00:00:00Z',
+                    address: '0xDUP',
+                    version: 1,
+                    threshold: 2,
+                    participant_addresses: ['0xA'],
+                },
+            ],
+            joint_account_sign_requests: [],
+            asa_inboxes: [],
+        })
+
+        renderHook(() => useCleanupDuplicateMultisigInvitations(ETHEREUM), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(mutateMock).toHaveBeenCalledTimes(1))
+        expect(fetchInbox).toHaveBeenCalledWith(ETHEREUM, 'test-device-id', [
+            '0xA',
+        ])
+        expect(mutateMock).toHaveBeenCalledWith({ multisigAddress: '0xDUP' })
     })
 })

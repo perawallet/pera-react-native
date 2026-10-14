@@ -16,8 +16,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { closeSpotBanner } from '../../api/spot-banners'
 import { useDismissSpotBannerMutation } from '../useDismissSpotBannerMutation'
 import { getSpotBannersQueryKey } from '../querykeys'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import type { ReactNode } from 'react'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/spot-banners', () => ({
     closeSpotBanner: vi.fn(),
@@ -28,6 +28,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 const buildWrapper = (qc: QueryClient) => {
     const Wrapper = ({ children }: { children: ReactNode }) => (
@@ -160,5 +161,28 @@ describe('useDismissSpotBannerMutation', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(closeSpotBanner).toHaveBeenCalledWith(SCOPE, '', 1)
+    })
+
+    it('closes and optimistically removes the banner for an Ethereum scope', async () => {
+        const qc = new QueryClient({
+            defaultOptions: { mutations: { retry: false } },
+        })
+        const key = getSpotBannersQueryKey(ETHEREUM, 'dev-1')
+        qc.setQueryData(key, [
+            { id: 1, text: 'a', image: 'x', url: 'y' },
+            { id: 2, text: 'b', image: 'x', url: 'y' },
+        ])
+        vi.mocked(closeSpotBanner).mockResolvedValue(undefined)
+
+        const { result } = renderHook(
+            () => useDismissSpotBannerMutation(ETHEREUM),
+            { wrapper: buildWrapper(qc) },
+        )
+
+        act(() => result.current.mutate(1))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(closeSpotBanner).toHaveBeenCalledWith(ETHEREUM, 'dev-1', 1)
+        expect(qc.getQueryData<unknown[]>(key)).toHaveLength(1)
     })
 })

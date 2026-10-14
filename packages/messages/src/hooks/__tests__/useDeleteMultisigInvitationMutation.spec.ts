@@ -22,24 +22,26 @@ import { useDeleteMultisigInvitationMutation } from '../useDeleteMultisigInvitat
 import { invalidateAllPredicate } from '../querykeys'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 const mocks = vi.hoisted(() => ({
     mutationFn: vi.fn(),
+    received: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
-    useDeleteImportInboxMutation: ({
-        onSuccess,
-    }: {
-        network: string
+    useDeleteImportInboxMutation: (options: {
+        scope: unknown
         deviceId: string
         onSuccess?: () => void
-    }) =>
-        useMutation({
+    }) => {
+        mocks.received(options.scope, options.deviceId)
+        return useMutation({
             mutationFn: (input: { multisigAddress: string }) =>
                 mocks.mutationFn(input),
-            onSuccess,
-        }),
+            onSuccess: options.onSuccess,
+        })
+    },
 }))
 
 describe('useDeleteMultisigInvitationMutation', () => {
@@ -107,4 +109,27 @@ describe('useDeleteMultisigInvitationMutation', () => {
 
         expect(invalidateQueriesSpy).not.toHaveBeenCalled()
     })
+
+    it.each([ALGORAND_MAINNET, ETHEREUM])(
+        'hands the $chainId scope to the multisig mutation',
+        async scope => {
+            mocks.mutationFn.mockResolvedValue(undefined)
+
+            const { result } = renderHook(
+                () =>
+                    useDeleteMultisigInvitationMutation({
+                        scope,
+                        deviceId: 'device-123',
+                    }),
+                { wrapper },
+            )
+
+            await act(async () => {
+                result.current.mutate({ multisigAddress: 'MSIG_ADDR' })
+            })
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+            expect(mocks.received).toHaveBeenCalledWith(scope, 'device-123')
+        },
+    )
 })

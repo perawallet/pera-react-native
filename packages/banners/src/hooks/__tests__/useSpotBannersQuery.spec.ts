@@ -13,9 +13,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useSpotBannersQuery } from '../useSpotBannersQuery'
 import { fetchSpotBanners } from '../../api/spot-banners'
-import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/spot-banners', () => ({
     fetchSpotBanners: vi.fn(),

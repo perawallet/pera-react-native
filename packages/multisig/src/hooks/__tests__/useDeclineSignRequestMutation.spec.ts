@@ -19,6 +19,7 @@ import { getSignRequestDetailQueryKey } from '../querykeys'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 const mocks = vi.hoisted(() => ({
     addSignature: vi.fn(),
@@ -137,6 +138,31 @@ describe('useDeclineSignRequestMutation', () => {
                 },
             ],
         )
+    })
+
+    test('declines and invalidates the detail of an Ethereum scope', async () => {
+        mocks.addSignature.mockResolvedValue(declinedSignRequestResponse)
+        const queryKey = getSignRequestDetailQueryKey(ETHEREUM, 'sr-eth')
+        queryClient.setQueryData(queryKey, { id: 'sr-eth', status: 'pending' })
+
+        const { result } = renderHook(
+            () =>
+                useDeclineSignRequestMutation({
+                    scope: ETHEREUM,
+                    signRequestId: 'sr-eth',
+                }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            result.current.mutate({ address: '0xA', deviceId: 'device-1' })
+        })
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(mocks.addSignature).toHaveBeenCalledWith(ETHEREUM, 'sr-eth', [
+            { address: '0xA', response: 'declined', device_id: 'device-1' },
+        ])
+        expect(queryClient.getQueryState(queryKey)?.isInvalidated).toBe(true)
     })
 
     test('invalidates sign request detail query on success', async () => {
