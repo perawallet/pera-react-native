@@ -14,6 +14,7 @@ import type { ReactNode } from 'react'
 import type { Decimal } from 'decimal.js'
 import type {
     ChainId,
+    FeeModel,
     FeePreset,
     FeePresetEstimate,
 } from '@perawallet/wallet-core-chain-contract'
@@ -23,6 +24,14 @@ import { FlatFeeRow } from './FlatFeeRow'
 import { GasFeeEditor } from './GasFeeEditor'
 
 export const FEE_ROW_TEST_ID = 'transaction_fee_row'
+
+// Record keeps this exhaustive: a new fee model fails to compile until it
+// picks a row. A size-rate chain shows its single fee until it prices presets.
+const FEE_MODEL_HAS_PRESETS: Record<FeeModel, boolean> = {
+    flat: false,
+    gas: true,
+    rate: false,
+}
 
 export type FeeRowProps = {
     chainId: ChainId
@@ -48,29 +57,18 @@ export const FeeRow = ({
 }: FeeRowProps) => {
     const feeModel = useChainFeeModel(chainId)
 
-    switch (feeModel) {
-        case 'gas':
-            // A gas estimate without presets breaks the fee contract; the
-            // headline amount is still right to show.
-            if (presets) {
-                return (
-                    <GasFeeEditor
-                        chainId={chainId}
-                        presets={presets}
-                        selectedPreset={selectedPreset}
-                        onPresetChange={onPresetChange}
-                        accessory={accessory}
-                    />
-                )
-            }
-            break
-        case 'flat':
-        case 'rate':
-            break
-        default: {
-            const unhandled: never = feeModel
-            throw new Error(`Unhandled fee model: ${String(unhandled)}`)
-        }
+    // A presets-model estimate without presets breaks the fee contract; the
+    // headline amount is still right to show.
+    if (FEE_MODEL_HAS_PRESETS[feeModel] && presets) {
+        return (
+            <GasFeeEditor
+                chainId={chainId}
+                presets={presets}
+                selectedPreset={selectedPreset}
+                onPresetChange={onPresetChange}
+                accessory={accessory}
+            />
+        )
     }
 
     return (
