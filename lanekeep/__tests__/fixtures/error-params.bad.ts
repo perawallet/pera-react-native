@@ -24,3 +24,10 @@ export const paramsSpreadIsUnverifiable = {
     messageKey: 'dapp.approval.request_origin',
     params: { ...base },
 }
+
+declare const i18nKey: (key: string) => string
+
+export const callFormMissingParam = {
+    messageKey: i18nKey('dapp.approval.request_origin'),
+    params: { unrelated: 1 },
+}

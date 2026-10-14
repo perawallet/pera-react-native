@@ -37,7 +37,7 @@ const KEY_SHAPED = /^[A-Za-z][\w-]*(?:\.[\w-]+)+$/
 // dotted and hyphenated, and keeping hyphens out of ancestor claims stops
 // them claiming a key subtree.
 const PATH_SHAPED = /^[A-Za-z]\w*(?:\.\w+)+$/
-// `errors.algod.${code}` and `networks_${chain}` build keys from a head.
+// `search.sections.${kind}` and `networks_${chain}` build keys from a head.
 const TEMPLATE_HEAD = /^`([A-Za-z][\w.]*[._])\$\{/
 
 export default defineRule({
@@ -46,7 +46,7 @@ export default defineRule({
     card: {
         message: 'an en.json key is never used',
         remediation:
-            "Delete the key from en.json and every other locale, or use it. A key built at run time is claimed by a template head (`errors.${code}`) or a literal naming its parent path; only non-error keys assembled from enums belong in EXCLUDED_KEYS in this rule. A top-level key with no dot can't be claimed, so keep keys namespaced.",
+            "Delete the key from en.json and every other locale, or use it. A key built at run time is claimed by a template head (`search.sections.${kind}`) or a literal naming its parent path; only non-error keys assembled from enums belong in EXCLUDED_KEYS in this rule. A top-level key with no dot can't be claimed, so keep keys namespaced.",
         examples: {
             bad: '"settings.old_banner" in en.json, referenced nowhere',
             good: "t('settings.old_banner') in the screen that shows it",
@@ -125,7 +125,7 @@ export default defineRule({
             if (key.startsWith('errors.')) {
                 ctx.report(
                     jsonLocation(fact),
-                    `error key "${key}" is not claimed by a messageKey, a keysFor() base or a t() call`,
+                    `error key "${key}" is not claimed by an i18nKey() call or a t() call`,
                 )
                 continue
             }

@@ -10,6 +10,7 @@ import { defineRule } from 'lanekeep'
 const GUARDED = [
     'locale-key-parity',
     'translation-key-exists',
+    'i18n-key-exists',
     'no-unused-translation-keys',
     'no-i18n-integrity-suppressions',
 ].join('|')
