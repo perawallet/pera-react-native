@@ -10,8 +10,9 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useMutation } from '@tanstack/react-query'
-import type { Nullable, Network } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { createMultisigAccount } from '../api/endpoints'
 import type {
     CreateMultisigAccountRequest,
@@ -19,7 +20,7 @@ import type {
 } from '../api/schema'
 
 type UseCreateMultisigAccountMutationParams = {
-    network: Network
+    scope: ChainScope
 }
 
 export type UseCreateMultisigAccountMutationResult = {
@@ -36,11 +37,11 @@ export type UseCreateMultisigAccountMutationResult = {
 }
 
 export const useCreateMultisigAccountMutation = ({
-    network,
+    scope,
 }: UseCreateMultisigAccountMutationParams): UseCreateMultisigAccountMutationResult => {
     const mutation = useMutation({
         mutationFn: (params: CreateMultisigAccountRequest) =>
-            createMultisigAccount(network, params),
+            createMultisigAccount(scope, params),
     })
 
     return {

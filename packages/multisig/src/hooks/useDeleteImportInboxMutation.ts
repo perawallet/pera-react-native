@@ -10,12 +10,13 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useMutation } from '@tanstack/react-query'
-import type { Nullable, Network } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { deleteImportInbox } from '../api/endpoints'
 
 type UseDeleteImportInboxMutationParams = {
-    network: Network
+    scope: ChainScope
     deviceId: string
     onSuccess?: () => void
 }
@@ -36,13 +37,13 @@ export type UseDeleteImportInboxMutationResult = {
 }
 
 export const useDeleteImportInboxMutation = ({
-    network,
+    scope,
     deviceId,
     onSuccess,
 }: UseDeleteImportInboxMutationParams): UseDeleteImportInboxMutationResult => {
     const mutation = useMutation({
         mutationFn: ({ multisigAddress }: DeleteImportInboxInput) =>
-            deleteImportInbox(network, deviceId, multisigAddress),
+            deleteImportInbox(scope, deviceId, multisigAddress),
         onSuccess,
     })
 

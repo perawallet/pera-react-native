@@ -22,6 +22,9 @@ import {
 } from '../endpoints'
 import { queryClient, PeraNetworkError } from '@perawallet/wallet-core-shared'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 vi.mock(import('@perawallet/wallet-core-shared'), async importOriginal => {
     const actual = await importOriginal()
     return {
@@ -66,11 +69,11 @@ describe('createMultisigAccount', () => {
             participant_addresses: ['ADDR1', 'ADDR2'],
             device_id: 'device-1',
         }
-        await createMultisigAccount('testnet', params)
+        await createMultisigAccount(ALGORAND_TESTNET, params)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'POST',
             url: '/v1/joint-accounts/accounts/',
             data: params,
@@ -82,7 +85,7 @@ describe('createMultisigAccount', () => {
             data: validAccountResponse,
         })
 
-        const result = await createMultisigAccount('testnet', {
+        const result = await createMultisigAccount(ALGORAND_TESTNET, {
             version: 1,
             threshold: 2,
             participant_addresses: ['ADDR1', 'ADDR2'],
@@ -97,7 +100,7 @@ describe('createMultisigAccount', () => {
         })
 
         await expect(
-            createMultisigAccount('testnet', {
+            createMultisigAccount(ALGORAND_TESTNET, {
                 version: 1,
                 threshold: 2,
                 participant_addresses: ['ADDR1'],
@@ -117,11 +120,11 @@ describe('getMultisigAccountDetail', () => {
             data: validAccountResponse,
         })
 
-        await getMultisigAccountDetail('mainnet', 'MSIG_ADDR')
+        await getMultisigAccountDetail(ALGORAND_MAINNET, 'MSIG_ADDR')
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             url: '/v1/joint-accounts/accounts/MSIG_ADDR/',
         })
@@ -151,11 +154,11 @@ describe('proposeSignRequest', () => {
                 },
             ],
         }
-        await proposeSignRequest('testnet', params)
+        await proposeSignRequest(ALGORAND_TESTNET, params)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'POST',
             url: '/v1/joint-accounts/sign-requests/',
             data: params,
@@ -167,7 +170,7 @@ describe('proposeSignRequest', () => {
             data: validSignRequestResponse,
         })
 
-        const result = await proposeSignRequest('testnet', {
+        const result = await proposeSignRequest(ALGORAND_TESTNET, {
             joint_account_address: 'MSIG_ADDR',
             proposer_address: 'ADDR1',
             type: 'async',
@@ -201,15 +204,11 @@ describe('addSignature', () => {
                 signatures: [['sig1']],
             },
         ]
-        await addSignature(
-            { chainId: 'algorand', networkId: 'testnet' },
-            'sr-1',
-            responses,
-        )
+        await addSignature(ALGORAND_TESTNET, 'sr-1', responses)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: { chainId: 'algorand', networkId: 'testnet' },
+            scope: ALGORAND_TESTNET,
             method: 'POST',
             url: '/v1/joint-accounts/sign-requests/sr-1/responses/',
             data: responses,
@@ -228,14 +227,14 @@ describe('getSignRequestDetail', () => {
         })
 
         const result = await getSignRequestDetail(
-            'mainnet',
+            ALGORAND_MAINNET,
             'device-7',
             validSignRequestResponse.id,
         )
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'POST',
             url: '/v1/joint-accounts/sign-requests/search/',
             data: {
@@ -252,7 +251,7 @@ describe('getSignRequestDetail', () => {
         })
 
         await expect(
-            getSignRequestDetail('mainnet', 'device-7', 'sr-missing'),
+            getSignRequestDetail(ALGORAND_MAINNET, 'device-7', 'sr-missing'),
         ).rejects.toThrow(
             /Sign request not found in search results: sr-missing/,
         )
@@ -267,11 +266,11 @@ describe('deleteImportInbox', () => {
     test('calls queryClient with correct params', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: '' })
 
-        await deleteImportInbox('testnet', 'device-1', 'MSIG_ADDR')
+        await deleteImportInbox(ALGORAND_TESTNET, 'device-1', 'MSIG_ADDR')
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'DELETE',
             url: '/v1/joint-accounts/inbox/device-import/device-1/MSIG_ADDR/',
             responseType: 'text',
@@ -290,7 +289,7 @@ describe('checkIsMultisigAddress', () => {
         })
 
         await expect(
-            checkIsMultisigAddress('mainnet', 'MSIG_ADDR'),
+            checkIsMultisigAddress(ALGORAND_MAINNET, 'MSIG_ADDR'),
         ).resolves.toBe(true)
     })
 
@@ -304,7 +303,7 @@ describe('checkIsMultisigAddress', () => {
         )
 
         await expect(
-            checkIsMultisigAddress('mainnet', 'UNKNOWN'),
+            checkIsMultisigAddress(ALGORAND_MAINNET, 'UNKNOWN'),
         ).resolves.toBe(false)
     })
 
@@ -312,8 +311,8 @@ describe('checkIsMultisigAddress', () => {
         const boom = new PeraNetworkError('server', { status: 500 })
         ;(queryClient as Mock).mockRejectedValue(boom)
 
-        await expect(checkIsMultisigAddress('mainnet', 'ADDR')).rejects.toBe(
-            boom,
-        )
+        await expect(
+            checkIsMultisigAddress(ALGORAND_MAINNET, 'ADDR'),
+        ).rejects.toBe(boom)
     })
 })

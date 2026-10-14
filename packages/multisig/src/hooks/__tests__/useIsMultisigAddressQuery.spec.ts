@@ -16,6 +16,8 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useIsMultisigAddressQuery } from '../useIsMultisigAddressQuery'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     checkIsMultisigAddress: vi.fn(),
 }))
@@ -47,7 +49,7 @@ describe('useIsMultisigAddressQuery', () => {
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'ADDR',
                 }),
             { wrapper },
@@ -62,7 +64,7 @@ describe('useIsMultisigAddressQuery', () => {
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'ADDR',
                 }),
             { wrapper },
@@ -75,7 +77,7 @@ describe('useIsMultisigAddressQuery', () => {
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: '',
                 }),
             { wrapper },
@@ -89,7 +91,7 @@ describe('useIsMultisigAddressQuery', () => {
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'ADDR',
                     enabled: false,
                 }),

@@ -11,14 +11,14 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { ProposeSignRequestResponse } from '../api/schema'
 import { getSignRequestDetailQueryKey } from './querykeys'
 
 type UseDeclineSignRequestMutationParams = {
-    network: Network
+    scope: ChainScope
     signRequestId: string
 }
 
@@ -41,14 +41,14 @@ export type UseDeclineSignRequestMutationResult = {
 }
 
 export const useDeclineSignRequestMutation = ({
-    network,
+    scope,
     signRequestId,
 }: UseDeclineSignRequestMutationParams): UseDeclineSignRequestMutationResult => {
     const rqClient = useQueryClient()
 
     const mutation = useMutation({
         mutationFn: ({ address, deviceId }: DeclineSignRequestInput) =>
-            addSignature(scopeForLegacyNetwork(network), signRequestId, [
+            addSignature(scope, signRequestId, [
                 {
                     address,
                     response: 'declined',
@@ -57,10 +57,7 @@ export const useDeclineSignRequestMutation = ({
             ]),
         onSuccess: () => {
             void rqClient.invalidateQueries({
-                queryKey: getSignRequestDetailQueryKey(
-                    scopeForLegacyNetwork(network),
-                    signRequestId,
-                ),
+                queryKey: getSignRequestDetailQueryKey(scope, signRequestId),
             })
         },
     })

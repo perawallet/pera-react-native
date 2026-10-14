@@ -11,15 +11,15 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { AddSignatureRequest } from '../api/schema'
 import type { ProposeSignRequestResponse } from '../api/schema'
 import { getSignRequestDetailQueryKey } from './querykeys'
 
 type UseAddSignatureMutationParams = {
-    network: Network
+    scope: ChainScope
     signRequestId: string
 }
 
@@ -37,24 +37,17 @@ export type UseAddSignatureMutationResult = {
 }
 
 export const useAddSignatureMutation = ({
-    network,
+    scope,
     signRequestId,
 }: UseAddSignatureMutationParams): UseAddSignatureMutationResult => {
     const rqClient = useQueryClient()
 
     const mutation = useMutation({
         mutationFn: ({ responses }: AddSignatureMutationInput) =>
-            addSignature(
-                scopeForLegacyNetwork(network),
-                signRequestId,
-                responses,
-            ),
+            addSignature(scope, signRequestId, responses),
         onSuccess: () => {
             void rqClient.invalidateQueries({
-                queryKey: getSignRequestDetailQueryKey(
-                    scopeForLegacyNetwork(network),
-                    signRequestId,
-                ),
+                queryKey: getSignRequestDetailQueryKey(scope, signRequestId),
             })
         },
     })

@@ -14,9 +14,11 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useDeclineSignRequestMutation } from '../useDeclineSignRequestMutation'
 import { getSignRequestDetailQueryKey } from '../querykeys'
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mocks = vi.hoisted(() => ({
     addSignature: vi.fn(),
@@ -85,7 +87,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -109,7 +111,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'testnet',
+                    scope: ALGORAND_TESTNET,
                     signRequestId: 'sr-456',
                 }),
             { wrapper },
@@ -125,7 +127,7 @@ describe('useDeclineSignRequestMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(mocks.addSignature).toHaveBeenCalledWith(
-            { chainId: 'algorand', networkId: 'testnet' },
+            ALGORAND_TESTNET,
             'sr-456',
             [
                 {
@@ -141,7 +143,7 @@ describe('useDeclineSignRequestMutation', () => {
         mocks.addSignature.mockResolvedValue(declinedSignRequestResponse)
 
         const queryKey = getSignRequestDetailQueryKey(
-            scopeForLegacyNetwork('mainnet'),
+            ALGORAND_MAINNET,
             'sr-123',
         )
         queryClient.setQueryData(queryKey, { id: 'sr-123', status: 'pending' })
@@ -151,7 +153,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -179,7 +181,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -203,7 +205,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -225,7 +227,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -241,7 +243,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -266,7 +268,7 @@ describe('useDeclineSignRequestMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeclineSignRequestMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
