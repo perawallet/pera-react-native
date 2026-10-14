@@ -10,36 +10,38 @@
  limitations under the License
  */
 
+import type { ChainNotice } from '@perawallet/wallet-core-transactions'
 import { PWRoundIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type RecipientBelowMbrWarningProps = {
-    minBalance: string
+type RecipientWarningProps = {
+    notice: ChainNotice
 }
 
-export const RecipientBelowMbrWarning = ({
-    minBalance,
-}: RecipientBelowMbrWarningProps) => {
+export const RecipientWarning = ({ notice }: RecipientWarningProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     return (
         <PWView
-            style={styles.recipientMbrContainer}
-            testID='recipient_below_mbr_warning'
+            style={styles.container}
+            testID='recipient_warning'
         >
             <PWRoundIcon
                 icon='info'
                 size='md'
                 variant='error'
             />
-            <PWView style={styles.recipientMbrMessageContainer}>
-                <PWText style={styles.recipientMbrMessage}>
-                    {t('send_funds.confirmation.recipient_below_mbr.body', {
-                        min: minBalance,
-                    })}
-                </PWText>
+            <PWView style={styles.messageContainer}>
+                {notice.body.map(paragraph => (
+                    <PWText
+                        key={paragraph.key}
+                        style={styles.message}
+                    >
+                        {t(paragraph.key, paragraph.params)}
+                    </PWText>
+                ))}
             </PWView>
         </PWView>
     )

@@ -17,7 +17,6 @@ import { Decimal } from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountAssetBalanceQuery,
-    useOnChainAccountStateQuery,
     useSignerFor,
     usesNonPrimaryScheme,
 } from '@perawallet/wallet-core-accounts'
@@ -26,6 +25,10 @@ import {
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
+import {
+    useRecipientWarningQuery,
+    type ChainNotice,
+} from '@perawallet/wallet-core-transactions'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useToast } from '@hooks/useToast'
@@ -75,7 +78,6 @@ vi.mock('../../../components/send-funds/AddNoteContent', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(),
-    useOnChainAccountStateQuery: vi.fn(),
     useSignerFor: vi.fn(),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
@@ -153,11 +155,14 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
-// Both in base units; the snapshot carries the minimum balance in display units.
-const recipientState = (amount: number, minBalanceBaseUnits: number) => ({
-    nativeBalanceBaseUnits: new Decimal(amount),
-    reserveBalance: new Decimal(minBalanceBaseUnits),
-})
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useRecipientWarningQuery: vi.fn(),
+}))
+
+const RECIPIENT_WARNING: ChainNotice = {
+    title: { key: 'recipient.title' },
+    body: [{ key: 'recipient.body', params: { min: '0.1' } }],
+}
 
 describe('useTransactionConfirmationScreen', () => {
     const mockOnNext = vi.fn()
@@ -203,7 +208,7 @@ describe('useTransactionConfirmationScreen', () => {
             chainId,
             networkId: 'mainnet',
         }))
-        ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
+        ;(useRecipientWarningQuery as Mock).mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -383,7 +388,7 @@ describe('useTransactionConfirmationScreen', () => {
         })
     })
 
-    describe('recipient MBR validation', () => {
+    describe('recipient warning', () => {
         const setupAlgoSend = (amount: Decimal) => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
@@ -399,57 +404,51 @@ describe('useTransactionConfirmationScreen', () => {
             })
         }
 
-        it('flags recipient below MBR when sending insufficient ALGO to a new account', () => {
+        const warnWith = (data: ChainNotice | undefined, isPending = false) =>
+            (useRecipientWarningQuery as Mock).mockReturnValue({
+                data,
+                isPending,
+            })
+
+        it('asks the chain about the recipient with the amount in base units', () => {
             setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: recipientState(0, 100_000),
-                isPending: false,
+
+            renderHook(() => useTransactionConfirmationScreen())
+
+            expect(useRecipientWarningQuery).toHaveBeenLastCalledWith({
+                recipient: 'DEST_ADDRESS',
+                asset: { chainId: 'algorand', assetId: '0' },
+                amount: new Decimal(50_000),
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             })
+        })
+
+        it('asks nothing until the send has a destination', () => {
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: '0',
+                amount: new Decimal('1'),
+            })
+
+            renderHook(() => useTransactionConfirmationScreen())
+
+            expect(useRecipientWarningQuery).toHaveBeenLastCalledWith(undefined)
+        })
+
+        it("surfaces the chain's warning", () => {
+            setupAlgoSend(new Decimal('0.05'))
+            warnWith(RECIPIENT_WARNING)
 
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.isRecipientBelowMbr).toBe(true)
-            expect(result.current.recipientMbrDisplay).toBe('0.1')
+            expect(result.current.recipientWarning).toEqual(RECIPIENT_WARNING)
         })
 
-        it('does not flag when ALGO send meets recipient MBR', () => {
-            setupAlgoSend(new Decimal('0.1'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: recipientState(0, 100_000),
-                isPending: false,
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.isRecipientBelowMbr).toBe(false)
-        })
-
-        // The ledger allows leaving a receiver at exactly 0 — a zero-amount
-        // note payment to an empty account is valid.
-        it('does not flag a zero-amount send that leaves an empty recipient at zero', () => {
+        it('confirms a send the chain has no warning for', () => {
             setupAlgoSend(new Decimal('0'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: recipientState(0, 100_000),
-                isPending: false,
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.isRecipientBelowMbr).toBe(false)
-        })
-
-        it('confirms a zero-amount ALGO send to a funded recipient', () => {
-            setupAlgoSend(new Decimal('0'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: recipientState(200_000, 100_000),
-                isPending: false,
-            })
 
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
@@ -459,90 +458,14 @@ describe('useTransactionConfirmationScreen', () => {
                 result.current.handleConfirm()
             })
 
+            expect(result.current.recipientWarning).toBeUndefined()
             expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
             expect(mockShowToast).not.toHaveBeenCalled()
         })
 
-        it('does not flag when recipient already has balance above MBR', () => {
-            setupAlgoSend(new Decimal('0.01'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: recipientState(200_000, 100_000),
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.isRecipientBelowMbr).toBe(false)
-        })
-
-        it('does not flag for non-ALGO asset sends', () => {
-            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAssetId: mockSelectedAssetId,
-                amount: new Decimal('0.0001'),
-                destination: 'DEST_ADDRESS',
-            })
-            ;(useAssetsQuery as Mock).mockReturnValue({
-                data: new Map([['123', mockAsset]]),
-            })
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: undefined,
-                isPending: false,
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.isRecipientBelowMbr).toBe(false)
-        })
-
-        it('reports isRecipientInfoPending while ALGO recipient query is in flight', () => {
+        it('handleConfirm is a no-op while the recipient check is pending', () => {
             setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: undefined,
-                isPending: true,
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.isRecipientInfoPending).toBe(true)
-            expect(result.current.isRecipientBelowMbr).toBe(false)
-        })
-
-        it('does not flag isRecipientInfoPending for non-ALGO sends', () => {
-            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAssetId: mockSelectedAssetId,
-                amount: new Decimal('10'),
-                destination: 'DEST_ADDRESS',
-            })
-            ;(useAssetsQuery as Mock).mockReturnValue({
-                data: new Map([['123', mockAsset]]),
-            })
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: undefined,
-                isPending: true,
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.isRecipientInfoPending).toBe(false)
-        })
-
-        it('handleConfirm is a no-op while recipient info is pending', () => {
-            setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: undefined,
-                isPending: true,
-            })
+            warnWith(undefined, true)
 
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
@@ -552,16 +475,14 @@ describe('useTransactionConfirmationScreen', () => {
                 result.current.handleConfirm()
             })
 
+            expect(result.current.isRecipientInfoPending).toBe(true)
             expect(mockNavigate).not.toHaveBeenCalled()
             expect(mockShowToast).not.toHaveBeenCalled()
         })
 
-        it('blocks confirm and shows toast when recipient is below MBR', () => {
+        it("blocks confirm and toasts the chain's warning", () => {
             setupAlgoSend(new Decimal('0.05'))
-            ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
-                data: recipientState(0, 100_000),
-                isPending: false,
-            })
+            warnWith(RECIPIENT_WARNING)
 
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
@@ -574,7 +495,8 @@ describe('useTransactionConfirmationScreen', () => {
             expect(mockNavigate).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    title: 'send_funds.confirmation.recipient_below_mbr.title',
+                    title: 'recipient.title',
+                    body: 'recipient.body',
                     type: 'error',
                 }),
                 expect.anything(),

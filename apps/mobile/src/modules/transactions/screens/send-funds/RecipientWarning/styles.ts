@@ -13,7 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    recipientMbrContainer: {
+    container: {
         flexDirection: 'row' as const,
         alignItems: 'flex-start' as const,
         gap: theme.spacing.lg,
@@ -22,11 +22,11 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.lg,
         borderRadius: theme.spacing.sm,
     },
-    recipientMbrMessageContainer: {
+    messageContainer: {
         flexShrink: 1,
         gap: theme.spacing.xs,
     },
-    recipientMbrMessage: {
+    message: {
         flexShrink: 1,
         color: theme.colors.suspiciousBannerContent,
     },

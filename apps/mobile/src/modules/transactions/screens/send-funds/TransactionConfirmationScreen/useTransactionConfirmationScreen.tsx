@@ -15,7 +15,6 @@ import { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useAccountAssetBalanceQuery,
-    useOnChainAccountStateQuery,
     useSelectedAccount,
     useSignerFor,
     usesNonPrimaryScheme,
@@ -23,10 +22,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useIsNativeAssetId,
-    useNativeAsset,
     isCollectible,
-    toWholeUnits,
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -36,7 +32,6 @@ import {
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
-    toBigInt,
 } from '@perawallet/wallet-core-shared'
 import {
     LEGACY_CHAIN_ID,
@@ -44,6 +39,10 @@ import {
     type FeePreset,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useRecipientWarningQuery,
+    type ChainNotice,
+} from '@perawallet/wallet-core-transactions'
 import { bottomSheetNotifier } from '@components/core'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
@@ -76,8 +75,7 @@ type useTransactionConfirmationScreenResult = {
     isCollectible: boolean
     isReady: boolean
     isCloseAccount: boolean
-    isRecipientBelowMbr: boolean
-    recipientMbrDisplay: string
+    recipientWarning: Optional<ChainNotice>
     isRecipientInfoPending: boolean
     isSigning: boolean
 }
@@ -85,8 +83,6 @@ type useTransactionConfirmationScreenResult = {
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const nativeAsset = useNativeAsset()
-        const isNativeAssetId = useIsNativeAssetId()
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -158,60 +154,26 @@ export const useTransactionConfirmationScreen =
                 scope,
             )
 
-        const isAlgoSend = isNativeAssetId(selectedAssetId)
-        const {
-            data: recipientAccountState,
-            isPending: recipientAccountInfoPending,
-        } = useOnChainAccountStateQuery(
-            isAlgoSend ? (destination ?? '') : '',
-            scope,
-        )
-        // Base units of the chain's native asset, as the MBR check below
-        // compares base units.
-        const recipientAccountInfo = useMemo(
+        const recipientInput = useMemo(
             () =>
-                recipientAccountState
+                destination && amount && asset && selectedAssetId
                     ? {
-                          amount: toBigInt(
-                              recipientAccountState.nativeBalanceBaseUnits,
+                          recipient: destination,
+                          asset: {
+                              chainId: scope.chainId,
+                              assetId: selectedAssetId,
+                          },
+                          amount: displayUnitsToBaseUnits(
+                              amount,
+                              asset.decimals,
                           ),
-                          minBalance: toBigInt(
-                              recipientAccountState.reserveBalance,
-                          ),
+                          scope,
                       }
                     : undefined,
-            [recipientAccountState],
+            [destination, amount, asset, selectedAssetId, scope],
         )
-        const isRecipientInfoPending =
-            isAlgoSend && !!destination && recipientAccountInfoPending
-
-        const { isRecipientBelowMbr, recipientMbrDisplay } = useMemo(() => {
-            const mbr = recipientAccountInfo?.minBalance ?? 0n
-            const mbrDisplay = toWholeUnits(mbr, nativeAsset).toString()
-            if (!isAlgoSend || !amount || !recipientAccountInfo) {
-                return {
-                    isRecipientBelowMbr: false,
-                    recipientMbrDisplay: mbrDisplay,
-                }
-            }
-            const amountBaseUnits = BigInt(
-                displayUnitsToBaseUnits(
-                    amount,
-                    nativeAsset.decimals,
-                ).toString(),
-            )
-            const recipientBalanceAfter =
-                recipientAccountInfo.amount + amountBaseUnits
-            // The ledger allows leaving a receiver at exactly 0 (a zero-amount
-            // note payment to an empty account); only a positive balance below
-            // the MBR fails on-chain.
-            return {
-                isRecipientBelowMbr:
-                    recipientBalanceAfter > 0n &&
-                    recipientBalanceAfter < recipientAccountInfo.minBalance,
-                recipientMbrDisplay: mbrDisplay,
-            }
-        }, [isAlgoSend, amount, recipientAccountInfo, nativeAsset])
+        const { data: recipientWarning, isPending: isRecipientInfoPending } =
+            useRecipientWarningQuery(recipientInput)
 
         const [isSigning, setIsSigning] = useState(false)
         const isFocused = useIsFocused()
@@ -247,16 +209,18 @@ export const useTransactionConfirmationScreen =
                 return
             }
 
-            if (isRecipientBelowMbr) {
+            if (recipientWarning) {
                 showToast(
                     {
                         title: t(
-                            'send_funds.confirmation.recipient_below_mbr.title',
+                            recipientWarning.title.key,
+                            recipientWarning.title.params,
                         ),
-                        body: t(
-                            'send_funds.confirmation.recipient_below_mbr.body',
-                            { min: recipientMbrDisplay },
-                        ),
+                        body: recipientWarning.body
+                            .map(paragraph =>
+                                t(paragraph.key, paragraph.params),
+                            )
+                            .join(' '),
                         type: 'error',
                     },
                     {
@@ -299,8 +263,7 @@ export const useTransactionConfirmationScreen =
             isCollectible: isCollectibleAsset,
             isReady,
             isCloseAccount,
-            isRecipientBelowMbr,
-            recipientMbrDisplay,
+            recipientWarning,
             isRecipientInfoPending,
             isSigning,
         }
