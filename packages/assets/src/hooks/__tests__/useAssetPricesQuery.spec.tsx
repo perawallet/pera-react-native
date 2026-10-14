@@ -11,26 +11,24 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useAssetPricesQuery } from '../useAssetPricesQuery'
 import { Decimal } from 'decimal.js'
 import { createWrapper } from './test-utils'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
 const NATIVE_ASSET_ID = '0'
 
 const mocks = vi.hoisted(() => ({
     getAssetPricesByIds: vi.fn(),
-    useNetwork: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
     getAssetPricesByIds: mocks.getAssetPricesByIds,
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mocks.useNetwork,
 }))
 
 describe('useAssetPricesQuery', () => {
@@ -38,7 +36,6 @@ describe('useAssetPricesQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetPricesByIds.mockReturnValue([])
         queryClient = new QueryClient({
             defaultOptions: {
@@ -55,27 +52,33 @@ describe('useAssetPricesQuery', () => {
         onlineManager.setOnline(true)
     })
 
-    it('serves prices from SQLite while offline', async () => {
-        onlineManager.setOnline(false)
+    it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
+        'serves prices from SQLite while offline for $chainId',
+        async scope => {
+            onlineManager.setOnline(false)
 
-        mocks.getAssetPricesByIds.mockReturnValue([
-            { assetId: '123', usdPrice: new Decimal('2.0') },
-        ])
+            mocks.getAssetPricesByIds.mockReturnValue([
+                { assetId: '123', usdPrice: new Decimal('2.0') },
+            ])
 
-        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
-            wrapper: createWrapper(queryClient),
-        })
+            const { result } = renderHook(
+                () => useAssetPricesQuery(scope, ['123']),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
 
-        await waitFor(() => expect(result.current.isPending).toBe(false))
+            await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        expect(result.current.data.get('123')?.usdPrice).toEqual(
-            new Decimal(2.0),
-        )
-        expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
-            assetIds: ['123'],
-            scope: scopeForLegacyNetwork('mainnet'),
-        })
-    })
+            expect(result.current.data.get('123')?.usdPrice).toEqual(
+                new Decimal(2.0),
+            )
+            expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
+                assetIds: ['123'],
+                scope,
+            })
+        },
+    )
 
     it('reads prices from the database and transforms them', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
@@ -83,9 +86,12 @@ describe('useAssetPricesQuery', () => {
             { assetId: NATIVE_ASSET_ID, usdPrice: new Decimal('1.5') },
         ])
 
-        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useAssetPricesQuery(ALGORAND_MAINNET, ['123']),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -103,9 +109,12 @@ describe('useAssetPricesQuery', () => {
             { assetId: '456', usdPrice: new Decimal('0') },
         ])
 
-        const { result } = renderHook(() => useAssetPricesQuery(['456']), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useAssetPricesQuery(ALGORAND_MAINNET, ['456']),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -118,7 +127,8 @@ describe('useAssetPricesQuery', () => {
         ])
 
         const { result, rerender } = renderHook(
-            ({ ids }: { ids: string[] }) => useAssetPricesQuery(ids),
+            ({ ids }: { ids: string[] }) =>
+                useAssetPricesQuery(ALGORAND_MAINNET, ids),
             {
                 wrapper: createWrapper(queryClient),
                 initialProps: { ids: ['123'] },
@@ -140,7 +150,8 @@ describe('useAssetPricesQuery', () => {
         ])
 
         const { result, rerender } = renderHook(
-            ({ ids }: { ids: string[] }) => useAssetPricesQuery(ids),
+            ({ ids }: { ids: string[] }) =>
+                useAssetPricesQuery(ALGORAND_MAINNET, ids),
             {
                 wrapper: createWrapper(queryClient),
                 initialProps: { ids: ['123'] },
@@ -159,41 +170,39 @@ describe('useAssetPricesQuery', () => {
         await waitFor(() =>
             expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
                 assetIds: ['456'],
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: ALGORAND_MAINNET,
             }),
         )
     })
 
-    it('refetches when network changes', async () => {
+    it('refetches when the scope changes', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
             { assetId: '123', usdPrice: new Decimal('2.0') },
         ])
 
-        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result, rerender } = renderHook(
+            ({
+                scope,
+            }: {
+                scope: typeof ALGORAND_MAINNET | typeof ALGORAND_TESTNET
+            }) => useAssetPricesQuery(scope, ['123']),
+            {
+                wrapper: createWrapper(queryClient),
+                initialProps: { scope: ALGORAND_MAINNET },
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         mocks.getAssetPricesByIds.mockClear()
 
-        // Switch to testnet
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        rerender({ scope: ALGORAND_TESTNET })
 
-        const testnetQueryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-
-        const { result: result2 } = renderHook(
-            () => useAssetPricesQuery(['123']),
-            { wrapper: createWrapper(testnetQueryClient) },
+        await waitFor(() =>
+            expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
+                assetIds: ['123'],
+                scope: ALGORAND_TESTNET,
+            }),
         )
-
-        await waitFor(() => expect(result2.current.isPending).toBe(false))
-
-        expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
-            assetIds: ['123'],
-            scope: scopeForLegacyNetwork('testnet'),
-        })
     })
 
     it('reads prices on a scope it is given instead of the selected network', async () => {
@@ -213,9 +222,12 @@ describe('useAssetPricesQuery', () => {
     })
 
     it('respects the enabled parameter', () => {
-        renderHook(() => useAssetPricesQuery(['123'], false), {
-            wrapper: createWrapper(queryClient),
-        })
+        renderHook(
+            () => useAssetPricesQuery(ALGORAND_MAINNET, ['123'], false),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         expect(mocks.getAssetPricesByIds).not.toHaveBeenCalled()
     })

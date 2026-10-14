@@ -14,11 +14,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetPricesByIds } from '../db'
 
@@ -32,13 +28,11 @@ type UseAssetPricesQueryResult = {
 }
 
 export const useAssetPricesQuery = (
+    scope: ChainScope,
     ids: string[],
     enabled?: boolean,
     scope?: ChainScope,
 ): UseAssetPricesQueryResult => {
-    const { network } = useNetwork()
-    const resolvedScope = scope ?? scopeForLegacyNetwork(network)
-
     // Keep a stable reference to ids — only update when the actual content
     // changes. This prevents query recomputation when callers pass a new array
     // with the same values.

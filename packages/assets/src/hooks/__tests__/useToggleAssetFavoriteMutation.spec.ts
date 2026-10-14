@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
@@ -26,13 +25,16 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(
-            mockUseNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
-        ),
+    useChainCapability: vi.fn(
+        (chainId: string) =>
+            chainId !== 'algorand' ||
+            ['mainnet', 'testnet'].includes(capability.networkId),
     ),
-    useNetwork: mockUseNetwork,
 }))
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 const buildAsset = (isFavorited: boolean): PeraAsset => ({
     assetId: '123',
@@ -55,7 +57,7 @@ vi.mock('../../db', () => ({
     updateAssetPeraMetadata: vi.fn(),
 }))
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const capability = vi.hoisted(() => ({ networkId: 'mainnet' }))
 
 const mockToggleResponse = {
     is_enabled: true,
@@ -66,7 +68,7 @@ describe('useToggleAssetFavoriteMutation', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        capability.networkId = 'mainnet'
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -79,47 +81,53 @@ describe('useToggleAssetFavoriteMutation', () => {
         })
     })
 
-    it('calls toggleAssetFavorite with correct parameters when enabling', async () => {
-        vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
+    it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
+        'calls toggleAssetFavorite with correct parameters when enabling for $chainId',
+        async scope => {
+            vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+            const { result } = renderHook(
+                () => useToggleAssetFavoriteMutation({ scope }),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
 
-        result.current.toggleAssetFavorite({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: true,
-            network: 'mainnet' as const,
-        })
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
-
-        expect(toggleAssetFavorite).toHaveBeenCalledWith(
-            expect.objectContaining({
+            result.current.toggleAssetFavorite({
                 assetID: '123',
                 deviceId: 'device-123',
                 enabled: true,
-                network: 'mainnet',
-            }),
-            expect.any(Object),
-        )
-    })
+            })
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true)
+            })
+
+            expect(toggleAssetFavorite).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    assetID: '123',
+                    deviceId: 'device-123',
+                    enabled: true,
+                    scope,
+                }),
+            )
+        },
+    )
 
     it('calls toggleAssetFavorite with correct parameters when disabling', async () => {
         vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_TESTNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: false,
-            network: 'testnet' as const,
         })
 
         await waitFor(() => {
@@ -131,9 +139,8 @@ describe('useToggleAssetFavoriteMutation', () => {
                 assetID: '123',
                 deviceId: 'device-123',
                 enabled: false,
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
             }),
-            expect.any(Object),
         )
     })
 
@@ -141,15 +148,17 @@ describe('useToggleAssetFavoriteMutation', () => {
         const mockError = new Error('Network error')
         vi.mocked(toggleAssetFavorite).mockRejectedValue(mockError)
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -166,9 +175,12 @@ describe('useToggleAssetFavoriteMutation', () => {
         })
         vi.mocked(toggleAssetFavorite).mockReturnValue(promise)
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         expect(result.current.isLoading).toBe(false)
 
@@ -176,7 +188,6 @@ describe('useToggleAssetFavoriteMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -199,21 +210,23 @@ describe('useToggleAssetFavoriteMutation', () => {
         })
         vi.mocked(toggleAssetFavorite).mockReturnValue(promise)
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
             expect(updateAssetPeraMetadata).toHaveBeenCalledWith({
                 assetId: '123',
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: ALGORAND_MAINNET,
                 updates: { isFavorited: true },
             })
         })
@@ -228,9 +241,12 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('returns correct state when mutation is idle', () => {
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         expect(result.current.isLoading).toBe(false)
         expect(result.current.isError).toBe(false)
@@ -239,10 +255,7 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('optimistically updates the cached asset before the mutation resolves', async () => {
-        const queryKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const queryKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset>(queryKey, buildAsset(false))
 
         let resolvePromise: (value: typeof mockToggleResponse) => void
@@ -251,15 +264,17 @@ describe('useToggleAssetFavoriteMutation', () => {
         })
         vi.mocked(toggleAssetFavorite).mockReturnValue(promise)
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -277,10 +292,7 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('rolls the cache back to its previous value when the mutation fails', async () => {
-        const queryKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const queryKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         const original = buildAsset(false)
         queryClient.setQueryData<PeraAsset>(queryKey, original)
 
@@ -288,15 +300,17 @@ describe('useToggleAssetFavoriteMutation', () => {
             new Error('Network error'),
         )
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -310,25 +324,24 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('rolls the DB write back to the previous value when the mutation fails', async () => {
-        const queryKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const queryKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset>(queryKey, buildAsset(false))
 
         vi.mocked(toggleAssetFavorite).mockRejectedValue(
             new Error('Network error'),
         )
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -337,12 +350,12 @@ describe('useToggleAssetFavoriteMutation', () => {
 
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(1, {
             assetId: '123',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: ALGORAND_MAINNET,
             updates: { isFavorited: true },
         })
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(2, {
             assetId: '123',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: ALGORAND_MAINNET,
             updates: { isFavorited: false },
         })
     })
@@ -350,21 +363,20 @@ describe('useToggleAssetFavoriteMutation', () => {
     it('invalidates the asset list cache on success so list views refetch', async () => {
         vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 
-        const listKey = getAssetsQueryKey(
-            ['123'],
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const listKey = getAssetsQueryKey(['123'], ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset[]>(listKey, [buildAsset(false)])
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -373,31 +385,27 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('invalidates the asset list cache on error so the rolled-back value is read', async () => {
-        const detailsKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const detailsKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset>(detailsKey, buildAsset(false))
 
-        const listKey = getAssetsQueryKey(
-            ['123'],
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const listKey = getAssetsQueryKey(['123'], ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset[]>(listKey, [buildAsset(false)])
 
         vi.mocked(toggleAssetFavorite).mockRejectedValue(
             new Error('Network error'),
         )
 
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ scope: ALGORAND_MAINNET }),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         result.current.toggleAssetFavorite({
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -416,7 +424,11 @@ describe('useToggleAssetFavoriteMutation', () => {
         vi.mocked(toggleAssetFavorite).mockReturnValue(promise)
 
         const { result } = renderHook(
-            () => useToggleAssetFavoriteMutation({ onLocalWrite }),
+            () =>
+                useToggleAssetFavoriteMutation({
+                    scope: ALGORAND_MAINNET,
+                    onLocalWrite,
+                }),
             { wrapper: createWrapper(queryClient) },
         )
 
@@ -424,7 +436,6 @@ describe('useToggleAssetFavoriteMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -444,7 +455,7 @@ describe('useToggleAssetFavoriteMutation', () => {
     it('notifies onLocalWrite again after the rollback write when the mutation fails', async () => {
         const onLocalWrite = vi.fn()
         queryClient.setQueryData<PeraAsset>(
-            getAssetDetailsQueryKey('123', scopeForLegacyNetwork('mainnet')),
+            getAssetDetailsQueryKey('123', ALGORAND_MAINNET),
             buildAsset(false),
         )
         vi.mocked(toggleAssetFavorite).mockRejectedValue(
@@ -452,7 +463,11 @@ describe('useToggleAssetFavoriteMutation', () => {
         )
 
         const { result } = renderHook(
-            () => useToggleAssetFavoriteMutation({ onLocalWrite }),
+            () =>
+                useToggleAssetFavoriteMutation({
+                    scope: ALGORAND_MAINNET,
+                    onLocalWrite,
+                }),
             { wrapper: createWrapper(queryClient) },
         )
 
@@ -460,7 +475,6 @@ describe('useToggleAssetFavoriteMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -473,10 +487,13 @@ describe('useToggleAssetFavoriteMutation', () => {
     it.each(['betanet', 'custom'])(
         'reports isUnavailableOnNetwork true on %s',
         network => {
-            mockUseNetwork.mockReturnValue({ network })
+            capability.networkId = network
 
             const { result } = renderHook(
-                () => useToggleAssetFavoriteMutation(),
+                () =>
+                    useToggleAssetFavoriteMutation({
+                        scope: { chainId: 'algorand', networkId: network },
+                    }),
                 { wrapper: createWrapper(queryClient) },
             )
 
@@ -491,10 +508,13 @@ describe('useToggleAssetFavoriteMutation', () => {
     it.each(['mainnet', 'testnet'])(
         'reports isUnavailableOnNetwork false on %s',
         network => {
-            mockUseNetwork.mockReturnValue({ network })
+            capability.networkId = network
 
             const { result } = renderHook(
-                () => useToggleAssetFavoriteMutation(),
+                () =>
+                    useToggleAssetFavoriteMutation({
+                        scope: { chainId: 'algorand', networkId: network },
+                    }),
                 { wrapper: createWrapper(queryClient) },
             )
 

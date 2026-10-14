@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
@@ -26,13 +25,16 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(
-            mockUseNetwork.mock.results.at(-1)?.value?.network ?? 'mainnet',
-        ),
+    useChainCapability: vi.fn(
+        (chainId: string) =>
+            chainId !== 'algorand' ||
+            ['mainnet', 'testnet'].includes(capability.networkId),
     ),
-    useNetwork: mockUseNetwork,
 }))
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 const buildAsset = (isPriceAlertEnabled: boolean): PeraAsset => ({
     assetId: '123',
@@ -55,7 +57,7 @@ vi.mock('../../db', () => ({
     updateAssetPeraMetadata: vi.fn(),
 }))
 
-const mockUseNetwork = vi.hoisted(() => vi.fn())
+const capability = vi.hoisted(() => ({ networkId: 'mainnet' }))
 
 const mockToggleResponse = {
     is_enabled: true,
@@ -66,7 +68,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        capability.networkId = 'mainnet'
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -79,43 +81,46 @@ describe('useToggleAssetPriceAlertMutation', () => {
         })
     })
 
-    it('calls toggleAssetPriceAlert with correct parameters when enabling', async () => {
-        vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
+    it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
+        'calls toggleAssetPriceAlert with correct parameters when enabling for $chainId',
+        async scope => {
+            vi.mocked(toggleAssetPriceAlert).mockResolvedValue(
+                mockToggleResponse,
+            )
 
-        const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
-            {
-                wrapper: createWrapper(queryClient),
-            },
-        )
+            const { result } = renderHook(
+                () => useToggleAssetPriceAlertMutation({ scope }),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
 
-        result.current.toggleAssetPriceAlert({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: true,
-            network: 'mainnet' as const,
-        })
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
-
-        expect(toggleAssetPriceAlert).toHaveBeenCalledWith(
-            expect.objectContaining({
+            result.current.toggleAssetPriceAlert({
                 assetID: '123',
                 deviceId: 'device-123',
                 enabled: true,
-                network: 'mainnet',
-            }),
-            expect.any(Object),
-        )
-    })
+            })
+
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true)
+            })
+
+            expect(toggleAssetPriceAlert).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    assetID: '123',
+                    deviceId: 'device-123',
+                    enabled: true,
+                    scope,
+                }),
+            )
+        },
+    )
 
     it('calls toggleAssetPriceAlert with correct parameters when disabling', async () => {
         vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_TESTNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -125,7 +130,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: false,
-            network: 'testnet' as const,
         })
 
         await waitFor(() => {
@@ -137,9 +141,8 @@ describe('useToggleAssetPriceAlertMutation', () => {
                 assetID: '123',
                 deviceId: 'device-123',
                 enabled: false,
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
             }),
-            expect.any(Object),
         )
     })
 
@@ -148,7 +151,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         vi.mocked(toggleAssetPriceAlert).mockRejectedValue(mockError)
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -158,7 +161,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -176,7 +178,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         vi.mocked(toggleAssetPriceAlert).mockReturnValue(promise)
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -188,7 +190,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -212,7 +213,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         vi.mocked(toggleAssetPriceAlert).mockReturnValue(promise)
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -222,13 +223,12 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
             expect(updateAssetPeraMetadata).toHaveBeenCalledWith({
                 assetId: '123',
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: ALGORAND_MAINNET,
                 updates: { isPriceAlertEnabled: true },
             })
         })
@@ -244,7 +244,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
 
     it('returns correct state when mutation is idle', () => {
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -257,10 +257,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('optimistically updates the cached asset before the mutation resolves', async () => {
-        const queryKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const queryKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset>(queryKey, buildAsset(false))
 
         let resolvePromise: (value: typeof mockToggleResponse) => void
@@ -270,7 +267,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         vi.mocked(toggleAssetPriceAlert).mockReturnValue(promise)
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -280,7 +277,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -298,10 +294,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('rolls the cache back to its previous value when the mutation fails', async () => {
-        const queryKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const queryKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         const original = buildAsset(false)
         queryClient.setQueryData<PeraAsset>(queryKey, original)
 
@@ -310,7 +303,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         )
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -320,7 +313,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -334,10 +326,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('rolls the DB write back to the previous value when the mutation fails', async () => {
-        const queryKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const queryKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset>(queryKey, buildAsset(false))
 
         vi.mocked(toggleAssetPriceAlert).mockRejectedValue(
@@ -345,7 +334,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         )
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -355,7 +344,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -364,12 +352,12 @@ describe('useToggleAssetPriceAlertMutation', () => {
 
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(1, {
             assetId: '123',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: ALGORAND_MAINNET,
             updates: { isPriceAlertEnabled: true },
         })
         expect(updateAssetPeraMetadata).toHaveBeenNthCalledWith(2, {
             assetId: '123',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: ALGORAND_MAINNET,
             updates: { isPriceAlertEnabled: false },
         })
     })
@@ -377,14 +365,11 @@ describe('useToggleAssetPriceAlertMutation', () => {
     it('invalidates the asset list cache on success so list views refetch', async () => {
         vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
 
-        const listKey = getAssetsQueryKey(
-            ['123'],
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const listKey = getAssetsQueryKey(['123'], ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset[]>(listKey, [buildAsset(false)])
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -394,7 +379,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -403,16 +387,10 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('invalidates the asset list cache on error so the rolled-back value is read', async () => {
-        const detailsKey = getAssetDetailsQueryKey(
-            '123',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const detailsKey = getAssetDetailsQueryKey('123', ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset>(detailsKey, buildAsset(false))
 
-        const listKey = getAssetsQueryKey(
-            ['123'],
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const listKey = getAssetsQueryKey(['123'], ALGORAND_MAINNET)
         queryClient.setQueryData<PeraAsset[]>(listKey, [buildAsset(false)])
 
         vi.mocked(toggleAssetPriceAlert).mockRejectedValue(
@@ -420,7 +398,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
         )
 
         const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
+            () => useToggleAssetPriceAlertMutation({ scope: ALGORAND_MAINNET }),
             {
                 wrapper: createWrapper(queryClient),
             },
@@ -430,7 +408,6 @@ describe('useToggleAssetPriceAlertMutation', () => {
             assetID: '123',
             deviceId: 'device-123',
             enabled: true,
-            network: 'mainnet' as const,
         })
 
         await waitFor(() => {
@@ -443,10 +420,13 @@ describe('useToggleAssetPriceAlertMutation', () => {
     it.each(['betanet', 'custom'])(
         'reports isUnavailableOnNetwork true on %s',
         network => {
-            mockUseNetwork.mockReturnValue({ network })
+            capability.networkId = network
 
             const { result } = renderHook(
-                () => useToggleAssetPriceAlertMutation(),
+                () =>
+                    useToggleAssetPriceAlertMutation({
+                        scope: { chainId: 'algorand', networkId: network },
+                    }),
                 { wrapper: createWrapper(queryClient) },
             )
 
@@ -461,10 +441,13 @@ describe('useToggleAssetPriceAlertMutation', () => {
     it.each(['mainnet', 'testnet'])(
         'reports isUnavailableOnNetwork false on %s',
         network => {
-            mockUseNetwork.mockReturnValue({ network })
+            capability.networkId = network
 
             const { result } = renderHook(
-                () => useToggleAssetPriceAlertMutation(),
+                () =>
+                    useToggleAssetPriceAlertMutation({
+                        scope: { chainId: 'algorand', networkId: network },
+                    }),
                 { wrapper: createWrapper(queryClient) },
             )
 

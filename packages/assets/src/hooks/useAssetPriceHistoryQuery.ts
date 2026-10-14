@@ -22,10 +22,7 @@ import type {
 } from '../api'
 import { useCallback } from 'react'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { AssetPriceHistory } from '../models'
 
@@ -41,6 +38,7 @@ export type UseAssetPriceHistoryQueryResult = {
 }
 
 export const useAssetPriceHistoryQuery = (
+    scope: ChainScope,
     assetID: string,
     period: HistoryPeriod,
     scope: ChainScope,
@@ -53,9 +51,7 @@ export const useAssetPriceHistoryQuery = (
 
     const query = useQuery({
         queryKey,
-        // legacyNetworkOf throws for a scope with no legacy network, so this runs only while priceHistory is on.
-        queryFn: () =>
-            fetchAssetPriceHistory(assetID, period, legacyNetworkOf(scope)),
+        queryFn: () => fetchAssetPriceHistory(assetID, period, scope),
         enabled: !isUnavailableOnNetwork,
         select: useCallback(
             (data: AssetPriceHistoryResponse) =>

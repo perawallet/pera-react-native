@@ -13,6 +13,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
 const registerMock = vi.fn()
 vi.mock('../../services/registerAppIntegrity', () => ({
     registerAppIntegrity: (...a: unknown[]) => registerMock(...a),
@@ -30,12 +32,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 import { useAppIntegrityBootstrap } from '../useAppIntegrityBootstrap'
 import { useAppIntegrityStore } from '../../store'
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('useAppIntegrityBootstrap', () => {
     beforeEach(() => {
@@ -43,10 +43,14 @@ describe('useAppIntegrityBootstrap', () => {
         useAppIntegrityStore.getState().resetState()
     })
 
-    it('registers on boot when there is no valid token', async () => {
-        renderHook(() => useAppIntegrityBootstrap())
-        await waitFor(() => expect(registerMock).toHaveBeenCalledOnce())
-    })
+    it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
+        'registers on boot with the given scope when there is no valid token ($chainId)',
+        async scope => {
+            renderHook(() => useAppIntegrityBootstrap(scope))
+            await waitFor(() => expect(registerMock).toHaveBeenCalledOnce())
+            expect(registerMock).toHaveBeenCalledWith({ scope })
+        },
+    )
 
     it('does not re-register when an unexpired token exists', async () => {
         useAppIntegrityStore.getState().setRegistration({
@@ -55,7 +59,7 @@ describe('useAppIntegrityBootstrap', () => {
             keyId: null,
             deviceInstallationId: 'd1',
         })
-        renderHook(() => useAppIntegrityBootstrap())
+        renderHook(() => useAppIntegrityBootstrap(ALGORAND_MAINNET))
         await new Promise(r => setTimeout(r, 10))
         expect(registerMock).not.toHaveBeenCalled()
     })

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     registerAppIntegrity,
     type RegisterAppIntegrityResult,
@@ -23,22 +23,22 @@ export type UseAppIntegrityRegistrationResult = {
 }
 
 /**
- * Triggers the attestation handshake for the active network and tracks whether
+ * Triggers the attestation handshake for the given scope and tracks whether
  * a run is in flight. The persisted result is exposed via useAppIntegrityStore.
  */
-export const useAppIntegrityRegistration =
-    (): UseAppIntegrityRegistrationResult => {
-        const { network } = useNetwork()
-        const [isRegistering, setIsRegistering] = useState(false)
+export const useAppIntegrityRegistration = (
+    scope: ChainScope,
+): UseAppIntegrityRegistrationResult => {
+    const [isRegistering, setIsRegistering] = useState(false)
 
-        const register = useCallback(async () => {
-            setIsRegistering(true)
-            try {
-                return await registerAppIntegrity({ network })
-            } finally {
-                setIsRegistering(false)
-            }
-        }, [network])
+    const register = useCallback(async () => {
+        setIsRegistering(true)
+        try {
+            return await registerAppIntegrity({ scope })
+        } finally {
+            setIsRegistering(false)
+        }
+    }, [scope])
 
-        return { register, isRegistering }
-    }
+    return { register, isRegistering }
+}

@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { registerAppIntegrity } from '../services/registerAppIntegrity'
 import { useAppIntegrityStore } from '../store'
 
@@ -31,8 +31,7 @@ const hasValidToken = (): boolean => {
  * Attestation proceeds on distributed (staging + production) builds;
  * `registerAppIntegrity` no-ops with status `skipped` on development builds.
  */
-export const useAppIntegrityBootstrap = (): void => {
-    const { network } = useNetwork()
+export const useAppIntegrityBootstrap = (scope: ChainScope): void => {
     const hasRun = useRef(false)
 
     useEffect(() => {
@@ -41,8 +40,8 @@ export const useAppIntegrityBootstrap = (): void => {
 
         if (hasValidToken()) return
 
-        void registerAppIntegrity({ network })
-        // Boot-once handshake: `hasRun` makes later network changes a no-op, so
-        // registration always uses the network captured on the first run.
-    }, [network])
+        void registerAppIntegrity({ scope })
+        // Boot-once handshake: `hasRun` makes later scope changes a no-op, so
+        // registration always uses the scope captured on the first run.
+    }, [scope])
 }

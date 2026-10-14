@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor } from '../chain-adapter'
 import type { PeraAsset } from '../models'
 
 /**
- * The native asset of the active network's chain. Resolves during render, so an
+ * The native asset of the scope's chain. Resolves during render, so an
  * unregistered chain throws here rather than surfacing as a query error.
  */
-export const useNativeAsset = (): PeraAsset => {
-    const { network } = useNetwork()
-    return nativeAssetFor(scopeForLegacyNetwork(network).chainId)
-}
+export const useNativeAsset = (scope: ChainScope): PeraAsset =>
+    nativeAssetFor(scope.chainId)

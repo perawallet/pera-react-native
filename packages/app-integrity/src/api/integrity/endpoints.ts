@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
     IDEMPOTENT_POST_RETRY,
     SINGLE_USE_POST_RETRY,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import {
     challengeResponseSchema,
@@ -38,19 +38,19 @@ import type {
 export type RequestChallengeParams = {
     deviceInstallationId: string
     platform: IntegrityPlatform
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const requestChallenge = async ({
     deviceInstallationId,
     platform,
-    network,
+    scope,
     signal,
 }: RequestChallengeParams): Promise<string> => {
     const response = await queryClient<unknown>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/api/v3/public/integrity/challenge',
         data: { device_id: deviceInstallationId, platform },
@@ -66,13 +66,13 @@ export const requestChallenge = async ({
 
 export type AttestDeviceParams = {
     payload: AttestPayload
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const attestDevice = async ({
     payload,
-    network,
+    scope,
     signal,
 }: AttestDeviceParams): Promise<IntegrityRegistration> => {
     const data = ((): Record<string, string> => {
@@ -104,7 +104,7 @@ export const attestDevice = async ({
     })()
     const response = await queryClient<unknown>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/api/v3/public/integrity/attest',
         data,
@@ -120,18 +120,18 @@ export const attestDevice = async ({
 
 export type VerifyIntegrityTokenParams = {
     integrityToken: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const verifyIntegrityToken = async ({
     integrityToken,
-    network,
+    scope,
     signal,
 }: VerifyIntegrityTokenParams): Promise<IntegrityVerification> => {
     const response = await queryClient<unknown>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: '/api/v3/test-integrity',
         headers: { 'x-app-integrity-token': integrityToken },
@@ -144,7 +144,7 @@ export type EnrolDeviceParams = {
     deviceInstallationId: string
     publicKey: string
     turnstileToken: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -152,12 +152,12 @@ export const enrolDevice = async ({
     deviceInstallationId,
     publicKey,
     turnstileToken,
-    network,
+    scope,
     signal,
 }: EnrolDeviceParams): Promise<IntegrityEnrolment> => {
     const response = await queryClient<unknown>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/api/v3/public/integrity/enrol',
         data: {

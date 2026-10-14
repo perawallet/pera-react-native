@@ -11,13 +11,9 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
-    useChainCapability,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
-import {
-    type Network,
     logger,
     type Nullable,
     type Optional,
@@ -36,7 +32,6 @@ type UseToggleAssetFavoriteMutationParams = {
     assetID: string
     deviceId: string
     enabled: boolean
-    network: Network
 }
 
 type ToggleAssetFavoriteMutationContext = {
@@ -56,6 +51,7 @@ type UseToggleAssetFavoriteMutationResult = {
 }
 
 type UseToggleAssetFavoriteMutationOptions = {
+    scope: ChainScope
     /**
      * Fired after the local metadata write, on both the optimistic path and the
      * rollback. Lets a caller refresh queries this package can't reach — the
@@ -66,12 +62,12 @@ type UseToggleAssetFavoriteMutationOptions = {
 }
 
 export const useToggleAssetFavoriteMutation = ({
+    scope,
     onLocalWrite,
-}: UseToggleAssetFavoriteMutationOptions = {}): UseToggleAssetFavoriteMutationResult => {
+}: UseToggleAssetFavoriteMutationOptions): UseToggleAssetFavoriteMutationResult => {
     const queryClient = useQueryClient()
-    const { network } = useNetwork()
     const isUnavailableOnNetwork = !useChainCapability(
-        scopeForLegacyNetwork(network).chainId,
+        scope.chainId,
         'assetFavorites',
     )
 
@@ -81,10 +77,9 @@ export const useToggleAssetFavoriteMutation = ({
         UseToggleAssetFavoriteMutationParams,
         ToggleAssetFavoriteMutationContext
     >({
-        mutationFn: toggleAssetFavorite,
+        mutationFn: variables => toggleAssetFavorite({ ...variables, scope }),
         throwOnError: false,
         onMutate: async variables => {
-            const scope = scopeForLegacyNetwork(variables.network)
             const queryKey = getAssetDetailsQueryKey(variables.assetID, scope)
             const remoteQueryKey = getRemoteAssetDetailsQueryKey(
                 variables.assetID,
@@ -136,7 +131,6 @@ export const useToggleAssetFavoriteMutation = ({
         },
         onError: async (error, variables, context) => {
             if (context) {
-                const scope = scopeForLegacyNetwork(variables.network)
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
                     scope,
