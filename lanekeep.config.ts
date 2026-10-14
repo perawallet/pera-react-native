@@ -22,6 +22,7 @@ import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import i18nKeyExists from './lanekeep/rules/i18n-key-exists.js'
 import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-suppressions.js'
 import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
+import noLegacyNetworkBridge from './lanekeep/rules/no-legacy-network-bridge.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 import noReactNativeImportsInPackages from './lanekeep/rules/no-react-native-imports-in-packages.js'
@@ -84,6 +85,7 @@ export default defineConfig({
         noWcImportsInConnectionsModule,
         noChainIdentityInSharedPackages,
         noChainPackageImports,
+        noLegacyNetworkBridge,
         noAlgorandAccountVocabulary,
         noAlgorandTermsInChainNeutralPackages,
         noDeepModuleImports,

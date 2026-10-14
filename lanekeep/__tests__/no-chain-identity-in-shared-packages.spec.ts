@@ -68,7 +68,22 @@ describe('pera/no-chain-identity-in-shared-packages', () => {
         ])
     })
 
-    it('leaves packages outside the shared list alone', async () => {
+    it('scans every package without a list, banners and one no list names', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v =>
+                    /chain-identity\.(banners|unlisted)\.ts$/.test(v.file),
+                ),
+            ),
+        ).toEqual([
+            'chain-identity.banners.ts:5',
+            'chain-identity.unlisted.ts:5',
+        ])
+    })
+
+    it('leaves the chain packages alone', async () => {
         const found = await runRule(RULE, FIXTURES)
 
         expect(
