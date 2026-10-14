@@ -2695,6 +2695,12 @@
             "nfd_unavailable_title": "{{name}} konnte nicht überprüft werden",
             "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein."
         },
+        "fee": {
+            "slow": "Langsam",
+            "normal": "Normal",
+            "fast": "Schnell",
+            "max_fee": "Maximale Gebühr"
+        },
         "confirmation": {
             "edit": "Bearbeiten",
             "title": "Transaktion bestätigen",

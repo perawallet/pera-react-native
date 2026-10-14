@@ -2703,6 +2703,12 @@
             "nfd_unavailable_title": "No se pudo verificar {{name}}",
             "nfd_unavailable_body": "No se pudo contactar con el registro NFD para comprobar este nombre. Inténtalo de nuevo o pega la dirección directamente."
         },
+        "fee": {
+            "slow": "Lenta",
+            "normal": "Normal",
+            "fast": "Rápida",
+            "max_fee": "Comisión máxima"
+        },
         "confirmation": {
             "edit": "Editar",
             "title": "Confirmar transacción",

@@ -2719,6 +2719,12 @@
             "nfd_unavailable_title": "Não foi possível verificar {{name}}",
             "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente."
         },
+        "fee": {
+            "slow": "Lenta",
+            "normal": "Normal",
+            "fast": "Rápida",
+            "max_fee": "Taxa máxima"
+        },
         "confirmation": {
             "edit": "Editar",
             "title": "Confirmar transação",

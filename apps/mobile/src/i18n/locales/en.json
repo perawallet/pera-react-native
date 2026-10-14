@@ -2703,6 +2703,12 @@
             "nfd_unavailable_title": "Couldn't verify {{name}}",
             "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly."
         },
+        "fee": {
+            "slow": "Slow",
+            "normal": "Normal",
+            "fast": "Fast",
+            "max_fee": "Max fee"
+        },
         "confirmation": {
             "edit": "Edit",
             "title": "Confirm Transaction",
