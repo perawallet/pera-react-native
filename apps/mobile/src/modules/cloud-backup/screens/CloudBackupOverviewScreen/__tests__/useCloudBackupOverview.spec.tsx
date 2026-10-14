@@ -19,6 +19,7 @@ import {
 import {
     accountItemKey,
     contactItemKey,
+    contactRecordItemKey,
     createItemKeyHasher,
     passkeyItemKey,
     secretsItemKey,
@@ -46,6 +47,13 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
         Object.entries(account.chains)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([, entry]) => entry.address),
+    contactBackupAddresses: (contact: {
+        addresses: Record<string, string | undefined>
+    }) =>
+        ['algorand', 'evm'].flatMap(family => {
+            const address = contact.addresses[family]
+            return address ? [address] : []
+        }),
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/itemKeys')
     >('../../../../../../../../packages/backup/src/cloud/models/itemKeys')),
@@ -209,7 +217,7 @@ const mockStores = (opts: {
     backupId: string | null
     syncState: SyncStateFixture | null
     accounts: (string | { chains: Record<string, { address: string }> })[]
-    contacts: string[]
+    contacts: (string | { evm: string })[]
 }) => {
     ;(useCloudBackupStore as unknown as Mock).mockImplementation(
         (s: (st: { backupId: string | null }) => unknown) =>
@@ -233,7 +241,10 @@ const mockStores = (opts: {
         (s: (st: { contacts: unknown[] }) => unknown) =>
             s({
                 contacts: opts.contacts.map(address => ({
-                    addresses: { algorand: address },
+                    addresses:
+                        typeof address === 'string'
+                            ? { algorand: address }
+                            : address,
                 })),
             }),
     )
@@ -327,6 +338,25 @@ describe('useCloudBackupOverview', () => {
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.contactsInSync).toBe(1)
         expect(result.current.contactsNotBackedUp).toBe(1)
+    })
+
+    test('counts a contact holding only an EVM address through its record', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [contactRecordItemKey(hashAddress('0xB'))]: uploaded('0xB', {
+                type: 'CONTACT',
+                addresses: ['0xB'],
+            }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: [{ evm: '0xB' }],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.contactsInSync).toBe(1)
+        expect(result.current.contactsNotBackedUp).toBe(0)
     })
 
     test('a single backed-up account reads as one, not one per stored item', () => {

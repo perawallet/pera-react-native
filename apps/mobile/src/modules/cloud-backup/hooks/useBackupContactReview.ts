@@ -12,11 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    isContactInFamily,
     useContactsStore,
-    type ContactInFamily,
+    type Contact,
 } from '@perawallet/wallet-core-contacts'
 import {
+    contactBackupAddresses,
     deriveBackupContactReview,
     backupBusyItemKey,
     useBackupReviewActionMutation,
@@ -30,9 +30,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 
-// The backup payload carries one Algorand address, so only contacts holding
-// one take part in the backup.
-export type BackupContact = ContactInFamily<'algorand'>
+/** `backupAddress` is the contact's first address, which names its record. */
+export type BackupContact = Contact & { backupAddress: string }
 
 export type UseBackupContactReviewResult = {
     contacts: BackupContact[]
@@ -75,21 +74,23 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     const storedContacts = useContactsStore(state => state.contacts)
     const contacts = useMemo(
         () =>
-            storedContacts.filter((contact): contact is BackupContact =>
-                isContactInFamily(contact, 'algorand'),
-            ),
+            storedContacts.flatMap(contact => {
+                const [backupAddress] = contactBackupAddresses(contact)
+                return backupAddress === undefined
+                    ? []
+                    : [{ ...contact, backupAddress }]
+            }),
         [storedContacts],
     )
     const syncState = useBackupSyncStateStore(state => state.syncState)
 
-    const addresses = useMemo(
-        () => contacts.map(contact => contact.addresses.algorand),
-        [contacts],
-    )
-
     const review = useMemo(
-        () => deriveBackupContactReview(syncState, addresses),
-        [syncState, addresses],
+        () =>
+            deriveBackupContactReview(
+                syncState,
+                storedContacts.map(contactBackupAddresses),
+            ),
+        [syncState, storedContacts],
     )
 
     const { mutate } = useBackupReviewActionMutation('contact', {
@@ -134,15 +135,12 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     return {
         contacts,
         backedUpContacts: useMemo(
-            () =>
-                contacts.filter(c => review.backedUp.has(c.addresses.algorand)),
+            () => contacts.filter(c => review.backedUp.has(c.backupAddress)),
             [contacts, review.backedUp],
         ),
         notBackedUpContacts: useMemo(
             () =>
-                contacts.filter(c =>
-                    notBackedUpAddresses.has(c.addresses.algorand),
-                ),
+                contacts.filter(c => notBackedUpAddresses.has(c.backupAddress)),
             [contacts, notBackedUpAddresses],
         ),
         availableFromBackup: review.availableFromBackup,

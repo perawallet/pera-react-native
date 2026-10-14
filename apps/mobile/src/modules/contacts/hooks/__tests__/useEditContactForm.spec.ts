@@ -31,7 +31,7 @@ const replaceMock = vi.fn()
 // selected in the app, no route params); deeplink tests override the return.
 const useContactsMock = vi.fn()
 const showToastMock = vi.fn()
-const isContactBackedUpMock = vi.fn(() => false)
+const isContactBackedUpMock = vi.fn((_address: string) => false)
 const isCloudBackupEnabledMock = vi.fn(() => false)
 const deleteContactFromBackupMock = vi.fn(
     async (): Promise<BackupActionOutcome> => 'settled',
@@ -66,7 +66,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@modules/cloud-backup', () => ({
-    useIsContactBackedUp: () => isContactBackedUpMock(),
+    useIsContactBackedUp: (address: string) => isContactBackedUpMock(address),
     DeleteFromBackupSheet: () => null,
 }))
 
@@ -75,6 +75,13 @@ vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
+    contactBackupAddresses: (contact: {
+        addresses: Record<string, string | undefined>
+    }) =>
+        ['algorand', 'evm'].flatMap(family => {
+            const address = contact.addresses[family]
+            return address ? [address] : []
+        }),
     getBackupSyncManager: () => ({
         deleteContactFromBackup: deleteContactFromBackupMock,
         keepContactInBackup: keepContactInBackupMock,
@@ -391,6 +398,26 @@ describe('useEditContactForm', () => {
 
             expect(deleteContactFromBackupMock).toHaveBeenCalledWith(ALICE)
             expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
+        })
+
+        it('names the contact to the backup by its first address, not its algorand one', async () => {
+            const evmContact: Contact = {
+                name: 'Bob',
+                addresses: { evm: '0xBOB' },
+            }
+            useContactsMock.mockReturnValue({
+                editContact: editContactMock,
+                deleteContact: deleteContactMock,
+                selectedContact: evmContact,
+                setSelectedContact: setSelectedContactMock,
+                contacts: [],
+            })
+            const { result } = renderHook(() => useEditContactForm())
+
+            await act(() => result.current.removeContact('keep'))
+
+            expect(isContactBackedUpMock).toHaveBeenCalledWith('0xBOB')
+            expect(keepContactInBackupMock).toHaveBeenCalledWith('0xBOB', 'Bob')
         })
 
         it('ignores a second removal while the first is still recording its choice', async () => {

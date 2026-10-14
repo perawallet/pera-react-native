@@ -26,7 +26,10 @@ import {
     type ContactFormValues,
 } from '@perawallet/wallet-core-contacts'
 
-import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
+import {
+    contactBackupAddresses,
+    getBackupSyncManager,
+} from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -90,10 +93,13 @@ export const useEditContactForm = (): UseEditContactFormResult => {
 
     const form = useContactForm(targetContact)
     const targetAddress = targetContact?.addresses.algorand ?? ''
+    const backupAddress = targetContact
+        ? (contactBackupAddresses(targetContact)[0] ?? '')
+        : ''
 
     const { showToast } = useToast()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
-    const isBackedUp = useIsContactBackedUp(targetAddress)
+    const isBackedUp = useIsContactBackedUp(backupAddress)
     const needsBackupChoice = isCloudBackupAvailable && isBackedUp
 
     const save = useCallback(
@@ -162,15 +168,15 @@ export const useEditContactForm = (): UseEditContactFormResult => {
                     isRecorded =
                         backupChoice === 'delete'
                             ? (await manager.deleteContactFromBackup(
-                                  targetAddress,
+                                  backupAddress,
                               )) !== 'refused'
                             : await manager.keepContactInBackup(
-                                  targetAddress,
+                                  backupAddress,
                                   targetContact.name,
                               )
                 } catch (error) {
                     logger.warn('useEditContactForm: backup choice failed', {
-                        address: targetAddress,
+                        address: backupAddress,
                         error:
                             error instanceof Error
                                 ? error.message
@@ -204,7 +210,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         },
         [
             targetContact,
-            targetAddress,
+            backupAddress,
             deleteContact,
             setSelectedContact,
             navigation,

@@ -39,6 +39,7 @@ import {
     buildRestoreHandlers,
     buildSyncHandlers,
     contactItemKey,
+    contactRecordItemKey,
     createItemKeyHasher,
     secretsItemKey,
     type ItemKeyHasher,
@@ -382,6 +383,52 @@ describe('Flow: Cloud backup → Restore', () => {
                 useBackupSyncStateStore.getState().syncState?.items[contactKey]
             expect(item?.knownVer).toBeGreaterThan(0)
         })
+        await expectRestoreLandedOnOverview()
+    })
+
+    it('Given a backup holding a contact record, when the user restores, then the contact is on the device with every address', async () => {
+        const { backupId, encryptionKey, itemKey } = await deriveBackupKeys({
+            mnemonic: BACKUP_MNEMONIC,
+            salt: BACKUP_SALT,
+        })
+        const hashAddress = createItemKeyHasher(itemKey)
+
+        server.use(
+            ...buildRestoreHandlers({
+                backupId,
+                encryptionKey,
+                items: [
+                    ...algo25BackupItems(hashAddress),
+                    {
+                        key: contactRecordItemKey(hashAddress('CONTACT_A')),
+                        plaintext: JSON.stringify({
+                            formatVersion: 1,
+                            name: 'Alice',
+                            updatedAt: 1,
+                            addresses: [
+                                { family: 'algorand', address: 'CONTACT_A' },
+                                { family: 'evm', address: '0xA11CE' },
+                            ],
+                        }),
+                    },
+                ],
+            }),
+        )
+
+        renderCloudBackupFlow()
+        await runRestoreFlow()
+
+        await waitFor(
+            () => {
+                expect(useContactsStore.getState().contacts).toEqual([
+                    {
+                        addresses: { algorand: 'CONTACT_A', evm: '0xA11CE' },
+                        name: 'Alice',
+                    },
+                ])
+            },
+            { timeout: 10_000 },
+        )
         await expectRestoreLandedOnOverview()
     })
 

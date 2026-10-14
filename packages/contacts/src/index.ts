@@ -12,7 +12,6 @@
 
 export const name = '@perawallet/wallet-core-contacts'
 
-export * from './contact-addresses'
 export * from './errors'
 export * from './models'
 export * from './schema'

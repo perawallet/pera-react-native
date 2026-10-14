@@ -32,13 +32,13 @@ const DeviceContactRowComponent = ({
     const { t } = useLanguage()
 
     const handleBackUp = useCallback(
-        () => onBackUp(contact.addresses.algorand),
-        [onBackUp, contact.addresses.algorand],
+        () => onBackUp(contact.backupAddress),
+        [onBackUp, contact.backupAddress],
     )
 
     return (
         <BackupContactRow
-            address={contact.addresses.algorand}
+            address={contact.backupAddress}
             name={contact.name}
             contact={contact}
             isBackedUp={isBackedUp}
@@ -54,7 +54,7 @@ const DeviceContactRowComponent = ({
                     />
                 )
             }
-            testID={`cloud_backup_contact_${contact.addresses.algorand}`}
+            testID={`cloud_backup_contact_${contact.backupAddress}`}
         />
     )
 }

@@ -30,13 +30,13 @@ const NotBackedUpContactRowComponent = ({
     const { t } = useLanguage()
 
     const handleBackUp = useCallback(
-        () => onBackUp(contact.addresses.algorand),
-        [onBackUp, contact.addresses.algorand],
+        () => onBackUp(contact.backupAddress),
+        [onBackUp, contact.backupAddress],
     )
 
     return (
         <BackupContactRow
-            address={contact.addresses.algorand}
+            address={contact.backupAddress}
             name={contact.name}
             contact={contact}
             isBackedUp={false}
@@ -50,7 +50,7 @@ const NotBackedUpContactRowComponent = ({
                     testID='backup_review_contact_back_up_button'
                 />
             }
-            testID={`backup_review_not_backed_up_contact_${contact.addresses.algorand}`}
+            testID={`backup_review_not_backed_up_contact_${contact.backupAddress}`}
         />
     )
 }

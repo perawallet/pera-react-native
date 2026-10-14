@@ -39,6 +39,7 @@ import {
     accountRecordItemKey,
     buildSyncHandlers,
     contactItemKey,
+    contactRecordItemKey,
     createItemKeyHasher,
     decryptItemPayload,
     encryptItemPayload,
@@ -132,7 +133,12 @@ const setupSyncedBackup = async ({
         recordKey: (identity: string) =>
             accountRecordItemKey(hashAddress(identity)),
         secretsKey: (address: string) => secretsItemKey(hashAddress(address)),
-        contactKey: (address: string) => contactItemKey(hashAddress(address)),
+        // What this client writes for a contact: one record, keyed by the
+        // hash of its first address.
+        contactKey: (address: string) =>
+            contactRecordItemKey(hashAddress(address)),
+        legacyContactKey: (address: string) =>
+            contactItemKey(hashAddress(address)),
     }
 }
 
@@ -364,7 +370,10 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
                     key,
                 }),
             ),
-        ).toMatchObject({ address: 'CONTACT_A', name: 'Alice' })
+        ).toMatchObject({
+            name: 'Alice',
+            addresses: [{ family: 'algorand', address: 'CONTACT_A' }],
+        })
     })
 
     it('holds a contact the user chose to keep, with its name, for review', async () => {
@@ -430,7 +439,32 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         expect(getItem(contactKey('CONTACT_A'))).toBeDefined()
     })
 
-    it('pulls a contact another device backed up', async () => {
+    it('pulls a contact an older app backed up as a legacy item', async () => {
+        const {
+            manager,
+            pushFromOtherDevice,
+            backupId,
+            encryptionKey,
+            legacyContactKey,
+        } = await setupSyncedBackup()
+        await manager.syncNow()
+
+        const key = legacyContactKey('CONTACT_B')
+        pushFromOtherDevice(
+            key,
+            encryptItemPayload(
+                JSON.stringify({ address: 'CONTACT_B', name: 'Bob' }),
+                { encryptionKey, backupId, key },
+            ),
+        )
+        await manager.syncNow()
+
+        expect(useContactsStore.getState().contacts).toEqual([
+            { addresses: { algorand: 'CONTACT_B' }, name: 'Bob' },
+        ])
+    })
+
+    it('pulls a contact record another device backed up, with every family', async () => {
         const {
             manager,
             pushFromOtherDevice,
@@ -444,14 +478,43 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         pushFromOtherDevice(
             key,
             encryptItemPayload(
-                JSON.stringify({ address: 'CONTACT_B', name: 'Bob' }),
+                JSON.stringify({
+                    formatVersion: 1,
+                    name: 'Bob',
+                    updatedAt: 1,
+                    addresses: [
+                        { family: 'algorand', address: 'CONTACT_B' },
+                        { family: 'evm', address: '0xB0B' },
+                    ],
+                }),
                 { encryptionKey, backupId, key },
             ),
         )
         await manager.syncNow()
 
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { algorand: 'CONTACT_B' }, name: 'Bob' },
+            {
+                addresses: { algorand: 'CONTACT_B', evm: '0xB0B' },
+                name: 'Bob',
+            },
+        ])
+    })
+
+    it('backs up a contact holding only an EVM address, and adds it back after Keep', async () => {
+        useContactsStore
+            .getState()
+            .addContact({ addresses: { evm: '0xB0B' }, name: 'Bob' })
+        const { manager, getItem, contactKey } = await setupSyncedBackup()
+        await manager.syncNow()
+        expect(getItem(contactKey('0xB0B'))).toBeDefined()
+
+        await manager.keepContactInBackup('0xB0B', 'Bob')
+        useContactsStore.getState().resetState()
+        const summary = await manager.addContactFromBackup('0xB0B')
+
+        expect(summary).toMatchObject({ imported: 1, failed: [] })
+        expect(useContactsStore.getState().contacts).toEqual([
+            { addresses: { evm: '0xB0B' }, name: 'Bob' },
         ])
     })
 })

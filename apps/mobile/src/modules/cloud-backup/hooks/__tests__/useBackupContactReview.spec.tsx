@@ -27,7 +27,10 @@ const {
     NoConnectionError,
 } = vi.hoisted(() => ({
     contactsMock: {
-        current: [] as { addresses: { algorand?: string }; name: string }[],
+        current: [] as {
+            addresses: { algorand?: string; evm?: string }
+            name: string
+        }[],
     },
     reviewMock: {
         current: {
@@ -52,10 +55,6 @@ const {
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
-    isContactInFamily: (
-        contact: { addresses: Record<string, string | undefined> },
-        family: string,
-    ) => !!contact.addresses[family],
     useContactsStore: (selector: (s: unknown) => unknown) =>
         selector({ contacts: contactsMock.current }),
 }))
@@ -66,6 +65,13 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
+        contactBackupAddresses: (contact: {
+            addresses: Record<string, string | undefined>
+        }) =>
+            ['algorand', 'evm'].flatMap(family => {
+                const address = contact.addresses[family]
+                return address ? [address] : []
+            }),
         deriveBackupContactReview: () => reviewMock.current,
         backupBusyItemKey: (itemKind: string, id: string) =>
             `${itemKind}:${id}`,
@@ -135,10 +141,10 @@ describe('useBackupContactReview', () => {
         const { result } = renderReview()
 
         expect(result.current.backedUpContacts).toEqual([
-            { addresses: { algorand: 'A' }, name: 'Alice' },
+            { addresses: { algorand: 'A' }, name: 'Alice', backupAddress: 'A' },
         ])
         expect(result.current.notBackedUpContacts).toEqual([
-            { addresses: { algorand: 'B' }, name: 'Bob' },
+            { addresses: { algorand: 'B' }, name: 'Bob', backupAddress: 'B' },
         ])
         expect(result.current.availableFromBackup).toEqual([
             { address: 'GONE', name: 'Carol' },
@@ -147,7 +153,7 @@ describe('useBackupContactReview', () => {
         expect(result.current.isBackedUp('B')).toBe(false)
     })
 
-    test('leaves out a contact without an Algorand address', () => {
+    test('leaves out a contact without any address', () => {
         contactsMock.current = [
             ...contactsMock.current,
             { addresses: {}, name: 'Nowhere' },
@@ -158,6 +164,20 @@ describe('useBackupContactReview', () => {
         expect(result.current.contacts.map(c => c.name)).toEqual([
             'Alice',
             'Bob',
+        ])
+    })
+
+    test('lists a contact holding only an EVM address under that address', () => {
+        contactsMock.current = [
+            ...contactsMock.current,
+            { addresses: { evm: '0xC' }, name: 'Carol' },
+        ]
+        reviewMock.current = { ...reviewMock.current, notBackedUp: ['0xC'] }
+
+        const { result } = renderReview()
+
+        expect(result.current.notBackedUpContacts).toEqual([
+            { addresses: { evm: '0xC' }, name: 'Carol', backupAddress: '0xC' },
         ])
     })
 
