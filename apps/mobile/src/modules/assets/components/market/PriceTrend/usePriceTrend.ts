@@ -21,11 +21,13 @@ import {
     type AssetPriceHistoryItem,
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 type UsePriceTrendParams = {
     assetId: string
     period: HistoryPeriod
     selectedDataPoint?: Nullable<AssetPriceHistoryItem>
+    scope: ChainScope
 }
 
 type UsePriceTrendResult = {
@@ -45,12 +47,13 @@ export const usePriceTrend = ({
     assetId,
     period,
     selectedDataPoint,
+    scope,
 }: UsePriceTrendParams): UsePriceTrendResult => {
     const {
         data: chartData,
         isPaused,
         isUnavailableOnNetwork,
-    } = useAssetPriceHistoryQuery(assetId, period)
+    } = useAssetPriceHistoryQuery(assetId, period, scope)
 
     const [changePercentage, changeValue] = useMemo(() => {
         const dataPoints = chartData?.map(p => p.usdPrice) ?? []

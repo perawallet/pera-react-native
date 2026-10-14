@@ -14,14 +14,16 @@ import { PWView } from '@components/core'
 import { AssetSecurityTag } from '../AssetSecurityTag'
 import { useAssetSecurityTags } from './useAssetSecurityTags'
 import { useStyles } from './styles'
+import type { AssetChainSectionProps } from '@modules/assets'
 
-export type AssetSecurityTagsProps = {
-    assetId: string
-}
+export type AssetSecurityTagsProps = AssetChainSectionProps
 
-export const AssetSecurityTags = ({ assetId }: AssetSecurityTagsProps) => {
+export const AssetSecurityTags = ({ asset, scope }: AssetSecurityTagsProps) => {
     const styles = useStyles()
-    const { isVisible, freezeTag, clawbackTag } = useAssetSecurityTags(assetId)
+    const { isVisible, freezeTag, clawbackTag } = useAssetSecurityTags(
+        asset.assetId,
+        scope,
+    )
 
     if (!isVisible) {
         return null

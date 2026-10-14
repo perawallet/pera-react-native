@@ -22,3 +22,10 @@ export { CollectibleGridItem } from './components/CollectibleGridItem'
 export { CollectibleListItem } from './components/CollectibleListItem'
 export { OptInAccountSelectionContent } from './components/OptInAccountSelectionContent'
 export { OptInConfirmationContent } from './components/OptInConfirmationContent'
+export type {
+    AssetAboutParams,
+    AssetAboutDisplay,
+    AssetChainSectionProps,
+    AssetDetailsDisplay,
+    AssetExplorerLink,
+} from './types/asset-details-display'

@@ -18,12 +18,14 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { AssetPriceHistoryItem } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { TrendIndicator } from '@components/TrendIndicator'
 import { usePriceTrend } from './usePriceTrend'
 
 export type PriceTrendProps = {
     assetId: string
+    scope: ChainScope
     period: HistoryPeriod
     selectedDataPoint?: Nullable<AssetPriceHistoryItem>
     showAbsolute?: boolean
@@ -31,6 +33,7 @@ export type PriceTrendProps = {
 
 export const PriceTrend = ({
     assetId,
+    scope,
     period,
     selectedDataPoint,
     showAbsolute = false,
@@ -39,7 +42,7 @@ export const PriceTrend = ({
     const { preferredCurrency } = useCurrency()
 
     const { changePercentage, changeValue, isPositive, isHidden } =
-        usePriceTrend({ assetId, period, selectedDataPoint })
+        usePriceTrend({ assetId, period, selectedDataPoint, scope })
 
     if (isHidden) {
         return null

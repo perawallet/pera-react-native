@@ -1259,7 +1259,7 @@ describe('useDeepLink', () => {
             screen: 'Home',
             params: {
                 screen: 'AssetDetails',
-                params: { assetId: '123' },
+                params: { assetId: '123', chainId: 'algorand' },
             },
         })
     })
@@ -1813,7 +1813,7 @@ describe('useDeepLink', () => {
             screen: 'Home',
             params: {
                 screen: 'AssetDetails',
-                params: { assetId: '123' },
+                params: { assetId: '123', chainId: 'algorand' },
             },
         })
     })

@@ -16,7 +16,7 @@ import { RoundButton } from '@components/RoundButton'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { nativeAssetFor, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFunds } from '@modules/transactions'
@@ -33,7 +33,7 @@ import {
     type AssetWithAccountBalance,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
@@ -42,12 +42,14 @@ import { useAssetActionButtons } from './useAssetActionButtons'
 export type AssetActionButtonsProps = {
     asset: PeraAsset
     assetHolding?: Nullable<AssetWithAccountBalance>
+    chainId: ChainId
     isCollectible?: boolean
 }
 //TODO hook up missing actions
 export const AssetActionButtons = ({
     asset,
     assetHolding,
+    chainId,
     isCollectible,
 }: AssetActionButtonsProps) => {
     const styles = useStyles()
@@ -55,14 +57,13 @@ export const AssetActionButtons = ({
     const { t } = useLanguage()
     const account = useSelectedAccount()
     const { request: requestBottomSheet } = useBottomSheet()
-    const isReadOnly = !useCanSignWith(account, LEGACY_CHAIN_ID)
+    const isReadOnly = !useCanSignWith(account, chainId)
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const isFrozen =
         assetHolding?.restriction === HoldingRestrictions.transferBlocked
-    const nativeAsset = useNativeAsset()
-    const { canSwap, canBuy } = useAssetActionButtons(account)
+    const { canSwap, canBuy } = useAssetActionButtons(account, chainId)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -81,6 +82,7 @@ export const AssetActionButtons = ({
     }
 
     const handleSwap = useCallback(() => {
+        const nativeAsset = nativeAssetFor(chainId)
         const isAlgo = asset.assetId === nativeAsset.assetId
         if (isAlgo) {
             trackEvent(AssetDetailsEvent.SwapAlgo)
@@ -91,7 +93,7 @@ export const AssetActionButtons = ({
                 ? undefined
                 : { assetInId: nativeAsset.assetId, assetOutId: asset.assetId },
         })
-    }, [asset.assetId, nativeAsset.assetId, navigation])
+    }, [asset.assetId, chainId, navigation])
 
     const handleSend = useCallback(() => {
         trackEvent(AssetDetailsEvent.Send)
@@ -120,7 +122,7 @@ export const AssetActionButtons = ({
 
     const handleCopyAddress = useCallback(() => {
         const address = account
-            ? chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+            ? chainAccountOf(account, chainId)?.address
             : undefined
         if (address) {
             void copyToClipboard(address)
@@ -130,7 +132,7 @@ export const AssetActionButtons = ({
                 type: 'success',
             })
         }
-    }, [account, copyToClipboard, showToast, t])
+    }, [account, chainId, copyToClipboard, showToast, t])
 
     if (isCollectible) return null
 

@@ -14,7 +14,10 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetPricesByIds } from '../db'
@@ -31,9 +34,10 @@ type UseAssetPricesQueryResult = {
 export const useAssetPricesQuery = (
     ids: string[],
     enabled?: boolean,
+    scope?: ChainScope,
 ): UseAssetPricesQueryResult => {
     const { network } = useNetwork()
-    const scope = scopeForLegacyNetwork(network)
+    const resolvedScope = scope ?? scopeForLegacyNetwork(network)
 
     // Keep a stable reference to ids — only update when the actual content
     // changes. This prevents query recomputation when callers pass a new array
@@ -41,10 +45,11 @@ export const useAssetPricesQuery = (
     const stableIds = useStableIdList(ids)
 
     const query = useQuery({
-        queryKey: getAssetPricesQueryKey(stableIds, scope),
+        queryKey: getAssetPricesQueryKey(stableIds, resolvedScope),
         enabled: enabled ?? true,
         staleTime: Infinity,
-        queryFn: () => getAssetPricesByIds({ assetIds: stableIds, scope }),
+        queryFn: () =>
+            getAssetPricesByIds({ assetIds: stableIds, scope: resolvedScope }),
         // SQLite is the source of truth; run the queryFn even while offline instead
         // of pausing it (TanStack's default networkMode: 'online'), which would strand
         // consumers in `pending`.

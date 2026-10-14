@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import {
-    AlgorandTransactionDetailBody,
-    AlgorandTransactionReviewBody,
-} from '@modules/algorand'
-import type { TransactionBodyRegistry } from './types'
+import { chainUiFor } from '@modules/chain-ui'
+import type { ReviewBodyProps } from '../types'
 
-export const transactionBodyRegistry: TransactionBodyRegistry = {
-    algorand: {
-        reviewBody: AlgorandTransactionReviewBody,
-        detailBody: AlgorandTransactionDetailBody,
-    },
+export type TransactionReviewBodyProps = ReviewBodyProps
+
+export const TransactionReviewBody = (props: TransactionReviewBodyProps) => {
+    const ReviewBody = chainUiFor(props.transaction.family).transactionDetails
+        ?.ReviewBody
+
+    return ReviewBody ? <ReviewBody {...props} /> : null
 }

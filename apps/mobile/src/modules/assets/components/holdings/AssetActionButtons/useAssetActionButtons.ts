@@ -11,9 +11,10 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useOnrampScope } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
-import { useCanFundAccount } from '@modules/onramp'
 
 export type UseAssetActionButtonsResult = {
     canSwap: boolean
@@ -22,7 +23,10 @@ export type UseAssetActionButtonsResult = {
 
 export const useAssetActionButtons = (
     account: Nullable<WalletAccount> | undefined,
+    chainId: ChainId,
 ): UseAssetActionButtonsResult => ({
-    canSwap: useSwapScope(account ?? null) !== null,
-    canBuy: useCanFundAccount(account),
+    // The account's scope can resolve to another of its chains; the action
+    // only belongs on this screen when it runs on the asset's own chain.
+    canSwap: useSwapScope(account ?? null)?.chainId === chainId,
+    canBuy: useOnrampScope(account?.chains ?? null)?.chainId === chainId,
 })

@@ -66,5 +66,8 @@ anything deeper. Tests are exempt.
 - A chain's own UI (`modules/algorand`) is the only app code that reads that chain's transaction
   shapes or imports its chain package; everything else passes `TransactionNative` through opaque.
   Each such module is listed in `CHAIN_UI_MODULES` (`lanekeep/shared/chain-package-allowlist.ts`).
+  A feature reaches a chain's UI through `chainUiFor(family)` from `@modules/chain-ui`: one entry
+  per family, one slot per feature. The feature owns its slot's type and what renders when a family
+  has none.
 - A test that mocks a collaborator mocks the file the entry re-exports from, or the entry itself; a
   mock of some other path under the module no longer intercepts the import.

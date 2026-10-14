@@ -20,9 +20,11 @@ import {
     type PeraAsset,
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 export type AssetPriceChartProps = {
     asset: PeraAsset
+    scope: ChainScope
     period: HistoryPeriod
     onSelectionChanged: (item: Nullable<AssetPriceHistoryItem>) => void
 }
@@ -36,6 +38,7 @@ const getUsdPriceValue = (item: AssetPriceHistoryItem): number =>
 export const AssetPriceChart = memo(function AssetPriceChart({
     onSelectionChanged,
     asset,
+    scope,
     period,
 }: AssetPriceChartProps) {
     const themeStyle = useStyles()
@@ -48,7 +51,7 @@ export const AssetPriceChart = memo(function AssetPriceChart({
         isPaused,
         refetch,
         isUnavailableOnNetwork,
-    } = useAssetPriceHistoryQuery(asset.assetId, period)
+    } = useAssetPriceHistoryQuery(asset.assetId, period, scope)
 
     return (
         <BalanceLineChart

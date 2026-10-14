@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { transactionBodyRegistry } from '../registry'
-import type { DetailBodyProps } from '../types'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type { AssetDetailsDisplay } from '@modules/assets'
+import type { TransactionDisplay } from '@modules/signing'
 
-export type TransactionDetailBodyProps = DetailBodyProps
-
-export const TransactionDetailBody = (props: TransactionDetailBodyProps) => {
-    const DetailBody =
-        transactionBodyRegistry[props.transaction.family]?.detailBody
-
-    return DetailBody ? <DetailBody {...props} /> : null
+/** Each slot's type belongs to its feature, which decides what a missing slot renders. */
+export type ChainUi = {
+    transactionDetails?: TransactionDisplay
+    assetDetails?: AssetDetailsDisplay
 }
+
+export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>

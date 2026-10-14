@@ -11,10 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import {
-    useIsNativeAssetId,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useTheme } from '@rneui/themed'
 import {
     type IconName,
@@ -27,16 +24,15 @@ import { useMemo, useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import type { AssetChainSectionProps } from '@modules/assets'
 
-export type AssetVerificationCardProps = {
-    assetDetails: PeraAsset
-}
+export type AssetVerificationCardProps = AssetChainSectionProps
 
 export const AssetVerificationCard = ({
-    assetDetails,
+    asset,
+    scope,
 }: AssetVerificationCardProps) => {
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -44,11 +40,10 @@ export const AssetVerificationCard = ({
     const handleLearnMore = useCallback(() => {
         pushWebView({ url: config.asaVerificationUrl })
     }, [pushWebView])
-    const isTrusted = isNativeAssetId(assetDetails.assetId)
+    const isTrusted = isNativeAssetId(scope.chainId, asset.assetId)
     const isVerified =
-        !isTrusted && assetDetails.peraMetadata?.verificationTier === 'verified'
-    const isSuspicious =
-        assetDetails.peraMetadata?.verificationTier === 'suspicious'
+        !isTrusted && asset.peraMetadata?.verificationTier === 'verified'
+    const isSuspicious = asset.peraMetadata?.verificationTier === 'suspicious'
 
     const CARD_CONFIGS = useMemo(
         () => ({

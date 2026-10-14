@@ -243,12 +243,18 @@ export const useSearchScreen = (): UseSearchScreenResult => {
 
             navigation.navigate('TabBar', {
                 screen: 'Home',
-                params: {
-                    screen: isCollectible(asset)
-                        ? 'CollectibleDetails'
-                        : 'AssetDetails',
-                    params: { assetId: asset.assetId },
-                },
+                params: isCollectible(asset)
+                    ? {
+                          screen: 'CollectibleDetails',
+                          params: { assetId: asset.assetId },
+                      }
+                    : {
+                          screen: 'AssetDetails',
+                          params: {
+                              assetId: asset.assetId,
+                              chainId: scope.chainId,
+                          },
+                      },
             })
         },
         [

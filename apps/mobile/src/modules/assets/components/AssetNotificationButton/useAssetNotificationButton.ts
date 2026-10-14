@@ -12,7 +12,11 @@
 
 import { useCallback } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,
@@ -23,18 +27,24 @@ import { useErrorToast } from '@hooks/useErrorToast'
 export const useAssetNotificationButton = (
     assetId: string,
     isNotificationsEnabled: Optional<boolean>,
+    scope: ChainScope,
 ) => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)
     const { showError } = useErrorToast()
-    const { toggleAssetPriceAlert, isLoading, isUnavailableOnNetwork } =
-        useToggleAssetPriceAlertMutation()
+    const hasPriceAlerts = useChainCapability(scope.chainId, 'priceAlerts')
+    const {
+        toggleAssetPriceAlert,
+        isLoading,
+        isUnavailableOnNetwork: isMutationUnavailable,
+    } = useToggleAssetPriceAlertMutation()
+    const isUnavailableOnNetwork = isMutationUnavailable || !hasPriceAlerts
 
     const handleToggleNotifications = useCallback(() => {
         // Stays reachable (not truly disabled) so the tap can explain why,
         // instead of the press being silently swallowed.
         if (isUnavailableOnNetwork) {
-            showError(new PeraServiceUnavailableError(network))
+            showError(new PeraServiceUnavailableError(scope))
             return
         }
         if (deviceId && isNotificationsEnabled !== undefined) {
@@ -51,6 +61,7 @@ export const useAssetNotificationButton = (
         isNotificationsEnabled,
         toggleAssetPriceAlert,
         network,
+        scope,
         isUnavailableOnNetwork,
         showError,
     ])
