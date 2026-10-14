@@ -11,9 +11,9 @@
  */
 
 // Pera Web ("Transfer Accounts") import — recovery-only restore from a QR
-// scanned on web.perawallet.app. Mirrors the ASB submodule in shape.
+// scanned on web.perawallet.app. Mirrors the secure-backup submodule in shape.
 // Crypto primitives (secretbox open) live in `../shared/` since they're
-// identical to the ones used by ASB.
+// identical to the ones used by secure-backup.
 export * from './api'
 export * from './errors'
 export * from './hooks'

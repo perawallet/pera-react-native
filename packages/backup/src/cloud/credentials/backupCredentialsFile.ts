@@ -34,8 +34,7 @@ export const LEGACY_BACKUP_CREDENTIALS_FILE_NAME =
 
 const FILE_NAME_PREFIX = 'pera-backup-'
 const FILE_NAME_EXTENSION = '.json'
-// Enough to tell one user's own backups apart in a list. Algorand addresses are
-// base32, so the legacy name's "encryption-key" can never be mistaken for one.
+// Enough to tell one user's own backups apart in a list. Backup ids are base32, so the legacy name's "encryption-key" can never be mistaken for one.
 const ADDRESS_PREFIX_LENGTH = 5
 const FILE_NAME_PATTERN = new RegExp(
     `^${FILE_NAME_PREFIX}([A-Z2-7]{${ADDRESS_PREFIX_LENGTH}})\\${FILE_NAME_EXTENSION}$`,

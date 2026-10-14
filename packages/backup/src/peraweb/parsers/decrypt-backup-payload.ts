@@ -12,10 +12,9 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
-import {
-    decodePrivateKeyBytes,
-    secretboxOpenWithPrependedNonce,
-} from '../../shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { backupAdapterFor } from '../../chain-adapter'
+import { secretboxOpenWithPrependedNonce } from '../../shared'
 import { PeraWebImportError, PeraWebImportErrorReason } from '../errors'
 import type {
     PeraWebBackupAccount,
@@ -38,9 +37,12 @@ const isNonEmptyString = (value: unknown): value is string =>
  * Normalise a raw account row from the decrypted JSON. Returns null when the
  * shape is missing required fields — the caller silently drops bad rows so
  * one malformed account doesn't block recovery of the rest. Mirrors the same
- * tolerant policy as ASB's `parseAccount`.
+ * tolerant policy as the secure-backup parser.
  */
-const parseAccount = (raw: unknown): PeraWebBackupAccount | null => {
+const parseAccount = (
+    raw: unknown,
+    chainId: ChainId,
+): PeraWebBackupAccount | null => {
     if (!isPlainObject(raw)) return null
     const {
         address,
@@ -70,9 +72,10 @@ const parseAccount = (raw: unknown): PeraWebBackupAccount | null => {
 
     let decodedPrivateKey: Uint8Array | null = null
     if (privateKeyValue) {
-        decodedPrivateKey = decodePrivateKeyBytes(privateKeyValue, {
-            allowCommaSeparated: true,
-        })
+        decodedPrivateKey = backupAdapterFor(chainId).decodePrivateKey(
+            privateKeyValue,
+            { allowCommaSeparated: true },
+        )
         // If the field is present but undecodable, treat the row as malformed
         // rather than silently downgrading to a watch-style import.
         if (!decodedPrivateKey) return null
@@ -107,6 +110,7 @@ const parseAccount = (raw: unknown): PeraWebBackupAccount | null => {
 export const decryptPeraWebBackupPayload = (
     response: PeraWebBackupResponse,
     encryptionKey: Uint8Array,
+    chainId: ChainId,
 ): PeraWebBackupPayload => {
     if (!isNonEmptyString(response.encrypted_content)) {
         throw new PeraWebImportError(PeraWebImportErrorReason.EmptyContent)
@@ -159,7 +163,7 @@ export const decryptPeraWebBackupPayload = (
 
         const accounts: PeraWebBackupAccount[] = []
         for (const row of rows) {
-            const account = parseAccount(row)
+            const account = parseAccount(row, chainId)
             if (account) accounts.push(account)
         }
 

@@ -12,10 +12,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-    ASB_RECOVERY_MNEMONIC_WORD_COUNT,
-    AsbErrorReason,
-    AsbImportError,
+    SecureBackupErrorReason,
+    SecureBackupImportError,
     decryptBackupPayload,
+    secureBackupRecoveryWordCount,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
@@ -53,6 +53,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
     const setPayload = useAsbImportFlowStore(state => state.setPayload)
 
     const [isProcessing, setIsProcessing] = useState(false)
+    const wordCount = secureBackupRecoveryWordCount(LEGACY_CHAIN_ID)
 
     // The flow store is wiped after a successful import (and on backgrounding,
     // for the decrypted payload). If the user navigates back into this screen
@@ -92,7 +93,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         areAllWordsValid,
         getMnemonicIndices,
     } = useMnemonicWordEntry({
-        wordCount: ASB_RECOVERY_MNEMONIC_WORD_COUNT,
+        wordCount,
         onTooManyWords,
         onInsufficientSlots,
     })
@@ -111,7 +112,9 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
             // same user copy as a bad key.
             mnemonicIndices = getMnemonicIndices()
             if (!mnemonicIndices) {
-                throw new AsbImportError(AsbErrorReason.InvalidRecoveryKey)
+                throw new SecureBackupImportError(
+                    SecureBackupErrorReason.InvalidRecoveryKey,
+                )
             }
             // The crypto stack is synchronous but `setIsProcessing` triggers a
             // re-render before the heavy work runs; without an await/microtask
@@ -130,10 +133,10 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
             navigation.replace('AsbImportSelectAccounts')
         } catch (e) {
             const reason =
-                e instanceof AsbImportError
+                e instanceof SecureBackupImportError
                     ? e.reason
-                    : AsbErrorReason.DecryptionFailed
-            if (!(e instanceof AsbImportError)) {
+                    : SecureBackupErrorReason.DecryptionFailed
+            if (!(e instanceof SecureBackupImportError)) {
                 logger.error('Unexpected ASB decryption error', { error: e })
             }
             errorToast(
@@ -162,7 +165,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         canContinue,
         isProcessing,
         suggestions,
-        wordCount: ASB_RECOVERY_MNEMONIC_WORD_COUNT,
+        wordCount,
         setFocused,
         handleWordChange,
         handleSelectSuggestion,

@@ -22,9 +22,12 @@ import {
     backupItemKindId,
     backupSeedReference,
 } from '../chain-adapter'
-import { parseBackupEnvelope } from '../asb/parsers/parse-backup-envelope'
-import { decryptBackupPayload } from '../asb/parsers/decrypt-backup-payload'
-import { partitionImportableAccounts } from '../asb/utils/partition-importable-accounts'
+import {
+    decryptBackupPayload,
+    parseBackupEnvelope,
+    partitionImportableAccounts,
+    secureBackupRecoveryWordCount,
+} from '../secure-backup'
 import { fakeBackupAdapter } from './fakeBackupAdapter'
 
 describe('backupChainAdapters', () => {
@@ -94,5 +97,18 @@ describe('backupChainAdapters', () => {
             [],
             [],
         )
+    })
+
+    it("reads the recovery word count from the chain's adapter", () => {
+        backupChainAdapters.register(
+            fakeBackupAdapter({
+                secureBackup: {
+                    ...fakeBackupAdapter().secureBackup,
+                    recoveryWordCount: 24,
+                },
+            }),
+        )
+
+        expect(secureBackupRecoveryWordCount('algorand')).toBe(24)
     })
 })

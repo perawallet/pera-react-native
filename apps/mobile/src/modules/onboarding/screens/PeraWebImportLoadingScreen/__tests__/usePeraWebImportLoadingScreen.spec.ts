@@ -12,6 +12,7 @@
 
 import { renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { Networks } from '@perawallet/wallet-core-config'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -106,5 +107,18 @@ describe('usePeraWebImportLoadingScreen', () => {
                 'backup-1',
             )
         })
+    })
+
+    it("decrypts through the legacy chain's backup adapter", async () => {
+        mockFetchPeraWebBackup.mockResolvedValue({ encryptedContent: 'x' })
+
+        renderHook(() => usePeraWebImportLoadingScreen())
+
+        await waitFor(() => {
+            expect(mockDecryptPeraWebBackupPayload).toHaveBeenCalled()
+        })
+        expect(mockDecryptPeraWebBackupPayload.mock.calls[0]?.[2]).toBe(
+            LEGACY_CHAIN_ID,
+        )
     })
 })
