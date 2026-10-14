@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { type FC, useCallback, useEffect, useState } from 'react'
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react'
+import { Decimal } from 'decimal.js'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
@@ -36,14 +37,14 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useSendFunds, useSenderBalances } from '@modules/transactions/hooks'
+import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'
 import type { SvgProps } from 'react-native-svg'
-import type { Decimal } from 'decimal.js'
 
 type UseARC59SendSummaryScreenResult = {
     summary?: Arc59SendSummaryResponse
@@ -89,20 +90,35 @@ export const useARC59SendSummaryScreen =
         const { data: asset, isLoading: assetLoading } =
             useSingleAssetDetailsQuery(assetId, scope)
 
-        const accountInfo = useSenderBalances(selectedAccount)
+        // No fee: the inbox quote's funding amount already covers the group.
+        const spendableInput = useMemo(
+            () =>
+                selectedAccount
+                    ? {
+                          account: selectedAccount,
+                          asset: {
+                              chainId: scope.chainId,
+                              assetId: nativeAsset.assetId,
+                          },
+                          scope,
+                          fee: new Decimal(0),
+                      }
+                    : undefined,
+            [selectedAccount, scope, nativeAsset.assetId],
+        )
+        const { data: spendable } = useSpendableBalanceQuery(spendableInput)
 
         const isLoading = summaryLoading || assetLoading
         const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage
 
         useEffect(() => {
-            if (!summary || !accountInfo) return
+            if (!summary || !spendable) return
 
-            const availableAlgo = accountInfo.amount - accountInfo.minBalance
             // Gate on the amount actually signed, not the
             // independent `total_protocol_and_mbr_fee` field.
             const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
 
-            if (availableAlgo < requiredMicroAlgo) {
+            if (spendable.max.lt(requiredMicroAlgo.toString())) {
                 const requiredAlgo = toWholeUnits(
                     requiredMicroAlgo,
                     nativeAsset,
@@ -115,7 +131,7 @@ export const useARC59SendSummaryScreen =
                     ),
                 })
             }
-        }, [summary, accountInfo, navigation, nativeAsset])
+        }, [summary, spendable, navigation, nativeAsset])
 
         useEffect(() => {
             if (summary) {
