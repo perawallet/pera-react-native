@@ -12,7 +12,13 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAccountBalancesQuery,
     useAccountAssetBalanceQuery,
@@ -352,10 +358,51 @@ describe('useAccountBalances', () => {
             .get('ADDR1')
             ?.assetBalances.find(b => b.assetId === '999')
         expect(asset999?.amount).toEqual(new Decimal(100)) // decimals: 0
-        expect(asset999?.nativeValue).toEqual(new Decimal(0)) // no price → 0
+        expect(asset999?.nativeValue).toBeNull()
     })
 
-    it('emits zero amount and zero nativeValue when asset metadata is not yet loaded', async () => {
+    describe('while the native price is unloaded', () => {
+        const rows = [algoRow(100_000, null), asaRow('31566704', 500, 0, 1)]
+        const renderAccount = async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue(rows)
+            const { result } = renderHook(
+                () => useAccountBalancesQuery([account], SCOPE),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            return result.current
+        }
+
+        it('keeps the native-only total on a single-chain wallet', async () => {
+            const { accountBalances, portfolioNativeValue } =
+                await renderAccount()
+
+            expect(accountBalances.get('ADDR1')?.nativeValue).toEqual(
+                new Decimal('0.1'),
+            )
+            expect(portfolioNativeValue).toEqual(new Decimal('0.1'))
+        })
+
+        it('leaves the total unknown once a second chain is registered, rather than dropping the priced ASA', async () => {
+            const allOn = Object.fromEntries(
+                CHAIN_CAPABILITIES.map(capability => [capability, true]),
+            ) as ChainCapabilities
+            for (const id of ['algorand', 'ethereum']) {
+                getProvider().chains.register(
+                    { id, networks: [] } as unknown as ChainDescriptor,
+                    allOn,
+                )
+            }
+
+            const { accountBalances, portfolioNativeValue } =
+                await renderAccount()
+
+            expect(accountBalances.get('ADDR1')?.nativeValue).toBeNull()
+            expect(portfolioNativeValue).toBeNull()
+        })
+    })
+
+    it('emits a zero amount and an unknown nativeValue when asset metadata is not yet loaded', async () => {
         // A holding whose metadata hasn't synced (asset: null) must carry zeros
         // so its base-unit amount can't leak into the value-desc sort.
         mockGetAccountHoldingsPage.mockResolvedValue([
@@ -374,7 +421,7 @@ describe('useAccountBalances', () => {
             .get('ADDR1')
             ?.assetBalances.find(b => b.assetId === '456')
         expect(unloaded?.amount).toEqual(new Decimal(0))
-        expect(unloaded?.nativeValue).toEqual(new Decimal(0))
+        expect(unloaded?.nativeValue).toBeNull()
         expect(unloaded?.asset).toBeUndefined()
 
         // Portfolio total ignores the unscalable row — just the ALGO balance.

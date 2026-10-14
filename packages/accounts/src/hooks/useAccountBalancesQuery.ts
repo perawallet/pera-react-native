@@ -35,6 +35,7 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
+import { useOtherRegisteredChainIds } from './accountChainEntries'
 import { chainAccountOf } from '../credentials/accessors'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
@@ -100,6 +101,10 @@ export const useAccountBalancesQuery = (
             a => chainAccountOf(a, scope.chainId)?.address ?? [],
         ) ?? [],
     )
+
+    // See `valueAccountTotals`: single-chain wallets keep today's figures.
+    const isUnconvertibleUnknown =
+        useOtherRegisteredChainIds(scope.chainId).length > 0
 
     const queries = useMemo(() => {
         return addresses.map(address => {
@@ -183,6 +188,7 @@ export const useAccountBalancesQuery = (
             const nativeUsdPrice = nativeHolding?.usdPrice ?? new Decimal(0)
 
             let nativeValue = new Decimal(0)
+            let hasUnconvertible = false
             // Accumulated in the same pass as `nativeValue`: the portfolio
             // roll-up used to re-walk every account's holdings to derive this,
             // doubling the accounts×holdings Decimal work on every price poll.
@@ -206,7 +212,7 @@ export const useAccountBalancesQuery = (
                             assetId: holding.assetId,
                             asset: undefined,
                             amount: new Decimal(0),
-                            nativeValue: new Decimal(0),
+                            nativeValue: null,
                             usdPrice: holding.usdPrice ?? undefined,
                             fiatValue: null,
                             restriction,
@@ -217,13 +223,18 @@ export const useAccountBalancesQuery = (
                         pow10(asset.decimals),
                     )
                     // The native asset's value in native terms is just its amount
-                    // (1:1), independent of price. Others convert via its rate.
+                    // (1:1), independent of price. Others convert via its rate,
+                    // and are unknown while either price is.
                     const nativeAssetValue = isNative
                         ? assetAmount
-                        : nativeUsdPrice.isZero()
-                          ? new Decimal(0)
+                        : nativeUsdPrice.isZero() || holding.usdPrice === null
+                          ? null
                           : assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
-                    nativeValue = nativeValue.plus(nativeAssetValue)
+                    if (nativeAssetValue) {
+                        nativeValue = nativeValue.plus(nativeAssetValue)
+                    } else if (!usdAssetPrice.isZero()) {
+                        hasUnconvertible = true
+                    }
                     usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
                     return {
                         assetId: holding.assetId,
@@ -247,7 +258,10 @@ export const useAccountBalancesQuery = (
 
             return {
                 assetBalances,
-                nativeValue,
+                nativeValue:
+                    isUnconvertibleUnknown && hasUnconvertible
+                        ? null
+                        : nativeValue,
                 usdValue,
                 fiatValue: isNativeUnpriced ? null : usdValue,
                 isPending: r.isPending,
@@ -261,8 +275,13 @@ export const useAccountBalancesQuery = (
             addresses.map((address, i) => [address, accountBalanceList[i]]),
         )
 
-        const portfolioNativeValue = accountBalanceList.reduce(
-            (acc, cur) => acc.plus(cur.nativeValue),
+        const portfolioNativeValue = accountBalanceList.reduce<
+            Nullable<Decimal>
+        >(
+            (acc, cur) =>
+                acc === null || cur.nativeValue === null
+                    ? null
+                    : acc.plus(cur.nativeValue),
             new Decimal(0),
         )
 
@@ -284,7 +303,14 @@ export const useAccountBalancesQuery = (
         // `results` is read inside but deliberately not a dep — `resultsSig`
         // is its stable stand-in; see the comment where it is built.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, addresses, hasAccounts, nativeAsset, scope.chainId])
+    }, [
+        resultsSig,
+        addresses,
+        hasAccounts,
+        nativeAsset,
+        scope.chainId,
+        isUnconvertibleUnknown,
+    ])
 
     return {
         accountBalances,

@@ -24,7 +24,7 @@ import {
 import { Decimal } from 'decimal.js'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 
 type UseRekeyedAccountInfoContentParams = {
@@ -34,9 +34,11 @@ type UseRekeyedAccountInfoContentParams = {
 export type UseRekeyedAccountInfoContentResult = {
     address: string
     rekeyedAccountBalances: AssetWithAccountBalance[]
-    rekeyedAccountAlgoValue: Decimal
+    /** `null` when unknown — renders as a placeholder, not 0. */
+    rekeyedAccountAlgoValue: Nullable<Decimal>
     authAddress: Optional<string>
-    authAccountAlgoValue: Decimal
+    /** `null` when unknown — renders as a placeholder, not 0. */
+    authAccountAlgoValue: Nullable<Decimal>
     isPending: boolean
 }
 
@@ -90,12 +92,12 @@ export function useRekeyedAccountInfoContent({
         }
     }, [isNativeAssetId, rekeyedBalances, address])
 
-    const authAccountAlgoValue = useMemo(() => {
+    const authAccountAlgoValue = useMemo((): Nullable<Decimal> => {
         const authAddress =
             authAccount && chainAccountOf(authAccount, scope.chainId)?.address
         if (!authAddress) return new Decimal(0)
         const balanceData = authBalances.get(authAddress)
-        return balanceData?.nativeValue ?? new Decimal(0)
+        return balanceData ? balanceData.nativeValue : new Decimal(0)
     }, [authBalances, authAccount, scope.chainId])
 
     return {

@@ -13,6 +13,12 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useSortedAccounts } from '../useSortedAccounts'
 import { useAccountsStore } from '../../store'
 import type {
@@ -47,6 +53,7 @@ const makeBalance = (nativeValue: number): AccountBalance => ({
     assetBalances: [],
     nativeValue: new Decimal(nativeValue),
     usdValue: new Decimal(nativeValue),
+    fiatValue: new Decimal(nativeValue),
     isPending: false,
     isFetched: true,
     isRefetching: false,
@@ -217,5 +224,132 @@ describe('useSortedAccounts', () => {
             'AAA_UNNAMED',
             'ADDR_A',
         ])
+    })
+
+    describe('with a second chain registered', () => {
+        const ALL_ON = Object.fromEntries(
+            CHAIN_CAPABILITIES.map(capability => [capability, true]),
+        ) as ChainCapabilities
+        const ethereumAccount: WalletAccount = {
+            id: '0xETH',
+            name: 'Eve',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: '0xETH' } },
+        }
+        const bothChains: WalletAccount = {
+            ...makeAccount('ADDR_BOTH', 'Bo'),
+            chains: {
+                algorand: { address: 'ADDR_BOTH' },
+                ethereum: { address: '0xBOTH' },
+            },
+        }
+        // ALGO price unloaded: its priced ASAs can't be expressed in ALGO, and
+        // its fiat value is unknown too.
+        const asaOnly = makeAccount('ADDR_ASA', 'Asa')
+        const values = new Map([
+            [
+                'ADDR_A',
+                { nativeValue: new Decimal(1000), fiatValue: new Decimal(100) },
+            ],
+            ['ADDR_B', { nativeValue: new Decimal(5000), fiatValue: null }],
+            ['ADDR_ASA', { nativeValue: null, fiatValue: null }],
+            [
+                '0xETH',
+                { nativeValue: new Decimal(1), fiatValue: new Decimal(3000) },
+            ],
+            [
+                'ADDR_BOTH',
+                { nativeValue: new Decimal(10), fiatValue: new Decimal(50) },
+            ],
+            [
+                '0xBOTH',
+                { nativeValue: new Decimal(1), fiatValue: new Decimal(3000) },
+            ],
+        ])
+        const sortedIds = (list: WalletAccount[]) =>
+            renderHook(() =>
+                useSortedAccounts(list, values, FAKE_CHAIN_ID),
+            ).result.current.sortedAccounts.map(a => a.id)
+
+        beforeEach(() => {
+            for (const id of ['algorand', 'ethereum']) {
+                getProvider().chains.register(
+                    { id, networks: [] } as unknown as ChainDescriptor,
+                    ALL_ON,
+                )
+            }
+        })
+
+        describe('with only Algorand accounts', () => {
+            beforeEach(() => {
+                useAccountsStore.setState({ accounts: [accountA, asaOnly] })
+            })
+
+            test('keeps ranking by native value', () => {
+                useAccountsStore.setState({ sortMode: 'balanceDesc' })
+
+                expect(sortedIds([accountA, accountB])).toEqual([
+                    'ADDR_B',
+                    'ADDR_A',
+                ])
+            })
+
+            test.each(['balanceAsc', 'balanceDesc'] as const)(
+                'sorts an account whose native value is unknown last in %s',
+                sortMode => {
+                    useAccountsStore.setState({ sortMode })
+
+                    expect(
+                        sortedIds([asaOnly, accountA, accountB]).at(-1),
+                    ).toBe('ADDR_ASA')
+                },
+            )
+        })
+
+        describe('once an account is on Ethereum', () => {
+            beforeEach(() => {
+                useAccountsStore.setState({
+                    accounts: [accountA, asaOnly, ethereumAccount, bothChains],
+                })
+            })
+
+            test('ranks by fiat', () => {
+                useAccountsStore.setState({ sortMode: 'balanceDesc' })
+
+                expect(sortedIds([accountA, ethereumAccount])).toEqual([
+                    '0xETH',
+                    'ADDR_A',
+                ])
+            })
+
+            test('ranks a list without an Ethereum row by fiat too, so every list agrees', () => {
+                useAccountsStore.setState({ sortMode: 'balanceDesc' })
+
+                expect(sortedIds([accountB, accountA])).toEqual([
+                    'ADDR_A',
+                    'ADDR_B',
+                ])
+            })
+
+            test('sums an account derived on both chains across them', () => {
+                useAccountsStore.setState({ sortMode: 'balanceDesc' })
+
+                expect(sortedIds([ethereumAccount, bothChains])).toEqual([
+                    'ADDR_BOTH',
+                    '0xETH',
+                ])
+            })
+
+            test.each(['balanceAsc', 'balanceDesc'] as const)(
+                'sorts an unpriced account last in %s',
+                sortMode => {
+                    useAccountsStore.setState({ sortMode })
+
+                    expect(
+                        sortedIds([asaOnly, accountA, ethereumAccount]).at(-1),
+                    ).toBe('ADDR_ASA')
+                },
+            )
+        })
     })
 })

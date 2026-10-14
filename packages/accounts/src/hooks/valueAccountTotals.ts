@@ -17,8 +17,13 @@ import type { AccountPortfolioTotals } from '../db'
 export type ValuedAccountTotals = {
     /** Native balance in display units (price-independent). */
     nativeAmount: Decimal
-    /** Account value expressed in the native asset (display units). */
-    nativeValue: Decimal
+    /**
+     * Account value expressed in the native asset (display units); `null` when
+     * priced non-native holdings can't be converted for want of a native
+     * price, and the caller asked for that to be unknown — see
+     * `isUnconvertibleUnknown`.
+     */
+    nativeValue: Nullable<Decimal>
     /**
      * Account value in USD (display units); `null` when the native asset is
      * held but unpriced on a chain that should price it, so the value is
@@ -45,10 +50,15 @@ export type ValuedAccountTotals = {
  * Pricing 10 of the native asset at $0.00 is the fake number the offline epic
  * forbids. A chain with no price source (`hasPricing` false) is excluded: a
  * zero price is the deliberate answer there, not a missing one.
+ *
+ * With `isUnconvertibleUnknown`, a native total that would silently drop
+ * priced non-native holdings is `null` instead. Callers set it only once a
+ * second chain is registered, so single-chain wallets keep today's figures.
  */
 export const valueAccountTotals = (
     totals: Optional<AccountPortfolioTotals>,
     hasPricing: boolean,
+    isUnconvertibleUnknown = false,
 ): ValuedAccountTotals => {
     const nativeAmount = totals?.nativeAmount ?? new Decimal(0)
     const nonNativeUsd = totals?.nonNativeUsdValue ?? new Decimal(0)
@@ -56,9 +66,11 @@ export const valueAccountTotals = (
     const price = nativeUsdPrice ?? new Decimal(0)
 
     const usdTotal = nonNativeUsd.plus(nativeAmount.times(price))
-    const nativeValue = price.isZero()
-        ? nativeAmount
-        : nativeAmount.plus(nonNativeUsd.div(price))
+    const nativeValue = !price.isZero()
+        ? nativeAmount.plus(nonNativeUsd.div(price))
+        : isUnconvertibleUnknown && !nonNativeUsd.isZero()
+          ? null
+          : nativeAmount
 
     return {
         nativeAmount,

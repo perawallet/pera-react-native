@@ -43,18 +43,15 @@ import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     type AccountBalanceHistoryItem,
-    useAccountValueTotalsQuery,
     useAccountBalancesHistoryQuery,
     addressOn,
-    useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { Decimal } from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
 import { usePortfolioTrendColumn } from './usePortfolioTrendColumn'
+import { usePortfolioView } from './usePortfolioView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { TrendIndicator } from '@components/TrendIndicator'
 
@@ -63,18 +60,20 @@ export type PortfolioViewProps = {
 } & PWViewProps
 
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset()
     const styles = useStyles()
-    const { preferredCurrency, usdToPreferred } = useCurrency()
+    const { preferredCurrency } = useCurrency()
     const { t } = useLanguage()
 
-    const accounts = useSigningAccounts(scope.chainId)
-    const { portfolioNativeValue, portfolioUsdValue, hasFiatTotal, isPending } =
-        useAccountValueTotalsQuery(accounts, scope)
-    const portfolioPreferredValue = useMemo(() => {
-        return usdToPreferred(portfolioUsdValue)
-    }, [portfolioUsdValue, usdToPreferred])
+    const {
+        scope,
+        accounts,
+        basis,
+        portfolioNativeValue,
+        portfolioPreferredValue,
+        hasFiatTotal,
+        isPending,
+    } = usePortfolioView()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()
@@ -178,31 +177,47 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             </InfoButton>
                         </PWView>
                     </PWView>
-                    <AssetAmount
-                        variant='h2'
-                        value={
-                            selectedPoint
-                                ? selectedPoint.nativeValue
-                                : portfolioNativeValue
-                        }
-                        asset={nativeAsset}
-                        density='compact'
-                        style={styles.primaryCurrency}
-                        isLoading={isPending}
-                    />
-                    {hasFiatTotal && (
+                    {basis === 'fiat' ? (
                         <PreferredAmount
-                            variant='h4'
-                            style={styles.valueTitle}
+                            variant='h2'
+                            style={styles.primaryCurrency}
                             value={
                                 selectedPoint
                                     ? selectedPoint.preferredValue
                                     : portfolioPreferredValue
                             }
-                            prefix='≈ '
                             density='compact'
                             isLoading={isPending}
                         />
+                    ) : (
+                        <>
+                            <AssetAmount
+                                variant='h2'
+                                value={
+                                    selectedPoint
+                                        ? selectedPoint.nativeValue
+                                        : portfolioNativeValue
+                                }
+                                asset={nativeAsset}
+                                density='compact'
+                                style={styles.primaryCurrency}
+                                isLoading={isPending}
+                            />
+                            {hasFiatTotal && (
+                                <PreferredAmount
+                                    variant='h4'
+                                    style={styles.valueTitle}
+                                    value={
+                                        selectedPoint
+                                            ? selectedPoint.preferredValue
+                                            : portfolioPreferredValue
+                                    }
+                                    prefix='≈ '
+                                    density='compact'
+                                    isLoading={isPending}
+                                />
+                            )}
+                        </>
                     )}
                 </PWView>
 

@@ -124,7 +124,7 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.portfolioNativeValue.toString()).toBe('100')
+        expect(result.current.portfolioNativeValue?.toString()).toBe('100')
         expect(result.current.portfolioPreferredValue?.toString()).toBe('200')
     })
 

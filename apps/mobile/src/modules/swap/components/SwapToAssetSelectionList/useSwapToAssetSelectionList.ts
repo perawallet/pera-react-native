@@ -155,7 +155,7 @@ export const useSwapToAssetSelectionList = ({
             onAssetSelected({
                 assetId,
                 amount: item.balance ?? new Decimal(0),
-                nativeValue: new Decimal(0),
+                nativeValue: null,
                 fiatValue: null,
                 restriction: null,
             })

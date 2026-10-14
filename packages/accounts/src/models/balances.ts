@@ -28,8 +28,12 @@ export type AssetWithAccountBalance = {
     asset?: PeraAsset
     /** Asset amount in display units (divided by 10^decimals) */
     amount: Decimal
-    /** Value of this holding in the chain's native asset (display units) */
-    nativeValue: Decimal
+    /**
+     * Value of this holding in the chain's native asset (display units);
+     * `null` when it can't be priced against the native asset, so it is
+     * unknown, not 0. The native holding itself is always its amount.
+     */
+    nativeValue: Nullable<Decimal>
     /** USD price per whole unit of the asset, joined from the DB read. */
     usdPrice?: Decimal
     /**
@@ -43,7 +47,8 @@ export type AssetWithAccountBalance = {
 
 export type AccountBalancesWithTotals = {
     accountBalances: AccountBalances
-    portfolioNativeValue: Decimal
+    /** `null` when any account's `nativeValue` is. */
+    portfolioNativeValue: Nullable<Decimal>
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -53,7 +58,12 @@ export type AccountBalancesWithTotals = {
 
 export type AccountBalance = {
     assetBalances: AssetWithAccountBalance[]
-    nativeValue: Decimal
+    /**
+     * Total in the native asset (display units); `null` once a second chain is
+     * registered and priced holdings can't be converted for want of a native
+     * price — see `valueAccountTotals`.
+     */
+    nativeValue: Nullable<Decimal>
     /** Total value of the account's holdings in USD (display units). */
     usdValue: Decimal
     /**
@@ -70,21 +80,15 @@ export type AccountBalance = {
 export type AccountBalances = Map<string, AccountBalance>
 
 /**
- * Per-address values in the chain's native asset — the minimal shape
- * balance-ranking consumers (e.g. `useSortedAccounts`) need. Structural on
- * purpose: both the full `AccountBalances` map and
- * `useAccountValueTotalsQuery`'s cheap totals map satisfy it.
+ * Per-address values for ranking accounts: the native value within one chain,
+ * the fiat value across chains. Structural on purpose: both the full
+ * `AccountBalances` map and `useAccountValueTotalsQuery`'s cheap totals map
+ * satisfy it.
  */
-export type AccountNativeValues = Map<
+export type AccountValues = Map<
     string,
-    Pick<AccountBalance, 'nativeValue'>
+    Pick<AccountBalance, 'nativeValue' | 'fiatValue'>
 >
-
-/**
- * Per-address fiat values for ranking and summing across chains;
- * `AccountBalances` and `AccountValueTotalsMap` both satisfy it.
- */
-export type AccountFiatValues = Map<string, Pick<AccountBalance, 'fiatValue'>>
 
 export type AccountBalanceHistoryItem = {
     datetime: Date

@@ -158,10 +158,10 @@ export const useLedgerAccountInfoContent = (
                     amount: asset.amount,
                     restriction: asset.restriction,
                     // Holding value in ALGOs (display units):
-                    // amount * usdPrice / algoUsdPrice. Falls back to 0
-                    // when the ALGO USD price is unknown (avoids /0).
+                    // amount * usdPrice / algoUsdPrice; unknown while the
+                    // ALGO USD price is.
                     nativeValue: algoUsdPrice.isZero()
-                        ? new Decimal(0)
+                        ? null
                         : asset.amount.times(asset.usdPrice).div(algoUsdPrice),
                     // The preview's usdPrice is 0 when unknown, so it can't tell unpriced from worthless.
                     fiatValue: null,

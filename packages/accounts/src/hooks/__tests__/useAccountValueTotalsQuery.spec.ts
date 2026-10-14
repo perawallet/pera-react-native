@@ -22,6 +22,7 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountChains } from '../../models'
 import type { WalletAccount } from '../../models/accounts'
@@ -45,9 +46,23 @@ vi.mock('../../sync/account-syncer', () => ({
         mockEnsureAccountFetched(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: (_chainId: string, name: string) =>
-        name === 'pricing' ? capability.pricing : true,
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useChainCapabilityCheck:
+        () =>
+        ({ chain }: { chain?: { chainId: ChainId; capability: string } }) => {
+            // Like the real registry: asking an unregistered chain throws.
+            if (
+                chain &&
+                getProvider().chains.list().length > 0 &&
+                !getProvider().chains.has(chain.chainId)
+            ) {
+                throw new Error(`${chain.chainId} is not registered`)
+            }
+            return chain?.capability === 'pricing' ? capability.pricing : true
+        },
 }))
 
 const createWrapper = () => {
@@ -116,7 +131,7 @@ describe('useAccountValueTotalsQuery', () => {
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(44))
     })
 
-    it('falls back to the raw native amount when no native price is known', async () => {
+    it('falls back to the raw native amount when no native price is known on a single-chain wallet', async () => {
         mockGetAccountPortfolioTotals.mockResolvedValue(totals(7, 30, null))
 
         const { result } = renderHook(
@@ -240,6 +255,187 @@ describe('useAccountValueTotalsQuery', () => {
         })
     })
 
+    describe('with a second chain registered', () => {
+        const ALL_ON = Object.fromEntries(
+            CHAIN_CAPABILITIES.map(capability => [capability, true]),
+        ) as ChainCapabilities
+        const ethereumAccount: WalletAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: '0xE' } },
+        }
+
+        beforeEach(() => {
+            for (const id of ['algorand', 'ethereum']) {
+                getProvider().chains.register(
+                    {
+                        id,
+                        networks: [
+                            {
+                                id: 'mainnet',
+                                tier: 'mainnet',
+                                isDefaultForTier: true,
+                            },
+                        ],
+                    } as unknown as ChainDescriptor,
+                    ALL_ON,
+                )
+            }
+        })
+
+        it('values it on its own chain and sums fiat across chains, native only on the scope chain', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(10, 20))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(mockGetAccountPortfolioTotals).toHaveBeenCalledWith({
+                accountAddress: '0xE',
+                scope: expect.objectContaining({ chainId: 'ethereum' }),
+            })
+            expect(
+                result.current.accountValueTotals.get('0xE')?.fiatValue,
+            ).toEqual(new Decimal(3000))
+            // A1: native 10 + 20/2 = 20 ALGO; the ETH balance doesn't add.
+            expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
+            expect(result.current.portfolioUsdValue).toEqual(new Decimal(40))
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
+        })
+
+        it('leaves the native total unknown, not ASA-less, while the ALGO price is unloaded and no Ethereum account exists', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(0.1, 500, null))
+                        : Promise.resolve(totals(5, 0, null)),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), makeAccount('A2')],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(
+                result.current.accountValueTotals.get('A1')?.nativeValue,
+            ).toBeNull()
+            // No non-native holdings, so nothing is missing from it.
+            expect(
+                result.current.accountValueTotals.get('A2')?.nativeValue,
+            ).toEqual(new Decimal(5))
+            expect(result.current.portfolioNativeValue).toBeNull()
+        })
+
+        it('values an account derived on both chains on each of them', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(10, 20))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+            const bothChains: WalletAccount = {
+                ...makeAccount('A1'),
+                chains: {
+                    algorand: { address: 'A1' },
+                    ethereum: { address: '0xE' },
+                },
+            }
+
+            const { result } = renderHook(
+                () => useAccountValueTotalsQuery([bothChains], SCOPE),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(
+                result.current.accountValueTotals.get('0xE')?.fiatValue,
+            ).toEqual(new Decimal(3000))
+            expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
+        })
+
+        it('drops a chain un-registered while the hook stays mounted instead of throwing', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(10, 20))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+            const { result, rerender } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            getProvider().chains.reset()
+            getProvider().chains.register(
+                {
+                    id: 'algorand',
+                    networks: [
+                        {
+                            id: 'mainnet',
+                            tier: 'mainnet',
+                            isDefaultForTier: true,
+                        },
+                    ],
+                } as unknown as ChainDescriptor,
+                ALL_ON,
+            )
+            rerender()
+
+            await waitFor(() =>
+                expect(result.current.accountValueTotals.has('0xE')).toBe(
+                    false,
+                ),
+            )
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(40))
+        })
+
+        it('leaves the fiat total unknown, not zero, while the ALGO price is unloaded', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(1, 5, null))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(
+                result.current.accountValueTotals.get('A1')?.fiatValue,
+            ).toBeNull()
+            expect(result.current.portfolioFiatValue).toBeNull()
+        })
+    })
+
     describe('network tiers', () => {
         const SECOND_CHAIN_ID = 'ethereum' as ChainId
         const SECOND_CHAIN_TEST_SCOPE: ChainScope = {
@@ -350,6 +546,40 @@ describe('useAccountValueTotalsQuery', () => {
 
             expect(result.current.hasFiatTotal).toBe(false)
             expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
+        })
+
+        it('leaves a second chain on its test network out of the cross-chain fiat total', async () => {
+            registerBothChains()
+            // The Algorand scope is passed in; the second chain follows the
+            // wallet's selection, which this puts on its test network.
+            useNetworkStore.getState().setNetwork('testnet')
+
+            try {
+                const { result } = renderHook(
+                    () =>
+                        useAccountValueTotalsQuery(
+                            [makeAccount('A1'), makeSecondChainAccount('E1')],
+                            SCOPE,
+                        ),
+                    { wrapper: createWrapper() },
+                )
+                await waitFor(() =>
+                    expect(result.current.isPending).toBe(false),
+                )
+
+                expect(mockGetAccountPortfolioTotals).toHaveBeenCalledWith({
+                    accountAddress: 'E1',
+                    scope: SECOND_CHAIN_TEST_SCOPE,
+                })
+                expect(
+                    result.current.accountValueTotals.get('E1')?.fiatValue,
+                ).toEqual(new Decimal(40))
+                expect(result.current.portfolioFiatValue).toEqual(
+                    new Decimal(40),
+                )
+            } finally {
+                useNetworkStore.getState().setNetwork('mainnet')
+            }
         })
 
         it('has no fiat total for an empty account list on a test-tier scope', () => {

@@ -13,14 +13,16 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type {
-    AccountNativeValues,
-    AccountSortMode,
-    WalletAccount,
-} from '../models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { AccountSortMode, AccountValues, WalletAccount } from '../models'
 import { getAccountDisplayName } from '../utils'
 import { useAccountsStore } from '../store'
 import { chainAccountOf } from '../credentials'
+import { useAccountValueBasis } from './useAccountValueBasis'
+import {
+    accountChainEntries,
+    useOtherRegisteredChainIds,
+} from './accountChainEntries'
 
 type UseSortedAccountsResult = {
     sortedAccounts: WalletAccount[]
@@ -30,12 +32,30 @@ type UseSortedAccountsResult = {
     setManualAccountOrder: (order: string[]) => void
 }
 
-/** `accountBalances` is keyed by each account's address on `chainId`, which also names unnamed accounts. */
+/** Nulls last in either direction: an unpriced account ranks below every priced one. */
+const compareNullable = (
+    a: Nullable<Decimal>,
+    b: Nullable<Decimal>,
+    direction: 1 | -1,
+): number => {
+    if (a === null || b === null) {
+        return (a === null ? 1 : 0) - (b === null ? 1 : 0)
+    }
+    return a.comparedTo(b) * direction
+}
+
+/**
+ * `accountBalances` is keyed by address, one entry per chain an account is on;
+ * the address on `chainId` also names unnamed accounts. See
+ * `AccountValueBasis` for which value ranks.
+ */
 export const useSortedAccounts = (
     accounts: WalletAccount[],
-    accountBalances: AccountNativeValues,
+    accountBalances: AccountValues,
     chainId: ChainId,
 ): UseSortedAccountsResult => {
+    const basis = useAccountValueBasis(chainId)
+    const otherChainIds = useOtherRegisteredChainIds(chainId)
     const sortMode = useAccountsStore(state => state.sortMode)
     const manualAccountOrder = useAccountsStore(
         state => state.manualAccountOrder,
@@ -49,13 +69,29 @@ export const useSortedAccounts = (
         const sorted = [...accounts]
         const nameOf = (account: WalletAccount) =>
             getAccountDisplayName(account, chainId)
-        const valueOf = (account: WalletAccount) => {
+        // Summed over every chain the account is on; unknown if any part is.
+        const fiatOf = (account: WalletAccount): Nullable<Decimal> => {
+            const entries = accountChainEntries(account, chainId, otherChainIds)
+            if (entries.length === 0) return null
+            return entries.reduce<Nullable<Decimal>>((sum, { address }) => {
+                const fiatValue = accountBalances.get(address)?.fiatValue
+                return sum === null || !fiatValue ? null : sum.plus(fiatValue)
+            }, new Decimal(0))
+        }
+        const nativeOf = (account: WalletAccount): Nullable<Decimal> => {
             const address = chainAccountOf(account, chainId)?.address
-            return (
-                (address
-                    ? accountBalances.get(address)?.nativeValue
-                    : undefined) ?? new Decimal(-1)
-            )
+            const values = address ? accountBalances.get(address) : undefined
+            // -1 only marks totals that haven't loaded, which keeps the
+            // single-chain order as it was; `null` is a known unknown.
+            return values ? values.nativeValue : new Decimal(-1)
+        }
+        const compareByValue = (
+            a: WalletAccount,
+            b: WalletAccount,
+            direction: 1 | -1,
+        ) => {
+            const valueOf = basis === 'fiat' ? fiatOf : nativeOf
+            return compareNullable(valueOf(a), valueOf(b), direction)
         }
 
         switch (sortMode) {
@@ -68,11 +104,11 @@ export const useSortedAccounts = (
                 break
             }
             case 'balanceAsc': {
-                sorted.sort((a, b) => valueOf(a).minus(valueOf(b)).toNumber())
+                sorted.sort((a, b) => compareByValue(a, b, 1))
                 break
             }
             case 'balanceDesc': {
-                sorted.sort((a, b) => valueOf(b).minus(valueOf(a)).toNumber())
+                sorted.sort((a, b) => compareByValue(a, b, -1))
                 break
             }
             case 'manual': {
@@ -89,7 +125,15 @@ export const useSortedAccounts = (
         }
 
         return sorted
-    }, [accounts, sortMode, accountBalances, manualAccountOrder, chainId])
+    }, [
+        accounts,
+        sortMode,
+        accountBalances,
+        manualAccountOrder,
+        chainId,
+        basis,
+        otherChainIds,
+    ])
 
     return {
         sortedAccounts,

@@ -25,9 +25,11 @@ import {
     useIsOnTestTier,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 export type UseAccountWithBalanceResult = {
-    nativeValue: Decimal | undefined
+    /** `undefined` until loaded, `null` when unknown; both render a placeholder, not 0. */
+    nativeValue: Maybe<Decimal>
     isTestTier: boolean
 }
 

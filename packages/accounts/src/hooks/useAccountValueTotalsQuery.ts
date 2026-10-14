@@ -14,21 +14,32 @@ import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useStableIdList, type Nullable } from '@perawallet/wallet-core-shared'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    selectChainNetworkId,
+    useChainCapabilityCheck,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     isTestTierScope,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../models'
-import { chainAccountOf } from '../credentials/accessors'
+import {
+    accountChainEntries,
+    useOtherRegisteredChainIds,
+} from './accountChainEntries'
 import { getAccountSummaryQueryKey } from './querykeys'
 import { readAccountSummary } from './useAccountSummaryQuery'
 import { valueAccountTotals } from './valueAccountTotals'
 
 export type AccountValueTotals = {
-    /** Account value expressed in the native asset (display units). */
-    nativeValue: Decimal
+    /**
+     * Value of the account's holdings on this chain, in its native asset
+     * (display units); `null` when unknown — see `valueAccountTotals`.
+     */
+    nativeValue: Nullable<Decimal>
     /**
      * Account value in USD (display units); `null` when the native asset is
      * held but its price has never synced, so the value is genuinely unknown —
@@ -49,13 +60,27 @@ export type AccountValueTotals = {
 export type AccountValueTotalsMap = Map<string, AccountValueTotals>
 
 export type UseAccountValueTotalsQueryResult = {
-    accountValueTotals: AccountValueTotalsMap
-    portfolioNativeValue: Decimal
     /**
-     * `null` when any account's USD value is unknown — see `usdValue`. `0`
-     * when `hasFiatTotal` is false.
+     * Keyed by address, one entry per chain an account is on: an account
+     * derived on two chains has two.
+     */
+    accountValueTotals: AccountValueTotalsMap
+    /**
+     * Over holdings on `scope`'s chain only, since other chains' native assets
+     * don't add; `null` when any of them is unknown.
+     */
+    portfolioNativeValue: Nullable<Decimal>
+    /**
+     * Over the accounts on `scope`'s chain only; `null` when any of their USD
+     * values is unknown — see `usdValue`. `0` when `hasFiatTotal` is false.
      */
     portfolioUsdValue: Nullable<Decimal>
+    /**
+     * Over every account on every registered chain, leaving out holdings on a
+     * test-tier network; `null` when any counted fiat value is unknown — see
+     * `fiatValue`.
+     */
+    portfolioFiatValue: Nullable<Decimal>
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
     isPending: boolean
@@ -68,6 +93,7 @@ export type UseAccountValueTotalsQueryResult = {
 const EMPTY_RESULT_BASE = {
     portfolioNativeValue: new Decimal(0),
     portfolioUsdValue: new Decimal(0),
+    portfolioFiatValue: new Decimal(0),
     isPending: false,
     isFetched: false,
     isRefetching: false,
@@ -88,28 +114,75 @@ export const useAccountValueTotalsQuery = (
     scope: ChainScope,
     enabled?: boolean,
 ): UseAccountValueTotalsQueryResult => {
-    // See `valueAccountTotals`: only a chain with a price source can be
-    // missing a price it ought to have.
-    const hasPricing = useChainCapability(scope.chainId, 'pricing')
     const hasAccounts = !!accounts?.length
     const hasFiatTotal = useMemo(
         () => !isTestTierScope(getProvider().chains, scope),
         [scope],
     )
+    const check = useChainCapabilityCheck()
+    const otherChainIds = useOtherRegisteredChainIds(scope.chainId)
+    // See `valueAccountTotals`: only a chain with a price source can be
+    // missing a price it ought to have. Joined so the memo below keys on a
+    // primitive rather than the per-render checker.
+    const pricedChainsKey = [scope.chainId, ...otherChainIds]
+        .filter(chainId => check({ chain: { chainId, capability: 'pricing' } }))
+        .join()
+    // Holdings on another chain are valued at that chain's selected network;
+    // a primitive so only a network switch re-keys their queries.
+    const otherNetworksKey = useNetworkStore(state =>
+        otherChainIds
+            .map(
+                chainId => `${chainId}:${selectChainNetworkId(state, chainId)}`,
+            )
+            .join(),
+    )
 
-    // Call sites routinely pass fresh array literals per render; only
-    // addresses are read below, so the memos key on this stable list instead
-    // of array identity (see useAccountBalancesQuery for the long version).
-    const addresses = useStableIdList(
-        accounts?.flatMap(
-            a => chainAccountOf(a, scope.chainId)?.address ?? [],
+    // Call sites routinely pass fresh array literals per render; only each
+    // account's chain entries are read below, so the memos key on this stable
+    // `home|chainId|address` list instead of array identity (see
+    // useAccountBalancesQuery for the long version).
+    const valuedOn = useStableIdList(
+        accounts?.flatMap(account =>
+            accountChainEntries(account, scope.chainId, otherChainIds).map(
+                ({ chainId, address, isHome }) =>
+                    `${isHome ? 1 : 0}|${chainId}|${address}`,
+            ),
         ) ?? [],
     )
 
-    const queries = useMemo(() => {
-        return addresses.map(address => {
+    const entries = useMemo(() => {
+        const networks = useNetworkStore.getState()
+        const { chains } = getProvider()
+        return valuedOn.map(id => {
+            const [home, chainId, address] = id.split('|') as [
+                string,
+                ChainId,
+                string,
+            ]
+            const isHome = home === '1'
+            const entryScope = isHome
+                ? scope
+                : {
+                      chainId,
+                      networkId: selectChainNetworkId(networks, chainId),
+                  }
             return {
-                queryKey: getAccountSummaryQueryKey(address, scope),
+                address,
+                isHome,
+                scope: entryScope,
+                // Each chain sits on its own network, so a test-tier one is
+                // left out of the fiat totals entry by entry.
+                hasFiatTotal: !isTestTierScope(chains, entryScope),
+            }
+        })
+        // `otherNetworksKey` stands in for the network store read above.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [valuedOn, scope, otherNetworksKey])
+
+    const queries = useMemo(() => {
+        return entries.map(({ address, scope: accountScope }) => {
+            return {
+                queryKey: getAccountSummaryQueryKey(address, accountScope),
                 enabled: !!address && enabled !== false,
                 staleTime: Infinity,
                 // SQLite is the source of truth; run the queryFn even while
@@ -120,10 +193,10 @@ export const useAccountValueTotalsQuery = (
                 // See useAccountBalancesQuery: works around a QueriesObserver
                 // race under Proxy-based property tracking.
                 notifyOnChangeProps: 'all' as const,
-                queryFn: () => readAccountSummary(address, scope),
+                queryFn: () => readAccountSummary(address, accountScope),
             }
         })
-    }, [addresses, enabled, scope])
+    }, [entries, enabled])
 
     const results = useQueries({ queries })
 
@@ -131,7 +204,7 @@ export const useAccountValueTotalsQuery = (
     const resultsSig = results
         .map(
             (r, i) =>
-                `${addresses[i] ?? ''}|${r.dataUpdatedAt}|${
+                `${valuedOn[i] ?? ''}|${r.dataUpdatedAt}|${
                     r.isPending ? 1 : 0
                 }${r.isFetched ? 1 : 0}${r.isRefetching ? 1 : 0}${
                     r.isError ? 1 : 0
@@ -148,24 +221,42 @@ export const useAccountValueTotalsQuery = (
             }
         }
 
-        let portfolioNativeValue = new Decimal(0)
+        const pricedChains = new Set(pricedChainsKey.split(','))
+        // Single-chain wallets keep today's native figures; see
+        // `valueAccountTotals`.
+        const isUnconvertibleUnknown = otherChainIds.length > 0
+        let portfolioNativeValue: Nullable<Decimal> = new Decimal(0)
         let portfolioUsdValue: Nullable<Decimal> = new Decimal(0)
+        let portfolioFiatValue: Nullable<Decimal> = new Decimal(0)
         const accountValueTotals: AccountValueTotalsMap = new Map(
-            addresses.map((address, i) => {
+            entries.map((entry, i) => {
+                const { address, isHome, scope: accountScope } = entry
                 const r = results[i]
                 const { nativeValue, usdValue, fiatValue } = valueAccountTotals(
                     r?.data,
-                    hasPricing,
+                    pricedChains.has(accountScope.chainId),
+                    isUnconvertibleUnknown,
                 )
 
-                portfolioNativeValue = portfolioNativeValue.plus(nativeValue)
-                // One unknown account makes the portfolio total unknown —
+                // One unknown account makes a portfolio total unknown —
                 // silently summing the rest would understate it.
-                if (hasFiatTotal) {
+                if (isHome) {
+                    portfolioNativeValue =
+                        portfolioNativeValue === null || nativeValue === null
+                            ? null
+                            : portfolioNativeValue.plus(nativeValue)
+                }
+                if (isHome && entry.hasFiatTotal) {
                     portfolioUsdValue =
                         portfolioUsdValue === null || usdValue === null
                             ? null
                             : portfolioUsdValue.plus(usdValue)
+                }
+                if (entry.hasFiatTotal) {
+                    portfolioFiatValue =
+                        portfolioFiatValue === null || fiatValue === null
+                            ? null
+                            : portfolioFiatValue.plus(fiatValue)
                 }
 
                 return [
@@ -187,6 +278,7 @@ export const useAccountValueTotalsQuery = (
             accountValueTotals,
             portfolioNativeValue,
             portfolioUsdValue,
+            portfolioFiatValue,
             hasFiatTotal,
             isPending: results.some(r => r.isPending),
             isFetched: results.every(r => r.isFetched),
@@ -197,5 +289,12 @@ export const useAccountValueTotalsQuery = (
         // `results` is read inside but deliberately not a dep — `resultsSig`
         // is its stable stand-in.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, addresses, hasAccounts, hasPricing, hasFiatTotal])
+    }, [
+        resultsSig,
+        entries,
+        hasAccounts,
+        pricedChainsKey,
+        otherChainIds,
+        hasFiatTotal,
+    ])
 }
