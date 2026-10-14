@@ -48,7 +48,9 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-assets')
     >()),
-    nativeAssetFor: () => ({ assetId: '0' }),
+    nativeAssetFor: (chainId: string) => ({
+        assetId: chainId === 'ethereum' ? 'native-eth' : '0',
+    }),
 }))
 
 const MAINNET = scopeForLegacyNetwork('mainnet')
@@ -108,6 +110,23 @@ describe('useNativeUsdPriceQuery', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(result.current.data).toEqual(new Decimal('0.15'))
+    })
+
+    it('reads the price of the scope chain native asset', async () => {
+        const sepolia = { chainId: 'ethereum', networkId: 'sepolia' } as const
+        await upsertAssetPrices({
+            db,
+            prices: [{ assetId: 'native-eth', usdPrice: new Decimal('2500') }],
+            scope: sepolia,
+        })
+
+        const { result } = renderHook(() => useNativeUsdPriceQuery(sepolia), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data).toEqual(new Decimal('2500'))
     })
 
     it('does not fetch when disabled', () => {
