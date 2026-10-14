@@ -336,7 +336,10 @@ export const submitAndAutoRefresh = async (
         network,
         onConfirmed: (addresses, networkAtSubmission) => {
             const handler = getOnConfirmedHandler()
-            return handler?.(addresses, networkAtSubmission)
+            return handler?.(
+                addresses,
+                scopeForLegacyNetwork(networkAtSubmission),
+            )
         },
         signedTxns,
         ledger: {

@@ -98,7 +98,7 @@ describe('sensitive mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.data?.hostedPageUrl).toContain('pin-direct/set')
         expect(api.createSetPinSession).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
         })
     })
 

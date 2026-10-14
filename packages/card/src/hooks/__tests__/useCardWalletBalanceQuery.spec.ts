@@ -70,7 +70,7 @@ describe('useCardWalletBalanceQuery', () => {
             await waitFor(() => expect(result.current.wallet).not.toBeNull())
             expect(result.current.wallet?.balance.toFixed(2)).toBe('12.34')
             expect(fetchWalletBalance).toHaveBeenCalledWith(
-                expect.objectContaining({ kind, network: 'mainnet' }),
+                expect.objectContaining({ kind, scope: SCOPE }),
             )
         },
     )

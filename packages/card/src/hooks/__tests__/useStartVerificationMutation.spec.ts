@@ -61,7 +61,7 @@ describe('useStartVerificationMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(startRegisterVerification).toHaveBeenCalledWith({
             onboardingId: 'ob_1',
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(result.current.data?.sessionUrl).toBe('https://veriff/session')
     })

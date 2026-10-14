@@ -67,7 +67,7 @@ describe('useWithdrawWalletBalanceMutation', () => {
             expect(withdrawWalletBalance).toHaveBeenCalledWith({
                 kind,
                 amount: '10.5',
-                network: 'mainnet',
+                scope: SCOPE,
             })
             expect(invalidateSpy).toHaveBeenCalledWith({
                 queryKey: cardQueryKeys.walletBalance(SCOPE, kind),

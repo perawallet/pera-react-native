@@ -113,7 +113,7 @@ describe('useSignCardOwnershipMutation', () => {
         })
 
         expect(fetchDelegationToken).toHaveBeenCalledWith(
-            expect.objectContaining({ network: 'testnet' }),
+            expect.objectContaining({ scope: SCOPE }),
         )
         expect(buildSiwxAuthData).toHaveBeenCalledWith(
             expect.objectContaining({

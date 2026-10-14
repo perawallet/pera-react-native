@@ -11,10 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     submitMailingAddress,
@@ -38,7 +35,6 @@ export type UseSubmitMailingAddressMutationResult = CardMutationResult<
 export const useSubmitMailingAddressMutation = (
     scope: ChainScope,
 ): UseSubmitMailingAddressMutationResult => {
-    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<
@@ -48,7 +44,7 @@ export const useSubmitMailingAddressMutation = (
     >({
         mutationFn: async address => {
             try {
-                return await submitMailingAddress({ address, network })
+                return await submitMailingAddress({ address, scope })
             } catch (error) {
                 if (isNotVerifiedError(await getCardApiError(error))) {
                     throw new OnboardingNotVerifiedError()
@@ -56,7 +52,7 @@ export const useSubmitMailingAddressMutation = (
                 throw error
             }
         },
-        onSuccess: result => completeCardRegistration({ result, network }),
+        onSuccess: result => completeCardRegistration({ result, scope }),
         onError: async (error, variables) => {
             if (error instanceof OnboardingNotVerifiedError) {
                 void queryClient.invalidateQueries({

@@ -55,7 +55,7 @@ describe('useSendLoginOtpMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(sendLoginOtpRequest).toHaveBeenCalledWith(
-            expect.objectContaining({ userId: 'user-1', network: 'mainnet' }),
+            expect.objectContaining({ userId: 'user-1', scope: SCOPE }),
         )
     })
 

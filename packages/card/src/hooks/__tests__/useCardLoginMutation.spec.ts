@@ -94,14 +94,14 @@ describe('useCardLoginMutation', () => {
             expect.objectContaining({
                 email: 'e@x.com',
                 password: 'pw',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // The exchange runs with the ephemeral login token…
         expect(acquireCardSessionTokens).toHaveBeenCalledWith(
             expect.objectContaining({
                 accessToken: 'ephemeral-login-token',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // …and the durable OAuth pair is what gets persisted.
@@ -194,7 +194,7 @@ describe('useCardLoginMutation', () => {
         expect(fetchOnboardingDetails).toHaveBeenCalledWith(
             expect.objectContaining({
                 onboardingId: 'user-123',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // The resolved state is merged into the result, and the bridge is set.

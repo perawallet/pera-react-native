@@ -37,6 +37,7 @@ import {
     isWalletConnectV2Connection,
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { WalletConnectRequestExpiredError } from '../../shared/errors'
 import { createWalletConnectV2Handler } from '../handler'
@@ -931,7 +932,9 @@ describe('session requests', () => {
 
 describe('empty signatures', () => {
     const stubEmptySignatures = () => {
-        const adapter = dappRequestAdapterFor(Networks.mainnet)
+        const adapter = dappRequestAdapterFor(
+            scopeForLegacyNetwork(Networks.mainnet),
+        )
         if (!adapter) throw new Error('no Algorand adapter registered')
         return vi
             .spyOn(adapter, 'emptySignaturesFor')

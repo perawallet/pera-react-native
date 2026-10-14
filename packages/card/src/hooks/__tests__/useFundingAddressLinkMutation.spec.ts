@@ -69,7 +69,7 @@ describe('useFundingAddressLinkMutation', () => {
             result.current.checkFundingAddress('FUNDING_ADDR'),
         ).resolves.toEqual({ state: 'linked_to_other', cardAddress: null })
         expect(fetchFundingAddressLink).toHaveBeenCalledWith({
-            network: 'testnet',
+            scope: SCOPE,
             address: 'FUNDING_ADDR',
             baanxUserId: 'baanx-user-1',
         })

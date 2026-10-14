@@ -24,6 +24,8 @@ import {
     CardSetupIncompleteError,
 } from '../errors'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
 describe('createCard', () => {
@@ -37,7 +39,7 @@ describe('createCard', () => {
         })
 
         const result = await createCard({
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             address: 'FUNDING_ADDR',
             baanxUserId: 'baanx-user-1',
             currency: 'usdc',
@@ -71,7 +73,7 @@ describe('createCard', () => {
 
         await expect(
             createCard({
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 address: 'FUNDING_ADDR',
                 currency: 'usdc',
                 signData,
@@ -87,7 +89,7 @@ describe('createCard error mapping', () => {
     })
 
     const params = {
-        network: 'testnet',
+        scope: ALGORAND_TESTNET,
         address: 'FUNDING_ADDR',
         baanxUserId: 'baanx-user-1',
         currency: 'usdc',
@@ -200,7 +202,7 @@ describe('fetchFundingAddressLink', () => {
         })
 
         const result = await fetchFundingAddressLink({
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             address: 'FUNDING_ADDR',
             baanxUserId: 'baanx-user-1',
         })
@@ -232,7 +234,7 @@ describe('fetchFundingAddressLink', () => {
 
         await expect(
             fetchFundingAddressLink({
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 address: 'FUNDING_ADDR',
                 baanxUserId: 'baanx-user-1',
             }),
@@ -250,7 +252,7 @@ describe('fetchFundingAddressLink', () => {
 
         await expect(
             fetchFundingAddressLink({
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 address: 'FUNDING_ADDR',
                 baanxUserId: 'baanx-user-1',
             }),

@@ -61,7 +61,7 @@ describe('useOnboardingDetailsQuery', () => {
         expect(fetchOnboardingDetails).toHaveBeenCalledWith(
             expect.objectContaining({
                 onboardingId: 'ob_1',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
     })

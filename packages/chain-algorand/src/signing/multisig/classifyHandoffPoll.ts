@@ -112,7 +112,7 @@ const classifyReadyPoll = async (
 
     // Assemble one composite SignedTransaction per item, in canonical order:
     // by list, then by position within the list.
-    const multisig = multisigAdapterFor(algorandNetworkOf(handoff.scope))
+    const multisig = multisigAdapterFor(handoff.scope)
     const assembledBytes: Uint8Array[] = []
     for (const list of lists) {
         const result = await multisig.assembleSignedTransactions({

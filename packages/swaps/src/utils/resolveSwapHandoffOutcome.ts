@@ -167,7 +167,6 @@ export const resolveSwapHandoffOutcome = async ({
     deps: SwapHandoffResolutionDeps
 }): Promise<void> => {
     const { signRequestId, swapIdStr, deviceId, plan } = record
-
     await completeMultisigHandoff(record.scope.chainId, {
         outcome,
         // A crash-recovered record that already landed on chain: the shared

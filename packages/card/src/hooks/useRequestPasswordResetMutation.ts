@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     requestPasswordReset,
     type RequestPasswordResetParams,
@@ -23,7 +20,7 @@ import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type RequestPasswordResetVariables = Omit<
     RequestPasswordResetParams,
-    'network' | 'signal'
+    'scope' | 'signal'
 >
 
 export type UseRequestPasswordResetMutationResult =
@@ -37,11 +34,8 @@ export type UseRequestPasswordResetMutationResult =
 export const useRequestPasswordResetMutation = (
     scope: ChainScope,
 ): UseRequestPasswordResetMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<void, Error, RequestPasswordResetVariables>({
-        mutationFn: variables =>
-            requestPasswordReset({ ...variables, network }),
+        mutationFn: variables => requestPasswordReset({ ...variables, scope }),
         throwOnError: false,
     })
 

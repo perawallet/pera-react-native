@@ -64,7 +64,7 @@ describe('useOrderCardMutation', () => {
         result.current.mutate()
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(orderCard).toHaveBeenCalledWith({ network: 'mainnet' })
+        expect(orderCard).toHaveBeenCalledWith({ scope: SCOPE })
         expect(invalidateSpy).toHaveBeenCalledWith(
             expect.objectContaining({
                 queryKey: expect.arrayContaining(['card', 'status']),

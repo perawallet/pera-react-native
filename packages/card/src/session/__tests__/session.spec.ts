@@ -58,9 +58,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     withSecret,
     zeroBytes,
 }))
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-}))
 vi.mock('../../api/auth', () => ({ refreshTokenRequest }))
 vi.mock('../../api/transport', () => ({
     setRefreshHandler,
@@ -74,6 +71,8 @@ import {
     hasCardSession,
 } from '../session'
 import { useCardSessionStore } from '../../store/session-store'
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 // Registered when the module loads, so it has to be captured before the
 // per-test clearAllMocks wipes the call record.
@@ -155,13 +154,13 @@ describe('card session', () => {
             refreshToken: 'refresh-2',
         })
 
-        const refreshed = await refreshSession()
+        const refreshed = await refreshSession(ALGORAND_MAINNET)
 
         expect(refreshed).toBe(true)
         expect(refreshTokenRequest).toHaveBeenCalledWith(
             expect.objectContaining({
                 refreshToken: 'refresh-1',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         )
         expect(useCardSessionStore.getState().isAuthenticated).toBe(true)
@@ -169,7 +168,7 @@ describe('card session', () => {
     })
 
     it('clears the session and returns false when there is no refresh token', async () => {
-        const refreshed = await refreshSession()
+        const refreshed = await refreshSession(ALGORAND_MAINNET)
 
         expect(refreshed).toBe(false)
         expect(refreshTokenRequest).not.toHaveBeenCalled()
@@ -180,7 +179,7 @@ describe('card session', () => {
         secretStore.set('baanx-refresh-token', 'refresh-1')
         refreshTokenRequest.mockRejectedValue(new Error('boom'))
 
-        const refreshed = await refreshSession()
+        const refreshed = await refreshSession(ALGORAND_MAINNET)
 
         expect(refreshed).toBe(false)
         expect(useCardSessionStore.getState().isAuthenticated).toBe(false)

@@ -94,7 +94,7 @@ describe('onboarding mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(api.sendEmailVerification).toHaveBeenCalledWith({
             email: 'e@x.com',
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(useCardStore.getState().contactVerificationId).toBe('cv_new')
         expect(useCardStore.getState().onboardingStep).toBe(
@@ -124,7 +124,7 @@ describe('onboarding mutation hooks', () => {
                 contactVerificationId: 'cv_1',
                 allowMarketing: true,
                 allowSms: false,
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         expect(useCardStore.getState().onboardingId).toBe('ob_new')
@@ -152,7 +152,7 @@ describe('onboarding mutation hooks', () => {
         expect(api.sendPhoneVerification).toHaveBeenCalledWith(
             expect.objectContaining({
                 phoneNumber: '7400846282',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         expect(useCardStore.getState().onboardingStep).toBe(
@@ -177,7 +177,7 @@ describe('onboarding mutation hooks', () => {
             expect.objectContaining({
                 onboardingId: 'ob_1',
                 verificationCode: '654321',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // Phone verified → the KYC (verification) step comes next.
@@ -206,7 +206,7 @@ describe('onboarding mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(api.submitPersonalDetails).toHaveBeenCalledWith({
             details,
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Address,
@@ -292,13 +292,13 @@ describe('onboarding mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(api.submitAddress).toHaveBeenCalledWith({
             address,
-            network: 'mainnet',
+            scope: SCOPE,
         })
         // The registration-issued token is only used to complete the OAuth
         // flow; the persisted session is the durable access+refresh pair.
         expect(auth.acquireCardSessionTokens).toHaveBeenCalledWith({
             accessToken: 'tok',
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(session.setCardSession).toHaveBeenCalledTimes(1)
         expect(session.setCardSession).toHaveBeenCalledWith({
@@ -377,7 +377,7 @@ describe('onboarding mutation hooks', () => {
                 allowSms: false,
                 cardTermsAccepted: true,
                 platformTermsAccepted: true,
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // The created consent set id is stashed for the link step.
@@ -416,7 +416,7 @@ describe('onboarding mutation hooks', () => {
         expect(api.linkOnboardingConsent).toHaveBeenCalledWith({
             consentSetId: 'cs_1',
             userId: 'user_1',
-            network: 'mainnet',
+            scope: SCOPE,
         })
     })
 })

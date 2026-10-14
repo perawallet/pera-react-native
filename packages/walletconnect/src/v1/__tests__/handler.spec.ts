@@ -40,6 +40,7 @@ import {
     createConnectorRegistry,
     type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { toPeer } from '../../shared/peer'
 
@@ -1201,7 +1202,9 @@ describe('walletconnect v1 handler behaviour', () => {
 
     it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {
         keys.set('c1', 'restored-key')
-        const adapter = dappRequestAdapterFor(testGetNetwork())
+        const adapter = dappRequestAdapterFor(
+            scopeForLegacyNetwork(testGetNetwork()),
+        )
         if (!adapter) throw new Error('no Algorand adapter registered')
         const emptySignaturesFor = vi
             .spyOn(adapter, 'emptySignaturesFor')

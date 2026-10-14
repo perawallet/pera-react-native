@@ -53,7 +53,7 @@ describe('useRequestCountryAvailabilityMutation', () => {
         expect(api.requestCountryAvailability).toHaveBeenCalledWith({
             countryCode: 'RU',
             deviceId: 'device-1',
-            network: 'mainnet',
+            scope: SCOPE,
         })
     })
 })

@@ -78,7 +78,7 @@ describe('useCardWalletHistoryQuery', () => {
                     kind,
                     walletId: 'w_1',
                     page: 0,
-                    network: 'mainnet',
+                    scope: SCOPE,
                 }),
             )
             expect(result.current.hasNextPage).toBe(false)

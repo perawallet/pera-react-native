@@ -14,6 +14,9 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { CardStatus, FundingType, OnboardingStep } from '../../models'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 // Stores register once, at import, and vitest clears mock calls before every
 // test, so registrations are kept here rather than on a vi.fn().
 const registeredStores: Parameters<
@@ -229,7 +232,7 @@ describe('useCardStore', () => {
             result.current.setEscrowCard({
                 cardAddress: 'ESCROWCARDADDR',
                 ownerAddress: 'OWNERADDR',
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 txId: 'TX1',
             })
         })
@@ -272,18 +275,18 @@ describe('useCardStore', () => {
             result.current.setEscrowCard({
                 cardAddress: 'ESCROWCARDADDR',
                 ownerAddress: 'OWNERADDR',
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 txId: 'TX1',
             }),
         )
         expect(result.current.escrowCardAddress).toBe('ESCROWCARDADDR')
         expect(result.current.escrowCardOwner).toBe('OWNERADDR')
-        expect(result.current.escrowCardNetwork).toBe('testnet')
+        expect(result.current.escrowCardScopeKey).toBe('algorand/testnet')
         expect(result.current.escrowCardTxId).toBe('TX1')
         expect(result.current.escrowCardApproved).toBe(false)
 
-        // Persisted (with owner + network + txId) so a same-account,
-        // same-network retry reuses the created card.
+        // Persisted (with owner + scope + txId) so a same-account,
+        // same-scope retry reuses the created card.
         const persisted = (
             useCardStore as unknown as {
                 persist: {
@@ -297,7 +300,7 @@ describe('useCardStore', () => {
             .partialize?.(useCardStore.getState())
         expect(persisted?.escrowCardAddress).toBe('ESCROWCARDADDR')
         expect(persisted?.escrowCardOwner).toBe('OWNERADDR')
-        expect(persisted?.escrowCardNetwork).toBe('testnet')
+        expect(persisted?.escrowCardScopeKey).toBe('algorand/testnet')
         expect(persisted?.escrowCardTxId).toBe('TX1')
         expect(persisted?.escrowCardApproved).toBe(false)
 
@@ -308,7 +311,7 @@ describe('useCardStore', () => {
         act(() => result.current.resetOnboardingProgress())
         expect(result.current.escrowCardAddress).toBe('ESCROWCARDADDR')
         expect(result.current.escrowCardOwner).toBe('OWNERADDR')
-        expect(result.current.escrowCardNetwork).toBe('testnet')
+        expect(result.current.escrowCardScopeKey).toBe('algorand/testnet')
         expect(result.current.escrowCardTxId).toBe('TX1')
         expect(result.current.escrowCardApproved).toBe(true)
 
@@ -316,7 +319,7 @@ describe('useCardStore', () => {
         act(() => result.current.setEscrowCard(null))
         expect(result.current.escrowCardAddress).toBeNull()
         expect(result.current.escrowCardOwner).toBeNull()
-        expect(result.current.escrowCardNetwork).toBeNull()
+        expect(result.current.escrowCardScopeKey).toBeNull()
         expect(result.current.escrowCardTxId).toBeNull()
         expect(result.current.escrowCardApproved).toBe(false)
 
@@ -325,7 +328,7 @@ describe('useCardStore', () => {
             result.current.setEscrowCard({
                 cardAddress: 'X',
                 ownerAddress: 'Y',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 txId: 'TX2',
             }),
         )
@@ -343,7 +346,7 @@ describe('useCardStore', () => {
             result.current.setEscrowCard({
                 cardAddress: 'CARD1',
                 ownerAddress: 'OWNER1',
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 txId: 'TX1',
             })
             result.current.markEscrowCardApproved()
@@ -354,7 +357,7 @@ describe('useCardStore', () => {
             result.current.setEscrowCard({
                 cardAddress: 'CARD2',
                 ownerAddress: 'OWNER2',
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 txId: 'TX2',
             }),
         )
@@ -369,13 +372,13 @@ describe('useCardStore', () => {
             result.current.restoreEscrowCard({
                 cardAddress: 'CARD1',
                 ownerAddress: 'OWNER1',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         )
 
         expect(result.current.escrowCardAddress).toBe('CARD1')
         expect(result.current.escrowCardOwner).toBe('OWNER1')
-        expect(result.current.escrowCardNetwork).toBe('mainnet')
+        expect(result.current.escrowCardScopeKey).toBe('algorand/mainnet')
         expect(result.current.escrowCardTxId).toBeNull()
         expect(result.current.escrowCardApproved).toBe(true)
         expect(result.current.connectedFundingSourceAddress).toBe('OWNER1')
@@ -473,5 +476,45 @@ describe('useCardStore', () => {
 
         const registration = registeredStores.at(-1)!
         expect(registration?.name).toBe('card-store')
+    })
+})
+
+describe('migrateCardUxState', () => {
+    test('carries a v0 escrow network over as its scope key', async () => {
+        const { migrateCardUxState } = await import('../ux-store')
+
+        const migrated = migrateCardUxState(
+            { escrowCardAddress: 'CARD', escrowCardNetwork: 'testnet' },
+            0,
+        )
+
+        expect(migrated).toEqual({
+            escrowCardAddress: 'CARD',
+            escrowCardScopeKey: 'algorand/testnet',
+        })
+    })
+
+    test.each([undefined, 'not-a-network', 42])(
+        'degrades an unreadable v0 escrow network (%s) to null without dropping the rest',
+        async escrowCardNetwork => {
+            const { migrateCardUxState } = await import('../ux-store')
+
+            const migrated = migrateCardUxState(
+                { escrowCardAddress: 'CARD', escrowCardNetwork },
+                0,
+            )
+
+            expect(migrated).toEqual({
+                escrowCardAddress: 'CARD',
+                escrowCardScopeKey: null,
+            })
+        },
+    )
+
+    test('leaves v1 state untouched', async () => {
+        const { migrateCardUxState } = await import('../ux-store')
+        const state = { escrowCardScopeKey: 'ethereum/sepolia' }
+
+        expect(migrateCardUxState(state, 1)).toEqual(state)
     })
 })

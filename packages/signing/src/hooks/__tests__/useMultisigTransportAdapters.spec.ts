@@ -49,14 +49,9 @@ const fakeSigned = (tag: string, sig?: Uint8Array): PeraSignedTransaction =>
 const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
     addSignature: vi.fn(),
-    useNetwork: vi.fn(),
     encodeUnsignedTransaction: vi.fn(),
     useAllAccounts: vi.fn(),
-    useDeviceID: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => mocks.useNetwork(),
+    deviceIdForScope: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -67,7 +62,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: (network: string) => mocks.useDeviceID(network),
+    deviceIdForScope: (_state: unknown, scope: ChainScope) =>
+        mocks.deviceIdForScope(scope),
+    useDeviceStore: { getState: () => ({}) },
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
@@ -149,7 +146,6 @@ const buildTxnSigningResult = (): {
 describe('useMultisigTransportAdapters', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
         registerTestMultisigAdapter()
         mocks.useAllAccounts.mockReturnValue([
             multisigAccount('MSIG', {
@@ -158,7 +154,7 @@ describe('useMultisigTransportAdapters', () => {
                 addresses: ['A', 'B'],
             }),
         ])
-        mocks.useDeviceID.mockReturnValue('device-1')
+        mocks.deviceIdForScope.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
         mocks.encodeUnsignedTransaction.mockImplementation(
             (txn: { tag: string }) =>
@@ -221,8 +217,8 @@ describe('useMultisigTransportAdapters', () => {
             expect(mocks.proposeSignRequest).toHaveBeenCalledTimes(1)
             expect(mocks.addSignature).not.toHaveBeenCalled()
 
-            const [network, params] = mocks.proposeSignRequest.mock.calls[0]
-            expect(network).toBe('testnet')
+            const [scope, params] = mocks.proposeSignRequest.mock.calls[0]
+            expect(scope).toEqual(SCOPE)
             expect(params).toEqual({
                 joint_account_address: 'MSIG',
                 proposer_address: 'PARTICIPANT_A',
@@ -568,7 +564,7 @@ describe('useMultisigTransportAdapters', () => {
     describe('addSignatures draft bootstrap', () => {
         const createDraft = (proposeType: 'sync' | 'async' = 'sync') =>
             useDraftSignRequestStore.getState().createDraft({
-                network: 'testnet',
+                scope: SCOPE,
                 multisigAddress: 'MSIG',
                 multisigDetails: {
                     threshold: 2,

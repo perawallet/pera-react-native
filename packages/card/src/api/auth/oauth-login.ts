@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
     logger,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import type { CardSessionTokens } from '../../models'
 import {
@@ -39,7 +39,7 @@ export class OauthStateMismatchError extends AppError {
 export type ExchangeLoginForOauthTokensParams = {
     /** Ephemeral access token from a successful `loginRequest` (OAuth step 2). */
     accessToken: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -54,7 +54,7 @@ export type ExchangeLoginForOauthTokensParams = {
 export const exchangeLoginForOauthTokens = async (
     params: ExchangeLoginForOauthTokensParams,
 ): Promise<CardSessionTokens> => {
-    const { accessToken, network, signal } = params
+    const { accessToken, scope, signal } = params
 
     const { codeVerifier, codeChallenge } = createPkcePair()
     const state = createOauthState()
@@ -62,14 +62,14 @@ export const exchangeLoginForOauthTokens = async (
     const { sessionToken } = await oauthInitiateRequest({
         state,
         codeChallenge,
-        network,
+        scope,
         signal,
     })
 
     const authorization = await oauthAuthorizeRequest({
         sessionToken,
         accessToken,
-        network,
+        scope,
         signal,
     })
 
@@ -80,7 +80,7 @@ export const exchangeLoginForOauthTokens = async (
     return oauthTokenRequest({
         code: authorization.code,
         codeVerifier,
-        network,
+        scope,
         signal,
     })
 }

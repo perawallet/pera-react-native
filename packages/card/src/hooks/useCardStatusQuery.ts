@@ -11,10 +11,7 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchCardStatus } from '../api/card'
@@ -43,11 +40,9 @@ export const useCardStatusQuery = (
     scope: ChainScope,
     options?: UseCardStatusQueryOptions,
 ) => {
-    const network = legacyNetworkOf(scope)
-
     return useQuery({
         queryKey: cardQueryKeys.status(scope),
-        queryFn: ({ signal }) => fetchCardStatus({ network, signal }),
+        queryFn: ({ signal }) => fetchCardStatus({ scope, signal }),
         staleTime: config.reactQueryShortLivedStaleTime,
         enabled: options?.enabled ?? true,
         refetchInterval: options?.refetchInterval,

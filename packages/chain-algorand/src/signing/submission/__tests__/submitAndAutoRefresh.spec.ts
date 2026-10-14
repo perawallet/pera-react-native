@@ -686,10 +686,10 @@ describe('submitAndAutoRefresh (public)', () => {
             expect(mockWaitForConfirmation).toHaveBeenCalled(),
         )
         await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith(
-                [PUBLIC_WALLET],
-                'betanet',
-            ),
+            expect(onConfirmed).toHaveBeenCalledWith([PUBLIC_WALLET], {
+                chainId: 'algorand',
+                networkId: 'betanet',
+            }),
         )
     })
 })

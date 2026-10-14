@@ -66,7 +66,7 @@ describe('useExportCardStatementMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(exportCardStatement).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             format: StatementFormat.Csv,
             filters: { dateFrom: '2026-01-01' },
         })

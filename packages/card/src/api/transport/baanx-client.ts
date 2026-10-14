@@ -15,17 +15,17 @@ import ky, {
     type BeforeRequestState,
     type SearchParamsOption,
 } from 'ky'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { hasSecret, withSecret } from '@perawallet/wallet-core-kms'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { ACCESS_TOKEN_SECRET_ID } from '../../session/secret-ids'
 import type { CardTransportRequest, CardTransportResponse } from './types'
 import { parseResponse, toKyPath } from './http-helpers'
 
-// One ky instance per Algorand network (mainnet → Baanx prod, testnet →
+// One ky instance per scope (Algorand mainnet → Baanx prod, testnet →
 // Baanx sandbox). Only the static `x-client-key` is attached at the client
 // level; the per-user Bearer is read from the keystore per request below.
-const clients = new Map<Network, KyInstance>()
+const clients = new Map<string, KyInstance>()
 
 const textDecoder = new TextDecoder()
 
@@ -38,16 +38,17 @@ const attachClientHeaders =
         }
     }
 
-const getClient = (network: Network): KyInstance => {
-    const existing = clients.get(network)
+const getClient = (scope: ChainScope): KyInstance => {
+    const key = `${scope.chainId}/${scope.networkId}`
+    const existing = clients.get(key)
     if (existing) return existing
 
-    const { baanxBaseUrl, baanxClientKey } = getNetworkConfig(network)
+    const { baanxBaseUrl, baanxClientKey } = getPeraServicesConfig(scope)
     const client = ky.create({
         prefix: baanxBaseUrl,
         hooks: { beforeRequest: [attachClientHeaders(baanxClientKey)] },
     })
-    clients.set(network, client)
+    clients.set(key, client)
     return client
 }
 
@@ -64,7 +65,7 @@ const getClient = (network: Network): KyInstance => {
 export const baanxDirectRequest = async <TData, TVars = unknown>(
     req: CardTransportRequest<TVars>,
 ): Promise<CardTransportResponse<TData>> => {
-    const client = getClient(req.network)
+    const client = getClient(req.scope)
 
     const send = (authHeader?: string): Promise<Response> =>
         client(toKyPath(req.path), {

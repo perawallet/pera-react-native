@@ -83,14 +83,14 @@ describe('useRestoreEscrowCardMutation', () => {
             result.current.mutateAsync(['OTHER', 'BROKEN', 'OWNER']),
         ).resolves.toBe('CARD1')
         expect(fetchFundingAddressLink).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             address: 'OWNER',
             baanxUserId: 'baanx-user-1',
         })
         expect(mockRestoreEscrowCard).toHaveBeenCalledWith({
             cardAddress: 'CARD1',
             ownerAddress: 'OWNER',
-            network: 'mainnet',
+            scope: SCOPE,
         })
     })
 

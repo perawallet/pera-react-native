@@ -52,6 +52,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useCreateAndApproveCardMutation } from '../useCreateAndApproveCardMutation'
 import { useCardStore } from '../../store'
+import { migrateCardUxState } from '../../store/ux-store'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import {
     CardAccountLinkedElsewhereError,
@@ -113,7 +114,7 @@ describe('useCreateAndApproveCardMutation', () => {
 
         expect(createCard).toHaveBeenCalledWith(
             expect.objectContaining({
-                network: 'testnet',
+                scope: SCOPE,
                 address: ADDRESS,
                 baanxUserId: BAANX_USER_ID,
                 currency: 'usdc',
@@ -279,11 +280,39 @@ describe('useCreateAndApproveCardMutation', () => {
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
     })
 
-    it('resume: skips both calls when already created and approved for the same account + network', async () => {
+    it('resume: reuses a card persisted before the scope-key migration', async () => {
+        useCardStore.setState(
+            migrateCardUxState(
+                {
+                    escrowCardAddress: 'EXISTING_CARD',
+                    escrowCardOwner: ADDRESS,
+                    escrowCardNetwork: 'testnet',
+                    escrowCardTxId: 'EXISTING_TX',
+                    escrowCardApproved: true,
+                },
+                0,
+            ),
+        )
+        const { result } = renderHook(
+            () => useCreateAndApproveCardMutation(SCOPE),
+            { wrapper },
+        )
+
+        const outcome = await result.current.mutateAsync({
+            address: ADDRESS,
+            proof: PROOF,
+        })
+
+        expect(createCard).not.toHaveBeenCalled()
+        expect(postDelegationApproval).not.toHaveBeenCalled()
+        expect(outcome).toEqual({ cardAddress: 'EXISTING_CARD' })
+    })
+
+    it('resume: skips both calls when already created and approved for the same account + scope', async () => {
         useCardStore.getState().setEscrowCard({
             cardAddress: 'EXISTING_CARD',
             ownerAddress: ADDRESS,
-            network: 'testnet',
+            scope: SCOPE,
             txId: 'EXISTING_TX',
         })
         useCardStore.getState().markEscrowCardApproved()
@@ -308,7 +337,7 @@ describe('useCreateAndApproveCardMutation', () => {
         useCardStore.getState().setEscrowCard({
             cardAddress: 'CARD_FOR_A',
             ownerAddress: 'OTHER_ACCOUNT',
-            network: 'testnet',
+            scope: SCOPE,
             txId: 'TX_A',
         })
         useCardStore.getState().markEscrowCardApproved()

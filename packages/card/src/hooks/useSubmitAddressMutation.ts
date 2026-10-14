@@ -11,10 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { submitAddress, type SubmitAddressResult } from '../api/onboarding'
 import {
@@ -36,13 +33,12 @@ export type UseSubmitAddressMutationResult = CardMutationResult<
 export const useSubmitAddressMutation = (
     scope: ChainScope,
 ): UseSubmitAddressMutationResult => {
-    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<SubmitAddressResult, Error, AddressInput>({
         mutationFn: async address => {
             try {
-                return await submitAddress({ address, network })
+                return await submitAddress({ address, scope })
             } catch (error) {
                 // Typed so the screen can show the "finish verifying" state
                 // instead of Baanx's raw refusal string.
@@ -62,7 +58,7 @@ export const useSubmitAddressMutation = (
                     .setOnboardingStep(OnboardingStep.MailingAddress)
                 return
             }
-            await completeCardRegistration({ result, network })
+            await completeCardRegistration({ result, scope })
         },
         // Surface Baanx's real (often nested-stringified) error for diagnosis —
         // the screen only shows a generic toast, so this is where the actual

@@ -70,7 +70,7 @@ describe('useCardDetailsMutation', () => {
         // The sensitive result must never enter the query cache.
         expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
         expect(fetchCardDetailsToken).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             customCss: undefined,
         })
     })
@@ -92,7 +92,7 @@ describe('useCardDetailsMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(fetchCardDetailsToken).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             customCss,
         })
     })
