@@ -3324,7 +3324,9 @@
             "error_sheet_retry": "Vuelve a intentarlo desde la dApp donde iniciaste la solicitud.",
             "error_network_mismatch": "Esta app ha pedido conectarse en otra red, pero tu wallet está en {{active}}. Cambia de red en los ajustes y vuelve a intentarlo.",
             "error_delivery_failed": "Pera no pudo comunicarse con la aplicación para enviar tu respuesta, así que puede seguir esperando. Vuelve a intentarlo desde la aplicación.",
-            "quantum_fee_delivery_failed": "No se ha podido completar la solicitud. Puede que esta app no admita las comisiones de red más altas que requieren las cuentas Quantum."
+            "quantum_fee_delivery_failed": "No se ha podido completar la solicitud. Puede que esta app no admita las comisiones de red más altas que requieren las cuentas Quantum.",
+            "origin_scam": "Esta app se ha marcado como un riesgo de seguridad. No te conectes a menos que confíes en ella.",
+            "origin_unverified": "Pera no pudo verificar el sitio web de esta app."
         },
         "connection": {
             "approve_delivery_failed": "No se ha podido contactar con la dApp para confirmar la conexión. Comprueba tu conexión a internet y vuelve a intentarlo."

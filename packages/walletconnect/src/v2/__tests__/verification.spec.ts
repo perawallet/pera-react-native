@@ -31,7 +31,10 @@ describe('toPeerVerification', () => {
                     origin: 'https://evil.example',
                 }),
             ),
-        ).toEqual({ status: 'mismatch', verifiedOrigin: 'https://evil.example' })
+        ).toEqual({
+            status: 'mismatch',
+            verifiedOrigin: 'https://evil.example',
+        })
     })
 
     it.each(['VALID', 'INVALID'] as const)(
@@ -39,7 +42,10 @@ describe('toPeerVerification', () => {
         validation => {
             expect(
                 toPeerVerification(context({ validation, isScam: true })),
-            ).toEqual({ status: 'scam', verifiedOrigin: 'https://dapp.example' })
+            ).toEqual({
+                status: 'scam',
+                verifiedOrigin: 'https://dapp.example',
+            })
         },
     )
 
@@ -57,7 +63,8 @@ describe('toPeerVerification', () => {
         expect(
             toPeerVerification(
                 context({
-                    validation: 'MAYBE' as WalletKitVerifyContext['verified']['validation'],
+                    validation:
+                        'MAYBE' as WalletKitVerifyContext['verified']['validation'],
                 }),
             ),
         ).toEqual({ status: 'unknown' })

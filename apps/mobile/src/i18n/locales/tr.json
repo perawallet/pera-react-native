@@ -3324,7 +3324,9 @@
             "error_sheet_retry": "İsteği başlattığın dApp’e geri dönerek tekrar dene.",
             "error_network_mismatch": "Bu uygulama farklı bir ağda bağlanmak istedi, ancak cüzdanın {{active}} ağında. Ayarlar’dan ağı değiştir ve tekrar dene.",
             "error_delivery_failed": "Pera, cevabını iletmek için uygulamaya ulaşamadı; uygulama hâlâ bekliyor olabilir. Uygulamadan tekrar dene.",
-            "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir."
+            "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir.",
+            "origin_scam": "Bu uygulama güvenlik riski olarak işaretlendi. Güvenmiyorsan bağlanma.",
+            "origin_unverified": "Pera bu uygulamanın web sitesini doğrulayamadı."
         },
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."

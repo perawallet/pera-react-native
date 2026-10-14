@@ -63,6 +63,8 @@ export const ConnectionApprovalView = ({
         peerUrlLabel,
         canOpenPeerUrl,
         handlePressUrl,
+        originWarning,
+        verifiedOriginLabel,
     } = useConnectionApprovalView(proposal)
 
     const renderAccountRow = useCallback(
@@ -98,6 +100,8 @@ export const ConnectionApprovalView = ({
                         peerUrlLabel={peerUrlLabel}
                         canOpenPeerUrl={canOpenPeerUrl}
                         onPressUrl={handlePressUrl}
+                        originWarning={originWarning}
+                        verifiedOriginLabel={verifiedOriginLabel}
                     />
                 }
                 showsVerticalScrollIndicator={false}

@@ -72,6 +72,7 @@ import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
 // The v2 handler's own fixtures, reached by path: the WalletKit fake is a
 // test-only module and must never gain a package export the prod-bundle guard
 // would then have to police.
+import type { WalletKitVerifyContext } from '@packages/walletconnect/src/v2/client'
 import {
     makeProposal,
     makeRequest,
@@ -352,13 +353,15 @@ const waitForWalletKit = (): Promise<FakeWalletKit> =>
  * delivers the proposal the relay would. With no v2 session stored, the
  * client is only started by that first pairing, so it is read after `pair`.
  */
-const pairAndProposeV2 = async (): Promise<FakeWalletKit> => {
+const pairAndProposeV2 = async (
+    verified?: Partial<WalletKitVerifyContext['verified']>,
+): Promise<FakeWalletKit> => {
     await act(async () => {
         await captured.registry!.pair(V2_URI, { origin: IN_APP_ORIGIN })
     })
     const walletKit = await waitForWalletKit()
     act(() => {
-        walletKit.emit('session_proposal', makeProposal())
+        walletKit.emit('session_proposal', makeProposal({}, verified))
     })
     return walletKit
 }
@@ -453,6 +456,31 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         // The scanner's source, carried from the dispatcher through the
         // registry onto the record.
         expect(stored?.origin?.source).toBe('qr')
+    })
+
+    it('Given a v2 proposal whose attested origin is not the url it claims, when the sheet opens, then it warns with both origins instead of linking the claimed one, and Connect still works', async () => {
+        await mountProvider()
+        const walletKit = await pairAndProposeV2({
+            validation: 'INVALID',
+            origin: 'https://evil.example',
+        })
+
+        const warning = await screen.findByTestId('wc_origin_warning')
+        expect(warning.textContent).toBe('dapp.approval.requester_mismatch')
+        expect(findButton('dapp.example')).toBeUndefined()
+
+        await approveViaUi(SIGNING_ACCOUNT.name as string)
+        await waitForStoredConnection(V2_SESSION_TOPIC)
+        expect(walletKit.approveSession).toHaveBeenCalledTimes(1)
+    })
+
+    it('Given a v2 proposal no origin was attested for, when the sheet opens, then it notes the site is unverified and keeps the claimed url', async () => {
+        await mountProvider()
+        await pairAndProposeV2()
+
+        expect(await screen.findByTestId('wc_origin_unverified')).toBeTruthy()
+        expect(screen.queryByTestId('wc_origin_warning')).toBeNull()
+        expect(findButton('dapp.example')).toBeTruthy()
     })
 
     it('Given a session approved for one account, when the dApp asks to sign for another the wallet holds, then the peer is rejected rather than left waiting', async () => {

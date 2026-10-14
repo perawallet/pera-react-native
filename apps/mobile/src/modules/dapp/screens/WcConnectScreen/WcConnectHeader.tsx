@@ -123,7 +123,7 @@ export const WcConnectHeader = ({
                     the real (browser-stamped) origin and the claimed one. */}
                 {!!requesterOriginLabel && isRequesterOriginDistinct ? (
                     <PWView
-                        style={requesterStyles.mismatchWarning}
+                        style={styles.originWarning}
                         testID='wc-connect-requester-mismatch'
                     >
                         <PWRoundIcon
@@ -133,7 +133,7 @@ export const WcConnectHeader = ({
                         />
                         <PWText
                             variant='body'
-                            style={requesterStyles.mismatchWarningText}
+                            style={styles.originWarningText}
                         >
                             {peerUrlLabel
                                 ? t('dapp.approval.requester_mismatch', {

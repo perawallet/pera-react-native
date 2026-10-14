@@ -375,4 +375,86 @@ describe('useConnectionApprovalView', () => {
 
         expect(result.current.peerName).toBe('Tinynamyt')
     })
+
+    describe('origin verification', () => {
+        const renderWithVerification = (peer: Record<string, unknown>) =>
+            renderHook(() =>
+                useConnectionApprovalView(makeProposal({ peer }) as never),
+            ).result.current
+
+        it('warns about nothing when the transport attested no origin', () => {
+            const result = renderWithVerification({
+                name: 'Tinyman',
+                url: 'https://tinyman.org',
+            })
+
+            expect(result.originWarning).toBeUndefined()
+            expect(result.verifiedOriginLabel).toBeUndefined()
+        })
+
+        it('warns about nothing for an attested matching origin', () => {
+            const result = renderWithVerification({
+                name: 'Tinyman',
+                url: 'https://tinyman.org',
+                verification: {
+                    status: 'valid',
+                    verifiedOrigin: 'https://tinyman.org',
+                },
+            })
+
+            expect(result.originWarning).toBeUndefined()
+        })
+
+        it('flags a mismatch and labels the attested origin by its host', () => {
+            const result = renderWithVerification({
+                name: 'Tinyman',
+                url: 'https://tinyman.org',
+                verification: {
+                    status: 'mismatch',
+                    verifiedOrigin: 'https://evil.example',
+                },
+            })
+
+            expect(result.originWarning).toBe('mismatch')
+            expect(result.verifiedOriginLabel).toBe('evil.example')
+        })
+
+        it('labels the attested origin of a mismatch whose peer claims no url', () => {
+            const result = renderWithVerification({
+                name: 'Tinyman',
+                verification: {
+                    status: 'mismatch',
+                    verifiedOrigin: 'https://evil.example',
+                },
+            })
+
+            expect(result.originWarning).toBe('mismatch')
+            expect(result.verifiedOriginLabel).toBe('evil.example')
+            expect(result.peerUrlLabel).toBeUndefined()
+        })
+
+        it('flags a known-scam origin as scam even when it also mismatches', () => {
+            const result = renderWithVerification({
+                name: 'Tinyman',
+                url: 'https://tinyman.org',
+                verification: {
+                    status: 'scam',
+                    verifiedOrigin: 'https://evil.example',
+                },
+            })
+
+            expect(result.originWarning).toBe('scam')
+        })
+
+        it('marks an origin nothing could attest as unverified', () => {
+            const result = renderWithVerification({
+                name: 'Tinyman',
+                url: 'https://tinyman.org',
+                verification: { status: 'unknown' },
+            })
+
+            expect(result.originWarning).toBe('unverified')
+            expect(result.verifiedOriginLabel).toBeUndefined()
+        })
+    })
 })

@@ -84,8 +84,6 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
         ].map(m => m[1])
         expect(localDeclared.sort()).toEqual([
             'deliveryError',
-            'mismatchWarning',
-            'mismatchWarningText',
             'verifiedBadge',
             'verifiedBadgeText',
         ])
@@ -106,10 +104,18 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
             'walletconnect.request.networks_testnet',
         ]
 
+        // The twin attributes the request to its browser-verified tab
+        // instead, so it has no use for the transport's origin verdict copy.
+        const ATTRIBUTED_BY_THE_REQUESTING_TAB = [
+            'walletconnect.request.origin_scam',
+            'walletconnect.request.origin_unverified',
+        ]
+
         const missing = [...i18nKeys(mobileHeader)].filter(
             key =>
                 !twinHeader.includes(key) &&
-                !SHOWN_GLOBALLY_BY_TESTNET_INDICATOR.includes(key),
+                !SHOWN_GLOBALLY_BY_TESTNET_INDICATOR.includes(key) &&
+                !ATTRIBUTED_BY_THE_REQUESTING_TAB.includes(key),
         )
         expect(missing).toEqual([])
     })

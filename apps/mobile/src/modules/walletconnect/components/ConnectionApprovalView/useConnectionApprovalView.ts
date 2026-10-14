@@ -12,6 +12,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
+import type { ConnectionPeerVerificationStatus } from '@perawallet/wallet-extension-connections'
 import {
     AppError,
     generateOrderedUniqueId,
@@ -30,6 +31,8 @@ import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 
+export type ConnectionOriginWarning = 'scam' | 'mismatch' | 'unverified'
+
 export type UseConnectionApprovalViewResult = {
     selectedAccounts: string[]
     isConnecting: boolean
@@ -43,6 +46,20 @@ export type UseConnectionApprovalViewResult = {
     /** False when the peer url fails the https gate, so it renders unlinked. */
     canOpenPeerUrl: boolean
     handlePressUrl: () => void
+    /** Undefined when the peer's origin is attested or carries no verdict. */
+    originWarning?: ConnectionOriginWarning
+    /** Host of the transport-attested origin, for display. */
+    verifiedOriginLabel?: string
+}
+
+const ORIGIN_WARNINGS: Record<
+    ConnectionPeerVerificationStatus,
+    ConnectionOriginWarning | undefined
+> = {
+    valid: undefined,
+    mismatch: 'mismatch',
+    unknown: 'unverified',
+    scam: 'scam',
 }
 
 // Every action goes straight through `proposal.approve` / `proposal.reject`, so
@@ -179,5 +196,11 @@ export const useConnectionApprovalView = (
         peerUrlLabel: toPeerHostLabel(proposal.peer.url),
         canOpenPeerUrl: toValidatedBrowserUrl(proposal.peer.url) !== null,
         handlePressUrl,
+        originWarning: proposal.peer.verification
+            ? ORIGIN_WARNINGS[proposal.peer.verification.status]
+            : undefined,
+        verifiedOriginLabel: toPeerHostLabel(
+            proposal.peer.verification?.verifiedOrigin,
+        ),
     }
 }

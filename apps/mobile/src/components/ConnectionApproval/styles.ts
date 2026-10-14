@@ -63,6 +63,26 @@ export const useStyles = makeStyles(
                 color: theme.colors.textGray,
                 textAlign: 'center',
             },
+            // In place of the peer url: a page claiming someone else's url
+            // must not get that url as a link.
+            originWarning: {
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: theme.spacing.sm,
+                backgroundColor: theme.colors.negativeLighter,
+                borderRadius: theme.borderRadius.md,
+                padding: theme.spacing.md,
+                marginTop: theme.spacing.sm,
+            },
+            originWarningText: {
+                flex: 1,
+                color: theme.colors.negative,
+            },
+            originUnverifiedText: {
+                color: theme.colors.textGray,
+                textAlign: 'center',
+                marginTop: theme.spacing.xs,
+            },
             networksContainer: {
                 alignItems: 'center',
                 flexDirection: 'row',
