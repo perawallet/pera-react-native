@@ -40,6 +40,8 @@ import { ALGORAND_NATIVE_ASSET } from '../native-asset'
 
 const testnet: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 const ref = { chainId: 'algorand', assetId: '1' } as const
+const nativeRef = { chainId: 'algorand', assetId: '0' } as const
+const ethereumRef = { chainId: 'ethereum', assetId: '0xabc' } as const
 const foreign = {
     chainId: 'other',
     networkId: 'mainnet',
@@ -59,11 +61,11 @@ describe('algorandAssetsAdapter', () => {
         )
     })
 
-    it('passes the scope, or its network, to the asset sources', async () => {
-        await algorandAssetsAdapter.syncAssets(['1'], testnet)
-        await algorandAssetsAdapter.fetchAsset('1', testnet)
-        await algorandAssetsAdapter.fetchOnChainAsset('1', testnet)
-        await algorandAssetsAdapter.fetchAssetAuthorities('1', testnet)
+    it('passes the unwrapped id, and the scope or its network, to the asset sources', async () => {
+        await algorandAssetsAdapter.syncAssets([ref], testnet)
+        await algorandAssetsAdapter.getAssetMetadata(ref, testnet)
+        await algorandAssetsAdapter.fetchOnChainAsset(ref, testnet)
+        await algorandAssetsAdapter.fetchAssetAuthorities!(ref, testnet)
 
         expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith(['1'], testnet)
         expect(mocks.fetchAssetFromApis).toHaveBeenCalledWith('1', testnet)
@@ -71,8 +73,18 @@ describe('algorandAssetsAdapter', () => {
         expect(mocks.fetchAssetAuthorities).toHaveBeenCalledWith('1', 'testnet')
     })
 
+    it('answers the native ref from the seeded asset without a request', async () => {
+        const asset = await algorandAssetsAdapter.getAssetMetadata(
+            nativeRef,
+            testnet,
+        )
+
+        expect(asset).toBe(ALGORAND_NATIVE_ASSET)
+        expect(mocks.fetchAssetFromApis).not.toHaveBeenCalled()
+    })
+
     it('passes the scope network to search and the price sources', async () => {
-        await algorandAssetsAdapter.searchAssets(
+        await algorandAssetsAdapter.search!(
             { query: 'usdc', cursor: 'C', hasCollectible: true },
             testnet,
         )
@@ -89,12 +101,41 @@ describe('algorandAssetsAdapter', () => {
 
     it('refuses a scope that is not an Algorand network', async () => {
         await expect(
-            algorandAssetsAdapter.fetchOnChainAsset('1', foreign),
+            algorandAssetsAdapter.fetchOnChainAsset(ref, foreign),
+        ).rejects.toThrow('Not an Algorand scope')
+        await expect(
+            algorandAssetsAdapter.getAssetMetadata(nativeRef, foreign),
+        ).rejects.toThrow('Not an Algorand scope')
+        await expect(
+            algorandAssetsAdapter.search!({ query: 'x' }, foreign),
         ).rejects.toThrow('Not an Algorand scope')
         await expect(
             algorandAssetsAdapter.getPrices([ref], foreign),
         ).rejects.toThrow('Not an Algorand scope')
         expect(mocks.fetchOnChainAsset).not.toHaveBeenCalled()
+        expect(mocks.searchAssetPage).not.toHaveBeenCalled()
         expect(mocks.fetchPeraUsdPrices).not.toHaveBeenCalled()
+    })
+
+    it('refuses a ref on another chain before any request', async () => {
+        const adapter = algorandAssetsAdapter
+
+        await expect(
+            adapter.syncAssets([ref, ethereumRef], testnet),
+        ).rejects.toThrow('Not an Algorand asset')
+        await expect(
+            adapter.getAssetMetadata(ethereumRef, testnet),
+        ).rejects.toThrow('Not an Algorand asset')
+        await expect(
+            adapter.fetchOnChainAsset(ethereumRef, testnet),
+        ).rejects.toThrow('Not an Algorand asset')
+        await expect(
+            adapter.fetchAssetAuthorities!(ethereumRef, testnet),
+        ).rejects.toThrow('Not an Algorand asset')
+
+        expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
+        expect(mocks.fetchAssetFromApis).not.toHaveBeenCalled()
+        expect(mocks.fetchOnChainAsset).not.toHaveBeenCalled()
+        expect(mocks.fetchAssetAuthorities).not.toHaveBeenCalled()
     })
 })

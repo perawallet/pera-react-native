@@ -11,7 +11,10 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainKeyStore,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
@@ -56,6 +59,8 @@ export type SigningMachineDeps = {
     /** The request's chain and that chain's network, captured at actor creation. */
     scope: ChainScope
     hardwareWalletRegistry?: HardwareWalletRegistry
+    /** Signs any bytes it is handed, so only `signPlannedGroups` may call it. */
+    keyStore: Pick<ChainKeyStore, 'sign'>
     /** For hardware wallet signing. */
     encodeTransaction: EncodeTransactionFunction
 }

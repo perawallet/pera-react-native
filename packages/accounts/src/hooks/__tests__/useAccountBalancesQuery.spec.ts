@@ -25,7 +25,7 @@ import {
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
-import { testAccount } from '../../__tests__/accountFactory'
+import { buildTestAccount, testAccount } from '../../__tests__/accountFactory'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -63,17 +63,22 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
+const NATIVE_ASSETS = vi.hoisted(() => ({
+    algorand: { assetId: '0', decimals: 6 },
+    // ChainId is a closed union, so the 18-decimal chain rides on Ethereum's.
+    ethereum: { assetId: 'native', decimals: 18 },
+}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useNativeAsset: () => NATIVE_ASSET,
+    nativeAssetFor: (chainId: keyof typeof NATIVE_ASSETS) =>
+        NATIVE_ASSETS[chainId],
 }))
 
 // Helpers to build enriched holding rows as getAccountHoldingsPage returns them.
 type Row = {
     assetId: string
     amount: Decimal
-    isFrozen?: boolean
+    native?: { family: 'algorand'; isFrozen: boolean }
     asset: { assetId: string; decimals: number; name?: string } | null
     usdPrice: Decimal | null
     isFavorited: boolean
@@ -144,8 +149,8 @@ describe('useAccountBalances', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         const accountData = result.current.accountBalances.get('ADDR1')
-        expect(accountData?.algoValue).toEqual(new Decimal(1))
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
+        expect(accountData?.nativeValue).toEqual(new Decimal(1))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
     })
 
     it('returns empty data when no accounts provided', () => {
@@ -193,16 +198,24 @@ describe('useAccountBalances', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         const accountData = result.current.accountBalances.get('ADDR1')
-        expect(accountData?.algoValue).toEqual(new Decimal(1))
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
+        expect(accountData?.nativeValue).toEqual(new Decimal(1))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
     })
 
-    it('exposes the holding-level frozen flag on asset balances', async () => {
+    it('derives the holding restriction from its native data', async () => {
         mockGetAccountHoldingsPage.mockResolvedValue([
             algoRow(1_000_000, 1),
-            { ...asaRow('456', 1000, 2, 10, 'Frozen NFT'), isFrozen: true },
-            // A row with unsynced metadata must still carry the flag.
-            { ...asaRow('789', 1, null, null), isFrozen: true },
+            {
+                ...asaRow('456', 1000, 2, 10, 'Frozen NFT'),
+                native: { family: 'algorand' as const, isFrozen: true },
+            },
+            // A row with unsynced metadata must still carry the restriction.
+            {
+                ...asaRow('789', 1, null, null),
+                native: { family: 'algorand' as const, isFrozen: true },
+            },
+            // A fresh holding the next sync hasn't described yet has none.
+            asaRow('321', 1, 0, null),
         ])
 
         const { result } = renderHook(
@@ -214,9 +227,12 @@ describe('useAccountBalances', () => {
 
         const balances =
             result.current.accountBalances.get('ADDR1')?.assetBalances
-        expect(balances?.find(b => b.assetId === '456')?.isFrozen).toBe(true)
-        expect(balances?.find(b => b.assetId === '789')?.isFrozen).toBe(true)
-        expect(balances?.find(b => b.assetId === '0')?.isFrozen).toBe(false)
+        const restrictionOf = (assetId: string) =>
+            balances?.find(b => b.assetId === assetId)?.restriction
+        expect(restrictionOf('456')).toBe('transferBlocked')
+        expect(restrictionOf('789')).toBe('transferBlocked')
+        expect(restrictionOf('0')).toBeNull()
+        expect(restrictionOf('321')).toBeNull()
     })
 
     it('calculates asset balances with prices correctly', async () => {
@@ -245,7 +261,7 @@ describe('useAccountBalances', () => {
         ).toEqual(new Decimal(5))
 
         // 50 (456) + 0.5 (789) + 5 (ALGO) = 55.5 ALGO
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(55.5))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(55.5))
         // 100 (456) + 1 (789) + 10 (ALGO) = $111
         expect(accountData?.usdValue).toEqual(new Decimal(111))
     })
@@ -274,7 +290,7 @@ describe('useAccountBalances', () => {
         const filters = {
             hideZeroBalance: true,
             hideNfts: true,
-            hideOptedInNfts: false,
+            hideZeroBalanceNfts: false,
         }
 
         const { result } = renderHook(
@@ -290,7 +306,7 @@ describe('useAccountBalances', () => {
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
                 hideZeroBalance: true,
                 hideNfts: true,
-                hideOptedInNfts: false,
+                hideZeroBalanceNfts: false,
             }),
         )
     })
@@ -336,10 +352,10 @@ describe('useAccountBalances', () => {
             .get('ADDR1')
             ?.assetBalances.find(b => b.assetId === '999')
         expect(asset999?.amount).toEqual(new Decimal(100)) // decimals: 0
-        expect(asset999?.algoValue).toEqual(new Decimal(0)) // no price → 0
+        expect(asset999?.nativeValue).toEqual(new Decimal(0)) // no price → 0
     })
 
-    it('emits zero amount and zero algoValue when asset metadata is not yet loaded', async () => {
+    it('emits zero amount and zero nativeValue when asset metadata is not yet loaded', async () => {
         // A holding whose metadata hasn't synced (asset: null) must carry zeros
         // so its base-unit amount can't leak into the value-desc sort.
         mockGetAccountHoldingsPage.mockResolvedValue([
@@ -358,11 +374,11 @@ describe('useAccountBalances', () => {
             .get('ADDR1')
             ?.assetBalances.find(b => b.assetId === '456')
         expect(unloaded?.amount).toEqual(new Decimal(0))
-        expect(unloaded?.algoValue).toEqual(new Decimal(0))
+        expect(unloaded?.nativeValue).toEqual(new Decimal(0))
         expect(unloaded?.asset).toBeUndefined()
 
         // Portfolio total ignores the unscalable row — just the ALGO balance.
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
     })
 
     it('falls back to fetchAndPersistAccount when the chain-state row is missing', async () => {
@@ -399,6 +415,49 @@ describe('useAccountBalances', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(mockFetchAndPersistAccount).not.toHaveBeenCalled()
+    })
+
+    describe('a chain whose native asset has 18 decimals', () => {
+        const ETH_SCOPE: ChainScope = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        }
+        const ethAccount = buildTestAccount(
+            { kind: 'watch' },
+            { ethereum: { address: 'ETH1' } },
+            { id: 'eth' },
+        )
+
+        it('scales the native balance and prices every holding against it', async () => {
+            mockGetAccountHoldingsPage.mockResolvedValue([
+                {
+                    assetId: 'native',
+                    amount: new Decimal('1500000000000000000'),
+                    asset: { assetId: 'native', decimals: 18 },
+                    usdPrice: new Decimal(2000),
+                    isFavorited: false,
+                },
+                asaRow('tok', 3_000_000, 6, 4),
+            ])
+
+            const { result } = renderHook(
+                () => useAccountBalancesQuery([ethAccount], ETH_SCOPE),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            const data = result.current.accountBalances.get('ETH1')
+            const nativeOf = (assetId: string) =>
+                data?.assetBalances.find(b => b.assetId === assetId)
+            expect(nativeOf('native')?.amount).toEqual(new Decimal('1.5'))
+            expect(nativeOf('native')?.nativeValue).toEqual(new Decimal('1.5'))
+            expect(nativeOf('native')?.fiatValue).toEqual(new Decimal(3000))
+            // 3 units at $4 is $12, or 0.006 of the native asset at $2000.
+            expect(nativeOf('tok')?.nativeValue).toEqual(new Decimal('0.006'))
+            expect(data?.nativeValue).toEqual(new Decimal('1.506'))
+            expect(data?.usdValue).toEqual(new Decimal(3012))
+            expect(data?.fiatValue).toEqual(new Decimal(3012))
+        })
     })
 
     describe('fiatValue', () => {
@@ -446,7 +505,7 @@ describe('useAccountBalances', () => {
             expect(data?.fiatValue).toBeNull()
             expect(fiatOf(data, '456')).toEqual(new Decimal(100))
             expect(data?.usdValue).toEqual(new Decimal(100))
-            expect(data?.algoValue).toEqual(new Decimal(1))
+            expect(data?.nativeValue).toEqual(new Decimal(1))
         })
 
         it('is a Decimal for the account when the unpriced native balance is zero', async () => {

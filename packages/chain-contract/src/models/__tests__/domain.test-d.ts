@@ -17,6 +17,7 @@ import type {
     AssetOptInIntent,
     AssetRef,
     ChainTransactionData,
+    FeePreset,
     TransactionIntent,
     TransactionSummary,
     TransferIntent,
@@ -86,5 +87,11 @@ describe('TransactionIntent', () => {
 
     it('carries a transfer amount as a Decimal', () => {
         expectTypeOf<TransferIntent['amount']>().toEqualTypeOf<Decimal>()
+    })
+})
+
+describe('FeePreset', () => {
+    it('is slow, normal or fast', () => {
+        expectTypeOf<FeePreset>().toEqualTypeOf<'slow' | 'normal' | 'fast'>()
     })
 })

@@ -13,6 +13,7 @@
 import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
+import type { HoldingRestriction } from './balances'
 
 export type LedgerAccountPreviewAsset = {
     assetId: string
@@ -37,9 +38,9 @@ export type LedgerAccountPreviewAsset = {
     usdPrice: Decimal
     verificationTier: PeraAssetVerificationTier
     logo?: string
-    isAlgo: boolean
-    /** Holding-level freeze from algod — frozen assets can't be transferred. */
-    isFrozen: boolean
+    isNative: boolean
+    /** `null` when the chain places no restriction on the holding. */
+    restriction: Nullable<HoldingRestriction>
 }
 
 export type LedgerAccountDelegation =
@@ -49,14 +50,14 @@ export type LedgerAccountDelegation =
 
 export type LedgerAccountPreview = {
     address: string
-    /** ALGO balance in display units */
-    algoBalance: Decimal
+    /** Native asset balance in display units */
+    nativeBalance: Decimal
     /**
      * Total account value in the user's preferred currency; `null` when the
      * rate is unresolved (offline, not yet synced) — not 0.
      */
     totalFiatValue: Nullable<Decimal>
-    /** ALGO first, then the account's on-chain holdings in algod order */
+    /** The native asset first, then the account's holdings in the chain's order */
     assets: LedgerAccountPreviewAsset[]
     delegation: LedgerAccountDelegation
 }

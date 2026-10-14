@@ -84,7 +84,7 @@ describe('useRekeyedAccountInfoContent', () => {
             accountBalances: new Map([
                 [
                     'REKEYED_ADDR',
-                    { assetBalances: [], algoValue: new Decimal(5) },
+                    { assetBalances: [], nativeValue: new Decimal(5) },
                 ],
             ]),
             isPending: false,

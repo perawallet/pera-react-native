@@ -16,7 +16,7 @@ import type {
     ChainScope,
     PeraTransaction,
     PeraSignedTransaction,
-    PeraTransactionType,
+    SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
@@ -223,8 +223,16 @@ export type RejectReason =
     | { kind: 'user' }
     | { kind: 'softReject'; error: Error }
 
+export interface SubmissionReceipt {
+    txIds: string[]
+}
+
 export interface SourceCallbacks {
-    approve?: (result: SigningResult) => Promise<void>
+    /** `submission` is set only when the transport broadcast the group before answering. */
+    approve?: (
+        result: SigningResult,
+        submission?: SubmissionReceipt,
+    ) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
     /**
@@ -268,15 +276,6 @@ export interface SignableGroup {
     originalIndices?: number[]
 }
 
-export interface AlgorandTransactionSummary {
-    type: PeraTransactionType
-    sender: string
-    receiver?: string
-    amount?: bigint
-    assetId?: bigint
-    note?: string
-}
-
 export interface AnalysisWarning {
     type:
         | 'high-fee'
@@ -292,11 +291,12 @@ export interface AnalysisWarning {
 export interface SignableAnalysis {
     totalFees: bigint
 
-    transactionSummaries: AlgorandTransactionSummary[]
-
     warnings: AnalysisWarning[]
 
-    /** Addresses that need to provide signatures. */
+    /**
+     * The wallet's addresses that sign. A chain-neutral transaction is signed
+     * only with these keys, so this is what the user approves.
+     */
     signableAddresses: string[]
 
     riskLevel: 'low' | 'medium' | 'high'
@@ -305,7 +305,7 @@ export interface SignableAnalysis {
 /** What a group does, before any warning or risk is attached. */
 export type DecodedGroup = Pick<
     SignableAnalysis,
-    'totalFees' | 'transactionSummaries' | 'signableAddresses'
+    'totalFees' | 'signableAddresses'
 >
 
 export interface AnalysisContext {
@@ -372,6 +372,12 @@ export interface SignedTransactionData {
     signed: PeraSignedTransaction[]
 }
 
+/** Chain-neutral transactions as their chain's planner assembled them. */
+export interface SignedChainTransactionsData {
+    type: 'signed-transactions'
+    signed: SignedTransaction[]
+}
+
 export interface SignedArbitraryData {
     type: 'arbitrary-data'
     signatures: Uint8Array[]
@@ -384,6 +390,7 @@ export interface SignedAuthData {
 
 export type SignedData =
     | SignedTransactionData
+    | SignedChainTransactionsData
     | SignedArbitraryData
     | SignedAuthData
 
@@ -408,6 +415,12 @@ export interface SigningStrategy {
 
 export interface SubmittedTransportResult {
     type: 'submitted'
+    txIds: string[]
+}
+
+/** Broadcast, then the source's `approve` callback accepted the submitted ids. */
+export interface SubmittedAndAnsweredTransportResult {
+    type: 'submitted-and-answered'
     txIds: string[]
 }
 
@@ -450,6 +463,7 @@ export type SignRequestStatus =
 
 export type TransportResult =
     | SubmittedTransportResult
+    | SubmittedAndAnsweredTransportResult
     | CallbackTransportResult
     | ProposedTransportResult
     | SignaturesAddedTransportResult

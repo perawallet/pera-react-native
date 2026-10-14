@@ -53,8 +53,12 @@ const snapshot = (
         totalAppsOptedIn: 0,
     },
     holdings: [
-        { assetId: '0', amount: new Decimal(1_500_000), isFrozen: false },
-        { assetId: '10', amount: new Decimal(500), isFrozen: true },
+        { assetId: '0', amount: new Decimal(1_500_000) },
+        {
+            assetId: '10',
+            amount: new Decimal(500),
+            native: { family: 'algorand', isFrozen: true },
+        },
     ],
     observedRound: 1234,
     ...overrides,

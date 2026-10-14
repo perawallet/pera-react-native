@@ -46,6 +46,19 @@ const fixtureAdapter: DappRequestChainAdapter = {
             networksFor: chainId => (chainId === 4160 ? ['testnet'] : []),
             screenRequest: () => ({ ok: true }),
         },
+        v2: {
+            methods: ['fx_sign', 'fx_public'],
+            signingMethods: ['fx_sign'],
+            handleRequest: (method, params) => {
+                if (method === 'fx_sign') {
+                    return { kind: 'operation', type: 'sign-data', params }
+                }
+                if (method === 'fx_public') {
+                    return { kind: 'public-data', answer: () => ({}) }
+                }
+                return { kind: 'unsupported' }
+            },
+        },
     },
     validateTransactionPayload: payload =>
         Array.isArray(payload) && payload.length > 0

@@ -14,6 +14,7 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
+    type WalletConnectV2ChainSupport,
 } from '@perawallet/wallet-core-connections/dappRequest'
 import {
     Networks,
@@ -43,6 +44,12 @@ export const walletConnectSupportFor = (
     network: Network,
 ): Nullable<WalletConnectSupport> =>
     dappRequestAdapterFor(network)?.walletConnect ?? null
+
+/** `null` when no adapter is registered, or its chain serves no v2. */
+export const walletConnectV2SupportFor = (
+    network: Network,
+): Nullable<WalletConnectV2ChainSupport> =>
+    walletConnectSupportFor(network)?.v2 ?? null
 
 /** Fails closed: no adapter, or a chain that serves no v1, accepts nothing. */
 export const isV1ChainIdAcceptable = (

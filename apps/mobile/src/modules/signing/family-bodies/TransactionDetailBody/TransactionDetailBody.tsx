@@ -10,34 +10,14 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { transactionBodyRegistry } from '../registry'
-import type { FamilyTransaction } from '../types'
+import type { DetailBodyProps } from '../types'
 
-export type TransactionDetailBodyProps = {
-    transaction: FamilyTransaction
-    onRelatedTransactionPress?: (related: FamilyTransaction) => void
-}
+export type TransactionDetailBodyProps = DetailBodyProps
 
-export const TransactionDetailBody = ({
-    transaction,
-    onRelatedTransactionPress,
-}: TransactionDetailBodyProps) => {
-    const { detailBody: DetailBody } =
-        transactionBodyRegistry[transaction.family]
-    const { family } = transaction
+export const TransactionDetailBody = (props: TransactionDetailBodyProps) => {
+    const DetailBody =
+        transactionBodyRegistry[props.transaction.family]?.detailBody
 
-    const handleRelatedTransactionPress = useCallback(
-        (related: FamilyTransaction['transaction']) => {
-            onRelatedTransactionPress?.({ family, transaction: related })
-        },
-        [family, onRelatedTransactionPress],
-    )
-
-    return (
-        <DetailBody
-            transaction={transaction.transaction}
-            onRelatedTransactionPress={handleRelatedTransactionPress}
-        />
-    )
+    return DetailBody ? <DetailBody {...props} /> : null
 }

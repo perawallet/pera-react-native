@@ -57,7 +57,7 @@ export const TransactionListHeader = ({
                 )}
 
                 <TransactionIcon
-                    type='group'
+                    name='transactions/group'
                     size='lg'
                 />
                 <PWText variant='h3'>

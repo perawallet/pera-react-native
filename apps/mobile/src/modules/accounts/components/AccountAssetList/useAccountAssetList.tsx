@@ -115,7 +115,7 @@ export const useAccountAssetList = ({
         () => ({
             hideZeroBalance,
             hideNfts: !displayNfts,
-            hideOptedInNfts: !effectiveDisplayOptedInNfts,
+            hideZeroBalanceNfts: !effectiveDisplayOptedInNfts,
         }),
         [hideZeroBalance, displayNfts, effectiveDisplayOptedInNfts],
     )

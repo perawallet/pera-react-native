@@ -21,16 +21,26 @@ import {
 } from 'vitest'
 import { setupServer } from 'msw/node'
 import type { RequestHandler } from 'msw'
-import { CHAIN_CAPABILITIES } from '@perawallet/wallet-core-chain-contract'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainHoldingNative,
+} from '@perawallet/wallet-core-chain-contract'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
     accountKindId,
     accountsChainAdapters,
+    describeHolding,
     fetchDelegatedAddresses,
+    fetchHoldingAcquisitionOrder,
+    fetchHoldingBalanceHistory,
+    fetchPortfolioHistory,
     requirePublicKeyGetter,
     requireSingleKeyAccounts,
     type AccountsChainAdapter,
+    type HoldingBalanceHistoryPoint,
     type MintedAccount,
+    type PortfolioHistoryPoint,
 } from '../chain-adapter'
 import { addressOn } from '../credentials/accessors'
 import type { AccountPresentationChainAdapter } from '../presentation-adapter'
@@ -58,6 +68,29 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
     }
     /** Accounts on this chain: one that holds its own key, one that only watches. */
     signers: { signing: WalletAccount; watch: WalletAccount }
+    /** Required when the adapter declares either history operation. */
+    history?: {
+        addresses: string[]
+        assetId: string
+        period: HistoryPeriod
+        currency: string
+        /** Handlers under which each declared history operation answers with `portfolio` and `balance`. */
+        handlers: readonly RequestHandler[]
+        portfolio: readonly PortfolioHistoryPoint[]
+        balance: readonly HoldingBalanceHistoryPoint[]
+    }
+    /** Required when the adapter declares `fetchHoldingAcquisitionOrder`. */
+    acquisitionOrder?: {
+        address: string
+        handlers: readonly RequestHandler[]
+        /** Asset id to order, as the operation returns it. */
+        expected: readonly (readonly [string, number])[]
+    }
+    /** Required when the adapter declares `describeHolding`. */
+    holdingNative?: {
+        restricted: ChainHoldingNative
+        unrestricted: ChainHoldingNative
+    }
     /** Required when the adapter declares `authority`. */
     delegated?: {
         authAddress: string
@@ -377,6 +410,93 @@ export const accountsContractTests = (
 
             expect([...found].sort()).toEqual([...delegatedAddresses].sort())
             expect(CHAIN_CAPABILITIES).toContain(authority.capability)
+        })
+
+        it('serves portfolio and holding history, or none without a request on a chain with no source', async () => {
+            const adapter = makeAdapter()
+            const {
+                fetchPortfolioHistory: portfolio,
+                fetchHoldingBalanceHistory: balance,
+            } = adapter
+            if (!portfolio && !balance) {
+                // The server rejects any unhandled request, so a request fails this.
+                await expect(
+                    fetchPortfolioHistory(['ANY'], 'one-day', scope),
+                ).resolves.toEqual([])
+                await expect(
+                    fetchHoldingBalanceHistory(
+                        'ANY',
+                        'ANY',
+                        'one-day',
+                        'USD',
+                        scope,
+                    ),
+                ).resolves.toEqual([])
+                return
+            }
+
+            expect(fixtures.history).toBeDefined()
+            const history = fixtures.history!
+            server.use(...history.handlers)
+
+            if (portfolio) {
+                await expect(
+                    portfolio(history.addresses, history.period, scope),
+                ).resolves.toEqual(history.portfolio)
+            }
+            if (balance) {
+                await expect(
+                    balance(
+                        history.addresses[0]!,
+                        history.assetId,
+                        history.period,
+                        history.currency,
+                        scope,
+                    ),
+                ).resolves.toEqual(history.balance)
+            }
+        })
+
+        it('orders holdings by acquisition, or answers empty without a request', async () => {
+            const adapter = makeAdapter()
+            if (!adapter.fetchHoldingAcquisitionOrder) {
+                await expect(
+                    fetchHoldingAcquisitionOrder('ANY', scope),
+                ).resolves.toEqual(new Map())
+                return
+            }
+
+            expect(fixtures.acquisitionOrder).toBeDefined()
+            const { address, handlers, expected } = fixtures.acquisitionOrder!
+            server.use(...handlers)
+
+            await expect(
+                adapter.fetchHoldingAcquisitionOrder(address, scope),
+            ).resolves.toEqual(new Map(expected))
+        })
+
+        it('describes a holding by its native data, or places no restriction', () => {
+            const adapter = makeAdapter()
+            if (!adapter.describeHolding) {
+                expect(
+                    describeHolding(scope.chainId, {
+                        family: 'algorand',
+                        isFrozen: true,
+                    }),
+                ).toEqual({ restriction: null })
+                return
+            }
+
+            expect(fixtures.holdingNative).toBeDefined()
+            const { restricted, unrestricted } = fixtures.holdingNative!
+
+            expect(adapter.describeHolding(restricted).restriction).toBe(
+                'transferBlocked',
+            )
+            expect(adapter.describeHolding(unrestricted).restriction).toBeNull()
+            expect(describeHolding(scope.chainId, null)).toEqual({
+                restriction: null,
+            })
         })
 
         it('resolves a key-holding account to itself and a watch account to no signer', () => {

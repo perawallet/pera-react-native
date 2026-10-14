@@ -21,16 +21,16 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    isAssetFrozen,
+    getHoldingRestriction,
     isMultisigAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
+    submitAndAutoRefresh,
 } from '@perawallet/wallet-core-signing'
 import { algorandMultisigOf } from '../accounts/multisig-participants'
 import { algorandAddressOf } from '../accounts/vocabulary'
-import { submitAndAutoRefresh } from '../signing/submission/submitAndAutoRefresh'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import {
     encodeToBase64,
@@ -126,20 +126,22 @@ export const executeAlgorandSwap = async (
 
     const accountAddress = account ? algorandAddressOf(account) : undefined
 
-    const [isInFrozen, isOutFrozen] = accountAddress
+    const [inRestriction, outRestriction] = accountAddress
         ? await Promise.all([
-              isAssetFrozen({
+              getHoldingRestriction({
                   accountAddress,
                   assetId: quote.assetIn.assetId,
                   scope,
               }),
-              isAssetFrozen({
+              getHoldingRestriction({
                   accountAddress,
                   assetId: quote.assetOut.assetId,
                   scope,
               }),
           ])
-        : [false, false]
+        : [null, null]
+    const isInFrozen = inRestriction !== null
+    const isOutFrozen = outRestriction !== null
 
     if (isInFrozen || isOutFrozen) {
         return failed({
@@ -378,21 +380,16 @@ export const executeAlgorandSwap = async (
         onProgress('submitting')
         for (const signedGroup of allSignedGroups) {
             if (signedGroup.length === 0) continue
-            const ids = await submitAndAutoRefresh(
-                algorandClient,
-                encodeSignedTransactions,
-                signedGroup,
-                {
-                    flow: 'swap',
-                    // No swapId means no stable identity — a blank key would
-                    // collide unrelated swaps, and the rebuild guard skips
-                    // them anyway.
-                    intentKey: prepareResult.swapIdStr
-                        ? { kind: 'swap', swapId: prepareResult.swapIdStr }
-                        : undefined,
-                    sender: accountAddress ?? quote.swapperAddress,
-                },
-            )
+            const ids = await submitAndAutoRefresh(scope, signedGroup, {
+                flow: 'swap',
+                // No swapId means no stable identity — a blank key would
+                // collide unrelated swaps, and the rebuild guard skips
+                // them anyway.
+                intentKey: prepareResult.swapIdStr
+                    ? { kind: 'swap', swapId: prepareResult.swapIdStr }
+                    : undefined,
+                sender: accountAddress ?? quote.swapperAddress,
+            })
             txIds.push(...ids)
         }
     } catch (e) {

@@ -38,6 +38,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import {
     accountItemKey,
+    accountRecordItemKey,
     buildSyncHandlers,
     createItemKeyHasher,
     encryptItemPayload,
@@ -153,11 +154,14 @@ describe('Flow: Cloud backup → real-time manager', () => {
 
         await manager.start()
 
-        // start() runs a full sync before opening the socket.
+        // start() runs a full sync before opening the socket, writing the
+        // account as a record (test-handlers doesn't re-export its key builder).
         await waitFor(
             () =>
                 expect(
-                    getItem(accountItemKey(hashAddress(addressOf(account)))),
+                    getItem(
+                        accountRecordItemKey(hashAddress(addressOf(account))),
+                    ),
                 ).toBeDefined(),
             { timeout: 10_000 },
         )
@@ -178,6 +182,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
         const seqBeforePull =
             useBackupSyncStateStore.getState().syncState?.lastSyncedSeq ?? 0
 
+        // A legacy item from a device on an older release: still read.
         const remoteKey = accountItemKey(hashAddress(REMOTE_WATCH_ADDRESS))
         pushFromOtherDevice(
             remoteKey,

@@ -29,4 +29,20 @@ describe('PWListItem', () => {
         fireEvent.click(screen.getByText('My Accounts'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
+
+    it('lets the title wrap to a second line beside a value', () => {
+        render(
+            <PWListItem
+                icon='wallet'
+                title='Copia de seguridad en la nube'
+                value='Desactivada'
+            />,
+        )
+
+        expect(
+            screen
+                .getByText('Copia de seguridad en la nube')
+                .getAttribute('numberoflines'),
+        ).toBe('2')
+    })
 })

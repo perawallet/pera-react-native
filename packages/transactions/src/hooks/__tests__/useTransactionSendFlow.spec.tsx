@@ -38,7 +38,7 @@ const mockGetSuggestedParams = vi.fn()
 const mockBuildTransfer = vi.fn()
 const mockBuildExpress = vi.fn()
 const mockAddToAssetHolding = vi.fn()
-const mockIsAssetFrozen = vi.fn()
+const mockGetHoldingRestriction = vi.fn()
 const mockFetchAndPersistAssets = vi.fn()
 const mockInvalidateBalances = vi.fn()
 const mockUseAllAccounts = vi.fn()
@@ -69,7 +69,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ) => account.chains[scope.chainId]?.address,
     fetchOnChainAccountState: (...args: unknown[]) => mockAccountState(...args),
     addToAssetHolding: (...args: unknown[]) => mockAddToAssetHolding(...args),
-    isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
+    getHoldingRestriction: (...args: unknown[]) =>
+        mockGetHoldingRestriction(...args),
     useAccountBalancesInvalidator: () => ({
         invalidate: mockInvalidateBalances,
     }),
@@ -119,11 +120,14 @@ const accountState = (balance: bigint, minBalance: bigint) => ({
     holdings: [],
 })
 
-// Answers per asset, like the real `isAssetFrozen`, so a test asserting a
+// Answers per asset, like the real `getHoldingRestriction`, so a test asserting a
 // frozen asset fails if the guard asked about a different one.
 const freezeHoldings = (...frozenIds: string[]) =>
-    mockIsAssetFrozen.mockImplementation(({ assetId }: { assetId: string }) =>
-        Promise.resolve(frozenIds.includes(assetId)),
+    mockGetHoldingRestriction.mockImplementation(
+        ({ assetId }: { assetId: string }) =>
+            Promise.resolve(
+                frozenIds.includes(assetId) ? 'transferBlocked' : null,
+            ),
     )
 
 describe('useTransactionSendFlow', () => {
@@ -801,7 +805,7 @@ describe('useTransactionSendFlow', () => {
                 ).rejects.toBeInstanceOf(AssetFrozenError)
             })
             // Only the asset being sent is queried — not the whole portfolio.
-            expect(mockIsAssetFrozen).toHaveBeenCalledWith({
+            expect(mockGetHoldingRestriction).toHaveBeenCalledWith({
                 accountAddress: 'A',
                 assetId: '99',
                 scope: { chainId: 'algorand', networkId: expect.any(String) },

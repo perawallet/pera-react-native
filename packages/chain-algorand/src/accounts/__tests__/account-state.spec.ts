@@ -129,10 +129,18 @@ describe('fetchAlgorandAccountState', () => {
                 {
                     assetId: '0',
                     amount: new Decimal(1_500_000),
-                    isFrozen: false,
+                    native: { family: 'algorand', isFrozen: false },
                 },
-                { assetId: '10', amount: new Decimal(500), isFrozen: true },
-                { assetId: '20', amount: new Decimal(0), isFrozen: false },
+                {
+                    assetId: '10',
+                    amount: new Decimal(500),
+                    native: { family: 'algorand', isFrozen: true },
+                },
+                {
+                    assetId: '20',
+                    amount: new Decimal(0),
+                    native: { family: 'algorand', isFrozen: false },
+                },
             ],
             // The mocked response carries no round, so none is reported.
             observedRound: null,
@@ -173,7 +181,11 @@ describe('fetchAlgorandAccountState', () => {
         expect(state.chainState).not.toHaveProperty('authAddress')
         // No ASAs, but ALGO is always injected as a holding.
         expect(state.holdings).toEqual([
-            { assetId: '0', amount: new Decimal(0), isFrozen: false },
+            {
+                assetId: '0',
+                amount: new Decimal(0),
+                native: { family: 'algorand', isFrozen: false },
+            },
         ])
     })
 
@@ -199,8 +211,16 @@ describe('fetchAlgorandAccountState', () => {
         const state = await fetchAlgorandAccountState('ADDR1', 'mainnet', SMALL)
 
         expect(state.holdings).toEqual([
-            { assetId: '0', amount: new Decimal(0), isFrozen: false },
-            { assetId: '42', amount: new Decimal(0), isFrozen: false },
+            {
+                assetId: '0',
+                amount: new Decimal(0),
+                native: { family: 'algorand', isFrozen: false },
+            },
+            {
+                assetId: '42',
+                amount: new Decimal(0),
+                native: { family: 'algorand', isFrozen: false },
+            },
         ])
     })
 
@@ -240,9 +260,21 @@ describe('fetchAlgorandAccountState', () => {
         // First page sends no token; the second follows the page-1 token.
         expect(mockLookupAccountAssets.lastNextTokens).toEqual(['page2'])
         expect(state.holdings).toEqual([
-            { assetId: '0', amount: new Decimal(0), isFrozen: false },
-            { assetId: '1', amount: new Decimal(1), isFrozen: true },
-            { assetId: '2', amount: new Decimal(2), isFrozen: false },
+            {
+                assetId: '0',
+                amount: new Decimal(0),
+                native: { family: 'algorand', isFrozen: false },
+            },
+            {
+                assetId: '1',
+                amount: new Decimal(1),
+                native: { family: 'algorand', isFrozen: true },
+            },
+            {
+                assetId: '2',
+                amount: new Decimal(2),
+                native: { family: 'algorand', isFrozen: false },
+            },
         ])
     })
 
@@ -320,8 +352,16 @@ describe('fetchAlgorandAccountState', () => {
         expect(mockAccountInformation).toHaveBeenNthCalledWith(2, 'ADDR1')
         expect(mockAccountInformation.lastExclude).toBe('all')
         expect(state.holdings).toEqual([
-            { assetId: '0', amount: new Decimal(0), isFrozen: false },
-            { assetId: '7', amount: new Decimal(3), isFrozen: false },
+            {
+                assetId: '0',
+                amount: new Decimal(0),
+                native: { family: 'algorand', isFrozen: false },
+            },
+            {
+                assetId: '7',
+                amount: new Decimal(3),
+                native: { family: 'algorand', isFrozen: false },
+            },
         ])
     })
 

@@ -20,17 +20,19 @@ import {
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import {
+    readAlgorandNative,
+    toAlgorandNative,
     useTransactionDetailQuery,
     useGroupTransactionsQuery,
+    type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
+    type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
-import type { FamilyTransaction } from '@modules/signing/family-bodies/types'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<
@@ -44,18 +46,18 @@ type TransactionDetailsRouteProp = RouteProp<
 >
 
 type TransactionDetailsRenderState =
-    | { kind: 'content'; transaction: FamilyTransaction }
+    | { kind: 'content'; transaction: TransactionNative }
     | { kind: 'loading' }
     | { kind: 'offline' }
     | { kind: 'error'; titleKey: string; bodyKey: string }
 
 type UseTransactionDetailsScreenResult = {
     renderState: TransactionDetailsRenderState
-    groupTransactions: PeraDisplayableTransaction[]
+    groupTransactions: AlgorandTransactionView[]
     currentTransactionId: string
     isExternal: boolean
-    handleTransactionPress: (tx: PeraDisplayableTransaction) => void
-    handleRelatedTransactionPress: (related: FamilyTransaction) => void
+    handleTransactionPress: (tx: AlgorandTransactionView) => void
+    handleRelatedTransactionPress: (related: TransactionNative) => void
     handleRetry: () => void
 }
 
@@ -73,7 +75,11 @@ export const useTransactionDetailsScreen =
         } = route.params
 
         const detailQuery = useTransactionDetailQuery({
-            transactionId: transactionId || paramTransaction?.id || '',
+            transactionId:
+                transactionId ||
+                (paramTransaction &&
+                    readAlgorandNative(paramTransaction)?.id) ||
+                '',
             isEnabled: !paramTransaction && !!transactionId,
         })
 
@@ -94,16 +100,18 @@ export const useTransactionDetailsScreen =
                     : null,
             [historyTransaction],
         )
-        const transaction =
-            paramTransaction ?? detailQuery.data ?? localTransaction ?? null
+        const transaction = useMemo((): TransactionNative | null => {
+            if (paramTransaction) {
+                return paramTransaction
+            }
+            // Both sources here (indexer, Algorand history row) are Algorand-only.
+            const fetched = detailQuery.data ?? localTransaction
+            return fetched ? toAlgorandNative(fetched) : null
+        }, [paramTransaction, detailQuery.data, localTransaction])
 
         const renderState = useMemo((): TransactionDetailsRenderState => {
             if (transaction) {
-                // Both sources here (indexer, Algorand history row) are Algorand-only.
-                return {
-                    kind: 'content',
-                    transaction: { family: 'algorand', transaction },
-                }
+                return { kind: 'content', transaction }
             }
             // Offline wins over a stale error: a device that goes offline
             // carrying a prior error (e.g. `timeout`) must show the offline
@@ -133,9 +141,9 @@ export const useTransactionDetailsScreen =
         ])
 
         const handleTransactionPress = useCallback(
-            (tx: PeraDisplayableTransaction) => {
+            (tx: AlgorandTransactionView) => {
                 navigation.push('TransactionDetails', {
-                    transaction: tx,
+                    transaction: toAlgorandNative(tx),
                     groupId,
                 })
             },
@@ -143,10 +151,13 @@ export const useTransactionDetailsScreen =
         )
 
         const handleRelatedTransactionPress = useCallback(
-            (related: FamilyTransaction) => {
-                handleTransactionPress(related.transaction)
+            (related: TransactionNative) => {
+                navigation.push('TransactionDetails', {
+                    transaction: related,
+                    groupId,
+                })
             },
-            [handleTransactionPress],
+            [navigation, groupId],
         )
 
         const handleRetry = useCallback(() => {
@@ -162,7 +173,10 @@ export const useTransactionDetailsScreen =
         return {
             renderState,
             groupTransactions,
-            currentTransactionId: transaction?.id ?? transactionId ?? '',
+            currentTransactionId:
+                (transaction && readAlgorandNative(transaction)?.id) ??
+                transactionId ??
+                '',
             isExternal: isExternal ?? false,
             handleTransactionPress,
             handleRelatedTransactionPress,

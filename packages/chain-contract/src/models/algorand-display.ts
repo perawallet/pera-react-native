@@ -14,31 +14,6 @@
 // algosdk values assign to them; the way back is `asAlgosdkTransaction` in blockchain.
 // chain-algorand's algorand-display-parity.test-d.ts fails when a copy drifts from the SDK.
 
-export type PeraTransactionType =
-    | 'payment'
-    | 'asset-transfer'
-    | 'asset-opt-in'
-    | 'asset-opt-out'
-    | 'asset-clawback'
-    | 'asset-config'
-    | 'asset-freeze'
-    | 'key-registration'
-    | 'app-call'
-    | 'state-proof'
-    | 'heartbeat'
-    | 'unknown'
-
-export type KeyRegType = 'online' | 'offline'
-
-export type AssetTransferType =
-    | 'transfer'
-    | 'opt-in'
-    | 'opt-out'
-    | 'clawback'
-    | 'unknown'
-
-export type AssetConfigType = 'create' | 'update' | 'destroy'
-
 interface AlgorandAddress {
     readonly publicKey: Uint8Array
     equals(other: AlgorandAddress): boolean

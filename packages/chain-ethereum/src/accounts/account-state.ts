@@ -124,13 +124,12 @@ const toSnapshot = (
         .map(([assetId, balance]) => ({
             assetId,
             amount: new Decimal(balance.toString()),
-            isFrozen: false,
         }))
     return {
         nativeBalanceBaseUnits: baseUnits,
         chainState: { family: 'evm', nonce: { latest, pending } },
         holdings: [
-            { assetId: NATIVE_ASSET_ID, amount: baseUnits, isFrozen: false },
+            { assetId: NATIVE_ASSET_ID, amount: baseUnits },
             ...tokenHoldings,
         ],
         observedRound: Number(blockNumber),

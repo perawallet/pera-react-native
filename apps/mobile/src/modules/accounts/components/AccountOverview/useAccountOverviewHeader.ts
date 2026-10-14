@@ -28,7 +28,7 @@ import { useChartInteraction } from '@hooks/useChartInteraction'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewHeaderResult = {
-    portfolioAlgoValue: Decimal
+    portfolioNativeValue: Decimal
     /** `null` while the preferred-currency rate is unresolved — renders as a placeholder, not 0. */
     portfolioPreferredValue: Nullable<Decimal>
     /** False while held assets are still enriching — the total is still settling. */
@@ -53,17 +53,17 @@ export const useAccountOverviewHeader = (
     const canSign = useCanSignWith(account, scope.chainId)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
     const {
-        algoAmount,
-        portfolioAlgoValue,
+        nativeAmount,
+        portfolioNativeValue,
         portfolioUsdValue,
         isComplete,
         isPending,
     } = useAccountSummaryQuery(addressOn(account, scope), scope)
     const allAccounts = useAllAccounts()
-    // Show the "get started" empty state only for a lone account with no ALGO
+    // Show the "get started" empty state only for a lone account with no native balance
     // (a brand-new wallet). Any funded account, or any account in a multi-
     // account wallet, shows its balance (even 0) — gated on data, not value.
-    const isOnlyEmptyAccount = allAccounts.length <= 1 && algoAmount.isZero()
+    const isOnlyEmptyAccount = allAccounts.length <= 1 && nativeAmount.isZero()
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
         [usdToPreferred, portfolioUsdValue],
@@ -89,7 +89,7 @@ export const useAccountOverviewHeader = (
     )
 
     return {
-        portfolioAlgoValue,
+        portfolioNativeValue,
         portfolioPreferredValue,
         isBalanceComplete: isComplete,
         isPending,

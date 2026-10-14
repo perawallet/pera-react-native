@@ -67,7 +67,6 @@ const makeGroup = (
         originalIndices: [0],
         analysis: {
             totalFees: 0n,
-            transactionSummaries: [],
             warnings: [],
             signableAddresses: [],
             riskLevel: 'low',

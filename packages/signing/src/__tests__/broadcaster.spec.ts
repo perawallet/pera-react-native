@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import * as signing from '../index'
 import {
@@ -23,8 +24,11 @@ import {
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
     submitAndAutoRefresh,
+    submitSignedGroup,
 } from '../broadcaster'
 import { registerFakeBroadcaster } from './fakeBroadcaster'
+
+const SCOPE = scopeForLegacyNetwork('testnet')
 
 describe('broadcaster wrappers', () => {
     it('forward their arguments to the adapter registered for the chain and return its result', async () => {
@@ -33,17 +37,21 @@ describe('broadcaster wrappers', () => {
         const handler = vi.fn()
         const adapter = registerFakeBroadcaster({
             submitAndAutoRefresh: vi.fn(async () => ['TX1']),
+            submit: vi.fn(async () => ['TX2']),
             reconcileOpenSubmissions: vi.fn(async () => summary),
             deriveSubmissionAttemptFromBytes: vi.fn(() => derived),
         })
         const bytes = [new Uint8Array([1])]
 
         await expect(
-            submitAndAutoRefresh(LEGACY_CHAIN_ID, [], { flow: 'swap' }),
+            submitAndAutoRefresh(SCOPE, [], { flow: 'swap' }),
         ).resolves.toEqual(['TX1'])
-        expect(adapter.submitAndAutoRefresh).toHaveBeenCalledWith([], {
+        expect(adapter.submitAndAutoRefresh).toHaveBeenCalledWith(SCOPE, [], {
             flow: 'swap',
         })
+
+        await expect(submitSignedGroup(SCOPE, bytes)).resolves.toEqual(['TX2'])
+        expect(adapter.submit).toHaveBeenCalledWith(SCOPE, bytes)
 
         await expect(reconcileOpenSubmissions(LEGACY_CHAIN_ID)).resolves.toBe(
             summary,
@@ -68,9 +76,10 @@ describe('broadcaster wrappers', () => {
         broadcasterChainAdapters.reset()
 
         await expect(
-            Promise.resolve().then(() =>
-                submitAndAutoRefresh(LEGACY_CHAIN_ID, []),
-            ),
+            Promise.resolve().then(() => submitAndAutoRefresh(SCOPE, [])),
+        ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+        await expect(
+            Promise.resolve().then(() => submitSignedGroup(SCOPE, [])),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             Promise.resolve().then(() =>
@@ -92,6 +101,7 @@ describe('broadcaster wrappers', () => {
 describe('signing root exports kept for other packages', () => {
     it.each([
         'submitAndAutoRefresh',
+        'submitSignedGroup',
         'STALE_OPEN_ATTEMPT_MS',
         'deriveSubmissionAttemptFromBytes',
         'setSubmissionSettledHandler',

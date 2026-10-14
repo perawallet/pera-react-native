@@ -38,7 +38,7 @@ import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
-import { TransactionStatusBadge } from '@modules/transactions/components/TransactionStatusBadge'
+import { TransactionStatusBadge } from '@modules/algorand/components/TransactionStatusBadge'
 
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
@@ -361,9 +361,9 @@ registerPreview({
                 assetId: MOCK_ASSET_ID,
                 asset: mockAsset,
                 amount: new Decimal('1234.56'),
-                algoValue: new Decimal('120.0'),
+                nativeValue: new Decimal('120.0'),
                 fiatValue: new Decimal('1234.56'),
-                isFrozen: false,
+                restriction: null,
             }}
             usdPrice={new Decimal('1.00')}
             showBalance={true}
@@ -381,19 +381,19 @@ registerPreview({
     render: () => (
         <PWView>
             <TransactionIcon
-                type='payment'
+                name='transactions/payment'
                 size='sm'
             />
             <TransactionIcon
-                type='swap'
+                name='transactions/swap'
                 size='md'
             />
             <TransactionIcon
-                type='receive'
+                name='transactions/receive'
                 size='lg'
             />
             <TransactionIcon
-                type='asset-opt-in'
+                name='transactions/opt-in'
                 size='sm'
             />
         </PWView>
@@ -1135,7 +1135,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             },
             {
                 id: 'comp-transaction-summary-header',
-                label: 'TransactionSummaryHeader (needs PeraDisplayableTransaction)',
+                label: 'TransactionSummaryHeader (needs TransactionNative)',
                 launch: { kind: 'action', run: () => undefined },
             },
         ],

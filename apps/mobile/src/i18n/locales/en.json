@@ -646,6 +646,9 @@
             "accounts": "Accounts",
             "accounts_in_sync": "{{count}} accounts in sync",
             "accounts_in_sync_one": "{{count}} account in sync",
+            "update_required": "Update Pera",
+            "update_required_description": "{{count}} accounts in your backup were saved by a newer version of Pera. Update the app to restore them.",
+            "update_required_description_one": "{{count}} account in your backup was saved by a newer version of Pera. Update the app to restore it.",
             "accounts_not_backed_up": "You have {{count}} accounts not backed up",
             "accounts_not_backed_up_one": "You have {{count}} account not backed up",
             "contacts": "Contacts",
@@ -696,6 +699,7 @@
             "not_backed_up_subtitle": "On this device, not in your Cloud Backup",
             "back_up_action": "Back Up",
             "add_action": "Add",
+            "update_to_add": "Update Pera to add this account",
             "review_empty_title": "Nothing to review",
             "review_empty_body": "Every account on this device is in your Cloud Backup.",
             "back_up_success": "Account backed up",
@@ -839,8 +843,10 @@
             "error_invalid_credentials": "Incorrect backup phrase or encryption key.",
             "error_unknown": "Something went wrong. Please try again.",
             "success": "Backup restored",
-            "partial_success": "{{count}} accounts couldn’t be restored.",
-            "partial_success_one": "{{count}} account couldn’t be restored."
+            "partial_success": "{{count}} accounts couldn’t be fully restored.",
+            "partial_success_one": "{{count}} account couldn’t be fully restored.",
+            "update_to_restore": "Update Pera to restore {{count}} more accounts.",
+            "update_to_restore_one": "Update Pera to restore {{count}} more account."
         },
         "restore_scan": {
             "title": "Scan QR Code",

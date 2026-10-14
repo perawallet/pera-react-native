@@ -14,12 +14,11 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAssetAuthoritiesQuery } from '../useAssetAuthoritiesQuery'
 import { registerFakeAssetsAdapter } from '../../__tests__/fakeAssetsChain'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
+const scope: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const wrapper = ({ children }: { children: React.ReactNode }) => {
     const client = new QueryClient({
@@ -29,7 +28,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 }
 
 describe('useAssetAuthoritiesQuery', () => {
-    it('maps the adapter result and passes the active scope', async () => {
+    it('maps the adapter result and passes the ref and scope', async () => {
         const fetchAssetAuthorities = vi.fn().mockResolvedValue({
             hasFreeze: true,
             hasClawback: false,
@@ -38,28 +37,48 @@ describe('useAssetAuthoritiesQuery', () => {
         })
         registerFakeAssetsAdapter({ fetchAssetAuthorities })
 
-        const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useAssetAuthoritiesQuery('123', scope),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.hasFreeze).toBe(true)
         expect(result.current.hasClawback).toBe(false)
         expect(result.current.freezeAddress).toBe('FREEZEADDR')
         expect(result.current.clawbackAddress).toBeNull()
-        expect(fetchAssetAuthorities).toHaveBeenCalledWith('123', {
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
+        expect(fetchAssetAuthorities).toHaveBeenCalledWith(
+            { chainId: 'algorand', assetId: '123' },
+            scope,
+        )
+    })
+
+    it('reports a cleared authority when the chain declares no authorities', async () => {
+        registerFakeAssetsAdapter({ fetchAssetAuthorities: undefined })
+
+        const { result } = renderHook(
+            () => useAssetAuthoritiesQuery('123', scope),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(result.current.hasFreeze).toBe(false)
+        expect(result.current.hasClawback).toBe(false)
+        expect(result.current.freezeAddress).toBeNull()
     })
 
     it('does not query for the native asset', () => {
         const fetchAssetAuthorities = vi.fn()
         registerFakeAssetsAdapter({ fetchAssetAuthorities })
 
-        const { result } = renderHook(() => useAssetAuthoritiesQuery('0'), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useAssetAuthoritiesQuery('0', scope),
+            {
+                wrapper,
+            },
+        )
 
         expect(fetchAssetAuthorities).not.toHaveBeenCalled()
         expect(result.current.hasFreeze).toBe(false)
@@ -71,9 +90,12 @@ describe('useAssetAuthoritiesQuery', () => {
             fetchAssetAuthorities: vi.fn().mockRejectedValue(new Error('down')),
         })
 
-        const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useAssetAuthoritiesQuery('123', scope),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.hasFreeze).toBe(false)

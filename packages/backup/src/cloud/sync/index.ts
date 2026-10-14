@@ -11,7 +11,11 @@
  */
 
 export { canonicalJson, contentHash } from './canonicalize'
-export { serializeAccountItems } from './serializeAccountItems'
+export {
+    accountAddressesOf,
+    accountBackupAddresses,
+    buildAccountRecord,
+} from './serializeAccountItems'
 export { buildLocalItems } from './buildLocalItems'
 export { buildLocalContactItems } from './buildLocalContactItems'
 export { contactsFingerprint } from './contactsFingerprint'
@@ -89,4 +93,5 @@ export type {
     SettingsImportFn,
     SerializeHdResolver,
     SerializeMnemonicResolver,
+    SerializePrivateKeyResolver,
 } from './types'

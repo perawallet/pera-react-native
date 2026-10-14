@@ -664,7 +664,7 @@ describe('submitAndAutoRefresh (public)', () => {
         setOnConfirmedHandler(null)
     })
 
-    test('submits the group through the real path and confirms in the background', async () => {
+    test('submits the group through the real path and confirms in the background on the given network', async () => {
         useAccountsStore
             .getState()
             .setAccounts([standaloneAccount(PUBLIC_WALLET)])
@@ -674,6 +674,7 @@ describe('submitAndAutoRefresh (public)', () => {
         const algokit = makeAlgokit('REALTXID')
 
         const txIds = await submitAndAutoRefresh(
+            'betanet',
             algokit,
             encodeSignedTransactions,
             [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
@@ -687,7 +688,7 @@ describe('submitAndAutoRefresh (public)', () => {
         await vi.waitFor(() =>
             expect(onConfirmed).toHaveBeenCalledWith(
                 [PUBLIC_WALLET],
-                expect.anything(),
+                'betanet',
             ),
         )
     })

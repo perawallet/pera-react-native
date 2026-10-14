@@ -11,18 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import {
-    compactSignedResults,
-    useAlgorandClient,
-    useTransactionEncoder,
-} from '../../blockchain'
+import { compactSignedResults, useTransactionEncoder } from '../../blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
+import {
+    scopeForLegacyNetwork,
+    type PeraSignedTransaction,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { submitAndAutoRefresh } from '../../signing/submission/submitAndAutoRefresh'
+import {
+    submitAndAutoRefresh,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {
@@ -132,13 +131,11 @@ const requestSignatures = (
  *    submitted.
  */
 export const useFeeDelegation = (): UseFeeDelegationResult => {
-    const algokit = useAlgorandClient()
     const { network } = useNetwork()
     const { addSignRequest } = useSigningRequest()
     const {
         encodeTransaction,
         encodeTransactionRaw,
-        encodeSignedTransactions,
         decodeTransaction,
         decodeSignedTransaction,
     } = useTransactionEncoder()
@@ -244,19 +241,16 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             )
 
             await submitAndAutoRefresh(
-                algokit,
-                encodeSignedTransactions,
+                scopeForLegacyNetwork(network),
                 orderedSigned,
                 { flow: 'fee-delegation', sender: account },
             )
         },
         [
-            algokit,
             network,
             addSignRequest,
             encodeTransaction,
             encodeTransactionRaw,
-            encodeSignedTransactions,
             decodeTransaction,
             decodeSignedTransaction,
         ],

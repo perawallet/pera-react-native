@@ -9,174 +9,186 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { buildAccount } from '@perawallet/wallet-core-accounts'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
-import { accountItemKey, secretsItemKey } from '../../models'
+import { accountRecordItemKey, secretsItemKey } from '../../models'
 import { serializeAccountForBackup } from '../serializeAccountForBackup'
-import { backupChainAdapters } from '../../../chain-adapter'
-import { fakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
+
+registerAlgorandAccountsAdapter()
+registerEthereumAccountsAdapter()
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const KEY_HEX =
+    '0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20'
+const keyBytes = () =>
+    Uint8Array.from(KEY_HEX.match(/../g) ?? [], byte =>
+        Number.parseInt(byte, 16),
+    )
 
-const algo25: WalletAccount = {
-    id: '1',
-    custody: { kind: 'local', seed: null },
-    chains: { algorand: { address: 'ADDR', keyPairId: 'kp-1' } },
+const deps = {
+    chainId: 'algorand' as const,
+    updatedAt: 3,
+    hashAddress,
+}
+
+const algo25 = buildAccount({
+    id: 'algo25',
     name: 'Main',
-}
+    custody: { kind: 'local', seed: null },
+    chainId: 'algorand',
+    chains: { algorand: { address: 'ALGO', keyPairId: 'algo-key' } },
+})
+const hd = buildAccount({
+    id: 'hd',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 1 } },
+    chainId: 'algorand',
+    chains: {
+        algorand: { address: 'CHILD', keyPairId: 'hd-key' },
+        ethereum: { address: '0xchild', keyPairId: 'eth-key' },
+    },
+})
+const privateKeyAccount = buildAccount({
+    id: 'key',
+    name: 'Imported',
+    custody: { kind: 'local', seed: null },
+    chainId: 'ethereum',
+    chains: { ethereum: { address: '0xkey', keyPairId: 'eth-raw' } },
+})
+const watch = buildAccount({
+    id: 'watch',
+    custody: { kind: 'watch' },
+    chainId: 'algorand',
+    chains: { algorand: { address: 'W' } },
+})
 
-const quantum: WalletAccount = {
-    id: '4',
-    custody: { kind: 'local', seed: 'quantum' },
-    chains: { algorand: { address: 'QADDR', keyPairId: 'kp-q' } },
-    name: 'PQ',
-}
+const resolveHd = vi.fn(async () => ({
+    seedFirstDerivedAddress: 'SEED',
+    publicKeyHex: 'aabb',
+    seedHex: 'ccdd',
+    entropyHex: 'eeff',
+}))
 
 describe('serializeAccountForBackup', () => {
     beforeEach(() => {
-        backupChainAdapters.reset()
-        backupChainAdapters.register(fakeBackupAdapter())
+        registerFakeBackupAdapter()
+        registerEthereumBackupChain()
+        resolveHd.mockClear()
     })
 
-    it('resolves the algo25 mnemonic through the injected resolver and emits address + secrets', async () => {
-        const resolveMnemonic = vi.fn(async () => 'word-a word-b')
-
-        const result = await serializeAccountForBackup(algo25, {
-            chainId: 'algorand',
-            updatedAt: 5,
-            hashAddress,
-            resolveMnemonic,
+    it('files a single-key account as a record beside its recovery phrase', async () => {
+        const serialized = await serializeAccountForBackup(algo25, {
+            ...deps,
+            resolveMnemonic: async () => 'w1 w2',
         })
 
-        expect(resolveMnemonic).toHaveBeenCalledWith(algo25)
-        expect(result?.address.key).toBe(accountItemKey(hashAddress('ADDR')))
-        expect(result?.secrets?.payload).toMatchObject({
-            type: 'algo25',
-            mnemonic: 'word-a word-b',
-            address: 'ADDR',
-        })
-    })
-
-    it('backs up a quantum account through the same 25-word resolver', async () => {
-        const resolveMnemonic = vi.fn(async () => 'q1 q2')
-
-        const result = await serializeAccountForBackup(quantum, {
-            chainId: 'algorand',
-            updatedAt: 5,
-            hashAddress,
-            resolveMnemonic,
-        })
-
-        expect(resolveMnemonic).toHaveBeenCalledWith(quantum)
-        expect(result?.address.payload).toMatchObject({ type: 'quantum' })
-        expect(result?.secrets?.payload).toMatchObject({
-            type: 'quantum',
-            mnemonic: 'q1 q2',
-        })
-    })
-
-    it('skips a secret-bearing account when the mnemonic cannot be resolved', async () => {
-        const resolveMnemonic = vi.fn(async () => null)
-
-        const result = await serializeAccountForBackup(algo25, {
-            chainId: 'algorand',
-            updatedAt: 5,
-            hashAddress,
-            resolveMnemonic,
-        })
-
-        expect(result).toBeNull()
-    })
-
-    it('skips a secret-bearing account when no resolver is injected', async () => {
-        const result = await serializeAccountForBackup(algo25, {
-            chainId: 'algorand',
-            updatedAt: 5,
-            hashAddress,
-        })
-
-        expect(result).toBeNull()
-    })
-
-    it('returns address-only for a watch account (no secret reveal)', async () => {
-        const resolveMnemonic = vi.fn()
-        const watch: WalletAccount = {
-            id: '2',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: 'W' } },
-            name: 'Watcher',
-        }
-
-        const result = await serializeAccountForBackup(watch, {
-            chainId: 'algorand',
-            updatedAt: 1,
-            hashAddress,
-            resolveMnemonic: resolveMnemonic as never,
-        })
-
-        expect(resolveMnemonic).not.toHaveBeenCalled()
-        expect(result?.secrets).toBeNull()
-    })
-
-    it('serializes an HD account into an hdWallet item + a hdSeed secret extra item', async () => {
-        const resolveHd = vi.fn(async () => ({
-            seedFirstDerivedAddress: 'FIRST',
-            publicKeyHex: 'aabb',
-            seedHex: 'aa'.repeat(96),
-            entropyHex: 'bb'.repeat(32),
-        }))
-        const hd: WalletAccount = {
-            id: '3',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 1 },
-            },
-            chains: { algorand: { address: 'CHILD', keyPairId: 'kp' } },
-            name: 'Child',
-        }
-
-        const result = await serializeAccountForBackup(hd, {
-            chainId: 'algorand',
-            updatedAt: 7,
-            hashAddress,
-            resolveHd: resolveHd as never,
-        })
-
-        expect(resolveHd).toHaveBeenCalledWith(hd)
-        expect(result?.address.key).toBe(accountItemKey(hashAddress('CHILD')))
-        expect(result?.secrets).toBeNull()
-        expect(result?.extraItems?.[0].key).toBe(
-            secretsItemKey(hashAddress('FIRST')),
+        expect(serialized?.record.key).toBe(
+            accountRecordItemKey(hashAddress('ALGO')),
         )
-        expect(result?.extraItems?.[0].payload).toMatchObject({
-            type: 'hdSeed',
-            seed: 'aa'.repeat(96),
-            entropy: 'bb'.repeat(32),
-            address: 'FIRST',
+        expect(serialized?.secrets).toEqual({
+            key: secretsItemKey(hashAddress('ALGO')),
+            type: 'ACCOUNT',
+            payload: { type: 'algo25', mnemonic: 'w1 w2', address: 'ALGO' },
         })
     })
 
-    it('returns null for an HD account when no resolveHd is provided', async () => {
-        const hd: WalletAccount = {
-            id: '3',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            chains: { algorand: { address: 'CHILD', keyPairId: 'kp' } },
-        }
+    it('skips a single-key account whose phrase it cannot read', async () => {
+        expect(
+            await serializeAccountForBackup(algo25, {
+                ...deps,
+                resolveMnemonic: async () => null,
+            }),
+        ).toBeNull()
+    })
 
-        const result = await serializeAccountForBackup(hd, {
-            chainId: 'algorand',
-            updatedAt: 1,
-            hashAddress,
+    it('files an HD account under its seed position, with the seed beside it', async () => {
+        const serialized = await serializeAccountForBackup(hd, {
+            ...deps,
+            resolveHd,
         })
 
-        expect(result).toBeNull()
+        expect(serialized?.record.key).toBe(
+            accountRecordItemKey(hashAddress('SEED/0/1')),
+        )
+        expect(serialized?.secrets).toBeNull()
+        expect(serialized?.extraItems).toEqual([
+            {
+                key: secretsItemKey(hashAddress('SEED')),
+                type: 'ACCOUNT',
+                payload: {
+                    type: 'hdSeed',
+                    seed: 'ccdd',
+                    entropy: 'eeff',
+                    address: 'SEED',
+                },
+            },
+        ])
+    })
+
+    it('reads no seed for an account on no chain this build backs up', async () => {
+        getProvider().chains.reset()
+
+        expect(
+            await serializeAccountForBackup(hd, { ...deps, resolveHd }),
+        ).toBeNull()
+        expect(resolveHd).not.toHaveBeenCalled()
+    })
+
+    it('files a raw private key as a secret, hex, and zeroes the bytes', async () => {
+        const bytes = keyBytes()
+        const serialized = await serializeAccountForBackup(privateKeyAccount, {
+            ...deps,
+            resolvePrivateKey: async () => bytes,
+        })
+
+        expect(serialized?.record.key).toBe(
+            accountRecordItemKey(hashAddress('0xkey')),
+        )
+        expect(serialized?.secrets?.payload).toEqual({
+            type: 'standaloneKey',
+            chain: 'ethereum',
+            address: '0xkey',
+            privateKey: KEY_HEX,
+        })
+        expect(bytes.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('reads no key for a private-key account on no chain this build backs up', async () => {
+        getProvider().chains.reset()
+        const resolvePrivateKey = vi.fn(async () => keyBytes())
+
+        expect(
+            await serializeAccountForBackup(privateKeyAccount, {
+                ...deps,
+                resolvePrivateKey,
+            }),
+        ).toBeNull()
+        expect(resolvePrivateKey).not.toHaveBeenCalled()
+    })
+
+    it('skips a private-key account whose key it cannot read', async () => {
+        expect(
+            await serializeAccountForBackup(privateKeyAccount, {
+                ...deps,
+                resolvePrivateKey: async () => null,
+            }),
+        ).toBeNull()
+    })
+
+    it('files a watch account as a record with no secret', async () => {
+        const serialized = await serializeAccountForBackup(watch, deps)
+
+        expect(serialized?.secrets).toBeNull()
+        expect(serialized?.record.key).toBe(
+            accountRecordItemKey(hashAddress('W')),
+        )
     })
 })

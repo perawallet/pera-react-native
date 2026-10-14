@@ -23,8 +23,9 @@ import { generateAccount } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { concatBytes } from '@perawallet/wallet-core-shared'
-import { AlgodError } from '../../blockchain'
+import { AlgodError, decodeSignedTransaction } from '../../blockchain'
 import {
     mockAlgodPendingTransaction,
     mockAlgodStatus,
@@ -89,6 +90,36 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
         await algorandBroadcasterAdapter.submit(scope, opaque)
 
         expect(posted).toEqual(concatBytes(...opaque))
+    })
+
+    test("submitAndAutoRefresh posts to the scope's node while another network is selected", async () => {
+        let postedTo: string | undefined
+        server.use(
+            http.post('*/v2/transactions', ({ request }) => {
+                postedTo = new URL(request.url).origin
+                return HttpResponse.json({ txId: txIds[0] })
+            }),
+            mockAlgodStatus(),
+            mockAlgodStatusAfterBlock(),
+            mockAlgodPendingTransaction({
+                txId: txIds[0],
+                status: 200,
+                response: { 'confirmed-round': 5 },
+            }),
+        )
+
+        const ids = await algorandBroadcasterAdapter.submitAndAutoRefresh(
+            scopeForLegacyNetwork('mainnet'),
+            signed.map(decodeSignedTransaction),
+        )
+
+        expect(ids).toEqual([txIds[0]])
+        expect(postedTo).toBe(
+            new URL(getNetworkConfig('mainnet').algodUrl).origin,
+        )
+        expect(postedTo).not.toBe(
+            new URL(getNetworkConfig('testnet').algodUrl).origin,
+        )
     })
 
     test('rejects the wait when the node drops the transaction from its pool', async () => {

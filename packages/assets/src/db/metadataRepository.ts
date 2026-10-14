@@ -11,7 +11,7 @@
  */
 
 import { eq, and, inArray, sql } from 'drizzle-orm'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
     type ChainScope,
@@ -84,6 +84,55 @@ export function peraAssetFromColumns(row: {
         metadata: row.metadata ?? undefined,
         peraMetadata,
     }
+}
+
+/**
+ * The `assets_node` and `assets_pera` columns a joined holdings read needs to
+ * build a {@link PeraAsset}; the caller adds `assetId`. A function so the
+ * schemas aren't dereferenced at import, which breaks consumers that mock this
+ * package.
+ */
+export const peraAssetJoinColumns = () => ({
+    decimals: AssetsNodeSchema.decimals,
+    creatorAddress: AssetsNodeSchema.creatorAddress,
+    // Raw TEXT: the caller wraps it in a Decimal only for rows it renders.
+    totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
+    name: AssetsNodeSchema.name,
+    unitName: AssetsNodeSchema.unitName,
+    url: AssetsNodeSchema.url,
+    metadata: AssetsNodeSchema.metadata,
+    peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
+})
+
+export type PeraAssetJoinRow = {
+    assetId: string
+    decimals: Nullable<number>
+    creatorAddress: Nullable<string>
+    totalSupply: Nullable<string>
+    name: Nullable<string>
+    unitName: Nullable<string>
+    url: Nullable<string>
+    metadata: Nullable<string>
+    peraMetadataJson: Nullable<string>
+}
+
+/** Null until the asset's decimals and total supply have synced. */
+export function peraAssetFromJoinRow(
+    row: PeraAssetJoinRow,
+): Nullable<PeraAsset> {
+    if (row.decimals === null || row.totalSupply === null) return null
+
+    return peraAssetFromColumns({
+        assetId: row.assetId,
+        decimals: row.decimals,
+        creatorAddress: row.creatorAddress ?? '',
+        totalSupply: new Decimal(row.totalSupply),
+        name: row.name,
+        unitName: row.unitName,
+        url: row.url,
+        metadata: row.metadata,
+        peraMetadataJson: row.peraMetadataJson,
+    })
 }
 
 type UpsertNodeAssetsParams = {

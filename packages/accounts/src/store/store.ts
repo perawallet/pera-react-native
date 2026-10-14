@@ -59,6 +59,7 @@ import {
     seedMintableScheme,
 } from '../credentials'
 import {
+    AddressMismatchError,
     DuplicateAccountError,
     RawKeyImportUnsupportedError,
     WalletCannotDeriveError,
@@ -430,6 +431,16 @@ const removeUnreferencedKey = async (
     }
 }
 
+const assertExpectedAddress = (
+    chainId: ChainId,
+    derived: string,
+    expected: string | undefined,
+): void => {
+    if (expected !== undefined && !isSameAddress(chainId, derived, expected)) {
+        throw new AddressMismatchError(expected, derived)
+    }
+}
+
 // Structural over the union of keys (all scalar) so a future device field
 // can't silently skip a re-bind by being left out of a hand-listed check.
 const sameDevice = (
@@ -539,6 +550,7 @@ export const useAccountsStore: UseBoundStore<
                 chainId: ChainId,
                 privateKey: Uint8Array,
                 name?: string,
+                expectedAddress?: string,
             ) => {
                 try {
                     const scheme = canImportRawKey(chainId)
@@ -557,6 +569,7 @@ export const useAccountsStore: UseBoundStore<
                             networkId,
                         })
                     try {
+                        assertExpectedAddress(chainId, address, expectedAddress)
                         const holder = findAddressHolder(
                             get().accounts,
                             { chainId, networkId },
@@ -580,7 +593,13 @@ export const useAccountsStore: UseBoundStore<
                     zeroBytes(privateKey)
                 }
             },
-            addChainAccount: async (walletId, chainId, index, name) => {
+            addChainAccount: async (
+                walletId,
+                chainId,
+                index,
+                name,
+                expectedAddress,
+            ) => {
                 const scheme = seedMintableScheme(chainId)
                 if (
                     scheme === undefined ||
@@ -601,6 +620,8 @@ export const useAccountsStore: UseBoundStore<
                         index.keyIndex,
                         { scheme, networkId },
                     )
+
+                assertExpectedAddress(chainId, address, expectedAddress)
 
                 // Read after the derivation: the store can change across the await.
                 const { accounts } = get()

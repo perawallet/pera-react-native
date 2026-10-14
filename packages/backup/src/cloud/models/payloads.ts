@@ -22,6 +22,12 @@ export const BackupAccountType = {
     hardware: 'hardware',
     watch: 'watch',
     multisig: 'multisig',
+    /** An account record's entry on a chain with no backup adapter of its
+     *  own, derived from the record's backed-up HD seed. */
+    hdChain: 'hdChain',
+    /** An account record's entry for a key stored as a raw private key; the
+     *  key rides as a `standaloneKey` secret. Also that secret's type. */
+    standaloneKey: 'standaloneKey',
 } as const
 export type BackupAccountType =
     (typeof BackupAccountType)[keyof typeof BackupAccountType]
@@ -125,6 +131,24 @@ export const chainHdAddressPayloadSchema = z.object({
     updatedAt,
 })
 
+/** Never an item of its own: only an entry of an account record. */
+export const hdChainAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.hdChain),
+    address,
+    seedFirstDerivedAddress: address,
+    account: nonNegativeInt,
+    keyIndex: nonNegativeInt,
+    customName,
+    updatedAt,
+})
+/** Never an item of its own: only an entry of an account record. */
+export const standaloneKeyAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.standaloneKey),
+    address,
+    customName,
+    updatedAt,
+})
+
 export const addressBackupPayloadSchema = z.union([
     z.discriminatedUnion('type', [
         hdSeedAddressPayloadSchema,
@@ -157,12 +181,60 @@ export type AddressBackupPayload =
     | MultisigAddressPayload
     | ChainAddressPayload
 
+export type HdChainAddressPayload = z.infer<typeof hdChainAddressPayloadSchema>
+export type StandaloneKeyAddressPayload = z.infer<
+    typeof standaloneKeyAddressPayloadSchema
+>
+
+/** One chain of one account, as the importer takes it: a legacy item, or one
+ *  entry of an account record. */
+export type AccountEntryPayload =
+    | AddressBackupPayload
+    | HdChainAddressPayload
+    | StandaloneKeyAddressPayload
+
+export const accountEntryPayloadSchema = z.union([
+    addressBackupPayloadSchema,
+    hdChainAddressPayloadSchema,
+    standaloneKeyAddressPayloadSchema,
+])
+
+export type HdBackupPosition = {
+    seedReference: string
+    account: number
+    keyIndex: number
+}
+
+/** Where an HD entry sits in its seed; null for every other kind. */
+export const hdPositionOf = (
+    payload: AccountEntryPayload,
+): HdBackupPosition | null =>
+    'seedFirstDerivedAddress' in payload &&
+    payload.seedFirstDerivedAddress !== undefined &&
+    'account' in payload &&
+    'keyIndex' in payload
+        ? {
+              seedReference: payload.seedFirstDerivedAddress,
+              account: payload.account,
+              keyIndex: payload.keyIndex,
+          }
+        : null
+
+/** The account an entry belongs to: an HD account spans one entry per chain at
+ *  its seed position, any other account is its one address. */
+export const accountIdentityOf = (payload: AccountEntryPayload): string => {
+    const position = hdPositionOf(payload)
+    return position === null
+        ? payload.address
+        : `${position.seedReference}/${position.account}/${position.keyIndex}`
+}
+
 export const isChainAddressPayload = (
-    payload: AddressBackupPayload,
+    payload: AccountEntryPayload,
 ): payload is ChainAddressPayload => isChainBackupKind(payload.type)
 
 export const isChainHdAddressPayload = (
-    payload: AddressBackupPayload,
+    payload: AccountEntryPayload,
 ): payload is ChainHdAddressPayload =>
     isChainAddressPayload(payload) && 'seedFirstDerivedAddress' in payload
 
@@ -183,8 +255,19 @@ export const chainMnemonicSecretsPayloadSchema = z.object({
     address,
 })
 
+/** A raw private key. Carries its chain, since no other item says which
+ *  chain's key it is. */
+export const standaloneKeySecretsPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.standaloneKey),
+    chain: z.string().min(1),
+    address,
+    /** Lowercase hex of the raw key; the chain decides the length. */
+    privateKey: z.string().regex(/^(?:[0-9a-f]{2})+$/),
+})
+
 export const secretsBackupPayloadSchema = z.union([
     hdSeedSecretsPayloadSchema,
+    standaloneKeySecretsPayloadSchema,
     chainMnemonicSecretsPayloadSchema,
 ])
 
@@ -192,13 +275,45 @@ export type HdSeedSecretsPayload = z.infer<typeof hdSeedSecretsPayloadSchema>
 export type ChainMnemonicSecretsPayload = z.infer<
     typeof chainMnemonicSecretsPayloadSchema
 >
+export type StandaloneKeySecretsPayload = z.infer<
+    typeof standaloneKeySecretsPayloadSchema
+>
 export type SecretsBackupPayload =
     | HdSeedSecretsPayload
+    | StandaloneKeySecretsPayload
     | ChainMnemonicSecretsPayload
 
 export const isHdSeedSecretsPayload = (
     payload: SecretsBackupPayload,
 ): payload is HdSeedSecretsPayload => payload.type === BackupAccountType.hdSeed
+
+/** The record shape this build reads and writes. A record of a higher version
+ *  is never imported and never overwritten; a newer client owns it. */
+export const ACCOUNT_RECORD_FORMAT_VERSION = 2
+
+/** Loose, so what a newer client adds to an entry survives a read and is
+ *  written back by `mergeAccountRecord`. `chain` and `type` are plain strings
+ *  for the same reason; an entry this build can't read is kept, not imported. */
+export const accountRecordChainSchema = z.looseObject({
+    chain: z.string().min(1),
+    type: z.string().min(1),
+    address,
+})
+export type AccountRecordChain = z.infer<typeof accountRecordChainSchema>
+
+/**
+ * One account, every chain of it. Each entry is that chain's address item
+ * without the name and timestamp, which the record holds once: a chain with a
+ * backup adapter writes its own kind, any other chain a kind the format owns.
+ * Entries are in chain-id order. Key material stays in `secrets/` items.
+ */
+export const accountRecordPayloadSchema = z.looseObject({
+    formatVersion: nonNegativeInt,
+    customName,
+    updatedAt,
+    chains: z.array(accountRecordChainSchema).min(1),
+})
+export type AccountRecordPayload = z.infer<typeof accountRecordPayloadSchema>
 
 /** No discriminant: the `contacts/` prefix and the CONTACT item type already
  *  identify the shape. `image` is a device-local `file://` URI and `nfd` is

@@ -359,7 +359,7 @@
         "copy_address": "Copiar dirección",
         "shared_account_detail": "Detalle de cuenta compartida ({{count}})",
         "show_address": "Ver dirección",
-        "view_passphrase_hd": "Ver la passphrase de recuperación de la wallet raíz",
+        "view_passphrase_hd": "Ver la passphrase de recuperación",
         "view_passphrase_algo25": "Ver la passphrase de recuperación",
         "undo_rekey": "Deshacer rekey",
         "rekeyed_to": "Con rekey a",
@@ -574,7 +574,7 @@
             "storage_note": "Las copias de seguridad se guardan totalmente cifradas en los servidores de copias de seguridad de Pera. Algunos datos no sensibles también se guardan en tu cuenta de iCloud/Google Drive como medida de seguridad adicional."
         },
         "setup": {
-            "title": "Configurar una nueva copia de seguridad en la nube",
+            "title": "Configurar una nueva copia de seguridad",
             "description": "Guarda tu clave de 12 palabras y tus claves de cifrado en un lugar seguro para poder recuperar tu copia de seguridad en el futuro.",
             "passphrase_label": "Passphrase",
             "encryption_key_label": "Clave de cifrado",
@@ -646,6 +646,9 @@
             "accounts": "Cuentas",
             "accounts_in_sync": "{{count}} cuentas sincronizadas",
             "accounts_in_sync_one": "{{count}} cuenta sincronizada",
+            "update_required": "Actualiza Pera",
+            "update_required_description": "{{count}} cuentas de tu copia de seguridad se guardaron con una versión más reciente de Pera. Actualiza la app para restaurarlas.",
+            "update_required_description_one": "{{count}} cuenta de tu copia de seguridad se guardó con una versión más reciente de Pera. Actualiza la app para restaurarla.",
             "accounts_not_backed_up": "Tienes {{count}} cuentas sin copia de seguridad",
             "accounts_not_backed_up_one": "Tienes {{count}} cuenta sin copia de seguridad",
             "contacts": "Contactos",
@@ -662,7 +665,7 @@
             "credential_address": "Dirección de credenciales",
             "sync_devices": "Sincronizar con otros dispositivos",
             "sync_devices_description": "Accede a tus datos en todos tus dispositivos",
-            "turn_off": "Desactivar la copia de seguridad en la nube",
+            "turn_off": "Desactivar la copia de seguridad",
             "turn_off_description": "Dejar de sincronizar datos en la nube"
         },
         "sync_devices": {
@@ -696,6 +699,7 @@
             "not_backed_up_subtitle": "En este dispositivo, no en tu Cloud Backup",
             "back_up_action": "Respaldar",
             "add_action": "Añadir",
+            "update_to_add": "Actualiza Pera para añadir esta cuenta",
             "review_empty_title": "Nada por revisar",
             "review_empty_body": "Todas las cuentas de este dispositivo están en tu Cloud Backup.",
             "back_up_success": "Cuenta respaldada",
@@ -801,7 +805,7 @@
             "confirm_checkbox_label": "Entiendo que mi copia de seguridad se eliminará del servidor de forma permanente y que esta acción no se puede deshacer."
         },
         "restore": {
-            "sheet_title": "Restaurar/recuperar una copia de seguridad",
+            "sheet_title": "Restaurar una copia de seguridad",
             "sheet_description": "Restaura tu copia de seguridad escaneando un código QR o introduciendo tus credenciales manualmente.",
             "sheet_description_with_import": "Restaura tu copia de seguridad escaneando un código QR, importando tu clave de cifrado desde donde la guardaste o introduciendo tus credenciales manualmente.",
             "sheet_scan": "Escanear código QR",
@@ -839,8 +843,10 @@
             "error_invalid_credentials": "La frase de copia de seguridad o la clave de cifrado son incorrectas.",
             "error_unknown": "Algo ha ido mal. Vuelve a intentarlo.",
             "success": "Copia de seguridad restaurada",
-            "partial_success": "No se pudieron restaurar {{count}} cuentas.",
-            "partial_success_one": "No se pudo restaurar {{count}} cuenta."
+            "partial_success": "No se pudieron restaurar por completo {{count}} cuentas.",
+            "partial_success_one": "No se pudo restaurar por completo {{count}} cuenta.",
+            "update_to_restore": "Actualiza Pera para restaurar {{count}} cuentas más.",
+            "update_to_restore_one": "Actualiza Pera para restaurar {{count}} cuenta más."
         },
         "restore_scan": {
             "title": "Escanear código QR",

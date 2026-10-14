@@ -36,6 +36,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import {
     accountItemKey,
+    accountRecordItemKey,
     buildSyncHandlers,
     contactItemKey,
     createItemKeyHasher,
@@ -125,6 +126,11 @@ const setupSyncedBackup = async ({
         backupId,
         encryptionKey,
         accountKey: (address: string) => accountItemKey(hashAddress(address)),
+        // What this client writes: one record per account, keyed by its
+        // identity (`seedFirst/account/keyIndex` for HD, else its address).
+        // test-handlers doesn't re-export the record key builder.
+        recordKey: (identity: string) =>
+            accountRecordItemKey(hashAddress(identity)),
         secretsKey: (address: string) => secretsItemKey(hashAddress(address)),
         contactKey: (address: string) => contactItemKey(hashAddress(address)),
     }
@@ -152,12 +158,12 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             getItem,
             backupId,
             encryptionKey,
-            accountKey,
+            recordKey,
             secretsKey,
         } = await setupSyncedBackup()
         await manager.syncNow()
 
-        const addressKey = accountKey(addressOf(account))
+        const addressKey = recordKey(addressOf(account))
         const secretKey = secretsKey(addressOf(account))
         expect(getItem(addressKey)).toBeDefined()
 
@@ -198,7 +204,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
         expect(new Set(seenDeviceIds())).toEqual(new Set(['registered-device']))
     })
 
-    it('pushes HD accounts: one hdWallet item per account + a single hdSeed secret', async () => {
+    it('pushes HD accounts: one record per account + a single hdSeed secret', async () => {
         const { first, second } = await seedHDWalletAccounts()
 
         const {
@@ -206,13 +212,14 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             getItem,
             backupId,
             encryptionKey,
-            accountKey,
+            recordKey,
             secretsKey,
         } = await setupSyncedBackup({ withHdResolver: true })
         await manager.syncNow()
 
-        expect(getItem(accountKey(addressOf(first)))).toBeDefined()
-        expect(getItem(accountKey(addressOf(second)))).toBeDefined()
+        const firstKey = recordKey(`${addressOf(first)}/0/0`)
+        expect(getItem(firstKey)).toBeDefined()
+        expect(getItem(recordKey(`${addressOf(first)}/0/1`))).toBeDefined()
         expect(getItem(secretsKey(addressOf(second)))).toBeUndefined()
 
         const seedItem = getItem(secretsKey(addressOf(first)))
@@ -226,24 +233,34 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             type: BackupAccountType.hdSeed,
         })
 
-        const addrItem = getItem(accountKey(addressOf(first)))!
-        const addrPlain = decryptItemPayload(addrItem.payload, {
+        const recordItem = getItem(firstKey)!
+        const recordPlain = decryptItemPayload(recordItem.payload, {
             encryptionKey,
             backupId,
-            key: accountKey(addressOf(first)),
+            key: firstKey,
         })
-        expect(JSON.parse(addrPlain)).toMatchObject({
-            type: 'hdWallet',
-            seedFirstDerivedAddress: addressOf(first),
+        expect(JSON.parse(recordPlain)).toMatchObject({
+            formatVersion: 2,
+            chains: [
+                {
+                    chain: 'algorand',
+                    type: 'hdWallet',
+                    address: addressOf(first),
+                    seedFirstDerivedAddress: addressOf(first),
+                    account: 0,
+                    keyIndex: 0,
+                },
+            ],
         })
     })
+
     it('deletes the account from the server when the user chooses Delete', async () => {
         const account = await seedAlgo25Account()
-        const { manager, getItem, accountKey, secretsKey } =
+        const { manager, getItem, recordKey, secretsKey } =
             await setupSyncedBackup()
 
         await manager.syncNow()
-        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
+        expect(getItem(recordKey(addressOf(account)))).toBeDefined()
 
         expect(await manager.deleteAccountFromBackup(addressOf(account))).toBe(
             'settled',
@@ -251,13 +268,13 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
         useAccountsStore.getState().setAccounts([])
         await manager.syncNow()
 
-        expect(getItem(accountKey(addressOf(account)))).toBeUndefined()
+        expect(getItem(recordKey(addressOf(account)))).toBeUndefined()
         expect(getItem(secretsKey(addressOf(account)))).toBeUndefined()
     })
 
     it('leaves the server copy alone when the user chooses Keep it', async () => {
         const account = await seedAlgo25Account()
-        const { manager, getItem, accountKey, secretsKey } =
+        const { manager, getItem, recordKey, secretsKey } =
             await setupSyncedBackup()
 
         await manager.syncNow()
@@ -265,27 +282,27 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
         useAccountsStore.getState().setAccounts([])
         await manager.syncNow()
 
-        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
+        expect(getItem(recordKey(addressOf(account)))).toBeDefined()
         expect(getItem(secretsKey(addressOf(account)))).toBeDefined()
     })
     it('keeps the server copy when an account leaves the device without a choice', async () => {
         const account = await seedAlgo25Account()
-        const { manager, getItem, accountKey, secretsKey } =
+        const { manager, getItem, recordKey, secretsKey } =
             await setupSyncedBackup()
 
         await manager.syncNow()
-        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
+        expect(getItem(recordKey(addressOf(account)))).toBeDefined()
 
         // No review action and no removal flow: the shape of a device wipe.
         useAccountsStore.getState().setAccounts([])
         await manager.syncNow()
 
-        expect(getItem(accountKey(addressOf(account)))).toBeDefined()
+        expect(getItem(recordKey(addressOf(account)))).toBeDefined()
         expect(getItem(secretsKey(addressOf(account)))).toBeDefined()
     })
     it('keeps the shared HD seed until its last account leaves the backup', async () => {
         const { first, second } = await seedHDWalletAccounts()
-        const { manager, getItem, accountKey, secretsKey } =
+        const { manager, getItem, recordKey, secretsKey } =
             await setupSyncedBackup({
                 withHdResolver: true,
             })
@@ -297,15 +314,15 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             'settled',
         )
 
-        expect(getItem(accountKey(addressOf(first)))).toBeUndefined()
-        expect(getItem(accountKey(addressOf(second)))).toBeDefined()
+        expect(getItem(recordKey(`${addressOf(first)}/0/0`))).toBeUndefined()
+        expect(getItem(recordKey(`${addressOf(first)}/0/1`))).toBeDefined()
         expect(getItem(secretsKey(addressOf(first)))).toBeDefined()
 
         expect(await manager.deleteAccountFromBackup(addressOf(second))).toBe(
             'settled',
         )
 
-        expect(getItem(accountKey(addressOf(second)))).toBeUndefined()
+        expect(getItem(recordKey(`${addressOf(first)}/0/1`))).toBeUndefined()
         expect(getItem(secretsKey(addressOf(first)))).toBeUndefined()
     })
 })

@@ -129,6 +129,20 @@ export class DuplicateAccountError extends AccountError {
 }
 
 /**
+ * The address a key or derivation path produced isn't the one the caller
+ * holds for it, so the source (e.g. a backup) is corrupt or mismatched.
+ */
+export class AddressMismatchError extends AccountError {
+    constructor(expected: string, derived: string) {
+        super(
+            `Derived address ${derived} does not match expected ${expected}`,
+            undefined,
+            { params: { expected, derived } },
+        )
+    }
+}
+
+/**
  * Why a BIP44 path failed validation.
  *
  * - `'malformed'`: the path string isn't a well-formed BIP44 path for the chain.

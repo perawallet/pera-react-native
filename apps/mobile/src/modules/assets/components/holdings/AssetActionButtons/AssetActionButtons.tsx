@@ -29,6 +29,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useSelectedAccount,
     useCanSignWith,
+    HoldingRestrictions,
     type AssetWithAccountBalance,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
@@ -58,7 +59,8 @@ export const AssetActionButtons = ({
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
-    const isFrozen = assetHolding?.isFrozen ?? false
+    const isFrozen =
+        assetHolding?.restriction === HoldingRestrictions.transferBlocked
     const nativeAsset = useNativeAsset()
     const { canSwap, canBuy } = useAssetActionButtons(account)
 

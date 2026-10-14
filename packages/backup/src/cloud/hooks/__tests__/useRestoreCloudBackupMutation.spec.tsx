@@ -75,7 +75,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
-vi.mock('@perawallet/wallet-core-device', () => ({
+vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
+    ...(await importOriginal<object>()),
     useDeviceID: () => deviceIdMock.value,
 }))
 

@@ -16,6 +16,7 @@ import { AppError, logger, type Optional } from '@perawallet/wallet-core-shared'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { kmsCore } from '@perawallet/wallet-core-kms'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useAuthDataSigner } from './useAuthDataSigner'
@@ -278,6 +279,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                         txn,
                     ),
                 hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
+                keyStore: kmsCore,
             }
         },
         [

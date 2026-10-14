@@ -15,6 +15,7 @@ import { isRestrictedIn } from '@perawallet/wallet-core-chain-contract'
 import { algorandCapabilityRestrictions } from '../capability-defaults'
 
 const PERA_BACKED = [
+    'pricing',
     'priceHistory',
     'balanceHistory',
     'assetSearch',

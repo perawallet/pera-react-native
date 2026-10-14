@@ -238,7 +238,6 @@ describe('useSelectDestinationScreen', () => {
                     {
                         assetId: ASA_ID,
                         amount: new Decimal(100),
-                        isFrozen: false,
                     },
                 ],
             },

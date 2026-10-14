@@ -12,6 +12,7 @@
 
 import { describe, expect, it, test } from 'vitest'
 import {
+    parseAccountRecordPayload,
     parseAddressPayload,
     parseContactPayload,
     parsePasskeyPayload,
@@ -20,6 +21,109 @@ import {
     BackupPayloadParseError,
 } from '../payloadParsers'
 import { isChainAddressPayload, isChainHdAddressPayload } from '../../models'
+
+describe('chain-tagged payloads', () => {
+    const standaloneKeySecrets = {
+        type: 'standaloneKey',
+        chain: 'ethereum',
+        address: '0xabc',
+        privateKey: 'ab01',
+    }
+
+    test.each(['hdChain', 'standaloneKey'])(
+        'rejects a %s address item, which only exists inside a record',
+        type => {
+            expect(() =>
+                parseAddressPayload(
+                    JSON.stringify({
+                        type,
+                        chain: 'ethereum',
+                        address: '0xabc',
+                    }),
+                ),
+            ).toThrow(BackupPayloadParseError)
+        },
+    )
+
+    test('parses a standaloneKey secrets payload', () => {
+        expect(
+            parseSecretsPayload(JSON.stringify(standaloneKeySecrets)),
+        ).toEqual(standaloneKeySecrets)
+    })
+
+    // An unknown chain still parses; whether this build restores it is decided
+    // where the chain registry is.
+    test('rejects secrets with no chain', () => {
+        expect(() =>
+            parseSecretsPayload(
+                JSON.stringify({ ...standaloneKeySecrets, chain: undefined }),
+            ),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    test.each(['0xab', 'AB01', 'abc', ''])(
+        'rejects a non-hex or odd-length private key %j',
+        privateKey => {
+            expect(() =>
+                parseSecretsPayload(
+                    JSON.stringify({ ...standaloneKeySecrets, privateKey }),
+                ),
+            ).toThrow(BackupPayloadParseError)
+        },
+    )
+
+    test('leaves a legacy watch payload free of a chain', () => {
+        const parsed = parseAddressPayload(
+            JSON.stringify({ type: 'watch', address: 'W', customName: null }),
+        )
+
+        expect(Object.keys(parsed)).not.toContain('chain')
+    })
+})
+
+describe('parseAccountRecordPayload', () => {
+    const record = {
+        formatVersion: 2,
+        customName: 'Both',
+        updatedAt: 5,
+        chains: [
+            { chain: 'algorand', type: 'watch', address: 'ALGO' },
+            { chain: 'ethereum', type: 'watch', address: '0xabc' },
+        ],
+    }
+
+    test('keeps fields and chains this build does not know', () => {
+        const future = {
+            ...record,
+            futureField: 1,
+            chains: [
+                ...record.chains,
+                { chain: 'solana', type: 'solanaKey', address: 'SOL', x: 1 },
+            ],
+        }
+
+        expect(parseAccountRecordPayload(JSON.stringify(future))).toEqual(
+            future,
+        )
+    })
+
+    test.each([
+        ['no chains', { ...record, chains: [] }],
+        [
+            'a chain without an address',
+            { ...record, chains: [{ chain: 'x', type: 'watch' }] },
+        ],
+        [
+            'a chain without a type',
+            { ...record, chains: [{ chain: 'x', address: 'X' }] },
+        ],
+        ['no format version', { ...record, formatVersion: undefined }],
+    ])('rejects a record with %s', (_label, payload) => {
+        expect(() =>
+            parseAccountRecordPayload(JSON.stringify(payload)),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
 
 describe('parseAddressPayload', () => {
     it('parses an algo25 address payload', () => {

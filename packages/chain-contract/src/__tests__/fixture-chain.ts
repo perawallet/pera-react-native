@@ -16,7 +16,8 @@ import type {
     DiscoveryCandidate,
     KeyDerivation,
 } from '../contracts/key-derivation'
-import type { DeriveOpts } from '../models/domain'
+import type { TransactionPlanner } from '../contracts/transaction-planner'
+import type { DeriveOpts, UnsignedTransaction } from '../models/domain'
 import type { ChainId, NetworkId } from '../models/identity'
 
 // A second chain that exists only to pressure-test the contracts: base-16
@@ -128,5 +129,57 @@ export const fixtureDerivation: KeyDerivation = {
             }
         }
         return found
+    },
+}
+
+/** The fixture chain's payload: who signs, and the text that is signed. */
+export type FixturePayload = { signer: string; body: string }
+
+const readFixturePayload = (
+    transaction: UnsignedTransaction,
+): FixturePayload => {
+    const { scope, payload } = transaction
+    if (scope.chainId !== FIXTURE_CHAIN_ID) {
+        throw new Error(`Not a fixturehex transaction: ${scope.chainId}`)
+    }
+    const { signer, body } = (payload ?? {}) as Partial<FixturePayload>
+    if (typeof signer !== 'string' || typeof body !== 'string') {
+        throw new Error('The fixturehex payload is malformed')
+    }
+    return { signer, body }
+}
+
+// One signature over the body's bytes, appended to them on assembly.
+export const fixturePlanner: TransactionPlanner = {
+    chainId: FIXTURE_CHAIN_ID,
+    plan: transaction => {
+        const { signer, body } = readFixturePayload(transaction)
+        return [
+            {
+                requestIndex: 0,
+                signer,
+                scheme: 'ed25519',
+                payload: new TextEncoder().encode(body),
+            },
+        ]
+    },
+    assemble: (transaction, signatures) => {
+        const { signer, body } = readFixturePayload(transaction)
+        const [signature] = signatures
+        if (
+            signatures.length !== 1 ||
+            signature.requestIndex !== 0 ||
+            signature.scheme !== 'ed25519' ||
+            !fixtureCodec.areEqual(signature.signer, signer)
+        ) {
+            throw new Error(
+                'A fixturehex transaction takes one signature, from its signer',
+            )
+        }
+        const bytes = new Uint8Array([
+            ...new TextEncoder().encode(body),
+            ...signature.bytes,
+        ])
+        return { scope: transaction.scope, id: toHex(bytes), bytes }
     },
 }

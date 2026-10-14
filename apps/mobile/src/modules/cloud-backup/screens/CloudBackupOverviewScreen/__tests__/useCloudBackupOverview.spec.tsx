@@ -40,6 +40,12 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
     useCloudBackupStore: vi.fn(),
     useBackupSyncStateStore: vi.fn(),
     backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
+    accountBackupAddresses: (account: {
+        chains: Record<string, { address: string }>
+    }) =>
+        Object.entries(account.chains)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, entry]) => entry.address),
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/itemKeys')
     >('../../../../../../../../packages/backup/src/cloud/models/itemKeys')),
@@ -149,6 +155,9 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const accountKey = (address: string) => accountItemKey(hashAddress(address))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
+// test-handlers doesn't re-export the record key builder; the prefix is the format.
+const recordKey = (identity: string) =>
+    `account-records/${hashAddress(identity)}`
 const passkeyKey = (credentialId: string) =>
     passkeyItemKey(hashAddress(credentialId))
 
@@ -166,7 +175,9 @@ type SyncStateFixture = {
             isDirty: boolean
             knownVer: number
             address: string
+            addresses?: string[]
             pendingDelete?: boolean
+            record?: Record<string, unknown>
         }
     >
 }
@@ -197,7 +208,7 @@ const emptySync = (): SyncStateFixture => ({
 const mockStores = (opts: {
     backupId: string | null
     syncState: SyncStateFixture | null
-    accounts: string[]
+    accounts: (string | { chains: Record<string, { address: string }> })[]
     contacts: string[]
 }) => {
     ;(useCloudBackupStore as unknown as Mock).mockImplementation(
@@ -211,9 +222,11 @@ const mockStores = (opts: {
     ;(useAccountsStore as unknown as Mock).mockImplementation(
         (s: (st: { accounts: unknown[] }) => unknown) =>
             s({
-                accounts: opts.accounts.map(address => ({
-                    chains: { algorand: { address } },
-                })),
+                accounts: opts.accounts.map(account =>
+                    typeof account === 'string'
+                        ? { chains: { algorand: { address: account } } }
+                        : account,
+                ),
             }),
     )
     ;(useContactsStore as unknown as Mock).mockImplementation(
@@ -331,6 +344,60 @@ describe('useCloudBackupOverview', () => {
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.accountsInSync).toBe(1)
         expect(result.current.accountsNotBackedUp).toBe(0)
+    })
+
+    test.each([
+        ['not in sync until its record is uploaded', 0, 0, 1],
+        ['in sync on one uploaded record for every chain', 1, 1, 0],
+    ])(
+        'an account on two chains is %s',
+        (_label, knownVer, inSync, notBackedUp) => {
+            const syncState = emptySync()
+            syncState.items = {
+                [recordKey('A')]: uploaded('A', {
+                    addresses: ['A', '0xeth'],
+                    knownVer,
+                }),
+            }
+            mockStores({
+                backupId: 'did:pera:abc',
+                syncState,
+                accounts: [
+                    {
+                        chains: {
+                            algorand: { address: 'A' },
+                            ethereum: { address: '0xeth' },
+                        },
+                    },
+                ],
+                contacts: [],
+            })
+            const { result } = renderHook(() => useCloudBackupOverview())
+            expect(result.current.accountsInSync).toBe(inSync)
+            expect(result.current.accountsNotBackedUp).toBe(notBackedUp)
+        },
+    )
+
+    test('counts the backup accounts only a newer version of the app can restore', () => {
+        const syncState = emptySync()
+        const record = (formatVersion: number, address: string) => ({
+            formatVersion,
+            chains: [{ chain: 'algorand', type: 'algo25', address }],
+        })
+        syncState.items = {
+            [recordKey('A')]: uploaded('A', { record: record(3, 'A') }),
+            [recordKey('B')]: uploaded('B', { record: record(2, 'B') }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: ['B'],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        expect(result.current.accountsNeedingUpdate).toBe(1)
     })
 
     test('strips the did:pera: prefix and truncates for the credential address label', () => {

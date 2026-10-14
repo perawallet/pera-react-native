@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+    CHAIN_UI_MODULES,
     COMPOSITION_ROOTS,
     TEST_PATHS,
     TRANSITIONAL_ALLOWLIST,
@@ -89,9 +90,18 @@ describe('pera/no-chain-package-imports', () => {
         ])
     })
 
-    it('gives every composition root, test path and allowlist entry a reason', () => {
+    it("lets a chain's UI module import its own chain package, and no other", async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(inFile(found, 'chain-imports.chain-ui.ts')).toEqual([
+            'chain-imports.chain-ui.ts:8',
+        ])
+    })
+
+    it('gives every composition root, chain UI module, test path and allowlist entry a reason', () => {
         const entries = [
             ...COMPOSITION_ROOTS,
+            ...CHAIN_UI_MODULES,
             ...TEST_PATHS,
             ...TRANSITIONAL_ALLOWLIST,
         ]

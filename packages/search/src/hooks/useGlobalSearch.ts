@@ -119,7 +119,7 @@ export const useGlobalSearch = (
     const showRemoteOnEmpty = remoteAssetsOptions?.showOnEmptyQuery ?? false
     const shouldRunRemoteAssets =
         remoteAssetsEnabled && includesAssets && (hasQuery || showRemoteOnEmpty)
-    const remoteAssetQuery = useAssetSearchQuery(debouncedValue, {
+    const remoteAssetQuery = useAssetSearchQuery(debouncedValue, chainScope, {
         hasCollectible: remoteAssetsOptions?.hasCollectible,
         enabled: shouldRunRemoteAssets,
     })

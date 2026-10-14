@@ -12,7 +12,7 @@
 
 import type { Network } from '@perawallet/wallet-core-shared'
 import {
-    BACKUP_ACCOUNTS_KEY_PREFIX,
+    isAccountKey,
     BACKUP_SECRETS_KEY_PREFIX,
     BackupItemStatus,
     DeltaOperation,
@@ -30,6 +30,7 @@ import {
     type SyncState,
 } from '../models'
 import { collectAccountPayloads } from './collectAccountPayloads'
+import { recordImportResults } from './importRetry'
 import { collectContactPayloads } from './collectContactPayloads'
 import { collectPasskeyPayloads } from './collectPasskeyPayloads'
 import { collectSettingsPayloads } from './collectSettingsPayloads'
@@ -58,7 +59,7 @@ const isSecretsKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
 
 const isAccountFamilyKey = (key: BackupItemKey): boolean =>
-    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) || isSecretsKey(key)
+    isAccountKey(key) || isSecretsKey(key)
 
 const isPasskeyFamilyKey = (key: BackupItemKey): boolean =>
     isPasskeyItemKey(key) || isPasskeySecretsItemKey(key)
@@ -202,7 +203,14 @@ export const applyDeltas = async ({
         deps,
     })
 
-    if (accounts.length > 0) await deps.importAccounts(accounts)
+    if (accounts.length > 0) {
+        const { failed } = await deps.importAccounts(accounts)
+        recordImportResults(
+            items,
+            fetched.map(item => item.key),
+            failed,
+        )
+    }
     if (contacts.length > 0) await deps.importContacts(contacts)
     if (passkeys.length > 0) await deps.importPasskeys(passkeys)
     // Last, so a launch account that arrived in this same batch is already

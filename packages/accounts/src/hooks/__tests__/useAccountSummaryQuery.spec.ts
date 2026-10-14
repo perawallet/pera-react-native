@@ -35,11 +35,20 @@ vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
 }))
 
-const mockAlgoPrices = new Map<string, { usdPrice: Decimal }>()
-vi.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetPricesQuery: () => ({ data: mockAlgoPrices }),
-    useNativeAsset: () => ({ assetId: '0' }),
+const capability = vi.hoisted(() => ({ pricing: true }))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: (_chainId: string, name: string) =>
+        name === 'pricing' ? capability.pricing : true,
 }))
+
+const totals = (overrides: Record<string, unknown> = {}) => ({
+    nativeAmount: new Decimal(10),
+    nativeUsdPrice: new Decimal(2),
+    nonNativeUsdValue: new Decimal(80),
+    holdingsCount: 5,
+    missingMetadataCount: 0,
+    ...overrides,
+})
 
 const wrapper = () => {
     const client = new QueryClient({
@@ -52,7 +61,7 @@ const wrapper = () => {
 describe('useAccountSummaryQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAlgoPrices.clear()
+        capability.pricing = true
     })
 
     // Restore the global onlineManager singleton so an offline test can't leak
@@ -63,13 +72,7 @@ describe('useAccountSummaryQuery', () => {
 
     it('serves the portfolio summary from SQLite while offline', async () => {
         onlineManager.setOnline(false)
-        mockAlgoPrices.set('0', { usdPrice: new Decimal(2) })
-        mockGetAccountPortfolioTotals.mockResolvedValue({
-            algoAmount: new Decimal(10),
-            nonAlgoUsdValue: new Decimal(80),
-            holdingsCount: 5,
-            missingMetadataCount: 0,
-        })
+        mockGetAccountPortfolioTotals.mockResolvedValue(totals())
 
         const { result } = renderHook(
             () => useAccountSummaryQuery('ADDR1', SCOPE),
@@ -84,15 +87,9 @@ describe('useAccountSummaryQuery', () => {
         expect(result.current.holdingsCount).toBe(5)
     })
 
-    it('derives ALGO + USD totals from the split aggregate', async () => {
-        mockAlgoPrices.set('0', { usdPrice: new Decimal(2) })
-        // 10 ALGO + $80 of ASAs, ALGO @ $2.
-        mockGetAccountPortfolioTotals.mockResolvedValue({
-            algoAmount: new Decimal(10),
-            nonAlgoUsdValue: new Decimal(80),
-            holdingsCount: 5,
-            missingMetadataCount: 0,
-        })
+    it('derives native + USD totals from the split aggregate', async () => {
+        // 10 native + $80 of other holdings, native @ $2.
+        mockGetAccountPortfolioTotals.mockResolvedValue(totals())
 
         const { result } = renderHook(
             () => useAccountSummaryQuery('ADDR1', SCOPE),
@@ -103,20 +100,21 @@ describe('useAccountSummaryQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        // USD: 80 + 10*$2 = 100. ALGO: 10 + 80/$2 = 50.
+        // USD: 80 + 10*$2 = 100. Native: 10 + 80/$2 = 50.
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(100))
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(50))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(50))
         expect(result.current.holdingsCount).toBe(5)
         expect(result.current.isComplete).toBe(true)
     })
 
     it('is incomplete while held assets are still missing metadata', async () => {
-        mockGetAccountPortfolioTotals.mockResolvedValue({
-            algoAmount: new Decimal(10),
-            nonAlgoUsdValue: new Decimal(0),
-            holdingsCount: 50,
-            missingMetadataCount: 12,
-        })
+        mockGetAccountPortfolioTotals.mockResolvedValue(
+            totals({
+                nonNativeUsdValue: new Decimal(0),
+                holdingsCount: 50,
+                missingMetadataCount: 12,
+            }),
+        )
 
         const { result } = renderHook(
             () => useAccountSummaryQuery('ADDR1', SCOPE),
@@ -140,14 +138,13 @@ describe('useAccountSummaryQuery', () => {
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
     })
 
-    it('still shows the ALGO balance when the ALGO price is unknown', async () => {
-        // No price entry for ALGO. ASAs can't be ALGO-denominated, but ALGO's
-        // own amount is price-independent and must still surface.
-        mockGetAccountPortfolioTotals.mockResolvedValue({
-            algoAmount: new Decimal(10),
-            nonAlgoUsdValue: new Decimal(80),
-            holdingsCount: 5,
-        })
+    it('still shows the native balance when its price is unknown', async () => {
+        // No price for the native asset. Other holdings can't be expressed in
+        // native terms, but its own amount is price-independent and must still
+        // surface.
+        mockGetAccountPortfolioTotals.mockResolvedValue(
+            totals({ nativeUsdPrice: null }),
+        )
 
         const { result } = renderHook(
             () => useAccountSummaryQuery('ADDR1', SCOPE),
@@ -157,6 +154,25 @@ describe('useAccountSummaryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(10))
+        expect(result.current.nativeAmount).toEqual(new Decimal(10))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(10))
+        expect(result.current.portfolioUsdValue).toBeNull()
+    })
+
+    it('reports a USD value for an unpriced native balance on a chain with no price source', async () => {
+        capability.pricing = false
+        mockGetAccountPortfolioTotals.mockResolvedValue(
+            totals({ nativeUsdPrice: null }),
+        )
+
+        const { result } = renderHook(
+            () => useAccountSummaryQuery('ADDR1', SCOPE),
+            {
+                wrapper: wrapper(),
+            },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.portfolioUsdValue).toEqual(new Decimal(80))
     })
 })

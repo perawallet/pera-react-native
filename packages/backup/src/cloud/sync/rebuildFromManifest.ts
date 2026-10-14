@@ -13,10 +13,14 @@
 import { logger } from '@perawallet/wallet-core-shared'
 import { fetchDelta, isFromSeqTooOldError } from '../api'
 import {
+    BACKUP_SECRETS_KEY_PREFIX,
+    isAccountKey,
+    isAccountRecordKey,
     BackupItemStatus,
     DeltaOperation,
     type DeltaEntry,
     type Manifest,
+    type SyncItemState,
     type SyncState,
 } from '../models'
 import type { SyncEngineDeps } from './types'
@@ -63,6 +67,43 @@ export const rebuildDeltasFromManifest = (
 ]
 
 /**
+ * Replays the account items this device tracks but never read, so
+ * `applyDeltas` downloads them again: all of them when this client can read a
+ * chain it could not before, or the ones `isDue` picks, such as a failed import
+ * owed a retry. No delta will mention them again.
+ *
+ * Held items are left alone: a `pendingImport` item waits for the user, and a
+ * dirty or pending-delete one carries a local decision.
+ */
+export const unreadAccountDeltas = (
+    state: SyncState,
+    isDue: (item: SyncItemState) => boolean = () => true,
+): DeltaEntry[] =>
+    Object.entries(state.items)
+        .filter(
+            ([key, item]) =>
+                isDue(item) &&
+                (isAccountKey(key) ||
+                    key.startsWith(BACKUP_SECRETS_KEY_PREFIX)) &&
+                item.status === BackupItemStatus.ACTIVE &&
+                item.pendingImport !== true &&
+                item.pendingDelete !== true &&
+                !item.isDirty &&
+                item.knownVer > 0 &&
+                item.lastRemoteHash !== null &&
+                item.localContentHash == null,
+        )
+        .map(([key, item]) => ({
+            seq: state.lastSyncedSeq,
+            key,
+            type: item.type,
+            ver: item.knownVer,
+            status: item.status,
+            op: DeltaOperation.UPSERT,
+            hash: item.lastRemoteHash,
+        }))
+
+/**
  * Deltas from the cursor, or — when retention has pruned past that cursor — the
  * manifest replayed as deltas, together with the seq it is current through.
  * That seq is the only thing that can move the cursor over the pruned gap; it
@@ -99,3 +140,22 @@ export const fetchDeltaOrRebuild = async (
         }
     }
 }
+
+/** A record can hold chains a client could not read when it adopted it, so a
+ *  change in what the client reads marks every settled record unread again,
+ *  for `unreadAccountDeltas` to replay. */
+export const withAccountRecordsUnread = (state: SyncState): SyncState => ({
+    ...state,
+    items: Object.fromEntries(
+        Object.entries(state.items).map(([key, item]) => [
+            key,
+            isAccountRecordKey(key) &&
+            item.status === BackupItemStatus.ACTIVE &&
+            !item.isDirty &&
+            item.pendingImport !== true &&
+            item.pendingDelete !== true
+                ? { ...item, localContentHash: null }
+                : item,
+        ]),
+    ),
+})

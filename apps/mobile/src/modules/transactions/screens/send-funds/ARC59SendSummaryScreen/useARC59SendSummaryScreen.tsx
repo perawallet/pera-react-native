@@ -25,6 +25,8 @@ import {
     toWholeUnits,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     ALGO_ASSET_NAME,
     formatCurrency,
@@ -83,8 +85,9 @@ export const useARC59SendSummaryScreen =
         // distinguishes "have a summary" from "don't", so collapse to undefined.
         const summary = summaryData ?? undefined
 
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { data: asset, isLoading: assetLoading } =
-            useSingleAssetDetailsQuery(assetId)
+            useSingleAssetDetailsQuery(assetId, scope)
 
         const accountInfo = useSenderBalances(selectedAccount)
 

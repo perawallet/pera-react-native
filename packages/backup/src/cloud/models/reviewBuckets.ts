@@ -11,10 +11,12 @@
  */
 
 import {
-    isAccountItemKey,
+    isAccountKey,
+    isAccountRecordKey,
     isContactItemKey,
     isPasskeyItemKey,
 } from './itemKeys'
+import { isNewerAccountRecord } from './accountRecord'
 import type { BackupItemKind } from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus, type BackupItemKey } from './types'
@@ -30,6 +32,8 @@ type ReviewBuckets<TAvailable> = {
 export type BackupAccountReview = ReviewBuckets<{
     address: string
     type: BackupItemKind | null
+    /** A record only a newer version of the app can restore. */
+    needsUpdate: boolean
 }>
 
 export type BackupContactReview = ReviewBuckets<{
@@ -82,22 +86,75 @@ const deriveReview = <TAvailable>(
     }
 }
 
-/** Reads address records only: a secret-bearing account also stores key
- *  material under the same item type, so counting every ACCOUNT item would
- *  double it. */
+/** Every address an item answers to: an account record's every chain. */
+const addressesOfItem = (item: SyncItemState): string[] =>
+    item.addresses ?? (item.address == null ? [] : [item.address])
+
+/**
+ * Reads account records and legacy address items only: a secret-bearing
+ * account also stores key material under the same item type, so counting every
+ * ACCOUNT item would double it. A legacy item a record covers is that account
+ * as written before records, so the record speaks for it.
+ *
+ * `localAccounts` holds each account's addresses, primary first; the buckets
+ * name an account by its primary, and a row from the backup by its record's.
+ */
 export const deriveBackupAccountReview = (
     syncState: SyncState | null,
-    localAddresses: readonly string[],
-): BackupAccountReview =>
-    deriveReview(
-        syncState,
-        localAddresses,
-        isAccountItemKey,
-        (address, item) => ({
-            address,
-            type: item.accountType ?? null,
-        }),
+    localAccounts: readonly (readonly string[])[],
+): BackupAccountReview => {
+    const live = Object.entries(syncState?.items ?? {}).filter(
+        ([key, item]) =>
+            isAccountKey(key) && item.address != null && isLiveInBackup(item),
     )
+    const recordAddresses = new Set(
+        live
+            .filter(([key]) => isAccountRecordKey(key))
+            .flatMap(([, item]) => addressesOfItem(item)),
+    )
+    const shown = live
+        .filter(
+            ([key, item]) =>
+                isAccountRecordKey(key) ||
+                !recordAddresses.has(item.address as string),
+        )
+        .map(([, item]) => item)
+
+    const covered = new Set(
+        shown
+            .filter(item => item.pendingImport !== true)
+            .flatMap(addressesOfItem),
+    )
+    const local = new Set(localAccounts.flat())
+    const primaries = localAccounts.flatMap(([primary]) =>
+        primary === undefined ? [] : [primary],
+    )
+    return {
+        backedUp: new Set(primaries.filter(address => covered.has(address))),
+        notBackedUp: primaries.filter(address => !covered.has(address)),
+        availableFromBackup: shown
+            .filter(
+                item =>
+                    item.pendingImport === true &&
+                    !addressesOfItem(item).some(address => local.has(address)),
+            )
+            .map(item => ({
+                address: item.address as string,
+                type: item.accountType ?? null,
+                needsUpdate: isNewerAccountRecord(item.record),
+            })),
+    }
+}
+
+/** Accounts the backup holds that only a newer version of the app can
+ *  restore. This device keeps them as they are and never writes over them. */
+export const countNewerAccountRecords = (syncState: SyncState | null): number =>
+    Object.entries(syncState?.items ?? {}).filter(
+        ([key, item]) =>
+            isAccountRecordKey(key) &&
+            isLiveInBackup(item) &&
+            isNewerAccountRecord(item.record),
+    ).length
 
 /** `name` comes from the cached label rather than the payload: a contact only
  *  the backup holds would otherwise render as a bare address, and the name is
@@ -134,7 +191,7 @@ const isAddressLiveUnder = (
 ): boolean =>
     Object.entries(syncState?.items ?? {}).some(
         ([key, item]) =>
-            item.address === address &&
+            addressesOfItem(item).includes(address) &&
             isOwnKey(key) &&
             isLiveInBackup(item) &&
             item.pendingImport !== true,
@@ -146,7 +203,7 @@ const isAddressLiveUnder = (
 export const isAddressBackedUp = (
     syncState: SyncState | null,
     address: string,
-): boolean => isAddressLiveUnder(syncState, address, isAccountItemKey)
+): boolean => isAddressLiveUnder(syncState, address, isAccountKey)
 
 export const isContactBackedUp = (
     syncState: SyncState | null,

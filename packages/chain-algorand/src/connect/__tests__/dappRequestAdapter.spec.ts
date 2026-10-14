@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ARC0001_MAX_TXN_B64_LENGTH,
     Arc0001Error,
@@ -18,6 +18,7 @@ import {
 } from '../../blockchain'
 import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {
     CannotSignError,
@@ -327,5 +328,41 @@ describe('algorandDappRequestAdapter', () => {
                 expect(adapter.relayableErrorNames).not.toContain(name)
             }
         })
+    })
+})
+
+describe('walletConnect.v2', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it("answers empty signatures through the adapter's own emptySignaturesFor", () => {
+        const emptySignaturesFor = vi
+            .spyOn(adapter, 'emptySignaturesFor')
+            .mockReturnValue({ A: 'gA==' })
+        const route = adapter.walletConnect.v2?.handleRequest(
+            'algo_getEmptySignatures',
+            {},
+        )
+        if (route?.kind !== 'public-data') throw new Error('not public data')
+
+        expect(route.answer(['A'], 'mainnet')).toEqual({ A: 'gA==' })
+        expect(emptySignaturesFor).toHaveBeenCalledWith(['A'])
+    })
+})
+
+describe('switchChain', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it("selects the network for Algorand's chain", () => {
+        const selectNetwork = vi
+            .spyOn(useNetworkStore.getState(), 'selectNetwork')
+            .mockImplementation(() => {})
+
+        adapter.switchChain?.('betanet')
+
+        expect(selectNetwork).toHaveBeenCalledWith(ALGORAND_CHAIN_ID, 'betanet')
     })
 })

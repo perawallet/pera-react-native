@@ -11,11 +11,20 @@
  */
 
 // @vitest-environment node
-import { passkeyItemKey, passkeySecretsItemKey } from '../../models/itemKeys'
+import {
+    accountRecordItemKey,
+    passkeyItemKey,
+    passkeySecretsItemKey,
+} from '../../models/itemKeys'
+import {
+    registerAlgorandAccountsAdapter,
+    registerEthereumAccountsAdapter,
+    registerEthereumBackupChain,
+} from '../../../__tests__/backupChainFixtures'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { backupChainAdapters } from '../../../chain-adapter'
-import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import {
     BackupItemStatus,
     BackupItemType,
@@ -152,20 +161,30 @@ beforeEach(() => {
 })
 
 describe('markAccountForBackup', () => {
-    it('forgets the tombstone so reconcile re-tracks the address at version 0', () => {
+    it('forgets a tombstoned secret so reconcile re-tracks it at version 0', () => {
+        const state = createEmptySyncState('b')
+        state.items[secretsKey('A')] = tracked('A', {
+            status: BackupItemStatus.IGNORED,
+        })
+        state.items[secretsKey('B')] = tracked('B', {
+            status: BackupItemStatus.IGNORED,
+        })
+
+        const next = markAccountForBackup(state, 'A')
+
+        expect(next.items[secretsKey('A')]).toBeUndefined()
+        expect(next.items[secretsKey('B')]).toBeDefined()
+    })
+
+    it('leaves a legacy item alone, since only records are written', () => {
         const state = createEmptySyncState('b')
         state.items[accountKey('A')] = tracked('A', {
             status: BackupItemStatus.IGNORED,
         })
-        state.items[secretsKey('A')] = tracked('A', {
-            status: BackupItemStatus.IGNORED,
-        })
-        state.items[accountKey('B')] = tracked('B')
 
-        const next = markAccountForBackup(state, 'A')
-        expect(next.items[accountKey('A')]).toBeUndefined()
-        expect(next.items[secretsKey('A')]).toBeUndefined()
-        expect(next.items[accountKey('B')]).toBeDefined()
+        expect(
+            markAccountForBackup(state, 'A').items[accountKey('A')],
+        ).toBeDefined()
     })
 
     it('leaves an item the device has never decrypted alone', () => {
@@ -210,6 +229,7 @@ describe('importFromBackup', () => {
         expect(pulled).toEqual([
             {
                 address: 'X',
+                group: 'X',
                 addressPayload: expect.objectContaining({ address: 'X' }),
                 secretsPayload: expect.objectContaining({ type: 'algo25' }),
             },
@@ -1005,6 +1025,229 @@ describe('passkey review actions', () => {
 
         expect(next.items[PASSKEY_ONE_KEY]).toMatchObject({
             label: 'https://example.com',
+        })
+    })
+})
+
+describe('an account record on two chains', () => {
+    const SEED = 'SEED'
+    const recordKey = (keyIndex: number) =>
+        accountRecordItemKey(hashAddress(`${SEED}/0/${keyIndex}`))
+    const hdRecord = (
+        algorand: string,
+        ethereum: string,
+        keyIndex: number,
+    ) => ({
+        formatVersion: 2,
+        customName: null,
+        updatedAt: 1,
+        chains: [
+            {
+                chain: 'algorand',
+                type: 'hdWallet',
+                address: algorand,
+                seedFirstDerivedAddress: SEED,
+                publicKey: 'aa',
+                account: 0,
+                change: 0,
+                keyIndex,
+                derivationType: 9,
+            },
+            {
+                chain: 'ethereum',
+                type: 'hdChain',
+                address: ethereum,
+                seedFirstDerivedAddress: SEED,
+                account: 0,
+                keyIndex,
+            },
+        ],
+    })
+    const withRecord = (
+        state: SyncState,
+        [algorand, ethereum, keyIndex]: [string, string, number],
+        overrides: Partial<SyncItemState> = {},
+    ): SyncState => {
+        state.items[recordKey(keyIndex)] = tracked(algorand, {
+            addresses: [algorand, ethereum],
+            accountType: 'hdWallet',
+            record: hdRecord(algorand, ethereum, keyIndex),
+            ...overrides,
+        })
+        return state
+    }
+    const CHILD: [string, string, number] = ['CHILD', '0xeth', 0]
+    const OTHER: [string, string, number] = ['OTHER', '0xother', 1]
+    const withSeed = (
+        state: SyncState,
+        overrides: Partial<SyncItemState> = {},
+    ) => {
+        state.items[secretsKey(SEED)] = tracked(SEED, {
+            accountType: 'hdSeed',
+            ...overrides,
+        })
+        return state
+    }
+    const servingRecords = () => ({
+        ...baseDeps(),
+        readItems: readsFor([recordKey(0), recordKey(1), secretsKey(SEED)]),
+        decrypt: servingPlaintext({
+            [recordKey(0)]: hdRecord(...CHILD),
+            [recordKey(1)]: hdRecord(...OTHER),
+            [secretsKey(SEED)]: hdSeedSecrets(SEED),
+        }),
+    })
+
+    describe('deleteFromBackup', () => {
+        it('keeps the seed while another record of it is live', async () => {
+            const state = withSeed(
+                withRecord(withRecord(createEmptySyncState('b'), CHILD), OTHER),
+            )
+
+            const { keys } = await deleteFromBackup({
+                state,
+                address: '0xeth',
+                deps: servingRecords(),
+            })
+
+            expect(keys).toEqual([recordKey(0)])
+        })
+
+        it('deletes the seed with the last record that derives from it', async () => {
+            const state = withSeed(withRecord(createEmptySyncState('b'), CHILD))
+
+            const { keys } = await deleteFromBackup({
+                state,
+                address: '0xeth',
+                deps: servingRecords(),
+            })
+
+            expect(keys).toEqual([recordKey(0), secretsKey(SEED)])
+        })
+
+        it("keeps the seed while a newer client's record may still derive from it", async () => {
+            const state = withSeed(
+                withRecord(withRecord(createEmptySyncState('b'), CHILD), OTHER),
+            )
+            const deps = {
+                ...servingRecords(),
+                decrypt: servingPlaintext({
+                    [recordKey(0)]: hdRecord(...CHILD),
+                    [recordKey(1)]: {
+                        formatVersion: 3,
+                        seed: SEED,
+                        chains: [
+                            {
+                                chain: 'algorand',
+                                type: 'hdWallet',
+                                address: 'OTHER',
+                            },
+                        ],
+                    },
+                }),
+            }
+
+            const { keys } = await deleteFromBackup({
+                state,
+                address: '0xeth',
+                deps,
+            })
+
+            expect(keys).toEqual([recordKey(0)])
+        })
+
+        it('deletes a legacy item the record covers', async () => {
+            const state = withRecord(createEmptySyncState('b'), CHILD)
+            state.items[accountKey('CHILD')] = tracked('CHILD')
+
+            const { keys } = await deleteFromBackup({
+                state,
+                address: '0xeth',
+                deps: servingRecords(),
+            })
+
+            expect(keys).toContain(accountKey('CHILD'))
+        })
+    })
+
+    describe('importFromBackup', () => {
+        it('restores every chain of the record in one import', async () => {
+            registerFakeBackupAdapter()
+            registerAlgorandAccountsAdapter()
+            registerEthereumAccountsAdapter()
+            registerEthereumBackupChain()
+            const state = withSeed(
+                withRecord(createEmptySyncState('b'), CHILD, {
+                    pendingImport: true,
+                }),
+            )
+            const deps = servingRecords()
+
+            const { state: next } = await importFromBackup({
+                state,
+                address: '0xeth',
+                deps,
+            })
+
+            expect(deps.importAccounts).toHaveBeenCalledTimes(1)
+            const [pulled] = deps.importAccounts.mock.calls[0]
+            expect(pulled.map(account => account.address).sort()).toEqual([
+                '0xeth',
+                'CHILD',
+                SEED,
+            ])
+            expect(next.items[recordKey(0)]?.pendingImport).toBe(false)
+        })
+
+        it("refuses a newer client's record and keeps it held", async () => {
+            const state = withRecord(createEmptySyncState('b'), CHILD, {
+                pendingImport: true,
+            })
+            const deps = {
+                ...servingRecords(),
+                decrypt: servingPlaintext({
+                    [recordKey(0)]: { ...hdRecord(...CHILD), formatVersion: 3 },
+                }),
+            }
+
+            const { state: next, summary } = await importFromBackup({
+                state,
+                address: '0xeth',
+                deps,
+            })
+
+            expect(deps.importAccounts).not.toHaveBeenCalled()
+            expect(summary.failed).toHaveLength(1)
+            expect(next.items[recordKey(0)]?.pendingImport).toBe(true)
+        })
+    })
+
+    describe('markAccountForBackup', () => {
+        it('revives a record whose delete is pending instead of resetting it to version 0', () => {
+            const state = withRecord(createEmptySyncState('b'), CHILD, {
+                pendingDelete: true,
+            })
+
+            const next = markAccountForBackup(state, '0xeth')
+
+            expect(next.items[recordKey(0)]).toMatchObject({
+                knownVer: 2,
+                pendingDelete: false,
+            })
+        })
+
+        it('forgets a tombstoned record and its tombstoned seed', () => {
+            const state = withSeed(
+                withRecord(createEmptySyncState('b'), CHILD, {
+                    status: BackupItemStatus.IGNORED,
+                }),
+                { status: BackupItemStatus.IGNORED },
+            )
+
+            const next = markAccountForBackup(state, '0xeth')
+
+            expect(next.items[recordKey(0)]).toBeUndefined()
+            expect(next.items[secretsKey(SEED)]).toBeUndefined()
         })
     })
 })

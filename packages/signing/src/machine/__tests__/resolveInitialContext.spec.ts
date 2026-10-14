@@ -15,18 +15,20 @@ import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccount
 import { Address, Transaction, assignGroupID } from 'algosdk'
 import {
     addressCodecs,
+    ChainAdapterNotRegisteredError,
     ScopeChangedError,
+    transactionPlanners,
     type AddressCodec,
 } from '@perawallet/wallet-core-chain-contract'
-import { fakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import {
     SECOND_CHAIN_SCOPE,
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedTransaction,
+    fakeTransactionPlanner,
     planFromPayload,
+    registerFakeTransactionPlanner,
 } from '../../__tests__/transactions'
-import { plannerChainAdapters } from '../../chain-adapter'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
@@ -202,7 +204,30 @@ describe('resolveInitialContext — source callbacks', () => {
             signedData: { type: 'transactions', signed },
         } as never)
 
-        expect(txApprove).toHaveBeenCalledWith(signed)
+        expect(txApprove).toHaveBeenCalledWith(signed, undefined)
+    })
+
+    it('hands the transport submission receipt to the transaction approve callback', async () => {
+        const txApprove = vi.fn(async () => undefined)
+        const request: TransactionSignRequest = {
+            id: 'req-tx-receipt',
+            type: 'transactions',
+            transport: 'algod',
+            sourceType: 'gift-card',
+            txs: [makePayment(userAddr, 1n)],
+            approve: txApprove,
+        }
+
+        const context = resolveInitialContext(baseInput(request))
+        const { callbacks } = context.signableGroups![0].source
+
+        const signed = [{ sig: new Uint8Array([1]) }] as never
+        await callbacks?.approve?.(
+            { signedData: { type: 'transactions', signed } } as never,
+            { txIds: ['TX1'] },
+        )
+
+        expect(txApprove).toHaveBeenCalledWith(signed, { txIds: ['TX1'] })
     })
 
     it('multisig-cosign without signRequestId throws SigningError', () => {
@@ -516,12 +541,7 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
     })
 
     beforeEach(() => {
-        plannerChainAdapters.register(
-            fakePlannerAdapter({
-                chainId: SECOND_CHAIN_SCOPE.chainId,
-                plan: planFromPayload,
-            }),
-        )
+        registerFakeTransactionPlanner()
     })
 
     it("groups each transaction under the signer its chain's planner names, keeping its position", () => {
@@ -591,32 +611,37 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
         ).toThrow(InvalidSignableDataError)
     })
 
-    it("refuses when the chain's planner can't plan chain-neutral transactions", () => {
-        plannerChainAdapters.reset()
-        plannerChainAdapters.register(
-            fakePlannerAdapter({ chainId: SECOND_CHAIN_SCOPE.chainId }),
-        )
+    it('refuses a chain with no transaction planner', () => {
+        transactionPlanners.reset()
 
         expect(() =>
             resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
-        ).toThrow(InvalidSignableDataError)
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 
-    it('refuses a transaction that needs more than one signer', () => {
-        plannerChainAdapters.reset()
-        plannerChainAdapters.register(
-            fakePlannerAdapter({
-                chainId: SECOND_CHAIN_SCOPE.chainId,
-                plan: transaction => [
-                    ...planFromPayload(transaction),
-                    { ...planFromPayload(transaction)[0], signer: ALSO_OURS },
-                ],
-            }),
+    it('keys a transaction several signers sign to the first one the wallet holds', () => {
+        registerFakeTransactionPlanner(
+            fakeTransactionPlanner(transaction => [
+                { ...planFromPayload(transaction)[0], signer: STRANGER },
+                { ...planFromPayload(transaction)[0], requestIndex: 1 },
+                {
+                    ...planFromPayload(transaction)[0],
+                    requestIndex: 2,
+                    signer: ALSO_OURS,
+                },
+            ]),
         )
 
-        expect(() =>
-            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
-        ).toThrow(InvalidSignableDataError)
+        const context = resolveInitialContext(
+            input([makeUnsignedTransaction(OURS)]),
+        )
+
+        expect(context.signableGroups).toEqual([
+            expect.objectContaining({
+                signerAddress: OURS,
+                originalIndices: [0],
+            }),
+        ])
     })
 
     it("groups under the wallet's spelling of a signer the planner spells differently", () => {
@@ -642,13 +667,9 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
     })
 
     it("refuses a payload the chain's planner can't read, as untrusted data", () => {
-        plannerChainAdapters.reset()
-        plannerChainAdapters.register(
-            fakePlannerAdapter({
-                chainId: SECOND_CHAIN_SCOPE.chainId,
-                plan: () => {
-                    throw new Error('The payload is malformed')
-                },
+        registerFakeTransactionPlanner(
+            fakeTransactionPlanner(() => {
+                throw new Error('The payload is malformed')
             }),
         )
 

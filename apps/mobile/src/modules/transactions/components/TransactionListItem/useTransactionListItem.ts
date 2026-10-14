@@ -36,7 +36,7 @@ import { getTransactionIconType } from './utils'
 import { safeDecimals, type AmountDisplay } from './amounts'
 import { useTransactionAmounts } from './useTransactionAmounts'
 
-import type { TransactionIconType } from '@components/TransactionIcon'
+import type { AlgorandTransactionIconType } from '@modules/algorand/icons'
 
 type TFunction = ReturnType<typeof useLanguage>['t']
 
@@ -46,7 +46,7 @@ export type UseTransactionListItemParams = {
 }
 
 export type UseTransactionListItemResult = {
-    iconType: TransactionIconType
+    iconType: AlgorandTransactionIconType
     title: string
     subtitle: Nullable<string>
     amounts: AmountDisplay[]
@@ -179,7 +179,7 @@ export const useTransactionListItem = ({
     )
 
     const iconType = useMemo(
-        (): TransactionIconType =>
+        (): AlgorandTransactionIconType =>
             getTransactionIconType(transaction, isOutgoing),
         [transaction, isOutgoing],
     )

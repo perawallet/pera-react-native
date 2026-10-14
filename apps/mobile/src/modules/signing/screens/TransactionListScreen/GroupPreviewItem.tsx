@@ -44,7 +44,7 @@ export const GroupPreviewItem = ({
             testID='group_preview_item'
         >
             <TransactionIcon
-                type='group'
+                name='transactions/group'
                 size='sm'
             />
             <PWView style={styles.groupPreviewContent}>

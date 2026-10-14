@@ -13,8 +13,12 @@
 import { useCallback, useMemo } from 'react'
 import {
     buildAccount,
+    chainAccountOf,
     DuplicateAccountError,
     findAddressHolder,
+    findPathHolder,
+    hasCustody,
+    isSameAddress,
     useAccountsStore,
     useImportAccount,
     useUpdateAccount,
@@ -28,6 +32,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -39,17 +44,24 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
-import { backupAdapterFor, type BackupChainAdapter } from '../../chain-adapter'
+import {
+    backupAdapterFor,
+    backupChainAdapters,
+    type BackupChainAdapter,
+} from '../../chain-adapter'
 import {
     BackupAccountType,
+    hdPositionOf,
     isChainAddressPayload,
     isChainHdAddressPayload,
     isHdSeedSecretsPayload,
     type ChainAddressPayload,
     type ChainHdAddressPayload,
     type HardwareAddressPayload,
+    type HdChainAddressPayload,
     type MultisigAddressPayload,
     type SecretsBackupPayload,
+    type StandaloneKeyAddressPayload,
     type WatchAddressPayload,
 } from '../models'
 import type { PulledAccount } from '../restore/pullBackupItems'
@@ -75,6 +87,7 @@ type ImportContext = Pick<
     importAccount: ReturnType<typeof useImportAccount>
     updateAccount: ReturnType<typeof useUpdateAccount>
     appendAccount: (account: WalletAccount) => void
+    replaceAccount: (account: WalletAccount) => void
 }
 
 /** XHD root key (`kL || kR || chainCode`) length expected by `persistHDMasterKey`. */
@@ -88,20 +101,17 @@ const nameField = (
 ): { name: string } | Record<string, never> =>
     customName ? { name: customName } : {}
 
-const assertValidAddress = (
-    { adapter }: ImportContext,
-    address: string,
-): void => {
-    if (!addressCodecs.get(adapter.chainId).isValid(address)) {
-        throw new Error(`Invalid ${adapter.chainId} address: ${address}`)
+const assertValidAddress = (chainId: ChainId, address: string): void => {
+    if (!addressCodecs.get(chainId).isValid(address)) {
+        throw new Error(`Invalid ${chainId} address: ${address}`)
     }
 }
 
 const buildHardwareAccount = (
-    context: ImportContext,
+    chainId: ChainId,
     payload: HardwareAddressPayload,
 ): HardwareWalletAccount => {
-    assertValidAddress(context, payload.address)
+    assertValidAddress(chainId, payload.address)
     return buildAccount({
         custody: {
             kind: 'hardware',
@@ -113,30 +123,30 @@ const buildHardwareAccount = (
             },
             accountIndex: payload.accountIndex,
         },
-        chainId: context.adapter.chainId,
-        chains: { [context.adapter.chainId]: { address: payload.address } },
+        chainId,
+        chains: { [chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
 
 const buildWatchAccount = (
-    context: ImportContext,
+    chainId: ChainId,
     payload: WatchAddressPayload,
 ): WatchAccount => {
-    assertValidAddress(context, payload.address)
+    assertValidAddress(chainId, payload.address)
     return buildAccount({
         custody: { kind: 'watch' },
-        chainId: context.adapter.chainId,
-        chains: { [context.adapter.chainId]: { address: payload.address } },
+        chainId,
+        chains: { [chainId]: { address: payload.address } },
         ...nameField(payload.customName),
     })
 }
 
 const buildMultisigAccount = (
-    { adapter }: ImportContext,
+    chainId: ChainId,
     payload: MultisigAddressPayload,
 ): MultiSigAccount => {
-    const multisig = multisigChainAdapters.get(adapter.chainId)
+    const multisig = multisigChainAdapters.get(chainId)
     const parameters = {
         version: payload.version,
         threshold: payload.threshold,
@@ -151,11 +161,11 @@ const buildMultisigAccount = (
     return withMultisigParameters(
         buildAccount({
             custody: { kind: 'multisig' },
-            chainId: adapter.chainId,
-            chains: { [adapter.chainId]: { address: payload.address } },
+            chainId,
+            chains: { [chainId]: { address: payload.address } },
             ...nameField(payload.customName),
         }),
-        adapter.chainId,
+        chainId,
         parameters,
     )
 }
@@ -164,7 +174,7 @@ const buildMultisigAccount = (
 type HdSeed = Extract<LocalKeySeed, 'bip39'>
 
 const buildHdWalletAccount = async (
-    { adapter }: ImportContext,
+    adapter: BackupChainAdapter,
     seed: HdSeed,
     seedKeyId: string,
     payload: ChainHdAddressPayload,
@@ -213,7 +223,7 @@ const importFromMnemonic = async (
     const { type } = addressPayload
     if (
         !secretsPayload ||
-        isHdSeedSecretsPayload(secretsPayload) ||
+        !('mnemonic' in secretsPayload) ||
         secretsPayload.type !== type
     ) {
         throw new Error(`${type} account missing mnemonic secret`)
@@ -319,15 +329,22 @@ const importSeeds = async (
     const seedKeyIdByFirstDerivedAddress = new Map<string, string>()
     const failures: ImportFailure[] = []
 
-    const hasSeedToImport = accounts.some(
-        ({ secretsPayload }) =>
-            !!secretsPayload && isHdSeedSecretsPayload(secretsPayload),
+    // A held seed is resolved for any entry that derives from one, not only
+    // when the batch carries the seed itself: a lone child arriving by sync, or
+    // a restore onto a device that already holds the wallet, derives against it.
+    const needsSeeds = accounts.some(
+        ({ addressPayload, secretsPayload }) =>
+            (!!secretsPayload && isHdSeedSecretsPayload(secretsPayload)) ||
+            hdPositionOf(addressPayload) !== null,
     )
-    if (!hasSeedToImport) {
+    if (!needsSeeds) {
         return { seedKeyIdByFirstDerivedAddress, failures }
     }
 
     const heldSeedKeyIdByFirstDerivedAddress = await resolveHeldSeeds(context)
+    for (const [reference, seedKeyId] of heldSeedKeyIdByFirstDerivedAddress) {
+        seedKeyIdByFirstDerivedAddress.set(reference, seedKeyId)
+    }
 
     for (const { address, secretsPayload } of accounts) {
         if (!secretsPayload || !isHdSeedSecretsPayload(secretsPayload)) continue
@@ -358,6 +375,7 @@ const importSeeds = async (
 
 const importHdWalletAccount = async (
     context: ImportContext,
+    adapter: BackupChainAdapter,
     seed: HdSeed,
     payload: ChainHdAddressPayload,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
@@ -370,9 +388,126 @@ const importHdWalletAccount = async (
             `No parent seed for ${payload.type} (seedFirstDerivedAddress=${payload.seedFirstDerivedAddress})`,
         )
     }
-    context.appendAccount(
-        await buildHdWalletAccount(context, seed, seedKeyId, payload),
+    const account = await buildHdWalletAccount(
+        adapter,
+        seed,
+        seedKeyId,
+        payload,
     )
+    const { chainId } = adapter
+    const holder = findPathHolder(
+        useAccountsStore.getState().accounts,
+        seedKeyId,
+        { account: payload.account, keyIndex: payload.keyIndex },
+    )
+    // The account at this position may already exist from another chain's
+    // entry, and a second one would split a single wallet account in two.
+    if (!holder || chainAccountOf(holder, chainId)) {
+        context.appendAccount(account)
+        return
+    }
+    context.replaceAccount({
+        ...holder,
+        chains: { ...holder.chains, [chainId]: account.chains[chainId] },
+    })
+}
+
+/** Returns 1 when the call created the account, 0 when it added this chain's
+ *  entry to the account already at that position. */
+const importHdChainAccount = async (
+    chainId: ChainId,
+    payload: HdChainAddressPayload,
+    seedKeyIdByFirstDerivedAddress: Map<string, string>,
+): Promise<number> => {
+    const seedKeyId = seedKeyIdByFirstDerivedAddress.get(
+        payload.seedFirstDerivedAddress,
+    )
+    if (!seedKeyId) {
+        throw new Error(
+            `No parent seed for hdChain (seedFirstDerivedAddress=${payload.seedFirstDerivedAddress})`,
+        )
+    }
+    const store = useAccountsStore.getState()
+    const before = store.accounts.length
+    await store.addChainAccount(
+        seedKeyId,
+        chainId,
+        { account: payload.account, keyIndex: payload.keyIndex },
+        payload.customName || undefined,
+        payload.address,
+    )
+    return useAccountsStore.getState().accounts.length > before ? 1 : 0
+}
+
+/** The key is hex only until it is decoded here, and the bytes are zeroed
+ *  whether or not the import succeeds. */
+const importStandaloneKeyAccount = async (
+    chainId: ChainId,
+    payload: StandaloneKeyAddressPayload,
+    secretsPayload: SecretsBackupPayload | null,
+): Promise<void> => {
+    if (
+        !secretsPayload ||
+        !('privateKey' in secretsPayload) ||
+        secretsPayload.chain !== chainId
+    ) {
+        throw new Error('standaloneKey account missing private key secret')
+    }
+    const privateKey = hexToBytes(secretsPayload.privateKey)
+    try {
+        await useAccountsStore
+            .getState()
+            .importAccountFromPrivateKey(
+                chainId,
+                privateKey,
+                payload.customName || undefined,
+                payload.address,
+            )
+    } finally {
+        zeroBytes(privateKey)
+    }
+}
+
+/** A watch account on several chains comes as one entry per chain; the first
+ *  creates the account and the rest join it. False when there is none to join,
+ *  or the slot already holds another address, which then stays as it is. */
+const attachWatchChain = (
+    context: ImportContext,
+    holder: WalletAccount | undefined,
+    chainId: ChainId,
+    address: string,
+): boolean => {
+    if (
+        !holder ||
+        !hasCustody(holder, 'watch') ||
+        chainAccountOf(holder, chainId) !== undefined
+    )
+        return false
+    assertValidAddress(chainId, address)
+    context.replaceAccount({
+        ...holder,
+        chains: { ...holder.chains, [chainId]: { address } },
+    })
+    return true
+}
+
+const chainOf = (context: ImportContext, account: PulledAccount): ChainId =>
+    account.chain ?? context.scope.chainId
+
+/** The account now holding the entry's address, which the rest of its group
+ *  join. */
+const holderOf = (
+    context: ImportContext,
+    account: PulledAccount,
+): WalletAccount | undefined => {
+    const chainId = chainOf(context, account)
+    return useAccountsStore.getState().accounts.find(held => {
+        const address = chainAccountOf(held, chainId)?.address
+        return (
+            address !== undefined &&
+            isSameAddress(chainId, address, account.address)
+        )
+    })
 }
 
 /**
@@ -382,21 +517,26 @@ const importHdWalletAccount = async (
  */
 const importOneAccount = async (
     context: ImportContext,
-    { address, addressPayload, secretsPayload }: PulledAccount,
+    account: PulledAccount,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
+    groupHolder: WalletAccount | undefined,
 ): Promise<number> => {
-    const isDuplicate = !!findAddressHolder(
-        useAccountsStore.getState().accounts,
-        context.scope,
-        address,
-    )
-    if (isDuplicate) {
+    const { address, addressPayload, secretsPayload } = account
+    const chainId = chainOf(context, account)
+    if (holderOf(context, account)) {
         throw new DuplicateAccountError(address)
     }
 
     if (isChainAddressPayload(addressPayload)) {
+        if (!backupChainAdapters.has(chainId)) {
+            throw new UnsupportedBackupAccountTypeError(
+                addressPayload.type,
+                chainId,
+            )
+        }
         return importChainAccount(
             context,
+            backupAdapterFor(chainId),
             addressPayload,
             secretsPayload,
             seedKeyIdByFirstDerivedAddress,
@@ -413,17 +553,36 @@ const importOneAccount = async (
         }
 
         case BackupAccountType.hardware: {
-            context.appendAccount(buildHardwareAccount(context, addressPayload))
+            context.appendAccount(buildHardwareAccount(chainId, addressPayload))
             return 1
         }
 
         case BackupAccountType.watch: {
-            context.appendAccount(buildWatchAccount(context, addressPayload))
+            if (attachWatchChain(context, groupHolder, chainId, address))
+                return 0
+            context.appendAccount(buildWatchAccount(chainId, addressPayload))
             return 1
         }
 
         case BackupAccountType.multisig: {
-            context.appendAccount(buildMultisigAccount(context, addressPayload))
+            context.appendAccount(buildMultisigAccount(chainId, addressPayload))
+            return 1
+        }
+
+        case BackupAccountType.hdChain: {
+            return importHdChainAccount(
+                chainId,
+                addressPayload,
+                seedKeyIdByFirstDerivedAddress,
+            )
+        }
+
+        case BackupAccountType.standaloneKey: {
+            await importStandaloneKeyAccount(
+                chainId,
+                addressPayload,
+                secretsPayload,
+            )
             return 1
         }
 
@@ -440,15 +599,16 @@ const importOneAccount = async (
  *  rather than restoring as some other kind. */
 const importChainAccount = async (
     context: ImportContext,
+    adapter: BackupChainAdapter,
     addressPayload: ChainAddressPayload,
     secretsPayload: SecretsBackupPayload | null,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
 ): Promise<number> => {
-    const local = context.adapter.localKindOf(addressPayload.type)
+    const local = adapter.localKindOf(addressPayload.type)
     if (!local) {
         throw new UnsupportedBackupAccountTypeError(
             addressPayload.type,
-            context.adapter.chainId,
+            adapter.chainId,
         )
     }
     if (!local.isHd) {
@@ -473,6 +633,7 @@ const importChainAccount = async (
     }
     await importHdWalletAccount(
         context,
+        adapter,
         local.seed,
         addressPayload,
         seedKeyIdByFirstDerivedAddress,
@@ -495,16 +656,57 @@ const dedupeFailuresByAddress = (
     })
 }
 
+/** An `hdChain` entry derives against the seed the pre-pass restored, and an
+ *  entry of an earlier stage claims an address a later one shares. */
+const importStageOf = ({ addressPayload }: PulledAccount): number => {
+    switch (addressPayload.type) {
+        case BackupAccountType.hdChain: {
+            return 1
+        }
+        case BackupAccountType.standaloneKey: {
+            return 2
+        }
+        default: {
+            return 0
+        }
+    }
+}
+
+/** The entries of one wallet account, in the order its record lists them.
+ *  Groups run in order of their earliest stage. */
+const groupByAccount = (pulled: PulledAccount[]): PulledAccount[][] => {
+    const groups = new Map<string, PulledAccount[]>()
+    for (const entry of pulled) {
+        groups.set(entry.group, [...(groups.get(entry.group) ?? []), entry])
+    }
+    const earliestStage = (entries: PulledAccount[]) =>
+        Math.min(...entries.map(importStageOf))
+    return [...groups.values()].sort(
+        (a, b) => earliestStage(a) - earliestStage(b),
+    )
+}
+
+/** A seed-only entry restores the seed and creates no account to count. */
+const createsAccount = (entries: PulledAccount[]): boolean =>
+    entries.some(
+        ({ addressPayload }) =>
+            addressPayload.type !== BackupAccountType.hdSeed,
+    )
+
 const importBatch = async (
     context: ImportContext,
-    accounts: PulledAccount[],
+    pulled: PulledAccount[],
     onProgress?: ImportProgressFn,
 ): Promise<ImportSummary> => {
-    const total = accounts.length
+    const groups = groupByAccount(pulled)
+    // Progress counts wallet accounts, not backup entries: one account on ten
+    // chains is "1 of 1", not "10 of 10".
+    const total = groups.filter(createsAccount).length
+    let done = 0
     onProgress?.(0, total)
     const { seedKeyIdByFirstDerivedAddress, failures } = await importSeeds(
         context,
-        accounts,
+        groups.flat(),
     )
     const summary: ImportSummary = {
         imported: 0,
@@ -512,26 +714,34 @@ const importBatch = async (
         failed: [...failures],
     }
 
-    for (const [index, account] of accounts.entries()) {
-        try {
-            summary.imported += await importOneAccount(
-                context,
-                account,
-                seedKeyIdByFirstDerivedAddress,
-            )
-        } catch (error) {
-            if (error instanceof DuplicateAccountError) {
-                summary.skippedDuplicate += 1
-            } else {
-                const reason = toFailureReason(error)
-                logger.warn('useCloudBackupImport: failed to import account', {
-                    address: account.address,
-                    reason,
-                })
-                summary.failed.push({ address: account.address, reason })
+    for (const entries of groups) {
+        let groupHolder: WalletAccount | undefined
+        for (const account of entries) {
+            try {
+                summary.imported += await importOneAccount(
+                    context,
+                    account,
+                    seedKeyIdByFirstDerivedAddress,
+                    groupHolder,
+                )
+            } catch (error) {
+                if (error instanceof DuplicateAccountError) {
+                    summary.skippedDuplicate += 1
+                } else {
+                    const reason = toFailureReason(error)
+                    logger.warn(
+                        'useCloudBackupImport: failed to import account',
+                        { address: account.address, reason },
+                    )
+                    summary.failed.push({ address: account.address, reason })
+                }
             }
+            groupHolder ??= holderOf(context, account)
         }
-        onProgress?.(index + 1, total)
+        if (createsAccount(entries)) {
+            done += 1
+            onProgress?.(done, total)
+        }
     }
 
     summary.failed = dedupeFailuresByAddress(summary.failed)
@@ -562,6 +772,14 @@ const useImportContext = (
                     ...useAccountsStore.getState().accounts,
                     newAccount,
                 ]),
+            replaceAccount: updated =>
+                setAccounts(
+                    useAccountsStore
+                        .getState()
+                        .accounts.map(account =>
+                            account.id === updated.id ? updated : account,
+                        ),
+                ),
         }),
         [
             scope,

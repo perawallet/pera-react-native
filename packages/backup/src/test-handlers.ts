@@ -37,6 +37,7 @@ export { createItemKeyHasher } from './cloud/crypto/itemKeyHash'
 export type { ItemKeyHash, ItemKeyHasher } from './cloud/crypto/itemKeyHash'
 export {
     accountItemKey,
+    accountRecordItemKey,
     contactItemKey,
     passkeyItemKey,
     passkeySecretsItemKey,

@@ -90,9 +90,6 @@
       "@perawallet/wallet-core-shared/test-utils": [
         "../../packages/shared/src/test-utils/index.ts"
       ],
-      "@perawallet/wallet-core-accounts/test-handlers": [
-        "../../packages/accounts/src/test-handlers.ts"
-      ],
       "@perawallet/wallet-core-transactions/test-handlers": [
         "../../packages/transactions/src/test-handlers.ts"
       ],

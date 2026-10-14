@@ -41,12 +41,12 @@ import { ETHEREUM_NATIVE_ASSET, NATIVE_ASSET_ID } from './native-asset'
 // Token metadata rarely changes; the same window as Algorand's asset cache.
 const ASSET_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
-const NO_AUTHORITIES = {
-    hasFreeze: false,
-    hasClawback: false,
-    freezeAddress: null,
-    clawbackAddress: null,
-} as const
+const ethereumAssetIdOf = (ref: AssetRef): string => {
+    if (ref.chainId !== ETHEREUM_CHAIN_ID) {
+        throw new Error(`Not an Ethereum asset: ${assetRefKey(ref)}`)
+    }
+    return ref.assetId
+}
 
 // The amount conversion reads these, so the contract's answer beats the
 // backend's: a wrong backend `decimals` would build a wrong-amount transfer.
@@ -132,8 +132,9 @@ const persistQuarantined = async (
 
 const syncAssets =
     (ctx: ChainContext): AssetsChainAdapter['syncAssets'] =>
-    async (assetIds, scope) => {
-        const tokenIds = toTokenIds(assetIds)
+    async (refs, scope) => {
+        eip155ChainIdOf(scope)
+        const tokenIds = toTokenIds(refs.map(ethereumAssetIdOf))
         if (tokenIds.length === 0) return
         const stale = await getStaleOrMissingAssetIds({
             assetIds: tokenIds,
@@ -169,9 +170,11 @@ const syncAssets =
         }
     }
 
-const fetchAsset =
-    (ctx: ChainContext): AssetsChainAdapter['fetchAsset'] =>
-    async (assetId, scope) => {
+const getAssetMetadata =
+    (ctx: ChainContext): AssetsChainAdapter['getAssetMetadata'] =>
+    async (ref, scope) => {
+        eip155ChainIdOf(scope)
+        const assetId = ethereumAssetIdOf(ref)
         if (assetId === NATIVE_ASSET_ID) return ETHEREUM_NATIVE_ASSET
         const tokenId = getAddress(assetId)
         if (!isTokenAddress(tokenId)) {
@@ -216,10 +219,7 @@ const getPrices =
     (ctx: ChainContext): AssetsChainAdapter['getPrices'] =>
     async (refs, scope) => {
         eip155ChainIdOf(scope)
-        const foreign = refs.find(ref => ref.chainId !== ETHEREUM_CHAIN_ID)
-        if (foreign) {
-            throw new Error(`Not an Ethereum asset: ${assetRefKey(foreign)}`)
-        }
+        for (const ref of refs) ethereumAssetIdOf(ref)
         if (!hasServices(ctx, scope, ASSETS_SERVICE, PRICES_SERVICE)) return []
         const refById = new Map<string, AssetRef>()
         for (const ref of refs) {
@@ -257,16 +257,14 @@ export const createEthereumAssetsAdapter = (
         maxPriceIdsPerRequest: ASSETS_MAX_IDS,
         getNativeAsset: () => ETHEREUM_NATIVE_ASSET,
         syncAssets: syncAssets(ctx),
-        fetchAsset: fetchAsset(ctx),
-        fetchOnChainAsset: async (assetId, scope) =>
-            assetId === NATIVE_ASSET_ID
+        getAssetMetadata: getAssetMetadata(ctx),
+        fetchOnChainAsset: async (ref, scope) => {
+            eip155ChainIdOf(scope)
+            const assetId = ethereumAssetIdOf(ref)
+            return assetId === NATIVE_ASSET_ID
                 ? ETHEREUM_NATIVE_ASSET
-                : readErc20(ctx, assetId, scope),
-        // ERC-20 has no freeze or clawback.
-        fetchAssetAuthorities: async () => NO_AUTHORITIES,
-        // The backend has no EVM token search, and `assetSearch` is off for
-        // Ethereum.
-        searchAssets: async () => ({ results: [], nextCursor: undefined }),
+                : readErc20(ctx, assetId, scope)
+        },
         getPrices: getPrices(ctx),
     }
 }

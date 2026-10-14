@@ -10,29 +10,14 @@
  limitations under the License
  */
 
-import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { transactionBodyRegistry } from '../registry'
-import type { FamilyTransaction } from '../types'
+import type { ReviewBodyProps } from '../types'
 
-export type TransactionReviewBodyProps = {
-    transaction: FamilyTransaction
-    source?: SignRequestSource
-    verifiedOrigin?: string
-}
+export type TransactionReviewBodyProps = ReviewBodyProps
 
-export const TransactionReviewBody = ({
-    transaction,
-    source,
-    verifiedOrigin,
-}: TransactionReviewBodyProps) => {
-    const { reviewBody: ReviewBody } =
-        transactionBodyRegistry[transaction.family]
+export const TransactionReviewBody = (props: TransactionReviewBodyProps) => {
+    const ReviewBody =
+        transactionBodyRegistry[props.transaction.family]?.reviewBody
 
-    return (
-        <ReviewBody
-            transaction={transaction.transaction}
-            source={source}
-            verifiedOrigin={verifiedOrigin}
-        />
-    )
+    return ReviewBody ? <ReviewBody {...props} /> : null
 }

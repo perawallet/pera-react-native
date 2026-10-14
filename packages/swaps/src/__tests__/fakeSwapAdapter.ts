@@ -12,6 +12,10 @@
 
 import { vi } from 'vitest'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    broadcasterChainAdapters,
+    type BroadcasterChainAdapter,
+} from '@perawallet/wallet-core-signing'
 import { swapChainAdapters, type SwapChainAdapter } from '../chain-adapter'
 
 export const FAKE_NATIVE_ASSET_ID = 'native'
@@ -25,7 +29,7 @@ export const fakeSwapAdapter = (
     defaultReceiveAssetId: FAKE_RECEIVE_ASSET_ID,
     swapExplorerUrl: vi.fn(),
     executeSwap: vi.fn(),
-    submitSignedGroup: vi.fn(),
+    supportsCosignedSwaps: true,
     ...overrides,
 })
 
@@ -36,4 +40,17 @@ export const registerFakeSwapAdapter = (
     swapChainAdapters.reset()
     swapChainAdapters.register(adapter)
     return adapter
+}
+
+// Registered on the real registry: the setup file loads the signing package
+// before any spec's `vi.mock` of it could apply.
+export const registerFakeBroadcaster = (
+    submit: BroadcasterChainAdapter['submit'] = vi.fn(),
+): BroadcasterChainAdapter['submit'] => {
+    broadcasterChainAdapters.reset()
+    broadcasterChainAdapters.register({
+        chainId: scopeForLegacyNetwork('mainnet').chainId,
+        submit,
+    } as BroadcasterChainAdapter)
+    return submit
 }

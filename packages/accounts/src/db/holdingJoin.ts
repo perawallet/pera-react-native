@@ -20,7 +20,7 @@ import { AccountAssetHoldingsSchema } from './schema'
 
 // Home-screen reads. Both join on the indexed accountAddress and let SQLite do
 // the summing, sorting and windowing, so the JS thread only materializes rows
-// actually on screen. ALGO participates like any holding, so there's no
+// actually on screen. The native asset participates like any holding, so there's no
 // synthetic-row union or per-row special-casing.
 export const holdingJoin = (
     table:

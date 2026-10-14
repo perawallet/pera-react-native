@@ -57,9 +57,7 @@ const snapshot = (
         totalCreatedAssets: 1,
         totalAppsOptedIn: 1,
     },
-    holdings: [
-        { assetId: '0', amount: new Decimal(1_500_000), isFrozen: false },
-    ],
+    holdings: [{ assetId: '0', amount: new Decimal(1_500_000) }],
     observedRound: null,
     ...overrides,
 })

@@ -388,7 +388,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
             amount: '10000000',
-            isFrozen: true,
+            native: { family: 'algorand', isFrozen: true },
         })
         await seedAlgorandAccountState({
             accountAddress: addressOf(sender),

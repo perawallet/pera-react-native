@@ -17,24 +17,22 @@ import {
     isAuthDataOriginMismatch,
     isUnsignedTransactionsData,
     TransactionRoundTripError,
-    type AlgorandTransactionSummary,
     type AnalysisContext,
     type AnalysisWarning,
     type DecodedGroup,
     type ReviewPolicy,
     type SignableGroup,
+    type TransactionSignableData,
     type TransactionDecoder,
     type WarningDetector,
 } from '@perawallet/wallet-core-signing'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import {
-    encodeAlgorandAddress,
-    classifyPeraTransaction,
-    getExpectedGenesisHash,
-} from '../blockchain'
+import { encodeAlgorandAddress, getExpectedGenesisHash } from '../blockchain'
+import { authorityOf } from '@perawallet/wallet-core-accounts'
 import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandNetworkOf } from '../legacy-network'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
+import { readAlgorandTransaction } from './planner'
 import { validateTransactionRoundTrip } from './validateTransactionRoundTrip'
 
 // The round-trip and genesis errors are user-facing as they are; anything else
@@ -48,6 +46,60 @@ const toAnalysisError = (error: unknown): Error => {
     )
 }
 
+type AlgorandGroup = {
+    transactions: PeraTransaction[]
+    rawTransactionsBase64?: string[]
+    /** For chain-neutral transactions: every planned signer the wallet holds. */
+    heldSigners?: string[]
+}
+
+const refuse = (reason: string): never => {
+    throw new InvalidSignableDataError(reason)
+}
+
+// Chain-neutral transactions are reviewed as the Algorand transactions they
+// carry, read through the planner's trust boundary. The payload names its own
+// signers, so each one the wallet holds is listed for the user to approve,
+// and an authority a wallet sender isn't rekeyed to is refused.
+const algorandTransactionsOf = (
+    data: TransactionSignableData,
+    context: AnalysisContext,
+): AlgorandGroup => {
+    if (!isUnsignedTransactionsData(data)) return data
+    const heldSigners = new Set<string>()
+    const transactions = data.transactions.map(unsigned => {
+        let read: ReturnType<typeof readAlgorandTransaction>
+        try {
+            read = readAlgorandTransaction(unsigned)
+        } catch (error) {
+            if (error instanceof GenesisHashMismatchError) throw error
+            return refuse(
+                error instanceof Error ? error.message : String(error),
+            )
+        }
+        const sender = read.transaction.sender.toString()
+        const senderAccount = context.accounts.find(
+            a => algorandAddressOf(a) === sender,
+        )
+        if (senderAccount) {
+            const authority =
+                authorityOf(senderAccount, context.scope) ?? sender
+            if (authority !== read.signer) {
+                refuse(
+                    `${sender} is authorised by ${authority}, not ${read.signer}`,
+                )
+            }
+        }
+        for (const signer of read.multisig?.addresses ?? [read.signer]) {
+            if (context.accounts.some(a => algorandAddressOf(a) === signer)) {
+                heldSigners.add(signer)
+            }
+        }
+        return read.transaction
+    })
+    return { transactions, heldSigners: [...heldSigners] }
+}
+
 /**
  * Summarises a group only once its bytes round-trip and its genesis is the
  * selected network's.
@@ -56,27 +108,22 @@ const decode = async (
     group: SignableGroup,
     context: AnalysisContext,
 ): Promise<DecodedGroup> => {
-    // Thrown outside the analysis wrapper so the refusal stays non-retryable.
-    if (
-        group.data.type === 'transactions' &&
-        isUnsignedTransactionsData(group.data)
-    ) {
-        throw new InvalidSignableDataError(
-            'Algorand reviews Algorand transactions only',
-        )
-    }
+    // Outside the analysis wrapper, so a payload refusal stays non-retryable.
+    const algorand =
+        group.data.type === 'transactions'
+            ? algorandTransactionsOf(group.data, context)
+            : undefined
     try {
-        if (group.data.type !== 'transactions') {
+        if (!algorand) {
             return {
                 totalFees: 0n,
-                transactionSummaries: [],
                 signableAddresses: context.accounts.flatMap(
                     a => algorandAddressOf(a) ?? [],
                 ),
             }
         }
 
-        const { transactions, rawTransactionsBase64 } = group.data
+        const { transactions, rawTransactionsBase64, heldSigners } = algorand
 
         if (rawTransactionsBase64) {
             validateTransactionRoundTrip(transactions, rawTransactionsBase64)
@@ -95,14 +142,14 @@ const decode = async (
         const signedByUs = context.accounts.some(
             a => algorandAddressOf(a) === group.signerAddress,
         )
+        const signableAddresses =
+            heldSigners ?? (signedByUs ? [group.signerAddress] : [])
         return {
-            totalFees: signedByUs
-                ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
-                : 0n,
-            transactionSummaries: transactions.map(tx =>
-                summarizeTransaction(tx),
-            ),
-            signableAddresses: signedByUs ? [group.signerAddress] : [],
+            totalFees:
+                signableAddresses.length > 0
+                    ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
+                    : 0n,
+            signableAddresses,
         }
     } catch (error) {
         throw toAnalysisError(error)
@@ -117,12 +164,14 @@ const decode = async (
 const detect = (
     group: SignableGroup,
     decoded: DecodedGroup,
+    context: AnalysisContext,
 ): AnalysisWarning[] => {
     try {
         if (group.data.type === 'transactions') {
-            return decoded.signableAddresses.length > 0 &&
-                !isUnsignedTransactionsData(group.data)
-                ? detectWarnings(group.data.transactions)
+            return decoded.signableAddresses.length > 0
+                ? detectWarnings(
+                      algorandTransactionsOf(group.data, context).transactions,
+                  )
                 : []
         }
         if (
@@ -144,40 +193,6 @@ const detect = (
     } catch (error) {
         throw toAnalysisError(error)
     }
-}
-
-const summarizeTransaction = (
-    tx: PeraTransaction,
-): AlgorandTransactionSummary => {
-    const type = classifyPeraTransaction(tx)
-    const senderAddress = tx.sender.toString()
-
-    const summary: AlgorandTransactionSummary = {
-        type,
-        sender: senderAddress,
-    }
-
-    // Like the close fields in detectWarnings, receiver/amount/assetIndex
-    // live under the type-specific payload on an algosdk v3 Transaction,
-    // never at the top level.
-    if (tx.payment) {
-        summary.receiver = tx.payment.receiver.toString()
-        summary.amount = tx.payment.amount
-    } else if (tx.assetTransfer) {
-        summary.receiver = tx.assetTransfer.receiver.toString()
-        summary.amount = tx.assetTransfer.amount
-        summary.assetId = tx.assetTransfer.assetIndex
-    }
-
-    if (tx.note) {
-        try {
-            summary.note = new TextDecoder().decode(tx.note)
-        } catch {
-            // Note is not valid UTF-8, skip it
-        }
-    }
-
-    return summary
 }
 
 const detectWarnings = (transactions: PeraTransaction[]): AnalysisWarning[] => {

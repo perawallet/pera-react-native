@@ -19,7 +19,7 @@ import type { TabBarStackParamList } from '@routes/tabbar'
 import type { SettingsStackParamsList } from '@modules/settings'
 import type { ContactsStackParamsList } from '@modules/contacts'
 import type { AccountStackParamsList } from '@modules/accounts'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { MessagesStackParamList } from '@modules/messages'
 import type { MultisigStackParamList } from '@modules/multisig'
@@ -69,7 +69,7 @@ export type RootStackParamList = {
     }
     TransactionDetails: {
         transactionId?: string
-        transaction?: PeraDisplayableTransaction
+        transaction?: TransactionNative
         /**
          * The SQLite history row the user tapped. Lets the screen render
          * offline from local data while the indexer fetch (enrichment)

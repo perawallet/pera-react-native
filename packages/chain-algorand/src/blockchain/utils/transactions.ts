@@ -12,12 +12,15 @@
 
 import { TransactionType, type OnApplicationComplete } from 'algosdk'
 import type {
-    AssetConfigType,
-    AssetTransferType,
     PeraDisplayableTransaction,
     PeraTransaction,
-    PeraTransactionType,
 } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AlgorandTransactionKind,
+    AlgorandTransactionView,
+    AssetConfigType,
+    AssetTransferType,
+} from '../models/transaction-view'
 import { encodeAlgorandAddress } from './addresses'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -204,7 +207,7 @@ const mapOnCompletion = (oc: OnApplicationComplete): string => {
 }
 
 export const getAssetTransferType = (
-    tx: PeraDisplayableTransaction,
+    tx: AlgorandTransactionView,
 ): AssetTransferType => {
     const assetTransfer = tx.assetTransferTransaction
     if (!assetTransfer) {
@@ -234,7 +237,7 @@ export const getAssetTransferType = (
 }
 
 export const getAssetConfigType = (
-    tx: PeraDisplayableTransaction,
+    tx: AlgorandTransactionView,
 ): AssetConfigType => {
     const assetConfig = tx.assetConfigTransaction
     if (!assetConfig) {
@@ -258,7 +261,7 @@ export const getAssetConfigType = (
     return 'update'
 }
 
-const txTypeToPeraTypeMap: Record<string, PeraTransactionType> = {
+const txTypeToPeraTypeMap: Record<string, AlgorandTransactionKind> = {
     pay: 'payment',
     axfer: 'asset-transfer',
     acfg: 'asset-config',
@@ -270,13 +273,13 @@ const txTypeToPeraTypeMap: Record<string, PeraTransactionType> = {
 }
 
 export const getTransactionType = (
-    tx: PeraDisplayableTransaction,
-): PeraTransactionType => {
+    tx: AlgorandTransactionView,
+): AlgorandTransactionKind => {
     return txTypeToPeraTypeMap[tx.txType ?? ''] ?? 'unknown'
 }
 
 /**
- * Classify a raw PeraTransaction into a detailed PeraTransactionType,
+ * Classify a raw PeraTransaction into a detailed Algorand transaction kind,
  * including asset transfer sub-types (opt-in, opt-out, clawback).
  */
 const ASSET_TRANSFER_TYPE_MAP = {
@@ -285,44 +288,19 @@ const ASSET_TRANSFER_TYPE_MAP = {
     clawback: 'asset-clawback',
     transfer: 'asset-transfer',
     unknown: 'asset-transfer',
-} as const satisfies Record<AssetTransferType, PeraTransactionType>
+} as const satisfies Record<AssetTransferType, AlgorandTransactionKind>
 
 /**
- * Classify a PeraDisplayableTransaction into a detailed PeraTransactionType,
+ * Classify an Algorand transaction view into a detailed transaction kind,
  * including asset transfer sub-types (opt-in, opt-out, clawback).
- *
- * Use this when you already have a displayable transaction (e.g. from the indexer).
- * For raw PeraTransaction objects, use classifyPeraTransaction instead.
  */
 export const classifyDisplayableTransaction = (
-    tx: PeraDisplayableTransaction,
-): PeraTransactionType => {
+    tx: AlgorandTransactionView,
+): AlgorandTransactionKind => {
     const baseType = getTransactionType(tx)
 
     if (baseType === 'asset-transfer') {
         const subType = getAssetTransferType(tx)
-        return (
-            ASSET_TRANSFER_TYPE_MAP[
-                subType as keyof typeof ASSET_TRANSFER_TYPE_MAP
-            ] ?? 'asset-transfer'
-        )
-    }
-
-    return baseType
-}
-
-export const classifyPeraTransaction = (
-    tx: PeraTransaction,
-): PeraTransactionType => {
-    const displayTx = mapToDisplayableTransaction(tx)
-    if (!displayTx) {
-        return 'unknown'
-    }
-
-    const baseType = getTransactionType(displayTx)
-
-    if (baseType === 'asset-transfer') {
-        const subType = getAssetTransferType(displayTx)
         return (
             ASSET_TRANSFER_TYPE_MAP[
                 subType as keyof typeof ASSET_TRANSFER_TYPE_MAP

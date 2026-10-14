@@ -12,16 +12,13 @@
 
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import {
+    Address,
     OnApplicationComplete,
     Transaction,
     TransactionType,
-    type Address,
 } from 'algosdk'
 import { standaloneAccount } from '../../__tests__/algorandAccounts'
-import {
-    scopeForLegacyNetwork,
-    type PeraTransactionType,
-} from '@perawallet/wallet-core-chain-contract'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     AnalysisError,
@@ -51,6 +48,7 @@ vi.mock('../../blockchain', async importOriginal => ({
 import { encodeTransactionRaw, getExpectedGenesisHash } from '../../blockchain'
 import { algorandReviewerAdapter } from '../adapter'
 import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwork'
+import { generateMultisigAddress } from '../../multisig/address'
 import {
     TEST_SUGGESTED_PARAMS,
     makeUnsignedAlgorandTransaction,
@@ -86,6 +84,17 @@ const transactionsGroup = (
             transactions,
             indicesToSign: transactions.map((_, i) => i),
             rawTransactionsBase64,
+        },
+    }) as unknown as SignableGroup
+
+const chainNeutralGroup = (payload: unknown): SignableGroup =>
+    ({
+        signerAddress: WALLET.toString(),
+        source: { type: 'local' },
+        data: {
+            type: 'transactions',
+            transactions: [{ ...makeUnsignedAlgorandTransaction(), payload }],
+            chainData: {},
         },
     }) as unknown as SignableGroup
 
@@ -182,7 +191,6 @@ const KINDS = {
 }
 
 type Expected = {
-    summaryTypes: PeraTransactionType[]
     /** Charged its transactions' own fees, rather than nothing. */
     isCharged: boolean
     warningTypes: AnalysisWarning['type'][]
@@ -193,11 +201,7 @@ type Expected = {
 const SIGNER = [WALLET.toString()]
 const EVERY_ACCOUNT = [WALLET.toString(), SECOND.toString()]
 
-const signed = (
-    summaryType: PeraTransactionType,
-    warningTypes: AnalysisWarning['type'][] = [],
-): Expected => ({
-    summaryTypes: [summaryType],
+const signed = (warningTypes: AnalysisWarning['type'][] = []): Expected => ({
     isCharged: true,
     warningTypes,
     riskLevel: warningTypes.length > 0 ? 'high' : 'low',
@@ -210,66 +214,41 @@ const feesOf = (group: SignableGroup): bigint =>
         : 0n
 
 const CASES: [string, SignableGroup, Expected][] = [
-    ['a payment', transactionsGroup([KINDS.payment]), signed('payment')],
-    [
-        'an asset transfer',
-        transactionsGroup([KINDS.assetTransfer]),
-        signed('asset-transfer'),
-    ],
-    [
-        'an asset opt-in',
-        transactionsGroup([KINDS.optIn]),
-        signed('asset-opt-in'),
-    ],
-    [
-        'an asset clawback',
-        transactionsGroup([KINDS.clawback]),
-        signed('asset-clawback'),
-    ],
-    [
-        'an asset config',
-        transactionsGroup([KINDS.assetConfig]),
-        signed('asset-config'),
-    ],
-    [
-        'an asset freeze',
-        transactionsGroup([KINDS.assetFreeze]),
-        signed('asset-freeze'),
-    ],
-    ['an app call', transactionsGroup([KINDS.appCall]), signed('app-call')],
-    [
-        'a key registration',
-        transactionsGroup([KINDS.keyreg]),
-        signed('key-registration'),
-    ],
-    ['a rekey', transactionsGroup([KINDS.rekey]), signed('payment', ['rekey'])],
+    ['a payment', transactionsGroup([KINDS.payment]), signed()],
+    ['an asset transfer', transactionsGroup([KINDS.assetTransfer]), signed()],
+    ['an asset opt-in', transactionsGroup([KINDS.optIn]), signed()],
+    ['an asset clawback', transactionsGroup([KINDS.clawback]), signed()],
+    ['an asset config', transactionsGroup([KINDS.assetConfig]), signed()],
+    ['an asset freeze', transactionsGroup([KINDS.assetFreeze]), signed()],
+    ['an app call', transactionsGroup([KINDS.appCall]), signed()],
+    ['a key registration', transactionsGroup([KINDS.keyreg]), signed()],
+    ['a rekey', transactionsGroup([KINDS.rekey]), signed(['rekey'])],
     [
         'a rekey a wallet account authorises for another sender',
         transactionsGroup([KINDS.foreignSenderRekey]),
-        signed('payment', ['rekey']),
+        signed(['rekey']),
     ],
     [
         'an account close-out',
         transactionsGroup([KINDS.accountClose]),
-        signed('payment', ['close-account']),
+        signed(['close-account']),
     ],
     [
         'an asset close-out',
         transactionsGroup([KINDS.assetClose]),
-        signed('asset-opt-out', ['close-account']),
+        signed(['close-account']),
     ],
     [
         'a dApp group whose bytes round-trip',
         transactionsGroup([KINDS.payment], {
             rawTransactionsBase64: [rawOf(KINDS.payment)],
         }),
-        signed('payment'),
+        signed(),
     ],
     [
         'a rekey no wallet account signs',
         transactionsGroup([KINDS.rekey], { signer: OTHER }),
         {
-            summaryTypes: ['payment'],
             isCharged: false,
             warningTypes: [],
             riskLevel: 'low',
@@ -284,7 +263,6 @@ const CASES: [string, SignableGroup, Expected][] = [
             data: { type: 'arbitrary-data', data: [] },
         } as unknown as SignableGroup,
         {
-            summaryTypes: [],
             isCharged: false,
             warningTypes: [],
             riskLevel: 'low',
@@ -295,7 +273,6 @@ const CASES: [string, SignableGroup, Expected][] = [
         'a sign-in from the site that asked',
         authDataGroup('pera.app', 'https://pera.app'),
         {
-            summaryTypes: [],
             isCharged: false,
             warningTypes: [],
             riskLevel: 'low',
@@ -306,7 +283,6 @@ const CASES: [string, SignableGroup, Expected][] = [
         'a sign-in with no origin to check, as over WalletConnect',
         authDataGroup('pera.app'),
         {
-            summaryTypes: [],
             isCharged: false,
             warningTypes: [],
             riskLevel: 'low',
@@ -317,7 +293,6 @@ const CASES: [string, SignableGroup, Expected][] = [
         'a sign-in relayed from another site',
         authDataGroup('pera.app', 'https://evil.example'),
         {
-            summaryTypes: [],
             isCharged: false,
             warningTypes: ['suspicious'],
             riskLevel: 'high',
@@ -337,9 +312,6 @@ describe('algorandReviewerAdapter review parts', () => {
     it.each(CASES)('reviews %s', async (_kind, group, expected) => {
         const analysis = await review(group)
 
-        expect(analysis.transactionSummaries.map(s => s.type)).toEqual(
-            expected.summaryTypes,
-        )
         expect(analysis.totalFees).toBe(expected.isCharged ? feesOf(group) : 0n)
         expect(analysis.warnings.map(w => w.type)).toEqual(
             expected.warningTypes,
@@ -356,57 +328,6 @@ describe('algorandReviewerAdapter review parts', () => {
         await expect(
             algorandReviewerAdapter.decoder.decode(group, context),
         ).rejects.toBeInstanceOf(TransactionRoundTripError)
-    })
-
-    it('summarises each transaction from its own payload, guessing nothing for a contract call', async () => {
-        const note = new Uint8Array(new TextEncoder().encode('hello'))
-        const withNote = makeTestPaymentTx(WALLET, {
-            receiver: OTHER,
-            amount: 5n,
-            note,
-        })
-        const group = transactionsGroup([
-            withNote,
-            KINDS.assetTransfer,
-            KINDS.appCall,
-        ])
-
-        const analysis = await review(group)
-
-        expect(analysis.transactionSummaries).toEqual([
-            {
-                type: 'payment',
-                sender: WALLET.toString(),
-                receiver: OTHER.toString(),
-                amount: 5n,
-                note: 'hello',
-            },
-            {
-                type: 'asset-transfer',
-                sender: WALLET.toString(),
-                receiver: OTHER.toString(),
-                amount: 5n,
-                assetId: 42n,
-                note: '',
-            },
-            { type: 'app-call', sender: WALLET.toString(), note: '' },
-        ])
-        expect(analysis.totalFees).toBe(feesOf(group))
-    })
-
-    it("leaves out a note that isn't valid UTF-8", async () => {
-        vi.stubGlobal(
-            'TextDecoder',
-            class {
-                decode(): never {
-                    throw new TypeError('invalid UTF-8')
-                }
-            },
-        )
-
-        const analysis = await review(transactionsGroup([KINDS.payment]))
-
-        expect(analysis.transactionSummaries[0]).not.toHaveProperty('note')
     })
 
     it("checks the transactions against the selected network's resolved genesis", async () => {
@@ -435,7 +356,57 @@ describe('algorandReviewerAdapter review parts', () => {
         ).rejects.toBeInstanceOf(GenesisHashMismatchError)
     })
 
-    it("refuses chain-neutral transactions for good, since it can't explain them", async () => {
+    it('reviews a chain-neutral transaction as the Algorand transaction it carries', async () => {
+        const neutral = {
+            signerAddress: WALLET.toString(),
+            source: { type: 'local' },
+            data: {
+                type: 'transactions',
+                transactions: [
+                    {
+                        ...makeUnsignedAlgorandTransaction(),
+                        payload: { transaction: KINDS.rekey },
+                    },
+                ],
+                chainData: {},
+            },
+        } as unknown as SignableGroup
+
+        expect(await review(neutral)).toEqual(
+            await review(transactionsGroup([KINDS.rekey])),
+        )
+    })
+
+    it('lists every multisig participant the wallet holds as a signer', async () => {
+        const addresses = [WALLET, SECOND, OTHER].map(a => a.toString())
+        const msig = generateMultisigAddress(1, 2, addresses)
+        const neutral = chainNeutralGroup({
+            transaction: makeTestPaymentTx(Address.fromString(msig), {
+                receiver: OTHER,
+            }),
+            multisig: { version: 1, threshold: 2, addresses },
+        })
+
+        const analysis = await review(neutral)
+
+        expect(analysis.signableAddresses).toEqual([
+            WALLET.toString(),
+            SECOND.toString(),
+        ])
+    })
+
+    it("refuses an authority a wallet sender isn't rekeyed to", async () => {
+        const neutral = chainNeutralGroup({
+            transaction: KINDS.payment,
+            authorizer: SECOND.toString(),
+        })
+
+        await expect(review(neutral)).rejects.toBeInstanceOf(
+            InvalidSignableDataError,
+        )
+    })
+
+    it("refuses for good a chain-neutral payload the planner can't read", async () => {
         const group = {
             signerAddress: WALLET.toString(),
             source: { type: 'local' },
@@ -456,7 +427,7 @@ describe('algorandReviewerAdapter review parts', () => {
 
     it('reports any other failure as an analysis error', async () => {
         const unreadable = {
-            get sender(): never {
+            get fee(): never {
                 throw new Error('unreadable transaction')
             },
         } as unknown as Transaction

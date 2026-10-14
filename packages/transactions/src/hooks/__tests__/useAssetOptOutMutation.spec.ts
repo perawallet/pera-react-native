@@ -119,7 +119,7 @@ describe('useAssetOptOutMutation', () => {
             ],
         })
         expect(mockSubmit).toHaveBeenCalledWith({
-            chainId: 'algorand',
+            scope: SCOPE,
             unsignedTxs: [{ sender: 'SENDER' }],
             source: {
                 name: 'asset-opt-out',
@@ -187,7 +187,7 @@ describe('useAssetOptOutMutation', () => {
 
         expect(mockBuild).toHaveBeenCalledTimes(1)
         expect(mockSubmit).toHaveBeenCalledWith({
-            chainId: 'algorand',
+            scope: SCOPE,
             unsignedTxs: [{ sender: 'SENDER' }, { sender: 'SENDER' }],
             source: {
                 name: 'asset-opt-out',

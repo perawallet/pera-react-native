@@ -40,6 +40,12 @@ export default defineConfig({
                 __dirname,
                 '../chain-algorand/src/descriptor/index.ts',
             ),
+            // Test-only: Ethereum's planner and known-answer vectors, so a spec
+            // runs Ethereum signing through the machine.
+            '@perawallet/wallet-core-chain-ethereum/testing': path.resolve(
+                __dirname,
+                '../chain-ethereum/src/__tests__/testing.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

@@ -12,14 +12,13 @@
 
 import { Decimal } from 'decimal.js'
 import {
-    assetRefKey,
     isNativeAsset,
     type AssetPrice,
     type AssetRef,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { fetchPublicAssetDetails } from '../assets/api'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandAssetIdOf } from '../assets/asset-ref'
 import { algorandDescriptor } from '../descriptor'
 import { fetchAssetPrices } from './endpoints'
 
@@ -56,9 +55,7 @@ export const fetchPeraUsdPrices = async (
     refs: AssetRef[],
     network: Network,
 ): Promise<AssetPrice[]> => {
-    const foreign = refs.find(ref => ref.chainId !== ALGORAND_CHAIN_ID)
-    if (foreign)
-        throw new Error(`Not an Algorand asset: ${assetRefKey(foreign)}`)
+    for (const ref of refs) algorandAssetIdOf(ref)
 
     const native = refs.filter(ref => isNativeAsset(ref, algorandDescriptor))
     const tokens = refs.filter(ref => !isNativeAsset(ref, algorandDescriptor))

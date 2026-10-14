@@ -72,7 +72,7 @@ export const makeTestAssetTransferTx = (
         suggestedParams: TEST_SUGGESTED_PARAMS,
     })
 
-/** A chain-neutral transaction on Algorand's own scope, which Algorand's own paths refuse or skip. */
+/** A chain-neutral transaction on Algorand's own scope with no Algorand payload, so every path refuses or skips it. */
 export const makeUnsignedAlgorandTransaction = (): UnsignedTransaction => ({
     scope: { chainId: 'algorand', networkId: 'mainnet' },
     payload: {},

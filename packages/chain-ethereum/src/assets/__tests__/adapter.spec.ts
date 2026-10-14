@@ -22,7 +22,10 @@ import {
 } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AssetRef,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     getStaleOrMissingAssetIds,
     upsertAssets,
@@ -124,6 +127,8 @@ const memoryPersistence = (stale: (ids: string[]) => string[] = ids => ids) => {
     }
 }
 
+const ref = (assetId: string): AssetRef => ({ chainId: 'ethereum', assetId })
+
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
@@ -148,7 +153,7 @@ const recordRequests = (): string[] => {
     return urls
 }
 
-describe('fetchAsset', () => {
+describe('getAssetMetadata', () => {
     it("keeps the chain's name, symbol, decimals and supply over the backend's", async () => {
         server.use(
             ...rpc({ [USDC]: usdcOnChain }),
@@ -162,7 +167,7 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        const asset = await ops.fetchAsset(USDC, SCOPE)
+        const asset = await ops.getAssetMetadata(ref(USDC), SCOPE)
 
         expect(asset).toMatchObject({
             name: 'USD Coin',
@@ -190,7 +195,9 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await expect(ops.fetchAsset(USDC, SCOPE)).resolves.toMatchObject({
+        await expect(
+            ops.getAssetMetadata(ref(USDC), SCOPE),
+        ).resolves.toMatchObject({
             unitName: 'pUSDC',
         })
         expect(persistence.upsertNodeAssets).not.toHaveBeenCalled()
@@ -206,7 +213,7 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await expect(ops.fetchAsset(USDC, SCOPE)).rejects.toThrow()
+        await expect(ops.getAssetMetadata(ref(USDC), SCOPE)).rejects.toThrow()
         expect(persistence.upsertNodeAssets).not.toHaveBeenCalled()
     })
 
@@ -220,7 +227,7 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await expect(ops.fetchAsset(USDC, SCOPE)).rejects.toThrow()
+        await expect(ops.getAssetMetadata(ref(USDC), SCOPE)).rejects.toThrow()
         expect(persistence.upsertNodeAssets).not.toHaveBeenCalled()
     })
 
@@ -237,7 +244,7 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        const asset = await ops.fetchAsset(DAI, SCOPE)
+        const asset = await ops.getAssetMetadata(ref(DAI), SCOPE)
 
         expect(asset).toMatchObject({
             assetId: DAI,
@@ -268,7 +275,7 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await expect(ops.fetchAsset(DAI, SCOPE)).rejects.toThrow()
+        await expect(ops.getAssetMetadata(ref(DAI), SCOPE)).rejects.toThrow()
         expect(persistence.upsertNodeAssets).not.toHaveBeenCalled()
         expect(persistence.upsertAssets).not.toHaveBeenCalled()
     })
@@ -279,7 +286,7 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await expect(ops.fetchAsset(ZERO, SCOPE)).rejects.toThrow()
+        await expect(ops.getAssetMetadata(ref(ZERO), SCOPE)).rejects.toThrow()
         expect(requests).toEqual([])
     })
 
@@ -289,7 +296,9 @@ describe('fetchAsset', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await expect(ops.fetchAsset('not-an-address', SCOPE)).rejects.toThrow()
+        await expect(
+            ops.getAssetMetadata(ref('not-an-address'), SCOPE),
+        ).rejects.toThrow()
         expect(requests).toEqual([])
     })
 
@@ -299,7 +308,7 @@ describe('fetchAsset', () => {
         )
 
         await expect(
-            ops.fetchAsset(ETHEREUM_NATIVE_ASSET.assetId, SCOPE),
+            ops.getAssetMetadata(ref(ETHEREUM_NATIVE_ASSET.assetId), SCOPE),
         ).resolves.toBe(ETHEREUM_NATIVE_ASSET)
     })
 })
@@ -320,7 +329,10 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([ETHEREUM_NATIVE_ASSET.assetId, USDC, DAI], SCOPE)
+        await ops.syncAssets(
+            [ETHEREUM_NATIVE_ASSET.assetId, USDC, DAI].map(ref),
+            SCOPE,
+        )
 
         expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
             expect.objectContaining({ assetIds: [USDC, DAI] }),
@@ -335,7 +347,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([USDC.toLowerCase()], SCOPE)
+        await ops.syncAssets([USDC.toLowerCase()].map(ref), SCOPE)
 
         expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
             expect.objectContaining({ assetIds: [USDC] }),
@@ -348,7 +360,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets(['not-an-address'], SCOPE)
+        await ops.syncAssets(['not-an-address'].map(ref), SCOPE)
 
         expect(requests).toEqual([])
     })
@@ -366,7 +378,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([USDC, DAI], SCOPE)
+        await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
         expect(full.map(a => a.assetId)).toEqual([USDC])
         expect(node.map(a => a.assetId)).toEqual([DAI])
@@ -388,7 +400,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([USDC, DAI], SCOPE)
+        await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
         expect(full.map(a => a.assetId)).toEqual([USDC])
         expect(node.map(a => a.assetId)).toEqual([DAI])
@@ -407,7 +419,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([DAI], SCOPE)
+        await ops.syncAssets([DAI].map(ref), SCOPE)
 
         expect(node).toEqual([])
         expect(full).toHaveLength(1)
@@ -431,7 +443,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([DAI], SCOPE)
+        await ops.syncAssets([DAI].map(ref), SCOPE)
 
         expect(persistence.upsertNodeAssets).not.toHaveBeenCalled()
         expect(persistence.upsertAssets).not.toHaveBeenCalled()
@@ -443,7 +455,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([ZERO, USDC], SCOPE)
+        await ops.syncAssets([ZERO, USDC].map(ref), SCOPE)
 
         expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
             expect.objectContaining({ assetIds: [USDC] }),
@@ -476,7 +488,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets(ids, SCOPE)
+        await ops.syncAssets(ids.map(ref), SCOPE)
 
         expect(batchSizes).toEqual([500, 1])
         expect(full).toHaveLength(501)
@@ -488,7 +500,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await ops.syncAssets([USDC], SCOPE)
+        await ops.syncAssets([USDC].map(ref), SCOPE)
 
         expect(persistence.upsertAssets).not.toHaveBeenCalled()
     })
@@ -498,7 +510,7 @@ describe('syncAssets', () => {
         const { persistence, node } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(testChainContext())
 
-        await ops.syncAssets([USDC, DAI], SCOPE)
+        await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
         expect(node.map(a => a.assetId)).toEqual([USDC])
         expect(persistence.upsertAssets).not.toHaveBeenCalled()
@@ -512,7 +524,7 @@ describe('syncAssets', () => {
             testChainContext({ services: ['assets'] }),
         )
 
-        await expect(ops.syncAssets([USDC], SCOPE)).rejects.toThrow()
+        await expect(ops.syncAssets([USDC].map(ref), SCOPE)).rejects.toThrow()
     })
 })
 
@@ -643,29 +655,54 @@ describe('prices', () => {
     })
 })
 
-describe('authorities and search', () => {
-    it('reports no freeze or clawback, since ERC-20 has neither', async () => {
+describe('optional members', () => {
+    it('declares no authorities or search, since ERC-20 has no freeze or clawback and the backend has no EVM token search', () => {
         const adapter = createEthereumAssetsAdapter(testChainContext())
 
-        await expect(
-            adapter.fetchAssetAuthorities(USDC, SCOPE),
-        ).resolves.toEqual({
-            hasFreeze: false,
-            hasClawback: false,
-            freezeAddress: null,
-            clawbackAddress: null,
-        })
+        expect(adapter.fetchAssetAuthorities).toBeUndefined()
+        expect(adapter.search).toBeUndefined()
     })
+})
 
-    it('answers a search with an empty page and no request', async () => {
+describe('foreign scopes and refs', () => {
+    const ALGORAND_SCOPE: ChainScope = {
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    }
+
+    it('rejects the native ref on another chain without a request', async () => {
         const requests = recordRequests()
-        const adapter = createEthereumAssetsAdapter(
+        const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
         )
+        const native = ref(ETHEREUM_NATIVE_ASSET.assetId)
 
         await expect(
-            adapter.searchAssets({ query: 'USDC' }, SCOPE),
-        ).resolves.toEqual({ results: [], nextCursor: undefined })
+            ops.getAssetMetadata(native, ALGORAND_SCOPE),
+        ).rejects.toThrow()
+        await expect(
+            ops.fetchOnChainAsset(native, ALGORAND_SCOPE),
+        ).rejects.toThrow()
         expect(requests).toEqual([])
+    })
+
+    it('rejects a ref on another chain before any request', async () => {
+        const requests = recordRequests()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+        )
+        const algorandRef: AssetRef = {
+            chainId: 'algorand',
+            assetId: '31566704',
+        }
+
+        await expect(ops.syncAssets([algorandRef], SCOPE)).rejects.toThrow(
+            'Not an Ethereum asset',
+        )
+        await expect(ops.getAssetMetadata(algorandRef, SCOPE)).rejects.toThrow(
+            'Not an Ethereum asset',
+        )
+        expect(requests).toEqual([])
+        expect(getStaleOrMissingAssetIds).not.toHaveBeenCalled()
     })
 })

@@ -27,6 +27,11 @@ import {
     createXHDGetPublicKey,
 } from './discovery'
 import { fetchAssetOptInRounds } from './information'
+import { describeAlgorandHolding } from './holdings'
+import {
+    fetchAlgorandHoldingBalanceHistory,
+    fetchAlgorandPortfolioHistory,
+} from './portfolio-history'
 import { algorandNetworkOf } from '../legacy-network'
 import { algorandAuthority } from './authority'
 import { decodeAlgorandLegacyAuthority } from './legacy-authority'
@@ -49,8 +54,24 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
         fetchAlgorandChangeSignal(addresses, algorandNetworkOf(scope), cursor),
     toChainState: toAlgorandChainState,
     summarizeChainState: summarizeAlgorandChainState,
-    fetchAssetOptInRounds: (address, scope) =>
+    // Algorand's opt-in round orders the collectibles gallery.
+    fetchHoldingAcquisitionOrder: (address, scope) =>
         fetchAssetOptInRounds(address, algorandNetworkOf(scope)),
+    describeHolding: describeAlgorandHolding,
+    fetchPortfolioHistory: (addresses, period, scope) =>
+        fetchAlgorandPortfolioHistory(
+            addresses,
+            period,
+            algorandNetworkOf(scope),
+        ),
+    fetchHoldingBalanceHistory: (address, assetId, period, currency, scope) =>
+        fetchAlgorandHoldingBalanceHistory(
+            address,
+            assetId,
+            period,
+            currency,
+            algorandNetworkOf(scope),
+        ),
     accountExists: (address, scope) =>
         algorandAccountExists(address, algorandNetworkOf(scope)),
     checkActivity: (addresses, scope) =>

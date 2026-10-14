@@ -192,7 +192,6 @@ export {
     isInteractiveSource,
     isUnsignedTransactionsData,
     type AlgorandGroupData,
-    type AlgorandTransactionSummary,
     type AnalysisContext,
     type AnalysisWarning,
     type ArbitraryDataSignableData,
@@ -211,6 +210,7 @@ export {
     type SignableAnalysis,
     type SignableGroup,
     type SourceType,
+    type SubmissionReceipt,
     type TransportResult,
 } from './pipeline/types'
 export { signingEventBus } from './pipeline/signingEventBus'
@@ -260,6 +260,7 @@ export {
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
     submitAndAutoRefresh,
+    submitSignedGroup,
     type BroadcasterChainAdapter,
     type DerivedSubmissionAttempt,
     type OnConfirmedHandler,

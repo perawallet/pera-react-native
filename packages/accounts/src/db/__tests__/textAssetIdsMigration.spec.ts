@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { sql } from 'drizzle-orm'
 import {
     runMigrations,
     migrations,
@@ -43,12 +44,13 @@ describe('holdings across the asset cache rebuild', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrationsBefore('0010_text_asset_ids'))
-        await refreshAccountHoldings({
-            db,
-            accountAddress: 'ADDR1',
-            holdings: HOLDINGS,
-            scope: MAINNET_SCOPE,
-        })
+        // Raw, because the holdings table still has its pre-rebuild shape here.
+        for (const { assetId, amount } of HOLDINGS) {
+            await db.run(sql`
+                INSERT INTO account_asset_holdings (account_address, asset_id, network, amount, updated_at)
+                VALUES ('ADDR1', ${assetId}, 'algorand/mainnet', ${amount.toString()}, 1)
+            `)
+        }
         await runMigrations(db, migrations)
     })
 

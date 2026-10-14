@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import type {
     AccountChainState,
+    ChainHoldingNative,
     ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -29,10 +30,8 @@ export const AccountAssetHoldingsSchema = sqliteTable(
         network: text('network').notNull().$type<ChainScopeKey>(),
         /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),
-        /** Holding-level freeze from algod — frozen assets can't be transferred. */
-        isFrozen: integer('is_frozen', { mode: 'boolean' })
-            .notNull()
-            .default(false),
+        /** The chain's own data about the holding; null when it has none. */
+        native: decimalJsonColumn<ChainHoldingNative>('native'),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [

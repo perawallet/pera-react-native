@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
+    AddressMismatchError,
     DuplicateAccountError,
     RawKeyImportUnsupportedError,
 } from '../../errors'
@@ -152,6 +153,19 @@ describe('importAccountFromPrivateKey', () => {
         })
         expect(getProvider().key.store.remove).toHaveBeenCalledWith(KEY_ID)
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
+
+    test('refuses a key whose address is not the expected one, removing the entry it just made', async () => {
+        const key = privateKey()
+
+        const result = useAccountsStore
+            .getState()
+            .importAccountFromPrivateKey(FAKE_CHAIN_ID, key, 'X', '0xother')
+
+        await expect(result).rejects.toBeInstanceOf(AddressMismatchError)
+        expect(getProvider().key.store.remove).toHaveBeenCalledWith(KEY_ID)
+        expect(useAccountsStore.getState().accounts).toEqual([])
+        expect(isZero(key)).toBe(true)
     })
 
     test('throws a keyed error before the KMS when the chain imports no raw keys', async () => {

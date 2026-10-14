@@ -20,7 +20,7 @@ import {
 } from '../api'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import {
-    isAccountItemKey,
+    isAccountKey,
     isContactItemKey,
     isPasskeyItemKey,
     isSettingsItemKey,
@@ -103,7 +103,7 @@ const withUpdatedAt = (
     updatedAt: number | null | undefined,
 ): string => {
     const carriesUpdatedAt =
-        isAccountItemKey(item.key) ||
+        isAccountKey(item.key) ||
         isContactItemKey(item.key) ||
         isPasskeyItemKey(item.key)
     const payload =

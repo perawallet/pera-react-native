@@ -16,7 +16,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type { ChainDescriptor } from './descriptor'
-import type { ChainId, ChainScope, NetworkId } from './identity'
+import type { ChainFamily, ChainId, ChainScope, NetworkId } from './identity'
 
 /** An i18n key plus its interpolation params, resolved by the UI. */
 export type LocalizedText = { key: string; params?: Record<string, string> }
@@ -58,6 +58,15 @@ export type ChainAccountNative = {
      * offscreen document) still has to describe the account's signature.
      */
     pq?: { scheme: Extract<SigningScheme, 'falcon-1024'>; publicKey: string }
+}
+
+/**
+ * Holding data only its own chain reads, persisted on the holding row. A chain
+ * package adds its member, discriminated by `family`.
+ */
+export type ChainHoldingNative = {
+    family: 'algorand'
+    isFrozen: boolean
 }
 
 export type AccountChainState =
@@ -185,6 +194,16 @@ export interface TransactionRecord {
     chainData: ChainTransactionData
 }
 
+/**
+ * A transaction as its own chain's review and detail UI reads it. Only the
+ * chain named by `family` reads `transaction`, the way only the owning
+ * adapter reads `UnsignedTransaction.payload`.
+ */
+export interface TransactionNative {
+    family: ChainFamily
+    transaction: unknown
+}
+
 export type TransferIntent = {
     kind: 'transfer'
     from: string
@@ -207,11 +226,29 @@ export type TransactionIntent = TransferIntent | AssetOptInIntent
 export interface BuildContext {
     scope: ChainScope
     chainState?: AccountChainState
+    /** The speed to price at; unset means `'normal'`. A chain without presets ignores it. */
+    feePreset?: FeePreset
+}
+
+/** Slowest first, which is the display order. */
+export const FEE_PRESETS = ['slow', 'normal', 'fast'] as const
+
+export type FeePreset = (typeof FEE_PRESETS)[number]
+
+/** Both amounts are in base units of the native asset. */
+export interface FeePresetEstimate {
+    /** The expected cost. */
+    amount: Decimal
+    /** The most the transaction can be charged; the sender's balance must cover it on top of what it sends. */
+    maxAmount: Decimal
 }
 
 export interface FeeEstimate {
     assetRef: AssetRef
+    /** In base units of `assetRef`. With `presets` set, equals `presets[context.feePreset ?? 'normal'].amount`. */
     amount: Decimal
+    /** Set by a chain whose `protocol.feeModel` is `'gas'`. */
+    presets?: Record<FeePreset, FeePresetEstimate>
 }
 
 /** Opaque; only the adapter that issued it can interpret it. */

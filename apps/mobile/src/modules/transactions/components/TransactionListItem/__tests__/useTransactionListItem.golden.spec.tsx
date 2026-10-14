@@ -39,7 +39,7 @@ import {
     ALGORAND_HISTORY_SUMMARY_GOLDENS,
     type HistorySummaryGolden,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import type { TransactionIconType } from '@components/TransactionIcon'
+import type { AlgorandTransactionIconType } from '@modules/algorand/icons'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTransactionListItem } from '../useTransactionListItem'
 
@@ -122,7 +122,7 @@ vi.mock('@hooks/useLanguage', async () => {
 // Icon types that share a glyph with a summary icon.
 const ROW_ICON_TYPES: Record<
     TransactionIconKind,
-    readonly TransactionIconType[]
+    readonly AlgorandTransactionIconType[]
 > = {
     send: ['send'],
     receive: ['receive'],

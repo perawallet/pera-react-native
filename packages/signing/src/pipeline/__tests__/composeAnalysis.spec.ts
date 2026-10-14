@@ -21,7 +21,6 @@ import type {
 
 const decoded: DecodedGroup = {
     totalFees: 2000n,
-    transactionSummaries: [{ type: 'payment', sender: 'A' }],
     signableAddresses: ['A'],
 }
 

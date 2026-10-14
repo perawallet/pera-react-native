@@ -140,7 +140,7 @@ describe('fetchAccountState token holdings', () => {
 
         expect(state.holdings.map(h => h.assetId)).toEqual(['native', USDC])
         expect(state.holdings[1]!.amount.toFixed()).toBe('9007199254740993')
-        expect(state.holdings[1]!.isFrozen).toBe(false)
+        expect(state.holdings[1]!.native).toBeUndefined()
         expect(state.observedRound).toBe(100)
     })
 

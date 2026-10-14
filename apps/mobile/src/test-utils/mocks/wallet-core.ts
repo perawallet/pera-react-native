@@ -424,10 +424,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             discoverDelegatedAccounts: vi.fn(),
         })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
-        useAccountOptInRoundsQuery: vi.fn(() => ({
-            optInRounds: new Map(),
+        useHoldingAcquisitionOrderQuery: vi.fn(() => ({
+            acquisitionOrder: new Map(),
             isPending: false,
         })),
+        HoldingRestrictions: { transferBlocked: 'transferBlocked' },
         useSelectedAccount: vi.fn(() => null),
         useSelectedAccountId: vi.fn(() => ({
             selectedAccountId: null,
@@ -704,8 +705,17 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
         typeof import('@packages/chain-algorand/src/blockchain/arc0001')
     >('@packages/chain-algorand/src/blockchain/arc0001')
 
+    const transactionView = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/models/transaction-view')
+    >('@packages/chain-algorand/src/blockchain/models/transaction-view')
+    const warnings = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/utils/warnings')
+    >('@packages/chain-algorand/src/blockchain/utils/warnings')
+
     return {
         ...arc0001,
+        ...transactionView,
+        ...warnings,
         useAlgorandClient: vi.fn(),
         useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
         useTransactionEncoder: vi.fn(() => ({

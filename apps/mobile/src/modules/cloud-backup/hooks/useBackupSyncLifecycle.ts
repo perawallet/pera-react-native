@@ -24,9 +24,11 @@ import {
     useListPasskeysForBackup,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
+    useResolvePrivateKeyForBackup,
     useResolveSeedEntropyForBackup,
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
+    type SerializePrivateKeyResolver,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -50,6 +52,7 @@ type BackupSyncCallbacks = {
     >['importContacts']
     resolveHd: SerializeHdResolver
     resolveMnemonic: SerializeMnemonicResolver
+    resolvePrivateKey: SerializePrivateKeyResolver
     listPasskeys: ReturnType<typeof useListPasskeysForBackup>
     importPasskeys: ReturnType<
         typeof useCloudBackupPasskeyImport
@@ -151,6 +154,7 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     const { importContacts } = useCloudBackupContactImport()
     const resolveHd = useResolveHdSeedForBackup(scope.chainId)
     const resolveMnemonic = useResolveMnemonicForBackup(scope.chainId)
+    const resolvePrivateKey = useResolvePrivateKeyForBackup()
     const listPasskeys = useListPasskeysForBackup(scope.chainId)
     const { importPasskeys } = useCloudBackupPasskeyImport(
         scope.chainId,
@@ -162,6 +166,7 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
         importContacts,
         resolveHd,
         resolveMnemonic,
+        resolvePrivateKey,
         listPasskeys,
         importPasskeys,
         showToast,
@@ -174,6 +179,7 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
             importContacts,
             resolveHd,
             resolveMnemonic,
+            resolvePrivateKey,
             listPasskeys,
             importPasskeys,
             showToast,
@@ -184,6 +190,7 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
         importContacts,
         resolveHd,
         resolveMnemonic,
+        resolvePrivateKey,
         listPasskeys,
         importPasskeys,
         showToast,
@@ -207,6 +214,8 @@ const useBackupSyncManagerSetup = () => {
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
+            resolvePrivateKey: (chainId, keyPairId) =>
+                latest.current.resolvePrivateKey(chainId, keyPairId),
             isLocked: () => useSecurityStore.getState().isAppLockActive,
             listPasskeys: () => latest.current.listPasskeys(),
             importPasskeys: passkeys => latest.current.importPasskeys(passkeys),

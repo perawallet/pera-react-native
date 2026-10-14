@@ -20,8 +20,10 @@ import { canonicalJson } from '../canonicalize'
 import type { SerializedAccount, SerializedItem } from '../types'
 import {
     type GOLDEN_ACCOUNT_ITEMS,
+    type GOLDEN_MULTICHAIN_ITEMS,
     GOLDEN_HD,
     GOLDEN_MNEMONIC,
+    GOLDEN_PRIVATE_KEY_HEX,
     GOLDEN_UPDATED_AT,
     type GoldenItem,
 } from './accountWireFormat.golden'
@@ -31,12 +33,12 @@ import {
 // must come from the caller so it reads the caller's adapter registry.
 
 export type GoldenAccountKind = keyof typeof GOLDEN_ACCOUNT_ITEMS
+export type GoldenMultichainKind = keyof typeof GOLDEN_MULTICHAIN_ITEMS
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
-// Stands in for an entry a later chain adds to an account, which must never
-// reach the Algorand backup payload. It isn't a `ChainId` member, hence the
-// widening cast.
+// Stands in for an entry on a chain this build doesn't back up, which must
+// never reach the record. It isn't a `ChainId` member, hence the widening cast.
 const fixtureChain = (address: string, keyPairId?: string): AccountChains =>
     ({
         'fixture-chain': {
@@ -123,8 +125,8 @@ export const WIRE_FORMAT_ACCOUNTS: Record<GoldenAccountKind, WalletAccount> = {
     }),
 }
 
-// The same accounts holding only their Algorand entry: another chain's entry
-// must neither add to nor change the items.
+// The same accounts holding only their Algorand entry: an entry on a chain the
+// backup doesn't carry must neither add to nor change the items.
 export const ALGORAND_ONLY_WIRE_FORMAT_ACCOUNTS: Record<
     GoldenAccountKind,
     WalletAccount
@@ -134,6 +136,57 @@ export const ALGORAND_ONLY_WIRE_FORMAT_ACCOUNTS: Record<
         { ...account, chains: { algorand: account.chains.algorand } },
     ]),
 ) as Record<GoldenAccountKind, WalletAccount>
+
+// Accounts on Algorand and on Ethereum, which has no backup adapter of its
+// own and so gets the entries the format owns.
+export const MULTICHAIN_WIRE_FORMAT_ACCOUNTS: Record<
+    GoldenMultichainKind,
+    WalletAccount
+> = {
+    hdAlgorandEthereum: buildAccount({
+        id: 'hdAlgorandEthereum',
+        name: 'Child 1',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 1 },
+        },
+        chainId: 'algorand',
+        chains: {
+            algorand: { address: 'HDCHILDADDR', keyPairId: 'hd-key' },
+            ethereum: { address: '0xHDCHAINADDR', keyPairId: 'eth-hd' },
+        },
+    }),
+    hdEthereumOnly: buildAccount({
+        id: 'hdEthereumOnly',
+        name: 'Eth child',
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 2 },
+        },
+        chainId: 'ethereum',
+        chains: {
+            ethereum: { address: '0xHDONLYADDR', keyPairId: 'eth-hd-2' },
+        },
+    }),
+    privateKeyEthereum: buildAccount({
+        id: 'privateKeyEthereum',
+        name: 'Imported',
+        custody: { kind: 'local', seed: null },
+        chainId: 'ethereum',
+        chains: { ethereum: { address: '0xKEYADDR', keyPairId: 'eth-raw' } },
+    }),
+    watchAlgorandEthereum: buildAccount({
+        id: 'watchAlgorandEthereum',
+        custody: { kind: 'watch' },
+        chainId: 'algorand',
+        chains: {
+            algorand: { address: 'WATCHADDR' },
+            ethereum: { address: '0xWATCHADDR' },
+        },
+    }),
+}
 
 const toWire = (item: SerializedItem): GoldenItem => ({
     key: item.key,
@@ -146,7 +199,7 @@ export const wireItemsOf = (
 ): GoldenItem[] => {
     if (serialized === null) throw new Error('account was not serialized')
     return [
-        serialized.address,
+        serialized.record,
         ...(serialized.secrets ? [serialized.secrets] : []),
         ...(serialized.extraItems ?? []),
     ].map(toWire)
@@ -159,4 +212,8 @@ export const GOLDEN_SERIALIZE_DEPS = {
     hashAddress,
     resolveMnemonic: async () => GOLDEN_MNEMONIC,
     resolveHd: async () => GOLDEN_HD,
+    resolvePrivateKey: async () =>
+        Uint8Array.from(GOLDEN_PRIVATE_KEY_HEX.match(/../g) ?? [], byte =>
+            Number.parseInt(byte, 16),
+        ),
 }

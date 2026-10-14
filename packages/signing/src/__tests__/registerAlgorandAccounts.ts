@@ -19,6 +19,7 @@ import {
     CHAIN_CAPABILITIES,
     scopeForLegacyNetwork,
     type ChainCapabilities,
+    type ChainDescriptor,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -37,20 +38,28 @@ accountsChainAdapters.register(algorandAccountsAdapter)
 getProvider().chains.register(algorandDescriptor, NO_CAPABILITIES)
 
 /**
- * Algorand's account rules and schemes under another chain's id, so the
- * pipeline resolves a signer there without that chain's package. A real id,
- * since the stores' scope keys accept no other.
+ * Algorand's account rules under another chain's id, so the pipeline resolves
+ * a signer there without that chain's package. Its schemes and key kinds are
+ * Algorand's unless the chain's own are given. A real id, since the stores'
+ * scope keys accept no other.
  */
-export const registerAlgorandRulesAs = (chainId: ChainId): void => {
+export const registerAlgorandRulesAs = (
+    chainId: ChainId,
+    {
+        descriptor = { ...algorandDescriptor, id: chainId },
+        localKeyKinds = algorandAccountsAdapter.localKeyKinds,
+    }: {
+        descriptor?: ChainDescriptor
+        localKeyKinds?: AccountsChainAdapter['localKeyKinds']
+    } = {},
+): void => {
     if (accountsChainAdapters.has(chainId)) return
     accountsChainAdapters.register({
         ...algorandAccountsAdapter,
         chainId,
+        localKeyKinds,
     } as AccountsChainAdapter)
-    getProvider().chains.register(
-        { ...algorandDescriptor, id: chainId },
-        NO_CAPABILITIES,
-    )
+    getProvider().chains.register(descriptor, NO_CAPABILITIES)
 }
 
 /**

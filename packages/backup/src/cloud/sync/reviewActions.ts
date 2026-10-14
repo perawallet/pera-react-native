@@ -14,6 +14,7 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { deleteItem, readItems } from '../api'
 import {
+    parseAccountRecordPayload,
     parseAddressPayload,
     parseContactPayload,
     parsePasskeyPayload,
@@ -23,15 +24,23 @@ import {
 import { decryptItemPayload } from '../crypto/itemPayload'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import {
+    accountRecordSeedReference,
+    cachedRecordSeedReference,
+    isAccountRecordReadable,
     isAccountItemKey,
-    isChainHdAddressPayload,
+    isAccountKey,
+    isAccountRecordKey,
     passkeyPartnerKey,
     secretsItemKey,
+    BACKUP_ACCOUNT_RECORDS_KEY_PREFIX,
     BACKUP_ACCOUNTS_KEY_PREFIX,
     BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
+    BackupAccountType,
     BackupItemStatus,
+    hdPositionOf,
+    type AccountRecordPayload,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
@@ -98,16 +107,18 @@ export const reviewActionDeps = (deps: SyncEngineDeps): ReviewActionDeps => ({
     decrypt: decryptItemPayload,
 })
 
-/** Matched on the cached address, never by rebuilding the key from it. */
+/** Whether a tracked item names `address`: its own, or any chain's of an
+ *  account record. Matched on the cache, never by rebuilding the key. */
+const names = (item: SyncItemState, address: string): boolean =>
+    item.address === address || item.addresses?.includes(address) === true
+
 const trackedKeysUnder = (
     state: SyncState,
     address: string,
     prefix: string,
 ): BackupItemKey[] =>
     Object.entries(state.items)
-        .filter(
-            ([key, item]) => key.startsWith(prefix) && item.address === address,
-        )
+        .filter(([key, item]) => key.startsWith(prefix) && names(item, address))
         .map(([key]) => key)
 
 const isLiveIn =
@@ -122,10 +133,51 @@ const liveKeyUnder = (
 ): BackupItemKey | null =>
     trackedKeysUnder(state, address, prefix).find(isLiveIn(state)) ?? null
 
-const keysFor = (state: SyncState, address: string): BackupItemKey[] => [
-    ...trackedKeysUnder(state, address, BACKUP_ACCOUNTS_KEY_PREFIX),
-    ...trackedKeysUnder(state, address, BACKUP_SECRETS_KEY_PREFIX),
-]
+/** The record of the account `address` is on, live first. */
+const recordKeyFor = (
+    state: SyncState,
+    address: string,
+): BackupItemKey | null => {
+    const keys = trackedKeysUnder(
+        state,
+        address,
+        BACKUP_ACCOUNT_RECORDS_KEY_PREFIX,
+    )
+    return keys.find(isLiveIn(state)) ?? keys[0] ?? null
+}
+
+/** Every address of the account `address` is on, as far as the backup knows:
+ *  its record's chains, else the address alone. */
+const accountAddressesIn = (state: SyncState, address: string): string[] => {
+    const key = recordKeyFor(state, address)
+    return (key && state.items[key]?.addresses) || [address]
+}
+
+const recordSeedReference = (item: SyncItemState | undefined): string | null =>
+    cachedRecordSeedReference(item?.record)
+
+const isSeedSecret = (state: SyncState, key: BackupItemKey): boolean =>
+    state.items[key]?.accountType === BackupAccountType.hdSeed
+
+/** The account's record, its legacy items and its own secrets. The shared HD
+ *  seed counts only where the account's address is the one it is filed
+ *  under, as before records. */
+const keysFor = (state: SyncState, address: string): BackupItemKey[] => {
+    const addresses = accountAddressesIn(state, address)
+    return [
+        ...new Set([
+            ...trackedKeysUnder(
+                state,
+                address,
+                BACKUP_ACCOUNT_RECORDS_KEY_PREFIX,
+            ),
+            ...addresses.flatMap(each => [
+                ...trackedKeysUnder(state, each, BACKUP_ACCOUNTS_KEY_PREFIX),
+                ...trackedKeysUnder(state, each, BACKUP_SECRETS_KEY_PREFIX),
+            ]),
+        ]),
+    ]
+}
 
 const liveKeysFor = (state: SyncState, address: string): BackupItemKey[] =>
     keysFor(state, address).filter(isLiveIn(state))
@@ -134,15 +186,31 @@ const liveKeysFor = (state: SyncState, address: string): BackupItemKey[] =>
  * Forgets what the backup knew about an address so the next reconcile treats
  * its items as brand new. Dropping the tombstone rather than reviving it is
  * what makes the re-upload correct: the server deleted these keys, so they
- * have to go back at version 0.
+ * have to go back at version 0. An item the server still holds keeps its
+ * version instead, since tracking it at 0 would conflict on every push; that
+ * covers a seed another account still uses. Legacy items are left alone, since
+ * records are all this build writes.
  */
 export const markAccountForBackup = (
     state: SyncState,
     address: string,
 ): SyncState => {
     const items = { ...state.items }
-    for (const key of keysFor(state, address)) {
-        delete items[key]
+    const recordKey = recordKeyFor(state, address)
+    const seedReference = recordKey
+        ? recordSeedReference(state.items[recordKey])
+        : null
+    const seedKeys = seedReference
+        ? trackedKeysUnder(state, seedReference, BACKUP_SECRETS_KEY_PREFIX)
+        : []
+    for (const key of new Set([...keysFor(state, address), ...seedKeys])) {
+        if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)) continue
+        const item = items[key] as SyncItemState
+        if (item.status === BackupItemStatus.ACTIVE && item.knownVer > 0) {
+            items[key] = { ...item, pendingDelete: false, pendingImport: false }
+        } else {
+            delete items[key]
+        }
     }
     return { ...state, items }
 }
@@ -182,9 +250,17 @@ const clearReviewed = (
 })
 
 type CollectedPayloads = {
+    records: AccountRecordPayload[]
     addressPayloads: Map<string, AddressBackupPayload>
     secretsPayloads: Map<string, SecretsBackupPayload>
 }
+
+const decryptWithDeps = (item: FetchedItem, deps: ReviewActionDeps): string =>
+    deps.decrypt(item.payload, {
+        encryptionKey: deps.encryptionKey,
+        backupId: deps.backupId,
+        key: item.key,
+    })
 
 const collect = (
     items: FetchedItem[],
@@ -193,12 +269,10 @@ const collect = (
 ): void => {
     for (const item of items) {
         try {
-            const plaintext = deps.decrypt(item.payload, {
-                encryptionKey: deps.encryptionKey,
-                backupId: deps.backupId,
-                key: item.key,
-            })
-            if (isAccountItemKey(item.key)) {
+            const plaintext = decryptWithDeps(item, deps)
+            if (isAccountRecordKey(item.key)) {
+                into.records.push(parseAccountRecordPayload(plaintext))
+            } else if (isAccountItemKey(item.key)) {
                 const payload = parseAddressPayload(plaintext)
                 into.addressPayloads.set(payload.address, payload)
             } else {
@@ -211,9 +285,21 @@ const collect = (
     }
 }
 
-/** An HD child needs a second read: its key material lives under the seed's
- *  first derived address, not its own, and without it the import has no parent
- *  to derive from. */
+const seedReferenceOf = (collected: CollectedPayloads): string | null => {
+    for (const record of collected.records) {
+        const reference = accountRecordSeedReference(record)
+        if (reference) return reference
+    }
+    for (const payload of collected.addressPayloads.values()) {
+        const position = hdPositionOf(payload)
+        if (position) return position.seedReference
+    }
+    return null
+}
+
+/** An HD account needs a second read: its key material lives under the seed's
+ *  first derived address, not its own, and without it the import has no
+ *  parent to derive from. A record restores every chain of the account. */
 export const importFromBackup = async ({
     state,
     address,
@@ -223,8 +309,14 @@ export const importFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<{ state: SyncState; summary: ImportSummary }> => {
-    const keys = liveKeysFor(state, address)
-    if (keys.length === 0) {
+    const liveKeys = liveKeysFor(state, address)
+    // A legacy item the record covers is the same account; it is cleared with
+    // the record but never read.
+    const hasRecord = liveKeys.some(isAccountRecordKey)
+    const readKeys = hasRecord
+        ? liveKeys.filter(key => !isAccountItemKey(key))
+        : liveKeys
+    if (readKeys.length === 0) {
         return {
             state,
             summary: {
@@ -239,78 +331,79 @@ export const importFromBackup = async ({
         deps.network,
         deps.backupId,
         deps.deviceId,
-        keys,
+        readKeys,
     )
     const collected: CollectedPayloads = {
+        records: [],
         addressPayloads: new Map(),
         secretsPayloads: new Map(),
     }
     collect(fetched, deps, collected)
-
-    const addressPayload = collected.addressPayloads.get(address)
-    const parentSeed = addressPayload && parentSeedOf(addressPayload)
-    if (parentSeed) {
-        // Hashed, not matched: the seed is filed under an account this device
-        // may not hold, so nothing caches that address.
-        const seedKey = secretsItemKey(deps.hashAddress(parentSeed))
-        if (state.items[seedKey]?.status === BackupItemStatus.ACTIVE) {
-            collect(
-                await deps.readItems(
-                    deps.network,
-                    deps.backupId,
-                    deps.deviceId,
-                    [seedKey],
-                ),
-                deps,
-                collected,
-            )
+    // Importing it would bring nothing back and clear the row; it stays held
+    // for the version that can read it.
+    if (collected.records.some(record => !isAccountRecordReadable(record))) {
+        return {
+            state,
+            summary: {
+                imported: 0,
+                skippedDuplicate: 0,
+                failed: [{ address, reason: 'Needs a newer version of Pera' }],
+            },
         }
     }
 
-    const summary = await deps.importAccounts(
-        buildPulledAccounts(
-            collected.addressPayloads,
-            collected.secretsPayloads,
-        ),
-    )
+    const seedReference = seedReferenceOf(collected)
+    if (seedReference) {
+        // Hashed, not matched: the seed is filed under an account this device
+        // may not hold, so nothing caches that address.
+        const seedKey = secretsItemKey(deps.hashAddress(seedReference))
+        if (
+            !readKeys.includes(seedKey) &&
+            state.items[seedKey]?.status === BackupItemStatus.ACTIVE
+        ) {
+            const seedFetched = await deps.readItems(
+                deps.network,
+                deps.backupId,
+                deps.deviceId,
+                [seedKey],
+            )
+            collect(seedFetched, deps, collected)
+            fetched.push(...seedFetched)
+        }
+    }
+
+    const summary = await deps.importAccounts(buildPulledAccounts(collected))
 
     const byKey = new Map(fetched.map(item => [item.key, item]))
     const items = { ...state.items }
-    for (const key of keys) {
+    for (const key of liveKeys) {
         const tracked = items[key]
         if (tracked) items[key] = clearReviewed(tracked, byKey.get(key))
     }
     return { state: { ...state, items }, summary }
 }
 
-/** The seed an HD child's item derives from, filed under its first derived
- *  address. Read off the item's shape rather than its chain's kind, so an
- *  item of a kind no registered adapter decodes still keeps its seed. */
-const parentSeedOf = (payload: AddressBackupPayload): string | undefined =>
-    isChainHdAddressPayload(payload)
-        ? payload.seedFirstDerivedAddress
-        : undefined
-
-const otherLiveAddressKeys = (
+const otherLiveAccountKeys = (
     state: SyncState,
-    ownKey: BackupItemKey,
+    ownKeys: readonly BackupItemKey[],
 ): BackupItemKey[] =>
     Object.entries(state.items)
         .filter(
             ([key, item]) =>
-                key !== ownKey &&
-                isAccountItemKey(key) &&
+                !ownKeys.includes(key) &&
+                isAccountKey(key) &&
                 item.status === BackupItemStatus.ACTIVE,
         )
         .map(([key]) => key)
 
-/** Anything unreadable is simply absent from the result, so callers must treat
+/** Each readable item's seed reference, null for an account with none.
+ *  Anything unreadable is simply absent from the result, so callers must treat
  *  a missing key as "unknown", never as "not there". */
-const readAddressPayloads = async (
+const readSeedReferences = async (
     keys: BackupItemKey[],
     deps: ReviewActionDeps,
-): Promise<Map<BackupItemKey, AddressBackupPayload>> => {
-    const out = new Map<BackupItemKey, AddressBackupPayload>()
+): Promise<Map<BackupItemKey, string | null>> => {
+    const out = new Map<BackupItemKey, string | null>()
     if (keys.length === 0) return out
 
     const fetched = await deps.readItems(
@@ -321,16 +414,20 @@ const readAddressPayloads = async (
     )
     for (const item of fetched) {
         try {
-            out.set(
-                item.key,
-                parseAddressPayload(
-                    deps.decrypt(item.payload, {
-                        encryptionKey: deps.encryptionKey,
-                        backupId: deps.backupId,
-                        key: item.key,
-                    }),
-                ),
-            )
+            const plaintext = decryptWithDeps(item, deps)
+            if (!isAccountRecordKey(item.key)) {
+                out.set(
+                    item.key,
+                    hdPositionOf(parseAddressPayload(plaintext))
+                        ?.seedReference ?? null,
+                )
+                continue
+            }
+            const record = parseAccountRecordPayload(plaintext)
+            // A newer client's record may derive from it in a shape this
+            // build can't read, so it stays unknown.
+            if (isAccountRecordReadable(record))
+                out.set(item.key, accountRecordSeedReference(record))
         } catch {
             logger.warn('reviewActions: unreadable address record', {
                 key: item.key,
@@ -342,51 +439,35 @@ const readAddressPayloads = async (
 
 /**
  * An HD account's secret is the seed every sibling derives from, stored under
- * the seed's first derived address — itself an ordinary account. So the seed
- * only goes once no address record in the backup still derives from it, and
- * anything unreadable counts as "still derives": never delete key material we
- * cannot prove is unreferenced.
+ * the seed's first derived address. So the seed only goes once no other
+ * account item in the backup still derives from it, and anything unreadable
+ * counts as "still derives": never delete key material we cannot prove is
+ * unreferenced. An offline read keeps it too; the caller's delete queues a
+ * retry for the rest.
  */
-const secretKeyToDelete = async (
+const seedKeyToDelete = async (
     state: SyncState,
-    addressKey: BackupItemKey,
-    address: string,
+    ownKeys: readonly BackupItemKey[],
+    seedReference: string,
     deps: ReviewActionDeps,
 ): Promise<BackupItemKey | null> => {
-    const isLive = isLiveIn(state)
-    const others = otherLiveAddressKeys(state, addressKey)
-
-    let payloads: Map<BackupItemKey, AddressBackupPayload>
+    // Hashed, not matched: the seed is filed under an account this device may
+    // not hold, so nothing caches that address.
+    const seedKey = secretsItemKey(deps.hashAddress(seedReference))
+    if (!isLiveIn(state)(seedKey)) return null
+    const others = otherLiveAccountKeys(state, ownKeys)
+    let references: Map<BackupItemKey, string | null>
     try {
-        payloads = await readAddressPayloads([addressKey, ...others], deps)
+        references = await readSeedReferences(others, deps)
     } catch (error) {
-        // Offline: delete the address (which queues a retry) and leave every
-        // secret alone rather than guess.
         logger.warn('reviewActions: could not read address records', {
             error: error instanceof Error ? error.message : String(error),
         })
         return null
     }
-
-    const own = payloads.get(addressKey)
-    if (!own) return null
-
-    const ownSeed = parentSeedOf(own)
-    if (!ownSeed) {
-        return liveKeyUnder(state, address, BACKUP_SECRETS_KEY_PREFIX)
-    }
-
-    // Hashed, not matched: the seed is filed under an account this device may
-    // not hold, so nothing caches that address.
-    const seedKey = secretsItemKey(deps.hashAddress(ownSeed))
-    if (!isLive(seedKey)) return null
-
-    const stillDerives = others.some(key => {
-        const payload = payloads.get(key)
-        // Unreadable sibling: assume it needs the seed.
-        if (!payload) return true
-        return parentSeedOf(payload) === ownSeed
-    })
+    const stillDerives = others.some(
+        key => !references.has(key) || references.get(key) === seedReference,
+    )
     return stillDerives ? null : seedKey
 }
 
@@ -444,16 +525,65 @@ export const deleteFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<BackupDeleteResult> => {
-    const addressKey = liveKeyUnder(state, address, BACKUP_ACCOUNTS_KEY_PREFIX)
-    if (addressKey === null) {
-        return { state, keys: [] }
-    }
-
-    const keys: BackupItemKey[] = [addressKey]
-    const secretKey = await secretKeyToDelete(state, addressKey, address, deps)
-    if (secretKey !== null) keys.push(secretKey)
-
+    const recordKey = recordKeyFor(state, address)
+    const keys =
+        recordKey && isLiveIn(state)(recordKey)
+            ? await recordKeysToDelete(state, recordKey, address, deps)
+            : await legacyKeysToDelete(state, address, deps)
     return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
+}
+
+/** The record goes with every legacy item of the account, or a restore would
+ *  bring the account back from those. */
+const recordKeysToDelete = async (
+    state: SyncState,
+    recordKey: BackupItemKey,
+    address: string,
+    deps: ReviewActionDeps,
+): Promise<BackupItemKey[]> => {
+    const own = liveKeysFor(state, address)
+    const seedReference = recordSeedReference(state.items[recordKey])
+    const seedKey = seedReference
+        ? await seedKeyToDelete(
+              state,
+              own.filter(isAccountKey),
+              seedReference,
+              deps,
+          )
+        : null
+    return [
+        ...own.filter(key => !isSeedSecret(state, key)),
+        ...(seedKey ? [seedKey] : []),
+    ]
+}
+
+const legacyKeysToDelete = async (
+    state: SyncState,
+    address: string,
+    deps: ReviewActionDeps,
+): Promise<BackupItemKey[]> => {
+    const addressKey = liveKeyUnder(state, address, BACKUP_ACCOUNTS_KEY_PREFIX)
+    if (addressKey === null) return []
+
+    let own: Map<BackupItemKey, string | null>
+    try {
+        own = await readSeedReferences([addressKey], deps)
+    } catch (error) {
+        // Offline: delete the address (which queues a retry) and leave every
+        // secret alone rather than guess.
+        logger.warn('reviewActions: could not read address records', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return [addressKey]
+    }
+    if (!own.has(addressKey)) return [addressKey]
+
+    const seedReference = own.get(addressKey) ?? null
+    const secretKey =
+        seedReference === null
+            ? liveKeyUnder(state, address, BACKUP_SECRETS_KEY_PREFIX)
+            : await seedKeyToDelete(state, [addressKey], seedReference, deps)
+    return secretKey === null ? [addressKey] : [addressKey, secretKey]
 }
 
 export const deleteContactFromBackup = async ({

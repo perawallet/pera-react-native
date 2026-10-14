@@ -13,7 +13,6 @@
 import { useCallback } from 'react'
 import {
     restoreErrorCategoryOf,
-    type ImportSummary,
     type RestoreCloudBackupResult,
     type RestoreErrorCategory,
 } from '@perawallet/wallet-core-backup'
@@ -28,20 +27,38 @@ const ERROR_KEYS: Record<RestoreErrorCategory, string> = {
     UNKNOWN: 'cloud_backup.restore.error_unknown',
 }
 
-const outcomeToast = (t: Translate, { failed }: ImportSummary) =>
-    failed.length > 0
-        ? {
-              title: t('cloud_backup.restore.partial_success', {
-                  count: failed.length,
-              }),
-              body: '',
-              type: 'warning' as const,
-          }
-        : {
-              title: t('cloud_backup.restore.success'),
-              body: '',
-              type: 'success' as const,
-          }
+const outcomeToast = (
+    t: Translate,
+    {
+        incompleteAccountCount,
+        newerAccountCount,
+    }: Pick<
+        RestoreCloudBackupResult,
+        'incompleteAccountCount' | 'newerAccountCount'
+    >,
+) => {
+    const update =
+        newerAccountCount > 0
+            ? t('cloud_backup.restore.update_to_restore', {
+                  count: newerAccountCount,
+              })
+            : ''
+    if (incompleteAccountCount > 0) {
+        return {
+            title: t('cloud_backup.restore.partial_success', {
+                count: incompleteAccountCount,
+            }),
+            body: update,
+            type: 'warning' as const,
+        }
+    }
+    if (update) return { title: update, body: '', type: 'warning' as const }
+    return {
+        title: t('cloud_backup.restore.success'),
+        body: '',
+        type: 'success' as const,
+    }
+}
 
 const failureToast = (t: Translate, category: RestoreErrorCategory) => ({
     title: t(ERROR_KEYS[category]),
@@ -72,8 +89,8 @@ export const useRestoreOutcome = ({
     const { showToast } = useToast()
 
     const onSuccess = useCallback(
-        ({ summary }: RestoreCloudBackupResult) => {
-            showToast(outcomeToast(t, summary))
+        (result: RestoreCloudBackupResult) => {
+            showToast(outcomeToast(t, result))
             clearDraft()
             onDone()
         },

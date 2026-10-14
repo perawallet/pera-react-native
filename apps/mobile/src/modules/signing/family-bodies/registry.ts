@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { AlgorandTransactionDetailBody } from './algorand/AlgorandTransactionDetailBody'
-import { AlgorandTransactionReviewBody } from './algorand/AlgorandTransactionReviewBody'
+import {
+    AlgorandTransactionDetailBody,
+    AlgorandTransactionReviewBody,
+} from '@modules/algorand'
 import type { TransactionBodyRegistry } from './types'
 
 export const transactionBodyRegistry: TransactionBodyRegistry = {

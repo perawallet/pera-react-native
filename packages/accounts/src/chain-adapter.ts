@@ -16,6 +16,7 @@ import {
     keyDerivations,
     type ChainAccountNative,
     type ChainCapability,
+    type ChainHoldingNative,
     type ChainId,
     type ChainScope,
     type ChainScopeKey,
@@ -26,7 +27,11 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore, type useKMS } from '@perawallet/wallet-core-kms'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type {
+    HistoryPeriod,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     HdAccountsUnsupportedError,
     MultisigUnsupportedError,
@@ -37,6 +42,7 @@ import type {
     AccountChains,
     AccountCustody,
     HdIndex,
+    HoldingRestriction,
     LocalCustody,
     WalletAccount,
 } from './models'
@@ -154,7 +160,31 @@ export type AccountHoldingSnapshot = {
     assetId: string
     /** Base units. */
     amount: Decimal
-    isFrozen: boolean
+    /** Absent on a chain whose holdings carry no data of their own. */
+    native?: ChainHoldingNative
+}
+
+/** What a chain says about a holding, for chain-neutral readers. */
+export type HoldingDescription = {
+    restriction: Nullable<HoldingRestriction>
+}
+
+/** One point of a portfolio's value over time. */
+export type PortfolioHistoryPoint = {
+    /** Unix ms. */
+    timestamp: number
+    usdValue: Decimal
+    /** Display units of the chain's native asset. */
+    nativeValue: Decimal
+}
+
+/** One point of a single holding's balance and value over time. */
+export type HoldingBalanceHistoryPoint = {
+    /** Unix ms. */
+    timestamp: number
+    /** Display units. */
+    amount: Decimal
+    usdValue: Decimal
 }
 
 /** One read of an account's balance, holdings and signer, as the syncer persists it. */
@@ -264,11 +294,33 @@ export interface AccountsChainAdapter {
     summarizeChainState(
         chainState: AccountChainState,
     ): Pick<AccountState, 'reserveBalance' | 'heldTokenCount'>
-    /** Opt-in round per held asset, keyed by asset id. Absent on a chain without opt-in. */
-    fetchAssetOptInRounds?(
+    /**
+     * When each held asset was acquired, keyed by asset id; higher means later.
+     * Orders the collectibles gallery. Absent on a chain with no such order.
+     */
+    fetchHoldingAcquisitionOrder?(
         address: string,
         scope: ChainScope,
     ): Promise<Map<string, number>>
+    /** Absent on a chain whose holdings carry no data to describe. */
+    describeHolding?(native: ChainHoldingNative): HoldingDescription
+    /**
+     * The summed value of `addresses` over `period`. Absent on a chain with no
+     * portfolio history source.
+     */
+    fetchPortfolioHistory?(
+        addresses: string[],
+        period: HistoryPeriod,
+        scope: ChainScope,
+    ): Promise<PortfolioHistoryPoint[]>
+    /** One holding's history. Absent on a chain with no such source. */
+    fetchHoldingBalanceHistory?(
+        address: string,
+        assetId: string,
+        period: HistoryPeriod,
+        currency: string,
+        scope: ChainScope,
+    ): Promise<HoldingBalanceHistoryPoint[]>
     /**
      * Whether a sync pass has anything to read. A null cursor has never
      * synced, so it always reports a change. Absent on a chain whose change
@@ -433,13 +485,51 @@ export const fetchDelegatedAddresses = async (
         .get(scope.chainId)
         .authority?.fetchDelegatedAddresses(authorityAddress, scope) ?? []
 
-/** Empty on a chain without asset opt-in. */
-export const fetchAssetOptInRounds = async (
+/** Empty, without a request, on a chain with no acquisition order. */
+export const fetchHoldingAcquisitionOrder = async (
     address: string,
     scope: ChainScope,
 ): Promise<Map<string, number>> => {
     const adapter = accountsChainAdapters.get(scope.chainId)
-    return adapter.fetchAssetOptInRounds
-        ? adapter.fetchAssetOptInRounds(address, scope)
+    return adapter.fetchHoldingAcquisitionOrder
+        ? adapter.fetchHoldingAcquisitionOrder(address, scope)
         : new Map()
 }
+
+/** Empty, without a request, on a chain with no portfolio history source. */
+export const fetchPortfolioHistory = async (
+    addresses: string[],
+    period: HistoryPeriod,
+    scope: ChainScope,
+): Promise<PortfolioHistoryPoint[]> =>
+    (await accountsChainAdapters
+        .get(scope.chainId)
+        .fetchPortfolioHistory?.(addresses, period, scope)) ?? []
+
+/** Empty, without a request, on a chain with no holding history source. */
+export const fetchHoldingBalanceHistory = async (
+    address: string,
+    assetId: string,
+    period: HistoryPeriod,
+    currency: string,
+    scope: ChainScope,
+): Promise<HoldingBalanceHistoryPoint[]> =>
+    (await accountsChainAdapters
+        .get(scope.chainId)
+        .fetchHoldingBalanceHistory?.(
+            address,
+            assetId,
+            period,
+            currency,
+            scope,
+        )) ?? []
+
+/** No restriction when the holding has no data or the chain describes none. */
+export const describeHolding = (
+    chainId: ChainId,
+    native: Nullable<ChainHoldingNative>,
+): HoldingDescription =>
+    (native &&
+        accountsChainAdapters.get(chainId).describeHolding?.(native)) || {
+        restriction: null,
+    }

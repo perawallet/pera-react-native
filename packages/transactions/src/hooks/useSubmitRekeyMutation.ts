@@ -156,7 +156,7 @@ export const useSubmitRekeyMutation = ({
             )
 
             try {
-                return await submitAndAutoRefresh(scope.chainId, signed, {
+                return await submitAndAutoRefresh(scope, signed, {
                     flow: 'rekey',
                     intentKey: { kind: 'rekey', address: sourceAddress },
                     sender: sourceAddress,

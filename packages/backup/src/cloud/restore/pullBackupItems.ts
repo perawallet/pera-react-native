@@ -10,10 +10,12 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { fetchManifest, readItems } from '../api'
 import {
+    parseAccountRecordPayload,
     parseAddressPayload,
     parseContactPayload,
     parsePasskeyPayload,
@@ -23,6 +25,14 @@ import {
 } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
+    accountIdentityOf,
+    accountRecordAddresses,
+    accountRecordEntries,
+    accountRecordIdentity,
+    accountRecordType,
+    isAccountRecordKey,
+    isAccountRecordReadable,
+    BACKUP_ACCOUNT_RECORDS_KEY_PREFIX,
     BACKUP_ACCOUNTS_KEY_PREFIX,
     BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
@@ -35,6 +45,8 @@ import {
     isPasskeyItemKey,
     isPasskeySecretsItemKey,
     isSettingsItemKey,
+    type AccountEntryPayload,
+    type AccountRecordPayload,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
@@ -46,16 +58,30 @@ import {
     type PasskeySecretsBackupPayload,
     type SecretsBackupPayload,
     type SettingsBackupPayload,
+    type SyncItemState,
 } from '../models'
+import { canRestoreRecordEntry, isBackupChain } from '../sync/backupChains'
 import type { PulledPasskey } from '../sync/types'
 
 const READ_BATCH_SIZE = 50
 
+/** One chain of one account. `group` is the account's identity, shared by
+ *  every chain of it, so the import can treat them as one account. */
 export type PulledAccount = {
     address: string
-    addressPayload: AddressBackupPayload
+    group: string
+    /** A record entry's chain; absent for a legacy item, which is on the
+     *  backup's scope chain. */
+    chain?: ChainId
+    addressPayload: AccountEntryPayload
     secretsPayload: SecretsBackupPayload | null
 }
+
+/** What a tracked item caches about its payload; the key is a hash. */
+export type TrackedIdentifiers = Pick<
+    SyncItemState,
+    'address' | 'addresses' | 'accountType' | 'record'
+>
 
 export type PulledSettings = {
     key: BackupItemKey
@@ -64,7 +90,8 @@ export type PulledSettings = {
 
 export type SkippedItem = {
     key: BackupItemKey
-    reason: 'decrypt' | 'parse'
+    /** `newer`: an account record only a newer client can restore. */
+    reason: 'decrypt' | 'parse' | 'chain' | 'newer'
 }
 
 export type PullBackupItemsResult = {
@@ -74,9 +101,9 @@ export type PullBackupItemsResult = {
      *  tombstones and items the restore could not read, which the caller still
      *  has to track or it will offer them to the server as new. */
     manifestItems: Record<BackupItemKey, ManifestItem>
-    /** The address each read item was filed under. This pull is the only place
-     *  a restore can learn it: the key is an HMAC of the address. */
-    addressByKey: Record<BackupItemKey, string>
+    /** What each read item was filed under. This pull is the only place a
+     *  restore can learn it: the key is an HMAC. */
+    trackedByKey: Record<BackupItemKey, TrackedIdentifiers>
     accounts: PulledAccount[]
     contacts: ContactBackupPayload[]
     passkeys: PulledPasskey[]
@@ -115,6 +142,7 @@ const selectWantedKeys = (
             ([key, item]) =>
                 item.status === BackupItemStatus.ACTIVE &&
                 (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_ACCOUNT_RECORDS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_CONTACTS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX) ||
@@ -156,16 +184,18 @@ const decryptItem = (
 }
 
 type CollectedPayloads = {
+    records: AccountRecordPayload[]
     addressPayloads: Map<string, AddressBackupPayload>
     secretsPayloads: Map<string, SecretsBackupPayload>
     contacts: ContactBackupPayload[]
     passkeys: PulledPasskey[]
     settings: PulledSettings | null
-    addressByKey: Record<BackupItemKey, string>
+    trackedByKey: Record<BackupItemKey, TrackedIdentifiers>
     skipped: SkippedItem[]
 }
 
 type ParsedItemPayload =
+    | { kind: 'record'; payload: AccountRecordPayload }
     | { kind: 'address'; payload: AddressBackupPayload }
     | { kind: 'secrets'; payload: SecretsBackupPayload }
     | { kind: 'contact'; payload: ContactBackupPayload }
@@ -190,6 +220,8 @@ const parseItemPayload = (
         }
     if (isSettingsItemKey(key))
         return { kind: 'settings', payload: parseSettingsPayload(plaintext) }
+    if (isAccountRecordKey(key))
+        return { kind: 'record', payload: parseAccountRecordPayload(plaintext) }
     if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX))
         return { kind: 'address', payload: parseAddressPayload(plaintext) }
     return { kind: 'secrets', payload: parseSecretsPayload(plaintext) }
@@ -203,13 +235,14 @@ const collectItemPayloads = (
     encryptionKey: Uint8Array,
     backupId: BackupId,
 ): CollectedPayloads => {
+    const records: AccountRecordPayload[] = []
     const addressPayloads = new Map<string, AddressBackupPayload>()
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
     const contacts: ContactBackupPayload[] = []
     const passkeyPayloads: PasskeyBackupPayload[] = []
     const passkeySecrets = new Map<string, PasskeySecretsBackupPayload>()
     let settings: PulledSettings | null = null
-    const addressByKey: Record<BackupItemKey, string> = {}
+    const trackedByKey: Record<BackupItemKey, TrackedIdentifiers> = {}
     const skipped: SkippedItem[] = []
 
     for (const item of items) {
@@ -236,27 +269,59 @@ const collectItemPayloads = (
         }
 
         // A passkey has no address; its credential id is the identifier the
-        // review buckets read back out of `addressByKey`.
+        // review buckets read back out of `trackedByKey`.
         if (parsed.kind === 'passkey') {
-            addressByKey[item.key] = parsed.payload.credentialId
+            trackedByKey[item.key] = {
+                address: parsed.payload.credentialId,
+                accountType: null,
+            }
             passkeyPayloads.push(parsed.payload)
             continue
         }
         if (parsed.kind === 'passkeySecrets') {
-            addressByKey[item.key] = parsed.payload.credentialId
+            trackedByKey[item.key] = {
+                address: parsed.payload.credentialId,
+                accountType: null,
+            }
             passkeySecrets.set(parsed.payload.credentialId, parsed.payload)
             continue
         }
 
+        if (parsed.kind === 'record') {
+            // Tracked either way, so this device never writes over it.
+            trackedByKey[item.key] = recordIdentifiers(parsed.payload)
+            if (isAccountRecordReadable(parsed.payload))
+                records.push(parsed.payload)
+            else skipped.push({ key: item.key, reason: 'newer' })
+            continue
+        }
+
+        const chain =
+            parsed.kind === 'secrets' && 'chain' in parsed.payload
+                ? (parsed.payload.chain as ChainId)
+                : null
+        if (chain !== null && !isBackupChain(chain)) {
+            skipped.push({ key: item.key, reason: 'chain' })
+            continue
+        }
+
         const { address } = parsed.payload
-        addressByKey[item.key] = address
-        if (parsed.kind === 'contact') contacts.push(parsed.payload)
-        else if (parsed.kind === 'address')
-            addressPayloads.set(address, parsed.payload)
-        else secretsPayloads.set(address, parsed.payload)
+        if (parsed.kind === 'contact') {
+            trackedByKey[item.key] = { address, accountType: null }
+            contacts.push(parsed.payload)
+        } else {
+            trackedByKey[item.key] = {
+                address,
+                accountType: parsed.payload.type,
+            }
+            if (parsed.kind === 'address')
+                addressPayloads.set(address, parsed.payload)
+            else secretsPayloads.set(address, parsed.payload)
+        }
     }
 
     return {
+        records,
         addressPayloads,
         secretsPayloads,
         contacts,
@@ -265,33 +330,77 @@ const collectItemPayloads = (
             secret: passkeySecrets.get(payload.credentialId) ?? null,
         })),
         settings,
-        addressByKey,
+        trackedByKey,
         skipped,
     }
 }
 
-/** Joins address + secrets payloads by address into PulledAccounts. A hdSeed
- *  secret with no matching address payload (its first account was removed) is
- *  surfaced as a standalone hdSeed entry so the seed still restores. */
-export const buildPulledAccounts = (
-    addressPayloads: Map<string, AddressBackupPayload>,
-    secretsPayloads: Map<string, SecretsBackupPayload>,
-): PulledAccount[] => {
-    const accounts: PulledAccount[] = [...addressPayloads.entries()].map(
-        ([address, addressPayload]) => ({
-            address,
-            addressPayload,
-            secretsPayload: secretsPayloads.get(address) ?? null,
+export const recordIdentifiers = (
+    record: AccountRecordPayload,
+): TrackedIdentifiers => ({
+    address: record.chains[0]?.address ?? null,
+    addresses: accountRecordAddresses(record),
+    accountType: accountRecordType(record),
+    record,
+})
+
+/**
+ * Splits records into one entry per chain this build reads, adds the legacy
+ * items no record covers, and joins each to its secret by address. A legacy
+ * item a record covers is the same account written before records existed, so
+ * the record wins. So a client that predates records can't reach that account:
+ * its rename is dropped, and its delete leaves the record live, so the account
+ * comes back on the next restore. An hdSeed secret no entry claims (its first
+ * account was removed) still surfaces, so the seed restores.
+ */
+export const buildPulledAccounts = ({
+    records,
+    addressPayloads,
+    secretsPayloads,
+}: {
+    records: readonly AccountRecordPayload[]
+    addressPayloads: ReadonlyMap<string, AddressBackupPayload>
+    secretsPayloads: ReadonlyMap<string, SecretsBackupPayload>
+}): PulledAccount[] => {
+    const covered = new Set(records.flatMap(accountRecordAddresses))
+    const entries: {
+        group: string
+        chain?: ChainId
+        payload: AccountEntryPayload
+    }[] = [
+        ...records.flatMap(record => {
+            const group = accountRecordIdentity(record)
+            return accountRecordEntries(record, canRestoreRecordEntry).map(
+                ({ chain, payload }) => ({
+                    group,
+                    chain: chain as ChainId,
+                    payload,
+                }),
+            )
+        }),
+        ...[...addressPayloads.values()]
+            .filter(payload => !covered.has(payload.address))
+            .map(payload => ({ group: accountIdentityOf(payload), payload })),
+    ]
+    const accounts: PulledAccount[] = entries.map(
+        ({ group, chain, payload }) => ({
+            address: payload.address,
+            group,
+            ...(chain ? { chain } : {}),
+            addressPayload: payload,
+            secretsPayload: secretsPayloads.get(payload.address) ?? null,
         }),
     )
+    const claimed = new Set(accounts.map(account => account.address))
     for (const secretsPayload of secretsPayloads.values()) {
         const { address } = secretsPayload
         if (
             secretsPayload.type === BackupAccountType.hdSeed &&
-            !addressPayloads.has(address)
+            !claimed.has(address)
         ) {
             accounts.push({
                 address,
+                group: address,
                 addressPayload: { type: BackupAccountType.hdSeed, address },
                 secretsPayload,
             })
@@ -316,12 +425,13 @@ export const pullBackupItems = async ({
         wantedKeys,
     )
     const {
+        records,
         addressPayloads,
         secretsPayloads,
         contacts,
         passkeys,
         settings,
-        addressByKey,
+        trackedByKey,
         skipped,
     } = collectItemPayloads(items, encryptionKey, backupId)
 
@@ -329,8 +439,12 @@ export const pullBackupItems = async ({
         backupGlobalHash: manifest.backupGlobalHash,
         lastSeq: manifest.lastSeq,
         manifestItems: manifest.items,
-        addressByKey,
-        accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
+        trackedByKey,
+        accounts: buildPulledAccounts({
+            records,
+            addressPayloads,
+            secretsPayloads,
+        }),
         contacts,
         passkeys,
         settings,

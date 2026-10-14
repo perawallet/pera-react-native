@@ -71,7 +71,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         data: {
             assetId: '0',
             amount: new Decimal(100),
-            algoValue: new Decimal(100),
+            nativeValue: new Decimal(100),
         },
     })),
     isDelegatedAccount: vi.fn(() => false),

@@ -16,9 +16,11 @@ import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { SwapChainAdapter } from '../../chain-adapter'
 import type { SwapHandoffRecord } from '../../models'
-import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
+import {
+    registerFakeBroadcaster,
+    registerFakeSwapAdapter,
+} from '../../__tests__/fakeSwapAdapter'
 import {
     settleCosignAttempt,
     useSwapCosignResolver,
@@ -127,12 +129,12 @@ const render = (isAppActive = true) =>
 type ResolverConfig = Parameters<typeof mocks.useHandoffResolver>[0]
 const config = (): ResolverConfig => mocks.useHandoffResolver.mock.calls[0][0]
 
-let submitSignedGroup: SwapChainAdapter['submitSignedGroup']
+const submit = vi.fn()
 
 beforeEach(() => {
     vi.clearAllMocks()
-    submitSignedGroup = vi.fn()
-    registerFakeSwapAdapter({ submitSignedGroup })
+    registerFakeSwapAdapter()
+    registerFakeBroadcaster(submit)
     mocks.handoffs = {}
     mocks.selectedNetwork = { algorand: 'mainnet' }
     mocks.deviceIdOf.mockReturnValue('device-1')
@@ -269,10 +271,10 @@ describe('swaps/useSwapCosignResolver', () => {
         )
     })
 
-    it("wires submitGroup through to the handoff network's chain adapter", async () => {
+    it("wires submitGroup through to the broadcaster for the handoff's scope", async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        vi.mocked(submitSignedGroup).mockResolvedValue(['txid'])
+        submit.mockResolvedValue(['txid'])
 
         render()
 
@@ -283,7 +285,7 @@ describe('swaps/useSwapCosignResolver', () => {
 
         const bytes = [new Uint8Array([1])]
         await deps.submitGroup(bytes)
-        expect(submitSignedGroup).toHaveBeenCalledWith(
+        expect(submit).toHaveBeenCalledWith(
             scopeForLegacyNetwork('mainnet'),
             bytes,
         )
@@ -454,7 +456,7 @@ describe('swaps/useSwapCosignResolver', () => {
     })
 
     it('registers no settle handler for a chain that cannot finish co-signed groups', () => {
-        registerFakeSwapAdapter({ submitSignedGroup: undefined })
+        registerFakeSwapAdapter({ supportsCosignedSwaps: false })
 
         render()
 

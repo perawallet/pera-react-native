@@ -74,6 +74,10 @@ vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({}))
 
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
+
 const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

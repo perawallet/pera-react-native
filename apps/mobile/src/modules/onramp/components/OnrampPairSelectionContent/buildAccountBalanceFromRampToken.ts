@@ -68,8 +68,8 @@ export const buildAccountBalanceFromRampToken = (
         assetId,
         asset,
         amount: balance ?? new Decimal(0),
-        algoValue: new Decimal(0),
+        nativeValue: new Decimal(0),
         fiatValue: null,
-        isFrozen: false,
+        restriction: null,
     }
 }

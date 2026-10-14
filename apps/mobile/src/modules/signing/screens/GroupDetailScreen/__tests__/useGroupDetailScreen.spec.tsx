@@ -110,7 +110,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItem1)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockTx1,
+            transaction: { family: 'algorand', transaction: mockTx1 },
             isExternal: false,
         })
     })
@@ -121,7 +121,7 @@ describe('useGroupDetailScreen', () => {
         result.current.handleTransactionPress(mockItemExternal)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: mockTx1,
+            transaction: { family: 'algorand', transaction: mockTx1 },
             isExternal: true,
         })
     })

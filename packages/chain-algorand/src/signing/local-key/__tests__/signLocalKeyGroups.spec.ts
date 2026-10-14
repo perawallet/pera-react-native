@@ -50,7 +50,6 @@ const mockGroup: AnalyzedSignableGroup = {
     signerAddress: MOCK_ADDRESS,
     analysis: {
         totalFees: 0n,
-        transactionSummaries: [],
         warnings: [],
         signableAddresses: [],
         riskLevel: 'low',

@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import {
@@ -85,11 +86,12 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
 
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         data: assetDetails,
         isError,
         isPending,
-    } = useSingleAssetDetailsQuery(asset.assetId)
+    } = useSingleAssetDetailsQuery(asset.assetId, scope)
 
     const openDiscover = () => {
         // Pushed over asset details (not the Discover tab, which swaps in

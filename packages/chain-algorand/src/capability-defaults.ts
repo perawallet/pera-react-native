@@ -65,6 +65,7 @@ const PERA_BACKED = ['developer-override'] as const
 export const algorandCapabilityRestrictions: ChainCapabilityRestrictions = {
     // onramp buys real ALGO and USDC, so live only.
     onramp: ['developer', 'developer-override'],
+    pricing: PERA_BACKED,
     priceHistory: PERA_BACKED,
     balanceHistory: PERA_BACKED,
     assetSearch: PERA_BACKED,

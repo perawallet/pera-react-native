@@ -55,14 +55,11 @@ export const reviewerContractTests = (
             expect(makeAdapter().chainId).toBe(context.scope.chainId)
         })
 
-        it('explains every transaction of a group a wallet account signs', async () => {
+        it('asks a wallet account that signs a group for its signature', async () => {
             const decoded = await decode(fixtures.plainGroup)
 
             expect(transactionsOf(fixtures.plainGroup).length).toBeGreaterThan(
                 0,
-            )
-            expect(decoded.transactionSummaries).toHaveLength(
-                transactionsOf(fixtures.plainGroup).length,
             )
             expect(decoded.signableAddresses).toEqual([
                 fixtures.plainGroup.signerAddress,
@@ -79,22 +76,17 @@ export const reviewerContractTests = (
 
         // What a chain reads off the call itself (an EVM `to` and `value`) may
         // show, so the effect it can't read is pinned by each chain's own spec.
-        it("still explains a contract call it can't read", async () => {
-            const decoded = await decode(fixtures.opaqueGroup)
-
-            expect(decoded.transactionSummaries).toHaveLength(
-                transactionsOf(fixtures.opaqueGroup).length,
-            )
+        it("still decodes a contract call it can't read", async () => {
+            await expect(decode(fixtures.opaqueGroup)).resolves.toBeDefined()
         })
 
         it('refuses a transaction built for another network', async () => {
             await expect(decode(fixtures.wrongNetworkGroup)).rejects.toThrow()
         })
 
-        it('decodes message data to no transactions and no fees', async () => {
+        it('decodes message data to no fees', async () => {
             const decoded = await decode(fixtures.messageGroup)
 
-            expect(decoded.transactionSummaries).toEqual([])
             expect(decoded.totalFees).toBe(0n)
         })
 

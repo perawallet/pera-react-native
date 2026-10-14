@@ -26,6 +26,7 @@ import {
     type AlgokitClientInterface,
     type EncodeSignedTransactionsFn,
 } from '../submission'
+import { algorandNetworkOf } from '../../legacy-network'
 
 /**
  * Creates a transport that submits transactions directly to algod.
@@ -60,6 +61,7 @@ export const createAlgodTransport = (
             let txIds: string[]
             try {
                 txIds = await submitAndAutoRefresh(
+                    algorandNetworkOf(capturedScope),
                     algokit,
                     encodeSignedTransactions,
                     signed,
@@ -85,7 +87,8 @@ export const createAlgodTransport = (
             // must not fail the pipeline — log and return success.
             if (source.callbacks?.approve) {
                 try {
-                    await source.callbacks.approve(result)
+                    await source.callbacks.approve(result, { txIds })
+                    return { type: 'submitted-and-answered', txIds }
                 } catch (error) {
                     logger.error(
                         'Algod transport: approve callback failed after submission',

@@ -76,7 +76,7 @@ export const useExecuteSwapMutation = () => {
                 throw new SwapAccountUnsupportedError()
             }
             const adapter = swapAdapterFor(scope)
-            if (isMultisigAccount(account) && !adapter.submitSignedGroup) {
+            if (isMultisigAccount(account) && !adapter.supportsCosignedSwaps) {
                 throw new SwapCosignUnsupportedError(adapter.chainId)
             }
             const address = addressOn(account, scope)

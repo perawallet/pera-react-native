@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    toScopeKey,
+    type AssetRef,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
@@ -26,14 +31,9 @@ import {
 import { createWrapper } from './test-utils'
 
 const mocks = vi.hoisted(() => ({
-    useNetwork: vi.fn(),
     getAssetById: vi.fn(),
     batchEnqueue: vi.fn(),
-    fetchAsset: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mocks.useNetwork,
+    getAssetMetadata: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
@@ -44,7 +44,7 @@ vi.mock('../../services/assetBatchQueue', () => ({
     assetBatchQueue: { enqueue: mocks.batchEnqueue },
 }))
 
-const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }
+const mainnetScope: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const makeAsset = (assetId: string, name: string) => ({
     assetId,
@@ -60,15 +60,14 @@ describe('useSingleAssetDetailsQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetById.mockResolvedValue(null)
         // Default: the bulk endpoint doesn't know the asset, so the read falls
         // through to the adapter's per-asset read.
         mocks.batchEnqueue.mockResolvedValue(undefined)
-        mocks.fetchAsset.mockImplementation(async (assetId: string) =>
-            makeAsset(assetId, 'Adapter Asset'),
+        mocks.getAssetMetadata.mockImplementation(async (ref: AssetRef) =>
+            makeAsset(ref.assetId, 'Adapter Asset'),
         )
-        registerFakeAssetsAdapter({ fetchAsset: mocks.fetchAsset })
+        registerFakeAssetsAdapter({ getAssetMetadata: mocks.getAssetMetadata })
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
@@ -85,9 +84,12 @@ describe('useSingleAssetDetailsQuery', () => {
         const dbAsset = makeAsset('123', 'Offline DB Asset')
         mocks.getAssetById.mockResolvedValue(dbAsset)
 
-        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('123', mainnetScope),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -102,20 +104,27 @@ describe('useSingleAssetDetailsQuery', () => {
         const dbAsset = makeAsset('123', 'DB Asset')
         mocks.getAssetById.mockResolvedValue(dbAsset)
 
-        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('123', mainnetScope),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.data).toEqual(dbAsset)
         expect(mocks.batchEnqueue).not.toHaveBeenCalled()
-        expect(mocks.fetchAsset).not.toHaveBeenCalled()
+        expect(mocks.getAssetMetadata).not.toHaveBeenCalled()
     })
 
     it("returns the adapter's native asset when it is not in the DB yet", async () => {
         const { result } = renderHook(
-            () => useSingleAssetDetailsQuery(FAKE_NATIVE_ASSET.assetId),
+            () =>
+                useSingleAssetDetailsQuery(
+                    FAKE_NATIVE_ASSET.assetId,
+                    mainnetScope,
+                ),
             { wrapper: createWrapper(queryClient) },
         )
 
@@ -123,38 +132,50 @@ describe('useSingleAssetDetailsQuery', () => {
 
         expect(result.current.data).toBe(FAKE_NATIVE_ASSET)
         expect(mocks.batchEnqueue).not.toHaveBeenCalled()
-        expect(mocks.fetchAsset).not.toHaveBeenCalled()
+        expect(mocks.getAssetMetadata).not.toHaveBeenCalled()
     })
 
     it('resolves a DB miss through the batch queue without the per-asset read', async () => {
         const bulkAsset = makeAsset('456', 'Bulk Asset')
         mocks.batchEnqueue.mockResolvedValue(bulkAsset)
 
-        const { result } = renderHook(() => useSingleAssetDetailsQuery('456'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('456', mainnetScope),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.data).toEqual(bulkAsset)
-        expect(mocks.batchEnqueue).toHaveBeenCalledWith('456', 'mainnet')
-        expect(mocks.fetchAsset).not.toHaveBeenCalled()
+        expect(mocks.batchEnqueue).toHaveBeenCalledWith(
+            '456',
+            toScopeKey(mainnetScope),
+        )
+        expect(mocks.getAssetMetadata).not.toHaveBeenCalled()
     })
 
     it("falls back to the adapter's per-asset read when the batch queue finds nothing", async () => {
-        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('123', mainnetScope),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.data?.name).toBe('Adapter Asset')
-        expect(mocks.fetchAsset).toHaveBeenCalledWith('123', mainnetScope)
+        expect(mocks.getAssetMetadata).toHaveBeenCalledWith(
+            { chainId: 'algorand', assetId: '123' },
+            mainnetScope,
+        )
     })
 
     it('skips DB and batch queue entirely with useDB=false and caches under the remote key', async () => {
         const { result } = renderHook(
-            () => useSingleAssetDetailsQuery('789', false),
+            () => useSingleAssetDetailsQuery('789', mainnetScope, false),
             { wrapper: createWrapper(queryClient) },
         )
 
@@ -176,19 +197,25 @@ describe('useSingleAssetDetailsQuery', () => {
     it('handles loading state', () => {
         mocks.getAssetById.mockReturnValue(new Promise(() => {}))
 
-        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('123', mainnetScope),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         expect(result.current.isLoading).toBe(true)
     })
 
     it('surfaces an adapter failure as a query error', async () => {
-        mocks.fetchAsset.mockRejectedValue(new Error('adapter down'))
+        mocks.getAssetMetadata.mockRejectedValue(new Error('adapter down'))
 
-        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('123', mainnetScope),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('adapter down')
@@ -197,9 +224,12 @@ describe('useSingleAssetDetailsQuery', () => {
     it('ends in ChainAdapterNotRegisteredError on a DB miss when no adapter is registered', async () => {
         assetsChainAdapters.reset()
 
-        const { result } = renderHook(() => useSingleAssetDetailsQuery('123'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result } = renderHook(
+            () => useSingleAssetDetailsQuery('123', mainnetScope),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toBeInstanceOf(

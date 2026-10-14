@@ -27,18 +27,21 @@ import {
     CHAIN_IDS,
     type AssetPrice,
     type AssetRef,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 // Type-only, so a chain package can run this suite without loading the database.
-import type { AssetsChainAdapter } from '../chain-adapter'
+import type { AssetAuthorities, AssetsChainAdapter } from '../chain-adapter'
 
 export type AssetMetadataOps = Pick<
     AssetsChainAdapter,
     | 'chainId'
     | 'getNativeAsset'
     | 'syncAssets'
-    | 'fetchAsset'
+    | 'getAssetMetadata'
     | 'fetchOnChainAsset'
+    | 'fetchAssetAuthorities'
+    | 'search'
 >
 
 export interface AssetMetadataContractFixtures {
@@ -46,10 +49,20 @@ export interface AssetMetadataContractFixtures {
     nativeAssetId: string
     /** A token every metadata source under `handlers` knows. */
     token: { assetId: string; unitName: string; decimals: number }
+    /** Set exactly when the ops declare `fetchAssetAuthorities`. */
+    tokenAuthorities?: AssetAuthorities
+    /** Set when the ops declare `search` and `scope` can serve it. */
+    search?: { query: string; hitAssetIds: string[] }
     /** Installed before every case. */
     handlers: readonly RequestHandler[]
     /** Asset ids the ops have persisted so far. */
     persistedIds: () => string[]
+}
+
+const foreignChainIdOf = (chainId: ChainId): ChainId => {
+    const foreign = CHAIN_IDS.find(id => id !== chainId)
+    if (!foreign) throw new Error('Contract needs a second chain id')
+    return foreign
 }
 
 /** A chain package runs this against its metadata operations before its full adapter exists. */
@@ -60,8 +73,14 @@ export const assetMetadataContractTests = (
 ): void => {
     const server = setupServer()
     const { scope, token } = fixtures
+    const chainId = makeOps().chainId
+    const foreignChainId = foreignChainIdOf(chainId)
+    const nativeRef: AssetRef = { chainId, assetId: fixtures.nativeAssetId }
+    const tokenRef: AssetRef = { chainId, assetId: token.assetId }
+    const foreignRef: AssetRef = { ...tokenRef, chainId: foreignChainId }
+    const foreignScope: ChainScope = { ...scope, chainId: foreignChainId }
 
-    describe(`AssetsChainAdapter metadata contract: ${makeOps().chainId}${label ? ` (${label})` : ''}`, () => {
+    describe(`AssetsChainAdapter metadata contract: ${chainId}${label ? ` (${label})` : ''}`, () => {
         beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
         beforeEach(() => server.use(...fixtures.handlers))
         afterEach(() => server.resetHandlers())
@@ -74,31 +93,108 @@ export const assetMetadataContractTests = (
             expect(makeOps().getNativeAsset()).toBe(native)
         })
 
+        it('answers the native ref with that instance, without a request', async () => {
+            const ops = makeOps()
+
+            const asset = await ops.getAssetMetadata(nativeRef, scope)
+
+            expect(asset).toBe(ops.getNativeAsset())
+        })
+
         it('fetches a token with its unit name and decimals', async () => {
-            const asset = await makeOps().fetchAsset(token.assetId, scope)
+            const asset = await makeOps().getAssetMetadata(tokenRef, scope)
 
             expect(asset).toMatchObject(token)
         })
 
         it("reads a token from the chain's own record", async () => {
-            const asset = await makeOps().fetchOnChainAsset(
-                token.assetId,
-                scope,
-            )
+            const asset = await makeOps().fetchOnChainAsset(tokenRef, scope)
 
             expect(asset).toMatchObject(token)
         })
 
+        it("reports a token's freeze and clawback authorities exactly when it declares them", async () => {
+            const ops = makeOps()
+
+            expect(ops.fetchAssetAuthorities !== undefined).toBe(
+                fixtures.tokenAuthorities !== undefined,
+            )
+            if (ops.fetchAssetAuthorities) {
+                await expect(
+                    ops.fetchAssetAuthorities(tokenRef, scope),
+                ).resolves.toEqual(fixtures.tokenAuthorities)
+            }
+        })
+
         it('persists a synced token', async () => {
-            await makeOps().syncAssets([token.assetId], scope)
+            await makeOps().syncAssets([tokenRef], scope)
 
             expect(fixtures.persistedIds()).toContain(token.assetId)
         })
 
-        it('accepts the native id in a sync', async () => {
+        it('accepts the native ref in a sync', async () => {
             await expect(
-                makeOps().syncAssets([fixtures.nativeAssetId], scope),
+                makeOps().syncAssets([nativeRef], scope),
             ).resolves.toBeUndefined()
+        })
+
+        if (fixtures.search) {
+            const { query, hitAssetIds } = fixtures.search
+
+            it('finds assets by query', async () => {
+                const { search } = makeOps()
+
+                expect(search).toBeDefined()
+                const page = await search!({ query }, scope)
+
+                expect(page.results.map(r => r.assetId).sort()).toEqual(
+                    [...hitAssetIds].sort(),
+                )
+            })
+        }
+
+        it('rejects a ref on another chain', async () => {
+            const ops = makeOps()
+
+            await expect(ops.syncAssets([foreignRef], scope)).rejects.toThrow()
+            await expect(
+                ops.getAssetMetadata(foreignRef, scope),
+            ).rejects.toThrow()
+            await expect(
+                ops.fetchOnChainAsset(foreignRef, scope),
+            ).rejects.toThrow()
+            if (ops.fetchAssetAuthorities) {
+                await expect(
+                    ops.fetchAssetAuthorities(foreignRef, scope),
+                ).rejects.toThrow()
+            }
+        })
+
+        it('rejects a scope on another chain', async () => {
+            const ops = makeOps()
+
+            await expect(
+                ops.syncAssets([tokenRef], foreignScope),
+            ).rejects.toThrow()
+            await expect(
+                ops.getAssetMetadata(tokenRef, foreignScope),
+            ).rejects.toThrow()
+            await expect(
+                ops.getAssetMetadata(nativeRef, foreignScope),
+            ).rejects.toThrow()
+            await expect(
+                ops.fetchOnChainAsset(tokenRef, foreignScope),
+            ).rejects.toThrow()
+            if (ops.fetchAssetAuthorities) {
+                await expect(
+                    ops.fetchAssetAuthorities(tokenRef, foreignScope),
+                ).rejects.toThrow()
+            }
+            if (ops.search) {
+                await expect(
+                    ops.search({ query: 'x' }, foreignScope),
+                ).rejects.toThrow()
+            }
         })
     })
 }
@@ -134,8 +230,7 @@ export const assetPriceContractTests = (
         chainId: ops.chainId,
         assetId: ops.getNativeAsset().assetId,
     }
-    const foreignChainId = CHAIN_IDS.find(id => id !== ops.chainId)
-    if (!foreignChainId) throw new Error('Contract needs a second chain id')
+    const foreignChainId = foreignChainIdOf(ops.chainId)
 
     describe(`AssetsChainAdapter price contract: ${ops.chainId}${label ? ` (${label})` : ''}`, () => {
         beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))

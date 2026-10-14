@@ -59,7 +59,6 @@ const group = (
         signerAddress,
         analysis: {
             totalFees: 0n,
-            transactionSummaries: [],
             warnings: [],
             signableAddresses: [],
             riskLevel: 'low',

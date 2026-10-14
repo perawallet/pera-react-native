@@ -141,6 +141,7 @@ export const ConfirmActionLayout = ({
                     <PWButton
                         variant={confirmVariant}
                         title={confirmLabel}
+                        titleLines={2}
                         isDisabled={isConfirmDisabled || isPending}
                         isLoading={pendingAction === 'confirm'}
                         onPress={onConfirm}
@@ -151,6 +152,7 @@ export const ConfirmActionLayout = ({
                         <PWButton
                             variant={cancelVariant}
                             title={cancelLabel}
+                            titleLines={2}
                             isDisabled={isPending}
                             isLoading={pendingAction === 'cancel'}
                             onPress={onCancel}
@@ -162,6 +164,7 @@ export const ConfirmActionLayout = ({
                         <PWButton
                             variant={tertiaryVariant}
                             title={tertiaryLabel}
+                            titleLines={2}
                             isDisabled={isPending}
                             isLoading={pendingAction === 'tertiary'}
                             onPress={onTertiary}

@@ -17,7 +17,7 @@ import { TransactionListHeader } from './TransactionListHeader'
 import { TransactionListFooter } from './TransactionListFooter'
 import { GroupPreviewItem } from './GroupPreviewItem'
 import { useTransactionListScreen } from './useTransactionListScreen'
-import { TransactionPreview } from '@modules/transactions'
+import { TransactionPreview } from '@modules/algorand'
 
 export const TransactionListScreen = () => {
     const {

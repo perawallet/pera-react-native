@@ -126,12 +126,12 @@ describe('account holdings queries', () => {
             expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2', '30'])
         })
 
-        it('excludes zero-balance collectibles when opted-in are hidden', async () => {
+        it('excludes zero-balance collectibles when they are hidden', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
-                includeOptedInOnly: false,
+                includeZeroBalance: false,
             })
 
             expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2'])

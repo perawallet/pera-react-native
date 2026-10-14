@@ -646,6 +646,9 @@
             "accounts": "Comptes",
             "accounts_in_sync": "{{count}} comptes synchronisés",
             "accounts_in_sync_one": "{{count}} compte synchronisé",
+            "update_required": "Mettez à jour Pera",
+            "update_required_description": "{{count}} comptes de votre sauvegarde ont été enregistrés par une version plus récente de Pera. Mettez à jour l’application pour les restaurer.",
+            "update_required_description_one": "{{count}} compte de votre sauvegarde a été enregistré par une version plus récente de Pera. Mettez à jour l’application pour le restaurer.",
             "accounts_not_backed_up": "Vous avez {{count}} comptes sans sauvegarde",
             "accounts_not_backed_up_one": "Vous avez {{count}} compte sans sauvegarde",
             "contacts": "Contacts",
@@ -696,6 +699,7 @@
             "not_backed_up_subtitle": "Sur cet appareil, pas dans votre Cloud Backup",
             "back_up_action": "Sauvegarder",
             "add_action": "Ajouter",
+            "update_to_add": "Mettez à jour Pera pour ajouter ce compte",
             "review_empty_title": "Rien à vérifier",
             "review_empty_body": "Tous les comptes de cet appareil sont dans votre Cloud Backup.",
             "back_up_success": "Compte sauvegardé",
@@ -839,8 +843,10 @@
             "error_invalid_credentials": "Phrase de sauvegarde ou clé de chiffrement incorrecte.",
             "error_unknown": "Une erreur est survenue. Veuillez réessayer.",
             "success": "Sauvegarde restaurée",
-            "partial_success": "{{count}} comptes n’ont pas pu être restaurés.",
-            "partial_success_one": "{{count}} compte n’a pas pu être restauré."
+            "partial_success": "{{count}} comptes n’ont pas pu être entièrement restaurés.",
+            "partial_success_one": "{{count}} compte n’a pas pu être entièrement restauré.",
+            "update_to_restore": "Mettez à jour Pera pour restaurer {{count}} comptes supplémentaires.",
+            "update_to_restore_one": "Mettez à jour Pera pour restaurer {{count}} compte supplémentaire."
         },
         "restore_scan": {
             "title": "Scanner le QR code",

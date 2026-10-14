@@ -79,26 +79,31 @@ export type AccountsState = BaseStoreState & {
      * standalone account on `chainId`. Throws `RawKeyImportUnsupportedError`
      * before the KMS is reached when the chain imports no raw keys, and
      * `DuplicateAccountError` naming the holder when the address is already
-     * held, in which case a key no account references is removed again.
+     * held, and `AddressMismatchError` when the key's address isn't
+     * `expectedAddress`; either way a key no account references is removed again.
      * `privateKey` is zeroed before this settles, on success and on every throw.
      */
     importAccountFromPrivateKey: (
         chainId: ChainId,
         privateKey: Uint8Array,
         name?: string,
+        expectedAddress?: string,
     ) => Promise<WalletAccount>
     /**
      * Adds `chainId`'s entry to the account at `index` in wallet `walletId`
      * (the seed's KMS id, as `seedOf` returns), or creates an account there.
      * Throws `WalletCannotDeriveError` when the wallet can't mint on the chain,
      * and `DuplicateAccountError` naming the holder when the address or the
-     * chain entry is already held. `name` applies only to a new account.
+     * chain entry is already held, and `AddressMismatchError` before any write
+     * when the derived address isn't `expectedAddress`. `name` applies only to
+     * a new account.
      */
     addChainAccount: (
         walletId: string,
         chainId: ChainId,
         index: HdIndex,
         name?: string,
+        expectedAddress?: string,
     ) => Promise<WalletAccount>
     setSelectedAccountId: (id: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void

@@ -36,7 +36,11 @@ import {
     type AccountKindPresentation,
     type AccountPresentationChainAdapter,
 } from '../presentation-adapter'
-import type { AccountCustody, WalletAccount } from '../models'
+import {
+    HoldingRestrictions,
+    type AccountCustody,
+    type WalletAccount,
+} from '../models'
 import { useAccountChainStateStore } from '../store/accountChainState'
 import { canSignDirectly } from '../utils'
 
@@ -176,7 +180,6 @@ export const fakeAccountStateSnapshot = (
         {
             assetId: 'fake-native',
             amount: new Decimal(nativeBaseUnits),
-            isFrozen: false,
         },
     ],
     observedRound: null,
@@ -240,7 +243,14 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
               }
             : { reserveBalance: new Decimal(0), heldTokenCount: 0 },
     ),
-    fetchAssetOptInRounds: vi.fn(async () => new Map<string, number>()),
+    fetchHoldingAcquisitionOrder: vi.fn(async () => new Map<string, number>()),
+    fetchPortfolioHistory: vi.fn(async () => []),
+    fetchHoldingBalanceHistory: vi.fn(async () => []),
+    describeHolding: vi.fn(native => ({
+        restriction: native.isFrozen
+            ? HoldingRestrictions.transferBlocked
+            : null,
+    })),
     accountExists: vi.fn(async () => false),
     checkActivity: vi.fn(
         async (addresses: string[]) =>

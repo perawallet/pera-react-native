@@ -314,7 +314,7 @@ export const useSwapCosignResolver = ({
     useEffect(() => {
         const cosigningChains = swapChainAdapters
             .list()
-            .filter(adapter => adapter.submitSignedGroup !== undefined)
+            .filter(adapter => adapter.supportsCosignedSwaps)
             .map(({ chainId }) => chainId)
         for (const chainId of cosigningChains) {
             setSubmissionSettledHandler(

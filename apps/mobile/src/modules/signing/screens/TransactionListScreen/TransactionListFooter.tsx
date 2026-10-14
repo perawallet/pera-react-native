@@ -13,7 +13,7 @@
 import { PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
-import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
+import { FeeDisplay } from '@modules/algorand'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { useStyles } from './styles'
 
