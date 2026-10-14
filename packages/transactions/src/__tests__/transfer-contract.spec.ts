@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     AssetRef,
     BuildContext,
@@ -30,6 +31,14 @@ import { transferContractTests } from './transfer-contract'
 const FIXTURE_CHAIN_ID = 'fixturehex' as ChainId
 const NATIVE: AssetRef = { chainId: FIXTURE_CHAIN_ID, assetId: 'native' }
 const TOKEN: AssetRef = { chainId: FIXTURE_CHAIN_ID, assetId: 'token' }
+
+const SENDER: WalletAccount = {
+    id: 'alice',
+    custody: { kind: 'watch' },
+    chains: { [FIXTURE_CHAIN_ID]: { address: 'alice' } },
+}
+// Base units of the native asset.
+const balances = new Map<string, Decimal>()
 
 const context: BuildContext = {
     scope: { chainId: FIXTURE_CHAIN_ID, networkId: 'main' },
@@ -82,6 +91,22 @@ const fixtureTransferAdapter: TransferChainAdapter = {
         assertOwnScope(intent, ctx)
         return { assetRef: NATIVE, amount: new Decimal(21) }
     },
+    spendableBalance: async ({ account, asset, scope, fee }) => {
+        if (
+            scope.chainId !== FIXTURE_CHAIN_ID ||
+            asset.chainId !== FIXTURE_CHAIN_ID
+        ) {
+            throw new InvalidSendParamsError()
+        }
+        const address = account.chains[FIXTURE_CHAIN_ID]?.address ?? ''
+        const balance = balances.get(address) ?? new Decimal(0)
+        const isNative = asset.assetId === NATIVE.assetId
+        return {
+            balance,
+            max: isNative ? Decimal.max(balance.sub(fee), 0) : balance,
+            reserved: new Decimal(0),
+        }
+    },
 }
 
 transferContractTests(() => fixtureTransferAdapter, {
@@ -100,5 +125,14 @@ transferContractTests(() => fixtureTransferAdapter, {
         assetRef: TOKEN,
         amount: new Decimal(7),
     },
-    arrange: () => {},
+    spendable: {
+        account: SENDER,
+        nativeBalance: new Decimal(1_000),
+        fee: new Decimal(21),
+        hasReserve: false,
+    },
+    arrange: () => {
+        balances.clear()
+        balances.set('alice', new Decimal(1_000))
+    },
 })

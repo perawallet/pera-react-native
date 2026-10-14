@@ -20,7 +20,11 @@ import {
     type TransferIntent,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransferChainAdapter } from '../transfer-adapter'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    SpendableBalanceInput,
+    TransferChainAdapter,
+} from '../transfer-adapter'
 
 export interface TransferContractFixtures {
     /** On the adapter's chain. */
@@ -31,7 +35,17 @@ export interface TransferContractFixtures {
     tokenTransfer?: TransferIntent
     /** Set if and only if the chain requires an opt-in before holding an asset. */
     assetOptIn?: AssetOptInIntent
-    /** Installs the node handlers each test needs. */
+    spendable: {
+        /** Holds `nativeBalance` of the native asset once `arrange()` has run. */
+        account: WalletAccount
+        /** Base units of the native asset. */
+        nativeBalance: Decimal
+        /** Base units of the native asset. */
+        fee: Decimal
+        /** False on a chain that holds nothing back, where MAX is exactly the balance less the fee. */
+        hasReserve: boolean
+    }
+    /** Installs the node handlers and synced state each test needs. */
     arrange(): void
 }
 
@@ -40,7 +54,13 @@ export const transferContractTests = (
     makeAdapter: () => TransferChainAdapter,
     fixtures: TransferContractFixtures,
 ): void => {
-    const { context, nativeTransfer } = fixtures
+    const { context, nativeTransfer, spendable } = fixtures
+    const spendableInput: SpendableBalanceInput = {
+        account: spendable.account,
+        asset: nativeTransfer.assetRef,
+        scope: context.scope,
+        fee: spendable.fee,
+    }
     const foreignContext: BuildContext = {
         ...context,
         scope: {
@@ -187,6 +207,57 @@ export const transferContractTests = (
                 ),
             ).rejects.toThrow()
         })
+
+        it('never offers more of the native asset than the balance less the fee', async () => {
+            const result = await makeAdapter().spendableBalance(spendableInput)
+
+            expect(result.balance.equals(spendable.nativeBalance)).toBe(true)
+            expect(result.max.isInteger()).toBe(true)
+            expect(result.max.gte(0)).toBe(true)
+            expect(
+                result.max.lte(spendable.nativeBalance.sub(spendable.fee)),
+            ).toBe(true)
+            expect(result.reserved.gte(0)).toBe(true)
+        })
+
+        it("refuses to price another chain's scope", async () => {
+            await expect(
+                makeAdapter().spendableBalance({
+                    ...spendableInput,
+                    scope: foreignContext.scope,
+                }),
+            ).rejects.toThrow()
+        })
+
+        if (!spendable.hasReserve) {
+            it('holds nothing back: MAX is the balance less the fee, with no close-out', async () => {
+                const result =
+                    await makeAdapter().spendableBalance(spendableInput)
+
+                expect(
+                    result.max.equals(
+                        spendable.nativeBalance.sub(spendable.fee),
+                    ),
+                ).toBe(true)
+                expect(result.reserved.isZero()).toBe(true)
+                expect(result.reserveNotice).toBeUndefined()
+                expect(result.emptyAccount).toBeUndefined()
+                expect(
+                    makeAdapter().holdingReserve?.(context.scope),
+                ).toBeUndefined()
+            })
+
+            it('warns about no recipient', async () => {
+                const warning = await makeAdapter().recipientWarning?.({
+                    recipient: nativeTransfer.to,
+                    asset: nativeTransfer.assetRef,
+                    amount: nativeTransfer.amount,
+                    scope: context.scope,
+                })
+
+                expect(warning).toBeUndefined()
+            })
+        }
 
         it.each([new Decimal(-1), new Decimal('0.5')])(
             'refuses %s base units rather than rounding it',

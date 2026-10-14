@@ -36,7 +36,14 @@ export {
 } from './chain-adapter'
 export {
     transferChainAdapters,
+    holdingReserveOf,
     type TransferChainAdapter,
+    type ChainNotice,
+    type ReserveNotice,
+    type EmptyAccountOffer,
+    type SpendableBalance,
+    type SpendableBalanceInput,
+    type RecipientWarningInput,
 } from './transfer-adapter'
 export {
     historyChainAdapters,
