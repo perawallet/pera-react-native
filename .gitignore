@@ -65,3 +65,7 @@ docs/audits/
 
 # lanekeep result cache and precompiled rule components (~33 MiB)
 .lanekeep/
+
+# lanekeep test scratch dirs an interrupted run leaves behind. lanekeep/__tests__/.ignore
+# un-ignores them for lanekeep, which skips gitignored files.
+lanekeep/__tests__/scratch-*/

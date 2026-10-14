@@ -121,7 +121,8 @@ export async function runRule(
 /**
  * Writes `files` into a fresh scratch directory and hands `run` its
  * repo-relative path. Inside the repo because lanekeep reads only under its
- * project root; not dot-prefixed and not gitignored, so discovery sees it.
+ * project root; not dot-prefixed, and gitignored but re-included for lanekeep
+ * by `.ignore` here, so discovery sees it and a leftover can't be committed.
  * lanekeep.config.ts excludes `scratch-*`; a runner's config does not.
  */
 export async function withScratch<T>(

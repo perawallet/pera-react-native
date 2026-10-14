@@ -1,8 +1,0 @@
-{
-    "common": {
-        "ok": "OK",
-        "items_one": "{{count}} Element",
-        "items_other": "{{count}} Elemente"
-    },
-    "gone": "Weg"
-}
