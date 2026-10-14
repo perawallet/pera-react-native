@@ -41,7 +41,7 @@ vi.mock('../escrow/lsig', async () => ({
 }))
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
-    postCardDelegation: async () => undefined,
+    postAutoDrawDelegation: async () => undefined,
 }))
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),

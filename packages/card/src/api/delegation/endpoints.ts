@@ -29,6 +29,7 @@ import {
     externalWalletsResponseSchema,
 } from './schema'
 import { transformExternalWallet } from './transformers'
+import { AutoDrawDelegationRejectedError } from './errors'
 
 export type DelegationRequestParams = {
     network: Network
@@ -101,6 +102,26 @@ export const postCardDelegation = async (
         signal,
     })
     assertAccepted(response.data)
+}
+
+/**
+ * Registers the AutoDraw LSig. A 403 becomes `AutoDrawDelegationRejectedError`
+ * so the caller can stop offering a retry; anything else is rethrown as-is.
+ */
+export const postAutoDrawDelegation = async (
+    request: CardDelegationRequest,
+    scope: ChainScope,
+    signal?: AbortSignal,
+): Promise<void> => {
+    try {
+        await postCardDelegation(request, scope, signal)
+    } catch (error) {
+        const apiError = await getCardApiError(error)
+        if (apiError.status === 403) {
+            throw new AutoDrawDelegationRejectedError(apiError.message)
+        }
+        throw error
+    }
 }
 
 export type PostDelegationApprovalParams = DelegationApprovalParams & {
