@@ -34,6 +34,7 @@ import {
     selectAccountAndArmConnect,
     tapToConfirm,
     trackPageErrors,
+    standInForToolbarPopup,
 } from './approval-surface'
 
 declare global {
@@ -133,6 +134,7 @@ test.beforeAll(async () => {
         serviceWorker = await context.waitForEvent('serviceworker')
     }
     extensionId = new URL(serviceWorker.url()).host
+    await standInForToolbarPopup(context)
 
     // An account must exist for the proposal screen to grant one.
     page = await context.newPage()

@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     APPROVAL_KEEPALIVE_INTERVAL_MS,
     APPROVAL_KEEPALIVE_MAX_MS,
+    APPROVAL_POPUP_PORT_PREFIX,
     APPROVAL_WITHDRAWN,
     ApprovalWindowBridge,
     DAPP_APPROVAL_SCOPE,
@@ -38,6 +39,7 @@ const makeChrome = (
 ) => {
     let onMessage: Function = () => {}
     let onRemoved: Function = () => {}
+    let onConnect: Function = () => {}
     const created: any[] = []
     let nextWindowId = 100
     let idIndex = 0
@@ -61,6 +63,7 @@ const makeChrome = (
                 getURL: (p: string) => `chrome-extension://ext-id/${p}`,
                 getPlatformInfo: getPlatformInfoMock,
                 onMessage: { addListener: (fn: Function) => (onMessage = fn) },
+                onConnect: { addListener: (fn: Function) => (onConnect = fn) },
             },
             windows: {
                 create: vi.fn(async (opts: any) => {
@@ -85,6 +88,18 @@ const makeChrome = (
         fireMessage: (msg: unknown, sender: unknown) =>
             new Promise(resolve => onMessage(msg, sender, resolve)),
         closeWindow: (id: number) => onRemoved(id),
+        // A port the popup opened, and the disconnect its document closing fires.
+        connectPort: (name: string, sender: unknown) => {
+            let onDisconnect: Function = () => {}
+            onConnect({
+                name,
+                sender,
+                onDisconnect: {
+                    addListener: (fn: Function) => (onDisconnect = fn),
+                },
+            })
+            return { disconnect: () => onDisconnect() }
+        },
     }
 }
 
@@ -1593,5 +1608,132 @@ describe('unclaimed toolbar-popup approvals', () => {
         } finally {
             vi.useRealTimers()
         }
+    })
+
+    describe('popup lifetime', () => {
+        const claimPopupApproval = async (requestId: string) => {
+            const chrome = makeChrome(undefined, 'resolve')
+            const bridge = new ApprovalWindowBridge(chrome.chromeLike)
+            bridge.listen()
+            const decision = bridge.openConnectionProposal(
+                proposalCtx(requestId, 'https://dapp.example'),
+            )
+            await flush()
+            await chrome.fireMessage(
+                { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+                trustedSender,
+            )
+            return { ...chrome, decision }
+        }
+
+        it('rejects a claimed popup approval once its popup is gone', async () => {
+            const { decision, connectPort } = await claimPopupApproval('p1')
+            const port = connectPort(
+                `${APPROVAL_POPUP_PORT_PREFIX}p1`,
+                trustedSender,
+            )
+
+            port.disconnect()
+
+            expect(await decision).toBeNull()
+        })
+
+        it('keeps a decision the popup delivered before it closed', async () => {
+            const { decision, connectPort, fireMessage } =
+                await claimPopupApproval('p2')
+            const port = connectPort(
+                `${APPROVAL_POPUP_PORT_PREFIX}p2`,
+                trustedSender,
+            )
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'resolve-approval',
+                    requestId: 'p2',
+                    approvedAddresses: ['A'],
+                },
+                trustedSender,
+            )
+
+            port.disconnect()
+
+            expect(await decision).toEqual({ approvedAddresses: ['A'] })
+        })
+
+        it('ignores a port opened by a page outside the extension', async () => {
+            const { decision, connectPort, fireMessage } =
+                await claimPopupApproval('p3')
+            const port = connectPort(`${APPROVAL_POPUP_PORT_PREFIX}p3`, {
+                id: 'ext-id',
+                url: 'https://evil.example/x',
+            })
+
+            port.disconnect()
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'resolve-approval',
+                    requestId: 'p3',
+                    approvedAddresses: ['A'],
+                },
+                trustedSender,
+            )
+
+            expect(await decision).toEqual({ approvedAddresses: ['A'] })
+        })
+    })
+
+    describe('approval window that cannot be created', () => {
+        const FOCUSED = { left: 5000, top: 50, width: 1400, height: 900 }
+
+        it('retries without a position when Chrome refuses the bounds', async () => {
+            const { chromeLike, created } = makeChrome(
+                undefined,
+                undefined,
+                FOCUSED,
+            )
+            vi.mocked(chromeLike.windows.create).mockRejectedValueOnce(
+                new Error(
+                    'Invalid value for bounds. Bounds must be at least 50% within visible screen space.',
+                ),
+            )
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            void bridge.openConnectionProposal(
+                proposalCtx('w1', 'https://dapp.example'),
+            )
+            await flush()
+
+            expect(chromeLike.windows.create).toHaveBeenCalledTimes(2)
+            expect(created.at(-1)).not.toHaveProperty('left')
+            expect(created.at(-1)).not.toHaveProperty('top')
+        })
+
+        it('releases the request when no window can be opened', async () => {
+            const { chromeLike, fireMessage } = makeChrome()
+            vi.mocked(chromeLike.windows.create).mockRejectedValue(
+                new Error('No window'),
+            )
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            await expect(
+                bridge.openConnectionProposal(
+                    proposalCtx('w2', 'https://dapp.example'),
+                ),
+            ).rejects.toThrow('No window')
+
+            expect(
+                await fireMessage(
+                    {
+                        scope: DAPP_APPROVAL_SCOPE,
+                        kind: 'get-approval',
+                        requestId: 'w2',
+                    },
+                    trustedSender,
+                ),
+            ).toMatchObject({ ok: false, error: 'unknown request' })
+        })
     })
 })

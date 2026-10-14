@@ -15,11 +15,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDappRequest } from '../useDappRequest.web'
 
 const sendMessage = vi.fn()
+// The popup holds a port to the bridge once it claims an approval.
+const connect = vi.fn()
 
 beforeEach(() => {
     sendMessage.mockReset()
+    connect.mockReset()
     // @ts-expect-error test global
-    globalThis.chrome = { runtime: { sendMessage } }
+    globalThis.chrome = { runtime: { sendMessage, connect } }
     // Redefining the property descriptor (rather than `delete` + assign a
     // real URL/Location) avoids jsdom's Location setter treating the
     // reassignment as an actual page navigation, which tears down `document`

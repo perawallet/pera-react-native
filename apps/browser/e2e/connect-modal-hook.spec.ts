@@ -30,7 +30,10 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import WalletConnect from '@perawallet/walletconnect'
-import { selectAccountAndArmConnect } from './approval-surface'
+import {
+    selectAccountAndArmConnect,
+    standInForToolbarPopup,
+} from './approval-surface'
 import {
     startFakeBridge,
     type FakeWcBridge,
@@ -348,6 +351,7 @@ test.beforeAll(async () => {
         serviceWorker = await context.waitForEvent('serviceworker')
     }
     extensionId = new URL(serviceWorker.url()).host
+    await standInForToolbarPopup(context)
 
     // Onboard exactly as the other e2e suites (wallet-smoke.spec.ts / walletconnect.spec.ts).
     page = await context.newPage()

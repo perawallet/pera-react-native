@@ -11,7 +11,35 @@
  */
 
 import { expect } from '@playwright/test'
-import type { BrowserContext, Locator, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page, Worker } from '@playwright/test'
+
+/**
+ * Replaces `chrome.action.openPopup` in every service worker of `context`.
+ * Headless Chrome really opens the toolbar popup, which claims the approval and
+ * is dismissed as soon as a test opens a tab of its own, and a dismissed popup
+ * rejects its approval. This one opens nothing, so the popup.html tab a test
+ * opens plays the toolbar popup; like the real API, it rejects when there is no
+ * browser window to attach to.
+ */
+export const standInForToolbarPopup = async (
+    context: BrowserContext,
+): Promise<void> => {
+    const install = (worker: Worker): Promise<void> =>
+        worker
+            .evaluate(() => {
+                ;(
+                    chrome.action as { openPopup: () => Promise<void> }
+                ).openPopup = async () => {
+                    const windows = await chrome.windows.getAll()
+                    if (windows.length === 0) {
+                        throw new Error('No browser window to open in')
+                    }
+                }
+            })
+            .catch(() => {})
+    context.on('serviceworker', worker => void install(worker))
+    await Promise.all(context.serviceWorkers().map(install))
+}
 
 /** The toolbar popup's real dimensions. */
 const POPUP_VIEWPORT = { width: 360, height: 600 }

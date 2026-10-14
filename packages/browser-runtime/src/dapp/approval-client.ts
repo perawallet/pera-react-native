@@ -14,7 +14,11 @@
 // `chrome` global, so it reaches the approval bridge through this typed wrapper.
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import type { WireWalletOperationResult } from '../connections/protocol'
-import { DAPP_APPROVAL_SCOPE, type PendingApproval } from './approval-bridge'
+import {
+    APPROVAL_POPUP_PORT_PREFIX,
+    DAPP_APPROVAL_SCOPE,
+    type PendingApproval,
+} from './approval-bridge'
 
 const isPendingApproval = (value: unknown): value is PendingApproval =>
     typeof value === 'object' && value !== null && 'origin' in value
@@ -78,12 +82,23 @@ export const getPendingApproval = async (
     return isPendingApproval(res) ? res : null
 }
 
+// Referenced for the page's life: the port closing is what tells the bridge
+// this popup is gone (see APPROVAL_POPUP_PORT_PREFIX).
+const claimedApprovalPorts: chrome.runtime.Port[] = []
+
+/** Claims the toolbar popup's approval; never call it from the approval window. */
 export const getCurrentApproval = async (): Promise<PendingApproval | null> => {
     const res: unknown = await chrome.runtime.sendMessage({
         scope: DAPP_APPROVAL_SCOPE,
         kind: 'get-current-approval',
     })
-    return isPendingApproval(res) ? res : null
+    if (!isPendingApproval(res)) return null
+    claimedApprovalPorts.push(
+        chrome.runtime.connect({
+            name: `${APPROVAL_POPUP_PORT_PREFIX}${res.requestId}`,
+        }),
+    )
+    return res
 }
 
 export const resolveApproval = async (

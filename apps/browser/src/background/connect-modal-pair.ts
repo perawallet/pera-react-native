@@ -11,8 +11,8 @@
  */
 
 import {
-    CONNECTIONS_CONTROL_SCOPE,
     isWcPagePairMessage,
+    sendConnectionsControlMessage,
 } from '@perawallet/wallet-core-browser-runtime'
 import { ensureOffscreenDocument } from './offscreen'
 
@@ -70,24 +70,19 @@ export const installConnectModalPairRoute = ({
 
         if (!takeFromBudget(origin)) return false
 
-        // A page click is exactly when the SW may be waking from idle: ensure
-        // the offscreen document before forwarding or the first pair is lost.
-        void ensureOffscreenDocumentLike()
-            .then(() =>
-                chromeLike.runtime.sendMessage({
-                    scope: CONNECTIONS_CONTROL_SCOPE,
-                    kind: 'pair',
-                    uri: message.uri,
-                    requesterOrigin: origin,
-                }),
+        // A click is exactly when the SW may be waking from idle, and the
+        // offscreen document loads before its boot registers the control
+        // listener: a single send would be lost, so this one retries.
+        void sendConnectionsControlMessage(
+            { kind: 'pair', uri: message.uri, requesterOrigin: origin },
+            { ensureHost: ensureOffscreenDocumentLike, chromeLike },
+        ).catch((error: unknown) => {
+            // Nobody awaits this listener, so log rather than leave an unhandled rejection.
+            console.error(
+                '[pera] connect-modal pair ensure-offscreen/forward failed:',
+                error,
             )
-            .catch((error: unknown) => {
-                // Nobody awaits this listener, so log rather than leave an unhandled rejection.
-                console.error(
-                    '[pera] connect-modal pair ensure-offscreen/forward failed:',
-                    error,
-                )
-            })
+        })
         return false
     })
 }

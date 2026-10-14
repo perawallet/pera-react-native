@@ -36,6 +36,7 @@ import {
     expectApprovalSurfaceUrl,
     openApprovalSurface,
     trackPageErrors,
+    standInForToolbarPopup,
 } from './approval-surface'
 
 declare global {
@@ -217,6 +218,7 @@ test.beforeAll(async () => {
         serviceWorker = await context.waitForEvent('serviceworker')
     }
     extensionId = new URL(serviceWorker.url()).host
+    await standInForToolbarPopup(context)
 
     // Seed the PIN-security nudge as already dismissed so it never mounts. It
     // fires on a wall-clock delay and lands mid-flow as a full-screen backdrop

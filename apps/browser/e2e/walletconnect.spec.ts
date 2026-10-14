@@ -29,6 +29,7 @@ import {
     openApprovalSurface,
     selectAccountAndArmConnect,
     trackPageErrors,
+    standInForToolbarPopup,
 } from './approval-surface'
 import algosdk from 'algosdk'
 import WalletConnect from '@perawallet/walletconnect'
@@ -106,6 +107,7 @@ test.beforeAll(async () => {
         serviceWorker = await context.waitForEvent('serviceworker')
     }
     extensionId = new URL(serviceWorker.url()).host
+    await standInForToolbarPopup(context)
 
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
