@@ -156,3 +156,38 @@ describe('useSendFunds', () => {
         expect(result.current.canSelectAsset).toBe(true)
     })
 })
+
+describe('useSendFunds fee preset', () => {
+    beforeEach(() => {
+        useSendFundsStore.getState().reset()
+    })
+
+    it('starts at the normal preset', () => {
+        const { result } = renderHook(() => useSendFunds())
+
+        expect(result.current.feePreset).toBe('normal')
+    })
+
+    it('keeps the preset the user picks', () => {
+        const { result } = renderHook(() => useSendFunds())
+
+        act(() => {
+            result.current.setFeePreset('fast')
+        })
+
+        expect(result.current.feePreset).toBe('fast')
+    })
+
+    it('returns to the normal preset when the send resets', () => {
+        const { result } = renderHook(() => useSendFunds())
+        act(() => {
+            result.current.setFeePreset('slow')
+        })
+
+        act(() => {
+            result.current.reset()
+        })
+
+        expect(result.current.feePreset).toBe('normal')
+    })
+})
