@@ -379,6 +379,10 @@ const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
 export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
     new Set(servicesOf(scope))
 
+/** True when the scope has a Pera deployment; the query client refuses Pera requests otherwise. */
+export const hasPeraBackend = (scope: ChainScope): boolean =>
+    servicesOf(scope).size > 0
+
 export const hasPeraService = (
     scope: ChainScope,
     service: PeraService,
