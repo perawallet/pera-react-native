@@ -27,8 +27,8 @@ import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { FeeRow } from '@components/FeeRow'
 import { useStyles } from './styles'
-import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
@@ -36,7 +36,6 @@ import { CloseAccountWarning } from './CloseAccountWarning'
 import { RecipientBelowMbrWarning } from '../RecipientBelowMbrWarning/RecipientBelowMbrWarning'
 
 export const TransactionConfirmationScreen = () => {
-    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -45,8 +44,11 @@ export const TransactionConfirmationScreen = () => {
         destination,
         selectedAccount,
         selectedAssetId,
-        params,
-        paramsPending,
+        chainId,
+        feeAmount,
+        isFeePending,
+        feePreset,
+        setFeePreset,
         isQuantumFee,
         currentBalance,
         currentBalancePending,
@@ -125,22 +127,16 @@ export const TransactionConfirmationScreen = () => {
                         />
                     </KeyValueRow>
                 )}
-                <KeyValueRow title={t('send_funds.confirmation.fee')}>
-                    <PWView style={styles.feeValueContainer}>
-                        <AssetAmount
-                            asset={nativeAsset}
-                            showSymbol
-                            ignorePrivacyMode
-                            value={
-                                params?.minFee != null
-                                    ? toWholeUnits(params.minFee, nativeAsset)
-                                    : null
-                            }
-                            isLoading={paramsPending}
-                        />
-                        {isQuantumFee && <QuantumFeeExplainer />}
-                    </PWView>
-                </KeyValueRow>
+                <FeeRow
+                    chainId={chainId}
+                    amount={feeAmount}
+                    isLoading={isFeePending}
+                    selectedPreset={feePreset}
+                    onPresetChange={setFeePreset}
+                    accessory={
+                        isQuantumFee ? <QuantumFeeExplainer /> : undefined
+                    }
+                />
                 <PWDivider />
                 {currentBalance && (
                     <KeyValueRow
