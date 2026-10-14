@@ -16,11 +16,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
+    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AddressFormat = 'short' | 'long' | 'full'
