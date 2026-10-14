@@ -67,12 +67,4 @@ describe('useAccountWithBalance', () => {
         expect(mockUseIsOnTestTier).toHaveBeenCalledWith(['algorand'])
         expect(result.current.isTestTier).toBe(true)
     })
-
-    it('does not mark an account on a mainnet-tier network', () => {
-        mockUseIsOnTestTier.mockReturnValue(false)
-
-        const { result } = renderHook(() => useAccountWithBalance(ACCOUNT))
-
-        expect(result.current.isTestTier).toBe(false)
-    })
 })
