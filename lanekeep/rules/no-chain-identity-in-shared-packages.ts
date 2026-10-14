@@ -102,11 +102,6 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
     },
     {
-        file: 'packages/backup/src/cloud/hooks/useCloudBackupImport.ts',
-        text: "'algorand'",
-        reason: "A backup's multisig payload is Algorand's, so its native member is written as such.",
-    },
-    {
         file: 'packages/accounts/src/credentials/accessors.ts',
         text: 'scope.chainId !== LEGACY_CHAIN_ID',
         reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
@@ -145,11 +140,6 @@ const ALLOWED: readonly Allowed[] = [
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',
         text: "'algorand'",
         reason: "Bidali's payment-currency code, not a ChainId.",
-    },
-    {
-        file: 'packages/backup/src/cloud/hooks/useCloudBackupContactImport.ts',
-        text: "'algorand'",
-        reason: "A contact payload's bare `address` predates chain families, so it is always an Algorand address.",
     },
 ]
 
