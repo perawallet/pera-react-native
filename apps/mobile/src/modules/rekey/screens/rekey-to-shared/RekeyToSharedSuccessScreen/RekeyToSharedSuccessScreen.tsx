@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     RekeySuccessScreen,
     type RekeySuccessCopy,
 } from '../../../components/RekeySuccessScreen'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const SUCCESS_COPY: RekeySuccessCopy = {
     titleKey: i18nKey('rekey.to_shared.success.title'),

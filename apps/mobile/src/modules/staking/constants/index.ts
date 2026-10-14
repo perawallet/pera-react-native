@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { StakingType } from '../models'
 import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { StakingType } from '../models'
 
 export const STAKING_TYPE_LABEL_KEYS: Record<StakingType, I18nKey> = {
     liquid: i18nKey('staking.type_liquid'),

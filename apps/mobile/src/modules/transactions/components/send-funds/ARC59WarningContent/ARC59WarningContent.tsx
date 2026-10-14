@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type ARC59WarningContentProps = Record<string, never>
 

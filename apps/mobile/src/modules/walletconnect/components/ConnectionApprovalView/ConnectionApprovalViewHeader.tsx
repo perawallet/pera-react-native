@@ -11,6 +11,11 @@
  */
 
 import {
+    i18nKey,
+    type I18nKey,
+    type NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     PWBadge,
     PWButton,
     PWIcon,
@@ -21,11 +26,6 @@ import {
 } from '@components/core'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as usePermissionItemStyles } from '../PermissionItem/styles'
-import {
-    i18nKey,
-    type I18nKey,
-    type NetworkId,
-} from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import {

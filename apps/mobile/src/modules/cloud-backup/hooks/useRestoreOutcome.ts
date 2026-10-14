@@ -16,9 +16,9 @@ import {
     type RestoreCloudBackupResult,
     type RestoreErrorCategory,
 } from '@perawallet/wallet-core-backup'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 

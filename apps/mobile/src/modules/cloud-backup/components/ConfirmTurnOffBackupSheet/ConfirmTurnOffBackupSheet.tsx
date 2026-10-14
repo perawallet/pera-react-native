@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import type { IconName, PWButtonProps } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfirmationCheckbox } from '../ConfirmationCheckbox'
 import type { TurnOffBackupChoice } from '../TurnOffBackupSheet'
 import { useConfirmTurnOffBackupSheet } from './useConfirmTurnOffBackupSheet'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type ConfirmTurnOffBackupSheetProps = {
     choice: TurnOffBackupChoice

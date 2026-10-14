@@ -11,8 +11,8 @@
  */
 
 import { useState } from 'react'
-import { PWSheetLayout, PWSwitch, PWText, PWView } from '@components/core'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import { PWSheetLayout, PWSwitch, PWText, PWView } from '@components/core'
 import { SEARCH_SCOPES, type SearchScope } from '@perawallet/wallet-core-search'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'

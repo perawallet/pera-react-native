@@ -12,6 +12,7 @@
 
 import { useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWChip,
@@ -27,7 +28,6 @@ import { useStyles } from './styles'
 
 import cloudBackupIntroHeroDark from '@assets/images/cloud-backup-intro-hero-dark.png'
 import cloudBackupIntroHeroLight from '@assets/images/cloud-backup-intro-hero-light.png'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const STEP_KEYS = [
     {

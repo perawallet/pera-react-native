@@ -12,8 +12,8 @@
 
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { useLanguage } from '@hooks/useLanguage'
 import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 
 const PAIRING_STEP_KEYS: readonly I18nKey[] = [
     i18nKey('ledger.troubleshooting.pairing_step_1'),

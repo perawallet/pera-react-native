@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWDialog, PWImage, PWText, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -17,7 +18,6 @@ import { useStyles } from './styles'
 
 import multisigIntroHero from '@assets/images/multisig-intro-hero.png'
 import multisigIntroHeroDark from '@assets/images/multisig-intro-hero-dark.png'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type MultisigIntroductionDialogProps = {
     isVisible: boolean

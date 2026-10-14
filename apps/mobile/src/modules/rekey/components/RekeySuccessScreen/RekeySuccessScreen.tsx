@@ -12,12 +12,12 @@
 
 import { Trans } from 'react-i18next'
 import { useTheme } from '@rneui/themed'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import CheckIcon from '@assets/icons/check.svg'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRekeySuccessScreen } from './useRekeySuccessScreen'
 import { useStyles } from './styles'
-import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type RekeySuccessCopy = {
     titleKey: I18nKey

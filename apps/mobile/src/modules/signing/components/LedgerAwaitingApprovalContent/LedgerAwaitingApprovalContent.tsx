@@ -12,10 +12,10 @@
 
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWLottie, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { HardwareSigningOperation } from '@perawallet/wallet-core-signing'
 import animationSourceLight from '@assets/animations/ledger-signing.json'
 import animationSourceDark from '@assets/animations/ledger-signing.dark.json'

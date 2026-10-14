@@ -24,7 +24,7 @@ import type {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'
-import { ONRAMP_STATUS_DESCRIPTORS } from '../OnrampStatusBadge/onrampStatus'
+import { ONRAMP_STATUS_DESCRIPTORS } from '../OnrampStatusBadge'
 import { OnrampHistoryListItem } from './OnrampHistoryListItem'
 import { useOnrampHistory } from './useOnrampHistory'
 import { useStyles } from './styles'

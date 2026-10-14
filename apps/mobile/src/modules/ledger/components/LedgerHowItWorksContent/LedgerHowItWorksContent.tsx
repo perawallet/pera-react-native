@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWSheetLayout, PWText, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const STEP_KEYS = [
     i18nKey('ledger.how_does_it_work.step_1'),

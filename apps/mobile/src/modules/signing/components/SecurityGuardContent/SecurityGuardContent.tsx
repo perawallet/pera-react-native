@@ -10,9 +10,9 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 

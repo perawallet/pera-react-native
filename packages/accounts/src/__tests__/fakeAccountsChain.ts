@@ -18,6 +18,7 @@ import {
     type ChainId,
     type ChainScope,
     type KeyDerivation,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
 import {
@@ -109,9 +110,9 @@ export const fakeKindIdOf = (account: WalletAccount): AccountKindId =>
     accountKindId(`fake.${fakeKindOf(account)}`)
 
 const fakePresentationOfKind = (kindId: string): AccountKindPresentation => ({
-    labelKey: `${kindId}.label`,
-    infoTitleKey: `${kindId}.info_title`,
-    infoBodyKey: `${kindId}.info_body`,
+    labelKey: i18nKey(`${kindId}.label`),
+    infoTitleKey: i18nKey(`${kindId}.info_title`),
+    infoBodyKey: i18nKey(`${kindId}.info_body`),
     glyph: `fake-glyph-${kindId.slice('fake.'.length)}`,
 })
 
@@ -313,9 +314,11 @@ const createFakePresentation = (): AccountPresentationChainAdapter => ({
         kindId.startsWith('fake.') ? fakePresentationOfKind(kindId) : undefined,
     ),
     transitionLabel: vi.fn((from: string, to: string) => ({
-        labelKey: 'fake.transition.label',
-        signerKey: `${to}.signer`,
-        descriptionKey: `fake.transition.${from.slice('fake.'.length)}_to_${to.slice('fake.'.length)}`,
+        labelKey: i18nKey('fake.transition.label'),
+        signerKey: i18nKey(`${to}.signer`),
+        descriptionKey: i18nKey(
+            `fake.transition.${from.slice('fake.'.length)}_to_${to.slice('fake.'.length)}`,
+        ),
     })),
 })
 

@@ -14,13 +14,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { encodeFunctionData, erc20Abi, getAddress, maxUint256 } from 'viem'
 import type { Address, Hex, TransactionSerializableEIP1559 } from 'viem'
-import type {
-    ChainScope,
-    ReviewContext,
-    TransactionReview,
-    TransactionReviewer,
-    TransactionSummary,
-    UnsignedTransaction,
+import {
+    i18nKey,
+    type ChainScope,
+    type ReviewContext,
+    type TransactionReview,
+    type TransactionReviewer,
+    type TransactionSummary,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumCapabilityDefaults } from '../../capability-defaults'
 import { ethereumDescriptor } from '../../descriptor'
@@ -79,7 +80,7 @@ const TOKEN_TRANSFER: TransactionSerializableEIP1559 = {
 
 const OPAQUE_SUMMARY: TransactionSummary = {
     kind: 'contract-call',
-    title: { key: 'dapp.claimed' },
+    title: { key: i18nKey('dapp.claimed') },
     direction: 'none',
     icon: 'contract-call',
 }
@@ -89,7 +90,7 @@ const tokenClaim = (
     overrides: Partial<TransactionSummary> = {},
 ): TransactionSummary => ({
     kind: 'token-transfer',
-    title: { key: 'transactions.list_item.send' },
+    title: { key: i18nKey('transactions.list_item.send') },
     direction: 'out',
     icon: 'send',
     counterparty: RECIPIENT,
@@ -252,8 +253,8 @@ describe('ethereumReviewerAdapter', () => {
             const { summary } = await reviewOne(
                 unsigned(TOKEN_TRANSFER, {
                     summary: tokenClaim({
-                        title: { key: 'forged.title' },
-                        subtitle: { key: 'forged.subtitle' },
+                        title: { key: i18nKey('forged.title') },
+                        subtitle: { key: i18nKey('forged.subtitle') },
                         counterparty: RECIPIENT.toLowerCase(),
                         direction: 'in',
                         icon: 'receive',
@@ -505,7 +506,7 @@ describe('ethereumReviewerAdapter', () => {
         it('keeps a call it recognises as a kind outside the allowlist behind review, with a warning', async () => {
             const recogniseCall = vi.fn<CallRecogniser>(() => ({
                 kind: 'approval',
-                title: { key: 'transactions.list_item.approval' },
+                title: { key: i18nKey('transactions.list_item.approval') },
                 direction: 'none',
                 counterparty: SPENDER,
                 icon: 'approval',

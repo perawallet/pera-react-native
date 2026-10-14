@@ -12,11 +12,11 @@
 
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const TIP_KEYS = [
     i18nKey('ledger.troubleshooting.tip_unlocked'),

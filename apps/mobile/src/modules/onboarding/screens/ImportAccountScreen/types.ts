@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { PWInputRef } from '@components/core'
 import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { PWInputRef } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseImportAccountScreenResult = {

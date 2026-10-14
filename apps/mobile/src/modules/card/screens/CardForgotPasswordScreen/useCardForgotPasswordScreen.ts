@@ -19,12 +19,12 @@ import {
     useRequestPasswordResetMutation,
     type ForgotPasswordEmailFormValues,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardStackParamList } from '../../routes/types'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type UseCardForgotPasswordScreenResult = {
     control: Control<ForgotPasswordEmailFormValues>

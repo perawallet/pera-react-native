@@ -10,9 +10,9 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AssetDetailsDisplay } from '../../types/asset-details-display'
 import { extractDomain } from '../../utils/extractDomain'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** A chain with no entry in the chain-UI registry gets no sections and its descriptor's explorer link. */
 export const neutralAssetDetailsDisplay: AssetDetailsDisplay = {

@@ -11,13 +11,13 @@
  */
 
 import { useCallback } from 'react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWInfoView, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { UserPreferences } from '@constants/user-preferences'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useLegacyQuantumPrompt } from '@modules/prompts/hooks/useLegacyQuantumPrompt'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /**
  * One-time nudge, shown when the wallet holds at least one legacy-derivation

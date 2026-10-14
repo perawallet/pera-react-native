@@ -23,6 +23,7 @@ import {
     type PhoneSendFormValues,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { useCardErrorToast } from '@modules/card/hooks'
@@ -30,7 +31,6 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCardScope } from '../../hooks/useCardScope'
 

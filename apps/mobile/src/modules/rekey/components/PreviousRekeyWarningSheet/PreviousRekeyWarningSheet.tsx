@@ -11,10 +11,10 @@
  */
 
 import { Trans } from 'react-i18next'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type RekeyWarningCopy = {
     titleKey: I18nKey

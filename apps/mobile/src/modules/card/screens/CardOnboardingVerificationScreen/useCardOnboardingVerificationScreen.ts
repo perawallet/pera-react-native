@@ -19,6 +19,7 @@ import {
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
@@ -30,7 +31,6 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { isForegroundTransition } from '@utils/app-state'
 import { useCardScope } from '../../hooks/useCardScope'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type UseCardOnboardingVerificationScreenResult = {
     /** Start request in flight — disables the CTA and shows its spinner. */

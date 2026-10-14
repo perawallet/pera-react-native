@@ -12,6 +12,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -24,7 +25,6 @@ import {
     LedgerLocationServicesDisabledError,
     LedgerScanTimeoutError,
 } from '@perawallet/wallet-core-ledger'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { isAndroid, isIOS } from '@utils/platform'
 

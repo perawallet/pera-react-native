@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { isAndroid } from '@utils/platform'
 import { PasskeysHero } from '../PasskeysHero'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type PasskeysDisabledStateProps = {
     onOpenSettings: () => void

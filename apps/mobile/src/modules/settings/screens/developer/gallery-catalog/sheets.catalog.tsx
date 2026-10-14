@@ -19,6 +19,7 @@ import {
     mockAlgo25Account,
 } from '@perawallet/wallet-core-dev-fixtures'
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
 import { AccountMenuContent } from '@modules/accounts/components/AccountMenuContent'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
@@ -78,7 +79,6 @@ import { PWText } from '@components/core'
 import { GallerySheetBoundary } from './GallerySheetBoundary'
 
 import type { GallerySection } from './types'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 
 const A = MOCK_ADDRESS

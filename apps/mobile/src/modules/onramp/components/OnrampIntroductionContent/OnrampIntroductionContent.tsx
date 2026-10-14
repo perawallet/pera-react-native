@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWChip,
@@ -25,7 +26,6 @@ import { useBottomSheetResult } from '@modules/bottom-sheet'
 import onrampIntroHeroLight from '@assets/images/onramp-intro-hero-light.png'
 import onrampIntroHeroDark from '@assets/images/onramp-intro-hero-dark.png'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const FEATURE_KEYS = [
     i18nKey('onramp.introduction.feature_buy'),

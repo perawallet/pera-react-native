@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { PasswordScore } from '../../hooks/usePasswordStrength.web'
 import { useStyles } from './styles'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type PasswordStrengthMeterProps = {
     score: PasswordScore

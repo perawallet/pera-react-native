@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import heroImage from '@assets/images/rekey-hero.jpg'
 import { PWButton, PWImage, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,7 +21,6 @@ import {
     type RekeyIntroNavConfig,
 } from './useRekeyIntroScreen'
 import { useStyles } from './styles'
-import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type RekeyIntroCopy = {
     titleKey: I18nKey

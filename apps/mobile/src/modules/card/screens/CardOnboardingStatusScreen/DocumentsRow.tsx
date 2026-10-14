@@ -11,12 +11,12 @@
  */
 
 import React from 'react'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, type IconName, type PWIconVariant } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { StatusChecklistRow } from './StatusChecklistRow'
 import type { DocumentsState } from './useCardOnboardingStatusScreen'
 import { useStyles } from './styles'
-import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 // Icon, color, and copy for the "Submit Your Documents" row per KYC state.
 const DOCUMENTS_ROW: Record<

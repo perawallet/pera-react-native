@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { IconName, PWBadgeProps } from '@components/core'
 import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { IconName, PWBadgeProps } from '@components/core'
 
 export type AccountOption = {
     testID: string

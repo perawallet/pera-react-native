@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { compactSignedResults } from '../blockchain'
 import {
     type PeraSignedTransaction,
     type PeraTransaction,
     type I18nKey,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { compactSignedResults } from '../blockchain'
 import {
     usesNonPrimaryScheme,
     type WalletAccount,

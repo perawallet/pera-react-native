@@ -11,13 +11,13 @@
  */
 
 import React from 'react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import './i18n'
 import { ThemeProvider } from '@rneui/themed'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
 import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { ErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView/EmptyView'

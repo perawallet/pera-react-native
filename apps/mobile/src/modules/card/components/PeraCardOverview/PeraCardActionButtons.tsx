@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { CardWithdrawState } from './usePeraCardOverview'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const WITHDRAW_TITLE_KEYS = {
     idle: i18nKey('peraCard.account.withdraw'),

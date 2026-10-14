@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import {
+    scopeForLegacyNetwork,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -28,10 +32,6 @@ import {
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import {
-    scopeForLegacyNetwork,
-    i18nKey,
-} from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 

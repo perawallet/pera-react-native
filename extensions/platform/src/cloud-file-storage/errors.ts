@@ -16,8 +16,8 @@ import {
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
 
-import type { CloudFileStore } from './models'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { CloudFileStore } from './models'
 
 // A user setting rather than a fault, so it files no crash report.
 export class ICloudUnavailableError extends AppError {

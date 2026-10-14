@@ -15,10 +15,10 @@ import {
     useCardUserQuery,
     useRegistrationSettingsQuery,
 } from '@perawallet/wallet-core-card'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import { getCountryName } from '../../utils/getCountryName'
-import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** KYC presentation tone — drives the status color in the sheet. */
 export type KycTone = 'verified' | 'pending' | 'rejected' | 'unverified'

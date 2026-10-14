@@ -11,10 +11,10 @@
  */
 
 import { useCallback } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { DEEPLINK_TIMEOUT_TAG } from './timeout'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type Variant =
     | 'generic'

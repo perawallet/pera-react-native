@@ -29,6 +29,14 @@ import type { TabBarStackParamList } from './tab-types'
 
 export type { TabBarStackParamList } from './tab-types'
 
+const TAB_LABEL_KEYS: Record<string, I18nKey> = {
+    Home: i18nKey('tabbar.home'),
+    Discover: i18nKey('tabbar.discover'),
+    Swap: i18nKey('tabbar.swap'),
+    Fund: i18nKey('tabbar.fund'),
+    Menu: i18nKey('tabbar.menu'),
+}
+
 const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
 
 export const TabBarStackNavigator = () => {
@@ -84,14 +92,7 @@ export const TabBarStackNavigator = () => {
                         )
                     },
                     tabBarLabel: ({ focused }) => {
-                        const labelMap: Record<string, I18nKey> = {
-                            Home: i18nKey('tabbar.home'),
-                            Discover: i18nKey('tabbar.discover'),
-                            Swap: i18nKey('tabbar.swap'),
-                            Fund: i18nKey('tabbar.fund'),
-                            Menu: i18nKey('tabbar.menu'),
-                        }
-                        const labelKey = labelMap[route.name]
+                        const labelKey = TAB_LABEL_KEYS[route.name]
                         if (!labelKey) return null
                         return (
                             <TabLabel

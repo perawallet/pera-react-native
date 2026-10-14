@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useExpressSendScreen } from './useExpressSendScreen'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const STEPS = [
     i18nKey('send_funds.express_send.step_1'),

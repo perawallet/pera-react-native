@@ -18,6 +18,7 @@ import {
     useCardTransactionsQuery,
     useExportCardStatementMutation,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { shareFile } from '@utils/shareFile'
 import { useCardScope } from '../../hooks/useCardScope'
@@ -27,7 +28,6 @@ import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
 } from '../../utils/cardTransactions'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const PDF_MIME_TYPE = 'application/pdf'
 

@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { PanelButtonProps } from '@components/PanelButton'
 import type { OptionListOption } from '@components/OptionList'
 import { trackEvent, CloudBackupEvent } from '@analytics'
@@ -19,7 +20,6 @@ import { useBottomSheetResult } from '@modules/bottom-sheet'
 import type { CredentialsFileSource } from '../../storage'
 import { useCredentialsFileReadSources } from '../../hooks/useCredentialsFileSources'
 import { CREDENTIALS_FILE_SOURCE_ICONS } from '../credentialsFileSourceIcons'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type RestoreBackupSheetResult = 'scan' | CredentialsFileSource | 'manual'
 

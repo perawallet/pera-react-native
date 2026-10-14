@@ -18,6 +18,7 @@ import {
     useRequestPasswordResetMutation,
     useVerifyPasswordResetMutation,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -26,7 +27,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import type { PeraCardStackParamList } from '../../routes/types'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** Seconds the user must wait before the reset code can be re-requested. */
 const RESEND_COOLDOWN_SECONDS = 60

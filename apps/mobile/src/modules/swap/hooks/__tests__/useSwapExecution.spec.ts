@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
@@ -28,7 +29,6 @@ import {
     useSwapExecution,
     type SwapExecutionOutcome,
 } from '../useSwapExecution'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const mockT = vi.fn((key: string) => key)
 const mockExecuteSwap = vi.fn()

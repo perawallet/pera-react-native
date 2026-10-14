@@ -27,6 +27,7 @@ import {
     createChromeFake,
     type ChromeFake,
 } from '@perawallet/wallet-extension-platform-chrome/test-utils'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     broadcastConnectionsEvent,
     onConnectionsControlMessage,
@@ -282,7 +283,7 @@ describe('createRemoteConnectionRegistry', () => {
                 kind: 'error',
                 name: 'ConnectionsError',
                 message: 'No connection handler accepts this URI',
-                messageKey: 'errors.connections.no_handler',
+                messageKey: i18nKey('errors.connections.no_handler'),
                 scope: { pairingId: 'pair-1' },
             })
 

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWCheckbox,
@@ -23,7 +24,6 @@ import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePassphraseAcknowledgeContent } from './usePassphraseAcknowledgeContent'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type PassphraseAcknowledgeContentProps = {
     testID?: string

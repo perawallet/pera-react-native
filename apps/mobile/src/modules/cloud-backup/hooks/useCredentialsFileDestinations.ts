@@ -11,12 +11,12 @@
  */
 
 import { useMemo } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import type { OptionListOption } from '@components/OptionList'
 import { CREDENTIALS_FILE_SOURCE_ICONS } from '../components/credentialsFileSourceIcons'
 import type { CredentialsFileSource } from '../storage'
 import { useCredentialsFileSaveSources } from './useCredentialsFileSources'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const TITLE_KEYS: Record<CredentialsFileSource, I18nKey> = {
     device: i18nKey('cloud_backup.store_credentials.store_locally'),

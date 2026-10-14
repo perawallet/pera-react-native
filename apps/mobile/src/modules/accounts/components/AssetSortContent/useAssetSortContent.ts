@@ -16,8 +16,8 @@ import {
     AssetSortModes,
     useAssetPreferencesStore,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/useLanguage'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 
 type SortOption = {
     mode: AssetSortMode

@@ -17,11 +17,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { BackupAccountType } from '@perawallet/wallet-core-backup'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     AlgorandBackupKinds,
     algorandBackupKindIdOf,
 } from '../../backup/serialize-account'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
     standaloneAccount,
@@ -266,5 +266,42 @@ describe('algorandAccountPresentation.transitionLabel', () => {
         expect(transitionLabel(standard, quantum).supportUrl).toBe(
             config.quantumAccountSupportUrl,
         )
+    })
+})
+
+describe('glyphs', () => {
+    it.each([
+        standaloneAccount('A'),
+        hdAccount('A'),
+        hardwareAccount('A'),
+        multisigAccount('A', null),
+        watchAccount('A'),
+        quantumAccount('A'),
+    ])('are the same whether or not the account can sign', account => {
+        const kindId = kindIdOf(account)
+
+        expect(
+            algorandAccountPresentation.describe(kindId, { canSign: false })
+                ?.glyph,
+        ).toBe(
+            algorandAccountPresentation.describe(kindId, { canSign: true })
+                ?.glyph,
+        )
+    })
+
+    // A backup-only row shows the kind the backup adapter reads off the item.
+    it.each([
+        ...Object.values(AlgorandBackupKinds),
+        ...Object.values(BackupAccountType).filter(
+            type => type !== BackupAccountType.hdSeed,
+        ),
+    ])('include one for the %s backup item kind', type => {
+        const kindId = algorandBackupKindIdOf(type)
+
+        expect(kindId).toBeDefined()
+        expect(
+            algorandAccountPresentation.describe(kindId!, { canSign: true })
+                ?.glyph,
+        ).toBeDefined()
     })
 })

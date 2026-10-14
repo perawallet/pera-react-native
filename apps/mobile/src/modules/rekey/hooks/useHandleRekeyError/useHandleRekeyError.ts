@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -18,7 +19,6 @@ import {
     RekeyError,
     type RekeyErrorReason,
 } from '@perawallet/wallet-core-transactions'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type UseHandleRekeyErrorResult = (error: unknown) => void
 

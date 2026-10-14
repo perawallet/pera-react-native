@@ -11,7 +11,7 @@
  */
 
 import { vi } from 'vitest'
-import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -304,7 +304,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
     const getNetworkErrorMessageKeys = (error: unknown): ErrorMessageKeys => {
         if (error instanceof NoConnectionError) {
-            return keysFor(i18nKey('errors.network.no_connection'))
+            return keysFor('errors.network.no_connection')
         }
 
         if (!isPeraNetworkError(error)) return keysFor('errors.general')

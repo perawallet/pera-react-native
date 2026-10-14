@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWIcon,
     PWLoadingIndicator,
@@ -19,7 +20,6 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'

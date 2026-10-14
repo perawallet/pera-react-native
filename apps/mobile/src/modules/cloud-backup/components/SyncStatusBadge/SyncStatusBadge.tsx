@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTestProps } from '@utils/test-id-helper'
 import type { SyncBadge } from '../../hooks/useBackupSyncStatus'
 import { useStyles } from './styles'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const STATUS_LABEL_KEY: Record<SyncBadge, I18nKey> = {
     success: i18nKey('cloud_backup.overview.status_success'),

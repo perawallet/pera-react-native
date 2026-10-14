@@ -18,6 +18,7 @@ import {
     useSendPhoneVerificationMutation,
     useVerifyPhoneMutation,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
@@ -25,7 +26,6 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** Seconds the user must wait before the SMS code can be re-sent. */
 const RESEND_COOLDOWN_SECONDS = 60

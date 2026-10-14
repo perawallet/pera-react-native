@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { RekeyIntroCopy } from '../../../components/RekeyIntroScreen'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { RekeyIntroCopy } from '../../../components/RekeyIntroScreen'
 
 const COPY: RekeyIntroCopy = {
     titleKey: i18nKey('rekey.to_standard.intro.title'),

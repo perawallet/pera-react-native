@@ -10,10 +10,10 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type OnrampTab = 'fund' | 'history'
 

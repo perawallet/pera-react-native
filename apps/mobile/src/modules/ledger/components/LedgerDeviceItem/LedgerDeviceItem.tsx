@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWView,
     PWText,
@@ -26,7 +27,6 @@ import type {
     HardwareWalletDevice,
     LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type LedgerDeviceItemProps = {
     device: HardwareWalletDevice

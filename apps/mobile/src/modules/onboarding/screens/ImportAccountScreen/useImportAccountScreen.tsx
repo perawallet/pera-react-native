@@ -14,6 +14,11 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { Linking } from 'react-native'
 
 import { type RouteProp, useRoute } from '@react-navigation/native'
+import {
+    i18nKey,
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
     consumePendingImportMnemonic,
@@ -24,11 +29,6 @@ import {
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import {
-    i18nKey,
-    isPostQuantumScheme,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'

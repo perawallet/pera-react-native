@@ -10,10 +10,10 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWResultView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTransactionSuccessScreen } from './useTransactionSuccessScreen'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const titleKey = {
     close_account: i18nKey('send_funds.close_account.success_title'),

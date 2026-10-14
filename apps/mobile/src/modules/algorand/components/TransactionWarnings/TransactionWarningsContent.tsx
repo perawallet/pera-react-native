@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     type IconName,
     PWDivider,
@@ -21,7 +22,6 @@ import {
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LONG_ADDRESS_LENGTH,

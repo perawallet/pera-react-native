@@ -15,12 +15,12 @@ import {
     closeCurrentTab,
     getConsumedExpandedFlow,
 } from '@perawallet/wallet-core-browser-runtime'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useCameraTabResultStore,
     type CameraTabResult,
 } from './useCameraTabResultStore'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const COPY_KEYS: Record<CameraTabResult, { title: I18nKey; body: I18nKey }> = {
     'account-imported': {

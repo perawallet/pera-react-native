@@ -12,8 +12,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { AppError } from '@perawallet/wallet-core-shared'
 import {
     toOriginWarningMessage,

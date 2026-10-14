@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { LoadingView } from '@components/LoadingView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { PWButton, PWScreen, PWView } from '@components/core'
@@ -20,7 +21,6 @@ import {
     type CameraAccessState,
 } from './useCameraAccessScreen.web'
 import { useStyles } from './styles'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const DESCRIPTION_KEYS: Record<CameraAccessState, I18nKey> = {
     requesting: i18nKey('qr_scanner.camera_access_requesting'),

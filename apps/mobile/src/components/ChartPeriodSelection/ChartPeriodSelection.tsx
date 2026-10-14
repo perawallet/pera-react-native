@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
@@ -17,7 +18,6 @@ import {
     type HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
 import { useChartPeriodSelection } from './useChartPeriodSelection'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type ChartPeriodSelectionProps = {
     value: HistoryPeriod

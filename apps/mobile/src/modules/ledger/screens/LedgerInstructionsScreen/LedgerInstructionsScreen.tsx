@@ -11,12 +11,12 @@
  */
 
 import React from 'react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 
 import { useStyles } from './styles'
 import { useLedgerInstructionsScreen } from './useLedgerInstructionsScreen'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const BLE_INSTRUCTIONS = [
     { step: 1, key: i18nKey('ledger.instructions.step_1') },

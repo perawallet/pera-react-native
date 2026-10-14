@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView, withLanguageParam } from '@modules/webview'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStakingDisclaimerSheet } from './useStakingDisclaimerContent'

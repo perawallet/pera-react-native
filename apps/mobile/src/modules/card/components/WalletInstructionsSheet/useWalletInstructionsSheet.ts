@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type WalletPlatform = 'apple' | 'google'
 

@@ -14,10 +14,10 @@ import {
     PASSWORD_RULES,
     type PasswordRuleId,
 } from '@perawallet/wallet-core-card'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type PasswordRequirementsProps = {
     /** The current password value; each rule is re-evaluated against it. */

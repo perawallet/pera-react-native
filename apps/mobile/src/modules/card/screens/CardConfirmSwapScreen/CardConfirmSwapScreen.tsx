@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -18,7 +19,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { CardStepRow } from '../../components/CardStepRow'
 import { useCardConfirmSwapScreen } from './useCardConfirmSwapScreen'
 import { useStyles } from './styles'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const STEP_LABEL_KEYS = {
     swap: i18nKey('peraCard.add_funds.confirm_step_swap'),

@@ -12,12 +12,12 @@
 
 import LottieView from 'lottie-react-native'
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 import { useStyles } from './styles'
 import { useTransactionProcessingScreen } from './useTransactionProcessingScreen'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export const TransactionProcessingScreen = () => {
     const styles = useStyles()

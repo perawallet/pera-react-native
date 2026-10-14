@@ -20,13 +20,13 @@ import {
     useVerifyEmailMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type UseCardOnboardingPasswordScreenResult = {
     control: Control<PasswordSetFormValues>
