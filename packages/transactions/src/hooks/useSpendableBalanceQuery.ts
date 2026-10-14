@@ -23,6 +23,7 @@ import { MODULE_PREFIX, transactionQueryKeys } from './querykeys'
 export type UseSpendableBalanceQueryResult = {
     /** `undefined` until loaded; callers gate on it, so no default. */
     data: Optional<SpendableBalance>
+    /** True while `data` is missing or still answers an earlier input. */
     isPending: boolean
 }
 
@@ -58,7 +59,8 @@ export const useSpendableBalanceQuery = (
 
     return {
         data: query.data,
-        // TanStack reports a skipped query as pending.
-        isPending: isEnabled && query.isPending,
+        // TanStack reports a skipped query as pending. Placeholder data is the
+        // answer for an earlier input, so it still counts as pending.
+        isPending: isEnabled && (query.isPending || query.isPlaceholderData),
     }
 }

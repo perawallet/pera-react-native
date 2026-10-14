@@ -34,9 +34,9 @@ export const RecipientWarning = ({ notice }: RecipientWarningProps) => {
                 variant='error'
             />
             <PWView style={styles.messageContainer}>
-                {notice.body.map(paragraph => (
+                {notice.body.map((paragraph, index) => (
                     <PWText
-                        key={paragraph.key}
+                        key={index}
                         style={styles.message}
                     >
                         {t(paragraph.key, paragraph.params)}

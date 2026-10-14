@@ -247,7 +247,7 @@ export const transferContractTests = (
                 ).toBeUndefined()
             })
 
-            it('warns about no recipient', async () => {
+            it('has no recipient rule', async () => {
                 const warning = await makeAdapter().recipientWarning?.({
                     recipient: nativeTransfer.to,
                     asset: nativeTransfer.assetRef,

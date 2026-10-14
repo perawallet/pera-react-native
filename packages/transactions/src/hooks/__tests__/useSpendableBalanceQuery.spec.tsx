@@ -103,7 +103,7 @@ describe('useSpendableBalanceQuery', () => {
         expect(spendableBalance).toHaveBeenCalledWith(inputWith(1_000))
     })
 
-    it('re-prices when the fee arrives, keeping the earlier answer meanwhile', async () => {
+    it('re-prices when the fee arrives, showing the earlier answer as pending meanwhile', async () => {
         const { result, rerender } = renderHook(
             ({ fee }: { fee: number }) =>
                 useSpendableBalanceQuery(inputWith(fee)),
@@ -120,9 +120,12 @@ describe('useSpendableBalanceQuery', () => {
 
         rerender({ fee: 1_000 })
 
+        // The earlier answer is shown, but not as an answer for this fee.
         expect(result.current.data).toEqual(SPENDABLE)
+        expect(result.current.isPending).toBe(true)
         resolveRepriced(repriced)
         await waitFor(() => expect(result.current.data).toEqual(repriced))
+        expect(result.current.isPending).toBe(false)
         expect(spendableBalance).toHaveBeenLastCalledWith(inputWith(1_000))
     })
 

@@ -508,6 +508,29 @@ describe('useInputScreen', () => {
         expect(mockShowToast).not.toHaveBeenCalled()
     })
 
+    // While the fee lands, the last answer (priced without it) is still shown;
+    // checking an amount against it would let one fee too much through.
+    it('holds a resumed send while MAX is being re-priced', async () => {
+        mockSendFundsState.amount = new Decimal('99.8995')
+        mockSendFundsState.destination = 'RECEIVERADDR'
+        mockSendFundsState.shouldContinueToConfirm = true
+        ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+            data: {
+                balance: new Decimal(100_000_000),
+                max: new Decimal(99_900_000),
+                reserved: new Decimal(100_000),
+            },
+            isPending: true,
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        await act(async () => {})
+
+        expect(result.current.isBalanceReady).toBe(true)
+        expect(mockSetShouldContinueToConfirm).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
     it('holds a resumed send until the fee it is priced with is loaded', async () => {
         mockSendFundsState.amount = new Decimal('5')
         mockSendFundsState.destination = 'RECEIVERADDR'

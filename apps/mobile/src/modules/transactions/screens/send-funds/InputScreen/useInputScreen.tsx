@@ -170,7 +170,8 @@ export const useInputScreen = () => {
                 : undefined,
         [selectedAccount, selectedAssetId, scope, minFee],
     )
-    const { data: spendable } = useSpendableBalanceQuery(spendableInput)
+    const { data: spendable, isPending: isSpendablePending } =
+        useSpendableBalanceQuery(spendableInput)
 
     const totalBalance = useMemo(
         () =>
@@ -254,7 +255,7 @@ export const useInputScreen = () => {
                                 {translateParagraphs(notice).map(
                                     (paragraph, index) => (
                                         <PWText
-                                            key={notice.body[index].key}
+                                            key={index}
                                             variant='body'
                                         >
                                             {paragraph}
@@ -390,7 +391,8 @@ export const useInputScreen = () => {
     // Next checks the amount against these balances; pressing it before they
     // load would reject a valid amount as exceeding a zero balance.
     const isBalanceReady = !!spendable
-    const canCheckAmount = !!asset && isBalanceReady && minFee !== undefined
+    const canCheckAmount =
+        !!asset && isBalanceReady && !isSpendablePending && minFee !== undefined
 
     // A resumed send (see `shouldContinueToConfirm`) runs the user's own Next,
     // so every check a real tap makes still applies on the way to confirm.
