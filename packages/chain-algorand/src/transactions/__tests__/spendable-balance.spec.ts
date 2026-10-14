@@ -137,6 +137,17 @@ describe('readAlgorandSpendableBalance', () => {
         expect(result.reserveNotice).toEqual(MIN_BALANCE_NOTICE('0.2'))
     })
 
+    // The opt-in count misses app opt-ins, created assets and boxes; the raised
+    // minimum balance is what the node would reject the close-out for.
+    it('keeps an account open when an app opt-in holds its minimum balance up', async () => {
+        mocks.getAccountChainStateRow.mockResolvedValue(syncedState(328_500, 0))
+
+        const result = await spendableOf()
+
+        expect(result.emptyAccount).toBeUndefined()
+        expect(result.reserveNotice).toEqual(MIN_BALANCE_NOTICE('0.3285'))
+    })
+
     it('never offers to empty a rekeyed account, and holds its reserve firm', async () => {
         mocks.getAccountChainStateRow.mockResolvedValue(syncedState(100_000, 0))
         mocks.isDelegatedAccount.mockReturnValue(true)
