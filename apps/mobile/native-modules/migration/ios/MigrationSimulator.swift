@@ -21,6 +21,14 @@ enum MigrationSimulator {
         includeUnroutable: Bool,
         includeAuthState: Bool
     ) throws {
+        // Deletes the real legacy store and plants accounts whose keys derive
+        // from a public constant (FixtureCrypto) — never in the store app.
+        guard Bundle.main.bundleIdentifier != LegacyMigrationConstants.productionBundleId else {
+            throw LegacyMigrationError.simulator(
+                "refused: the migration simulator is disabled in the production app"
+            )
+        }
+
         guard dbName == LegacyMigrationConstants.simulatorStoreName else {
             throw LegacyMigrationError.simulator(
                 "unknown dbName '\(dbName)' (expected '\(LegacyMigrationConstants.simulatorStoreName)')"

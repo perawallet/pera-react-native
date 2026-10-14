@@ -16,6 +16,7 @@ import type {
     RouteCapabilityRestrictions,
 } from './capabilities-types'
 import { isDeveloperGalleryIncluded } from './developer-gallery'
+import { isMigrationDevToolsIncluded } from './migration-dev-tools'
 
 export type {
     RouteCapabilities,
@@ -44,6 +45,7 @@ export const routeCapabilities: RouteCapabilities = {
     analyticsConsent: true,
     developerSettings: true,
     developerGallery: isDeveloperGalleryIncluded,
+    migrationDevTools: isMigrationDevToolsIncluded,
     vaultSecuritySettings: false,
     pin: true,
     quantum: true,

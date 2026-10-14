@@ -15,6 +15,7 @@ import type {
     RouteCapabilityRestrictions,
 } from './capabilities-types'
 import { isDeveloperGalleryIncluded } from './developer-gallery'
+import { isMigrationDevToolsIncluded } from './migration-dev-tools'
 
 export type {
     RouteCapabilities,
@@ -50,6 +51,7 @@ export const routeCapabilities: RouteCapabilities = {
     analyticsConsent: false,
     developerSettings: true, // internal builds need network/debug toggles
     developerGallery: isDeveloperGalleryIncluded,
+    migrationDevTools: isMigrationDevToolsIncluded,
     vaultSecuritySettings: true,
     // Off: the vault password already locks the extension, and web has no PIN
     // lock screen, so shake to lock and duress PIN would do nothing.
