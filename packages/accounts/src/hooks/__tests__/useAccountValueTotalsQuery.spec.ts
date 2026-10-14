@@ -15,10 +15,19 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { AccountChains } from '../../models'
 import type { WalletAccount } from '../../models/accounts'
 import { useAccountValueTotalsQuery } from '../useAccountValueTotalsQuery'
 import { testAccount } from '../../__tests__/accountFactory'
+import { TESTNET_SCOPE } from '../../__tests__/fakeAccountsChain'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -228,6 +237,131 @@ describe('useAccountValueTotalsQuery', () => {
             const total = result.current.accountValueTotals.get('A1')
             expect(total?.usdValue).toEqual(new Decimal(30))
             expect(total?.fiatValue).toBeNull()
+        })
+    })
+
+    describe('network tiers', () => {
+        const SECOND_CHAIN_ID = 'ethereum' as ChainId
+        const SECOND_CHAIN_TEST_SCOPE: ChainScope = {
+            chainId: SECOND_CHAIN_ID,
+            networkId: 'sepolia',
+        }
+
+        const registerChain = (chainId: ChainId, testNetworkId: string) =>
+            getProvider().chains.register(
+                {
+                    id: chainId,
+                    networks: [
+                        {
+                            id: 'mainnet',
+                            tier: 'mainnet',
+                            isDefaultForTier: true,
+                        },
+                        {
+                            id: testNetworkId,
+                            tier: 'testnet',
+                            isDefaultForTier: true,
+                        },
+                    ],
+                } as unknown as ChainDescriptor,
+                Object.fromEntries(
+                    CHAIN_CAPABILITIES.map(capability => [capability, false]),
+                ) as ChainCapabilities,
+            )
+
+        const registerBothChains = () => {
+            registerChain(SCOPE.chainId, TESTNET_SCOPE.networkId)
+            registerChain(SECOND_CHAIN_ID, SECOND_CHAIN_TEST_SCOPE.networkId)
+        }
+
+        const makeSecondChainAccount = (address: string): WalletAccount =>
+            testAccount('watch', address, {
+                id: address,
+                chains: {
+                    [SECOND_CHAIN_ID]: { address },
+                } as unknown as AccountChains,
+            })
+
+        beforeEach(() => {
+            mockGetAccountPortfolioTotals.mockResolvedValue(totals(10, 20))
+        })
+
+        it('keeps the fiat total of a lone chain on its test network', async () => {
+            registerChain(SCOPE.chainId, TESTNET_SCOPE.networkId)
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1')],
+                        TESTNET_SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.hasFiatTotal).toBe(true)
+            expect(result.current.portfolioUsdValue).toEqual(new Decimal(40))
+        })
+
+        it('counts mainnet scopes and leaves test-tier scopes out of the fiat total', async () => {
+            registerBothChains()
+
+            const { result } = renderHook(
+                () => ({
+                    mainnet: useAccountValueTotalsQuery(
+                        [makeAccount('A1')],
+                        SCOPE,
+                    ),
+                    testTier: useAccountValueTotalsQuery(
+                        [makeSecondChainAccount('E1')],
+                        SECOND_CHAIN_TEST_SCOPE,
+                    ),
+                }),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => {
+                expect(result.current.mainnet.isPending).toBe(false)
+                expect(result.current.testTier.isPending).toBe(false)
+            })
+
+            const { mainnet, testTier } = result.current
+            expect(mainnet.hasFiatTotal).toBe(true)
+            expect(mainnet.portfolioUsdValue).toEqual(new Decimal(40))
+            expect(testTier.hasFiatTotal).toBe(false)
+            expect(testTier.portfolioUsdValue).toEqual(new Decimal(0))
+            expect(testTier.accountValueTotals.get('E1')?.usdValue).toEqual(
+                new Decimal(40),
+            )
+            expect(testTier.portfolioNativeValue).toEqual(new Decimal(20))
+        })
+
+        it('leaves the test network of the first chain out once a second chain is registered', async () => {
+            registerBothChains()
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1')],
+                        TESTNET_SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.hasFiatTotal).toBe(false)
+            expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
+        })
+
+        it('has no fiat total for an empty account list on a test-tier scope', () => {
+            registerBothChains()
+
+            const { result } = renderHook(
+                () => useAccountValueTotalsQuery([], SECOND_CHAIN_TEST_SCOPE),
+                { wrapper: createWrapper() },
+            )
+
+            expect(result.current.hasFiatTotal).toBe(false)
+            expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
         })
     })
 })

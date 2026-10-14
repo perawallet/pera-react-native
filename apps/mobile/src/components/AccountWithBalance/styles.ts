@@ -31,6 +31,9 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
         borderRadius: theme.spacing.lg,
         padding: theme.spacing.lg,
     },
+    accountDisplay: {
+        flex: 1,
+    },
     balanceContainer: {
         alignItems: 'flex-end',
         flexShrink: 0,

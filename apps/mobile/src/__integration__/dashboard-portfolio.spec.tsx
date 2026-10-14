@@ -18,13 +18,26 @@
 // math. PortfolioView wraps these same hooks but also pulls balance history and
 // the preferred-currency rate, both out of scope here.
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { createTestQueryClient } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -51,6 +64,7 @@ import {
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { registerChainAdapters } from '../bootstrap/chain-adapters'
 
 // USDC-like ASA with 6 decimals — same shape as the asset used in
 // existing send-asa / view-transactions fixtures so the math is easy to
@@ -260,6 +274,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         expect(
             result.current.portfolio.portfolioUsdValue?.equals(sumOfParts),
         ).toBe(true)
+        expect(result.current.portfolio.hasFiatTotal).toBe(true)
     })
 
     it('Given the accounts store is empty, when the portfolio hooks resolve, then accountBalances is empty and portfolioUsdValue is zero', async () => {
@@ -289,5 +304,82 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         expect(result.current.balances.accountBalances.size).toBe(0)
         expect(result.current.portfolio.portfolioUsdValue?.isZero()).toBe(true)
         expect(result.current.portfolio.accountValueTotals.size).toBe(0)
+    })
+
+    describe('with a second chain registered', () => {
+        const TEST_NETWORK = 'testnet' as const
+
+        afterEach(() => {
+            getProvider().chains.reset()
+            registerChainAdapters()
+            useNetworkStore.getState().resetState()
+        })
+
+        it('Given developer mode puts the accounts on a test network, when the portfolio hooks resolve, then each account keeps its value but none reaches the fiat total', async () => {
+            registerEthereumChain()
+            useNetworkStore.getState().setMode('developer')
+            useAccountsStore.getState().setAccounts([ACCOUNT_A])
+            const scope = scopeForLegacyNetwork(TEST_NETWORK)
+            await seedAlgoAsset(TEST_NETWORK)
+            await seedAlgorandAccountState({
+                accountAddress: addressOf(ACCOUNT_A),
+                scope,
+                nativeBalance: new Decimal(10_000_000),
+                totalAssetsOptedIn: 0,
+                minBalance: new Decimal(100_000),
+            })
+            await insertAssetHolding({
+                accountAddress: addressOf(ACCOUNT_A),
+                assetId: '0',
+                scope,
+                amount: '10000000',
+            })
+            await upsertAssetPrices({
+                prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],
+                scope,
+            })
+
+            const queryClient = createTestQueryClient()
+            const wrapper = ({ children }: { children: React.ReactNode }) => (
+                <QueryClientProvider client={queryClient}>
+                    {children}
+                </QueryClientProvider>
+            )
+            const { result } = renderHook(
+                () => {
+                    const selected = useSelectedScope(LEGACY_CHAIN_ID)
+                    const accounts = useSigningAccounts(selected.chainId)
+                    return {
+                        selected,
+                        portfolio: useAccountValueTotalsQuery(
+                            accounts,
+                            selected,
+                        ),
+                    }
+                },
+                { wrapper },
+            )
+
+            await waitFor(
+                () => {
+                    expect(result.current.portfolio.isPending).toBe(false)
+                    expect(
+                        result.current.portfolio.accountValueTotals.size,
+                    ).toBe(1)
+                },
+                { timeout: 5000 },
+            )
+
+            expect(result.current.selected.networkId).toBe(TEST_NETWORK)
+            expect(
+                result.current.portfolio.accountValueTotals
+                    .get(addressOf(ACCOUNT_A))
+                    ?.usdValue?.greaterThan(0),
+            ).toBe(true)
+            expect(result.current.portfolio.hasFiatTotal).toBe(false)
+            expect(result.current.portfolio.portfolioUsdValue?.isZero()).toBe(
+                true,
+            )
+        })
     })
 })
