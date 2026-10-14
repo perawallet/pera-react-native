@@ -15,7 +15,7 @@ import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AccountBalances,
-    AccountFiatValues,
+    AccountValues,
     AssetWithAccountBalance,
 } from '../../models'
 import type {
@@ -23,10 +23,10 @@ import type {
     AccountValueTotalsMap,
 } from '../useAccountValueTotalsQuery'
 
-describe('fiat value types', () => {
-    it('lets both hooks maps satisfy AccountFiatValues', () => {
-        expectTypeOf<AccountBalances>().toExtend<AccountFiatValues>()
-        expectTypeOf<AccountValueTotalsMap>().toExtend<AccountFiatValues>()
+describe('account value types', () => {
+    it('lets both hooks maps satisfy AccountValues', () => {
+        expectTypeOf<AccountBalances>().toExtend<AccountValues>()
+        expectTypeOf<AccountValueTotalsMap>().toExtend<AccountValues>()
     })
 
     it('keeps fiatValue to exactly null or a Decimal', () => {
@@ -34,6 +34,12 @@ describe('fiat value types', () => {
             Nullable<Decimal>
         >()
         expectTypeOf<AccountValueTotals['fiatValue']>().toEqualTypeOf<
+            Nullable<Decimal>
+        >()
+    })
+
+    it('keeps a holding nativeValue to exactly null or a Decimal', () => {
+        expectTypeOf<AssetWithAccountBalance['nativeValue']>().toEqualTypeOf<
             Nullable<Decimal>
         >()
     })

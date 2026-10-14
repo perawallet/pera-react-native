@@ -19,7 +19,6 @@ import {
 } from '@components/core'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { AssetAmount } from '@components/AssetAmount'
-import { Decimal } from 'decimal.js'
 import { WealthChart } from '@components/WealthChart'
 import { ButtonPanel } from '../ButtonPanel'
 import { useStyles } from './styles'
@@ -84,7 +83,7 @@ export const AccountOverviewHeader = ({
                                 variant='h1'
                                 value={
                                     selectedPoint
-                                        ? new Decimal(selectedPoint.nativeValue)
+                                        ? selectedPoint.nativeValue
                                         : portfolioNativeValue
                                 }
                                 asset={nativeAsset}

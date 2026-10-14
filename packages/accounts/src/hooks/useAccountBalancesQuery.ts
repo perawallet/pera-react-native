@@ -206,7 +206,7 @@ export const useAccountBalancesQuery = (
                             assetId: holding.assetId,
                             asset: undefined,
                             amount: new Decimal(0),
-                            nativeValue: new Decimal(0),
+                            nativeValue: null,
                             usdPrice: holding.usdPrice ?? undefined,
                             fiatValue: null,
                             restriction,
@@ -217,13 +217,16 @@ export const useAccountBalancesQuery = (
                         pow10(asset.decimals),
                     )
                     // The native asset's value in native terms is just its amount
-                    // (1:1), independent of price. Others convert via its rate.
+                    // (1:1), independent of price. Others convert via its rate,
+                    // and are unknown while either price is.
                     const nativeAssetValue = isNative
                         ? assetAmount
-                        : nativeUsdPrice.isZero()
-                          ? new Decimal(0)
+                        : nativeUsdPrice.isZero() || holding.usdPrice === null
+                          ? null
                           : assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
-                    nativeValue = nativeValue.plus(nativeAssetValue)
+                    if (nativeAssetValue) {
+                        nativeValue = nativeValue.plus(nativeAssetValue)
+                    }
                     usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
                     return {
                         assetId: holding.assetId,

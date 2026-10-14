@@ -52,6 +52,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useChainCapability: () => true,
+    useChainCapabilityCheck: () => () => true,
 }))
 
 vi.mock('../../sync/account-syncer', () => ({
@@ -209,7 +210,7 @@ describe('portfolio values for Algorand accounts', () => {
             },
             '200': {
                 amount: '15',
-                nativeValue: '0',
+                nativeValue: null,
                 usdPrice: '0',
                 fiatValue: null,
                 restriction: null,
@@ -217,7 +218,7 @@ describe('portfolio values for Algorand accounts', () => {
             },
             '300': {
                 amount: '0',
-                nativeValue: '0',
+                nativeValue: null,
                 usdPrice: '2',
                 fiatValue: null,
                 restriction: null,
@@ -233,7 +234,7 @@ describe('portfolio values for Algorand accounts', () => {
             },
             '500': {
                 amount: '0',
-                nativeValue: '0',
+                nativeValue: null,
                 usdPrice: '0',
                 fiatValue: null,
                 restriction: null,

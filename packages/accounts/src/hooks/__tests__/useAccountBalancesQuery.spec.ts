@@ -352,10 +352,10 @@ describe('useAccountBalances', () => {
             .get('ADDR1')
             ?.assetBalances.find(b => b.assetId === '999')
         expect(asset999?.amount).toEqual(new Decimal(100)) // decimals: 0
-        expect(asset999?.nativeValue).toEqual(new Decimal(0)) // no price → 0
+        expect(asset999?.nativeValue).toBeNull()
     })
 
-    it('emits zero amount and zero nativeValue when asset metadata is not yet loaded', async () => {
+    it('emits a zero amount and an unknown nativeValue when asset metadata is not yet loaded', async () => {
         // A holding whose metadata hasn't synced (asset: null) must carry zeros
         // so its base-unit amount can't leak into the value-desc sort.
         mockGetAccountHoldingsPage.mockResolvedValue([
@@ -374,7 +374,7 @@ describe('useAccountBalances', () => {
             .get('ADDR1')
             ?.assetBalances.find(b => b.assetId === '456')
         expect(unloaded?.amount).toEqual(new Decimal(0))
-        expect(unloaded?.nativeValue).toEqual(new Decimal(0))
+        expect(unloaded?.nativeValue).toBeNull()
         expect(unloaded?.asset).toBeUndefined()
 
         // Portfolio total ignores the unscalable row — just the ALGO balance.

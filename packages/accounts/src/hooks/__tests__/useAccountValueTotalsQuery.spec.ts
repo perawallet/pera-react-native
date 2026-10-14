@@ -15,7 +15,14 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models/accounts'
 import { useAccountValueTotalsQuery } from '../useAccountValueTotalsQuery'
 import { testAccount } from '../../__tests__/accountFactory'
@@ -36,9 +43,14 @@ vi.mock('../../sync/account-syncer', () => ({
         mockEnsureAccountFetched(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: (_chainId: string, name: string) =>
-        name === 'pricing' ? capability.pricing : true,
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useChainCapabilityCheck:
+        () =>
+        ({ chain }: { chain?: { chainId: ChainId; capability: string } }) =>
+            chain?.capability === 'pricing' ? capability.pricing : true,
 }))
 
 const createWrapper = () => {
@@ -228,6 +240,90 @@ describe('useAccountValueTotalsQuery', () => {
             const total = result.current.accountValueTotals.get('A1')
             expect(total?.usdValue).toEqual(new Decimal(30))
             expect(total?.fiatValue).toBeNull()
+        })
+    })
+
+    describe('with an Ethereum account', () => {
+        const ALL_ON = Object.fromEntries(
+            CHAIN_CAPABILITIES.map(capability => [capability, true]),
+        ) as ChainCapabilities
+        const ethereumAccount: WalletAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: '0xE' } },
+        }
+
+        beforeEach(() => {
+            for (const id of ['algorand', 'ethereum']) {
+                getProvider().chains.register(
+                    {
+                        id,
+                        networks: [
+                            {
+                                id: 'mainnet',
+                                tier: 'mainnet',
+                                isDefaultForTier: true,
+                            },
+                        ],
+                    } as unknown as ChainDescriptor,
+                    ALL_ON,
+                )
+            }
+        })
+
+        it('values it on its own chain and sums fiat across chains, native only on the scope chain', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(10, 20))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(mockGetAccountPortfolioTotals).toHaveBeenCalledWith({
+                accountAddress: '0xE',
+                scope: expect.objectContaining({ chainId: 'ethereum' }),
+            })
+            expect(
+                result.current.accountValueTotals.get('0xE')?.fiatValue,
+            ).toEqual(new Decimal(3000))
+            // A1: native 10 + 20/2 = 20 ALGO; the ETH balance doesn't add.
+            expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
+            expect(result.current.portfolioUsdValue).toEqual(new Decimal(40))
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
+        })
+
+        it('leaves the fiat total unknown, not zero, while the ALGO price is unloaded', async () => {
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({ accountAddress }: { accountAddress: string }) =>
+                    accountAddress === 'A1'
+                        ? Promise.resolve(totals(1, 5, null))
+                        : Promise.resolve(totals(1, 0, 3000)),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(
+                result.current.accountValueTotals.get('A1')?.fiatValue,
+            ).toBeNull()
+            expect(result.current.portfolioFiatValue).toBeNull()
         })
     })
 })

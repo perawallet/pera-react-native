@@ -318,7 +318,7 @@ describe('useLedgerAccountInfoContent', () => {
             expect(assetItems[0].usdPrice).toBeInstanceOf(Decimal)
             expect(assetItems[0].usdPrice.toString()).toBe('2')
             // ALGO holding: its ALGO value is the amount itself (5 * 2 / 2).
-            expect(assetItems[0].accountBalance.nativeValue.toString()).toBe(
+            expect(assetItems[0].accountBalance.nativeValue?.toString()).toBe(
                 '5',
             )
         }
@@ -328,7 +328,7 @@ describe('useLedgerAccountInfoContent', () => {
             expect(assetItems[1].usdPrice.toString()).toBe('1')
             // USDC holding value in ALGO = amount * usdPrice / algoUsdPrice
             //                            = 100 * 1 / 2 = 50.
-            expect(assetItems[1].accountBalance.nativeValue.toString()).toBe(
+            expect(assetItems[1].accountBalance.nativeValue?.toString()).toBe(
                 '50',
             )
         }
@@ -368,7 +368,7 @@ describe('useLedgerAccountInfoContent', () => {
         }
     })
 
-    it('falls back to a zero nativeValue when the ALGO USD price is unknown', () => {
+    it('leaves nativeValue unknown when the ALGO USD price is unknown', () => {
         mocks.useLedgerAccountPreview.mockReturnValue({
             preview: {
                 address: 'ADDR',
@@ -388,9 +388,7 @@ describe('useLedgerAccountInfoContent', () => {
 
         const assetItems = result.current.items.filter(i => i.kind === 'asset')
         if (assetItems[1].kind === 'asset') {
-            expect(assetItems[1].accountBalance.nativeValue.toString()).toBe(
-                '0',
-            )
+            expect(assetItems[1].accountBalance.nativeValue).toBeNull()
         }
     })
 

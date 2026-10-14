@@ -65,7 +65,7 @@ export const SwapToAssetItemView = ({
             assetId: dexAsset.assetId,
             asset,
             amount: balance ?? new Decimal(0),
-            nativeValue: new Decimal(0),
+            nativeValue: null,
             fiatValue: null,
             restriction: null,
         }

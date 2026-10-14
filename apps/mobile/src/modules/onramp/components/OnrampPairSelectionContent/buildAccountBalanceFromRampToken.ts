@@ -53,7 +53,7 @@ export const buildAccountBalanceFromRampToken = (
         assetId,
         asset: displayAsset,
         amount: balance ?? new Decimal(0),
-        nativeValue: new Decimal(0),
+        nativeValue: null,
         fiatValue: null,
         restriction: null,
     }
