@@ -24,9 +24,9 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
 
 export type PaymentTransactionDisplayProps = {
     referenceAddress?: string

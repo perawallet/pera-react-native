@@ -14,8 +14,8 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAssetPricesByIds } from '../db'
 
 type UseAssetPricesQueryResult = {

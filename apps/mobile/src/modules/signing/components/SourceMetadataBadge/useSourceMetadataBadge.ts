@@ -22,9 +22,9 @@ import {
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { useLanguage } from '@hooks/useLanguage'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const useSourceMetadataBadge = (
     metadata: SignRequestSource,

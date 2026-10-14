@@ -296,7 +296,7 @@ export const useTransactionSendFlow = (
                         pqMultiplier,
                     })
                     const unsignedTxs = await assetInbox.buildSendTxs({
-                        scope,
+                        scope: scope,
                         sender: senderAddress,
                         receiver: params.receiver,
                         assetId,
@@ -357,7 +357,7 @@ export const useTransactionSendFlow = (
 
             if (params.sendMode === 'claimArc59') {
                 const unsignedTxs = await assetInbox.buildClaimTxs({
-                    scope,
+                    scope: scope,
                     sender: senderAddress,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
@@ -378,7 +378,7 @@ export const useTransactionSendFlow = (
                         await addToAssetHolding({
                             accountAddress: senderAddress,
                             assetId: String(params.asset.assetId),
-                            scope,
+                            scope: scope,
                             amount: params.amount,
                         })
                         await fetchAndPersistAssets(
@@ -398,7 +398,7 @@ export const useTransactionSendFlow = (
                 return result.txIds[result.txIds.length - 1]
             } else {
                 const unsignedTxs = await assetInbox.buildRejectTxs({
-                    scope,
+                    scope: scope,
                     sender: senderAddress,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,

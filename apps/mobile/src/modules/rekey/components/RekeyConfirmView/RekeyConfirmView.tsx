@@ -23,8 +23,8 @@ import { useStyles } from './styles'
 
 import type { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Shared presentation for the rekey-to-{ledger,shared,standard} confirm screens.
 // They share an identical layout and differ only in their copy, testID prefix,

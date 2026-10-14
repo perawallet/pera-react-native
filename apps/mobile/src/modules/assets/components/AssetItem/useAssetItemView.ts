@@ -17,11 +17,11 @@ import {
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseAssetItemViewOptions = {
     copyableAssetId?: boolean

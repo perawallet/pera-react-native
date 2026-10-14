@@ -29,8 +29,8 @@ import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { AssetAmount } from '@components/AssetAmount'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { Decimal } from 'decimal.js'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { Decimal } from 'decimal.js'
 
 export type ArbitraryDataSigningDetailsViewProps = {
     request: ArbitraryDataSignRequest

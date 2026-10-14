@@ -25,10 +25,10 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSendFundsContentResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>

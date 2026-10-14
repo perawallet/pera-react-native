@@ -47,7 +47,7 @@ export default defineRule({
         if (m.call !== undefined && m.fn !== undefined) {
             ctx.report(
                 m.fn,
-                `${ctx.text(m.fn)}() bridges a scope to the legacy Network`,
+                `${ctx.text(m.fn)}() converts between a scope and the legacy Network`,
             )
             return
         }

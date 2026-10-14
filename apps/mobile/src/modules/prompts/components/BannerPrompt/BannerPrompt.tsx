@@ -16,6 +16,8 @@ import {
     useVisibleBanners,
     type Banner,
 } from '@perawallet/wallet-core-banners'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 // Direct subpath, not the module barrel: the barrel deliberately excludes the
@@ -25,8 +27,6 @@ import { BannerCarousel } from '@modules/banners/carousel'
 import { useBannerLinkRouter } from '@modules/banners'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useStyles } from './styles'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const BANNER_PROMPT_ID = 'banner_prompt'
 

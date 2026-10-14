@@ -15,7 +15,10 @@ import ky, {
     type BeforeRequestState,
     type SearchParamsOption,
 } from 'ky'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { hasSecret, withSecret } from '@perawallet/wallet-core-kms'
 import { ACCESS_TOKEN_SECRET_ID } from '../../session/secret-ids'
@@ -39,7 +42,7 @@ const attachClientHeaders =
     }
 
 const getClient = (scope: ChainScope): KyInstance => {
-    const key = `${scope.chainId}/${scope.networkId}`
+    const key = toScopeKey(scope)
     const existing = clients.get(key)
     if (existing) return existing
 
@@ -92,7 +95,7 @@ export const baanxDirectRequest = async <TData, TVars = unknown>(
     return parseResponse<TData>(await send(), req.responseType)
 }
 
-/** Test-only: drops memoized clients so a new network config is picked up. */
+/** Test-only: drops memoized clients so a new scope config is picked up. */
 export const resetBaanxClients = (): void => {
     clients.clear()
 }

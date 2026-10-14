@@ -24,13 +24,13 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
 import { AssetItemView } from './AssetItemView'
 import { AssetRowSkeleton } from '../AssetRowSkeleton'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance

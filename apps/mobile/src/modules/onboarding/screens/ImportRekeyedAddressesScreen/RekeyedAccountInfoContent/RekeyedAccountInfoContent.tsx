@@ -21,6 +21,8 @@ import {
 import { CopyableText } from '@components/CopyableText'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
@@ -29,8 +31,6 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useRekeyedAccountInfoContent } from './useRekeyedAccountInfoContent'
 import { useStyles } from './styles'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type RekeyedAccountInfoContentProps = {
     account: WalletAccount

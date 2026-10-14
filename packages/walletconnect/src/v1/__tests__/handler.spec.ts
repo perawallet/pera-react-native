@@ -29,6 +29,7 @@ import {
     type RawInboundMessage,
 } from '@perawallet/wallet-core-connections'
 import { logger } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     createStorageAnsweredRequests,
     type WalletConnectV1AnsweredRequests,
@@ -40,7 +41,6 @@ import {
     createConnectorRegistry,
     type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { toPeer } from '../../shared/peer'
 

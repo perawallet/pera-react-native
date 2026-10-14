@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { compactSignedResults, useTransactionEncoder } from '../../blockchain'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     type PeraSignedTransaction,
     type PeraTransaction,
@@ -28,6 +27,7 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandNetworkOf } from '../../legacy-network'

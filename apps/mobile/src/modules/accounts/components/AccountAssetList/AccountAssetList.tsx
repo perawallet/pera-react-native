@@ -29,8 +29,8 @@ import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type AccountAssetListProps = {
     account: WalletAccount

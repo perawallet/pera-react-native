@@ -20,12 +20,12 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { sendMessageToWebview } from '../handlers'
 import { resolveWebviewLanguage } from '../webviewLanguage'
 import type { BridgeHandler } from './types'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 type UseSettingsHandlersResult = {
     getSettings: BridgeHandler

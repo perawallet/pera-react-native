@@ -15,6 +15,8 @@ import {
     useIsNativeAssetId,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SvgProps } from 'react-native-svg'
@@ -27,8 +29,6 @@ import {
 } from '@components/core'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetIconProps = {
     asset: DisplayableAsset

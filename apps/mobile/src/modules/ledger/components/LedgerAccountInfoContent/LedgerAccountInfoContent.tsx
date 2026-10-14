@@ -24,6 +24,8 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
 import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AccountAssetItemView } from '@modules/assets'
 import {
@@ -31,8 +33,6 @@ import {
     type LedgerInfoListItem,
 } from './useLedgerAccountInfoContent'
 import { useStyles } from './styles'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 // This sheet is always about one connected Ledger, so a forced rekeyed state
 // is a rekey to hardware; the auth account isn't in the store to look up.

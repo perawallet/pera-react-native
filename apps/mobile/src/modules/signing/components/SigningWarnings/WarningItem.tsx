@@ -19,12 +19,12 @@ import {
     truncateAlgorandAddress,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type WarningItemProps = {
     warning: TransactionWarning

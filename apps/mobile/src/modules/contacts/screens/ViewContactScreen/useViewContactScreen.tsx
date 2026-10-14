@@ -14,13 +14,13 @@ import { useCallback } from 'react'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 import { shareText } from '@utils/shareText'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseViewContactScreenResult = {
     selectedContact: Maybe<Contact>

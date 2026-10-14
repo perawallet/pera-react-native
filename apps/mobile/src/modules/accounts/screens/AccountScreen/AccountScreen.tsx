@@ -16,6 +16,8 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useVisibleBanners } from '@perawallet/wallet-core-banners'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useShouldPlayConfetti } from '@modules/onboarding'
 
 import { useAccountScreenAnimation } from './useAccountScreenAnimation'
@@ -37,8 +39,6 @@ import { useCallback } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { PasteLinkContent } from '@modules/menu'
 import { routeCapabilities } from '@routes/capabilities'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
 

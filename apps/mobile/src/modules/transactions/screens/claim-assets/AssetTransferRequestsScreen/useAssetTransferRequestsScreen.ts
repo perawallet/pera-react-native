@@ -17,11 +17,10 @@ import {
     useAssetInboxRequestsQuery,
     type AssetInboxRequest,
 } from '@perawallet/wallet-core-transactions'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseAssetTransferRequestsScreenResult = {
     assetRequests: AssetInboxRequest[]

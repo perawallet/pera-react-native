@@ -27,13 +27,13 @@ import {
 } from '@components/core'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const SelectHDWalletScreen = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)

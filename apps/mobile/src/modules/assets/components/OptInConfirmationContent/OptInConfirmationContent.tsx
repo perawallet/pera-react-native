@@ -16,14 +16,14 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
 import { useOptInConfirmationContent } from './useOptInConfirmationContent'
 import { useStyles } from './styles'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type OptInConfirmationContentProps = {
     assetId: string

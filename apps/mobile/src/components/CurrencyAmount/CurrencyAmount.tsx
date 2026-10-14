@@ -31,8 +31,8 @@ import {
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { resolvePrecision, type PrecisionVariant } from './precision'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ALGO_SYMBOL = '¦'
 

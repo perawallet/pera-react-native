@@ -34,6 +34,7 @@ import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
 } from '@perawallet/wallet-core-security'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
@@ -55,7 +56,6 @@ import {
     useWalletConnectDeeplink,
 } from '../handlers'
 import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type HandleDeepLink = (
     url: string,

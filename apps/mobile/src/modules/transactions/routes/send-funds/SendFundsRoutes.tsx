@@ -22,6 +22,8 @@ import {
     isPureNft,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { AssetSelectionScreen } from '../../screens/send-funds/AssetSelectionScreen/AssetSelectionScreen'
 import { InputScreen } from '../../screens/send-funds/InputScreen/InputScreen'
@@ -34,8 +36,6 @@ import { TransactionProcessingScreen } from '../../screens/send-funds/Transactio
 import { TransactionSuccessScreen } from '../../screens/send-funds/TransactionSuccessScreen'
 import { useStyles } from './styles'
 import type { SendFundsStackParamList } from './types'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const Stack = createStackNavigator<SendFundsStackParamList>()
 

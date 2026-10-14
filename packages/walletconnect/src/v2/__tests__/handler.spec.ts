@@ -27,6 +27,7 @@ import type {
     ConnectionOrigin,
 } from '@perawallet/wallet-extension-connections'
 import { logger, Networks } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletKitEvent,
     WalletKitFactory,
@@ -37,7 +38,6 @@ import {
     isWalletConnectV2Connection,
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { WalletConnectRequestExpiredError } from '../../shared/errors'
 import { createWalletConnectV2Handler } from '../handler'

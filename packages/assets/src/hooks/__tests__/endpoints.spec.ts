@@ -11,8 +11,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { toggleAssetFavorite, toggleAssetPriceAlert } from '../../api'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { toggleAssetFavorite, toggleAssetPriceAlert } from '../../api'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const

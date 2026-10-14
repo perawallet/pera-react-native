@@ -14,6 +14,8 @@ import { useCallback, useMemo } from 'react'
 import { Trans } from 'react-i18next'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { config } from '@perawallet/wallet-core-config'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
@@ -22,8 +24,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { RekeySummaryRow } from '../../../components/RekeySummaryRow'
 import { useStyles } from './styles'
 import { useUndoRekeyConfirmScreen } from './useUndoRekeyConfirmScreen'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const UndoRekeyConfirmScreen = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)

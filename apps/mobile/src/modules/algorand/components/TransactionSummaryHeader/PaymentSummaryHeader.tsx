@@ -15,13 +15,13 @@ import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePaymentSummaryHeader } from './usePaymentSummaryHeader'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type PaymentSummaryHeaderProps = {
     transaction: AlgorandTransactionView

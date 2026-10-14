@@ -20,6 +20,8 @@ import {
 } from '@components/core'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
@@ -32,8 +34,6 @@ import { AccountTypeInfoContent } from './AccountTypeInfoContent'
 import { RekeyedToRow } from './RekeyedToRow'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AccountInfoCardProps = {
     account: WalletAccount

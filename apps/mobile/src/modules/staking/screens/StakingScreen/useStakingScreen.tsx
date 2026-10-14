@@ -12,6 +12,8 @@
 
 import { useCallback, useEffect } from 'react'
 import { trackEvent, StakingEvent, AnalyticsMetadataKey } from '@analytics'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
@@ -25,8 +27,6 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { StakingProject } from '@modules/staking/models'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseStakingScreenResult = {
     projects: StakingProject[]

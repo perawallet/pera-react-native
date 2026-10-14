@@ -25,10 +25,10 @@ import {
     toAlgorandNative,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type FeeDisplayProps = {
     transaction?: AlgorandTransactionView

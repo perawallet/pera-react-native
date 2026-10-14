@@ -12,13 +12,14 @@
 
 import React from 'react'
 import './i18n'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { ThemeProvider } from '@rneui/themed'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
 import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
 import type { ErrorMessageKeys } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { PWButton } from '@components/core'
@@ -32,8 +33,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AppProviders } from './providers/AppProviders'
 import { usePasskeyAutofillLifecycle } from './bootstrap/passkey-autofill'
 import { useAppBootstrap } from './useAppBootstrap'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const KEYSTORE_INIT_ERROR_KEYS: ErrorMessageKeys = {
     titleKey: i18nKey('app.initialization_failed.keystore.title'),

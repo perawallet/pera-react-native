@@ -18,9 +18,9 @@ import { Notifier } from 'react-native-notifier'
 
 import { useCardStore } from '@perawallet/wallet-core-card'
 import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { server } from '@test-utils/msw-server'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardSignInScreen } from '@modules/card/screens/CardSignInScreen'
 import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'

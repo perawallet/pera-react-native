@@ -39,7 +39,11 @@ import {
 import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
 import { createSessionBackoff } from './session-backoff'
 import { withNamedLock } from './named-lock'
-import { readActiveNetwork, type ActiveNetwork } from './network'
+import {
+    algorandScopeOf,
+    readActiveNetwork,
+    type ActiveNetwork,
+} from './network'
 
 export const INTEGRITY_RENEW_ALARM = 'pera-integrity-renew'
 
@@ -87,7 +91,7 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
     const challenge = await requestChallenge({
         deviceInstallationId,
         platform: 'web',
-        scope: { chainId: 'algorand', networkId: network },
+        scope: algorandScopeOf(network),
     })
     const [publicKey, signature] = await Promise.all([
         exportInstallPublicKey(),
@@ -102,7 +106,7 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
             publicKey,
             signature,
         },
-        scope: { chainId: 'algorand', networkId: network },
+        scope: algorandScopeOf(network),
     })
 
     await putSessionIntegrityToken({

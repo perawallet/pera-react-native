@@ -13,11 +13,11 @@
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const TransactionFeeRow = ({
     transaction,

@@ -40,7 +40,7 @@ export const fetchNfdNamesForAddress = async (
 ): Promise<NfdName[]> => {
     const { address, scope, signal } = params
 
-    // No Pera backend with no Pera backend: callers already treat [] as "no NFD match".
+    // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
     if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<NfdNamesListApiResponse>({
@@ -73,7 +73,7 @@ export const fetchNfdBulkRead = async (
 ): Promise<NfdBulkResult[]> => {
     const { addresses, scope, signal } = params
 
-    // No Pera backend with no Pera backend: callers already treat [] as "no NFD match".
+    // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
     if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<NfdBulkReadApiResponse>({
@@ -107,7 +107,7 @@ export const fetchNfdSearch = async (
 ): Promise<NfdSearchResult[]> => {
     const { name, scope, signal } = params
 
-    // No Pera backend with no Pera backend: callers already treat [] as "no NFD match".
+    // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
     if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<NfdSearchApiResponse>({

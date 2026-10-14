@@ -29,8 +29,7 @@ export type UseLocalCurrencyResult = {
  * Resolves the user's local fiat currency and the USD→fiat rate used for
  * conversions. The local currency is the app's preferred currency when that
  * is a fiat, or the fallback fiat (USD) when the app currency is the native
- * asset. The
- * symbol falls back to the currency code when unknown.
+ * asset. The symbol falls back to the currency code when unknown.
  */
 export const useLocalCurrency = (scope: ChainScope): UseLocalCurrencyResult => {
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =

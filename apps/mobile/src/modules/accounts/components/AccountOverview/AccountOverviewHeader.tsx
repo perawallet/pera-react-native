@@ -30,12 +30,12 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
 import { AccountOverviewHeaderSkeleton } from './AccountOverviewHeaderSkeleton'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount

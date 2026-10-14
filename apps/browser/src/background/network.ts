@@ -14,6 +14,10 @@ import { type Network, Networks } from '@perawallet/wallet-core-config'
 
 export type ActiveNetwork = Network
 
+// Typed as a literal so it satisfies the integrity request's scope without a chain-contract dependency.
+export const algorandScopeOf = (network: ActiveNetwork) =>
+    ({ chainId: 'algorand', networkId: network }) as const
+
 const SUPPORTED = new Set<string>(Object.values(Networks))
 
 // The service worker never hydrates the network zustand store, so it reads the persisted envelope

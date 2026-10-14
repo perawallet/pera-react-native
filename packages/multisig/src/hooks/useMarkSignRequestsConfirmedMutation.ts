@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useMutation } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { markSignRequestsConfirmed } from '../api/endpoints'
 
 type MarkSignRequestsConfirmedInput = {

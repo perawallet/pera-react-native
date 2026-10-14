@@ -12,13 +12,13 @@
 
 import { PWText, PWView } from '@components/core'
 import { useApplicationQuery } from '@perawallet/wallet-core-projects'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { ProjectVerificationIcon } from '../ProjectVerificationIcon'
 import { LoadingView } from '@components/LoadingView'
 import { CopyableText } from '@components/CopyableText'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type ApplicationDisplayProps = {
     applicationId: string

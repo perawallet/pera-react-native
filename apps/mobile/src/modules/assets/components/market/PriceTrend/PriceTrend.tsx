@@ -20,10 +20,10 @@ import {
 import type { AssetPriceHistoryItem } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { TrendIndicator } from '@components/TrendIndicator'
 import { usePriceTrend } from './usePriceTrend'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type PriceTrendProps = {
     assetId: string

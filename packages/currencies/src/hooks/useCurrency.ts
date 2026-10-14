@@ -13,12 +13,12 @@
 import { useCallback } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { useCurrenciesStore } from '../store'
 import { USD_CURRENCY_ID } from '../constants'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
 import { useNativeUsdPriceQuery } from './useNativeUsdPriceQuery'
 import { nativeCurrencyFor } from './nativeCurrency'
-import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { Decimal } from 'decimal.js'
 
 export type UseCurrencyResult = {

@@ -47,10 +47,10 @@ import {
     mockAlgodStatusAfterBlock,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
 import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { SigningOverlays } from '@modules/signing/shell'
 
 import { isElementDisabled } from '@test-utils/rnw'

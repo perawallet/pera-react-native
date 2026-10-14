@@ -32,8 +32,8 @@ import {
     useSpotBannersQuery,
     useVisibleBanners,
 } from '@perawallet/wallet-core-banners'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const DEVICE_ID = 'integration-test-device'
 const NETWORK = 'mainnet' as const

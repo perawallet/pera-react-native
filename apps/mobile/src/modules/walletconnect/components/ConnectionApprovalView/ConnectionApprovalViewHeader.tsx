@@ -32,11 +32,11 @@ import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer

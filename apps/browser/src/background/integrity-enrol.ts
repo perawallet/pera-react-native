@@ -49,7 +49,7 @@ import {
 } from './enrol-attempt'
 import { resumeIntegrityMint } from './integrity'
 import { withNamedLock } from './named-lock'
-import { readActiveNetwork } from './network'
+import { algorandScopeOf, readActiveNetwork } from './network'
 
 export const INTEGRITY_ENROL_LOCK = 'pera-integrity-enrol'
 export const INTEGRITY_ENROL_DEADLINE_ALARM = 'pera-integrity-enrol-deadline'
@@ -315,7 +315,7 @@ const submitEnrolment = async (
             deviceInstallationId,
             publicKey,
             turnstileToken,
-            scope: { chainId: 'algorand', networkId: attempt.network },
+            scope: algorandScopeOf(attempt.network),
         })
         if (kid !== attempt.kid) {
             logger.warn('Web integrity enrolment answered for another key', {

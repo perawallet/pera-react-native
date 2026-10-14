@@ -16,7 +16,6 @@ import { RoundButton } from '@components/RoundButton'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import { nativeAssetFor, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFunds } from '@modules/transactions'
@@ -33,12 +32,13 @@ import {
     type AssetWithAccountBalance,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetActionButtons } from './useAssetActionButtons'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset

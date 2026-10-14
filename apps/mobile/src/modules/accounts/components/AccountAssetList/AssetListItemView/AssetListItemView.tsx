@@ -26,6 +26,7 @@ import {
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import { pow10 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     AssetItemView,
     CollectibleListItem,
@@ -33,7 +34,6 @@ import {
 } from '@modules/assets'
 import type { AssetFiatConverter } from '../useAssetListFiat'
 import { useStyles } from './styles'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow

@@ -22,8 +22,8 @@ import type {
 } from '../api'
 import { useCallback } from 'react'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { AssetPriceHistory } from '../models'
 
 export type UseAssetPriceHistoryQueryResult = {

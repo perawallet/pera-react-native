@@ -16,9 +16,9 @@ import {
     type Optional,
     useDebouncedValue,
 } from '@perawallet/wallet-core-shared'
-import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseNfdResolveResult = {
     /** The input when a registered chain's codec accepts it, otherwise the NFD-resolved address (or empty string). */
