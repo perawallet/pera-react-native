@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import {
     decodeSignedTransaction,
     decodeTransaction,
     encodeSignedTransactions,
     getAlgorandClient,
+    getMinimumFeeConfig,
 } from '../blockchain'
 import type {
     PeraSignedTransaction,
@@ -25,19 +27,32 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../legacy-network'
 import { executeAlgorandSwap } from './executeSwap'
+import { isAlgorandQuantumSwapEnabled } from './quantumSwapGate'
+
+// Mainnet USDC on every network: the receive asset a fresh swap has always
+// defaulted to.
+const DEFAULT_RECEIVE_ASSET_ID = '31566704'
 
 // Swap groups arrive fully built from the backend, so the client only reads
 // account state and submits; it never builds or signs with its own defaults.
 export const algorandSwapAdapter: SwapChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     nativeAssetId: algorandDescriptor.nativeAsset.ref.assetId,
-    executeSwap: (params, { assetOptInMinBalance, scope, ...context }) =>
+    defaultReceiveAssetId: DEFAULT_RECEIVE_ASSET_ID,
+    swapExplorerUrl: (scope, item) => {
+        const { explorerUrl } = getAlgorandChainConfig(scope)
+        return item.transactionGroupId && explorerUrl
+            ? `${explorerUrl}/tx-group/${item.transactionGroupId}/`
+            : undefined
+    },
+    executeSwap: (params, { scope, ...context }) =>
         executeAlgorandSwap(params, {
             ...context,
             scope,
             network: algorandNetworkOf(scope),
             algorandClient: getAlgorandClient(scope),
-            assetMbr: assetOptInMinBalance,
+            assetMbr: getMinimumFeeConfig().assetMbr,
+            isQuantumSwapEnabled: isAlgorandQuantumSwapEnabled(),
             decodeTransaction: bytes =>
                 decodeTransaction(bytes) as PeraTransaction,
             decodeSignedTransaction: bytes =>

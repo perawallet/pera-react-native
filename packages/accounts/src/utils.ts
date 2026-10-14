@@ -140,6 +140,18 @@ export const findAccountByAddressOn = (
         return held !== undefined && isSameAddress(chainId, held, address)
     })
 
+/** The account holding `address` on any of its chains, compared per chain through that chain's codec. */
+export const findAccountByAnyChainAddress = (
+    accounts: readonly WalletAccount[],
+    address: string,
+): WalletAccount | undefined =>
+    accounts.find(account =>
+        (Object.keys(account.chains) as ChainId[]).some(chainId => {
+            const held = chainAccountOf(account, chainId)?.address
+            return held !== undefined && isSameAddress(chainId, held, address)
+        }),
+    )
+
 // A chain whose codec isn't registered (a build-gated chain) falls back to
 // string equality rather than throwing on every account write.
 export const isSameAddress = (

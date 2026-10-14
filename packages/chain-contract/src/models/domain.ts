@@ -173,6 +173,12 @@ export type ChainTransactionData =
       }
     | { family: 'evm' }
 
+/** Payment-link fields only the parsing chain reads; each family adds a member discriminated by `family`. */
+export type ChainPaymentData = never
+
+/** A link action only its own chain can build; each family adds a member discriminated by `family`. */
+export type ChainActionData = never
+
 export interface UnsignedTransaction {
     scope: ChainScope
     /** Chain-native transaction; only the owning adapter reads it. */

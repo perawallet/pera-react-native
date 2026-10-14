@@ -19,13 +19,21 @@ import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import {
     addressCodecs,
     keyDerivations,
+    transactionPlanners,
+    transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
-import { transferChainAdapters } from '@perawallet/wallet-core-transactions'
+import {
+    historyChainAdapters,
+    transferChainAdapters,
+} from '@perawallet/wallet-core-transactions'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
 import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
+import { ethereumHistoryAdapter } from '../history'
 import { registerChain } from '../register'
+import { ethereumPlannerAdapter } from '../signing/adapter'
+import { ethereumReviewerAdapter } from '../signing/review'
 
 const ADDRESS = '0x00000000000000000000000000000000000000aa'
 const context = {} as ChainContext
@@ -34,21 +42,31 @@ describe('registerChain', () => {
     beforeEach(() => {
         addressCodecs.reset()
         keyDerivations.reset()
+        transactionPlanners.reset()
+        transactionReviewers.reset()
         accountsChainAdapters.reset()
         assetsChainAdapters.reset()
         transferChainAdapters.reset()
+        historyChainAdapters.reset()
     })
 
-    it('registers the address codec, key derivation, and accounts, assets and transfer adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer and history adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
         expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
+        expect(transactionPlanners.get('ethereum')).toBe(ethereumPlannerAdapter)
+        expect(transactionReviewers.get('ethereum')).toBe(
+            ethereumReviewerAdapter,
+        )
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(assetsChainAdapters.get('ethereum').getNativeAsset()).toBe(
             ETHEREUM_NATIVE_ASSET,
         )
         expect(transferChainAdapters.get('ethereum').chainId).toBe('ethereum')
+        expect(historyChainAdapters.get('ethereum')).toBe(
+            ethereumHistoryAdapter,
+        )
     })
 
     it('can run more than once, so a repeated bootstrap is harmless', () => {

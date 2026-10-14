@@ -25,6 +25,7 @@ import {
 } from 'viem'
 import type {
     BuildContext,
+    ReviewContext,
     TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
@@ -34,7 +35,9 @@ import {
     evmRpcHandlers,
     type EvmRpcFixtures,
 } from '../../blockchain/msw-handlers'
+import { ethereumCapabilityDefaults } from '../../capability-defaults'
 import { ethereumPlannerAdapter } from '../../signing/adapter'
+import { ethereumReviewerAdapter } from '../../signing/review'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { createEthereumTransferAdapter } from '../builder'
 import type { EthereumTransactionPayload } from '../../signing/adapter'
@@ -281,4 +284,46 @@ describe('Ethereum transfer adapter', () => {
             adapter.getFeeEstimate(intent, context),
         ).rejects.toBeInstanceOf(InvalidSendParamsError)
     })
+})
+
+describe('a transfer the adapter builds, reviewed as the wallet built it', () => {
+    const walletBuilt: ReviewContext = {
+        scope: context.scope,
+        heldAddresses: [SENDER],
+        isWalletBuilt: true,
+        capabilities: ethereumCapabilityDefaults,
+    }
+
+    it.each([
+        ['a native transfer', nativeIntent, 'transfer'],
+        ['an ERC-20 transfer', tokenIntent, 'token-transfer'],
+    ] as const)(
+        'reviews %s as the same summary it was built with, and auto-approves it',
+        async (_, intent, kind) => {
+            useRpc({ eth_estimateGas: '0xfde8' })
+            const built = await adapter.build(intent, context)
+
+            const decoded = await ethereumReviewerAdapter.decoder.decode(
+                built,
+                walletBuilt,
+            )
+            const warnings = ethereumReviewerAdapter.warnings.detect(
+                built,
+                decoded,
+                walletBuilt,
+            )
+
+            expect(decoded.transactions.map(t => t.summary)).toEqual([
+                built[0].summary,
+            ])
+            expect(decoded.transactions[0].summary.kind).toBe(kind)
+            expect(warnings).toEqual([])
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal({
+                    ...decoded,
+                    warnings,
+                }),
+            ).toBe(true)
+        },
+    )
 })

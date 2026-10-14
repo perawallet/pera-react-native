@@ -11,8 +11,12 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DAPP_APPROVAL_SCOPE } from '../approval-bridge'
 import {
+    APPROVAL_POPUP_PORT_PREFIX,
+    DAPP_APPROVAL_SCOPE,
+} from '../approval-bridge'
+import {
+    getCurrentApproval,
     getPendingApproval,
     rejectApproval,
     rejectPasskey,
@@ -21,11 +25,13 @@ import {
 } from '../approval-client'
 
 const sendMessage = vi.fn()
+const connect = vi.fn()
 
 beforeEach(() => {
     sendMessage.mockReset()
+    connect.mockReset()
     globalThis.chrome = {
-        runtime: { sendMessage },
+        runtime: { sendMessage, connect },
     } as unknown as typeof chrome
 })
 
@@ -51,6 +57,30 @@ describe('getPendingApproval', () => {
             error: 'unknown request',
         })
         expect(await getPendingApproval('missing')).toBeNull()
+    })
+})
+
+describe('getCurrentApproval', () => {
+    it('holds a port named for the claimed approval open for the page lifetime', async () => {
+        sendMessage.mockResolvedValueOnce({
+            requestId: 'c1',
+            origin: 'https://x.com',
+            kind: 'connection-proposal',
+        })
+
+        const approval = await getCurrentApproval()
+
+        expect(approval?.requestId).toBe('c1')
+        expect(connect).toHaveBeenCalledWith({
+            name: `${APPROVAL_POPUP_PORT_PREFIX}c1`,
+        })
+    })
+
+    it('opens no port when there is nothing to claim', async () => {
+        sendMessage.mockResolvedValueOnce(null)
+
+        expect(await getCurrentApproval()).toBeNull()
+        expect(connect).not.toHaveBeenCalled()
     })
 })
 

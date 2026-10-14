@@ -18,7 +18,11 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Contact } from '../../models'
 import { ContactNotFoundError, DuplicateAddressError } from '../../errors'
 
-const registerStoreMock = vi.fn()
+// Stores register once, at import, and vitest clears mock calls before every
+// test, so registrations are kept here rather than on a vi.fn().
+const registeredStores: Parameters<
+    typeof import('@perawallet/wallet-core-shared').registerStore
+>[0][] = []
 
 // The union has one member today; a second family exercises the per-family rule.
 const OTHER_FAMILY = 'other' as ChainFamily
@@ -31,7 +35,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...original,
-        registerStore: registerStoreMock,
+        registerStore: (entry: (typeof registeredStores)[number]) => {
+            registeredStores.push(entry)
+        },
         createPersistStorage: createMockPersistStorage,
     }
 })
@@ -419,7 +425,7 @@ describe('ContactsStore', () => {
     test('registerStore wires clearStorage and resetState', async () => {
         await import('../index')
 
-        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        const registration = registeredStores.at(-1)!
         expect(registration?.name).toBe('contacts-store')
 
         const { useContactsStore } = await import('../index')

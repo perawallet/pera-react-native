@@ -20,7 +20,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({ keystoreSubtle: {} }))
 import {
     derivePasskeyCredential,
     derivePasskeyMainKey,
+    p256RawPublicKey,
 } from '../derivePasskeyCredential'
+import { p256RawPublicKeyToSpkiDer } from '../p256Spki'
 
 const subtle = webcrypto.subtle as unknown as SubtleCrypto
 
@@ -117,5 +119,23 @@ describe('derivePasskeyCredential', () => {
         })
 
         expect(a.credentialId).not.toBe(b.credentialId)
+    })
+})
+
+describe('p256RawPublicKey', () => {
+    it("is the point inside the credential's SPKI DER", async () => {
+        const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
+        const credential = await derivePasskeyCredential({
+            mainKey,
+            origin: 'webauthn.io',
+            identity: 'alice',
+        })
+
+        const raw = p256RawPublicKey(credential.privateKey)
+
+        expect(raw).toHaveLength(64)
+        expect(Array.from(p256RawPublicKeyToSpkiDer(raw))).toEqual(
+            Array.from(credential.publicKeySpkiDer),
+        )
     })
 })

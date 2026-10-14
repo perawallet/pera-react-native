@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Willkommen!",
             "get_started": "Zahle ALGO ein, um zu starten",
-            "buy_algo": "Algo kaufen",
+            "buy": "Krypto kaufen",
             "receive": "Empfangen",
             "more": "Mehr"
         }
@@ -2695,6 +2695,12 @@
             "nfd_unavailable_title": "{{name}} konnte nicht überprüft werden",
             "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein."
         },
+        "fee": {
+            "slow": "Langsam",
+            "normal": "Normal",
+            "fast": "Schnell",
+            "max_fee": "Maximale Gebühr"
+        },
         "confirmation": {
             "edit": "Bearbeiten",
             "title": "Transaktion bestätigen",
@@ -3131,6 +3137,7 @@
             "asset_config": "Asset-Konfiguration",
             "asset_freeze": "Asset-Freeze",
             "app_call": "App-Aufruf",
+            "contract_call": "Smart-Contract-Aufruf",
             "key_registration": "Schlüsselregistrierung",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3436,8 +3443,8 @@
             "error_title": "Tausch fehlgeschlagen",
             "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
             "provider_failed_body": "Dieser Anbieter konnte den Tausch nicht durchführen. Versuche es mit einem anderen Anbieter.",
-            "insufficient_algo_title": "Unzureichendes ALGO",
-            "insufficient_algo_body": "Dieses Konto benötigt mindestens {{amount}} ALGO mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr ALGO hinzu und versuche es erneut.",
+            "insufficient_native_title": "Unzureichendes {{symbol}}",
+            "insufficient_native_body": "Dieses Konto benötigt mindestens {{amount}} {{symbol}} mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
             "user_rejected": "Tausch abgebrochen",
@@ -3498,7 +3505,11 @@
         },
         "testnet": {
             "title": "Auf TestNet nicht verfügbar",
-            "body": "Das Aufladen deines Wallets ist nur auf MainNet verfügbar. Wechsle zu MainNet, um ALGO oder USDC zu kaufen."
+            "body": "Das Aufladen deines Wallets ist nur auf MainNet verfügbar. Wechsle zu MainNet, um Krypto zu kaufen."
+        },
+        "account_unsupported": {
+            "title": "Dieses Konto kann nicht aufgeladen werden",
+            "body": "Wähle ein Konto in einem Netzwerk, das Käufe unterstützt."
         },
         "region": {
             "unknown": "--",
@@ -3511,8 +3522,8 @@
             "title": "Aufladen",
             "new_chip": "NEU",
             "continue": "Weiter",
-            "feature_buy": "ALGO oder USDC mit Fiat oder Krypto kaufen",
-            "feature_swap": "Assets von anderen Netzwerken zu Algorand tauschen",
+            "feature_buy": "Krypto mit Fiat oder anderen Kryptowährungen kaufen",
+            "feature_swap": "Assets von anderen Netzwerken in dein Wallet tauschen",
             "feature_portal": "Ein Portal für On-Ramps und Cross-Chain-Swaps"
         },
         "form": {

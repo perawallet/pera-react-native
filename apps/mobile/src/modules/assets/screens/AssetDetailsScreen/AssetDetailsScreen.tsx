@@ -11,21 +11,10 @@
  */
 
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
-import {
-    getAccountDisplayName,
-    useSelectedAccount,
-    chainAccountOf,
-} from '@perawallet/wallet-core-accounts'
-import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
-import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { useEffect } from 'react'
-import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -33,6 +22,7 @@ import type { AccountStackParamsList } from '@modules/accounts'
 import { PWText, PWView } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
+import { useAssetDetailsScreen } from './useAssetDetailsScreen'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -46,46 +36,37 @@ type AssetDetailsTabParamsList = {
 
 const Tab = createPWTabNavigator<AssetDetailsTabParamsList>()
 
-export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
-    const assetId = route.params?.assetId
-    const isCollectible = route.params?.isCollectible ?? false
+type AssetDetailsContentProps = NonNullable<
+    AssetDetailsScreenProps['route']['params']
+>
+
+export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) =>
+    route.params ? <AssetDetailsContent {...route.params} /> : null
+
+const AssetDetailsContent = ({
+    assetId,
+    chainId,
+    isCollectible = false,
+}: AssetDetailsContentProps) => {
     const { t } = useLanguage()
 
     const styles = useStyles()
 
-    const account = useSelectedAccount()
-    const accountAddress = account
-        ? chainAccountOf(account, LEGACY_CHAIN_ID)?.address
-        : undefined
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { data: asset, isPending } = useSingleAssetDetailsQuery(
-        assetId ?? '',
+    const {
+        account,
+        asset,
         scope,
-    )
-    const { displayName: accountDisplayName } = useResolvedAddress(
-        accountAddress ?? '',
-        { enabled: !!accountAddress },
-    )
-
-    // Screen-view tracking (screen_asset_detail) is centralized in the
-    // navigator's screenListeners (see routes/listeners.ts). This effect only
-    // fires the asset-specific "Show" event, which carries the asset id.
-    useEffect(() => {
-        if (assetId && !isCollectible) {
-            trackEvent(AssetDetailsEvent.Show, {
-                [AnalyticsMetadataKey.AssetId]: assetId,
-            })
-        }
-    }, [assetId, isCollectible])
-
-    // Dedupe compares rendered strings, so both sides must share the same
-    // ('short') truncation — a 'long'-format secondary would never match and
-    // the address would render twice again.
-    const headerPrimary = getAccountDisplayName(account, LEGACY_CHAIN_ID)
-    const headerSecondary = dedupeSecondaryLabel(
+        isLoading,
+        isError,
         headerPrimary,
-        accountDisplayName,
-    )
+        headerSecondary,
+        assetDetailsDisplay,
+        about,
+    } = useAssetDetailsScreen({
+        assetId,
+        chainId,
+        isCollectible,
+    })
 
     useNavigationHeader({
         title: (
@@ -113,7 +94,16 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         ) : null,
     })
 
-    if (!asset || !account || isPending) {
+    if (isError) {
+        return (
+            <EmptyView
+                title={t('asset_details.markets.something_went_wrong_title')}
+                body={t('asset_details.markets.something_went_wrong_body')}
+            />
+        )
+    }
+
+    if (isLoading || !asset || !account || !about) {
         return (
             <LoadingView
                 variant='skeleton'
@@ -139,6 +129,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                         <AssetHoldings
                             account={account}
                             asset={asset}
+                            scope={scope}
                             isCollectible={isCollectible}
                         />
                     )}
@@ -150,7 +141,14 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                         title: t('asset_details.main_screen.markets_tab'),
                     }}
                 >
-                    {() => <AssetMarkets asset={asset} />}
+                    {() => (
+                        <AssetMarkets
+                            asset={asset}
+                            scope={scope}
+                            assetDetailsDisplay={assetDetailsDisplay}
+                            about={about}
+                        />
+                    )}
                 </Tab.Screen>
             </Tab.Navigator>
         </PWView>

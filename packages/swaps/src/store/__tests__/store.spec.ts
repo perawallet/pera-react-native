@@ -13,14 +13,23 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-const registerStoreMock = vi.hoisted(() => vi.fn())
+// Stores register once, at import, and vitest clears mock calls before every
+// test, so registrations are kept here rather than on a vi.fn().
+const registeredStores = vi.hoisted(
+    () =>
+        [] as Parameters<
+            typeof import('@perawallet/wallet-core-shared').registerStore
+        >[0][],
+)
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...original,
-        registerStore: registerStoreMock,
+        registerStore: (entry: (typeof registeredStores)[number]) => {
+            registeredStores.push(entry)
+        },
     }
 })
 
@@ -37,7 +46,7 @@ describe('swaps/store', () => {
         const { result } = renderHook(() => useSwapsStore())
 
         expect(result.current.fromAsset).toBeNull()
-        expect(result.current.toAsset).toBe('31566704')
+        expect(result.current.toAsset).toBeNull()
     })
 
     test('setFromAsset updates fromAsset state', () => {
@@ -138,14 +147,14 @@ describe('swaps/store', () => {
         })
 
         expect(result.current.fromAsset).toBeNull()
-        expect(result.current.toAsset).toBe('31566704')
+        expect(result.current.toAsset).toBeNull()
         expect(result.current.slippage).toBe('2.5')
     })
 
     test('registers resetState and clearStorage with the store registry', () => {
-        const registration = registerStoreMock.mock.calls
-            .map(([r]) => r)
-            .find(r => r?.name === 'swaps-store')
+        const registration = registeredStores.find(
+            r => r.name === 'swaps-store',
+        )
         expect(registration).toBeDefined()
 
         act(() => {

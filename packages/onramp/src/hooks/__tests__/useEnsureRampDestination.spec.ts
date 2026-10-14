@@ -12,10 +12,20 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import type { EnsureCanReceiveParams } from '../../chain-adapter'
 import { rampChainAdapters } from '../../chain-adapter'
 import { registerFakeRampAdapter } from '../../__tests__/fakeRampAdapter'
 import { useEnsureRampDestination } from '../useEnsureRampDestination'
+
+const PARAMS: EnsureCanReceiveParams = {
+    address: 'ADDR',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    destinationToken: {
+        id: 'STABLE',
+        symbol: 'STB',
+        network: { id: 'FAKE', name: 'Fake', logo: null },
+    },
+}
 
 describe('useEnsureRampDestination', () => {
     beforeEach(() => {
@@ -27,12 +37,13 @@ describe('useEnsureRampDestination', () => {
         const useEnsureCanReceive = vi.fn(() => ensureCanReceive)
         registerFakeRampAdapter({ useEnsureCanReceive })
 
-        const { result } = renderHook(() => useEnsureRampDestination('mainnet'))
-        const params = { address: 'ADDR', destinationAssetId: 5n }
-        const confirmed = await result.current.ensureCanReceive(params)
+        const { result } = renderHook(() =>
+            useEnsureRampDestination('algorand'),
+        )
+        const confirmed = await result.current.ensureCanReceive(PARAMS)
 
         expect(useEnsureCanReceive).toHaveBeenCalled()
-        expect(ensureCanReceive).toHaveBeenCalledWith(params)
+        expect(ensureCanReceive).toHaveBeenCalledWith(PARAMS)
         expect(confirmed).toBe(false)
     })
 
@@ -40,20 +51,27 @@ describe('useEnsureRampDestination', () => {
         registerFakeRampAdapter()
 
         const { result, rerender } = renderHook(() =>
-            useEnsureRampDestination('mainnet'),
+            useEnsureRampDestination('algorand'),
         )
         const first = result.current.ensureCanReceive
         rerender()
 
         expect(result.current.ensureCanReceive).toBe(first)
-        await expect(
-            first({ address: 'ADDR', destinationAssetId: 5n }),
-        ).resolves.toBe(true)
+        await expect(first(PARAMS)).resolves.toBe(true)
     })
 
-    test('throws when no ramp adapter is registered for the chain', () => {
-        expect(() =>
-            renderHook(() => useEnsureRampDestination('mainnet')),
-        ).toThrow(ChainAdapterNotRegisteredError)
-    })
+    test.each([null, 'ethereum' as const])(
+        'resolves true without preparation for chain %s, which has no ramp adapter',
+        async chainId => {
+            registerFakeRampAdapter()
+
+            const { result } = renderHook(() =>
+                useEnsureRampDestination(chainId),
+            )
+
+            await expect(result.current.ensureCanReceive(PARAMS)).resolves.toBe(
+                true,
+            )
+        },
+    )
 })

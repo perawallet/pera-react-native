@@ -13,6 +13,7 @@
 export * from './endpoints'
 export * from './useRegisterDeviceMutation'
 export * from './useDeviceID'
+export * from './useDeviceIdLookup'
 export * from './useIsDeviceRegistrationPending'
 export * from './usePushToken'
 export * from './useDevice'

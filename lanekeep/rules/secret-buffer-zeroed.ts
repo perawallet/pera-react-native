@@ -16,6 +16,7 @@ const PRODUCERS = [
     'backupMnemonicToPassword',
     'bip39SeedFromEntropy',
     'computeArgon2id',
+    'decodePrivateKey',
     'decodePrivateKeyBytes',
     'deriveArgon2id',
     'deriveBackupAuthKeypair',

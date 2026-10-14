@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-export { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
-export { AlgorandTransactionReviewBody } from './components/AlgorandTransactionReviewBody'
 export { FeeDisplay } from './components/FeeDisplay'
 export {
     GroupTransactionsPanel,

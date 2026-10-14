@@ -15,19 +15,29 @@ import {
     createChainAdapterRegistry,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
+import type {
+    LegacyAccount,
+    LegacyPreferences,
+} from '@perawallet/wallet-extension-platform'
 import type { MigrateAccountArgs } from './migrate/types'
 
 /** The per-account steps of a Pera 6 migration; registered by the chain package. */
 export interface MigrationChainAdapter {
     chainId: ChainId
     migrateAccount(args: MigrateAccountArgs): Promise<WalletAccount>
-    /** Keyless accounts import after key-bearing ones, so a rekey target exists first. */
+    /** Keyless accounts import after key-bearing ones, so a delegation target exists first. */
     isKeylessAccount(account: LegacyAccount): boolean
     /** Short label for the failure reason and log. */
     classifyAccountRoute(account: LegacyAccount): string
     /** Records the legacy auth address on the account's selected scope. */
     recordLegacyAuthority(account: LegacyAccount): void
+    /**
+     * The chain's own Pera 6 flags, keyed by the name each persists under after
+     * `legacy.`; a `null` flag is not written.
+     */
+    legacyPreferenceFlags(
+        preferences: LegacyPreferences,
+    ): Readonly<Record<string, boolean | null>>
 }
 
 export const migrationChainAdapters =

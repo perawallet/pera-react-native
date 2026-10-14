@@ -16,6 +16,10 @@ import {
     rejectUnauthenticated,
     type PeraEvmAssetFixtures,
 } from '../assets/api/msw-handlers'
+import {
+    peraEvmHistoryHandlers,
+    type PeraEvmHistoryFixtures,
+} from '../history/api/msw-handlers'
 import { SHOULD_REFRESH_PATH, type ShouldRefreshResponse } from './endpoints'
 
 export type ShouldRefreshRequest = {
@@ -26,17 +30,20 @@ export type ShouldRefreshRequest = {
     last_refreshed_round: number | null
 }
 
-export type PeraEvmFixtures = PeraEvmAssetFixtures & {
-    /**
-     * A number is the HTTP status the endpoint fails with. Defaults to the
-     * backend's quiet chain: a refresh at block 1 on a null cursor (it always
-     * refreshes one), no refresh otherwise.
-     */
-    blockFollowing?:
-        | ShouldRefreshResponse
-        | number
-        | ((request: ShouldRefreshRequest) => ShouldRefreshResponse | number)
-}
+export type PeraEvmFixtures = PeraEvmAssetFixtures &
+    PeraEvmHistoryFixtures & {
+        /**
+         * A number is the HTTP status the endpoint fails with. Defaults to the
+         * backend's quiet chain: a refresh at block 1 on a null cursor (it always
+         * refreshes one), no refresh otherwise.
+         */
+        blockFollowing?:
+            | ShouldRefreshResponse
+            | number
+            | ((
+                  request: ShouldRefreshRequest,
+              ) => ShouldRefreshResponse | number)
+    }
 
 const quietChain = ({
     last_refreshed_round,
@@ -48,10 +55,10 @@ const quietChain = ({
 /** The Pera backend's EVM endpoints. */
 export const peraEvmHandlers = ({
     blockFollowing = quietChain,
-    ...assetFixtures
+    ...fixtures
 }: PeraEvmFixtures = {}): RequestHandler[] => [
     http.post(
-        `${(assetFixtures.baseUrl ?? '*').replace(/\/+$/, '')}${SHOULD_REFRESH_PATH}`,
+        `${(fixtures.baseUrl ?? '*').replace(/\/+$/, '')}${SHOULD_REFRESH_PATH}`,
         async ({ request }) => {
             const refused = rejectUnauthenticated(request)
             if (refused) return refused
@@ -66,5 +73,6 @@ export const peraEvmHandlers = ({
                 : HttpResponse.json(outcome)
         },
     ),
-    ...peraEvmAssetHandlers(assetFixtures),
+    ...peraEvmAssetHandlers(fixtures),
+    ...peraEvmHistoryHandlers(fixtures),
 ]

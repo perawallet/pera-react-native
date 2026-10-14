@@ -11,8 +11,7 @@
  */
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -46,15 +45,16 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 export type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
+    scope: ChainScope
     isCollectible?: boolean
 }
 
 export const AssetHoldings = ({
     account,
     asset,
+    scope,
     isCollectible,
 }: AssetHoldingsProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(
         asset.assetId,
@@ -91,6 +91,7 @@ export const AssetHoldings = ({
         <AssetTransactionList
             account={account}
             asset={asset}
+            scope={scope}
         >
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.header}>
@@ -99,6 +100,7 @@ export const AssetHoldings = ({
                         <PWView style={styles.headerIcons}>
                             <AssetNotificationButton
                                 assetId={asset.assetId}
+                                scope={scope}
                                 isNotificationsEnabled={
                                     assetDetails?.peraMetadata
                                         ?.isPriceAlertEnabled
@@ -106,6 +108,7 @@ export const AssetHoldings = ({
                             />
                             <AssetFavoriteButton
                                 assetId={asset.assetId}
+                                scope={scope}
                                 isFavorite={
                                     assetDetails?.peraMetadata?.isFavorited
                                 }
@@ -133,6 +136,7 @@ export const AssetHoldings = ({
                                     assetHolding?.amount ?? new Decimal(0)
                                 }
                                 sourceAssetId={asset.assetId}
+                                scope={scope}
                                 density='compact'
                             />
                         )}
@@ -149,6 +153,7 @@ export const AssetHoldings = ({
                         <AssetWealthChart
                             account={account}
                             asset={asset}
+                            scope={scope}
                             period={period}
                             onSelectionChanged={setSelectedPoint}
                         />
@@ -162,6 +167,7 @@ export const AssetHoldings = ({
                 <AssetActionButtons
                     asset={asset}
                     assetHolding={assetHolding}
+                    chainId={scope.chainId}
                     isCollectible={isCollectible}
                 />
             </PWView>

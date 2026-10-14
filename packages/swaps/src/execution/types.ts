@@ -11,7 +11,10 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -43,6 +46,8 @@ export type SwapExecutionFailure =
     | {
           phase: 'prepare'
           reason: 'insufficient-native-balance'
+          /** The chain whose native asset is short. */
+          chainId: ChainId
           /** Shortfall in base units of the native asset. */
           shortfall: Decimal
       }
@@ -73,13 +78,10 @@ export type ExecuteSwapParams = {
     /** The selected account; the frozen and balance preflights need one. */
     account: Nullable<WalletAccount>
     /**
-     * The resolved effective signer (`useSignerFor`), not the account's own
-     * nominal type: an account rekeyed to a quantum auth account signs with
-     * Falcon even though its own `type` is not `'quantum'`.
+     * The resolved effective signer, not the account itself: a delegated
+     * account signs with its authority's key and scheme.
      */
     signer: Nullable<WalletAccount>
-    /** `enable_quantum_swap` remote flag; gates quantum signers out of swaps. */
-    isQuantumSwapEnabled: boolean
     /** Localized source metadata shown on the signing request. */
     signingSource: { name: string; description: string }
     onProgress: (progress: SwapExecutionProgress) => void
@@ -95,11 +97,6 @@ export type UpdateSwapStatusFn = (params: {
 /** The chain-neutral collaborators an execution needs from the app. */
 export type SwapExecutionContext = {
     scope: ChainScope
-    /**
-     * Extra balance an account must hold to receive an asset it does not hold
-     * yet, in base units of the native asset.
-     */
-    assetOptInMinBalance: bigint
     deviceId: Nullable<string>
     addSignRequest: (request: TransactionSignRequest) => void
     prepareTransactions: (

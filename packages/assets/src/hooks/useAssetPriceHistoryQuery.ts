@@ -22,11 +22,11 @@ import type {
 } from '../api'
 import { useCallback } from 'react'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    useChainCapability,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { AssetPriceHistory } from '../models'
 
 export type UseAssetPriceHistoryQueryResult = {
@@ -36,28 +36,26 @@ export type UseAssetPriceHistoryQueryResult = {
     isPaused: boolean
     isSuccess: boolean
     refetch: (options?: RefetchOptions) => unknown
-    /** True when the active network has no Pera backend — this can never succeed here. */
+    /** True when the scope's chain lacks `priceHistory`, so this can never succeed. */
     isUnavailableOnNetwork: boolean
 }
 
 export const useAssetPriceHistoryQuery = (
     assetID: string,
     period: HistoryPeriod,
+    scope: ChainScope,
 ): UseAssetPriceHistoryQueryResult => {
-    const { network } = useNetwork()
     const isUnavailableOnNetwork = !useChainCapability(
-        scopeForLegacyNetwork(network).chainId,
+        scope.chainId,
         'priceHistory',
     )
-    const queryKey = getAssetPriceHistoryQueryKey(
-        assetID,
-        period,
-        scopeForLegacyNetwork(network),
-    )
+    const queryKey = getAssetPriceHistoryQueryKey(assetID, period, scope)
 
     const query = useQuery({
         queryKey,
-        queryFn: () => fetchAssetPriceHistory(assetID, period, network),
+        // legacyNetworkOf throws for a scope with no legacy network, so this runs only while priceHistory is on.
+        queryFn: () =>
+            fetchAssetPriceHistory(assetID, period, legacyNetworkOf(scope)),
         enabled: !isUnavailableOnNetwork,
         select: useCallback(
             (data: AssetPriceHistoryResponse) =>

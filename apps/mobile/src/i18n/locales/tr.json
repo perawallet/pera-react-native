@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Pera’ya hoş geldin!",
             "get_started": "Başlamak için ALGO yatır",
-            "buy_algo": "Algo satın al",
+            "buy": "Kripto satın al",
             "receive": "Al",
             "more": "Daha fazla"
         }
@@ -2703,6 +2703,12 @@
             "nfd_unavailable_title": "{{name}} doğrulanamadı",
             "nfd_unavailable_body": "Bu adı kontrol etmek için NFD kaydına ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır."
         },
+        "fee": {
+            "slow": "Yavaş",
+            "normal": "Normal",
+            "fast": "Hızlı",
+            "max_fee": "Maksimum ücret"
+        },
         "confirmation": {
             "edit": "Düzenle",
             "title": "İşlemi onayla",
@@ -3139,6 +3145,7 @@
             "asset_config": "Varlık yapılandırması",
             "asset_freeze": "Varlık dondurma",
             "app_call": "Uygulama çağrısı",
+            "contract_call": "Sözleşme çağrısı",
             "key_registration": "Anahtar kaydı",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3444,8 +3451,8 @@
             "error_title": "Swap başarısız",
             "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
             "provider_failed_body": "Bu sağlayıcı swap işlemini tamamlayamadı. Başka bir sağlayıcı dene.",
-            "insufficient_algo_title": "Yetersiz ALGO",
-            "insufficient_algo_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} ALGO daha gerekiyor. Daha fazla ALGO ekle ve tekrar dene.",
+            "insufficient_native_title": "Yetersiz {{symbol}}",
+            "insufficient_native_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} {{symbol}} daha gerekiyor. Daha fazla {{symbol}} ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",
             "user_rejected": "Swap iptal edildi",
@@ -3506,7 +3513,11 @@
         },
         "testnet": {
             "title": "TestNet’te kullanılamaz",
-            "body": "Cüzdanına fon eklemek yalnızca MainNet’te kullanılabilir. ALGO veya USDC satın almak için MainNet’e geç."
+            "body": "Cüzdanına fon eklemek yalnızca MainNet’te kullanılabilir. Kripto satın almak için MainNet’e geç."
+        },
+        "account_unsupported": {
+            "title": "Bu hesaba fon eklenemez",
+            "body": "Satın almayı destekleyen bir ağdaki hesabı seç."
         },
         "region": {
             "unknown": "--",
@@ -3519,8 +3530,8 @@
             "title": "Fon ekle",
             "new_chip": "YENİ",
             "continue": "Devam et",
-            "feature_buy": "Fiat veya kripto ile ALGO ya da USDC satın al",
-            "feature_swap": "Diğer ağlardaki varlıkları Algorand’a takas et",
+            "feature_buy": "Fiat veya başka kriptolarla kripto satın al",
+            "feature_swap": "Diğer ağlardaki varlıkları cüzdanına takas et",
             "feature_portal": "On-ramp ve zincirler arası swap işlemleri için tek portal"
         },
         "form": {

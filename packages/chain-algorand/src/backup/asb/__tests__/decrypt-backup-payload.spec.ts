@@ -18,10 +18,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 import { backupIndicesToKey, generateBackupCipherKey } from '../asb-crypto'
-import { AsbErrorReason, AsbImportError } from '@perawallet/wallet-core-backup'
 import {
-    AsbAccountKind,
-    type AsbBackupEnvelope,
+    SecureBackupAccountKind,
+    SecureBackupErrorReason,
+    SecureBackupImportError,
+    type SecureBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
 import { decryptBackupPayload } from '../decrypt-backup-payload'
 
@@ -35,8 +36,8 @@ const RECOVERY_INDICES = mnemonicWordsToIndices(RECOVERY_MNEMONIC.split(' '))!
 const buildEnvelope = (
     plaintext: object,
     indices: Uint16Array,
-    overrides?: Partial<AsbBackupEnvelope>,
-): AsbBackupEnvelope => {
+    overrides?: Partial<SecureBackupEnvelope>,
+): SecureBackupEnvelope => {
     const seed = backupIndicesToKey(indices)
     const key = generateBackupCipherKey(seed)
     const nonce = nacl.randomBytes(24)
@@ -84,7 +85,7 @@ describe('decryptBackupPayload', () => {
         expect(result.providerName).toBe('Pera Wallet')
         expect(result.deviceId).toBe('dev-abc')
         expect(result.accounts).toHaveLength(1)
-        expect(result.accounts[0].kind).toBe(AsbAccountKind.Single)
+        expect(result.accounts[0].kind).toBe(SecureBackupAccountKind.Single)
         expect(result.accounts[0].name).toBe('My Single')
         expect(result.accounts[0].address).toBe(
             'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM',
@@ -113,7 +114,7 @@ describe('decryptBackupPayload', () => {
 
         const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
         expect(result.accounts).toHaveLength(1)
-        expect(result.accounts[0].kind).toBe(AsbAccountKind.Watch)
+        expect(result.accounts[0].kind).toBe(SecureBackupAccountKind.Watch)
         expect(result.accounts[0].privateKey).toBeNull()
         expect(result.accounts[0].name).toBe('Watcher')
         expect(result.providerName).toBeNull()
@@ -141,7 +142,7 @@ describe('decryptBackupPayload', () => {
 
         const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
         expect(result.accounts).toHaveLength(1)
-        expect(result.accounts[0].kind).toBe(AsbAccountKind.Single)
+        expect(result.accounts[0].kind).toBe(SecureBackupAccountKind.Single)
     })
 
     it('reports InvalidRecoveryKey when the recovery key is malformed', () => {
@@ -152,9 +153,9 @@ describe('decryptBackupPayload', () => {
             decryptBackupPayload(envelope, corrupted)
             throw new Error('expected throw')
         } catch (e) {
-            expect(e).toBeInstanceOf(AsbImportError)
-            expect((e as AsbImportError).reason).toBe(
-                AsbErrorReason.InvalidRecoveryKey,
+            expect(e).toBeInstanceOf(SecureBackupImportError)
+            expect((e as SecureBackupImportError).reason).toBe(
+                SecureBackupErrorReason.InvalidRecoveryKey,
             )
         }
     })
@@ -183,9 +184,9 @@ describe('decryptBackupPayload', () => {
             decryptBackupPayload(envelope, wrong)
             throw new Error('expected throw')
         } catch (e) {
-            expect(e).toBeInstanceOf(AsbImportError)
-            expect((e as AsbImportError).reason).toBe(
-                AsbErrorReason.DecryptionFailed,
+            expect(e).toBeInstanceOf(SecureBackupImportError)
+            expect((e as SecureBackupImportError).reason).toBe(
+                SecureBackupErrorReason.DecryptionFailed,
             )
         }
     })
@@ -199,9 +200,9 @@ describe('decryptBackupPayload', () => {
             decryptBackupPayload(envelope, RECOVERY_INDICES)
             throw new Error('expected throw')
         } catch (e) {
-            expect(e).toBeInstanceOf(AsbImportError)
-            expect((e as AsbImportError).reason).toBe(
-                AsbErrorReason.MalformedPayload,
+            expect(e).toBeInstanceOf(SecureBackupImportError)
+            expect((e as SecureBackupImportError).reason).toBe(
+                SecureBackupErrorReason.MalformedPayload,
             )
         }
     })
@@ -215,8 +216,8 @@ describe('decryptBackupPayload', () => {
             decryptBackupPayload(envelope, RECOVERY_INDICES)
             throw new Error('expected throw')
         } catch (e) {
-            expect((e as AsbImportError).reason).toBe(
-                AsbErrorReason.MalformedPayload,
+            expect((e as SecureBackupImportError).reason).toBe(
+                SecureBackupErrorReason.MalformedPayload,
             )
         }
     })
@@ -236,11 +237,11 @@ describe('decryptBackupPayload', () => {
             )
             throw new Error('expected throw')
         } catch (e) {
-            expect(e).toBeInstanceOf(AsbImportError)
+            expect(e).toBeInstanceOf(SecureBackupImportError)
             expect([
-                AsbErrorReason.MalformedEnvelope,
-                AsbErrorReason.DecryptionFailed,
-            ]).toContain((e as AsbImportError).reason)
+                SecureBackupErrorReason.MalformedEnvelope,
+                SecureBackupErrorReason.DecryptionFailed,
+            ]).toContain((e as SecureBackupImportError).reason)
         }
     })
 
@@ -267,6 +268,6 @@ describe('decryptBackupPayload', () => {
         // Confirm the inner ciphertext bytes were exactly 24 + 16 + 64-byte plaintext
         // wouldn't be useful here; just check it decoded successfully.
         expect(decodeFromBase64(envelope.ciphertext).length).toBeGreaterThan(24)
-        expect(result.accounts[0].kind).toBe(AsbAccountKind.Single)
+        expect(result.accounts[0].kind).toBe(SecureBackupAccountKind.Single)
     })
 })

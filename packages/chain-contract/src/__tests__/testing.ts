@@ -15,6 +15,7 @@
 export { descriptorContractTests } from './descriptor-contract'
 export {
     capabilityAdapterContractTests,
+    capabilityAdapterContractViolations,
     type CapabilityAdapterRegistries,
 } from './capability-adapter-contract'
 export { addressCodecContractTests } from './address-codec-contract'
@@ -23,11 +24,16 @@ export {
     fixtureCodec,
     fixtureDerivation,
     fixturePlanner,
+    fixtureReviewer,
 } from './fixture-chain'
 export {
     transactionPlannerContractTests,
     type TransactionPlannerContractFixtures,
 } from './transaction-planner-contract'
+export {
+    transactionReviewerContractTests,
+    type TransactionReviewerContractFixtures,
+} from './transaction-reviewer-contract'
 export {
     createFakeChainKeyStore,
     keyDerivationContractTests,

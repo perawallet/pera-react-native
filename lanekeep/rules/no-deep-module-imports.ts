@@ -17,10 +17,11 @@ const ENTRIES = new Set(['', 'index', 'routes', 'shell', 'web'])
 // every HomeBannersStrip consumer, deeplink's handlers import the modules that
 // need its parser and constants, PWWebView mounts the whole dApp bridge, and
 // the locale tour's register/registry are the files metro.config.js stubs out
-// of release builds, and the history row needs only Algorand's icon map, not
-// the review bodies the algorand barrel carries.
+// of release builds, the history row needs only Algorand's icon map, and the
+// chain-UI registry only Algorand's per-feature UI, so neither goes through the
+// barrel.
 const EXTRA_ENTRIES: Record<string, readonly string[]> = {
-    algorand: ['icons'],
+    algorand: ['icons', 'chain-ui'],
     banners: ['carousel'],
     deeplink: ['core'],
     'locale-tour': ['register', 'registry'],

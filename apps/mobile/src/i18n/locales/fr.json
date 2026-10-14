@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Bienvenue sur Pera !",
             "get_started": "Pour commencer, déposez de l’ALGO",
-            "buy_algo": "Acheter Algo",
+            "buy": "Acheter des cryptos",
             "receive": "Recevoir",
             "more": "Plus"
         }
@@ -2703,6 +2703,12 @@
             "nfd_unavailable_title": "Impossible de vérifier {{name}}",
             "nfd_unavailable_body": "Le registre NFD est injoignable pour vérifier ce nom. Réessayez ou collez l'adresse directement."
         },
+        "fee": {
+            "slow": "Lente",
+            "normal": "Normale",
+            "fast": "Rapide",
+            "max_fee": "Frais maximum"
+        },
         "confirmation": {
             "edit": "Modifier",
             "title": "Confirmer la transaction",
@@ -3139,6 +3145,7 @@
             "asset_config": "Configuration d’actif",
             "asset_freeze": "Gel d’actif",
             "app_call": "Appel d’application",
+            "contract_call": "Appel de contrat",
             "key_registration": "Enregistrement de clé",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3444,8 +3451,8 @@
             "error_title": "Échec du swap",
             "error_body": "Une erreur est survenue pendant le swap. Veuillez réessayer.",
             "provider_failed_body": "Ce fournisseur n’a pas pu effectuer le swap. Veuillez essayer un autre fournisseur.",
-            "insufficient_algo_title": "ALGO insuffisant",
-            "insufficient_algo_body": "Ce compte a besoin d’au moins {{amount}} ALGO supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez plus d’ALGO, puis réessayez.",
+            "insufficient_native_title": "{{symbol}} insuffisant",
+            "insufficient_native_body": "Ce compte a besoin d’au moins {{amount}} {{symbol}} supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez des fonds en {{symbol}}, puis réessayez.",
             "success_title": "Swap effectué",
             "success_body": "Swap de {{fromAsset}} vers {{toAsset}} effectué avec succès",
             "user_rejected": "Swap annulé",
@@ -3506,7 +3513,11 @@
         },
         "testnet": {
             "title": "Non disponible sur TestNet",
-            "body": "L’alimentation de votre wallet n’est disponible que sur MainNet. Passez sur MainNet pour acheter de l’ALGO ou de l’USDC."
+            "body": "L’alimentation de votre wallet n’est disponible que sur MainNet. Passez sur MainNet pour acheter des cryptos."
+        },
+        "account_unsupported": {
+            "title": "Ce compte ne peut pas être alimenté",
+            "body": "Choisissez un compte sur un réseau qui prend en charge l’achat."
         },
         "region": {
             "unknown": "--",
@@ -3519,8 +3530,8 @@
             "title": "Alimenter",
             "new_chip": "NOUVEAU",
             "continue": "Continuer",
-            "feature_buy": "Acheter de l’ALGO ou de l’USDC en fiat ou en crypto",
-            "feature_swap": "Échanger des actifs d’autres réseaux vers Algorand",
+            "feature_buy": "Acheter des cryptos en fiat ou avec d’autres cryptos",
+            "feature_swap": "Échanger des actifs d’autres réseaux vers votre wallet",
             "feature_portal": "Un portail unique pour les on-ramps et les swaps cross-chain"
         },
         "form": {

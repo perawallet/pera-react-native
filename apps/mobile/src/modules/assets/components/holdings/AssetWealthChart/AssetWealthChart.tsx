@@ -12,8 +12,7 @@
 
 import { memo, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
@@ -28,6 +27,7 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 export type AssetWealthChartProps = {
     account: WalletAccount
     asset: PeraAsset
+    scope: ChainScope
     period: HistoryPeriod
     onSelectionChanged: (item: Nullable<AccountAssetBalanceHistoryItem>) => void
 }
@@ -43,9 +43,9 @@ export const AssetWealthChart = memo(function AssetWealthChart({
     onSelectionChanged,
     account,
     asset,
+    scope,
     period,
 }: AssetWealthChartProps) {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const themeStyle = useStyles()
     const { t } = useLanguage()
 

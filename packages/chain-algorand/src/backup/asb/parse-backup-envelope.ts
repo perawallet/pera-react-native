@@ -12,12 +12,11 @@
 
 import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
 import {
-    ASB_BACKUP_CIPHER_SUITE,
-    ASB_BACKUP_PROTOCOL_VERSION,
-    AsbErrorReason,
-    AsbImportError,
-    type AsbBackupEnvelope,
+    SecureBackupErrorReason,
+    SecureBackupImportError,
+    type SecureBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
+import { ASB_BACKUP_CIPHER_SUITE, ASB_BACKUP_PROTOCOL_VERSION } from './arc35'
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -40,10 +39,10 @@ const MAX_ASB_BACKUP_FILE_BYTES = 5 * 1024 * 1024
  * the inner ciphertext is *also* base64 but is decoded separately at the
  * decryption step (see `decrypt-backup-payload.ts`).
  */
-export const parseBackupEnvelope = (raw: string): AsbBackupEnvelope => {
+export const parseBackupEnvelope = (raw: string): SecureBackupEnvelope => {
     const trimmed = raw.trim()
     if (trimmed.length === 0) {
-        throw new AsbImportError(AsbErrorReason.EmptyFile)
+        throw new SecureBackupImportError(SecureBackupErrorReason.EmptyFile)
     }
 
     let outerBytes: Uint8Array
@@ -54,30 +53,40 @@ export const parseBackupEnvelope = (raw: string): AsbBackupEnvelope => {
             'asb backup file',
         )
     } catch {
-        throw new AsbImportError(AsbErrorReason.NotBase64)
+        throw new SecureBackupImportError(SecureBackupErrorReason.NotBase64)
     }
 
     let parsed: unknown
     try {
         parsed = JSON.parse(new TextDecoder().decode(outerBytes))
     } catch {
-        throw new AsbImportError(AsbErrorReason.MalformedEnvelope)
+        throw new SecureBackupImportError(
+            SecureBackupErrorReason.MalformedEnvelope,
+        )
     }
 
     if (!isPlainObject(parsed)) {
-        throw new AsbImportError(AsbErrorReason.MalformedEnvelope)
+        throw new SecureBackupImportError(
+            SecureBackupErrorReason.MalformedEnvelope,
+        )
     }
 
     const { version, suite, ciphertext } = parsed
     if (!isString(version) || !isString(suite) || !isString(ciphertext)) {
-        throw new AsbImportError(AsbErrorReason.MalformedEnvelope)
+        throw new SecureBackupImportError(
+            SecureBackupErrorReason.MalformedEnvelope,
+        )
     }
 
     if (version !== ASB_BACKUP_PROTOCOL_VERSION) {
-        throw new AsbImportError(AsbErrorReason.UnsupportedVersion)
+        throw new SecureBackupImportError(
+            SecureBackupErrorReason.UnsupportedVersion,
+        )
     }
     if (suite !== ASB_BACKUP_CIPHER_SUITE) {
-        throw new AsbImportError(AsbErrorReason.UnsupportedSuite)
+        throw new SecureBackupImportError(
+            SecureBackupErrorReason.UnsupportedSuite,
+        )
     }
 
     return { version, suite, ciphertext }

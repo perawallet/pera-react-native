@@ -13,7 +13,11 @@
 import { useCallback } from 'react'
 import { useAccountHoldingsInvalidator } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    useChainCapability,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,
@@ -24,19 +28,25 @@ import { useErrorToast } from '@hooks/useErrorToast'
 export const useAssetFavoriteButton = (
     assetId: string,
     isFavorite: Optional<boolean>,
+    scope: ChainScope,
 ) => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)
     const { invalidate: invalidateHoldings } = useAccountHoldingsInvalidator()
     const { showError } = useErrorToast()
-    const { toggleAssetFavorite, isLoading, isUnavailableOnNetwork } =
-        useToggleAssetFavoriteMutation({ onLocalWrite: invalidateHoldings })
+    const hasFavorites = useChainCapability(scope.chainId, 'assetFavorites')
+    const {
+        toggleAssetFavorite,
+        isLoading,
+        isUnavailableOnNetwork: isMutationUnavailable,
+    } = useToggleAssetFavoriteMutation({ onLocalWrite: invalidateHoldings })
+    const isUnavailableOnNetwork = isMutationUnavailable || !hasFavorites
 
     const handleToggleFavorite = useCallback(() => {
         // Stays reachable (not truly disabled) so the tap can explain why,
         // instead of the press being silently swallowed.
         if (isUnavailableOnNetwork) {
-            showError(new PeraServiceUnavailableError(network))
+            showError(new PeraServiceUnavailableError(scope))
             return
         }
         if (deviceId && isFavorite !== undefined) {
@@ -53,6 +63,7 @@ export const useAssetFavoriteButton = (
         isFavorite,
         toggleAssetFavorite,
         network,
+        scope,
         isUnavailableOnNetwork,
         showError,
     ])

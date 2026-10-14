@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// Primitives shared between the ASB (ARC-35) and Pera Web import flows.
-// Both flows decrypt the same secretbox layout and decode `private_key`
-// fields whose on-wire encoding has a couple of legitimate formats.
+// Primitives shared between the secure-backup and Pera Web import flows,
+// which decrypt the same secretbox layout.
 export * from './secretbox'
-export * from './decode-key-bytes'

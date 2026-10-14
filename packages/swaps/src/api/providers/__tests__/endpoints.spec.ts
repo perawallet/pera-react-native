@@ -46,11 +46,14 @@ describe('fetchProviders', () => {
             },
         })
 
-        const result = await fetchProviders('mainnet')
+        const result = await fetchProviders({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/dex-swap/providers/',
         })
@@ -78,7 +81,7 @@ describe('fetchTopPairs', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/dex-swap/top-pairs/',
             params: undefined,
@@ -105,7 +108,7 @@ describe('fetchTopPairs', () => {
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/dex-swap/top-pairs/',
             params: { limit: 10 },

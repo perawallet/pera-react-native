@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useSendFundsDeeplink } from '@modules/deeplink'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
@@ -78,6 +79,7 @@ export const useTabResume = (
     const { setSelectedAccountId } = useSelectedAccountId()
     const openSendFunds = useSendFundsDeeplink()
     const canSwap = useCapability({ platform: 'swapTab', anyChain: 'swap' })
+    const swapChainOf = useSwapChainResolver()
 
     return useCallback(() => {
         void (async () => {
@@ -97,8 +99,14 @@ export const useTabResume = (
                 intent.accountAddress,
             )
             if (!account) return
-            // The Swap tab isn't registered while the capability is off.
-            if (intent.flow === 'swap' && !canSwap) return
+            // The Swap tab isn't registered while the capability is off, and
+            // the swap would run on the account's own chain.
+            if (
+                intent.flow === 'swap' &&
+                (!canSwap || swapChainOf(account) === undefined)
+            ) {
+                return
+            }
             // Before the screen mounts: Swap resets its form when the account
             // changes, and Send signs with the selected account.
             setSelectedAccountId(account.id)
@@ -122,7 +130,14 @@ export const useTabResume = (
                 shouldContinueToConfirm: true,
             })
         })()
-    }, [accounts, setSelectedAccountId, navigate, openSendFunds, canSwap])
+    }, [
+        accounts,
+        setSelectedAccountId,
+        navigate,
+        openSendFunds,
+        canSwap,
+        swapChainOf,
+    ])
 }
 
 /**

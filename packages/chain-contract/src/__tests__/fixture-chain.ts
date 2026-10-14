@@ -17,7 +17,16 @@ import type {
     KeyDerivation,
 } from '../contracts/key-derivation'
 import type { TransactionPlanner } from '../contracts/transaction-planner'
-import type { DeriveOpts, UnsignedTransaction } from '../models/domain'
+import type {
+    ReviewedTransaction,
+    ReviewWarning,
+    TransactionReviewer,
+} from '../contracts/transaction-reviewer'
+import type {
+    DeriveOpts,
+    TransactionSummary,
+    UnsignedTransaction,
+} from '../models/domain'
 import type { ChainId, NetworkId } from '../models/identity'
 
 // A second chain that exists only to pressure-test the contracts: base-16
@@ -181,5 +190,85 @@ export const fixturePlanner: TransactionPlanner = {
             ...signature.bytes,
         ])
         return { scope: transaction.scope, id: toHex(bytes), bytes }
+    },
+}
+
+// A body starting `call` is a contract call the fixture can't read; anything
+// else is a transfer. Each transaction a held address signs costs one unit.
+const CALL_PREFIX = 'call'
+
+const fixtureSummary = (body: string): TransactionSummary =>
+    body.startsWith(CALL_PREFIX)
+        ? {
+              kind: 'contract-call',
+              title: { key: 'fixture.contract_call' },
+              direction: 'none',
+              icon: 'contract-call',
+          }
+        : {
+              kind: 'transfer',
+              title: { key: 'fixture.transfer' },
+              direction: 'out',
+              icon: 'send',
+          }
+
+// An allowlist, so a kind a future recogniser adds stays behind review until it opts in.
+const isAutoApproved = (transaction: ReviewedTransaction): boolean =>
+    transaction.summary.kind === 'transfer' ||
+    transaction.summary.kind === 'token-transfer'
+
+export const fixtureReviewer: TransactionReviewer = {
+    chainId: FIXTURE_CHAIN_ID,
+    decoder: {
+        decode: async (transactions, context) => {
+            const signable = new Set<string>()
+            let totalFees = new Decimal(0)
+            const reviewed = transactions.map(
+                (transaction): ReviewedTransaction => {
+                    const { signer, body } = readFixturePayload(transaction)
+                    if (
+                        transaction.scope.networkId !== context.scope.networkId
+                    ) {
+                        throw new Error(
+                            `The transaction is for ${transaction.scope.networkId}, not ${context.scope.networkId}`,
+                        )
+                    }
+                    const held = context.heldAddresses.find(address =>
+                        fixtureCodec.areEqual(address, signer),
+                    )
+                    if (held) {
+                        signable.add(held)
+                        totalFees = totalFees.plus(1)
+                    }
+                    return {
+                        summary: fixtureSummary(body),
+                        native: {
+                            family: transaction.chainData.family,
+                            transaction: { signer, body },
+                        },
+                    }
+                },
+            )
+            return {
+                totalFees,
+                signableAddresses: [...signable],
+                transactions: reviewed,
+            }
+        },
+    },
+    warnings: {
+        detect: (_transactions, decoded) =>
+            decoded.signableAddresses.length === 0
+                ? []
+                : decoded.transactions
+                      .filter(t => !isAutoApproved(t))
+                      .map((): ReviewWarning => ({
+                          type: 'unknown-contract',
+                          severity: 'warning',
+                          message: 'The fixture cannot read this call.',
+                      })),
+    },
+    policy: {
+        autoApproveLocal: review => review.transactions.every(isAutoApproved),
     },
 }

@@ -15,20 +15,25 @@ import {
     useAssetPreferencesStore,
     useCollectiblePreferencesStore,
 } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
+import { migrationChainAdapters } from '../chain-adapter'
 
 const SECURITY_PIN_SETUP_PROMPT_KEY = 'security_pin_setup_prompt'
 
-export const migratePreferences = (preferences: LegacyPreferences): void => {
+export const migratePreferences = (
+    preferences: LegacyPreferences,
+    chainId: ChainId,
+): void => {
     applyAppearance(preferences)
     applyCurrency(preferences)
     applyAssetFilters(preferences)
     applyCollectiblePreferences(preferences)
     applyAccountSort(preferences)
     applyPromptDismissals(preferences)
-    applyMiscFlags(preferences)
+    applyMiscFlags(preferences, chainId)
 }
 
 const applyAppearance = (preferences: LegacyPreferences): void => {
@@ -101,7 +106,10 @@ const isPersistable = (value: unknown): value is Persistable => {
     return t === 'string' || t === 'number' || t === 'boolean'
 }
 
-const applyMiscFlags = (preferences: LegacyPreferences): void => {
+const applyMiscFlags = (
+    preferences: LegacyPreferences,
+    chainId: ChainId,
+): void => {
     const settings = useSettingsStore.getState()
 
     const writeIfPresent = (
@@ -114,11 +122,11 @@ const applyMiscFlags = (preferences: LegacyPreferences): void => {
 
     writeIfPresent('termsAcceptedVersion', preferences.termsAcceptedVersion)
     writeIfPresent('biometricEnabled', preferences.biometricEnabled)
-    writeIfPresent('rekeySupport', preferences.rekeySupport)
-    writeIfPresent(
-        'arc59ExpressSendWarningEnabled',
-        preferences.arc59ExpressSendWarningEnabled,
-    )
+    for (const [key, value] of Object.entries(
+        migrationChainAdapters.get(chainId).legacyPreferenceFlags(preferences),
+    )) {
+        writeIfPresent(key, value)
+    }
     writeIfPresent('applicationOpenCount', preferences.applicationOpenCount)
     writeIfPresent('appAtBackgroundMs', preferences.appAtBackgroundMs)
     writeIfPresent(

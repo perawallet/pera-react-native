@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Boas-vindas à Pera!",
             "get_started": "Para começar, deposite ALGO",
-            "buy_algo": "Comprar Algo",
+            "buy": "Comprar cripto",
             "receive": "Receber",
             "more": "Mais"
         }
@@ -359,7 +359,7 @@
         "copy_address": "Copiar endereço",
         "shared_account_detail": "Detalhes da conta compartilhada ({{count}})",
         "show_address": "Ver endereço",
-        "view_passphrase_hd": "Ver passphrase de recuperação da wallet raiz",
+        "view_passphrase_hd": "Ver passphrase de recuperação",
         "view_passphrase_algo25": "Ver passphrase de recuperação",
         "undo_rekey": "Desfazer rekey",
         "rekeyed_to": "Rekey feito para",
@@ -450,7 +450,7 @@
     },
     "view_passphrase": {
         "acknowledge": {
-            "title": "Mantenha em segredo. Mantenha em segurança.",
+            "title": "Mantenha-a secreta e segura.",
             "description": "Confirme e reconheça o seguinte:",
             "row_screen": "Ninguém pode ver a minha tela.",
             "row_share": "Corro o risco de perder todos os meus fundos se eu compartilhar minha passphrase de recuperação com alguém.",
@@ -2719,6 +2719,12 @@
             "nfd_unavailable_title": "Não foi possível verificar {{name}}",
             "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente."
         },
+        "fee": {
+            "slow": "Lenta",
+            "normal": "Normal",
+            "fast": "Rápida",
+            "max_fee": "Taxa máxima"
+        },
         "confirmation": {
             "edit": "Editar",
             "title": "Confirmar transação",
@@ -3156,6 +3162,7 @@
             "asset_config": "Configuração de ativo",
             "asset_freeze": "Congelamento de ativo",
             "app_call": "Chamada de app",
+            "contract_call": "Chamada de contrato",
             "key_registration": "Registro de chave",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3467,8 +3474,8 @@
             "error_title": "Falha na conversão",
             "error_body": "Algo deu errado durante a conversão. Tente novamente.",
             "provider_failed_body": "Este provedor não conseguiu concluir a conversão. Tente outro provedor.",
-            "insufficient_algo_title": "ALGO insuficiente",
-            "insufficient_algo_body": "Esta conta precisa de pelo menos {{amount}} ALGO a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais ALGO e tente novamente.",
+            "insufficient_native_title": "{{symbol}} insuficiente",
+            "insufficient_native_body": "Esta conta precisa de pelo menos {{amount}} {{symbol}} a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais {{symbol}} e tente novamente.",
             "success_title": "Conversão concluída",
             "success_body": "Conversão de {{fromAsset}} para {{toAsset}} concluída com sucesso",
             "user_rejected": "Conversão cancelada",
@@ -3529,7 +3536,11 @@
         },
         "testnet": {
             "title": "Indisponível na TestNet",
-            "body": "Adicionar fundos à sua wallet só está disponível na MainNet. Mude para a MainNet para comprar ALGO ou USDC."
+            "body": "Adicionar fundos à sua wallet só está disponível na MainNet. Mude para a MainNet para comprar cripto."
+        },
+        "account_unsupported": {
+            "title": "Não é possível adicionar fundos a esta conta",
+            "body": "Escolha uma conta em uma rede que permita compras."
         },
         "region": {
             "unknown": "--",
@@ -3542,8 +3553,8 @@
             "title": "Depositar",
             "new_chip": "NOVO",
             "continue": "Continuar",
-            "feature_buy": "Compre ALGO ou USDC com fiat ou cripto",
-            "feature_swap": "Troque ativos de outras redes por ativos no Algorand",
+            "feature_buy": "Compre cripto com fiat ou outras cripto",
+            "feature_swap": "Troque ativos de outras redes por ativos na sua wallet",
             "feature_portal": "Um único portal para on-ramps e swaps cross-chain"
         },
         "form": {

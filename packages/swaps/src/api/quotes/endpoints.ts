@@ -12,13 +12,9 @@
 
 import { Decimal } from 'decimal.js'
 
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
-    type Network,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -44,11 +40,11 @@ import type {
 
 export const calculatePeraFee = async (
     data: CalculatePeraFeeRequest,
-    network: Network,
+    scope: ChainScope,
 ): Promise<CalculatePeraFeeResult> => {
     const response = await queryClient<CalculatePeraFeeApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v1/dex-swap/calculate-pera-fee/`,
         data,
@@ -66,11 +62,11 @@ export const calculatePeraFee = async (
 
 export const calculateSwapAmount = async (
     data: CalculateSwapAmountRequest,
-    network: Network,
+    scope: ChainScope,
 ): Promise<CalculateSwapAmountResult> => {
     const response = await queryClient<CalculateSwapAmountApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v1/dex-swap/calculate-swap-amount/`,
         data,
@@ -97,7 +93,7 @@ export const createQuotes = async (
 ): Promise<SwapQuote[]> => {
     const response = await queryClient<CreateQuotesApiResponse>({
         backend: 'pera',
-        network: legacyNetworkOf(scope),
+        scope,
         method: 'POST',
         url: `/v2/dex-swap/quotes/`,
         data,

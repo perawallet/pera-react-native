@@ -10,20 +10,38 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import nacl from 'tweetnacl'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+} from '@perawallet/wallet-core-shared'
+import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { PeraWebImportError, PeraWebImportErrorReason } from '../../errors'
 import type { PeraWebBackupResponse } from '../../models'
 import { decryptPeraWebBackupPayload } from '../decrypt-backup-payload'
 
 const KEY = Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 1))
+const CHAIN = 'algorand'
+
+const decodePrivateKey = vi.fn((raw: string): Uint8Array | null => {
+    try {
+        return decodeFromBase64(raw)
+    } catch {
+        return null
+    }
+})
+
+beforeEach(() => {
+    decodePrivateKey.mockClear()
+    registerFakeBackupAdapter({ decodePrivateKey })
+})
 
 const sealPlaintext = (plaintext: object, key: Uint8Array): string => {
     const nonce = nacl.randomBytes(24)
     // jsdom's TextEncoder produces a Uint8Array from a different realm than
-    // tweetnacl's internal Uint8Array; wrap defensively (mirrors the ASB
-    // fixture helper).
+    // tweetnacl's internal Uint8Array; wrap defensively (mirrors the
+    // secure-backup fixture helper).
     const text = Uint8Array.from(
         new TextEncoder().encode(JSON.stringify(plaintext)),
     )
@@ -55,7 +73,7 @@ describe('decryptPeraWebBackupPayload', () => {
             },
         ])
 
-        const result = decryptPeraWebBackupPayload(response, KEY)
+        const result = decryptPeraWebBackupPayload(response, KEY, CHAIN)
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0].name).toBe('Web Account 1')
         expect(result.accounts[0].privateKey).not.toBeNull()
@@ -75,7 +93,7 @@ describe('decryptPeraWebBackupPayload', () => {
             ],
         })
 
-        const result = decryptPeraWebBackupPayload(response, KEY)
+        const result = decryptPeraWebBackupPayload(response, KEY, CHAIN)
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0].name).toBe('iOS Account')
         // 64-byte tweetnacl secret key is preserved by the parser; the
@@ -96,11 +114,39 @@ describe('decryptPeraWebBackupPayload', () => {
             },
         ])
 
-        const result = decryptPeraWebBackupPayload(response, KEY)
+        const result = decryptPeraWebBackupPayload(response, KEY, CHAIN)
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0].address).toBe(
             'EGRJQ7DXMIJ577UUN6AFOIUZY6CNSFKLMGFHQNTC5US5TRC23LK6DGQRDM',
         )
+    })
+
+    it('decodes each key through the chain adapter, allowing the legacy comma form', () => {
+        const privateKey = encodeToBase64(new Uint8Array(32).fill(7))
+        const response = responseFor([
+            { address: 'A', accountType: 'single', privateKey },
+        ])
+
+        decryptPeraWebBackupPayload(response, KEY, CHAIN)
+
+        expect(decodePrivateKey).toHaveBeenCalledWith(privateKey, {
+            allowCommaSeparated: true,
+        })
+    })
+
+    it('drops a row whose key the adapter cannot decode', () => {
+        decodePrivateKey.mockReturnValueOnce(null)
+        const response = responseFor([
+            { address: 'A', privateKey: encodeToBase64(new Uint8Array(32)) },
+            {
+                address: 'B',
+                privateKey: encodeToBase64(new Uint8Array(32).fill(1)),
+            },
+        ])
+
+        const result = decryptPeraWebBackupPayload(response, KEY, CHAIN)
+
+        expect(result.accounts.map(a => a.address)).toEqual(['B'])
     })
 
     it('reports EmptyContent when the API response is empty', () => {
@@ -111,7 +157,7 @@ describe('decryptPeraWebBackupPayload', () => {
             creator_device: null,
         }
         try {
-            decryptPeraWebBackupPayload(response, KEY)
+            decryptPeraWebBackupPayload(response, KEY, CHAIN)
             throw new Error('expected throw')
         } catch (e) {
             expect(e).toBeInstanceOf(PeraWebImportError)
@@ -133,7 +179,7 @@ describe('decryptPeraWebBackupPayload', () => {
         })
         const wrong = new Uint8Array(32).fill(0xff)
         try {
-            decryptPeraWebBackupPayload(response, wrong)
+            decryptPeraWebBackupPayload(response, wrong, CHAIN)
             throw new Error('expected throw')
         } catch (e) {
             expect((e as PeraWebImportError).reason).toBe(
@@ -145,7 +191,7 @@ describe('decryptPeraWebBackupPayload', () => {
     it('reports MalformedPayload when the plaintext lacks any account rows', () => {
         const response = responseFor({ provider: 'no accounts here' })
         try {
-            decryptPeraWebBackupPayload(response, KEY)
+            decryptPeraWebBackupPayload(response, KEY, CHAIN)
             throw new Error('expected throw')
         } catch (e) {
             expect((e as PeraWebImportError).reason).toBe(
@@ -157,7 +203,7 @@ describe('decryptPeraWebBackupPayload', () => {
     it('reports MalformedPayload when every account row is invalid', () => {
         const response = responseFor([null, {}, { foo: 'bar' }])
         try {
-            decryptPeraWebBackupPayload(response, KEY)
+            decryptPeraWebBackupPayload(response, KEY, CHAIN)
             throw new Error('expected throw')
         } catch (e) {
             expect((e as PeraWebImportError).reason).toBe(

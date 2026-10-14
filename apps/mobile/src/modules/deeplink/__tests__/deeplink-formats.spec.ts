@@ -176,6 +176,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chainId: 'algorand',
         address: string,
     ) => accounts.find(a => a.chains[chainId]?.address === address),
+    findAccountByAnyChainAddress: (
+        accounts: typeof mockWalletAccounts,
+        address: string,
+    ) =>
+        accounts.find(a =>
+            Object.values(a.chains).some(entry => entry?.address === address),
+        ),
     hdIndexOf: () => undefined,
     // Include the keyreg test sender so the preflight passes.
     useAllAccounts: () => mockWalletAccounts,
@@ -626,7 +633,7 @@ const cases: Case[] = [
                 screen: 'Home',
                 params: {
                     screen: 'AssetDetails',
-                    params: { assetId: ASSET_ID },
+                    params: { assetId: ASSET_ID, chainId: 'algorand' },
                 },
             })
             expect(mockSetSelectedAccountId).toHaveBeenCalledWith('mock-csv')

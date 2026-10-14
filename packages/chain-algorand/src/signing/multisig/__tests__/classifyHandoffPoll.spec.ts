@@ -431,7 +431,7 @@ describe('resolveHandoffOutcome', () => {
             assembledBytes,
         )
         expect(markConfirmed).toHaveBeenCalledWith({
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             deviceId: 'device-1',
             signRequestIds: [SIGN_REQUEST_ID],
         })

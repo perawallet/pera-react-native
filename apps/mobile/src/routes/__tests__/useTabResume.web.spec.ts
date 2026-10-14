@@ -21,7 +21,9 @@ const {
     mockOpenSendFunds,
     mockSuccessToast,
     surfaceState,
+    swapChainState,
 } = vi.hoisted(() => ({
+    swapChainState: { hasSwapChain: true },
     mockTakeTabResumeIntent: vi.fn(),
     mockTakeTabResumeResult: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
@@ -70,6 +72,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useSwapChainResolver: () => () =>
+        swapChainState.hasSwapChain ? 'algorand' : undefined,
+}))
+
 vi.mock('@modules/deeplink', () => ({
     useSendFundsDeeplink: () => mockOpenSendFunds,
 }))
@@ -88,6 +95,27 @@ describe('useTabResume (web)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         capabilityState.reset()
+        swapChainState.hasSwapChain = true
+    })
+
+    it('does not reopen a swap for an account with no swap chain', async () => {
+        swapChainState.hasSwapChain = false
+        mockTakeTabResumeIntent.mockResolvedValue({
+            flow: 'swap',
+            accountAddress: 'LEDGER_ADDR',
+            assetInId: '0',
+            assetOutId: '31566704',
+            payAmount: '2.5',
+            createdAt: Date.now(),
+        })
+        const navigate = vi.fn()
+
+        const { result } = renderHook(() => useTabResume(navigate))
+        result.current()
+        await flush()
+
+        expect(navigate).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
     })
 
     it('does not reopen a swap while the swap capability is off', async () => {

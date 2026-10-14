@@ -13,17 +13,17 @@
 import nacl from 'tweetnacl'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
-// Shared secretbox primitive used by both the ASB (ARC-35) and Pera Web
+// Shared secretbox primitive used by both the secure-backup and Pera Web
 // "Transfer Accounts" import flows.
 //
 // On-disk layout: `nonce(24) || sealed(mac || ciphertext)`. This matches:
-//   - Go: `nacl/secretbox.Seal` (algorand-go-mobile-sdk/sdk/encryption.go)
+//   - Go: `nacl/secretbox.Seal`
 //   - libsodium: `crypto_secretbox_easy` with the nonce prepended
 //   - tweetnacl: `nacl.secretbox` output, prefixed with the nonce
 //
 // All three are wire-compatible (XSalsa20-Poly1305, 24-byte nonce, 16-byte
 // Poly1305 MAC). Each domain wraps this primitive with its own key
-// derivation (ARC-35 HMAC-SHA256 vs. raw Pera Web QR key).
+// derivation (HMAC-SHA256 for secure-backup vs. the raw Pera Web QR key).
 
 const NONCE_LENGTH = 24
 
@@ -32,9 +32,9 @@ const NONCE_LENGTH = 24
  *
  * Returns null when the MAC fails (wrong key, corrupted bytes) or the input
  * is too short. Returning null rather than throwing lets each caller map
- * "decryption failed" to its own typed error — `AsbImportError` for ASB,
- * `PeraWebImportError` for Pera Web — without conflating MAC failures with
- * programmer errors.
+ * "decryption failed" to its own typed error (`SecureBackupImportError` for
+ * secure-backup, `PeraWebImportError` for Pera Web) without conflating MAC
+ * failures with programmer errors.
  *
  * Secure-memory: the two heap copies this function makes (`normalized` of
  * the ciphertext+nonce and `normalizedKey` of the secretbox key) are zeroed

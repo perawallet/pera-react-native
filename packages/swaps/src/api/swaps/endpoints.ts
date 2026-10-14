@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     swapStatusUpdateResponseSchema,
     type SwapStatusUpdateRequest,
@@ -21,11 +22,11 @@ import type { SwapStatusUpdateResult } from '../../models'
 export const updateSwapStatus = async (
     swapId: string,
     data: SwapStatusUpdateRequest,
-    network: Network,
+    scope: ChainScope,
 ): Promise<SwapStatusUpdateResult> => {
     const response = await queryClient<SwapStatusUpdateApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'PATCH',
         url: `/v2/dex-swap/swaps/${swapId}/`,
         data,

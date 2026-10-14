@@ -12,19 +12,28 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
-import { transferChainAdapters } from '@perawallet/wallet-core-transactions'
+import {
+    historyChainAdapters,
+    transferChainAdapters,
+} from '@perawallet/wallet-core-transactions'
 import {
     addressCodecs,
     createChainRegistry,
     keyDerivations,
     registerChainSetup,
     transactionPlanners,
+    transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule } from '..'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
+import {
+    ETHEREUM_HISTORY_SUMMARY_KEYS,
+    ethereumHistoryAdapter,
+} from '../history'
 import { ethereumPlannerAdapter } from '../signing/adapter'
+import { ethereumReviewerAdapter } from '../signing/review'
 import { ETHEREUM_TRANSFER_TITLE_KEYS } from '../transfer'
 
 const context: ChainContext = {
@@ -34,17 +43,13 @@ const context: ChainContext = {
 } as unknown as ChainContext
 
 const ENABLED = [
-    'send',
     'receive',
     'history',
     'assets',
     'pricing',
-    'messageSigning',
-    'dappConnect',
     'watchAccounts',
     'privateKeys',
     'cloudBackup',
-    'mnemonicBackup',
 ]
 
 describe('ethereumModule', () => {
@@ -56,7 +61,7 @@ describe('ethereumModule', () => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('registers its descriptor, address codec, key derivation, accounts adapter, planner and defaults through the setup', () => {
+    it('registers its descriptor, address codec, key derivation, accounts adapter, planner, reviewer and defaults through the setup', () => {
         const chains = createChainRegistry()
 
         registerChainSetup(
@@ -82,7 +87,13 @@ describe('ethereumModule', () => {
         expect(keyDerivations.get('ethereum')).toBe(ethereumKeyDerivation)
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(transactionPlanners.get('ethereum')).toBe(ethereumPlannerAdapter)
+        expect(transactionReviewers.get('ethereum')).toBe(
+            ethereumReviewerAdapter,
+        )
         expect(transferChainAdapters.get('ethereum').chainId).toBe('ethereum')
+        expect(historyChainAdapters.get('ethereum')).toBe(
+            ethereumHistoryAdapter,
+        )
         expect(chains.byCaip2('eip155:11155111')).toMatchObject({
             chainId: 'ethereum',
             network: { id: 'sepolia' },
@@ -97,9 +108,21 @@ describe('ethereumModule', () => {
             'errors.evm.invalid_private_key',
         )
         expect(ethereumModule.i18nKeys()).toEqual(
-            expect.arrayContaining([...ETHEREUM_TRANSFER_TITLE_KEYS]),
+            expect.arrayContaining([
+                ...ETHEREUM_TRANSFER_TITLE_KEYS,
+                ...ETHEREUM_HISTORY_SUMMARY_KEYS,
+            ]),
         )
         const keys = ethereumModule.i18nKeys()
         expect(new Set(keys).size).toBe(keys.length)
+    })
+
+    it('declares the titles its reviewer gives transactions', () => {
+        expect(ethereumModule.i18nKeys()).toEqual(
+            expect.arrayContaining([
+                'transactions.list_item.send',
+                'transactions.list_item.contract_call',
+            ]),
+        )
     })
 })

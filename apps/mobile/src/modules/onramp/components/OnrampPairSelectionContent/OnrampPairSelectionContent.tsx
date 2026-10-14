@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AssetSelectionList } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
@@ -24,10 +25,13 @@ import { useStyles } from './styles'
 
 export type OnrampPairSelectionContentProps = {
     variant?: 'source' | 'destination'
+    /** The chain and network the listed tokens are bought onto. */
+    scope: ChainScope
 }
 
 export const OnrampPairSelectionContent = ({
     variant = 'destination',
+    scope,
 }: OnrampPairSelectionContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -37,19 +41,21 @@ export const OnrampPairSelectionContent = ({
         setSearchFilter,
         isLoading,
         handleTokenSelected,
-    } = useOnrampPairSelectionContent({ variant })
+    } = useOnrampPairSelectionContent({ variant, scope })
 
     const renderItem = useCallback(
         ({ item }: { item: OnrampSelectableToken }) => (
             <OnrampAssetItemView
                 token={item.token}
+                asset={item.asset}
+                scope={scope}
                 balance={item.balance}
                 onPress={() => handleTokenSelected(item.token)}
                 style={styles.item}
                 testID={`onramp-asset-row-${item.token.id}`}
             />
         ),
-        [handleTokenSelected, styles],
+        [handleTokenSelected, styles, scope],
     )
 
     const title =

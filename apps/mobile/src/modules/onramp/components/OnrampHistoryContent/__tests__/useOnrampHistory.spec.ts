@@ -16,13 +16,9 @@ import {
     useRampHistoryInfiniteQuery,
     type RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import {
-    useSelectedAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 import { useOnrampHistory } from '../useOnrampHistory'
 
@@ -31,26 +27,21 @@ vi.mock('@perawallet/wallet-core-onramp', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn(),
+    useScopedDeviceID: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(),
+vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
+    useOnrampAccount: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(),
-    addressOn: (account: WalletAccount, scope: { chainId: ChainId }) =>
-        account.chains[scope.chainId]?.address,
-}))
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
-const accountAt = (address: string): WalletAccount => ({
-    id: address,
-    custody: { kind: 'watch' },
-    chains: { algorand: { address } },
+const onrampAccountAt = (
+    address: Nullable<string>,
+): ReturnType<typeof useOnrampAccount> => ({
+    account: null,
+    scope: address === null ? null : SCOPE,
+    address,
 })
 
 const makeItem = (id: string): RampHistoryItem =>
@@ -89,11 +80,8 @@ const makeQueryResult = (
 describe('useOnrampHistory', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(useNetwork).mockReturnValue({
-            network: 'mainnet',
-        } as never)
-        vi.mocked(useDeviceID).mockReturnValue('device-123')
-        vi.mocked(useSelectedAccount).mockReturnValue(accountAt('ADDR'))
+        vi.mocked(useScopedDeviceID).mockReturnValue('device-123')
+        vi.mocked(useOnrampAccount).mockReturnValue(onrampAccountAt('ADDR'))
         vi.mocked(useRampHistoryInfiniteQuery).mockReturnValue(
             makeQueryResult(),
         )
@@ -109,6 +97,7 @@ describe('useOnrampHistory', () => {
         renderHook(() => useOnrampHistory())
 
         expect(useRampHistoryInfiniteQuery).toHaveBeenCalledWith({
+            scope: SCOPE,
             deviceId: 'device-123',
             accountAddress: 'ADDR',
             status: undefined,
@@ -127,6 +116,7 @@ describe('useOnrampHistory', () => {
 
         expect(result.current.statusFilter).toBe('completed')
         expect(useRampHistoryInfiniteQuery).toHaveBeenLastCalledWith({
+            scope: SCOPE,
             deviceId: 'device-123',
             accountAddress: 'ADDR',
             status: 'completed',
@@ -148,7 +138,7 @@ describe('useOnrampHistory', () => {
     })
 
     it('falls back to empty deviceId when useDeviceID returns null', () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useScopedDeviceID).mockReturnValue(null)
 
         renderHook(() => useOnrampHistory())
 
@@ -158,7 +148,7 @@ describe('useOnrampHistory', () => {
     })
 
     it('falls back to empty accountAddress when no account is selected', () => {
-        vi.mocked(useSelectedAccount).mockReturnValue(null)
+        vi.mocked(useOnrampAccount).mockReturnValue(onrampAccountAt(null))
 
         renderHook(() => useOnrampHistory())
 

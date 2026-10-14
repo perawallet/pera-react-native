@@ -170,6 +170,8 @@ test network only, say) declares the developer modes it is off in, in a chain mo
 `capabilityRestrictions` or in `routeCapabilityRestrictions`, rather than comparing a network. The
 restriction can only switch a capability off, and Feature Flags still overrides it. The UI gates through
 `useCapability` or `<CapabilityGuard>`, which follow the mode and per-chain network override live.
+A `routeCapabilityRestrictions` entry reads the mode of a `chain:` requirement's chain; any other
+requirement is restricted only while every registered chain's mode is.
 
 An entry point renders when three independent things hold: the platform gate (`routeCapabilities`),
 the app flag if the feature has one (a remote `enable_*` boolean behind its `useIsXEnabled` hook), and
@@ -268,6 +270,13 @@ packages/signing. `plan` names each signature and its exact bytes, the wallet si
 with the key of the account the request names in the scheme it names, and `assemble` builds the
 signed transaction. No other path hands chain-neutral bytes to the key store, so a request can't
 have arbitrary bytes signed, which is what `eth_sign` would allow.
+
+A chain whose review reads only chain-neutral transactions registers a `TransactionReviewer` in
+chain-contract's `transactionReviewers`, as with planners, and the signing pipeline bridges it into
+the machine's reviewer. A transaction's `summary` is the request's own claim, so a reviewer consults
+it only on a request the wallet built, and only once the chain proves it from the payload: Ethereum
+honours a token-transfer summary only when re-encoding it gives exactly the calldata, and every call
+it can't prove stays an unrecognised contract call that the app can't sign without review.
 
 A request's `signer` is the address whose key produces the signature, not the account it is for:
 the planner reads it from the payload (Ethereum's `from`; Algorand's sender, rekey authority, or one

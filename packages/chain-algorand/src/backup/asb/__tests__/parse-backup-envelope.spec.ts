@@ -13,7 +13,10 @@
 import { describe, it, expect } from 'vitest'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { parseBackupEnvelope } from '../parse-backup-envelope'
-import { AsbImportError, AsbErrorReason } from '@perawallet/wallet-core-backup'
+import {
+    SecureBackupImportError,
+    SecureBackupErrorReason,
+} from '@perawallet/wallet-core-backup'
 
 const makeEnvelopeFile = (envelope: unknown): string =>
     encodeToBase64(new TextEncoder().encode(JSON.stringify(envelope)))
@@ -36,25 +39,28 @@ describe('parseBackupEnvelope', () => {
         expect(parseBackupEnvelope(file).version).toBe('1.0')
     })
 
-    const expectReason = (file: string, reason: AsbErrorReason) => {
+    const expectReason = (file: string, reason: SecureBackupErrorReason) => {
         try {
             parseBackupEnvelope(file)
-            throw new Error('expected AsbImportError')
+            throw new Error('expected SecureBackupImportError')
         } catch (e) {
-            expect(e).toBeInstanceOf(AsbImportError)
-            expect((e as AsbImportError).reason).toBe(reason)
+            expect(e).toBeInstanceOf(SecureBackupImportError)
+            expect((e as SecureBackupImportError).reason).toBe(reason)
         }
     }
 
     it('rejects empty input', () => {
-        expectReason('', AsbErrorReason.EmptyFile)
-        expectReason('   \n  ', AsbErrorReason.EmptyFile)
+        expectReason('', SecureBackupErrorReason.EmptyFile)
+        expectReason('   \n  ', SecureBackupErrorReason.EmptyFile)
     })
 
     it('rejects an oversized file before decoding (defence-in-depth)', () => {
         // ~7 MB of base64 → ~5.25 MB decoded, over the 5 MB cap. Maps to the
         // existing decode-failure reason.
-        expectReason('A'.repeat(7 * 1024 * 1024), AsbErrorReason.NotBase64)
+        expectReason(
+            'A'.repeat(7 * 1024 * 1024),
+            SecureBackupErrorReason.NotBase64,
+        )
     })
 
     it('rejects non-base64 input that decodes to non-JSON', () => {
@@ -64,38 +70,44 @@ describe('parseBackupEnvelope', () => {
         // outcomes; the user-facing copy collapses them.
         try {
             parseBackupEnvelope('!!!not-base64!!!')
-            throw new Error('expected AsbImportError')
+            throw new Error('expected SecureBackupImportError')
         } catch (e) {
-            expect(e).toBeInstanceOf(AsbImportError)
+            expect(e).toBeInstanceOf(SecureBackupImportError)
             expect([
-                AsbErrorReason.NotBase64,
-                AsbErrorReason.MalformedEnvelope,
-            ]).toContain((e as AsbImportError).reason)
+                SecureBackupErrorReason.NotBase64,
+                SecureBackupErrorReason.MalformedEnvelope,
+            ]).toContain((e as SecureBackupImportError).reason)
         }
     })
 
     it('rejects base64 that does not decode to JSON', () => {
         const file = encodeToBase64(new TextEncoder().encode('not json'))
-        expectReason(file, AsbErrorReason.MalformedEnvelope)
+        expectReason(file, SecureBackupErrorReason.MalformedEnvelope)
     })
 
     it('rejects JSON missing required fields', () => {
         expectReason(
             makeEnvelopeFile({ version: '1.0', suite: 'whatever' }),
-            AsbErrorReason.MalformedEnvelope,
+            SecureBackupErrorReason.MalformedEnvelope,
         )
-        expectReason(makeEnvelopeFile({}), AsbErrorReason.MalformedEnvelope)
-        expectReason(makeEnvelopeFile(null), AsbErrorReason.MalformedEnvelope)
+        expectReason(
+            makeEnvelopeFile({}),
+            SecureBackupErrorReason.MalformedEnvelope,
+        )
+        expectReason(
+            makeEnvelopeFile(null),
+            SecureBackupErrorReason.MalformedEnvelope,
+        )
         expectReason(
             makeEnvelopeFile([validEnvelope]),
-            AsbErrorReason.MalformedEnvelope,
+            SecureBackupErrorReason.MalformedEnvelope,
         )
     })
 
     it('rejects unsupported version', () => {
         expectReason(
             makeEnvelopeFile({ ...validEnvelope, version: '2.0' }),
-            AsbErrorReason.UnsupportedVersion,
+            SecureBackupErrorReason.UnsupportedVersion,
         )
     })
 
@@ -105,7 +117,7 @@ describe('parseBackupEnvelope', () => {
                 ...validEnvelope,
                 suite: 'AES-GCM:something-else',
             }),
-            AsbErrorReason.UnsupportedSuite,
+            SecureBackupErrorReason.UnsupportedSuite,
         )
     })
 })

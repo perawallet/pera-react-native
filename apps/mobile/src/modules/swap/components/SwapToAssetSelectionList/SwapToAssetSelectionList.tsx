@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets'
 import {
@@ -22,6 +23,7 @@ import { SwapToAssetItemView } from './SwapToAssetItemView'
 import { useStyles } from './styles'
 
 export type SwapToAssetSelectionListProps = {
+    scope: ChainScope
     fromAssetId: string
     onAssetSelected: (asset: AssetWithAccountBalance) => void
     isVisible?: boolean
@@ -33,6 +35,7 @@ export type SwapToAssetSelectionListProps = {
 }
 
 export const SwapToAssetSelectionList = ({
+    scope,
     fromAssetId,
     onAssetSelected,
     isVisible,
@@ -51,6 +54,7 @@ export const SwapToAssetSelectionList = ({
         isLoading,
         handleAssetSelected,
     } = useSwapToAssetSelectionList({
+        scope,
         fromAssetId,
         isVisible,
         excludeAssetId,

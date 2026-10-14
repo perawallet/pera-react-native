@@ -31,6 +31,7 @@ const SHARED_PACKAGES = [
     'card',
     'onramp',
     'nfd',
+    'deeplinks',
     'staking',
     'dapp',
     'multisig',
@@ -102,11 +103,6 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
     },
     {
-        file: 'packages/backup/src/cloud/hooks/useCloudBackupImport.ts',
-        text: "'algorand'",
-        reason: "A backup's multisig payload is Algorand's, so its native member is written as such.",
-    },
-    {
         file: 'packages/accounts/src/credentials/accessors.ts',
         text: 'scope.chainId !== LEGACY_CHAIN_ID',
         reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
@@ -115,6 +111,11 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/signing/src/hooks/usePlannerHook.ts',
         text: 'planner.chainId === chainId',
         reason: "Picks the caller's chain's planner while every planner's hook still runs; never a named chain.",
+    },
+    {
+        file: 'packages/onramp/src/token-identity.ts',
+        text: 'rampTokenChainId(token) !== scope.chainId',
+        reason: 'Checks a ramp token lives on whichever scope the caller passes, never a named chain.',
     },
     {
         file: 'packages/config/src/network-config.ts',
@@ -137,14 +138,19 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'The chains a build enables when its environment names none.',
     },
     {
+        file: 'apps/mobile/src/modules/assets/components/holdings/AssetActionButtons/useAssetActionButtons.ts',
+        text: 'useSwapScope(account ?? null)?.chainId === chainId',
+        reason: "Checks the account's swap scope lands on whichever asset chain the caller passes, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/assets/components/holdings/AssetActionButtons/useAssetActionButtons.ts',
+        text: 'useOnrampScope(account?.chains ?? null)?.chainId === chainId',
+        reason: "Checks the account's onramp scope lands on whichever asset chain the caller passes, never a named chain.",
+    },
+    {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',
         text: "'algorand'",
         reason: "Bidali's payment-currency code, not a ChainId.",
-    },
-    {
-        file: 'packages/backup/src/cloud/hooks/useCloudBackupContactImport.ts',
-        text: "'algorand'",
-        reason: "A contact payload's bare `address` predates chain families, so it is always an Algorand address.",
     },
 ]
 

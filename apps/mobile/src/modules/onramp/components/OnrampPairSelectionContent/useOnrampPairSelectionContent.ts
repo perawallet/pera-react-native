@@ -15,28 +15,28 @@ import type { Decimal } from 'decimal.js'
 import {
     addressOn,
     useAccountBalancesQuery,
-    useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import {
+    rampTokenAsset,
     useRampPairsQuery,
-    rampTokenAssetId,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 export type OnrampSelectableToken = {
     token: RampToken
     balance: Nullable<Decimal>
+    /** The asset the token arrives as on the account's chain, once loaded. */
+    asset: Nullable<PeraAsset>
 }
 
 type UseOnrampPairSelectionContentParams = {
     variant: 'source' | 'destination'
+    scope: ChainScope
 }
 
 type UseOnrampPairSelectionContentResult = {
@@ -49,21 +49,17 @@ type UseOnrampPairSelectionContentResult = {
 
 export const useOnrampPairSelectionContent = ({
     variant,
+    scope,
 }: UseOnrampPairSelectionContentParams): UseOnrampPairSelectionContentResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { account } = useOnrampAccount()
     const { resolve } = useBottomSheetResult<string>()
-    const { network } = useNetwork()
-    const { data: pairs, isLoading } = useRampPairsQuery()
-    const selectedAccount = useSelectedAccount()
+    const { data: pairs, isLoading } = useRampPairsQuery({ scope })
     const { accountBalances } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
+        account ? [account] : [],
         scope,
     )
+    const selectedAddress = account ? addressOn(account, scope) : undefined
     const [searchFilter, setSearchFilter] = useState('')
-
-    const selectedAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
 
     const balanceMap = useMemo((): Map<string, Decimal> => {
         if (!selectedAddress) return new Map()
@@ -72,7 +68,7 @@ export const useOnrampPairSelectionContent = ({
         return new Map(assetBalances.map(item => [item.assetId, item.amount]))
     }, [accountBalances, selectedAddress])
 
-    const items = useMemo((): OnrampSelectableToken[] => {
+    const tokens = useMemo((): RampToken[] => {
         const seen = new Set<string>()
         const deduped: RampToken[] = []
         for (const pair of pairs ?? []) {
@@ -93,16 +89,43 @@ export const useOnrampPairSelectionContent = ({
               )
             : deduped
 
-        const sorted = [...filtered].sort((a, b) =>
-            a.name.localeCompare(b.name),
-        )
+        return [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+    }, [pairs, variant, searchFilter])
 
-        return sorted.map(token => ({
-            token,
-            // A non-ALGO ramp token has no holding row, so it shows as unowned.
-            balance: balanceMap.get(rampTokenAssetId(token, network)) ?? null,
-        }))
-    }, [pairs, variant, searchFilter, balanceMap, network])
+    const assetIdOf = useCallback(
+        (token: RampToken) => rampTokenAsset(token, scope)?.assetId ?? null,
+        [scope],
+    )
+
+    const assetIds = useMemo(
+        () =>
+            tokens
+                .map(assetIdOf)
+                .filter((assetId): assetId is string => assetId !== null),
+        [tokens, assetIdOf],
+    )
+    const { data: assets } = useAssetsQuery(assetIds, {
+        fetchMissing: true,
+        scope,
+    })
+
+    const items = useMemo(
+        (): OnrampSelectableToken[] =>
+            tokens.map(token => {
+                const assetId = assetIdOf(token)
+                return {
+                    token,
+                    // A token the account doesn't hold shows as unowned.
+                    balance:
+                        assetId === null
+                            ? null
+                            : (balanceMap.get(assetId) ?? null),
+                    asset:
+                        assetId === null ? null : (assets.get(assetId) ?? null),
+                }
+            }),
+        [tokens, assetIdOf, balanceMap, assets],
+    )
 
     const handleTokenSelected = useCallback(
         (token: RampToken) => {

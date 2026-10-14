@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// A separate entry so the history row gets the icon map without the review bodies in index.ts.
+// A separate entry so the history row gets the icon map without the transaction-detail panels in index.ts.
 import type { AlgorandTransactionKind } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { IconName } from '@components/core'
 

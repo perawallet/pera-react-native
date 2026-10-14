@@ -12,16 +12,16 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
+import { decodePrivateKeyBytes } from '../decode-key-bytes'
 import { backupIndicesToKey, generateBackupCipherKey } from './asb-crypto'
 import {
-    AsbAccountKind,
-    AsbErrorReason,
-    AsbImportError,
-    decodePrivateKeyBytes,
+    SecureBackupAccountKind,
+    SecureBackupErrorReason,
+    SecureBackupImportError,
     secretboxOpenWithPrependedNonce,
-    type AsbBackupAccount,
-    type AsbBackupEnvelope,
-    type AsbBackupPayload,
+    type SecureBackupAccount,
+    type SecureBackupEnvelope,
+    type SecureBackupPayload,
 } from '@perawallet/wallet-core-backup'
 
 // Defence-in-depth cap on the encrypted payload before decode/decrypt/parse.
@@ -37,24 +37,29 @@ const isString = (value: unknown): value is string => typeof value === 'string'
 const isNonEmptyString = (value: unknown): value is string =>
     isString(value) && value.length > 0
 
-const ACCOUNT_KIND_VALUES: readonly AsbAccountKind[] = [
-    AsbAccountKind.Single,
-    AsbAccountKind.Watch,
+const ACCOUNT_KIND_VALUES: readonly SecureBackupAccountKind[] = [
+    SecureBackupAccountKind.Single,
+    SecureBackupAccountKind.Watch,
 ]
 
-const isAsbAccountKind = (value: unknown): value is AsbAccountKind =>
-    ACCOUNT_KIND_VALUES.includes(value as AsbAccountKind)
+const isSecureBackupAccountKind = (
+    value: unknown,
+): value is SecureBackupAccountKind =>
+    ACCOUNT_KIND_VALUES.includes(value as SecureBackupAccountKind)
 
-const parseAccount = (raw: unknown): AsbBackupAccount | null => {
+const parseAccount = (raw: unknown): SecureBackupAccount | null => {
     if (!isPlainObject(raw)) return null
 
     const { address, account_type, name, private_key } = raw
-    if (!isNonEmptyString(address) || !isAsbAccountKind(account_type)) {
+    if (
+        !isNonEmptyString(address) ||
+        !isSecureBackupAccountKind(account_type)
+    ) {
         return null
     }
 
     let privateKey: Uint8Array | null = null
-    if (account_type === AsbAccountKind.Single) {
+    if (account_type === SecureBackupAccountKind.Single) {
         if (!isNonEmptyString(private_key)) return null
         // ARC-35 always emits base64; we don't pass
         // `allowCommaSeparated: true` since that legacy format was
@@ -73,8 +78,8 @@ const parseAccount = (raw: unknown): AsbBackupAccount | null => {
 
 /**
  * Decrypt + decode an ARC-35 backup payload using the user's 12-word recovery
- * phrase. Throws `AsbImportError` for every user-fixable failure mode so the
- * UI can map a single error type to localized copy.
+ * phrase. Throws `SecureBackupImportError` for every user-fixable failure mode
+ * so the UI can map a single error type to localized copy.
  *
  * Account-level shape errors (missing fields, unknown `account_type`, malformed
  * base64 key) are silently dropped: a single broken row should not block
@@ -93,9 +98,9 @@ const parseAccount = (raw: unknown): AsbBackupAccount | null => {
  *     string.
  */
 export const decryptBackupPayload = (
-    envelope: AsbBackupEnvelope,
+    envelope: SecureBackupEnvelope,
     recoveryIndices: Uint16Array,
-): AsbBackupPayload => {
+): SecureBackupPayload => {
     let seed: Uint8Array | null = null
     let cipherKey: Uint8Array | null = null
     let plaintext: Uint8Array | null = null
@@ -104,7 +109,9 @@ export const decryptBackupPayload = (
         try {
             seed = backupIndicesToKey(recoveryIndices)
         } catch {
-            throw new AsbImportError(AsbErrorReason.InvalidRecoveryKey)
+            throw new SecureBackupImportError(
+                SecureBackupErrorReason.InvalidRecoveryKey,
+            )
         }
 
         cipherKey = generateBackupCipherKey(seed)
@@ -117,33 +124,43 @@ export const decryptBackupPayload = (
                 'asb ciphertext',
             )
         } catch {
-            throw new AsbImportError(AsbErrorReason.MalformedEnvelope)
+            throw new SecureBackupImportError(
+                SecureBackupErrorReason.MalformedEnvelope,
+            )
         }
 
         plaintext = secretboxOpenWithPrependedNonce(ciphertext, cipherKey)
         if (!plaintext) {
-            throw new AsbImportError(AsbErrorReason.DecryptionFailed)
+            throw new SecureBackupImportError(
+                SecureBackupErrorReason.DecryptionFailed,
+            )
         }
 
         let parsed: unknown
         try {
             parsed = JSON.parse(new TextDecoder().decode(plaintext))
         } catch {
-            throw new AsbImportError(AsbErrorReason.MalformedPayload)
+            throw new SecureBackupImportError(
+                SecureBackupErrorReason.MalformedPayload,
+            )
         }
 
         if (!isPlainObject(parsed) || !Array.isArray(parsed.accounts)) {
-            throw new AsbImportError(AsbErrorReason.MalformedPayload)
+            throw new SecureBackupImportError(
+                SecureBackupErrorReason.MalformedPayload,
+            )
         }
 
-        const accounts: AsbBackupAccount[] = []
+        const accounts: SecureBackupAccount[] = []
         for (const row of parsed.accounts) {
             const account = parseAccount(row)
             if (account) accounts.push(account)
         }
 
         if (accounts.length === 0) {
-            throw new AsbImportError(AsbErrorReason.MalformedPayload)
+            throw new SecureBackupImportError(
+                SecureBackupErrorReason.MalformedPayload,
+            )
         }
 
         const providerName = isNonEmptyString(parsed.provider_name)

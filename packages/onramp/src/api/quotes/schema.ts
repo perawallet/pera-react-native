@@ -23,7 +23,7 @@ const quoteAmountSchema = z.object({
     value: z.number(),
 })
 
-// XO (crypto -> ALGO/USDC) provider quote. Discriminated from Meld by the
+// XO (crypto -> crypto) provider quote. Discriminated from Meld by the
 // presence of `minerFee` and `pairId`, which Meld responses never carry.
 const xoProviderQuoteResponseSchema = z.object({
     amount: quoteAmountSchema,

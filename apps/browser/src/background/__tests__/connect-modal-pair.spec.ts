@@ -41,7 +41,7 @@ const makeChromeMock = () => {
             onMessage: {
                 addListener: vi.fn(listener => listeners.push(listener)),
             },
-            sendMessage: vi.fn().mockResolvedValue(undefined),
+            sendMessage: vi.fn().mockResolvedValue({ ok: true }),
         },
         deliver: (message: unknown, sender: unknown) =>
             listeners[0]?.(message, sender, () => {}),
@@ -133,6 +133,30 @@ describe('installConnectModalPairRoute', () => {
         })
         expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled()
         errorSpy.mockRestore()
+    })
+
+    it('retries the pair until the offscreen document is listening', async () => {
+        // The document is up before its boot registers the control listener.
+        chromeMock.runtime.sendMessage
+            .mockRejectedValueOnce(
+                new Error(
+                    'Could not establish connection. Receiving end does not exist.',
+                ),
+            )
+            .mockResolvedValueOnce({ ok: true })
+
+        chromeMock.deliver(
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI, hasUserActivation: true },
+            { origin: 'https://dapp.example', tab: { id: 7 } },
+        )
+
+        await vi.waitFor(
+            () => {
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalledTimes(2)
+            },
+            { timeout: 2000 },
+        )
+        expect(ensureOffscreenDocumentLike).toHaveBeenCalledTimes(2)
     })
 
     it('ignores a page-supplied requesterOrigin and uses sender.origin', async () => {

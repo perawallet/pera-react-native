@@ -25,13 +25,6 @@ let mockAssetsQueryResult: {
     isError: boolean
 }
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'testnet' }),
-}))
-
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     percentToApiSlippage: (value: string) => value,
     useCreateQuotesMutation: () => ({
@@ -43,7 +36,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => 'device-1',
+    useDeviceIdLookup: () => () => 'device-1',
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -71,6 +64,7 @@ const makeAssetsResult = (ids: string[]) => ({
 })
 
 const baseParams = {
+    scope: { chainId: 'algorand', networkId: 'testnet' } as const,
     swapperAddress: 'SWAPPER',
     fromAssetId: '0',
     toAssetId: '31566704',

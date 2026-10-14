@@ -192,6 +192,29 @@ console.log(
     `[metro] locale tour: ${localeTourEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'})`,
 );
 
+// Migration dev tools (the simulator + viewer screens) are stubbed out of any
+// bundle that is neither a dev bundle nor a staging build. The simulator
+// deletes the real legacy stores and plants fixture accounts whose private
+// keys derive from a public repo constant, so unlike the gallery this gate is
+// fail-closed: unset APP_ENV and everything else falls through to stubbed.
+// The same swap flips routeCapabilities.migrationDevTools off, so the menu row
+// and routes vanish with the code; the native production-id refusal is the
+// backstop. QA exercises migration on staging release builds, hence the
+// APP_ENV carve-out. The barrels are the only importers routes/index.tsx
+// reaches, so stubbing them detaches each screen's whole folder.
+const migrationDevToolsEnabled =
+    process.env.NODE_ENV === 'development' || process.env.APP_ENV === 'staging';
+
+const migrationDevToolsStubs = toStubMap(projectRoot, [
+    'src/routes/migration-dev-tools',
+    'src/modules/settings/screens/developer/SettingsDeveloperMigrationSimulatorScreen/index',
+    'src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/index',
+]);
+
+console.log(
+    `[metro] migration dev tools: ${migrationDevToolsEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'}, APP_ENV=${process.env.APP_ENV ?? 'unset'})`,
+);
+
 // The developer screen gallery ships in every build except production, keyed
 // on the channel baked into generated-env.ts rather than NODE_ENV: staging
 // release builds are NODE_ENV=production too, and QA uses the gallery there.
@@ -222,6 +245,7 @@ console.log(
 
 const buildStubs = {
     ...(localeTourEnabled ? {} : localeTourStubs),
+    ...(migrationDevToolsEnabled ? {} : migrationDevToolsStubs),
     ...(developerGalleryIncluded
         ? {}
         : toStubMap(projectRoot, DEVELOPER_GALLERY_MODULES)),

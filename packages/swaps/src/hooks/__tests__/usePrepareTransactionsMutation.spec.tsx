@@ -25,10 +25,6 @@ import {
 import { usePrepareTransactionsMutation } from '../usePrepareTransactionsMutation'
 import { prepareTransactions } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
-}))
-
 vi.mock('../../api', () => ({
     prepareTransactions: vi.fn(),
 }))
@@ -62,12 +58,19 @@ describe('usePrepareTransactionsMutation', () => {
         onlineManager.setOnline(true)
     })
 
-    test('passes the request and active network through to prepareTransactions', async () => {
+    test('passes the request and scope through to prepareTransactions', async () => {
         vi.mocked(prepareTransactions).mockResolvedValue({} as never)
 
-        const { result } = renderHook(() => usePrepareTransactionsMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () =>
+                usePrepareTransactionsMutation({
+                    chainId: 'algorand',
+                    networkId: 'testnet',
+                }),
+            {
+                wrapper,
+            },
+        )
 
         await act(async () => {
             await result.current.mutateAsync({ quote: 'q' })
@@ -76,7 +79,7 @@ describe('usePrepareTransactionsMutation', () => {
         await waitFor(() => expect(prepareTransactions).toHaveBeenCalled())
         expect(prepareTransactions).toHaveBeenCalledWith(
             { quote: 'q' },
-            'testnet',
+            { chainId: 'algorand', networkId: 'testnet' },
         )
     })
 
@@ -85,9 +88,16 @@ describe('usePrepareTransactionsMutation', () => {
             new Error('Request failed with status code 400'),
         )
 
-        const { result } = renderHook(() => usePrepareTransactionsMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () =>
+                usePrepareTransactionsMutation({
+                    chainId: 'algorand',
+                    networkId: 'testnet',
+                }),
+            {
+                wrapper,
+            },
+        )
 
         act(() => {
             result.current.mutate({ quote: 'q' })
@@ -106,9 +116,16 @@ describe('usePrepareTransactionsMutation', () => {
         // because `assertOnline()` threw before `prepareTransactions` ran.
         vi.mocked(prepareTransactions).mockResolvedValue({} as never)
 
-        const { result } = renderHook(() => usePrepareTransactionsMutation(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () =>
+                usePrepareTransactionsMutation({
+                    chainId: 'algorand',
+                    networkId: 'testnet',
+                }),
+            {
+                wrapper,
+            },
+        )
 
         act(() => {
             result.current.mutate({ quote: 'q' })

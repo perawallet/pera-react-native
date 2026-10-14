@@ -24,7 +24,9 @@ import {
     serializeAlgorandAccount,
     serializeAlgorandMnemonicSecret,
 } from './serialize-account'
+import { ASB_RECOVERY_MNEMONIC_WORD_COUNT } from './asb/arc35'
 import { useAsbAccountImport } from './asb/useAsbAccountImport'
+import { decodePrivateKeyBytes } from './decode-key-bytes'
 import { decryptBackupPayload } from './asb/decrypt-backup-payload'
 import { parseBackupEnvelope } from './asb/parse-backup-envelope'
 import { partitionImportableAccounts } from './asb/partition-importable-accounts'
@@ -75,7 +77,9 @@ export const algorandBackupAdapter: BackupChainAdapter = {
     serializeMnemonicSecret: serializeAlgorandMnemonicSecret,
     mnemonicBackupKeyId: algorandMnemonicBackupKeyId,
     useImportFromSeed: () => useImportAlgo25FromSeed().importFromSeed,
+    decodePrivateKey: decodePrivateKeyBytes,
     secureBackup: {
+        recoveryWordCount: ASB_RECOVERY_MNEMONIC_WORD_COUNT,
         parseEnvelope: parseBackupEnvelope,
         decryptPayload: decryptBackupPayload,
         partitionImportable: partitionImportableAccounts,

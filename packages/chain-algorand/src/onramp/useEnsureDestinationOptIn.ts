@@ -23,9 +23,12 @@ import {
     type EnsureCanReceiveParams,
 } from '@perawallet/wallet-core-onramp'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import {
+    algorandRampTokenAssetId,
+    isAlgorandNativeRampToken,
+} from './tokenAsset'
 
 export type UseEnsureDestinationOptInResult = {
     ensureOptIn: EnsureCanReceive
@@ -51,7 +54,7 @@ const SOURCE = {
  *    with a zero fee — the sponsor tops the group's fee pool up to the full
  *    requirement, so the (underfunded) account pays nothing.
  *
- * Paths 3 and 4 run the `confirmOptIn` gate first when provided.
+ * Paths 3 and 4 run the `confirm` gate first when provided.
  */
 export const useEnsureDestinationOptIn =
     (): UseEnsureDestinationOptInResult => {
@@ -65,14 +68,23 @@ export const useEnsureDestinationOptIn =
         const ensureOptIn = useCallback(
             async ({
                 address,
-                destinationAssetId,
-                confirmOptIn,
+                scope,
+                destinationToken,
+                confirm,
             }: EnsureCanReceiveParams): Promise<boolean> => {
                 // 1. ALGO never requires an opt-in.
-                if (destinationAssetId === ALGO_ASSET_NAME) {
+                if (isAlgorandNativeRampToken(destinationToken)) {
                     return true
                 }
-                const assetId = destinationAssetId
+                // No ASA on this network: nothing to opt into or receive.
+                const destinationAssetId = algorandRampTokenAssetId(
+                    destinationToken,
+                    scope,
+                )
+                if (destinationAssetId === null) {
+                    return false
+                }
+                const assetId = BigInt(destinationAssetId)
 
                 // 2. Already opted in → nothing to do.
                 const accountInfo = await algokit.client.algod
@@ -94,9 +106,9 @@ export const useEnsureDestinationOptIn =
                     BigInt(suggestedParams.minFee)
                 const isSponsored = accountInfo.amount < balanceNeeded
 
-                if (confirmOptIn) {
-                    const confirmed = await confirmOptIn({
-                        assetId,
+                if (confirm) {
+                    const confirmed = await confirm({
+                        assetId: destinationAssetId,
                         isSponsored,
                     })
                     if (!confirmed) {

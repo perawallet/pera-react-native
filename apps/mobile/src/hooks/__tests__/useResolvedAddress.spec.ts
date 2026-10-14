@@ -15,6 +15,14 @@ import { renderHook } from '@testing-library/react'
 import { useResolvedAddress } from '../useResolvedAddress'
 
 const mockUseNfdForAddress = vi.hoisted(() => vi.fn())
+const mockCodecs = vi.hoisted(() => ({
+    has: vi.fn(),
+    get: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-contract', () => ({
+    addressCodecs: mockCodecs,
+}))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdForAddressQuery: mockUseNfdForAddress,
@@ -75,6 +83,21 @@ describe('useResolvedAddress', () => {
 
         // Long format truncates at 20 chars (10...10)
         expect(result.current.displayName.length).toBe(23)
+    })
+
+    it('truncates a short address with the given chain codec', () => {
+        mockUseNfdForAddress.mockReturnValue({
+            data: undefined,
+            isPending: false,
+        })
+        mockCodecs.has.mockReturnValue(true)
+        mockCodecs.get.mockReturnValue({ truncate: () => '0xf39F...2266' })
+
+        const { result } = renderHook(() =>
+            useResolvedAddress(VALID_ADDRESS, { chainId: 'eip155:1' as never }),
+        )
+
+        expect(result.current.displayName).toBe('0xf39F...2266')
     })
 
     it('returns full address when format is full', () => {

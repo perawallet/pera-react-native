@@ -13,6 +13,7 @@
 import { create } from 'zustand'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import type { Decimal } from 'decimal.js'
+import type { FeePreset } from '@perawallet/wallet-core-chain-contract'
 import { registerStore } from '@perawallet/wallet-core-shared'
 
 type SendMode = 'normal' | 'express' | 'sendArc59'
@@ -41,6 +42,7 @@ type SendFundsState = {
      * on its confirmation step.
      */
     shouldContinueToConfirm: boolean
+    feePreset: FeePreset
 }
 
 type SendFundsActions = {
@@ -55,6 +57,7 @@ type SendFundsActions = {
     setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
+    setFeePreset: (preset: FeePreset) => void
     reset: () => void
     resetState: () => void
 }
@@ -73,6 +76,7 @@ const initialState: SendFundsState = {
     arc59Summary: undefined,
     isCloseAccount: false,
     shouldContinueToConfirm: false,
+    feePreset: 'normal',
 }
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
@@ -89,6 +93,7 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setIsCloseAccount: isClose => set({ isCloseAccount: isClose }),
     setShouldContinueToConfirm: shouldContinue =>
         set({ shouldContinueToConfirm: shouldContinue }),
+    setFeePreset: preset => set({ feePreset: preset }),
     reset: () => set(initialState),
     resetState: () => set(initialState),
     clearStorage: () => {},
@@ -114,6 +119,7 @@ type UseSendFundsResult = {
     arc59Summary?: Arc59SendSummaryResponse
     isCloseAccount: boolean
     shouldContinueToConfirm: boolean
+    feePreset: FeePreset
     setSelectedAssetId: (id?: string) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
@@ -125,6 +131,7 @@ type UseSendFundsResult = {
     setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
+    setFeePreset: (preset: FeePreset) => void
     reset: () => void
 }
 
@@ -165,6 +172,8 @@ export const useSendFunds = (): UseSendFundsResult => {
     const setShouldContinueToConfirm = useSendFundsStore(
         state => state.setShouldContinueToConfirm,
     )
+    const feePreset = useSendFundsStore(state => state.feePreset)
+    const setFeePreset = useSendFundsStore(state => state.setFeePreset)
     const reset = useSendFundsStore(state => state.reset)
 
     return {
@@ -179,6 +188,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         arc59Summary,
         isCloseAccount,
         shouldContinueToConfirm,
+        feePreset,
         setSelectedAssetId,
         setCanSelectAsset,
         setAmount,
@@ -190,6 +200,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         setArc59Summary,
         setIsCloseAccount,
         setShouldContinueToConfirm,
+        setFeePreset,
         reset,
     }
 }

@@ -52,7 +52,7 @@ export type PeraWebBackupResponse = {
  *
  * `privateKey` is the raw 32-byte Ed25519 seed for single accounts (null for
  * watch). Pera Web exports the seed, not the full 64-byte tweetnacl secret key
- * (unlike ASB).
+ * (unlike the secure-backup payload).
  */
 export type PeraWebBackupAccount = {
     address: string

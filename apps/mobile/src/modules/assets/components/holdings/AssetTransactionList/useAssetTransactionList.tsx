@@ -18,10 +18,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import {
     CSV_MIME_TYPE,
     useTransactionHistoryQuery,
     useCsvExportMutation,
@@ -47,7 +43,7 @@ import {
     PeraServiceUnavailableError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -55,6 +51,7 @@ import { useSyncRefresh } from '@hooks/useSyncRefresh'
 type UseAssetTransactionListParams = {
     account: WalletAccount
     asset: PeraAsset
+    scope: ChainScope
 }
 
 export type UseAssetTransactionListResult = {
@@ -85,10 +82,9 @@ export type UseAssetTransactionListResult = {
 export const useAssetTransactionList = ({
     account,
     asset,
+    scope,
 }: UseAssetTransactionListParams): UseAssetTransactionListResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accountAddress = chainAccountOf(account, scope.chainId)?.address ?? ''
-    const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
@@ -170,7 +166,7 @@ export const useAssetTransactionList = ({
         // the reason has to be raised here or the button would do nothing.
         if (isUnavailableOnNetwork) {
             showError(
-                new PeraServiceUnavailableError(network),
+                new PeraServiceUnavailableError(scope),
                 t('common.network_unavailable.title'),
             )
             return
@@ -186,7 +182,7 @@ export const useAssetTransactionList = ({
         assetId,
         exportCsv,
         isUnavailableOnNetwork,
-        network,
+        scope,
         showError,
         t,
     ])

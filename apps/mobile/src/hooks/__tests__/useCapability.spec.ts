@@ -16,7 +16,8 @@ import type { ChainMode } from '@perawallet/wallet-core-chain-contract'
 import { useCapability, useCapabilityCheck } from '../useCapability'
 
 const mocks = vi.hoisted(() => ({
-    chainMode: 'live' as ChainMode,
+    modes: {} as Record<string, ChainMode>,
+    chainIds: ['algorand'] as string[],
     isChainAllowed: true,
     checkChain: vi.fn(),
 }))
@@ -25,7 +26,14 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useChainCapabilityCheck: () => mocks.checkChain,
-    useSelectedChainMode: () => mocks.chainMode,
+    useNetworkStore: { getState: () => ({}) },
+    selectChainMode: (_state: unknown, id: string) => mocks.modes[id] ?? 'live',
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        chains: { list: () => mocks.chainIds.map(id => ({ id })) },
+    }),
 }))
 
 vi.mock('@routes/capabilities', () => ({
@@ -35,7 +43,8 @@ vi.mock('@routes/capabilities', () => ({
 
 describe('useCapability', () => {
     beforeEach(() => {
-        mocks.chainMode = 'live'
+        mocks.modes = {}
+        mocks.chainIds = ['algorand']
         mocks.isChainAllowed = true
         mocks.checkChain.mockImplementation(() => mocks.isChainAllowed)
     })
@@ -47,7 +56,7 @@ describe('useCapability', () => {
     ] as const)(
         'a restricted platform capability in %s is %s',
         (mode, expected) => {
-            mocks.chainMode = mode
+            mocks.modes.algorand = mode
 
             const { result } = renderHook(() =>
                 useCapability({ platform: 'peraCard' }),
@@ -60,7 +69,7 @@ describe('useCapability', () => {
     it.each(['live', 'developer', 'developer-override'] as const)(
         'an unrestricted platform capability is unchanged in %s',
         mode => {
-            mocks.chainMode = mode
+            mocks.modes.algorand = mode
 
             const { result } = renderHook(() =>
                 useCapability({ platform: 'staking' }),
@@ -104,5 +113,56 @@ describe('useCapability', () => {
         expect(result.current({ platform: 'swapTab' })).toBe(false)
         mocks.isChainAllowed = false
         expect(result.current({ anyChain: 'swap' })).toBe(false)
+    })
+
+    it('is never restricted with no registered chains', () => {
+        mocks.chainIds = []
+
+        const { result } = renderHook(() =>
+            useCapability({ platform: 'peraCard' }),
+        )
+
+        expect(result.current).toBe(true)
+    })
+
+    describe('with two registered chains', () => {
+        beforeEach(() => {
+            mocks.chainIds = ['algorand', 'ethereum']
+            mocks.modes = {
+                algorand: 'developer-override',
+                ethereum: 'live',
+            }
+        })
+
+        it.each([
+            [
+                'a chain requirement on the restricted chain',
+                { chain: { chainId: 'algorand', capability: 'card' } },
+                false,
+            ],
+            [
+                'a chain requirement on the live chain',
+                { chain: { chainId: 'ethereum', capability: 'card' } },
+                true,
+            ],
+            ['anyChain while one chain is live', { anyChain: 'card' }, true],
+            ['no chain part while one chain is live', {}, true],
+        ] as const)('%s is %s', (_name, requirement, expected) => {
+            const { result } = renderHook(() =>
+                useCapability({ platform: 'peraCard', ...requirement }),
+            )
+
+            expect(result.current).toBe(expected)
+        })
+
+        it('restricts anyChain once every chain is restricted', () => {
+            mocks.modes.ethereum = 'developer-override'
+
+            const { result } = renderHook(() =>
+                useCapability({ platform: 'peraCard', anyChain: 'card' }),
+            )
+
+            expect(result.current).toBe(false)
+        })
     })
 })

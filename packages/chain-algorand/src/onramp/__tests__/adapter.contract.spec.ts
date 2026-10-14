@@ -19,10 +19,13 @@ vi.mock('../useEnsureDestinationOptIn', () => ({
     useEnsureDestinationOptIn: vi.fn(),
 }))
 
+const RAMP_NETWORK = { id: 'ALGORAND', name: 'Algorand', logo: null }
+
 rampContractTests(() => algorandRampAdapter, {
-    native: { id: 'ALGO', symbol: 'ALGO' },
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    native: { id: 'ALGO', symbol: 'ALGO', network: RAMP_NETWORK },
     nonNative: {
-        token: { id: '31566704', symbol: 'USDC' },
+        token: { id: 'USDC_ALGORAND', symbol: 'USDC', network: RAMP_NETWORK },
         assetId: '31566704',
     },
 })

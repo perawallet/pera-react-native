@@ -25,6 +25,7 @@ import {
     AnalyticsMetadataKey,
     type RequiredEventPayloads,
 } from '@analytics'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     useSwapHistoryInvalidator,
     type SwapQuote,
@@ -33,10 +34,12 @@ import type { SwapConfirmationResult } from './SwapConfirmationContent'
 
 const buildSwapStatusPayload = (
     quote: SwapQuote,
+    scope: ChainScope,
 ): RequiredEventPayloads[SwapEvent.Failed] => {
     const usd = (value: string | null | undefined) =>
         value != null ? Number(value) : undefined
     return {
+        [AnalyticsMetadataKey.ChainId]: scope.chainId,
         [AnalyticsMetadataKey.InputAsaId]: quote.assetIn.assetId,
         [AnalyticsMetadataKey.InputAsaName]: quote.assetIn.unitName ?? '',
         [AnalyticsMetadataKey.InputAmountAsAsa]:
@@ -56,6 +59,7 @@ const buildSwapStatusPayload = (
 const SUCCESS_DISPLAY_MS = 3000
 
 type UseSwapConfirmationActionsParams = {
+    scope: ChainScope
     quote: SwapQuote
 }
 
@@ -66,6 +70,7 @@ type UseSwapConfirmationActionsResult = {
 }
 
 export const useSwapConfirmationActions = ({
+    scope,
     quote,
 }: UseSwapConfirmationActionsParams): UseSwapConfirmationActionsResult => {
     const { resolve, dismiss } = useBottomSheetResult<SwapConfirmationResult>()
@@ -81,7 +86,9 @@ export const useSwapConfirmationActions = ({
 
     const handleSlideConfirm = useCallback(async () => {
         if (!quoteIdStr || inFlightRef.current) return
-        trackEvent(SwapEvent.Confirm)
+        trackEvent(SwapEvent.Confirm, {
+            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+        })
         inFlightRef.current = true
         try {
             const outcome = await execute(quote)
@@ -94,7 +101,7 @@ export const useSwapConfirmationActions = ({
                 // persisted.
                 invalidateSwapHistory()
                 trackEvent(SwapEvent.Completed, {
-                    ...buildSwapStatusPayload(quote),
+                    ...buildSwapStatusPayload(quote, scope),
                     [AnalyticsMetadataKey.PeraFeeAsAlgo]:
                         quote.peraFeeAmount?.toNumber(),
                     [AnalyticsMetadataKey.NetworkFeeAsAlgo]:
@@ -133,7 +140,7 @@ export const useSwapConfirmationActions = ({
                 resolve({ kind: 'cancelled' })
                 return
             }
-            trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
+            trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote, scope))
             resolve({
                 kind: 'error',
                 message: outcome.message,
@@ -143,6 +150,7 @@ export const useSwapConfirmationActions = ({
             inFlightRef.current = false
         }
     }, [
+        scope,
         quote,
         quoteIdStr,
         execute,

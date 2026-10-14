@@ -10,21 +10,26 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import {
+    skipToken,
     useQuery,
     type FetchStatus,
     type RefetchOptions,
 } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { getRampPairs } from '../api'
-import { rampAdapterFor } from '../chain-adapter'
+import { rampChainAdapters } from '../chain-adapter'
 import type { RampPair } from '../models'
+import { isOfferedRampPair } from '../token-identity'
 import { onrampQueryKeys } from './querykeys'
+
+export type UseRampPairsQueryParams = {
+    scope: Nullable<ChainScope>
+    enabled?: boolean
+}
 
 export type UseRampPairsQueryResult = {
     data: RampPair[]
@@ -36,26 +41,39 @@ export type UseRampPairsQueryResult = {
 
 // One stable empty array, so memos that depend on `data` don't re-run every render.
 const NO_RESULTS: RampPair[] = []
+const NO_TOKEN_IDS: readonly string[] = []
 
-export const useRampPairsQuery = (
-    enabled: boolean = true,
-): UseRampPairsQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
-    const destinationTokenIds = [...rampAdapterFor(network).destinationTokenIds]
+export const useRampPairsQuery = ({
+    scope,
+    enabled = true,
+}: UseRampPairsQueryParams): UseRampPairsQueryResult => {
+    const destinationTokenIds = [
+        ...(scope !== null && rampChainAdapters.has(scope.chainId)
+            ? rampChainAdapters.get(scope.chainId).destinationTokenIds
+            : NO_TOKEN_IDS),
+    ]
 
     const query = useQuery({
         queryKey: onrampQueryKeys.pairs(destinationTokenIds, scope),
-        queryFn: () => getRampPairs(destinationTokenIds, network),
-        enabled,
+        queryFn:
+            scope === null
+                ? skipToken
+                : () => getRampPairs(destinationTokenIds, scope),
+        enabled: enabled && destinationTokenIds.length > 0,
     })
 
+    const data = useMemo(
+        () => query.data?.filter(isOfferedRampPair) ?? NO_RESULTS,
+        [query.data],
+    )
+
     return {
-        data: query.data ?? NO_RESULTS,
+        data,
         isLoading: query.isLoading,
         isError: query.isError,
         fetchStatus: query.fetchStatus,
-        refetch: query.refetch,
+        // A skipToken query rejects a manual refetch.
+        refetch: options =>
+            scope === null ? undefined : query.refetch(options),
     }
 }

@@ -49,7 +49,7 @@ describe('prepareTransactions', () => {
 
         const result = await prepareTransactions(
             { quote: 'serialized-quote' },
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
         )
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -73,7 +73,10 @@ describe('prepareTransactions', () => {
     test('returns undefined transactionGroups when the field is omitted', async () => {
         queryClientMock.mockResolvedValue({ data: {} })
 
-        const result = await prepareTransactions({ quote: 'x' }, 'mainnet')
+        const result = await prepareTransactions(
+            { quote: 'x' },
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
 
         expect(result.transactionGroups).toBeUndefined()
     })

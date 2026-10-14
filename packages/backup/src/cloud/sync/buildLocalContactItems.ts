@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_FAMILY } from '@perawallet/wallet-core-chain-contract'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import { BackupItemType, contactItemKey } from '../models'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
@@ -19,15 +20,16 @@ import type { LocalItem } from './types'
 /** Kept separate from `buildLocalItems` so the account builder's `skipped`
  *  count stays account-only: a contact has no key material and can never fail
  *  to serialize. `updatedAt` is epoch millis; `pushDirty` overwrites it with
- *  the tracked `localUpdatedAt` before encrypting. The payload carries one
- *  Algorand address, so a contact without one is not backed up. */
+ *  the tracked `localUpdatedAt` before encrypting. The payload's bare address
+ *  predates chain families, so only the legacy family's goes in and a contact
+ *  without one is not backed up. */
 export const buildLocalContactItems = (
     contacts: readonly Contact[],
     updatedAt: number,
     hashAddress: ItemKeyHasher,
 ): LocalItem[] =>
     contacts.flatMap(contact => {
-        const address = contact.addresses.algorand
+        const address = contact.addresses[LEGACY_CHAIN_FAMILY]
         if (!address) return []
         return [
             withContentHash({

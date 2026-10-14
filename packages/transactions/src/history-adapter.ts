@@ -21,7 +21,11 @@ import {
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     TransactionHistoryItem,
     TransactionHistoryResult,
@@ -92,13 +96,28 @@ export type AssetFactsResolver = (
     facts: AssetDisplayFacts,
 ) => AssetDisplayFacts
 
+export class TransactionHistoryRowsUnsupportedError extends AppError {
+    readonly chainId: ChainId
+
+    constructor(chainId: ChainId) {
+        super(`Cached history rows are not supported on ${chainId}.`, {
+            category: ErrorCategory.TRANSACTIONS,
+            recoverable: false,
+        })
+        this.name = 'TransactionHistoryRowsUnsupportedError'
+        this.chainId = chainId
+    }
+}
+
 /** The chain-specific history source; registered by the chain package. */
 export interface HistoryChainAdapter {
     chainId: ChainId
-    fetchHistory(
+    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    fetchHistory?(
         params: FetchTransactionHistoryParams,
     ): Promise<TransactionHistoryResult>
-    fetchMoreHistory(
+    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    fetchMoreHistory?(
         params: FetchMoreTransactionsParams,
     ): Promise<TransactionHistoryResult>
     /** Swept close amount in base units, as a decimal string; null when the transaction has no close leg. */
@@ -112,9 +131,16 @@ export interface HistoryChainAdapter {
         scope: ChainScope,
         page?: PageRef,
     ): Promise<Page<TransactionRecord>>
-    /** The list row for a stored item, read from `address`'s side. */
-    summarize(item: TransactionHistoryItem, address: string): TransactionSummary
-    toDisplayable(
+    /**
+     * The list row for a stored item, read from `address`'s side. Absent on a
+     * chain whose history isn't cached as `TransactionHistoryItem` rows.
+     */
+    summarize?(
+        item: TransactionHistoryItem,
+        address: string,
+    ): TransactionSummary
+    /** Absent on a chain whose history isn't cached as `TransactionHistoryItem` rows. */
+    toDisplayable?(
         item: TransactionHistoryItem,
     ): Nullable<PeraDisplayableTransaction>
     /**
@@ -135,16 +161,31 @@ export const assetFactsResolverFor = (chainId: ChainId): AssetFactsResolver =>
         ? historyChainAdapters.get(chainId).resolveAssetFacts
         : undefined) ?? keepFacts
 
+/** Rejects with {@link TransactionHistoryRowsUnsupportedError} on a chain that declares no `fetchHistory`. */
 export const fetchTransactionHistory = async (
     params: FetchTransactionHistoryParams,
-): Promise<TransactionHistoryResult> =>
-    historyChainAdapters.get(params.scope.chainId).fetchHistory(params)
+): Promise<TransactionHistoryResult> => {
+    const adapter = historyChainAdapters.get(params.scope.chainId)
+    if (!adapter.fetchHistory) {
+        throw new TransactionHistoryRowsUnsupportedError(adapter.chainId)
+    }
+    return adapter.fetchHistory(params)
+}
 
-/** Takes a nextUrl on Pera-backed networks, a next-token on indexer-backed ones. */
+/**
+ * Takes a nextUrl on Pera-backed networks, a next-token on indexer-backed ones.
+ * Rejects with {@link TransactionHistoryRowsUnsupportedError} on a chain that
+ * declares no `fetchMoreHistory`.
+ */
 export const fetchMoreTransactions = async (
     params: FetchMoreTransactionsParams,
-): Promise<TransactionHistoryResult> =>
-    historyChainAdapters.get(params.scope.chainId).fetchMoreHistory(params)
+): Promise<TransactionHistoryResult> => {
+    const adapter = historyChainAdapters.get(params.scope.chainId)
+    if (!adapter.fetchMoreHistory) {
+        throw new TransactionHistoryRowsUnsupportedError(adapter.chainId)
+    }
+    return adapter.fetchMoreHistory(params)
+}
 
 /** Null when the chain has no lookup. */
 export const fetchCloseAmount = async (
@@ -155,8 +196,9 @@ export const fetchCloseAmount = async (
         .get(scope.chainId)
         .fetchCloseAmount?.(txId, scope)) ?? null
 
+/** Null when the chain has no `toDisplayable`. */
 export const mapHistoryItemToDisplayableTransaction = (
     item: TransactionHistoryItem,
     chainId: ChainId,
 ): Nullable<PeraDisplayableTransaction> =>
-    historyChainAdapters.get(chainId).toDisplayable(item)
+    historyChainAdapters.get(chainId).toDisplayable?.(item) ?? null

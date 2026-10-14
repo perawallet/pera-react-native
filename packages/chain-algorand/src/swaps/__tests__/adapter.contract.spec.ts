@@ -16,6 +16,15 @@ import type { ExecuteSwapParams } from '@perawallet/wallet-core-swaps'
 import { swapContractTests } from '@perawallet/wallet-core-swaps/testing'
 import { algorandSwapAdapter } from '../adapter'
 
+// The adapter resolves these from remote config, which this suite doesn't set up.
+vi.mock('../quantumSwapGate', () => ({
+    isAlgorandQuantumSwapEnabled: () => false,
+}))
+vi.mock('../../blockchain', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../blockchain')>()),
+    getMinimumFeeConfig: () => ({ assetMbr: 100_000n }),
+}))
+
 swapContractTests(() => algorandSwapAdapter, {
     params: {
         quote: {
@@ -28,7 +37,6 @@ swapContractTests(() => algorandSwapAdapter, {
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
         scope: scopeForLegacyNetwork('testnet'),
-        assetOptInMinBalance: 100_000n,
         deviceId: null,
         addSignRequest: vi.fn(),
         prepareTransactions: vi.fn(),

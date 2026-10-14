@@ -1,0 +1,535 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it, vi } from 'vitest'
+import { Decimal } from 'decimal.js'
+import { encodeFunctionData, erc20Abi, getAddress, maxUint256 } from 'viem'
+import type { Address, Hex, TransactionSerializableEIP1559 } from 'viem'
+import type {
+    ChainScope,
+    ReviewContext,
+    TransactionReview,
+    TransactionReviewer,
+    TransactionSummary,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { ethereumCapabilityDefaults } from '../../capability-defaults'
+import { ethereumDescriptor } from '../../descriptor'
+import {
+    createEthereumReviewer,
+    ethereumReviewerAdapter,
+    type CallRecogniser,
+} from '../review'
+import { readEthereumNative } from '../transaction-view'
+import { SENDER, TRANSFER } from './fixtures'
+
+const MAINNET: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const SEPOLIA: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
+const TOKEN: Address = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const SPENDER: Address = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
+const RECIPIENT = getAddress(TRANSFER.to as Address)
+const STRANGER: Address = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+const TOKEN_UNITS = 5_000_000n
+
+const CONTEXT: ReviewContext = {
+    scope: MAINNET,
+    heldAddresses: [SENDER],
+    isWalletBuilt: false,
+    capabilities: ethereumCapabilityDefaults,
+}
+const WALLET_BUILT: ReviewContext = { ...CONTEXT, isWalletBuilt: true }
+
+const APPROVE_DATA = encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [SPENDER, maxUint256],
+})
+
+const transferData = (to: Address, amount: bigint): Hex =>
+    encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [to, amount],
+    })
+
+const APPROVE: TransactionSerializableEIP1559 = {
+    ...TRANSFER,
+    to: TOKEN,
+    value: 0n,
+    data: APPROVE_DATA,
+    gas: 60_000n,
+}
+
+const TOKEN_TRANSFER: TransactionSerializableEIP1559 = {
+    ...TRANSFER,
+    to: TOKEN,
+    value: 0n,
+    data: transferData(RECIPIENT, TOKEN_UNITS),
+    gas: 65_000n,
+}
+
+const OPAQUE_SUMMARY: TransactionSummary = {
+    kind: 'contract-call',
+    title: { key: 'dapp.claimed' },
+    direction: 'none',
+    icon: 'contract-call',
+}
+
+// What the wallet's ERC-20 send builds as its summary.
+const tokenClaim = (
+    overrides: Partial<TransactionSummary> = {},
+): TransactionSummary => ({
+    kind: 'token-transfer',
+    title: { key: 'transactions.list_item.send' },
+    direction: 'out',
+    icon: 'send',
+    counterparty: RECIPIENT,
+    amount: {
+        assetRef: { chainId: 'ethereum', assetId: TOKEN },
+        value: new Decimal(TOKEN_UNITS.toString()),
+    },
+    ...overrides,
+})
+
+const unsigned = (
+    transaction: TransactionSerializableEIP1559,
+    {
+        from = SENDER,
+        summary = OPAQUE_SUMMARY,
+        scope = MAINNET,
+    }: { from?: string; summary?: TransactionSummary; scope?: ChainScope } = {},
+): UnsignedTransaction => ({
+    scope,
+    payload: { from, transaction },
+    summary,
+    chainData: { family: 'evm' },
+})
+
+const review = async (
+    transactions: UnsignedTransaction[],
+    context: ReviewContext = CONTEXT,
+    reviewer: TransactionReviewer = ethereumReviewerAdapter,
+): Promise<TransactionReview> => {
+    const decoded = await reviewer.decoder.decode(transactions, context)
+    return {
+        ...decoded,
+        warnings: reviewer.warnings.detect(transactions, decoded, context),
+    }
+}
+
+const reviewOne = async (
+    transaction: UnsignedTransaction,
+    context: ReviewContext = CONTEXT,
+) => {
+    const reviewed = await review([transaction], context)
+    const [only] = reviewed.transactions
+    return {
+        reviewed,
+        summary: only.summary,
+        view: readEthereumNative(only.native),
+    }
+}
+
+describe('ethereumReviewerAdapter', () => {
+    describe('a native transfer', () => {
+        it('is a send of its wei to its checksummed recipient', async () => {
+            const { summary, view } = await reviewOne(unsigned(TRANSFER))
+
+            expect(summary).toEqual({
+                kind: 'transfer',
+                title: { key: 'transactions.list_item.send' },
+                direction: 'out',
+                counterparty: RECIPIENT,
+                amount: {
+                    assetRef: ethereumDescriptor.nativeAsset.ref,
+                    value: new Decimal((10n ** 18n).toString()),
+                },
+                icon: 'send',
+            })
+            expect(view.kind).toBe('transfer')
+            expect(view.data).toBe('0x')
+            expect(view.selector).toBeUndefined()
+        })
+
+        it('charges gas times the max fee, lists the sender, and signs without review', async () => {
+            const { reviewed } = await reviewOne(unsigned(TRANSFER))
+
+            expect(reviewed.totalFees).toEqual(
+                new Decimal((21_000n * 20_000_000_000n).toString()),
+            )
+            expect(reviewed.signableAddresses).toEqual([SENDER])
+            expect(reviewed.warnings).toEqual([])
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(true)
+        })
+
+        it('is a self-transfer when it goes back to the sender', async () => {
+            const { summary } = await reviewOne(
+                unsigned({ ...TRANSFER, to: SENDER.toLowerCase() as Address }),
+            )
+
+            expect(summary).toMatchObject({
+                direction: 'self',
+                icon: 'self',
+                counterparty: SENDER,
+            })
+        })
+    })
+
+    describe('approve(spender, 2^256-1)', () => {
+        it('is an unrecognised contract call with its selector and target, and no title guess', async () => {
+            const { summary, view } = await reviewOne(unsigned(APPROVE))
+
+            expect(summary).toEqual({
+                kind: 'contract-call',
+                title: { key: 'transactions.list_item.contract_call' },
+                direction: 'none',
+                counterparty: TOKEN,
+                icon: 'contract-call',
+            })
+            expect(view).toMatchObject({
+                kind: 'contract-call',
+                to: TOKEN,
+                data: APPROVE_DATA,
+                selector: '0x095ea7b3',
+            })
+        })
+
+        it('warns once and needs review', async () => {
+            const { reviewed } = await reviewOne(unsigned(APPROVE))
+
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({
+                    type: 'unknown-contract',
+                    severity: 'warning',
+                }),
+            ])
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+    })
+
+    describe("the wallet's own ERC-20 transfer", () => {
+        it('is a token transfer of the amount the calldata carries', async () => {
+            const { reviewed, summary, view } = await reviewOne(
+                unsigned(TOKEN_TRANSFER, { summary: tokenClaim() }),
+                WALLET_BUILT,
+            )
+
+            expect(summary).toEqual({
+                kind: 'token-transfer',
+                title: { key: 'transactions.list_item.send' },
+                direction: 'out',
+                counterparty: RECIPIENT,
+                amount: {
+                    assetRef: { chainId: 'ethereum', assetId: TOKEN },
+                    value: new Decimal(TOKEN_UNITS.toString()),
+                },
+                icon: 'send',
+            })
+            expect(view.token).toEqual({
+                contract: TOKEN,
+                to: RECIPIENT,
+                amount: new Decimal(TOKEN_UNITS.toString()),
+            })
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(true)
+        })
+
+        it('is rebuilt from the verified values, never echoed from the claim', async () => {
+            const { summary } = await reviewOne(
+                unsigned(TOKEN_TRANSFER, {
+                    summary: tokenClaim({
+                        title: { key: 'forged.title' },
+                        subtitle: { key: 'forged.subtitle' },
+                        counterparty: RECIPIENT.toLowerCase(),
+                        direction: 'in',
+                        icon: 'receive',
+                    }),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(summary).toEqual(
+                expect.objectContaining({
+                    title: { key: 'transactions.list_item.send' },
+                    counterparty: RECIPIENT,
+                    direction: 'out',
+                    icon: 'send',
+                }),
+            )
+            expect(summary.subtitle).toBeUndefined()
+        })
+    })
+
+    // The claim is checked by re-encoding it with the ERC-20 encoder the wallet
+    // builds with, not by decoding calldata, so it holds with contractDecoding off.
+    describe('a forged token-transfer summary, checked by re-encoding without contractDecoding', () => {
+        it.each([
+            [
+                'on approve calldata',
+                unsigned(APPROVE, { summary: tokenClaim() }),
+                WALLET_BUILT,
+            ],
+            [
+                'claiming another amount',
+                unsigned(TOKEN_TRANSFER, {
+                    summary: tokenClaim({
+                        amount: {
+                            assetRef: { chainId: 'ethereum', assetId: TOKEN },
+                            value: new Decimal(1),
+                        },
+                    }),
+                }),
+                WALLET_BUILT,
+            ],
+            [
+                'claiming another recipient',
+                unsigned(TOKEN_TRANSFER, {
+                    summary: tokenClaim({ counterparty: STRANGER }),
+                }),
+                WALLET_BUILT,
+            ],
+            [
+                'claiming another token',
+                unsigned(TOKEN_TRANSFER, {
+                    summary: tokenClaim({
+                        amount: {
+                            assetRef: { chainId: 'ethereum', assetId: SPENDER },
+                            value: new Decimal(TOKEN_UNITS.toString()),
+                        },
+                    }),
+                }),
+                WALLET_BUILT,
+            ],
+            [
+                'on a request the app did not build',
+                unsigned(TOKEN_TRANSFER, { summary: tokenClaim() }),
+                CONTEXT,
+            ],
+        ])('is a contract call %s', async (_, transaction, context) => {
+            const { reviewed, summary, view } = await reviewOne(
+                transaction,
+                context,
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(summary.title).toEqual({
+                key: 'transactions.list_item.contract_call',
+            })
+            expect(view.token).toBeUndefined()
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+    })
+
+    describe('other calls', () => {
+        it('is a contract call with no counterparty for a contract creation', async () => {
+            const { summary, view } = await reviewOne(
+                unsigned({
+                    ...TRANSFER,
+                    to: undefined,
+                    value: 0n,
+                    data: '0x6080604052',
+                }),
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(summary.counterparty).toBeUndefined()
+            expect(view.to).toBeUndefined()
+            expect(view.selector).toBe('0x60806040')
+        })
+
+        it('is a contract call with no selector for data shorter than four bytes', async () => {
+            const { summary, view } = await reviewOne(
+                unsigned({ ...TRANSFER, value: 0n, data: '0xabcd' }),
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(view.data).toBe('0xabcd')
+            expect(view.selector).toBeUndefined()
+        })
+
+        it('shows the wei a contract call sends', async () => {
+            const { summary } = await reviewOne(
+                unsigned({ ...APPROVE, value: 5n }),
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                direction: 'out',
+                amount: {
+                    assetRef: ethereumDescriptor.nativeAsset.ref,
+                    value: new Decimal(5),
+                },
+            })
+        })
+
+        it('neither charges nor warns for a sender the wallet does not hold', async () => {
+            const reviewed = await review([
+                unsigned(APPROVE, { from: STRANGER }),
+            ])
+
+            expect(reviewed.totalFees.isZero()).toBe(true)
+            expect(reviewed.signableAddresses).toEqual([])
+            expect(reviewed.warnings).toEqual([])
+        })
+
+        it("lists a held sender in the wallet's spelling, once", async () => {
+            const reviewed = await review(
+                [unsigned(TRANSFER), unsigned({ ...TRANSFER, nonce: 1 })],
+                { ...CONTEXT, heldAddresses: [SENDER.toLowerCase()] },
+            )
+
+            expect(reviewed.signableAddresses).toEqual([SENDER.toLowerCase()])
+            expect(reviewed.totalFees).toEqual(
+                new Decimal((2n * 21_000n * 20_000_000_000n).toString()),
+            )
+        })
+    })
+
+    describe('refuses', () => {
+        it.each([
+            [
+                'without a gas limit',
+                unsigned({ ...TRANSFER, gas: undefined }),
+                /gas limit and a max fee/,
+            ],
+            [
+                'without a max fee per gas',
+                unsigned({ ...TRANSFER, maxFeePerGas: undefined }),
+                /gas limit and a max fee/,
+            ],
+            [
+                'for another EIP-155 chain',
+                unsigned({ ...TRANSFER, chainId: 11_155_111 }),
+                /EIP-155 chain 11155111/,
+            ],
+            [
+                'scoped to another network',
+                unsigned(
+                    { ...TRANSFER, chainId: 11_155_111 },
+                    { scope: SEPOLIA },
+                ),
+                /sepolia, not .*mainnet/,
+            ],
+            [
+                'with a malformed payload',
+                {
+                    ...unsigned(TRANSFER),
+                    payload: { transaction: TRANSFER },
+                },
+                /malformed/,
+            ],
+            [
+                'with calldata that is not hex',
+                unsigned({ ...TRANSFER, data: 'transfer' as Hex }),
+                /malformed/,
+            ],
+            [
+                'with calldata of an odd number of hex digits',
+                unsigned({ ...TRANSFER, data: '0xabc' }),
+                /malformed/,
+            ],
+        ])('a transaction %s', async (_, transaction, reason) => {
+            await expect(
+                ethereumReviewerAdapter.decoder.decode([transaction], CONTEXT),
+            ).rejects.toThrow(reason)
+        })
+    })
+
+    describe('with a call recogniser', () => {
+        const VECTORS: [UnsignedTransaction, ReviewContext][] = [
+            [unsigned(TRANSFER), CONTEXT],
+            [unsigned({ ...TRANSFER, to: SENDER }), CONTEXT],
+            [unsigned(APPROVE), CONTEXT],
+            [unsigned({ ...APPROVE, value: 5n }), CONTEXT],
+            [unsigned(TOKEN_TRANSFER, { summary: tokenClaim() }), WALLET_BUILT],
+            [unsigned(APPROVE, { summary: tokenClaim() }), WALLET_BUILT],
+            [unsigned({ ...TRANSFER, to: undefined, data: '0x60' }), CONTEXT],
+            [unsigned({ ...TRANSFER, data: '0xabcd' }), CONTEXT],
+            [unsigned(APPROVE, { from: STRANGER }), CONTEXT],
+        ]
+
+        it('never consults it while contractDecoding is off', async () => {
+            const recogniseCall = vi.fn<CallRecogniser>(() => undefined)
+            const reviewer = createEthereumReviewer({ recogniseCall })
+
+            for (const [transaction, context] of VECTORS) {
+                await reviewer.decoder.decode([transaction], context)
+            }
+
+            expect(ethereumCapabilityDefaults.contractDecoding).toBe(false)
+            expect(recogniseCall).not.toHaveBeenCalled()
+        })
+
+        it('asks it about an unrecognised call once contractDecoding is on, and keeps the call unrecognised when it has no answer', async () => {
+            const recogniseCall = vi.fn<CallRecogniser>(() => undefined)
+            const reviewer = createEthereumReviewer({ recogniseCall })
+            const context: ReviewContext = {
+                ...CONTEXT,
+                capabilities: {
+                    ...ethereumCapabilityDefaults,
+                    contractDecoding: true,
+                },
+            }
+
+            const reviewed = await review(
+                [unsigned(APPROVE)],
+                context,
+                reviewer,
+            )
+
+            expect(recogniseCall).toHaveBeenCalledTimes(1)
+            expect(recogniseCall).toHaveBeenCalledWith({
+                to: TOKEN,
+                data: APPROVE_DATA,
+                value: 0n,
+            })
+            expect(reviewed.transactions[0].summary.kind).toBe('contract-call')
+        })
+
+        it('keeps a call it recognises as a kind outside the allowlist behind review, with a warning', async () => {
+            const recogniseCall = vi.fn<CallRecogniser>(() => ({
+                kind: 'approval',
+                title: { key: 'transactions.list_item.approval' },
+                direction: 'none',
+                counterparty: SPENDER,
+                icon: 'approval',
+            }))
+            const reviewer = createEthereumReviewer({ recogniseCall })
+            const context: ReviewContext = {
+                ...WALLET_BUILT,
+                capabilities: {
+                    ...ethereumCapabilityDefaults,
+                    contractDecoding: true,
+                },
+            }
+
+            const reviewed = await review(
+                [unsigned(APPROVE)],
+                context,
+                reviewer,
+            )
+
+            expect(reviewed.transactions[0].summary.kind).toBe('approval')
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({ type: 'unknown-contract' }),
+            ])
+            expect(reviewer.policy.autoApproveLocal(reviewed)).toBe(false)
+        })
+    })
+})

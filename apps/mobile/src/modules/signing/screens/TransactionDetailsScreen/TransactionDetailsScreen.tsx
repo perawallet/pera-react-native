@@ -20,7 +20,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { GroupTransactionsPanel } from '@modules/algorand'
 import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
-import { TransactionDetailBody } from '@modules/signing/family-bodies/TransactionDetailBody'
+import { TransactionDetailBody } from '@modules/signing/transactions/TransactionDetailBody'
 import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
 
 export const TransactionDetailsScreen = () => {

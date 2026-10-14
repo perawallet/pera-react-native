@@ -12,6 +12,7 @@
 
 import { useStyles } from './styles'
 import { useAssetFavoriteButton } from './useAssetFavoriteButton'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     PWRoundIcon,
     PWTouchableOpacity,
@@ -20,18 +21,20 @@ import {
 
 export type AssetFavoriteButtonProps = {
     assetId: string
+    scope: ChainScope
     isFavorite?: boolean
 } & Omit<PWTouchableOpacityProps, 'onPress'>
 
 export const AssetFavoriteButton = ({
     assetId,
+    scope,
     isFavorite,
     style,
     ...rest
 }: AssetFavoriteButtonProps) => {
     const styles = useStyles()
     const { handleToggleFavorite, isDisabled, isUnavailableOnNetwork } =
-        useAssetFavoriteButton(assetId, isFavorite)
+        useAssetFavoriteButton(assetId, isFavorite, scope)
 
     return (
         <PWTouchableOpacity

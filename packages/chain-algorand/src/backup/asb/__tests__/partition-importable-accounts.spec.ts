@@ -13,8 +13,8 @@
 import { describe, it, expect } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    AsbAccountKind,
-    type AsbBackupAccount,
+    SecureBackupAccountKind,
+    type SecureBackupAccount,
 } from '@perawallet/wallet-core-backup'
 import { partitionImportableAccounts } from '../partition-importable-accounts'
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
@@ -24,17 +24,17 @@ const validAddressA =
 const validAddressB =
     '7TTLR5VQAY5YVQ5QV4IBOVIKUULGVNPURNWM5NG7M7ELEOQPVROA4CS3FM'
 
-const single = (address: string): AsbBackupAccount => ({
+const single = (address: string): SecureBackupAccount => ({
     address,
     name: null,
-    kind: AsbAccountKind.Single,
+    kind: SecureBackupAccountKind.Single,
     privateKey: new Uint8Array(64),
 })
 
-const watch = (address: string): AsbBackupAccount => ({
+const watch = (address: string): SecureBackupAccount => ({
     address,
     name: null,
-    kind: AsbAccountKind.Watch,
+    kind: SecureBackupAccountKind.Watch,
     privateKey: null,
 })
 

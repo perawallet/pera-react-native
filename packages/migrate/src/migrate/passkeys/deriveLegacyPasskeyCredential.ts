@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { deriveLiquidAuthMainKey } from '@perawallet/wallet-core-kms'
 import {
     credentialIdBytesToStandardBase64,
+    derivePasskeyCredential,
+    p256RawPublicKey,
     p256RawPublicKeyToSpkiDer,
 } from '@perawallet/wallet-core-passkeys/crypto'
 import { decodeFromBase64, hexToBytes } from '@perawallet/wallet-core-shared'
@@ -37,8 +38,6 @@ import { decodeFromBase64, hexToBytes } from '@perawallet/wallet-core-shared'
  * the recomputed id before persisting, and skips rather than writing an
  * unsignable credential.
  */
-
-const dp256 = new DeterministicP256()
 
 // Moved to `@perawallet/wallet-core-passkeys`, which derives the same SPKI DER
 // and credential-id encoding for the entropy-based path; re-exported here so
@@ -103,17 +102,20 @@ export const deriveLegacyPasskeyCredentialFromMainKey = async (params: {
         counter = 0,
         credentialIdBasis = 'spki-der',
     } = params
-    const privateKey = await dp256.genDomainSpecificKeyPair(
-        derivedMainKey,
+    const {
+        privateKey,
+        publicKeySpkiDer,
+        credentialIdBytes: spkiDigest,
+    } = await derivePasskeyCredential({
+        mainKey: derivedMainKey,
         origin,
-        userName,
+        identity: userName,
         counter,
-    )
-    const pubRaw = dp256.getPurePKBytes(privateKey)
-    const publicKeySpkiDer = p256RawPublicKeyToSpkiDer(pubRaw)
-    const credentialIdBytes = sha256(
-        credentialIdBasis === 'raw-point' ? pubRaw : publicKeySpkiDer,
-    )
+    })
+    const credentialIdBytes =
+        credentialIdBasis === 'raw-point'
+            ? sha256(p256RawPublicKey(privateKey))
+            : spkiDigest
     return {
         credentialId: credentialIdBytesToStandardBase64(credentialIdBytes),
         credentialIdBytes,

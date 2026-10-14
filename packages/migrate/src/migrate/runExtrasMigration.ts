@@ -103,7 +103,7 @@ export const runExtrasMigration = async (
 
     if (enabled.has('preferences'))
         runStep(result, 'preferences', () => {
-            migratePreferences(data.preferences)
+            migratePreferences(data.preferences, options.chainId)
             result.preferences = true
         })
 

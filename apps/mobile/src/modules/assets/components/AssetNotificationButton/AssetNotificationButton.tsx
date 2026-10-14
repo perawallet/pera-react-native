@@ -12,6 +12,7 @@
 
 import { useStyles } from './styles'
 import { useAssetNotificationButton } from './useAssetNotificationButton'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     PWRoundIcon,
     PWTouchableOpacity,
@@ -20,18 +21,20 @@ import {
 
 export type AssetNotificationButtonProps = {
     assetId: string
+    scope: ChainScope
     isNotificationsEnabled?: boolean
 } & Omit<PWTouchableOpacityProps, 'onPress'>
 
 export const AssetNotificationButton = ({
     assetId,
+    scope,
     isNotificationsEnabled,
     style,
     ...rest
 }: AssetNotificationButtonProps) => {
     const styles = useStyles()
     const { handleToggleNotifications, isDisabled, isUnavailableOnNetwork } =
-        useAssetNotificationButton(assetId, isNotificationsEnabled)
+        useAssetNotificationButton(assetId, isNotificationsEnabled, scope)
 
     return (
         <PWTouchableOpacity

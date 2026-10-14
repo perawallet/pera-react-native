@@ -13,7 +13,14 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-const registerStoreMock = vi.hoisted(() => vi.fn())
+// Stores register once, at import, and vitest clears mock calls before every
+// test, so registrations are kept here rather than on a vi.fn().
+const registeredStores = vi.hoisted(
+    () =>
+        [] as Parameters<
+            typeof import('@perawallet/wallet-core-shared').registerStore
+        >[0][],
+)
 const memoryStore = new Map<string, string>()
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -38,7 +45,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...original,
-        registerStore: registerStoreMock,
+        registerStore: (entry: (typeof registeredStores)[number]) => {
+            registeredStores.push(entry)
+        },
         createPersistStorage: createMockPersistStorage,
     }
 })
@@ -95,11 +104,11 @@ describe('useCollectiblePreferencesStore', () => {
         const { useCollectiblePreferencesStore } =
             await import('../collectible-preferences-store')
 
-        const registrations = registerStoreMock.mock.calls.filter(
-            ([r]) => r?.name === 'collectible-preferences-store',
+        const registrations = registeredStores.filter(
+            r => r.name === 'collectible-preferences-store',
         )
         expect(registrations).not.toHaveLength(0)
-        const registration = registrations.at(-1)?.[0]
+        const registration = registrations.at(-1)!
 
         act(() => {
             useCollectiblePreferencesStore.getState().setShowOptedIn(false)

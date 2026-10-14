@@ -173,7 +173,9 @@ export const fakeBackupAdapter = (
     serializeMnemonicSecret: vi.fn(fakeSerializeMnemonicSecret),
     mnemonicBackupKeyId: vi.fn(fakeMnemonicBackupKeyId),
     useImportFromSeed: vi.fn(() => vi.fn()),
+    decodePrivateKey: vi.fn(() => null),
     secureBackup: {
+        recoveryWordCount: 12,
         parseEnvelope: vi.fn(),
         decryptPayload: vi.fn(),
         partitionImportable: vi.fn(),

@@ -62,14 +62,13 @@ import {
     requestSwapSignatures,
 } from './swapExecutionHelpers'
 
-export type AlgorandSwapExecutionContext = Omit<
-    SwapExecutionContext,
-    'assetOptInMinBalance'
-> & {
+export type AlgorandSwapExecutionContext = SwapExecutionContext & {
     network: Network
     algorandClient: ReturnType<typeof getAlgorandClient>
     /** Asset opt-in minimum balance, in microAlgos. */
     assetMbr: bigint
+    /** Whether a quantum signer may swap; see `isAlgorandQuantumSwapEnabled`. */
+    isQuantumSwapEnabled: boolean
     decodeTransaction: (bytes: Uint8Array) => PeraTransaction
     decodeSignedTransaction: (bytes: Uint8Array) => PeraSignedTransaction
     encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
@@ -101,7 +100,6 @@ export const executeAlgorandSwap = async (
         quote,
         account,
         signer,
-        isQuantumSwapEnabled,
         signingSource,
         onProgress,
         isCancelled,
@@ -110,6 +108,7 @@ export const executeAlgorandSwap = async (
         scope,
         algorandClient,
         assetMbr,
+        isQuantumSwapEnabled,
         deviceId,
         addSignRequest,
         decodeTransaction,
@@ -200,6 +199,7 @@ export const executeAlgorandSwap = async (
             return failed({
                 phase: 'prepare',
                 reason: 'insufficient-native-balance',
+                chainId: scope.chainId,
                 shortfall,
             })
         }

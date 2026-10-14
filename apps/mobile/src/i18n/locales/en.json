@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Welcome to Pera!",
             "get_started": "To get started, deposit ALGO",
-            "buy_algo": "Buy Algo",
+            "buy": "Buy Crypto",
             "receive": "Receive",
             "more": "More"
         }
@@ -2703,6 +2703,12 @@
             "nfd_unavailable_title": "Couldn't verify {{name}}",
             "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly."
         },
+        "fee": {
+            "slow": "Slow",
+            "normal": "Normal",
+            "fast": "Fast",
+            "max_fee": "Max fee"
+        },
         "confirmation": {
             "edit": "Edit",
             "title": "Confirm Transaction",
@@ -3139,6 +3145,7 @@
             "asset_config": "Asset Configuration",
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
+            "contract_call": "Contract Call",
             "key_registration": "Key Registration",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3444,8 +3451,8 @@
             "error_title": "Swap Failed",
             "error_body": "Something went wrong during the swap. Please try again.",
             "provider_failed_body": "This provider couldn't complete the swap. Try another provider.",
-            "insufficient_algo_title": "Insufficient ALGO",
-            "insufficient_algo_body": "This account needs at least {{amount}} more ALGO to cover this swap, its fees, and the minimum balance. Add more ALGO and try again.",
+            "insufficient_native_title": "Insufficient {{symbol}}",
+            "insufficient_native_body": "This account needs at least {{amount}} more {{symbol}} to cover this swap, its fees, and the minimum balance. Add more {{symbol}} and try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",
@@ -3506,7 +3513,11 @@
         },
         "testnet": {
             "title": "Not available on TestNet",
-            "body": "Funding your wallet is only available on MainNet. Switch to MainNet to buy ALGO or USDC."
+            "body": "Funding is only available on MainNet. Switch to MainNet to buy crypto."
+        },
+        "account_unsupported": {
+            "title": "This account can't be funded",
+            "body": "Choose an account on a network that supports buying."
         },
         "region": {
             "unknown": "--",
@@ -3519,8 +3530,8 @@
             "title": "Fund",
             "new_chip": "NEW",
             "continue": "Continue",
-            "feature_buy": "Buy ALGO or USDC with fiat or crypto",
-            "feature_swap": "Swap assets from other networks into Algorand",
+            "feature_buy": "Buy crypto with fiat or other crypto",
+            "feature_swap": "Swap assets from other networks into your wallet",
             "feature_portal": "One portal for on-ramps and cross-chain swaps"
         },
         "form": {

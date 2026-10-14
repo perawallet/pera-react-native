@@ -17,14 +17,19 @@ import { Decimal } from 'decimal.js'
 import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { InfoButton } from '@components/InfoButton'
 
 export type AssetMarketStatsProps = {
     assetDetails: PeraAsset
+    scope: ChainScope
 }
 
-export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
+export const AssetMarketStats = ({
+    assetDetails,
+    scope,
+}: AssetMarketStatsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -59,6 +64,7 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                         variant='h2'
                         sourceAmount={new Decimal(1)}
                         sourceAssetId={assetDetails.assetId}
+                        scope={scope}
                     />
                 </PWView>
 

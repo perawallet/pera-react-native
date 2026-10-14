@@ -276,9 +276,9 @@ describe('useMultisigTransportAdapters', () => {
 
             // Cosign carries signers[1..] one at a time
             expect(mocks.addSignature).toHaveBeenCalledTimes(1)
-            const [cosignNetwork, cosignSignRequestId, cosignResponses] =
+            const [cosignScope, cosignSignRequestId, cosignResponses] =
                 mocks.addSignature.mock.calls[0]
-            expect(cosignNetwork).toBe('testnet')
+            expect(cosignScope).toEqual(SCOPE)
             expect(cosignSignRequestId).toBe('sr-1')
             expect(cosignResponses).toEqual([
                 {
@@ -471,9 +471,9 @@ describe('useMultisigTransportAdapters', () => {
                 })
 
             expect(mocks.addSignature).toHaveBeenCalledTimes(1)
-            const [network, signRequestId, responses] =
+            const [scope, signRequestId, responses] =
                 mocks.addSignature.mock.calls[0]
-            expect(network).toBe('testnet')
+            expect(scope).toEqual(SCOPE)
             expect(signRequestId).toBe('sr-42')
             expect(responses).toEqual([
                 {

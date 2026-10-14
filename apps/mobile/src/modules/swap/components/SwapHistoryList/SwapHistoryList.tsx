@@ -14,18 +14,21 @@ import { useCallback } from 'react'
 import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import { SwapHistoryListItem } from './SwapHistoryListItem'
 import { useSwapHistoryList } from './useSwapHistoryList'
 import { useStyles } from './styles'
 
 export type SwapHistoryListProps = {
+    scope: ChainScope
     address: string
     onClose: () => void
     inBottomSheet?: boolean
 }
 
 export const SwapHistoryList = ({
+    scope,
     address,
     onClose,
     inBottomSheet = false,
@@ -42,7 +45,7 @@ export const SwapHistoryList = ({
         handleEndReached,
         shouldShowErrorState,
         shouldShowEmptyState,
-    } = useSwapHistoryList({ address, onClose })
+    } = useSwapHistoryList({ scope, address, onClose })
 
     const renderItem = useCallback(
         ({ item }: { item: SwapHistoryItem }) => (

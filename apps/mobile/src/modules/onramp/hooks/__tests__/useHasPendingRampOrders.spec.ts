@@ -17,13 +17,9 @@ import {
     type OnrampStatus,
     type RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import {
-    useSelectedAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 import { useHasPendingRampOrders } from '../useHasPendingRampOrders'
 
@@ -42,26 +38,21 @@ vi.mock('@perawallet/wallet-core-onramp', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn(),
+    useScopedDeviceID: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(),
+vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
+    useOnrampAccount: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(),
-    addressOn: (account: WalletAccount, scope: { chainId: ChainId }) =>
-        account.chains[scope.chainId]?.address,
-}))
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
-const accountAt = (address: string): WalletAccount => ({
-    id: address,
-    custody: { kind: 'watch' },
-    chains: { algorand: { address } },
+const onrampAccountAt = (
+    address: Nullable<string>,
+): ReturnType<typeof useOnrampAccount> => ({
+    account: null,
+    scope: address === null ? null : SCOPE,
+    address,
 })
 
 const makeItem = (id: string, status: OnrampStatus): RampHistoryItem =>
@@ -83,9 +74,8 @@ describe('useHasPendingRampOrders', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsFocused = true
-        vi.mocked(useNetwork).mockReturnValue({ network: 'mainnet' } as never)
-        vi.mocked(useDeviceID).mockReturnValue('device-123')
-        vi.mocked(useSelectedAccount).mockReturnValue(accountAt('ADDR'))
+        vi.mocked(useScopedDeviceID).mockReturnValue('device-123')
+        vi.mocked(useOnrampAccount).mockReturnValue(onrampAccountAt('ADDR'))
         vi.mocked(useRampHistoryInfiniteQuery).mockReturnValue(
             makeQueryResult([]),
         )
@@ -95,6 +85,7 @@ describe('useHasPendingRampOrders', () => {
         renderHook(() => useHasPendingRampOrders())
 
         expect(useRampHistoryInfiniteQuery).toHaveBeenCalledWith({
+            scope: SCOPE,
             deviceId: 'device-123',
             accountAddress: 'ADDR',
             isActive: true,

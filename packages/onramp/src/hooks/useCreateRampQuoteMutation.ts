@@ -11,23 +11,26 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { createRampQuote, type CreateRampQuoteParams } from '../api'
 import type { RampQuote } from '../models'
+import type { WithRampScope } from './withRampScope'
 
 export type UseCreateRampQuoteMutationResult = {
-    mutateAsync: (params: CreateRampQuoteParams) => Promise<RampQuote[]>
+    mutateAsync: (
+        params: WithRampScope<CreateRampQuoteParams>,
+    ) => Promise<RampQuote[]>
     isSuccess: boolean
 }
 
 export const useCreateRampQuoteMutation =
     (): UseCreateRampQuoteMutationResult => {
-        const { network } = useNetwork()
-
         const mutation = useMutation({
-            mutationFn: (params: CreateRampQuoteParams) =>
-                createRampQuote(params, network),
+            mutationFn: ({
+                scope,
+                ...params
+            }: WithRampScope<CreateRampQuoteParams>) =>
+                createRampQuote(params, scope),
             // Quote errors (e.g. SourceAmountIsTooLow) are expected and handled
             // inline by the form. Mirrors `mutationDefaults`
             // (@perawallet/wallet-core-shared), which already sets throwOnError:

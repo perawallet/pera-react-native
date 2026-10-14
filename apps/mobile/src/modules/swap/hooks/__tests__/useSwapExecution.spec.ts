@@ -32,12 +32,13 @@ import {
 const mockT = vi.fn((key: string) => key)
 const mockExecuteSwap = vi.fn()
 const mockResetMutation = vi.fn()
-const mockUseIsQuantumSwapEnabled = vi.fn()
 
 // The pipeline itself (preflights, group plans, signing, submission) is the
 // swaps package's `executeSwap`, covered by its own spec. This hook only maps
 // its results onto status and localized copy.
 vi.mock('@perawallet/wallet-core-swaps', () => ({
+    SwapAccountUnsupportedError: class SwapAccountUnsupportedError extends Error {},
+    SwapCosignUnsupportedError: class SwapCosignUnsupportedError extends Error {},
     useExecuteSwapMutation: () => ({
         mutateAsync: mockExecuteSwap,
         reset: mockResetMutation,
@@ -87,8 +88,11 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     >()),
 }))
 
-vi.mock('@hooks/useIsQuantumSwapEnabled', () => ({
-    useIsQuantumSwapEnabled: () => mockUseIsQuantumSwapEnabled(),
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    nativeAssetFor: (chainId: string) =>
+        chainId === 'algorand'
+            ? { assetId: '0', unitName: 'ALGO', decimals: 6 }
+            : { assetId: 'native', unitName: 'ETH', decimals: 18 },
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -136,7 +140,6 @@ const holdExecution = () => {
 describe('useSwapExecution', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseIsQuantumSwapEnabled.mockReturnValue(false)
         resolveWith({ kind: 'success', txIds: ['tx-1'] })
     })
 
@@ -148,15 +151,13 @@ describe('useSwapExecution', () => {
         expect(result.current.txIds).toEqual([])
     })
 
-    it('runs the quote with localized signing copy and the quantum-swap flag', async () => {
-        mockUseIsQuantumSwapEnabled.mockReturnValue(true)
+    it('runs the quote with localized signing copy', async () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await executeOnce(result.current.execute)
 
         expect(mockExecuteSwap).toHaveBeenCalledWith({
             quote: makeQuote('quote-1'),
-            isQuantumSwapEnabled: true,
             signingSource: {
                 name: 'swap.signing.source_name',
                 description: 'swap.signing.source_description',
@@ -299,10 +300,11 @@ describe('useSwapExecution', () => {
         })
     })
 
-    it('names the ALGO shortfall in display units', async () => {
+    it("names the shortfall in the chain's native asset, in display units", async () => {
         failWith({
             phase: 'prepare',
             reason: 'insufficient-native-balance',
+            chainId: 'algorand',
             shortfall: new Decimal(5000),
         })
         const { result } = renderHook(() => useSwapExecution())
@@ -312,15 +314,36 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'prepare',
-            message: 'swap.execution.insufficient_algo_body',
-            title: 'swap.execution.insufficient_algo_title',
+            message: 'swap.execution.insufficient_native_body',
+            title: 'swap.execution.insufficient_native_title',
         })
         // The 5_000 µALGO shortfall reaches the copy in display units.
         expect(mockT).toHaveBeenCalledWith(
-            'swap.execution.insufficient_algo_body',
-            { amount: '0.005' },
+            'swap.execution.insufficient_native_body',
+            { amount: '0.005', symbol: 'ALGO' },
+        )
+        expect(mockT).toHaveBeenCalledWith(
+            'swap.execution.insufficient_native_title',
+            { symbol: 'ALGO' },
         )
         expect(result.current.status).toBe('error')
+    })
+
+    it("uses the failing chain's own symbol and decimals", async () => {
+        failWith({
+            phase: 'prepare',
+            reason: 'insufficient-native-balance',
+            chainId: 'ethereum',
+            shortfall: new Decimal('2000000000000000'),
+        })
+        const { result } = renderHook(() => useSwapExecution())
+
+        await executeOnce(result.current.execute)
+
+        expect(mockT).toHaveBeenCalledWith(
+            'swap.execution.insufficient_native_body',
+            { amount: '0.002', symbol: 'ETH' },
+        )
     })
 
     it('maps an unrecognized prepare error to the general copy', async () => {
@@ -572,6 +595,20 @@ describe('useSwapExecution', () => {
 
         expect(result.current.status).toBe('preparing')
         expect(result.current.error).toBeNull()
+    })
+
+    it('reports a swap the account cannot run as an error, not a rejection', async () => {
+        const { SwapAccountUnsupportedError } =
+            await import('@perawallet/wallet-core-swaps')
+        mockExecuteSwap.mockRejectedValueOnce(new SwapAccountUnsupportedError())
+        const { result } = renderHook(() => useSwapExecution())
+
+        const outcome = await executeOnce(result.current.execute)
+
+        expect(outcome).toEqual(
+            expect.objectContaining({ kind: 'error', phase: 'prepare' }),
+        )
+        expect(result.current.status).toBe('error')
     })
 
     it('resets state', async () => {

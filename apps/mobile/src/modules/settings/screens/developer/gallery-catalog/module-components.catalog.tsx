@@ -42,6 +42,7 @@ import { TransactionStatusBadge } from '@modules/algorand/components/Transaction
 
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
+import { SwapScopePreview } from './SwapScopePreview'
 import { SwapProviderRow } from '@modules/swap/components/SwapProviderRow'
 import { SwapQuoteDetails } from '@modules/swap/components/SwapQuoteDetails'
 
@@ -96,6 +97,7 @@ import {
 
 import { registerPreview } from './registry'
 
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { Banner } from '@perawallet/wallet-core-banners'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
@@ -268,10 +270,12 @@ registerPreview({
         <PWView>
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isFavorite={false}
             />
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isFavorite={true}
             />
         </PWView>
@@ -284,10 +288,12 @@ registerPreview({
         <PWView>
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isNotificationsEnabled={false}
             />
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
+                scope={scopeForLegacyNetwork('mainnet')}
                 isNotificationsEnabled={true}
             />
         </PWView>
@@ -468,21 +474,31 @@ registerPreview({
 registerPreview({
     id: 'comp-swap-provider-display',
     render: () => (
-        <SwapProviderDisplay
-            providerName='Tinyman'
-            providerDisplayName='Tinyman'
-        />
+        <SwapScopePreview>
+            {scope => (
+                <SwapProviderDisplay
+                    scope={scope}
+                    providerName='Tinyman'
+                    providerDisplayName='Tinyman'
+                />
+            )}
+        </SwapScopePreview>
     ),
 })
 
 registerPreview({
     id: 'comp-swap-provider-row',
     render: () => (
-        <SwapProviderRow
-            quote={mockSwapQuote}
-            selectionMode='auto'
-            onPress={() => undefined}
-        />
+        <SwapScopePreview>
+            {scope => (
+                <SwapProviderRow
+                    scope={scope}
+                    quote={mockSwapQuote}
+                    selectionMode='auto'
+                    onPress={() => undefined}
+                />
+            )}
+        </SwapScopePreview>
     ),
 })
 

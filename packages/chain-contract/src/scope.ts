@@ -16,6 +16,7 @@ import {
     isLegacyNetwork,
     isNetworkId,
     LEGACY_NETWORKS,
+    type ChainFamily,
     type ChainId,
     type ChainScope,
     type ChainScopeKey,
@@ -57,6 +58,10 @@ export const parseScopeKey = (key: string): ChainScope => {
 // Every legacy network value, and every row stored before scope keys, is this
 // chain's.
 export const LEGACY_CHAIN_ID = 'algorand' satisfies ChainId
+
+// Every contact address stored before families existed, and a contact backup
+// item's bare `address`, belongs to this family.
+export const LEGACY_CHAIN_FAMILY = 'algorand' satisfies ChainFamily
 
 export const scopeForLegacyNetwork = (
     network: LegacyNetwork,

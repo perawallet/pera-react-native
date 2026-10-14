@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "¡Bienvenido a Pera!",
             "get_started": "Para empezar, deposita ALGO",
-            "buy_algo": "Comprar Algo",
+            "buy": "Comprar cripto",
             "receive": "Recibir",
             "more": "Más"
         }
@@ -2703,6 +2703,12 @@
             "nfd_unavailable_title": "No se pudo verificar {{name}}",
             "nfd_unavailable_body": "No se pudo contactar con el registro NFD para comprobar este nombre. Inténtalo de nuevo o pega la dirección directamente."
         },
+        "fee": {
+            "slow": "Lenta",
+            "normal": "Normal",
+            "fast": "Rápida",
+            "max_fee": "Comisión máxima"
+        },
         "confirmation": {
             "edit": "Editar",
             "title": "Confirmar transacción",
@@ -3139,6 +3145,7 @@
             "asset_config": "Configuración de activo",
             "asset_freeze": "Congelación de activo",
             "app_call": "Llamada a app",
+            "contract_call": "Llamada a contrato",
             "key_registration": "Registro de clave",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3444,8 +3451,8 @@
             "error_title": "Swap fallido",
             "error_body": "Algo salió mal durante el swap. Vuelve a intentarlo.",
             "provider_failed_body": "Este proveedor no pudo completar el swap. Prueba con otro proveedor.",
-            "insufficient_algo_title": "ALGO insuficiente",
-            "insufficient_algo_body": "Esta cuenta necesita al menos {{amount}} ALGO más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más ALGO y vuelve a intentarlo.",
+            "insufficient_native_title": "{{symbol}} insuficiente",
+            "insufficient_native_body": "Esta cuenta necesita al menos {{amount}} {{symbol}} más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más {{symbol}} y vuelve a intentarlo.",
             "success_title": "Swap completado",
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",
             "user_rejected": "Swap cancelado",
@@ -3506,7 +3513,11 @@
         },
         "testnet": {
             "title": "No disponible en TestNet",
-            "body": "Añadir fondos a tu wallet solo está disponible en MainNet. Cambia a MainNet para comprar ALGO o USDC."
+            "body": "Añadir fondos a tu wallet solo está disponible en MainNet. Cambia a MainNet para comprar cripto."
+        },
+        "account_unsupported": {
+            "title": "No se pueden añadir fondos a esta cuenta",
+            "body": "Elige una cuenta en una red que admita compras."
         },
         "region": {
             "unknown": "--",
@@ -3519,8 +3530,8 @@
             "title": "Añadir fondos",
             "new_chip": "NUEVO",
             "continue": "Continuar",
-            "feature_buy": "Compra ALGO o USDC con fiat o cripto",
-            "feature_swap": "Intercambia activos de otras redes a Algorand",
+            "feature_buy": "Compra cripto con fiat o con otras cripto",
+            "feature_swap": "Intercambia activos de otras redes a tu wallet",
             "feature_portal": "Un solo portal para on-ramps y swaps entre cadenas"
         },
         "form": {

@@ -14,41 +14,26 @@ import { Decimal } from 'decimal.js'
 import {
     DEFAULT_ASSET_METADATA,
     PeraAssetVerificationTier,
-    isNativeAssetId,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import {
-    rampTokenAssetId,
-    type RampToken,
-} from '@perawallet/wallet-core-onramp'
+import { rampTokenAsset, type RampToken } from '@perawallet/wallet-core-onramp'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 
-// RampToken carries no tier, so the known-safe listings are mapped here rather
-// than fabricating one on the domain model. The native asset is matched on the
-// resolved asset id, so a provider that lists ALGO under its on-chain id is
-// still recognised.
-const RAMP_TOKEN_VERIFICATION_TIER: Record<string, PeraAssetVerificationTier> =
-    {
-        USDC: PeraAssetVerificationTier.verified,
-        USDC_ALGORAND: PeraAssetVerificationTier.verified,
-    }
-
 // Builds a synthetic AssetWithAccountBalance from a RampToken so onramp tokens
-// can render through the standard AccountAssetItemView.
+// can render through the standard AccountAssetItemView. The verification tier
+// comes from the asset the token arrives as; RampToken carries none.
 export const buildAccountBalanceFromRampToken = (
     token: RampToken,
     balance: Nullable<Decimal>,
     scope: ChainScope,
+    asset: Nullable<PeraAsset>,
 ): AssetWithAccountBalance => {
-    const assetId = rampTokenAssetId(token, legacyNetworkOf(scope))
-    const isNative = isNativeAssetId(scope.chainId, assetId)
+    const tokenAsset = rampTokenAsset(token, scope)
+    const assetId = tokenAsset?.assetId ?? token.id
 
-    const asset: PeraAsset = {
+    const displayAsset: PeraAsset = {
         assetId,
         name: token.name,
         unitName: token.symbol,
@@ -57,16 +42,16 @@ export const buildAccountBalanceFromRampToken = (
         totalSupply: new Decimal(0),
         peraMetadata: {
             ...DEFAULT_ASSET_METADATA,
-            verificationTier: isNative
+            verificationTier: tokenAsset?.isNative
                 ? PeraAssetVerificationTier.verified
-                : (RAMP_TOKEN_VERIFICATION_TIER[assetId] ??
+                : (asset?.peraMetadata?.verificationTier ??
                   DEFAULT_ASSET_METADATA.verificationTier),
         },
     }
 
     return {
         assetId,
-        asset,
+        asset: displayAsset,
         amount: balance ?? new Decimal(0),
         nativeValue: new Decimal(0),
         fiatValue: null,

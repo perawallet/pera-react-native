@@ -14,6 +14,10 @@ import {
     LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useMemo } from 'react'
 
@@ -30,7 +34,12 @@ type UseResolvedAddressResult = {
 
 export const useResolvedAddress = (
     address: string,
-    options?: { enabled?: boolean; format?: AddressFormat },
+    options?: {
+        enabled?: boolean
+        format?: AddressFormat
+        /** Truncates a 'short' address with this chain's codec instead of Algorand's. */
+        chainId?: ChainId
+    },
 ): UseResolvedAddressResult => {
     const { data: nfdNames, isPending } = useNfdForAddressQuery(address, {
         enabled: options?.enabled,
@@ -40,14 +49,15 @@ export const useResolvedAddress = (
 
     const format = options?.format ?? 'short'
 
-    const displayName =
-        nfdName ??
-        (format === 'full'
-            ? address
+    const chainId = options?.chainId
+    const truncate = (): string =>
+        format === 'short' && chainId && addressCodecs.has(chainId)
+            ? addressCodecs.get(chainId).truncate(address)
             : truncateAlgorandAddress(
                   address,
                   format === 'long' ? LONG_ADDRESS_LENGTH : undefined,
-              ))
+              )
+    const displayName = nfdName ?? (format === 'full' ? address : truncate())
 
     return {
         displayName,

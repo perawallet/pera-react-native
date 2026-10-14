@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     swapHistoryResponseSchema,
@@ -36,7 +33,7 @@ export const fetchSwapHistory = async (
 ) => {
     const response = await queryClient<SwapHistoryApiResponse>({
         backend: 'pera',
-        network: legacyNetworkOf(scope),
+        scope,
         method: 'GET',
         url: `/v2/dex-swap/history/`,
         params: {
@@ -65,7 +62,7 @@ export const fetchDistinctPairsHistory = async (
 ) => {
     const response = await queryClient<SwapDistinctPairsHistoryApiResponse>({
         backend: 'pera',
-        network: legacyNetworkOf(scope),
+        scope,
         method: 'GET',
         url: `/v2/dex-swap/distinct-pairs-history/`,
         params: {

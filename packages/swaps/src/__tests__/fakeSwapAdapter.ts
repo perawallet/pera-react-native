@@ -19,12 +19,15 @@ import {
 import { swapChainAdapters, type SwapChainAdapter } from '../chain-adapter'
 
 export const FAKE_NATIVE_ASSET_ID = 'native'
+export const FAKE_RECEIVE_ASSET_ID = 'receive'
 
 export const fakeSwapAdapter = (
     overrides: Partial<SwapChainAdapter> = {},
 ): SwapChainAdapter => ({
     chainId: scopeForLegacyNetwork('mainnet').chainId,
     nativeAssetId: FAKE_NATIVE_ASSET_ID,
+    defaultReceiveAssetId: FAKE_RECEIVE_ASSET_ID,
+    swapExplorerUrl: vi.fn(),
     executeSwap: vi.fn(),
     supportsCosignedSwaps: true,
     ...overrides,

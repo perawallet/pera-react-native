@@ -18,8 +18,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import {
     AssetFavoriteButton,
@@ -39,10 +38,8 @@ import {
 } from '@components/core'
 import { AssetMarketStats } from '../AssetMarketStats/AssetMarketStats'
 import { AssetAbout } from '../AssetAbout/AssetAbout'
-import { AssetVerificationCard } from '../AssetVerificationCard/AssetVerificationCard'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetDescription } from '../AssetDescription/AssetDescription'
-import { AssetSecurityTags } from '../AssetSecurityTags'
 import { AssetSocialMedia } from '../AssetSocialMedia/AssetSocialMedia'
 import { PriceTrend } from '../PriceTrend/PriceTrend'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
@@ -54,9 +51,16 @@ import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useCapability } from '@hooks/useCapability'
 import { toDiscoverTokenDetailPath } from '@modules/discover'
+import type {
+    AssetAboutDisplay,
+    AssetDetailsDisplay,
+} from '../../../types/asset-details-display'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
+    scope: ChainScope
+    assetDetailsDisplay: AssetDetailsDisplay
+    about: AssetAboutDisplay
 }
 
 const Loading = () => {
@@ -70,7 +74,13 @@ const Loading = () => {
     )
 }
 
-export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
+export const AssetMarkets = ({
+    asset,
+    scope,
+    assetDetailsDisplay,
+    about,
+}: AssetMarketsProps) => {
+    const { VerificationSection, IssuerControlsSection } = assetDetailsDisplay
     const styles = useStyles()
     const { usdToPreferred } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
@@ -81,12 +91,11 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const { t } = useLanguage()
     const canOpenDiscover = useCapability({
         platform: 'discoverTab',
-        anyChain: 'discover',
+        chain: { chainId: scope.chainId, capability: 'discover' },
     })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
 
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const {
         data: assetDetails,
         isError,
@@ -97,7 +106,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         // Pushed over asset details (not the Discover tab, which swaps in
         // place and strands the user with no back affordance)
         navigation.navigate('DiscoverDetail', {
-            path: toDiscoverTokenDetailPath(asset.assetId, LEGACY_CHAIN_ID),
+            path: toDiscoverTokenDetailPath(asset.assetId, scope.chainId),
         })
     }
 
@@ -107,7 +116,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         setSelectedPoint(item)
     }
 
-    if (isError) {
+    if (isError && !assetDetails) {
         return (
             <EmptyView
                 title={t('asset_details.markets.something_went_wrong_title')}
@@ -136,12 +145,14 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     <PWView style={styles.headerIcons}>
                         <AssetNotificationButton
                             assetId={asset.assetId}
+                            scope={scope}
                             isNotificationsEnabled={
                                 assetDetails?.peraMetadata?.isPriceAlertEnabled
                             }
                         />
                         <AssetFavoriteButton
                             assetId={asset.assetId}
+                            scope={scope}
                             isFavorite={assetDetails?.peraMetadata?.isFavorited}
                         />
                     </PWView>
@@ -160,12 +171,14 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                                 variant='h1'
                                 sourceAmount={new Decimal(1)}
                                 sourceAssetId={asset.assetId}
+                                scope={scope}
                             />
                         )}
 
                         <PWView style={styles.trendContainer}>
                             <PriceTrend
                                 assetId={asset.assetId}
+                                scope={scope}
                                 period={period}
                                 showAbsolute
                                 selectedDataPoint={selectedPoint}
@@ -184,6 +197,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 <PWView style={styles.chartContainer}>
                     <AssetPriceChart
                         asset={asset}
+                        scope={scope}
                         period={period}
                         onSelectionChanged={handleDataPointSelection}
                     />
@@ -222,17 +236,33 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 </PWTouchableOpacity>
             )}
 
-            <AssetMarketStats assetDetails={assetDetails} />
+            <AssetMarketStats
+                assetDetails={assetDetails}
+                scope={scope}
+            />
 
-            <AssetAbout assetDetails={assetDetails} />
+            <AssetAbout
+                assetDetails={assetDetails}
+                about={about}
+            />
 
-            <AssetVerificationCard assetDetails={assetDetails} />
+            {!!VerificationSection && (
+                <VerificationSection
+                    asset={assetDetails}
+                    scope={scope}
+                />
+            )}
 
             <AssetDescription
                 description={assetDetails.peraMetadata?.description}
             />
 
-            <AssetSecurityTags assetId={assetDetails.assetId} />
+            {!!IssuerControlsSection && (
+                <IssuerControlsSection
+                    asset={assetDetails}
+                    scope={scope}
+                />
+            )}
 
             <AssetSocialMedia assetDetails={assetDetails} />
         </PWScrollView>

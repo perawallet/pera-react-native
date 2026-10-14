@@ -132,6 +132,14 @@ export const APPROVAL_KEEPALIVE_INTERVAL_MS = 25_000
 // one opened, the worker is left to idle out as it would without the keepalive.
 export const APPROVAL_KEEPALIVE_MAX_MS = 15 * 60_000
 
+/**
+ * Name prefix, followed by the request id, of the port a toolbar popup holds
+ * open while it shows a claimed approval. The popup's `pagehide` reject is
+ * often lost as it closes, and the popup emits no windows.onRemoved, so the
+ * port dropping is the one dependable signal that it is gone.
+ */
+export const APPROVAL_POPUP_PORT_PREFIX = 'pera-approval-popup:'
+
 export const APPROVAL_WINDOW_WIDTH = 360
 export const APPROVAL_WINDOW_HEIGHT = 600
 
@@ -201,6 +209,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
 
     listen(): void {
         this.chromeLike.runtime.onMessage.addListener(this.handleMessage)
+        this.chromeLike.runtime.onConnect.addListener(this.handlePopupPort)
         this.chromeLike.windows.onRemoved.addListener(this.handleWindowRemoved)
     }
 
@@ -416,17 +425,31 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     private async openApprovalWindow(requestId: string): Promise<void> {
         const before = this.pending.get(requestId)
         if (before) before.surface = 'window'
-        const url = this.chromeLike.runtime.getURL(
-            `approval.html?requestId=${encodeURIComponent(requestId)}`,
-        )
-        const win = await this.chromeLike.windows.create({
-            url,
+        const options: chrome.windows.CreateData = {
+            url: this.chromeLike.runtime.getURL(
+                `approval.html?requestId=${encodeURIComponent(requestId)}`,
+            ),
             type: 'popup',
             width: APPROVAL_WINDOW_WIDTH,
             height: APPROVAL_WINDOW_HEIGHT,
             focused: true,
-            ...(await this.approvalWindowPosition()),
-        })
+        }
+        let win: chrome.windows.Window | undefined
+        try {
+            win = await this.chromeLike.windows
+                .create({
+                    ...options,
+                    ...(await this.approvalWindowPosition()),
+                })
+                // Chrome refuses a position mostly off-screen, which a moved or
+                // resized anchor window produces; its own cascade always fits.
+                .catch(() => this.chromeLike.windows.create(options))
+        } catch (error) {
+            // With no surface nothing can settle it, and a held entry counts
+            // against assertCapacity until the worker dies.
+            this.finish(requestId, null)
+            throw error
+        }
         const entry = this.pending.get(requestId)
         if (entry && typeof win?.id === 'number') {
             entry.windowId = win.id
@@ -593,6 +616,19 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
                 return true
             }
         }
+    }
+
+    private handlePopupPort = (port: chrome.runtime.Port): void => {
+        if (!port.name.startsWith(APPROVAL_POPUP_PORT_PREFIX)) return
+        if (!isTrustedExtensionPageSender(port.sender, this.chromeLike)) return
+        const requestId = port.name.slice(APPROVAL_POPUP_PORT_PREFIX.length)
+        port.onDisconnect.addListener(() => {
+            // A decision delivered before the popup closed has already
+            // settled, and finish() is a no-op for it.
+            if (this.pending.get(requestId)?.surface === 'popup') {
+                this.finish(requestId, null)
+            }
+        })
     }
 
     private handleWindowRemoved = (windowId: number): void => {

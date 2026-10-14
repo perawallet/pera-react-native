@@ -28,7 +28,10 @@ export type CardDelegationRequest = {
 }
 
 export type DelegationApprovalParams = {
-    /** Delegator (funding-source) address whose spending is being delegated. */
+    /**
+     * Escrow card address, not the funding account: Baanx registers it as the
+     * user's delegated wallet. The funder is identified by the signed proof.
+     */
     address: string
     /** Currency code as Baanx expects it, e.g. "usdc". */
     currency: string

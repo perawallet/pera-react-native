@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     availableAssetsResponseSchema,
@@ -29,7 +26,7 @@ export const fetchAvailableAssets = async (
 ) => {
     const response = await queryClient<AvailableAssetsApiResponse>({
         backend: 'pera',
-        network: legacyNetworkOf(scope),
+        scope,
         method: 'GET',
         url: `/v1/dex-swap/available-assets/`,
         params: {

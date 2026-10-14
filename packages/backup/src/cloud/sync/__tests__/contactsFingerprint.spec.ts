@@ -12,7 +12,6 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { contactsFingerprint } from '../contactsFingerprint'
 
 describe('contactsFingerprint', () => {
@@ -56,13 +55,34 @@ describe('contactsFingerprint', () => {
         )
     })
 
-    it('ignores a contact without an Algorand address', () => {
+    it('pins the fingerprint of a legacy-only contact set', () => {
+        expect(
+            contactsFingerprint([
+                { addresses: { algorand: 'B' }, name: 'Bob' },
+                { addresses: { algorand: 'A' }, name: 'Alice' },
+            ]),
+        ).toBe('A AliceB Bob')
+    })
+
+    it('is unchanged by a second family on a contact', () => {
+        expect(
+            contactsFingerprint([
+                { addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' },
+            ]),
+        ).toBe(
+            contactsFingerprint([
+                { addresses: { algorand: 'A' }, name: 'Alice' },
+            ]),
+        )
+    })
+
+    it('ignores a contact without a legacy-family address', () => {
         const alice = { addresses: { algorand: 'A' }, name: 'Alice' }
 
         expect(
             contactsFingerprint([
                 alice,
-                { addresses: { ['other' as ChainFamily]: 'B' }, name: 'Bob' },
+                { addresses: { evm: '0xB' }, name: 'Bob' },
             ]),
         ).toBe(contactsFingerprint([alice]))
     })

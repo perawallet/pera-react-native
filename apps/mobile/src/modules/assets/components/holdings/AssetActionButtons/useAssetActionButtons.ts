@@ -10,14 +10,23 @@
  limitations under the License
  */
 
-import { useCapability } from '@hooks/useCapability'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useOnrampScope } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useSwapScope } from '@perawallet/wallet-core-swaps'
 
 export type UseAssetActionButtonsResult = {
     canSwap: boolean
     canBuy: boolean
 }
 
-export const useAssetActionButtons = (): UseAssetActionButtonsResult => ({
-    canSwap: useCapability({ anyChain: 'swap' }),
-    canBuy: useCapability({ anyChain: 'onramp' }),
+export const useAssetActionButtons = (
+    account: Nullable<WalletAccount> | undefined,
+    chainId: ChainId,
+): UseAssetActionButtonsResult => ({
+    // The account's scope can resolve to another of its chains; the action
+    // only belongs on this screen when it runs on the asset's own chain.
+    canSwap: useSwapScope(account ?? null)?.chainId === chainId,
+    canBuy: useOnrampScope(account?.chains ?? null)?.chainId === chainId,
 })

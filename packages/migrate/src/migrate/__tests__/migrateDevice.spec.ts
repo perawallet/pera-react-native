@@ -22,10 +22,6 @@ const { deviceStoreMock, settingsStoreMock } = vi.hoisted(() => ({
     settingsStoreMock: { setPreference: vi.fn() },
 }))
 
-vi.mock('@perawallet/wallet-core-config', () => ({
-    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
-}))
-
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: { getState: () => deviceStoreMock },
     deviceIdFor: (

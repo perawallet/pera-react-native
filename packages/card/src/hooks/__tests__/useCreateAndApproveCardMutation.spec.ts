@@ -121,10 +121,12 @@ describe('useCreateAndApproveCardMutation', () => {
                 signature: PROOF.signature,
             }),
         )
+        // Baanx links the approval's `address` as the delegated wallet, and
+        // its delegator-lsig check wants the card there, not the funder.
         expect(postDelegationApproval).toHaveBeenCalledWith(
             expect.objectContaining({
                 scope: SCOPE,
-                address: ADDRESS,
+                address: 'ESCROW1',
                 currency: 'usdc',
                 txId: 'TX1',
                 signData: PROOF.signData,
@@ -268,6 +270,7 @@ describe('useCreateAndApproveCardMutation', () => {
         // proof's token, never the consumed one.
         expect(postDelegationApproval.mock.calls[1][0]).toEqual(
             expect.objectContaining({
+                address: 'ESCROW1',
                 signature: 'ZnJlc2g=',
                 token: 'ABC_tok2',
             }),

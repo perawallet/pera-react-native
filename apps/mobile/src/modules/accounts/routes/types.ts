@@ -10,11 +10,16 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { PeraCardAccountStackParamList } from '@modules/card'
 
 export type AccountStackParamsList = {
     AccountDetails?: { playConfetti?: boolean }
-    AssetDetails?: { assetId: string; isCollectible?: boolean }
+    AssetDetails?: {
+        assetId: string
+        chainId: ChainId
+        isCollectible?: boolean
+    }
     CollectibleDetails?: { assetId: string }
     RemoveAssets?: undefined
 } & PeraCardAccountStackParamList

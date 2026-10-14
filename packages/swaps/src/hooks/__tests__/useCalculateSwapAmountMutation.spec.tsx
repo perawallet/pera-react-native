@@ -18,17 +18,15 @@ import React from 'react'
 import { useCalculateSwapAmountMutation } from '../useCalculateSwapAmountMutation'
 import { calculateSwapAmount } from '../../api'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 const mocks = vi.hoisted(() => ({
-    useDeviceID: vi.fn<() => string | null>(),
+    deviceIdOf: vi.fn<(scope: unknown) => string | null>(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: mocks.useDeviceID,
+    useDeviceIdLookup: () => mocks.deviceIdOf,
 }))
+
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('../../api', () => ({
     calculateSwapAmount: vi.fn(),
@@ -73,13 +71,16 @@ function createThrowOnErrorWrapper() {
 describe('swaps/useCalculateSwapAmountMutation', () => {
     beforeEach(() => {
         vi.mocked(calculateSwapAmount).mockResolvedValue(mockResult)
-        mocks.useDeviceID.mockReturnValue('123456')
+        mocks.deviceIdOf.mockReturnValue('123456')
     })
 
     test('calls calculateSwapAmount with the registered device id and returns result', async () => {
-        const { result } = renderHook(() => useCalculateSwapAmountMutation(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCalculateSwapAmountMutation(SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate(mockRequest)
@@ -89,17 +90,20 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
 
         expect(calculateSwapAmount).toHaveBeenCalledWith(
             { ...mockRequest, device: '123456' },
-            'mainnet',
+            SCOPE,
         )
         expect(result.current.data).toEqual(mockResult)
     })
 
     test('omits device entirely before the device has registered', async () => {
-        mocks.useDeviceID.mockReturnValue(null)
+        mocks.deviceIdOf.mockReturnValue(null)
 
-        const { result } = renderHook(() => useCalculateSwapAmountMutation(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCalculateSwapAmountMutation(SCOPE),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate(mockRequest)
@@ -118,9 +122,12 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
             new Error('Request failed with status code 400'),
         )
 
-        const { result } = renderHook(() => useCalculateSwapAmountMutation(), {
-            wrapper: createThrowOnErrorWrapper(),
-        })
+        const { result } = renderHook(
+            () => useCalculateSwapAmountMutation(SCOPE),
+            {
+                wrapper: createThrowOnErrorWrapper(),
+            },
+        )
 
         act(() => {
             result.current.mutate(mockRequest)

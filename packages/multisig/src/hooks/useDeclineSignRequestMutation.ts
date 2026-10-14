@@ -48,7 +48,7 @@ export const useDeclineSignRequestMutation = ({
 
     const mutation = useMutation({
         mutationFn: ({ address, deviceId }: DeclineSignRequestInput) =>
-            addSignature(network, signRequestId, [
+            addSignature(scopeForLegacyNetwork(network), signRequestId, [
                 {
                     address,
                     response: 'declined',

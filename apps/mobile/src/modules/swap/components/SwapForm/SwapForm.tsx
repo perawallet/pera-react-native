@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapAmountSection } from '../SwapAmountSection'
@@ -22,10 +23,11 @@ import { useSwapLocalCurrency } from '../../hooks'
 import { useStyles } from './styles'
 
 export type SwapFormProps = {
+    scope: ChainScope
     initialPayAmount?: SwapFormInitialPayAmount
 }
 
-export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
+export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
@@ -43,6 +45,7 @@ export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
         hasInsufficientBalance,
         isLocalCurrencyInput,
         handlePayAmountChange,
+        handlePayAmountFocus,
         handleSwapDirection,
         handleMaxPress,
         handleOpenPayAssetSelection,
@@ -50,7 +53,7 @@ export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
         handleOpenConfig,
         handleOpenProvider,
         handleOpenConfirm,
-    } = useSwapForm(initialPayAmount)
+    } = useSwapForm(scope, initialPayAmount)
 
     const { localCurrencySymbol, fiatToAsset, assetToFiat } =
         useSwapLocalCurrency(payAssetId)
@@ -59,11 +62,13 @@ export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
         <PWScrollView contentContainerStyle={styles.formContainer}>
             <PWView style={styles.amountSections}>
                 <SwapAmountSection
+                    scope={scope}
                     variant='pay'
                     assetId={payAssetId}
                     balance={payBalance}
                     amount={payAmount}
                     onAmountChange={handlePayAmountChange}
+                    onAmountFocus={handlePayAmountFocus}
                     onAssetPress={handleOpenPayAssetSelection}
                     isLocalCurrencyInput={isLocalCurrencyInput}
                     localCurrencySymbol={localCurrencySymbol}
@@ -78,6 +83,7 @@ export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
                 />
 
                 <SwapAmountSection
+                    scope={scope}
                     variant='receive'
                     assetId={receiveAssetId}
                     balance={receiveBalance}
@@ -89,6 +95,7 @@ export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
 
             {selectedQuote && (
                 <SwapProviderRow
+                    scope={scope}
                     quote={selectedQuote}
                     selectionMode={providerSelectionMode}
                     onPress={handleOpenProvider}
@@ -134,8 +141,8 @@ export const SwapForm = ({ initialPayAmount }: SwapFormProps) => {
                 />
             )}
 
-            <SwapPairHistoryWidget />
-            <SwapTopPairs />
+            <SwapPairHistoryWidget scope={scope} />
+            <SwapTopPairs scope={scope} />
         </PWScrollView>
     )
 }
