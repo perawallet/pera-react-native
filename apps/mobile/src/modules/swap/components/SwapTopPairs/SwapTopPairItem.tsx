@@ -20,6 +20,8 @@ import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { useStyles } from './styles'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type SwapTopPairItemProps = {
     index: number
@@ -32,9 +34,10 @@ export const SwapTopPairItem = ({
     pair,
     onPress,
 }: SwapTopPairItemProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const { theme } = useTheme()
-    const { preferredCurrency, usdToPreferred } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency(scope)
 
     const handlePress = useCallback(() => {
         onPress(pair)

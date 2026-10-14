@@ -26,6 +26,8 @@ import {
     type FeeAdjustment,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseFeeAdjustmentResult = {
     isAdjusted: boolean
@@ -57,8 +59,9 @@ const NOT_ADJUSTED: UseFeeAdjustmentResult = {
 export const useFeeAdjustment = (
     transaction?: AlgorandTransactionView,
 ): UseFeeAdjustmentResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { feeAdjustments, currentRequest } = useSigningPipeline()
-    const { decimals: nativeDecimals } = useNativeAsset()
+    const { decimals: nativeDecimals } = useNativeAsset(scope)
 
     return useMemo(() => {
         if (feeAdjustments.length === 0) {

@@ -27,6 +27,8 @@ import {
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { StackNavigationProp } from '@react-navigation/stack'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type FeeDisplayProps = {
     transaction?: AlgorandTransactionView
@@ -35,7 +37,8 @@ export type FeeDisplayProps = {
 type NavigationProp = StackNavigationProp<SigningStackParamList>
 
 export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()

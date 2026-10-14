@@ -17,6 +17,8 @@ import {
     type SpotBanner,
 } from '@perawallet/wallet-core-banners'
 import { useBannerLinkRouter } from '../../hooks'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseMessagesSpotBannersResult = {
     isVisible: boolean
@@ -26,8 +28,9 @@ export type UseMessagesSpotBannersResult = {
 }
 
 export const useMessagesSpotBanners = (): UseMessagesSpotBannersResult => {
-    const { spotBanners } = useSpotBannersQuery()
-    const { mutate: dismiss } = useDismissSpotBannerMutation()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { spotBanners } = useSpotBannersQuery(scope)
+    const { mutate: dismiss } = useDismissSpotBannerMutation(scope)
     const { route } = useBannerLinkRouter()
 
     const onPress = useCallback(

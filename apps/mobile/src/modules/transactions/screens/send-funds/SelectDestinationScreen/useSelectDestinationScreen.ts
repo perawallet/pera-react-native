@@ -10,9 +10,10 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -77,7 +78,7 @@ export const useSelectDestinationScreen = () => {
     // A name's address comes from Pera's backend. It only becomes the
     // destination once the chain itself vouches for it; nothing here
     // trusts the search result or a cache.
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { showToast } = useToast()
     const { t } = useLanguage()
     const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
@@ -94,7 +95,7 @@ export const useSelectDestinationScreen = () => {
                 const verification = await verifyNameAddress({
                     name,
                     address,
-                    network,
+                    scope,
                     signal: controller.signal,
                 })
                 if (verification === 'verified') {
@@ -123,7 +124,7 @@ export const useSelectDestinationScreen = () => {
                 if (!controller.signal.aborted) setIsVerifyingNfd(false)
             }
         },
-        [network, resolveDestination, showToast, t],
+        [scope, resolveDestination, showToast, t],
     )
 
     const handleSelected = useCallback(

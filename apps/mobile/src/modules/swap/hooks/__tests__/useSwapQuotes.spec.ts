@@ -138,6 +138,7 @@ describe('useSwapQuotes', () => {
         renderHook(() => useSwapQuotes({ ...baseParams, enabled: false }))
 
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+            expect.anything(),
             [],
             expect.objectContaining({ fetchMissing: true }),
         )

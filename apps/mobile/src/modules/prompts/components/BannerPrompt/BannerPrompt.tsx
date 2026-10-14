@@ -25,6 +25,8 @@ import { BannerCarousel } from '@modules/banners/carousel'
 import { useBannerLinkRouter } from '@modules/banners'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useStyles } from './styles'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const BANNER_PROMPT_ID = 'banner_prompt'
 
@@ -35,9 +37,10 @@ export const BANNER_PROMPT_ID = 'banner_prompt'
  * what it is.
  */
 export const BannerPrompt = ({ onHide }: PromptViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { banners, forcedBanner } = useVisibleBanners()
+    const { banners, forcedBanner } = useVisibleBanners(scope)
     const dismissBanner = useBannersStore(state => state.dismissBanner)
     const markAutoOpened = useBannersStore(state => state.markAutoOpened)
     const { route: routeUrl } = useBannerLinkRouter()

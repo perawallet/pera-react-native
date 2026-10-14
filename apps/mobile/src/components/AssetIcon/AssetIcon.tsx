@@ -27,6 +27,8 @@ import {
 } from '@components/core'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetIconProps = {
     asset: DisplayableAsset
@@ -40,9 +42,10 @@ export type AssetIconProps = {
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 export const AssetIcon = (props: AssetIconProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { asset, size, style, logoUrl, shape = 'circle', ...rest } = props
     const { theme } = useTheme()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const [loadFailed, setLoadFailed] = useState(false)
 
     const iconSize = getIconPixelSize(theme, size ?? 'md')

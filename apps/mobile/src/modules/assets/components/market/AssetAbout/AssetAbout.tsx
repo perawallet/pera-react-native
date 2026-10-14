@@ -19,17 +19,18 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { useClipboard } from '@hooks/useClipboard'
-import type { AssetAboutDisplay } from '../../../types/asset-details-display'
-import { extractDomain } from '../../../utils/extractDomain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetAboutProps = {
     assetDetails: PeraAsset
     about: AssetAboutDisplay
 }
 
-export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
-    const { explorerLink } = about
+export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { copyToClipboard } = useClipboard()

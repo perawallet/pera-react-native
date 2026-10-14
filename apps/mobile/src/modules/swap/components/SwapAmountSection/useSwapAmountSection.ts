@@ -20,6 +20,8 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'
@@ -82,7 +84,8 @@ export const useSwapAmountSection = ({
     fiatToAsset,
     assetToFiat,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
-    const { data: assets } = useAssetsQuery([assetId])
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { data: assets } = useAssetsQuery(scope, [assetId])
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.

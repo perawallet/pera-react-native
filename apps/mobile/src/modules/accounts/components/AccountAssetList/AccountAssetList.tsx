@@ -29,6 +29,8 @@ import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -45,8 +47,9 @@ export const AccountAssetList = ({
     isLoading = false,
     refreshControl,
 }: AccountAssetListProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const { t } = useLanguage()
 
     const {

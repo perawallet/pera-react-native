@@ -22,6 +22,8 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { TrendIndicator } from '@components/TrendIndicator'
 import { usePriceTrend } from './usePriceTrend'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type PriceTrendProps = {
     assetId: string
@@ -38,8 +40,9 @@ export const PriceTrend = ({
     selectedDataPoint,
     showAbsolute = false,
 }: PriceTrendProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency(scope)
 
     const { changePercentage, changeValue, isPositive, isHidden } =
         usePriceTrend({ assetId, period, selectedDataPoint, scope })

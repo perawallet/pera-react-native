@@ -11,8 +11,8 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import {
     chainAccountOf,
@@ -46,11 +46,11 @@ export const useMultisigInvitationDetailContent = ({
 }: UseMultisigInvitationDetailContentParams): UseMultisigInvitationDetailContentResult => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network) ?? ''
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const deviceId = useScopedDeviceID(scope) ?? ''
     const accounts = useAllAccounts()
     const deleteImportInboxMutation = useDeleteMultisigInvitationMutation({
-        network,
+        scope,
         deviceId,
     })
 

@@ -47,7 +47,7 @@ export const useAccountAssetSelectionList = ({
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const { accountBalances, isPending } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
         scope,

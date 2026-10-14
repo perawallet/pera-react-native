@@ -11,33 +11,30 @@
  */
 
 import { useCallback } from 'react'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export const useAssetNotificationButton = (
     assetId: string,
     isNotificationsEnabled: Optional<boolean>,
     scope: ChainScope,
 ) => {
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
+    const deviceId = useScopedDeviceID(scope)
     const { showError } = useErrorToast()
     const hasPriceAlerts = useChainCapability(scope.chainId, 'priceAlerts')
     const {
         toggleAssetPriceAlert,
         isLoading,
         isUnavailableOnNetwork: isMutationUnavailable,
-    } = useToggleAssetPriceAlertMutation()
+    } = useToggleAssetPriceAlertMutation({ scope })
     const isUnavailableOnNetwork = isMutationUnavailable || !hasPriceAlerts
 
     const handleToggleNotifications = useCallback(() => {
@@ -52,7 +49,6 @@ export const useAssetNotificationButton = (
                 assetID: assetId,
                 deviceId: `${deviceId}`,
                 enabled: !isNotificationsEnabled,
-                network,
             })
         }
     }, [
@@ -60,7 +56,6 @@ export const useAssetNotificationButton = (
         deviceId,
         isNotificationsEnabled,
         toggleAssetPriceAlert,
-        network,
         scope,
         isUnavailableOnNetwork,
         showError,

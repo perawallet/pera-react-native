@@ -37,10 +37,13 @@ import { useCallback } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { PasteLinkContent } from '@modules/menu'
 import { routeCapabilities } from '@routes/capabilities'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
 
 export const AccountScreen = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const account = useSelectedAccount()
@@ -52,7 +55,7 @@ export const AccountScreen = () => {
 
     const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const { banners: visibleBanners } = useVisibleBanners()
+    const { banners: visibleBanners } = useVisibleBanners(scope)
     const hasHomeBanner = visibleBanners.length > 0
     const { animatedCornerStyle } = useAccountScreenAnimation(hasHomeBanner)
     const { request: requestBottomSheet } = useBottomSheet()

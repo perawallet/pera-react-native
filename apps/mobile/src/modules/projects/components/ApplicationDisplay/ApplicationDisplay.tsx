@@ -17,6 +17,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ProjectVerificationIcon } from '../ProjectVerificationIcon'
 import { LoadingView } from '@components/LoadingView'
 import { CopyableText } from '@components/CopyableText'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type ApplicationDisplayProps = {
     applicationId: string
@@ -27,9 +29,11 @@ export const ApplicationDisplay = ({
     applicationId,
     valueOnlyOnFallback = false,
 }: ApplicationDisplayProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const { t } = useLanguage()
     const { data: application, isLoading } = useApplicationQuery({
+        scope,
         applicationId: applicationId,
         isEnabled: !!applicationId,
     })

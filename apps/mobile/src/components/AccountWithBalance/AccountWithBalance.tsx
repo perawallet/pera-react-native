@@ -30,7 +30,8 @@ export const AccountWithBalance = ({
     isHighlighted,
     ...rest
 }: AccountWithBalanceProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles({ isHighlighted })
     const { t } = useLanguage()
     const { nativeValue, isTestTier } = useAccountWithBalance(account)

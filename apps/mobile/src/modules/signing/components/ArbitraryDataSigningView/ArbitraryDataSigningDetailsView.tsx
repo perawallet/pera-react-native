@@ -30,6 +30,7 @@ import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { AssetAmount } from '@components/AssetAmount'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type ArbitraryDataSigningDetailsViewProps = {
     request: ArbitraryDataSignRequest
@@ -40,7 +41,8 @@ export const ArbitraryDataSigningDetailsView = ({
     request,
     dataMessage,
 }: ArbitraryDataSigningDetailsViewProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const account = findAccountByAddressOn(

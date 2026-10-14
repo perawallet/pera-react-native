@@ -29,6 +29,8 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useRekeyedAccountInfoContent } from './useRekeyedAccountInfoContent'
 import { useStyles } from './styles'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type RekeyedAccountInfoContentProps = {
     account: WalletAccount
@@ -37,7 +39,8 @@ export type RekeyedAccountInfoContentProps = {
 export const RekeyedAccountInfoContent = ({
     account,
 }: RekeyedAccountInfoContentProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()

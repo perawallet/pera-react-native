@@ -21,9 +21,12 @@ import { AssetAmount } from '@components/AssetAmount'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { AssetTitle } from '@modules/assets'
 import { LoadingView } from '@components/LoadingView'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const ARC59SendSummaryScreen = () => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
 

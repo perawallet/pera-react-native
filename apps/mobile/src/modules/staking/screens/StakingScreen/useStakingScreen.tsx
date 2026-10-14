@@ -25,6 +25,8 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { StakingProject } from '@modules/staking/models'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseStakingScreenResult = {
     projects: StakingProject[]
@@ -37,6 +39,7 @@ type UseStakingScreenResult = {
 }
 
 export const useStakingScreen = (): UseStakingScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { pushWebView } = useWebView()
     // Passed through so the project list re-resolves when the user switches
     // language: the staking package can't read i18next itself (no
@@ -48,7 +51,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         isError,
         isPaused,
         refetch,
-    } = useStakingProjectsQuery(currentLanguage)
+    } = useStakingProjectsQuery(scope, currentLanguage)
     const { hasInternet } = useNetworkStatus()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
     const { request: requestBottomSheet } = useBottomSheet()

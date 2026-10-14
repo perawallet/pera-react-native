@@ -25,6 +25,8 @@ import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import type { StakingProject } from '../../models'
 import { StakingTypeBadge } from '../StakingTypeBadge'
 import { useStyles } from './styles'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type StakingProjectCardProps = {
     project: StakingProject
@@ -37,9 +39,10 @@ export const StakingProjectCard = ({
     isLast = false,
     onPress,
 }: StakingProjectCardProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles({ isLast })
-    const { usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency(scope)
 
     const tvlInPreferredCurrency = useMemo(
         () => usdToPreferred(project.tvlInUsd),

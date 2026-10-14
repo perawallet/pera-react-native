@@ -33,9 +33,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
-import { RecipientWarning } from '../RecipientWarning/RecipientWarning'
+import { RecipientBelowMbrWarning } from '../RecipientBelowMbrWarning/RecipientBelowMbrWarning'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const TransactionConfirmationScreen = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const {

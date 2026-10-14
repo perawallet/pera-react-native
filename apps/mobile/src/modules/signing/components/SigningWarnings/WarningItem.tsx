@@ -23,6 +23,8 @@ import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type WarningItemProps = {
     warning: TransactionWarning
@@ -85,7 +87,8 @@ export const WarningItem = ({
     showDivider,
     isGroup,
 }: WarningItemProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()

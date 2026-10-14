@@ -17,6 +17,8 @@ import {
     useDebouncedValue,
 } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseNfdResolveResult = {
     /** The input when a registered chain's codec accepts it, otherwise the NFD-resolved address (or empty string). */
@@ -35,6 +37,7 @@ export const useNfdResolve = (
     input: string,
     options?: { enabled?: boolean },
 ): UseNfdResolveResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const enabled = options?.enabled ?? true
     const debouncedInput = useDebouncedValue(input, SEARCH_DEBOUNCE_TIME)
     const isDirectAddress = addressCodecs
@@ -44,6 +47,7 @@ export const useNfdResolve = (
         enabled && debouncedInput.includes('.') && !isDirectAddress
 
     const { data: nfdResults, isLoading: isNfdResolving } = useNfdSearchQuery(
+        scope,
         debouncedInput,
         { enabled: shouldSearchNfd },
     )

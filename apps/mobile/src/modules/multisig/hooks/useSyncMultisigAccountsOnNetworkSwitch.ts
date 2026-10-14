@@ -21,6 +21,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useNetwork,
     useOnNetworkSwitch,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { createMultisigAccount } from '@perawallet/wallet-core-multisig'
@@ -40,6 +41,7 @@ import {
  */
 export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
     const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const deviceId = useDeviceID(network)
     const accounts = useAllAccounts()
 
@@ -79,7 +81,7 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
         const run = async () => {
             const results = await Promise.allSettled(
                 multisigAccounts.map(({ parameters }) =>
-                    createMultisigAccount(network, {
+                    createMultisigAccount(scope, {
                         version: parameters.version,
                         threshold: parameters.threshold,
                         participant_addresses: parameters.addresses,
@@ -108,5 +110,5 @@ export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
                 error,
             })
         })
-    }, [network, deviceId])
+    }, [network, scope, deviceId])
 }

@@ -60,9 +60,10 @@ export type PortfolioViewProps = {
 } & PWViewProps
 
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency(scope)
     const { t } = useLanguage()
 
     const {

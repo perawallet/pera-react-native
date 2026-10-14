@@ -43,7 +43,7 @@ export const useNotificationsIcon = (): UseNotificationsIconResult => {
     // surface with its own guard ticket, and it already yields nothing on a
     // non-backed network — gating it here would bake in an assumption this
     // ticket doesn't own.
-    const { spotBanners } = useSpotBannersQuery()
+    const { spotBanners } = useSpotBannersQuery(scope)
     const hasSpotBanners = spotBanners.length > 0
 
     const goToNotifications = () => {

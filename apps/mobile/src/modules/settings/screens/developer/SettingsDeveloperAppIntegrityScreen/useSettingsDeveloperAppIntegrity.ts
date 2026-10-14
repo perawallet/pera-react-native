@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAppIntegrityRegistration,
@@ -19,6 +19,7 @@ import {
     useAppIntegrityStore,
     type IntegrityVerification,
 } from '@perawallet/wallet-core-app-integrity'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type UseSettingsDeveloperAppIntegrityResult = {
     status: string
@@ -38,9 +39,9 @@ export type UseSettingsDeveloperAppIntegrityResult = {
 
 export const useSettingsDeveloperAppIntegrity =
     (): UseSettingsDeveloperAppIntegrityResult => {
-        const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { deviceInfo, appIntegrity } = getProvider()
-        const { register, isRegistering } = useAppIntegrityRegistration()
+        const { register, isRegistering } = useAppIntegrityRegistration(scope)
 
         const status = useAppIntegrityStore(state => state.status)
         const integrityToken = useAppIntegrityStore(
@@ -83,7 +84,7 @@ export const useSettingsDeveloperAppIntegrity =
                 setVerifyResult(
                     await verifyIntegrityToken({
                         integrityToken: token,
-                        network,
+                        scope,
                     }),
                 )
             } catch (error) {
@@ -93,7 +94,7 @@ export const useSettingsDeveloperAppIntegrity =
             } finally {
                 setIsVerifying(false)
             }
-        }, [network])
+        }, [scope])
 
         const onClear = useCallback(() => {
             setVerifyResult(null)

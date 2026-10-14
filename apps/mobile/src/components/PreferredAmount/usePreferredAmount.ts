@@ -20,12 +20,16 @@ import {
     useIsNativeAssetId,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgoAssetName,
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UsePreferredAmountResult = {
     displayCurrency: string
@@ -40,9 +44,11 @@ export const usePreferredAmount = (
     preFetchedUsdPrice?: Decimal,
     scope?: ChainScope,
 ): UsePreferredAmountResult => {
+    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const assetScope = scope ?? currencyScope
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
-        useCurrency()
-    const isNativeAssetId = useIsNativeAssetId()
+        useCurrency(currencyScope)
+    const isNativeAssetId = useIsNativeAssetId(assetScope)
     const isPreferredAlgo = isAlgoAssetName(preferredCurrency)
     const isSourceAlgo = isNativeAssetId(sourceAssetId)
 
@@ -60,11 +66,15 @@ export const usePreferredAmount = (
         [hasPreFetchedUsdPrice, sourceAssetId],
     )
     const { data: usdPrices, isPending: usdPricesPending } =
-        useAssetPricesQuery(priceIDs, !hasPreFetchedUsdPrice, scope)
+        useAssetPricesQuery(assetScope, priceIDs, !hasPreFetchedUsdPrice)
 
     // Fallback exchange rate (needed when displaying in fallback currency)
     const { data: fallbackRate, isPending: fallbackRatePending } =
-        usePreferredCurrencyPriceQuery(fallbackCurrency, needsFallback)
+        usePreferredCurrencyPriceQuery(
+            currencyScope,
+            fallbackCurrency,
+            needsFallback,
+        )
 
     const isPending = useMemo(() => {
         if (preFetchedUsdPrice !== undefined) {

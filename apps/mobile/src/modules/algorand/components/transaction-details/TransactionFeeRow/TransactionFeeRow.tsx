@@ -16,13 +16,16 @@ import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const TransactionFeeRow = ({
     transaction,
 }: {
     transaction: AlgorandTransactionView
 }) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
 
     return (

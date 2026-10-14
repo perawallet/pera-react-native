@@ -15,13 +15,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
-    legacyNetworkOf,
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     getSignRequestDetailQueryKey,
     useSignRequestDetailQuery,
@@ -94,8 +93,7 @@ export const useSignRequestFailure = (
     const { t } = useLanguage()
     const { getMessage } = useNodeErrorMessage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-    const deviceId = useDeviceID(network) ?? ''
+    const deviceId = useScopedDeviceID(scope) ?? ''
     const queryClient = useQueryClient()
 
     const cosignSignRequestId =
@@ -130,7 +128,7 @@ export const useSignRequestFailure = (
     }, [cosignSignRequestId, scope, queryClient])
 
     const { data: signRequest } = useSignRequestDetailQuery({
-        network,
+        scope,
         deviceId,
         signRequestId: cosignSignRequestId ?? '',
         enabled: cosignSignRequestId !== null && deviceId !== '',

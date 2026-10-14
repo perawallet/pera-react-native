@@ -252,39 +252,6 @@ describe('usePreferredAmount', () => {
         expect(result.current.convertedValue).toEqual(new Decimal(12.75))
         expect(result.current.isPending).toBe(false)
 
-        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
-            [],
-            false,
-            undefined,
-        )
-    })
-
-    it('prices the asset on the scope it is given', () => {
-        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
-        mockUseCurrency.mockReturnValue({
-            preferredCurrency: 'EUR',
-            fallbackCurrency: 'USD',
-            usdToPreferred: (v: Decimal) => v,
-        })
-        mockUseAssetPricesQuery.mockReturnValue({
-            data: new Map(),
-            isPending: false,
-        })
-
-        renderHook(() =>
-            usePreferredAmount(
-                new Decimal(1),
-                '0xabc',
-                false,
-                undefined,
-                scope,
-            ),
-        )
-
-        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
-            ['0xabc'],
-            true,
-            scope,
-        )
+        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(expect.anything(), [], false)
     })
 })

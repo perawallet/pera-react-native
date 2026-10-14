@@ -32,6 +32,8 @@ import { AccountTypeInfoContent } from './AccountTypeInfoContent'
 import { RekeyedToRow } from './RekeyedToRow'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AccountInfoCardProps = {
     account: WalletAccount
@@ -55,7 +57,8 @@ export const AccountInfoCard = ({
     onClose,
     rekeyedTo,
 }: AccountInfoCardProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const {

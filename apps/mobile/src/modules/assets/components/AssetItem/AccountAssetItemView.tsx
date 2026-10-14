@@ -29,6 +29,8 @@ import { useMemo } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
 import { AssetItemView } from './AssetItemView'
 import { AssetRowSkeleton } from '../AssetRowSkeleton'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -53,8 +55,9 @@ export const AccountAssetItemView = ({
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
 
     // Use pre-fetched asset data when available to avoid N+1 queries.
     // Falls back to individual fetch for callers that don't populate
@@ -67,7 +70,7 @@ export const AccountAssetItemView = ({
             skipFetch || accountBalance.asset ? [] : [accountBalance.assetId],
         [skipFetch, accountBalance.asset, accountBalance.assetId],
     )
-    const { data: fetchedAssets } = useAssetsQuery(assetIds)
+    const { data: fetchedAssets } = useAssetsQuery(scope, assetIds)
 
     const asset = useMemo(() => {
         return (

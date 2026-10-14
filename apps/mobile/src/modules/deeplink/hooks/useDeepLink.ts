@@ -55,6 +55,7 @@ import {
     useWalletConnectDeeplink,
 } from '../handlers'
 import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type HandleDeepLink = (
     url: string,
@@ -82,6 +83,7 @@ const isValidDeepLink = (url: string): boolean => {
 }
 
 export const useDeepLink = (): UseDeepLinkResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast, infoToast } = useToast()
     const { setSelectedAccountId } = useSelectedAccountId()
     // A link naming an address outside the wallet leaves the selection alone.
@@ -130,7 +132,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const showError = useDeeplinkErrorHandler()
     const runLocaleTourStep = useLocaleTourDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
 
     /**
      * Runs a sheet-opening handler WITHOUT awaiting it. Sheets render at the app

@@ -32,6 +32,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AppProviders } from './providers/AppProviders'
 import { usePasskeyAutofillLifecycle } from './bootstrap/passkey-autofill'
 import { useAppBootstrap } from './useAppBootstrap'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const KEYSTORE_INIT_ERROR_KEYS: ErrorMessageKeys = {
     titleKey: i18nKey('app.initialization_failed.keystore.title'),
@@ -45,6 +47,7 @@ const GENERIC_INIT_ERROR_KEYS: ErrorMessageKeys = {
 // Process-wide setup (Decimal config, network status, splash hold, sheet
 // registry) runs before this tree mounts: see bootstrap/preReact.ts.
 const AppContent = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
     const theme = useAppTheme()
@@ -55,7 +58,7 @@ const AppContent = () => {
     useSystemBarsAppearance(isDarkMode)
     useOrientationPolicy()
     usePasskeyAutofillLifecycle()
-    useAppIntegrityBootstrap()
+    useAppIntegrityBootstrap(scope)
     useCrashReporterBinding()
 
     if (initError) {

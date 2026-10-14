@@ -38,6 +38,7 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetActionButtons } from './useAssetActionButtons'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -52,6 +53,7 @@ export const AssetActionButtons = ({
     chainId,
     isCollectible,
 }: AssetActionButtonsProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
@@ -63,7 +65,8 @@ export const AssetActionButtons = ({
     const { showToast } = useToast()
     const isFrozen =
         assetHolding?.restriction === HoldingRestrictions.transferBlocked
-    const { canSwap, canBuy } = useAssetActionButtons(account, chainId)
+    const nativeAsset = useNativeAsset(scope)
+    const { canSwap, canBuy } = useAssetActionButtons(account)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)

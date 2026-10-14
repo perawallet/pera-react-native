@@ -47,25 +47,25 @@ type UseSettingsCurrencyScreenResult = {
 
 export const useSettingsCurrencyScreen =
     (): UseSettingsCurrencyScreenResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const {
             setPreferredCurrency,
             setFallbackCurrency,
             fallbackCurrency,
             preferredCurrency,
-        } = useCurrency()
+        } = useCurrency(scope)
         const [search, setSearch] = useState<string>()
         const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-        const { data } = useCurrenciesQuery()
+        const { data } = useCurrenciesQuery(scope)
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { hasInternet } = useNetworkStatus()
         const queryClient = useQueryClient()
 
         const isRateUnavailableOffline = useMemo(() => {
             if (hasInternet) return false
             // USD is the identity path in useCurrency, and ALGO rides the
-            // DB-backed algo-usd query, which works offline.
+            // DB-backed native-usd query, which works offline.
             if (preferredCurrency === USD_CURRENCY_ID) return false
             if (isAlgoAssetName(preferredCurrency)) return false
 

@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useEffect, useState } from 'react'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     IN_FLIGHT_SIGN_REQUEST_STATUSES,
     useSignRequestDetailQuery,
@@ -69,8 +70,8 @@ export const useMultisigSignInboxItem = (
     item: MultisigSignItem,
 ): UseMultisigSignInboxItemResult => {
     const isDark = useIsDarkMode()
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network) ?? ''
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const deviceId = useScopedDeviceID(scope) ?? ''
 
     const avatarIcon: IconName = isDark
         ? 'accounts/dark/multisig-account'
@@ -102,7 +103,7 @@ export const useMultisigSignInboxItem = (
     // genuinely failed request isn't polled forever.
     const isRecovering = listStatus === 'failed' && !isFailedRecoveryExpired
     const { data: recovered } = useSignRequestDetailQuery({
-        network,
+        scope,
         deviceId,
         signRequestId: data.id,
         enabled: isRecovering,

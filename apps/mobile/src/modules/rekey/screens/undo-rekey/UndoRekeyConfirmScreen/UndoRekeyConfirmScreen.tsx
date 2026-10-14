@@ -22,9 +22,12 @@ import { useLanguage } from '@hooks/useLanguage'
 import { RekeySummaryRow } from '../../../components/RekeySummaryRow'
 import { useStyles } from './styles'
 import { useUndoRekeyConfirmScreen } from './useUndoRekeyConfirmScreen'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const UndoRekeyConfirmScreen = () => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()

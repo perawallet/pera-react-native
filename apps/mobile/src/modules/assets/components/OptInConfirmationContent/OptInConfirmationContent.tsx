@@ -22,6 +22,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
 import { useOptInConfirmationContent } from './useOptInConfirmationContent'
 import { useStyles } from './styles'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type OptInConfirmationContentProps = {
     assetId: string
@@ -38,14 +40,15 @@ export const OptInConfirmationContent = ({
     accountAddress,
     fee,
 }: OptInConfirmationContentProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve } = useBottomSheetResult<'confirm'>()
     const { resolvedFee } = useOptInConfirmationContent(accountAddress, fee)
 
-    const { data: assets } = useAssetsQuery([assetId])
+    const { data: assets } = useAssetsQuery(scope, [assetId])
     const asset = assets?.get(assetId)
 
     const assetDisplayName = asset?.name ?? assetId

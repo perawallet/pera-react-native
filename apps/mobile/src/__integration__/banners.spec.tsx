@@ -32,10 +32,12 @@ import {
     useSpotBannersQuery,
     useVisibleBanners,
 } from '@perawallet/wallet-core-banners'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 const DEVICE_ID = 'integration-test-device'
 const NETWORK = 'mainnet' as const
+const SCOPE = scopeForLegacyNetwork(NETWORK)
 
 describe('Flow: Banners (regular)', () => {
     afterEach(() => {
@@ -91,7 +93,7 @@ describe('Flow: Banners (regular)', () => {
             }),
         )
 
-        const { result } = renderHook(() => useVisibleBanners(), {
+        const { result } = renderHook(() => useVisibleBanners(SCOPE), {
             wrapper: createQueryClientWrapper(),
         })
 
@@ -134,7 +136,7 @@ describe('Flow: Banners (regular)', () => {
             }),
         )
 
-        const { result } = renderHook(() => useVisibleBanners(), {
+        const { result } = renderHook(() => useVisibleBanners(SCOPE), {
             wrapper: createQueryClientWrapper(),
         })
 
@@ -191,7 +193,7 @@ describe('Flow: Banners (regular)', () => {
             useBannersStore.getState().dismissBanner('21')
         })
 
-        const { result } = renderHook(() => useVisibleBanners(), {
+        const { result } = renderHook(() => useVisibleBanners(SCOPE), {
             wrapper: createQueryClientWrapper(),
         })
 
@@ -233,7 +235,7 @@ describe('Flow: Banners (regular)', () => {
             }),
         )
 
-        const { result } = renderHook(() => useVisibleBanners(), {
+        const { result } = renderHook(() => useVisibleBanners(SCOPE), {
             wrapper: createQueryClientWrapper(),
         })
 
@@ -272,7 +274,7 @@ describe('Flow: Spot banners', () => {
             }),
         )
 
-        const { result } = renderHook(() => useSpotBannersQuery(), {
+        const { result } = renderHook(() => useSpotBannersQuery(SCOPE), {
             wrapper: createQueryClientWrapper(),
         })
 
@@ -335,8 +337,8 @@ describe('Flow: Spot banners', () => {
         const wrapper = createQueryClientWrapper()
         const { result } = renderHook(
             () => ({
-                list: useSpotBannersQuery(),
-                dismiss: useDismissSpotBannerMutation(),
+                list: useSpotBannersQuery(SCOPE),
+                dismiss: useDismissSpotBannerMutation(SCOPE),
             }),
             { wrapper },
         )
@@ -392,8 +394,8 @@ describe('Flow: Spot banners', () => {
         const wrapper = createQueryClientWrapper()
         const { result } = renderHook(
             () => ({
-                list: useSpotBannersQuery(),
-                dismiss: useDismissSpotBannerMutation(),
+                list: useSpotBannersQuery(SCOPE),
+                dismiss: useDismissSpotBannerMutation(SCOPE),
             }),
             { wrapper },
         )

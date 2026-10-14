@@ -19,6 +19,8 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 import { shareText } from '@utils/shareText'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseViewContactScreenResult = {
     selectedContact: Maybe<Contact>
@@ -30,13 +32,14 @@ export type UseViewContactScreenResult = {
 }
 
 export const useViewContactScreen = (): UseViewContactScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedContact } = useContacts()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
 
     const address = selectedContact?.addresses.algorand ?? ''
 
-    const { data: nfdNames } = useNfdForAddressQuery(address, {
+    const { data: nfdNames } = useNfdForAddressQuery(scope, address, {
         enabled: !!address,
     })
     const nfdName = nfdNames?.at(0)?.name

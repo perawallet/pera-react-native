@@ -33,9 +33,11 @@ import { ScreenHeader } from '@components/ScreenHeader'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const SelectHDWalletScreen = () => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const {
         hdSeedGroups,

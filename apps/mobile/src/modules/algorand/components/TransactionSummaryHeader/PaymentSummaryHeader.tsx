@@ -20,6 +20,8 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePaymentSummaryHeader } from './usePaymentSummaryHeader'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type PaymentSummaryHeaderProps = {
     transaction: AlgorandTransactionView
@@ -28,7 +30,8 @@ type PaymentSummaryHeaderProps = {
 export const PaymentSummaryHeader = ({
     transaction,
 }: PaymentSummaryHeaderProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()

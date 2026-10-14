@@ -29,7 +29,7 @@ let mockStoredFundingType: FundingType | null = null
 let mockConnectedAddress: string | null = null
 let mockEscrowCardAddress: string | null = null
 let mockEscrowCardOwner: string | null = null
-let mockEscrowCardNetwork: string | null = null
+let mockEscrowCardScopeKey: string | null = null
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
@@ -42,7 +42,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                     connectedFundingSourceAddress: mockConnectedAddress,
                     escrowCardAddress: mockEscrowCardAddress,
                     escrowCardOwner: mockEscrowCardOwner,
-                    escrowCardNetwork: mockEscrowCardNetwork,
+                    escrowCardScopeKey: mockEscrowCardScopeKey,
                 }),
             {
                 getState: () => ({
@@ -144,7 +144,7 @@ describe('useSelectFundingTypeSheet', () => {
         // An escrow card exists for the connected account on this network.
         mockEscrowCardAddress = CARD
         mockEscrowCardOwner = 'ADDR1'
-        mockEscrowCardNetwork = 'testnet'
+        mockEscrowCardScopeKey = 'algorand/testnet'
         mockAccounts = [connectedAccount]
         mockEnableAutoDraw.mockResolvedValue(undefined)
         mockDisableAutoDraw.mockResolvedValue(undefined)

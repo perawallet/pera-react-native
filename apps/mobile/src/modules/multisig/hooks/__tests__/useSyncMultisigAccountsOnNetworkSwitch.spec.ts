@@ -143,7 +143,7 @@ describe('useSyncMultisigAccountsOnNetworkSwitch', () => {
         rerender()
 
         expect(createMultisigAccountMock).toHaveBeenCalledTimes(2)
-        expect(createMultisigAccountMock).toHaveBeenCalledWith('mainnet', {
+        expect(createMultisigAccountMock).toHaveBeenCalledWith({ chainId: 'algorand', networkId: 'mainnet' }, {
             version: 1,
             threshold: 2,
             participant_addresses: ['P1', 'P2'],
@@ -166,7 +166,7 @@ describe('useSyncMultisigAccountsOnNetworkSwitch', () => {
         rerender()
         expect(createMultisigAccountMock).toHaveBeenCalledTimes(1)
         expect(createMultisigAccountMock).toHaveBeenCalledWith(
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
             expect.objectContaining({ device_id: 'device-mainnet' }),
         )
     })

@@ -82,7 +82,8 @@ export const AssetMarkets = ({
 }: AssetMarketsProps) => {
     const { VerificationSection, IssuerControlsSection } = assetDetailsDisplay
     const styles = useStyles()
-    const { usdToPreferred } = useCurrency()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { usdToPreferred } = useCurrency(scope)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
 

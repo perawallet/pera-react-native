@@ -41,14 +41,14 @@ export const TxTypeDetails = ({
     tx: AlgorandTransactionView
     isExternal?: boolean
 }) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const txType = getTransactionType(tx)
     const { t } = useLanguage()
     const styles = useStyles()
     const { displayName: senderDisplayName } = useResolvedAddress(tx.sender, {
         format: 'long',
     })
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: asset } = useSingleAssetDetailsQuery(
         tx.assetTransferTransaction?.assetId?.toString() ?? '',
         scope,

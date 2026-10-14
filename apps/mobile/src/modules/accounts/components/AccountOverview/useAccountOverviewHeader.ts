@@ -50,7 +50,7 @@ export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency(scope)
     const canSign = useCanSignWith(account, scope.chainId)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
     const {

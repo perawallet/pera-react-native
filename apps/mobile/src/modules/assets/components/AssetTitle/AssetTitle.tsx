@@ -21,6 +21,8 @@ import { useStyles } from './styles'
 import { AssetIcon } from '@components/AssetIcon'
 import { useMemo } from 'react'
 import type { TypographyVariant } from '@theme/typography'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetTitleProps = {
     asset: PeraAsset
@@ -33,8 +35,9 @@ export const AssetTitle = ({
     showId = false,
     nameVariant = 'h4',
 }: AssetTitleProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const { t } = useLanguage()
 
     const isAlgo = useMemo(

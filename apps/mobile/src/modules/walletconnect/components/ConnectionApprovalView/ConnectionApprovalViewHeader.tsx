@@ -35,10 +35,8 @@ import {
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
-import {
-    toOriginWarningMessage,
-    type ConnectionOriginWarning,
-} from './useConnectionApprovalView'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer
@@ -85,6 +83,7 @@ export const ConnectionApprovalViewHeader = ({
     originWarning,
     verifiedOriginLabel,
 }: ConnectionApprovalViewHeaderProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const permissionItemStyles = usePermissionItemStyles()
     const { t } = useLanguage()
@@ -93,6 +92,7 @@ export const ConnectionApprovalViewHeader = ({
     // can never mint the `verified` checkmark; `resolveDisplayableVerificationTier`
     // suppresses the positive tier. A `suspicious` hit is still surfaced.
     const { data: project } = useProjectByUrlQuery({
+        scope,
         url: peer.url,
         isEnabled: !!peer.url,
     })

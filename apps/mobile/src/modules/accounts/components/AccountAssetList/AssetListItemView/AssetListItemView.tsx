@@ -33,6 +33,7 @@ import {
 } from '@modules/assets'
 import type { AssetFiatConverter } from '../useAssetListFiat'
 import { useStyles } from './styles'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
@@ -56,8 +57,9 @@ const AssetListItemViewBase = ({
     onPress,
     style,
 }: AssetListItemViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
 
     const asset = useMemo(
         () => assetFromHoldingLiteRow(holding, LEGACY_CHAIN_ID),

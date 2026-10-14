@@ -34,14 +34,18 @@ import { TransactionProcessingScreen } from '../../screens/send-funds/Transactio
 import { TransactionSuccessScreen } from '../../screens/send-funds/TransactionSuccessScreen'
 import { useStyles } from './styles'
 import type { SendFundsStackParamList } from './types'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const Stack = createStackNavigator<SendFundsStackParamList>()
 
 export const SendFundsRoutes = () => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { canSelectAsset, selectedAssetId, onFinished } = useSendFunds()
     const styles = useStyles()
 
     const { data: assets } = useAssetsQuery(
+        scope,
         selectedAssetId ? [selectedAssetId] : [],
     )
     const selectedAsset = selectedAssetId
