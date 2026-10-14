@@ -18,6 +18,7 @@ import type {
     WalletKitEventArguments,
     WalletKitSession,
     WalletKitSessionProposal,
+    WalletKitVerifyContext,
 } from '../client'
 
 /**
@@ -245,8 +246,20 @@ export const createFakeWalletKit = (
     }
 }
 
+export const makeVerifyContext = (
+    verified: Partial<WalletKitVerifyContext['verified']> = {},
+): WalletKitVerifyContext => ({
+    verified: {
+        verifyUrl: '',
+        validation: 'UNKNOWN',
+        origin: 'https://dapp.example',
+        ...verified,
+    },
+})
+
 export const makeProposal = (
     overrides: Partial<WalletKitSessionProposal['params']> = {},
+    verified?: Partial<WalletKitVerifyContext['verified']>,
 ): WalletKitSessionProposal => {
     ensureChainIds()
     return {
@@ -271,13 +284,7 @@ export const makeProposal = (
             pairingTopic: PAIRING_TOPIC,
             ...overrides,
         },
-        verifyContext: {
-            verified: {
-                verifyUrl: '',
-                validation: 'UNKNOWN',
-                origin: 'https://dapp.example',
-            },
-        },
+        verifyContext: makeVerifyContext(verified),
     }
 }
 
@@ -287,6 +294,7 @@ export type RequestOverrides = {
     method?: string
     params?: unknown
     chainId?: string
+    verified?: Partial<WalletKitVerifyContext['verified']>
 }
 
 export const makeRequest = (
@@ -303,12 +311,6 @@ export const makeRequest = (
             },
             chainId: overrides.chainId ?? MAINNET_CHAIN_ID,
         },
-        verifyContext: {
-            verified: {
-                verifyUrl: '',
-                validation: 'UNKNOWN',
-                origin: 'https://dapp.example',
-            },
-        },
+        verifyContext: makeVerifyContext(overrides.verified),
     }
 }

@@ -36,6 +36,8 @@ export type WalletKitSessionProposal =
 
 export type WalletKitSessionRequest = WalletKitEventArguments['session_request']
 
+export type WalletKitVerifyContext = WalletKitSessionProposal['verifyContext']
+
 /** The JSON-RPC frame `respondSessionRequest` puts on the wire. */
 export type WalletKitJsonRpcResponse = { id: number; jsonrpc: '2.0' } & (
     | { result: unknown }
