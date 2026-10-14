@@ -20,6 +20,7 @@ import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
 import { DeeplinkType, type LinkSource } from '../types'
 import {
     findAccountByAddressOn,
+    findAccountByAnyChainAddress,
     hdIndexOf,
     useAccountsStore,
     useSelectedAccountId,
@@ -101,6 +102,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (account) setSelectedAccountId(account.id)
     }
     const swapChainOf = useSwapChainResolver()
+    // Fund's provider redirects back with the address it delivered to, on
+    // whichever chain the purchase was for.
+    const selectAccountByAnyChainAddress = (address: string) => {
+        const account = findAccountByAnyChainAddress(
+            useAccountsStore.getState().accounts,
+            address,
+        )
+        if (account) setSelectedAccountId(account.id)
+    }
     const { t } = useLanguage()
     const { requestByType } = useBottomSheetStore()
     const { showSignRequest } = usePendingSignaturesSheet()
@@ -428,7 +438,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.BUY: {
                     if (parsedData.address) {
-                        selectAccountByAddress(parsedData.address)
+                        selectAccountByAnyChainAddress(parsedData.address)
                     }
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Fund',

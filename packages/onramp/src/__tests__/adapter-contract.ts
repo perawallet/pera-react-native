@@ -11,17 +11,16 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { RampChainAdapter } from '../chain-adapter'
-import type { RampToken } from '../models'
-
-type TokenRef = Pick<RampToken, 'id' | 'symbol'>
+import type { RampTokenIdentity } from '../models'
 
 export interface RampContractFixtures {
-    native: TokenRef
-    nonNative: { token: TokenRef; assetId: string }
+    /** A network the adapter's destination tokens exist on. */
+    scope: ChainScope
+    native: RampTokenIdentity
+    nonNative: { token: RampTokenIdentity; assetId: string }
 }
-
-const DECIMAL = /^\d+$/
 
 /** Every chain package runs this against its own ramp adapter. */
 export const rampContractTests = (
@@ -38,6 +37,10 @@ export const rampContractTests = (
             )
         })
 
+        it('names the ramp networks its tokens live on', () => {
+            expect(makeAdapter().rampNetworkIds.length).toBeGreaterThan(0)
+        })
+
         it('tells the native token from any other', () => {
             const adapter = makeAdapter()
 
@@ -45,14 +48,15 @@ export const rampContractTests = (
             expect(adapter.isNativeToken(fixtures.nonNative.token)).toBe(false)
         })
 
-        it('maps each token to its on-chain id as a decimal string', () => {
+        it('maps each token to its asset on the network', () => {
             const adapter = makeAdapter()
+            const nativeId = adapter.toAssetId(fixtures.native, fixtures.scope)
 
-            expect(adapter.toAssetId(fixtures.native)).toMatch(DECIMAL)
-            expect(adapter.toAssetId(fixtures.nonNative.token)).toBe(
-                fixtures.nonNative.assetId,
-            )
-            expect(fixtures.nonNative.assetId).toMatch(DECIMAL)
+            expect(nativeId).toEqual(expect.any(String))
+            expect(nativeId).not.toBe('')
+            expect(
+                adapter.toAssetId(fixtures.nonNative.token, fixtures.scope),
+            ).toBe(fixtures.nonNative.assetId)
         })
     })
 }

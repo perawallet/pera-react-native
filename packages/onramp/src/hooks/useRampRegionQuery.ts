@@ -10,30 +10,30 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { skipToken, useQuery } from '@tanstack/react-query'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { getRampRegion } from '../api'
 import type { RampRegion } from '../models'
 import { onrampQueryKeys } from './querykeys'
 
+export type UseRampRegionQueryParams = {
+    scope: Nullable<ChainScope>
+    enabled?: boolean
+}
+
 export type UseRampRegionQueryResult = {
     data: RampRegion | undefined
 }
 
-export const useRampRegionQuery = (
-    enabled: boolean = true,
-): UseRampRegionQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-
+export const useRampRegionQuery = ({
+    scope,
+    enabled = true,
+}: UseRampRegionQueryParams): UseRampRegionQueryResult => {
     const query = useQuery({
         queryKey: onrampQueryKeys.region(scope),
-        queryFn: () => getRampRegion(network),
+        queryFn: scope === null ? skipToken : () => getRampRegion(scope),
         enabled,
     })
 

@@ -12,8 +12,13 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@test-utils/render'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    algorandAccountAt,
+    registerAlgorandRampAdapter,
+} from '@test-utils/rampChainAdapter'
 import { useNoFundsButtonPanel } from '../useNoFundsButtonPanel'
 
 vi.mock('../../AccountOverview/AccountOverviewModalContext', () => ({
@@ -26,6 +31,10 @@ vi.mock('../../AccountOverview/AccountOverviewModalContext', () => ({
 describe('useNoFundsButtonPanel', () => {
     beforeEach(() => {
         useRemoteConfigStore.getState().resetState()
+        registerAlgorandRampAdapter()
+        vi.mocked(useSelectedAccount).mockReturnValue(
+            algorandAccountAt('ALGORAND_ADDRESS'),
+        )
     })
 
     it('offers buying at the Algorand defaults', () => {
@@ -36,6 +45,18 @@ describe('useNoFundsButtonPanel', () => {
 
     it('removes buying when the onramp capability is off', () => {
         setCapabilityOverrides({ onramp: false })
+
+        const { result } = renderHook(() => useNoFundsButtonPanel())
+
+        expect(result.current.canBuy).toBe(false)
+    })
+
+    it('removes buying for an account with no address on an onramp chain', () => {
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            id: 'elsewhere',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: '0xADDRESS' } },
+        })
 
         const { result } = renderHook(() => useNoFundsButtonPanel())
 

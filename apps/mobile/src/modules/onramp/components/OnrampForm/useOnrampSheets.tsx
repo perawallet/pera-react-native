@@ -14,8 +14,10 @@ import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { trackEvent, OnrampEvent } from '@analytics'
+import { OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
 import { OnrampPairSelectionContent } from '../OnrampPairSelectionContent'
 import { OnrampSourceSelectionContent } from '../OnrampSourceSelectionContent'
 import { OnrampProviderContent } from '../OnrampProviderContent'
@@ -69,6 +71,8 @@ export const useOnrampSheets = ({
     setSenderAddress,
 }: UseOnrampSheetsParams): UseOnrampSheetsResult => {
     const { request: requestBottomSheet } = useBottomSheet()
+    const { scope } = useOnrampAccount()
+    const trackOnrampEvent = useTrackOnrampEvent()
 
     const handleOpenSourceSelection = useCallback(async () => {
         const sourceTokenId = await requestBottomSheet<string>({
@@ -84,8 +88,14 @@ export const useOnrampSheets = ({
     }, [requestBottomSheet, setSelectedSourceTokenId])
 
     const handleOpenDestinationSelection = useCallback(async () => {
+        if (scope === null) return
         const destinationTokenId = await requestBottomSheet<string>({
-            contents: <OnrampPairSelectionContent variant='destination' />,
+            contents: (
+                <OnrampPairSelectionContent
+                    variant='destination'
+                    scope={scope}
+                />
+            ),
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
@@ -94,10 +104,10 @@ export const useOnrampSheets = ({
         })
         if (!destinationTokenId) return
         setSelectedDestinationTokenId(destinationTokenId)
-    }, [requestBottomSheet, setSelectedDestinationTokenId])
+    }, [requestBottomSheet, setSelectedDestinationTokenId, scope])
 
     const handleOpenProvider = useCallback(async () => {
-        trackEvent(OnrampEvent.ProviderTap)
+        trackOnrampEvent(OnrampEvent.ProviderTap)
         const resolvedQuoteId = await requestBottomSheet<string>({
             contents: (
                 <OnrampProviderContent
@@ -115,7 +125,7 @@ export const useOnrampSheets = ({
             },
         })
         if (resolvedQuoteId) {
-            trackEvent(OnrampEvent.ProviderSelect)
+            trackOnrampEvent(OnrampEvent.ProviderSelect)
             selectQuote(resolvedQuoteId)
         }
     }, [
@@ -126,6 +136,7 @@ export const useOnrampSheets = ({
         selectedPaymentMethodId,
         destinationPriceInUsd,
         selectQuote,
+        trackOnrampEvent,
     ])
 
     const handleOpenPaymentMethod = useCallback(async () => {
@@ -154,7 +165,7 @@ export const useOnrampSheets = ({
 
     const handleOpenSenderAddress = useCallback(async () => {
         // XO-only: choose the source (sender) address for the swap order.
-        trackEvent(OnrampEvent.SenderAddressOpen)
+        trackOnrampEvent(OnrampEvent.SenderAddressOpen)
         const resolvedAddress = await requestBottomSheet<string>({
             contents: (
                 <OnrampSenderAddressContent initialAddress={senderAddress} />
@@ -168,10 +179,10 @@ export const useOnrampSheets = ({
             },
         })
         if (resolvedAddress) {
-            trackEvent(OnrampEvent.SenderAddressApply)
+            trackOnrampEvent(OnrampEvent.SenderAddressApply)
             setSenderAddress(resolvedAddress)
         }
-    }, [requestBottomSheet, senderAddress, setSenderAddress])
+    }, [requestBottomSheet, senderAddress, setSenderAddress, trackOnrampEvent])
 
     return {
         handleOpenSourceSelection,

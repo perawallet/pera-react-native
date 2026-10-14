@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useAssetClaimDetailScreen } from '../useAssetClaimDetailScreen'
 
 const mockPush = vi.fn()
@@ -88,6 +89,7 @@ const buildRequest = (
 describe('useAssetClaimDetailScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandRampAdapter()
         mockAssetRequests = [buildRequest()]
     })
 
@@ -171,7 +173,7 @@ describe('useAssetClaimDetailScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
     })
 
-    it('offers the Add Funds button only while the onramp capability is on', () => {
+    it("offers the Add Funds button only while the receiving account's chain has onramp", () => {
         useRemoteConfigStore.getState().resetState()
         const { result, rerender } = renderHook(() =>
             useAssetClaimDetailScreen(),

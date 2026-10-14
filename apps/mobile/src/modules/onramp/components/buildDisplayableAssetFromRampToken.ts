@@ -11,21 +11,21 @@
  */
 
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
-import {
-    rampTokenAssetId,
-    type RampToken,
-} from '@perawallet/wallet-core-onramp'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { rampTokenAsset, type RampToken } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-// The native coin resolves to its on-chain id so AssetIcon renders the
-// built-in glyph. Other tokens use the token id as assetId and rely on the
-// backend-provided logo URL passed separately to AssetIcon's `logoUrl`.
+// A token with an asset on the account's chain resolves to that asset's id, so
+// AssetIcon renders its glyph. Any other token (fiat, another chain's coin)
+// keeps the ramp id and relies on the backend logo passed as `logoUrl`.
 export const buildDisplayableAssetFromRampToken = (
     token: RampToken,
-    network: Network,
+    scope: Nullable<ChainScope>,
 ): DisplayableAsset => {
     return {
-        assetId: rampTokenAssetId(token, network),
+        assetId:
+            (scope === null ? null : rampTokenAsset(token, scope))?.assetId ??
+            token.id,
         name: token.name,
         unitName: token.symbol,
     }

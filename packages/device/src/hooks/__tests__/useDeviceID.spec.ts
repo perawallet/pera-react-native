@@ -14,7 +14,7 @@ import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 import { useDeviceStore } from '../../store'
-import { useDeviceID } from '../useDeviceID'
+import { useDeviceID, useScopedDeviceID } from '../useDeviceID'
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
@@ -93,5 +93,23 @@ describe('device/hooks/useDeviceID', () => {
         deviceIDHook.rerender()
 
         expect(deviceIDHook.result.current).toBe('device-new-123')
+    })
+
+    test('reads the device ID by chain scope', () => {
+        act(() => {
+            useDeviceStore.getState().setDeviceID('mainnet', 'device-main-123')
+        })
+
+        const algorand = renderHook(() =>
+            useScopedDeviceID({ chainId: 'algorand', networkId: 'mainnet' }),
+        )
+        const ethereum = renderHook(() =>
+            useScopedDeviceID({ chainId: 'ethereum', networkId: 'mainnet' }),
+        )
+        const none = renderHook(() => useScopedDeviceID(null))
+
+        expect(algorand.result.current).toBe('device-main-123')
+        expect(ethereum.result.current).toBeNull()
+        expect(none.result.current).toBeNull()
     })
 })

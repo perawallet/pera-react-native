@@ -43,9 +43,18 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapSigningAccounts: () => mockSwapSigningAccounts.current,
 }))
 
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    algorandAccountAt,
+    registerAlgorandRampAdapter,
+} from '@test-utils/rampChainAdapter'
+
 import {
     useAccountPickers,
     useCardPicker,
+    useFundPicker,
     usePortfolioPicker,
     useSigningPicker,
     useSwapPicker,
@@ -95,6 +104,7 @@ describe('useAccountPickers', () => {
 
         expect(Object.keys(result.current).sort()).toEqual([
             'card',
+            'fund',
             'portfolio',
             'select',
             'swap',
@@ -103,6 +113,45 @@ describe('useAccountPickers', () => {
         expect(result.current.portfolio.onSelected).toBeUndefined()
         expect(result.current.select.onSelected).toBeUndefined()
         expect(result.current.swap.onSelected).toBeUndefined()
+        expect(result.current.fund.onSelected).toBeUndefined()
+    })
+})
+
+describe('useFundPicker', () => {
+    const fundable = algorandAccountAt('ALGORAND_ADDRESS', 'fundable')
+    const elsewhere: WalletAccount = {
+        id: 'elsewhere',
+        custody: { kind: 'local', seed: null },
+        chains: { ethereum: { address: '0xADDRESS' } },
+    }
+
+    beforeEach(() => {
+        useRemoteConfigStore.getState().resetState()
+        registerAlgorandRampAdapter()
+        mockSigningAccounts.current = [fundable, elsewhere]
+    })
+
+    it('offers only signing accounts on a chain with onramp', () => {
+        const { result } = renderHook(() => useFundPicker())
+
+        expect(result.current.accountFilter?.(fundable)).toBe(true)
+        expect(result.current.accountFilter?.(elsewhere)).toBe(false)
+    })
+
+    it('leaves out an account whose chain has onramp off', () => {
+        setCapabilityOverrides({ onramp: false })
+
+        const { result } = renderHook(() => useFundPicker())
+
+        expect(result.current.accountFilter?.(fundable)).toBe(false)
+    })
+
+    it('leaves out an account the wallet cannot sign for', () => {
+        mockSigningAccounts.current = []
+
+        const { result } = renderHook(() => useFundPicker())
+
+        expect(result.current.accountFilter?.(fundable)).toBe(false)
     })
 })
 

@@ -24,6 +24,7 @@ export {
     usePortfolioPicker,
     useAccountListPicker,
     useSigningPicker,
+    useFundPicker,
     type AccountPickerKind,
 } from './useAccountPickers'
 export type { AccountDrawerPickerProps } from './types'

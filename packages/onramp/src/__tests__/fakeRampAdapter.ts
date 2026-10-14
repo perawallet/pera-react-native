@@ -11,24 +11,31 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { rampChainAdapters, type RampChainAdapter } from '../chain-adapter'
 
 export const fakeRampAdapter = (
     overrides: Partial<RampChainAdapter> = {},
 ): RampChainAdapter => ({
-    chainId: scopeForLegacyNetwork('mainnet').chainId,
+    chainId: 'algorand',
+    rampNetworkIds: ['FAKE'],
     destinationTokenIds: ['NATIVE', 'STABLE'],
     isNativeToken: vi.fn(token => token.id === 'NATIVE'),
     toAssetId: vi.fn(token => (token.id === 'NATIVE' ? '0' : token.id)),
     ...overrides,
 })
 
+/** Replaces every registered ramp adapter with one fake per override set. */
+export const registerFakeRampAdapters = (
+    ...overrides: Partial<RampChainAdapter>[]
+): RampChainAdapter[] => {
+    rampChainAdapters.reset()
+    return overrides.map(override => {
+        const adapter = fakeRampAdapter(override)
+        rampChainAdapters.register(adapter)
+        return adapter
+    })
+}
+
 export const registerFakeRampAdapter = (
     overrides: Partial<RampChainAdapter> = {},
-): RampChainAdapter => {
-    const adapter = fakeRampAdapter(overrides)
-    rampChainAdapters.reset()
-    rampChainAdapters.register(adapter)
-    return adapter
-}
+): RampChainAdapter => registerFakeRampAdapters(overrides)[0]

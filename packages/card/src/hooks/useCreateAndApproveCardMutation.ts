@@ -121,7 +121,10 @@ export const useCreateAndApproveCardMutation = (
             if (!approved) {
                 await postDelegationApproval({
                     scope,
-                    address,
+                    // The card, not the funder: Baanx links this address as
+                    // the user's delegated wallet, and delegator-lsig 403s
+                    // unless the card is among them.
+                    address: cardAddress,
                     currency,
                     txId,
                     signData: proof.signData,

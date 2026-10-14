@@ -16,22 +16,13 @@ import {
     useRampPairsQuery,
     useRampRegionQuery,
     useOnramp,
-    isNativeRampToken,
+    rampTokenAsset,
     type RampPair,
     type RampRegion,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import type {
-    Network,
-    Nullable,
-    Optional,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
 import {
@@ -39,8 +30,10 @@ import {
     OnrampIntroductionContent,
     type OnrampTab,
 } from '@modules/onramp/components'
-import { trackEvent, OnrampEvent } from '@analytics'
+import { OnrampEvent } from '@analytics'
 import type { OnrampScreenParams } from '@modules/onramp/routes/types'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
 import { useOnrampIntroduction } from './useOnrampIntroduction'
 
 type UseOnrampScreenResult = {
@@ -52,6 +45,9 @@ type UseOnrampScreenResult = {
     selectedPair: Nullable<RampPair>
     region: Nullable<RampRegion>
     accountAddress: Nullable<string>
+    /** The chain and network Fund buys onto; null when the selected account can't be funded. */
+    scope: Nullable<ChainScope>
+    canFundSelectedAccount: boolean
     activeTab: OnrampTab
     handleTabChange: (tab: OnrampTab) => void
     handleRegionInfoPress: () => void
@@ -59,18 +55,19 @@ type UseOnrampScreenResult = {
 }
 
 // Resolve the destination token id to seed when none is selected: a matching
-// route param wins, else ALGO, else the first available destination token.
+// route param wins, else the chain's native coin, else the first available
+// destination token.
 const resolveSeedDestinationId = (
     pairs: RampPair[],
     destinationTokenId: Optional<string>,
-    network: Network,
+    scope: ChainScope,
 ): Nullable<string> => {
     const destinationIds = pairs.map(pair => pair.destinationToken.id)
     if (destinationTokenId && destinationIds.includes(destinationTokenId)) {
         return destinationTokenId
     }
-    const nativePair = pairs.find(pair =>
-        isNativeRampToken(pair.destinationToken, network),
+    const nativePair = pairs.find(
+        pair => rampTokenAsset(pair.destinationToken, scope)?.isNative,
     )
     if (nativePair) return nativePair.destinationToken.id
     return destinationIds[0] ?? null
@@ -84,16 +81,12 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const params = route.params
 
     const { request: requestBottomSheet } = useBottomSheet()
-    const pairsQuery = useRampPairsQuery()
+    const { scope, address: selectedAccountAddress } = useOnrampAccount()
+    const trackOnrampEvent = useTrackOnrampEvent()
+    const pairsQuery = useRampPairsQuery({ scope })
     const { data: pairs = [], isLoading: pairsLoading } = pairsQuery
     const { hasInternet } = useNetworkStatus()
-    const { network } = useNetwork()
-    const { data: region } = useRampRegionQuery()
-    const selectedAccount = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const selectedAccountAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
+    const { data: region } = useRampRegionQuery({ scope })
     const {
         selectedSourceTokenId,
         selectedDestinationTokenId,
@@ -107,17 +100,21 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const sourceTokenId = params?.sourceTokenId
     const destinationTokenId = params?.destinationTokenId
 
-    // Seed destination (defaults to ALGO) and source (only from a route param —
-    // otherwise the source stays unset so the pay selector shows "Choose an
-    // asset" on every fresh entry).
+    // Seed destination (defaults to the native coin) and source (only from a
+    // route param — otherwise the source stays unset so the pay selector shows
+    // "Choose an asset" on every fresh entry). A persisted destination another
+    // chain's pairs don't list is reseeded, or the form would wait on it.
     useEffect(() => {
-        if (pairsLoading || pairs.length === 0) return
+        if (scope === null || pairsLoading || pairs.length === 0) return
 
-        if (selectedDestinationTokenId === null) {
+        const isDestinationListed = pairs.some(
+            pair => pair.destinationToken.id === selectedDestinationTokenId,
+        )
+        if (selectedDestinationTokenId === null || !isDestinationListed) {
             const seedDestinationId = resolveSeedDestinationId(
                 pairs,
                 destinationTokenId,
-                network,
+                scope,
             )
             if (seedDestinationId !== null) {
                 setSelectedDestinationTokenId(seedDestinationId)
@@ -140,7 +137,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         pairsLoading,
         sourceTokenId,
         destinationTokenId,
-        network,
+        scope,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
     ])
@@ -149,8 +146,9 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     // the persisted flag the single guard, so the effect can't re-open it (and
     // strict-mode's double-invoke is harmless). Dismissing without Continue
     // therefore won't reshow — acceptable for an intro.
+    // Waits for a scope so the analytics event can name the chain.
     useEffect(() => {
-        if (isIntroductionSeen) return
+        if (isIntroductionSeen || scope === null) return
         markIntroductionSeen()
         void requestBottomSheet<'start'>({
             contents: <OnrampIntroductionContent />,
@@ -161,17 +159,26 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
             },
         }).then(result => {
             if (result === 'start') {
-                trackEvent(OnrampEvent.WelcomeContinue)
+                trackOnrampEvent(OnrampEvent.WelcomeContinue)
             }
         })
-    }, [isIntroductionSeen, markIntroductionSeen, requestBottomSheet])
+    }, [
+        isIntroductionSeen,
+        markIntroductionSeen,
+        requestBottomSheet,
+        scope,
+        trackOnrampEvent,
+    ])
 
-    const handleTabChange = useCallback((tab: OnrampTab) => {
-        setActiveTab(tab)
-        if (tab === 'history') {
-            trackEvent(OnrampEvent.HistoryTabSelect)
-        }
-    }, [])
+    const handleTabChange = useCallback(
+        (tab: OnrampTab) => {
+            setActiveTab(tab)
+            if (tab === 'history') {
+                trackOnrampEvent(OnrampEvent.HistoryTabSelect)
+            }
+        },
+        [trackOnrampEvent],
+    )
 
     const handleRegionInfoPress = useCallback(() => {
         void requestBottomSheet<void>({
@@ -245,7 +252,9 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         destinationToken,
         selectedPair,
         region: region ?? null,
-        accountAddress: selectedAccountAddress ?? null,
+        accountAddress: selectedAccountAddress,
+        scope,
+        canFundSelectedAccount: scope !== null,
         activeTab,
         handleTabChange,
         handleRegionInfoPress,

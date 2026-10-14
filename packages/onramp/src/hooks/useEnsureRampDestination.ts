@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
-import { rampAdapterFor, type EnsureCanReceive } from '../chain-adapter'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { rampChainAdapters, type EnsureCanReceive } from '../chain-adapter'
 
 export type UseEnsureRampDestinationResult = {
     ensureCanReceive: EnsureCanReceive
@@ -21,11 +22,13 @@ const canAlwaysReceive: EnsureCanReceive = async () => true
 const useNoReceivePreparation = (): EnsureCanReceive => canAlwaysReceive
 
 export const useEnsureRampDestination = (
-    network: Network,
+    chainId: Nullable<ChainId>,
 ): UseEnsureRampDestinationResult => {
-    // The adapter's hook runs as part of this one, so a network that resolves
-    // to a different adapter changes the hook order: remount the caller on it.
+    // The adapter's hook runs as part of this one, so a chain that resolves to
+    // a different adapter changes the hook order: remount the caller on it.
     const useEnsureCanReceive =
-        rampAdapterFor(network).useEnsureCanReceive ?? useNoReceivePreparation
+        (chainId !== null && rampChainAdapters.has(chainId)
+            ? rampChainAdapters.get(chainId).useEnsureCanReceive
+            : undefined) ?? useNoReceivePreparation
     return { ensureCanReceive: useEnsureCanReceive() }
 }

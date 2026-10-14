@@ -11,6 +11,8 @@
  */
 
 export * from './querykeys'
+export * from './withRampScope'
+export * from './useOnrampScope'
 export * from './useOnramp'
 export * from './useRampPairsQuery'
 export * from './useRampRegionQuery'

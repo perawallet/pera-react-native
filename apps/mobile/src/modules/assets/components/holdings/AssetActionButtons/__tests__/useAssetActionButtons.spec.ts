@@ -15,6 +15,10 @@ import { renderHook } from '@test-utils/render'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    algorandAccountAt,
+    registerAlgorandRampAdapter,
+} from '@test-utils/rampChainAdapter'
 import { useAssetActionButtons } from '../useAssetActionButtons'
 
 // The real useSwapScope is this one line; the package barrel drags in stores
@@ -29,11 +33,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     }
 })
 
-const onAlgorand: WalletAccount = {
-    id: 'algo',
-    custody: { kind: 'local', seed: null },
-    chains: { algorand: { address: 'ALGO-ADDR' } },
-}
+const account = algorandAccountAt('ALGORAND_ADDRESS')
 
 const onEthereumOnly: WalletAccount = {
     id: 'eth',
@@ -44,10 +44,11 @@ const onEthereumOnly: WalletAccount = {
 describe('useAssetActionButtons', () => {
     beforeEach(() => {
         useRemoteConfigStore.getState().resetState()
+        registerAlgorandRampAdapter()
     })
 
     it('offers both actions at the Algorand defaults', () => {
-        const { result } = renderHook(() => useAssetActionButtons(onAlgorand))
+        const { result } = renderHook(() => useAssetActionButtons(account))
 
         expect(result.current).toEqual({ canSwap: true, canBuy: true })
     })
@@ -60,9 +61,7 @@ describe('useAssetActionButtons', () => {
         (capability, expected) => {
             setCapabilityOverrides({ [capability]: false })
 
-            const { result } = renderHook(() =>
-                useAssetActionButtons(onAlgorand),
-            )
+            const { result } = renderHook(() => useAssetActionButtons(account))
 
             expect(result.current).toEqual(expected)
         },
@@ -80,5 +79,17 @@ describe('useAssetActionButtons', () => {
         const { result } = renderHook(() => useAssetActionButtons(null))
 
         expect(result.current.canSwap).toBe(false)
+    })
+
+    it('hides buying for an account with no address on an onramp chain', () => {
+        const { result } = renderHook(() =>
+            useAssetActionButtons({
+                id: 'elsewhere',
+                custody: { kind: 'watch' },
+                chains: { ethereum: { address: '0xADDRESS' } },
+            }),
+        )
+
+        expect(result.current.canBuy).toBe(false)
     })
 })

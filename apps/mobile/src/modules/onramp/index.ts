@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { USDC_RAMP_TOKEN_ID } from './constants'
+export { useCanFundAccount } from './hooks/useCanFundAccount'
 export type { OnrampScreenParams } from './routes/types'

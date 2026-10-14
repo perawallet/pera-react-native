@@ -18,12 +18,8 @@ import {
     useOnramp,
     type RampPair,
 } from '@perawallet/wallet-core-onramp'
-import {
-    useSelectedAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useRoute } from '@react-navigation/native'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampScreen } from '../useOnrampScreen'
@@ -45,16 +41,16 @@ const setHasInternet = (hasInternet: boolean): void => {
     hasInternetMock = hasInternet
 }
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(),
-    addressOn: (account: WalletAccount, scope: { chainId: ChainId }) =>
-        account.chains[scope.chainId]?.address,
+vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
+    useOnrampAccount: vi.fn(),
 }))
 
-const accountAt = (address: string): WalletAccount => ({
-    id: address,
-    custody: { kind: 'watch' },
-    chains: { algorand: { address } },
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+const fundableAccount = (): ReturnType<typeof useOnrampAccount> => ({
+    account: null,
+    scope: SCOPE,
+    address: 'ADDR',
 })
 
 vi.mock('@react-navigation/native', () => ({
@@ -82,6 +78,10 @@ vi.mock('@modules/onramp/components', () => ({
     OnrampIntroductionContent: () => null,
 }))
 
+vi.mock('@modules/onramp/hooks/useTrackOnrampEvent', () => ({
+    useTrackOnrampEvent: () => vi.fn(),
+}))
+
 vi.mock('@analytics', () => ({
     trackEvent: vi.fn(),
     OnrampEvent: {
@@ -97,8 +97,11 @@ const makePair = (
 ): RampPair =>
     ({
         id,
-        sourceToken: { id: sourceTokenId },
-        destinationToken: { id: destinationTokenId },
+        sourceToken: { id: sourceTokenId, network: { id: 'FIAT' } },
+        destinationToken: {
+            id: destinationTokenId,
+            network: { id: 'ALGORAND' },
+        },
         provider: { id: 'provider' },
     }) as unknown as RampPair
 
@@ -157,7 +160,7 @@ describe('useOnrampScreen', () => {
         vi.mocked(useRampRegionQuery).mockReturnValue({
             data: { countryCode: 'US', countryName: 'United States' },
         } as never)
-        vi.mocked(useSelectedAccount).mockReturnValue(accountAt('ADDR'))
+        vi.mocked(useOnrampAccount).mockReturnValue(fundableAccount())
         vi.mocked(useRampPairsQuery).mockReturnValue({
             data: PAIRS,
             isLoading: false,
@@ -182,6 +185,36 @@ describe('useOnrampScreen', () => {
         renderHook(() => useOnrampScreen())
 
         expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('0')
+    })
+
+    it("reseeds a remembered destination the account's chain does not list", () => {
+        setupOnramp({ selectedDestinationTokenId: 'ANOTHER_CHAINS_TOKEN' })
+
+        renderHook(() => useOnrampScreen())
+
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('ALGO')
+    })
+
+    it('keeps a remembered destination the pairs list', () => {
+        setupOnramp({ selectedDestinationTokenId: '31566704' })
+
+        renderHook(() => useOnrampScreen())
+
+        expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
+    })
+
+    it('neither seeds nor asks for pairs while the account cannot be funded', () => {
+        vi.mocked(useOnrampAccount).mockReturnValue({
+            account: null,
+            scope: null,
+            address: null,
+        })
+
+        const { result } = renderHook(() => useOnrampScreen())
+
+        expect(useRampPairsQuery).toHaveBeenCalledWith({ scope: null })
+        expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
+        expect(result.current.canFundSelectedAccount).toBe(false)
     })
 
     it('seeds the destination from the route destinationTokenId param', () => {

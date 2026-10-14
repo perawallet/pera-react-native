@@ -180,6 +180,7 @@ vi.mock('react-i18next', async () => {
 
 import { usePeraCardOverview } from '../usePeraCardOverview'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
+import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 
 const tx = (id: string, dateTime: string): CardTransaction =>
     ({ id, dateTime }) as unknown as CardTransaction
@@ -244,6 +245,7 @@ const setLinkedAlgo = (balance: Nullable<string>) => {
 
 beforeEach(() => {
     registerAlgorandCardAdapter()
+    registerAlgorandRampAdapter()
 })
 
 describe('usePeraCardOverview', () => {

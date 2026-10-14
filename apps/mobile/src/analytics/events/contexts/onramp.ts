@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+
 /**
  * Native onramp (Buy) flow. Event names mirror the legacy onramp-mobile-web
  * webview app's analytics so dashboards stay continuous across the migration.
@@ -27,4 +30,9 @@ export enum OnrampEvent {
     ProviderSelect = 'onramp_provider_select', // Picked a specific provider quote
     HistoryCategoryTap = 'onramp_history_category_tap', // Picked a status filter in buy history
     HistoryTransactionTap = 'onramp_history_transaction_tap', // Tapped a buy-history transaction
+}
+
+/** Every onramp event names the chain Fund is buying onto. */
+export type OnrampRequiredPayloads = {
+    [E in OnrampEvent]: { [Key.ChainId]: ChainId }
 }

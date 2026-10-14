@@ -56,7 +56,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
-    useSelectedAccount: () => selectedAccountMock(),
     useAccountsStore: {
         getState: () => ({ getSelectedAccount: () => selectedAccountMock() }),
     },
@@ -75,15 +74,19 @@ const selectedAccountMock = () =>
               chains: { algorand: { address: mockSelectedAccountAddress } },
           }
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: mockNetwork }),
-    useSelectedScope: (chainId: string) => ({
-        chainId,
-        networkId: mockNetwork,
+vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
+    useOnrampAccount: () => ({
+        account: selectedAccountMock(),
+        scope:
+            mockSelectedAccountAddress === null
+                ? null
+                : { chainId: 'algorand', networkId: mockNetwork },
+        address: mockSelectedAccountAddress,
     }),
+}))
+
+vi.mock('@modules/onramp/hooks/useTrackOnrampEvent', () => ({
+    useTrackOnrampEvent: () => vi.fn(),
 }))
 
 // The order-review sheet (imported transitively by the confirm hook) pulls in
@@ -186,7 +189,7 @@ const meldPair: RampPair = {
         name: 'Algorand',
         fractionDecimals: 6,
         logo: null,
-        network: { id: 'algorand', name: 'Algorand', logo: null },
+        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
         priceInUsd: null,
     },
     provider: { id: 'meld', paymentTypes: ['CARD'], limits: null },
@@ -203,7 +206,7 @@ const usdcPair: RampPair = {
         name: 'USD Coin',
         fractionDecimals: 6,
         logo: null,
-        network: { id: 'algorand', name: 'Algorand', logo: null },
+        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
         priceInUsd: null,
     },
 }
@@ -272,7 +275,10 @@ describe('useOnrampConfirm', () => {
         })
 
         expect(mockEnsureOptIn).toHaveBeenCalledWith(
-            expect.objectContaining({ destinationAssetId: 31_566_704n }),
+            expect.objectContaining({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                destinationToken: usdcPair.destinationToken,
+            }),
         )
         expect(mockCreateRampOrder).toHaveBeenCalled()
     })

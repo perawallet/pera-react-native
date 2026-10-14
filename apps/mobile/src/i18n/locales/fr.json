@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Bienvenue sur Pera !",
             "get_started": "Pour commencer, déposez de l’ALGO",
-            "buy_algo": "Acheter Algo",
+            "buy": "Acheter des cryptos",
             "receive": "Recevoir",
             "more": "Plus"
         }
@@ -3506,7 +3506,11 @@
         },
         "testnet": {
             "title": "Non disponible sur TestNet",
-            "body": "L’alimentation de votre wallet n’est disponible que sur MainNet. Passez sur MainNet pour acheter de l’ALGO ou de l’USDC."
+            "body": "L’alimentation de votre wallet n’est disponible que sur MainNet. Passez sur MainNet pour acheter des cryptos."
+        },
+        "account_unsupported": {
+            "title": "Ce compte ne peut pas être alimenté",
+            "body": "Choisissez un compte sur un réseau qui prend en charge l’achat."
         },
         "region": {
             "unknown": "--",
@@ -3519,8 +3523,8 @@
             "title": "Alimenter",
             "new_chip": "NOUVEAU",
             "continue": "Continuer",
-            "feature_buy": "Acheter de l’ALGO ou de l’USDC en fiat ou en crypto",
-            "feature_swap": "Échanger des actifs d’autres réseaux vers Algorand",
+            "feature_buy": "Acheter des cryptos en fiat ou avec d’autres cryptos",
+            "feature_swap": "Échanger des actifs d’autres réseaux vers votre wallet",
             "feature_portal": "Un portail unique pour les on-ramps et les swaps cross-chain"
         },
         "form": {
