@@ -28,6 +28,12 @@ import { EvmErrorCode } from './evmErrorCodes'
 const REPLACEMENT_UNDERPRICED =
     /replacement transaction underpriced|replacement fee too low|replacement_underpriced/i
 
+// viem classifies these only from the call that raised them. A rejected
+// eth_sendRawTransaction arrives as a plain InvalidInputRpcError, so match the
+// node's text as well.
+const NONCE_TOO_LOW = /nonce too low/i
+const INSUFFICIENT_FUNDS = /insufficient funds/i
+
 // viem files geth's estimateGas "gas required exceeds allowance" under
 // ExecutionRevertedError, so this must be checked before the revert branch.
 const OUT_OF_GAS = /out of gas|gas required exceeds allowance/i
@@ -90,14 +96,22 @@ const classify = (
     if (REPLACEMENT_UNDERPRICED.test(text)) {
         return { code: EvmErrorCode.REPLACEMENT_UNDERPRICED }
     }
-    if (has(NonceTooLowError)) return { code: EvmErrorCode.NONCE_TOO_LOW }
-    if (has(InsufficientFundsError)) {
+    const reverted =
+        has(ContractFunctionRevertedError) || has(ExecutionRevertedError)
+    // The text matches skip reverts: a token's own reason can say "nonce too low" or "insufficient funds".
+    if (has(NonceTooLowError) || (!reverted && NONCE_TOO_LOW.test(text))) {
+        return { code: EvmErrorCode.NONCE_TOO_LOW }
+    }
+    if (
+        has(InsufficientFundsError) ||
+        (!reverted && INSUFFICIENT_FUNDS.test(text))
+    ) {
         return { code: EvmErrorCode.INSUFFICIENT_FUNDS }
     }
     if (has(IntrinsicGasTooLowError) || OUT_OF_GAS.test(text)) {
         return { code: EvmErrorCode.OUT_OF_GAS }
     }
-    if (has(ContractFunctionRevertedError) || has(ExecutionRevertedError)) {
+    if (reverted) {
         const reason = revertReasonOf(chain)
         return reason
             ? { code: EvmErrorCode.REVERTED_WITH_REASON, params: { reason } }

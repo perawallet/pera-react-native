@@ -24,6 +24,7 @@ import {
     toFunctionSelector,
     type Hex,
     type RpcFeeHistory,
+    type RpcTransaction,
     type RpcTransactionReceipt,
 } from 'viem'
 import { MULTICALL3_ADDRESS } from './utils/erc20'
@@ -39,6 +40,8 @@ export type EvmRpcResults = {
     eth_sendRawTransaction: Hex
     /** `null` is how a node reports a transaction it hasn't mined yet. */
     eth_getTransactionReceipt: RpcTransactionReceipt | null
+    /** `null` is how a node reports a hash it doesn't hold, mined or pending. */
+    eth_getTransactionByHash: RpcTransaction | null
 }
 
 export type EvmRpcMethod = keyof EvmRpcResults
@@ -87,6 +90,7 @@ export const DEFAULT_EVM_RPC_RESPONSES: {
     // The hash a node returns is the keccak of the signed payload.
     eth_sendRawTransaction: params => keccak256(params[0] as Hex),
     eth_getTransactionReceipt: null,
+    eth_getTransactionByHash: null,
 }
 
 /** A mined, successful receipt; pass the fields the test asserts on. */

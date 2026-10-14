@@ -28,6 +28,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     getAccountChainStateRow: mocks.getAccountChainStateRow,
 }))
 
+// The empty pool: the ledger is not under test here.
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    getOpenSubmissionAttempts: vi.fn(async () => []),
+}))
+
 const SENDER = '0x00000000000000000000000000000000000000aa'
 const RECEIVER = '0x00000000000000000000000000000000000000bb'
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'

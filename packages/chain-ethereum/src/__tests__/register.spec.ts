@@ -16,6 +16,7 @@ import {
     buildAccount,
 } from '@perawallet/wallet-core-accounts'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
+import { broadcasterChainAdapters } from '@perawallet/wallet-core-signing'
 import {
     addressCodecs,
     keyDerivations,
@@ -48,9 +49,10 @@ describe('registerChain', () => {
         assetsChainAdapters.reset()
         transferChainAdapters.reset()
         historyChainAdapters.reset()
+        broadcasterChainAdapters.reset()
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer and history adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster and history adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
@@ -64,6 +66,9 @@ describe('registerChain', () => {
             ETHEREUM_NATIVE_ASSET,
         )
         expect(transferChainAdapters.get('ethereum').chainId).toBe('ethereum')
+        expect(broadcasterChainAdapters.get('ethereum').chainId).toBe(
+            'ethereum',
+        )
         expect(historyChainAdapters.get('ethereum')).toBe(
             ethereumHistoryAdapter,
         )

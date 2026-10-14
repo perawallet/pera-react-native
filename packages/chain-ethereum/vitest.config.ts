@@ -52,6 +52,10 @@ export default defineConfig({
                 __dirname,
                 '../chain-contract/src/__tests__/testing.ts',
             ),
+            '@perawallet/wallet-core-signing/testing': path.resolve(
+                __dirname,
+                '../signing/src/__tests__/testing.ts',
+            ),
             '@perawallet/wallet-core-transactions/testing': path.resolve(
                 __dirname,
                 '../transactions/src/__tests__/testing.ts',

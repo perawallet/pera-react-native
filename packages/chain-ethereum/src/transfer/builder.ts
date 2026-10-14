@@ -43,6 +43,7 @@ import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { readTransferFees, toEthereumFeeEstimate } from './fees'
+import { allocateEthereumNonce } from './nonce-pool'
 import { readEthereumSpendableBalance } from './spendable-balance'
 import { SEND_TITLE_KEY, sendSummary } from './summary'
 
@@ -123,11 +124,13 @@ const buildEthereumTransfer = async (
 ): Promise<UnsignedTransaction[]> => {
     const call = toEthereumTransferCall(intent, context)
     const client = createEvmClient(context.scope, ctx)
-    // The node's pending count, not context.chainState: a synced snapshot can lag the mempool.
+    // The node's pending count and the ledger's open sends, not
+    // context.chainState: a synced snapshot can lag the mempool.
     const [nonce, fees] = await Promise.all([
-        client.getTransactionCount({
-            address: call.from,
-            blockTag: 'pending',
+        allocateEthereumNonce({
+            client,
+            scope: context.scope,
+            sender: call.from,
         }),
         readTransferFees(client, call),
     ]).catch((error: unknown) => {

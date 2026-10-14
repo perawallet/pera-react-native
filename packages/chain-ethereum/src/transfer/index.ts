@@ -14,3 +14,4 @@ export {
     createEthereumTransferAdapter,
     ETHEREUM_TRANSFER_TITLE_KEYS,
 } from './builder'
+export { createEthereumBroadcasterAdapter } from './broadcaster'

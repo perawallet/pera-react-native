@@ -26,6 +26,10 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    broadcasterChainAdapters,
+    type BroadcasterChainAdapter,
+} from '@perawallet/wallet-core-signing'
+import {
     historyChainAdapters,
     transferChainAdapters,
     type TransferChainAdapter,
@@ -39,7 +43,10 @@ import { createEthereumAssetsAdapter } from './assets'
 import { ethereumHistoryAdapter } from './history'
 import { ethereumPlannerAdapter } from './signing/adapter'
 import { ethereumReviewerAdapter } from './signing/review'
-import { createEthereumTransferAdapter } from './transfer'
+import {
+    createEthereumBroadcasterAdapter,
+    createEthereumTransferAdapter,
+} from './transfer'
 
 // The registries ignore a repeat of the same instance but reject a new one, so
 // the context-bound adapters are built once; every context the app hands in
@@ -47,11 +54,13 @@ import { createEthereumTransferAdapter } from './transfer'
 let accountsAdapter: AccountsChainAdapter | undefined
 let assetsAdapter: AssetsChainAdapter | undefined
 let transferAdapter: TransferChainAdapter | undefined
+let broadcasterAdapter: BroadcasterChainAdapter | undefined
 
 export const registerChain = (ctx: ChainContext): void => {
     accountsAdapter ??= createEthereumAccountsAdapter(ctx)
     assetsAdapter ??= createEthereumAssetsAdapter(ctx)
     transferAdapter ??= createEthereumTransferAdapter(ctx)
+    broadcasterAdapter ??= createEthereumBroadcasterAdapter(ctx)
     addressCodecs.register(ethereumAddressCodec)
     keyDerivations.register(ethereumKeyDerivation)
     transactionPlanners.register(ethereumPlannerAdapter)
@@ -59,5 +68,6 @@ export const registerChain = (ctx: ChainContext): void => {
     accountsChainAdapters.register(accountsAdapter)
     assetsChainAdapters.register(assetsAdapter)
     transferChainAdapters.register(transferAdapter)
+    broadcasterChainAdapters.register(broadcasterAdapter)
     historyChainAdapters.register(ethereumHistoryAdapter)
 }

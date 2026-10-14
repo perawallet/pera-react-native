@@ -10,7 +10,16 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import {
@@ -28,6 +37,10 @@ import type {
     ReviewContext,
     TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    getOpenSubmissionAttempts,
+    type SubmissionAttempt,
+} from '@perawallet/wallet-core-signing'
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
 import { EvmErrorCode, isEvmError } from '../../blockchain/errors'
 import {
@@ -41,6 +54,14 @@ import { ethereumReviewerAdapter } from '../../signing/review'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { createEthereumTransferAdapter } from '../builder'
 import type { EthereumTransactionPayload } from '../../signing/adapter'
+
+// The empty pool by default, so the node's pending count decides the nonce.
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    getOpenSubmissionAttempts: vi.fn(async () => []),
+}))
 
 const SENDER = '0x00000000000000000000000000000000000000aa'
 const RECIPIENT = getAddress('0x00000000000000000000000000000000000000bb')
@@ -95,6 +116,26 @@ const useRpc = (responses: NonNullable<EvmRpcFixtures['responses']> = {}) =>
     )
 
 describe('Ethereum transfer adapter', () => {
+    beforeEach(() => {
+        vi.mocked(getOpenSubmissionAttempts).mockResolvedValue([])
+    })
+
+    it('builds past a nonce an open send of the account already holds', async () => {
+        useRpc()
+        vi.mocked(getOpenSubmissionAttempts).mockResolvedValue([
+            { nonce: 4 } as SubmissionAttempt,
+        ])
+
+        const [built] = await adapter.build(nativeIntent, context)
+
+        const { transaction } = built.payload as EthereumTransactionPayload
+        expect(transaction.nonce).toBe(5)
+        expect(getOpenSubmissionAttempts).toHaveBeenCalledWith({
+            scope: context.scope,
+            sender: getAddress(SENDER),
+        })
+    })
+
     it('builds a native transfer as an EIP-1559 payload priced from the node', async () => {
         useRpc()
 
