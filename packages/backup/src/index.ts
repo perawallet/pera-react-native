@@ -12,17 +12,17 @@
 
 // Umbrella package for all wallet backup concerns. Subdomains:
 //   - mnemonic: "has the user written down their phrase?" prompt state
-//   - asb:      Algorand Secure Backup (ARC-35) recovery-only support
+//   - secure-backup: recovery-only restore from a legacy encrypted backup file
 //   - peraweb:  Pera Web "Transfer Accounts" QR-based import
 //   - cloud:    end-to-end encrypted multi-device cloud backup + sync
-//   - shared:   primitives common to ASB + Pera Web (secretbox,
-//               private_key decoder)
-// The chain-specific halves (ASB format, key import, seed reference, HD
-// derivation) are a registered BackupChainAdapter; see chain-adapter.ts.
-export * from './asb'
+//   - shared:   primitives common to secure-backup + Pera Web (secretbox)
+// The chain-specific halves (secure-backup format, key decoding and import,
+// seed reference, HD derivation) are a registered BackupChainAdapter; see
+// chain-adapter.ts.
 export * from './chain-adapter'
 export * from './cloud'
 export * from './errors'
 export * from './mnemonic'
 export * from './peraweb'
+export * from './secure-backup'
 export * from './shared'

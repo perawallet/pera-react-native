@@ -11,8 +11,8 @@
  */
 
 // Reason codes drive UI copy. Keep them stable; locale keys are derived
-// from them in apps/mobile (see en.json `onboarding.asb_import.errors.*`).
-export const AsbErrorReason = {
+// from them in apps/mobile.
+export const SecureBackupErrorReason = {
     EmptyFile: 'empty_file',
     NotBase64: 'not_base64',
     MalformedEnvelope: 'malformed_envelope',
@@ -23,15 +23,15 @@ export const AsbErrorReason = {
     MalformedPayload: 'malformed_payload',
 } as const
 
-export type AsbErrorReason =
-    (typeof AsbErrorReason)[keyof typeof AsbErrorReason]
+export type SecureBackupErrorReason =
+    (typeof SecureBackupErrorReason)[keyof typeof SecureBackupErrorReason]
 
-export class AsbImportError extends Error {
-    readonly reason: AsbErrorReason
+export class SecureBackupImportError extends Error {
+    readonly reason: SecureBackupErrorReason
 
-    constructor(reason: AsbErrorReason, message?: string) {
+    constructor(reason: SecureBackupErrorReason, message?: string) {
         super(message ?? reason)
-        this.name = 'AsbImportError'
+        this.name = 'SecureBackupImportError'
         this.reason = reason
     }
 }

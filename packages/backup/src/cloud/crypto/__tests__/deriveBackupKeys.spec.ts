@@ -52,9 +52,9 @@ vi.mock('../deriveBackupAuthKeypair', async importOriginal => {
         deriveBackupAuthKeypair: vi.fn(actual.deriveBackupAuthKeypair),
     }
 })
-vi.mock('../deriveBackupId', async importOriginal => {
-    const actual = await importOriginal<typeof import('../deriveBackupId')>()
-    return { ...actual, deriveBackupId: vi.fn(actual.deriveBackupId) }
+vi.mock('../wireFormat', async importOriginal => {
+    const actual = await importOriginal<typeof import('../wireFormat')>()
+    return { ...actual, encodeBackupId: vi.fn(actual.encodeBackupId) }
 })
 
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -67,7 +67,7 @@ import {
     deriveBackupChildKeys,
     type BackupChildKeys,
 } from '../deriveBackupChildKeys'
-import { deriveBackupId } from '../deriveBackupId'
+import { encodeBackupId } from '../wireFormat'
 
 const hex = (bytes: Uint8Array): string =>
     Array.from(bytes)
@@ -163,7 +163,7 @@ describe('deriveBackupKeys', () => {
     })
 
     test('zeroes the child keys and auth secret key when the backup id throws', async () => {
-        vi.mocked(deriveBackupId).mockImplementationOnce(() => {
+        vi.mocked(encodeBackupId).mockImplementationOnce(() => {
             throw new Error('id failed')
         })
 

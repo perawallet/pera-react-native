@@ -149,3 +149,28 @@ describe('algorandBackupAdapter.kindIdOf', () => {
         },
     )
 })
+
+describe('algorandBackupAdapter.decodePrivateKey', () => {
+    it('decodes a base64 seed and the legacy comma form only when allowed', () => {
+        const seed = new Uint8Array(32).fill(3)
+        const csv = Array.from(seed).join(',')
+
+        expect(
+            algorandBackupAdapter.decodePrivateKey(
+                Buffer.from(seed).toString('base64'),
+            ),
+        ).toEqual(seed)
+        expect(algorandBackupAdapter.decodePrivateKey(csv)).toBeNull()
+        expect(
+            algorandBackupAdapter.decodePrivateKey(csv, {
+                allowCommaSeparated: true,
+            }),
+        ).toEqual(seed)
+    })
+})
+
+describe('algorandBackupAdapter.secureBackup', () => {
+    it('opens a backup with a 12-word recovery phrase', () => {
+        expect(algorandBackupAdapter.secureBackup.recoveryWordCount).toBe(12)
+    })
+})

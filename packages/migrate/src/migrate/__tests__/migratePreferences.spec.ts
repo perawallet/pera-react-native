@@ -58,7 +58,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
-import { migratePreferences } from '../migratePreferences'
+import { migrationChainAdapters } from '../../chain-adapter'
+import { migratePreferences as migrate } from '../migratePreferences'
+
+const legacyPreferenceFlags = vi.fn()
+
+const migratePreferences = (preferences: LegacyPreferences) =>
+    migrate(preferences, 'algorand')
 
 const buildPreferences = (
     overrides: Partial<LegacyPreferences> = {},
@@ -96,6 +102,16 @@ const buildPreferences = (
     }) as LegacyPreferences
 
 beforeEach(() => {
+    legacyPreferenceFlags.mockReset().mockReturnValue({})
+    migrationChainAdapters.reset()
+    migrationChainAdapters.register({
+        chainId: 'algorand',
+        migrateAccount: vi.fn(),
+        isKeylessAccount: vi.fn(),
+        classifyAccountRoute: vi.fn(),
+        recordLegacyAuthority: vi.fn(),
+        legacyPreferenceFlags,
+    })
     Object.values(settingsMock).forEach(fn => fn.mockReset())
     Object.values(currenciesMock).forEach(fn => fn.mockReset())
     Object.values(assetsMock).forEach(fn => fn.mockReset())
@@ -236,8 +252,6 @@ describe('migratePreferences > misc flags', () => {
             buildPreferences({
                 termsAcceptedVersion: 7,
                 biometricEnabled: true,
-                rekeySupport: false,
-                arc59ExpressSendWarningEnabled: true,
                 applicationOpenCount: 12,
                 appAtBackgroundMs: 1700,
                 notificationRefreshTimestampMs: 0,
@@ -248,11 +262,6 @@ describe('migratePreferences > misc flags', () => {
         const calls = settingsMock.setPreference.mock.calls
         expect(calls).toContainEqual(['legacy.termsAcceptedVersion', 7])
         expect(calls).toContainEqual(['legacy.biometricEnabled', true])
-        expect(calls).toContainEqual(['legacy.rekeySupport', false])
-        expect(calls).toContainEqual([
-            'legacy.arc59ExpressSendWarningEnabled',
-            true,
-        ])
         expect(calls).toContainEqual(['legacy.applicationOpenCount', 12])
         expect(calls).toContainEqual(['legacy.appAtBackgroundMs', 1700])
         expect(calls).toContainEqual([
@@ -260,6 +269,23 @@ describe('migratePreferences > misc flags', () => {
             0,
         ])
         expect(calls).toContainEqual(['legacy.copyAddressCount', 4])
+    })
+
+    it("writes the chain adapter's flags under legacy., skipping nulls", () => {
+        legacyPreferenceFlags.mockReturnValue({
+            chainFlagOff: false,
+            chainFlagOn: true,
+            chainFlagUnset: null,
+        })
+        const preferences = buildPreferences()
+
+        migratePreferences(preferences)
+
+        const calls = settingsMock.setPreference.mock.calls
+        expect(legacyPreferenceFlags).toHaveBeenCalledWith(preferences)
+        expect(calls).toContainEqual(['legacy.chainFlagOff', false])
+        expect(calls).toContainEqual(['legacy.chainFlagOn', true])
+        expect(calls.map(c => c[0])).not.toContain('legacy.chainFlagUnset')
     })
 
     it('skips null/undefined misc flags', () => {

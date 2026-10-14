@@ -18,8 +18,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     partitionImportableAccounts,
-    useAsbAccountImport,
-    type AsbBackupAccount,
+    useSecureBackupAccountImport,
+    type SecureBackupAccount,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
@@ -29,7 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useAsbImportFlowStore } from '@modules/onboarding/hooks'
 
-export type AsbAccountListItem = AsbBackupAccount & {
+export type AsbAccountListItem = SecureBackupAccount & {
     isAlreadyImported: boolean
 }
 
@@ -57,7 +57,7 @@ export const useAsbImportSelectAccountsScreen =
         const toggle = useAsbImportFlowStore(state => state.toggleSelection)
         const reset = useAsbImportFlowStore(state => state.reset)
         const allAccounts = useAllAccounts()
-        const { importAccount } = useAsbAccountImport(LEGACY_CHAIN_ID)
+        const { importAccount } = useSecureBackupAccountImport(LEGACY_CHAIN_ID)
 
         const [isProcessing, setIsProcessing] = useState(false)
 

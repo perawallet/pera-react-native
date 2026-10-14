@@ -16,15 +16,13 @@ import { base32nopad } from '@scure/base'
 import type { BackupId } from '../models'
 import { BACKUP_ID_PREFIX } from './constants'
 
-/**
- * Derives the DID-compatible `backupId` from the auth public key:
- * `did:pera:<algorand address>`. The identifier is the standard Algorand
- * address of the auth public key (base32 of `pubkey || sha512_256(pubkey)[-4:]`)
- * — the backend decodes it back to the public key to verify the registration
- * proof. Encoded here, not by a chain codec, because it's a backend wire
- * format that must not change with a codec.
- */
-export const deriveBackupId = (authPublicKey: Uint8Array): BackupId =>
+// Frozen backend format: the backend verifies the register proof as an
+// Algorand signBytes message.
+export const BACKUP_PROOF_PREFIX = 'MX'
+
+// Frozen backend format: `did:pera:` + the Algorand address of the auth public
+// key, which the backend decodes back to verify the proof.
+export const encodeBackupId = (authPublicKey: Uint8Array): BackupId =>
     `${BACKUP_ID_PREFIX}${base32nopad.encode(
         concatBytes(authPublicKey, sha512_256(authPublicKey).slice(-4)),
     )}`

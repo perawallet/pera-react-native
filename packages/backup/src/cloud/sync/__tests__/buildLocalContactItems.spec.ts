@@ -12,7 +12,6 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import { BackupItemType, contactItemKey } from '../../models'
 import { buildLocalContactItems } from '../buildLocalContactItems'
@@ -95,15 +94,30 @@ describe('buildLocalContactItems', () => {
         expect(before.contentHash).not.toBe(after.contentHash)
     })
 
-    it('skips a contact without an Algorand address', () => {
+    it('keys a contact holding two families by its legacy-family address', () => {
         const items = buildLocalContactItems(
             [
-                contact('A', 'Alice'),
                 {
-                    addresses: { ['other' as ChainFamily]: 'B' },
-                    name: 'Bob',
+                    addresses: { algorand: 'A', evm: '0xB' },
+                    name: 'Alice',
                 },
             ],
+            1000,
+            hashAddress,
+        )
+
+        expect(items).toHaveLength(1)
+        expect(items[0].key).toBe(contactItemKey(hashAddress('A')))
+        expect(items[0].payload).toEqual({
+            address: 'A',
+            name: 'Alice',
+            updatedAt: 1000,
+        })
+    })
+
+    it('skips a contact without a legacy-family address', () => {
+        const items = buildLocalContactItems(
+            [contact('A', 'Alice'), { addresses: { evm: '0xB' }, name: 'Bob' }],
             1000,
             hashAddress,
         )

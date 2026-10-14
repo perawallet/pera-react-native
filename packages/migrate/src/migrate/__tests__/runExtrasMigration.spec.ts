@@ -161,7 +161,10 @@ describe('runExtrasMigration > happy path', () => {
         const preferences = { rawFlags: {}, marker: 'p' } as never
         await runExtrasMigration(buildData({ preferences }), OPTIONS)
 
-        expect(migratePreferences).toHaveBeenCalledWith(preferences)
+        expect(migratePreferences).toHaveBeenCalledWith(
+            preferences,
+            OPTIONS.chainId,
+        )
         expect(migrateSwaps).toHaveBeenCalledWith(preferences)
     })
 

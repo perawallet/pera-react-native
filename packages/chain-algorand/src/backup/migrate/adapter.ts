@@ -13,6 +13,7 @@
 import type { MigrationChainAdapter } from '@perawallet/wallet-core-migrate'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { recordLegacyAuthority } from './buildKeylessAccount'
+import { algorandLegacyPreferenceFlags } from './legacyPreferenceFlags'
 import {
     classifyLegacyAccountRoute,
     isKeylessLegacyAccount,
@@ -25,4 +26,5 @@ export const algorandMigrationAdapter: MigrationChainAdapter = {
     isKeylessAccount: isKeylessLegacyAccount,
     classifyAccountRoute: classifyLegacyAccountRoute,
     recordLegacyAuthority,
+    legacyPreferenceFlags: algorandLegacyPreferenceFlags,
 }

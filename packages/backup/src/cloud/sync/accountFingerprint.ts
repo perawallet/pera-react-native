@@ -13,9 +13,9 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 /** Addresses and custom name are the only stored fields the backup's address
- *  payload carries for every account type. Rekey data is deliberately absent:
- *  account polling rewrites it, and reacting to that would sync on a timer the
- *  user never touched. */
+ *  payload carries for every account type. Delegation data is deliberately
+ *  absent: account polling rewrites it, and reacting to that would sync on a
+ *  timer the user never touched. */
 export const accountFingerprint = (
     accounts: readonly WalletAccount[],
 ): string =>

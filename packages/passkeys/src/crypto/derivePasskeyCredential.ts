@@ -10,23 +10,24 @@
  limitations under the License
  */
 
-import { DeterministicP256 } from '@algorandfoundation/dp256'
 import {
     DP256_DEFAULT_ITERATIONS,
     DP256_DEFAULT_KEY_LENGTH_BYTES,
     DP256_DEFAULT_SALT,
     genDerivedMainKeyWithSubtle,
 } from '@algorandfoundation/keystore-core'
-import { sha256 } from '@noble/hashes/sha2.js'
 import { keystoreSubtle } from '@perawallet/wallet-extension-provider'
-import {
+
+export {
+    derivePasskeyCredential,
+    p256PrivateKeyToSpkiDer,
+    p256RawPublicKey,
+    type DerivedPasskeyCredential,
+} from './p256Credential'
+export {
     credentialIdBytesToStandardBase64,
     p256RawPublicKeyToSpkiDer,
 } from './p256Spki'
-
-export { credentialIdBytesToStandardBase64, p256RawPublicKeyToSpkiDer }
-
-const dp256 = new DeterministicP256()
 
 /**
  * The seed's passkey main key, from its BIP39 entropy. Uses the library's own
@@ -44,45 +45,3 @@ export const derivePasskeyMainKey = (
         DP256_DEFAULT_ITERATIONS,
         DP256_DEFAULT_KEY_LENGTH_BYTES,
     )
-
-/** Throws on a scalar that is not a valid P-256 private key. */
-export const p256PrivateKeyToSpkiDer = (privateKey: Uint8Array): Uint8Array =>
-    p256RawPublicKeyToSpkiDer(dp256.getPurePKBytes(privateKey))
-
-export type DerivedPasskeyCredential = {
-    /** Standard-base64 SHA-256 of the SPKI DER — the keystore/MMKV credential id. */
-    credentialId: string
-    credentialIdBytes: Uint8Array
-    /** Raw 32-byte P-256 private scalar. */
-    privateKey: Uint8Array
-    /** 91-byte X.509/SPKI DER public key. */
-    publicKeySpkiDer: Uint8Array
-}
-
-/**
- * `identity` is the string that was fed to the domain-key derivation verbatim —
- * platforms differ on how they build it, so it is replayed rather than rebuilt.
- */
-export const derivePasskeyCredential = async (params: {
-    mainKey: Uint8Array
-    origin: string
-    identity: string
-    counter?: number
-}): Promise<DerivedPasskeyCredential> => {
-    const { mainKey, origin, identity, counter = 0 } = params
-    const privateKey = await dp256.genDomainSpecificKeyPair(
-        mainKey,
-        origin,
-        identity,
-        counter,
-    )
-    const publicKeySpkiDer = p256PrivateKeyToSpkiDer(privateKey)
-    const credentialIdBytes = sha256(publicKeySpkiDer)
-
-    return {
-        credentialId: credentialIdBytesToStandardBase64(credentialIdBytes),
-        credentialIdBytes,
-        privateKey,
-        publicKeySpkiDer,
-    }
-}

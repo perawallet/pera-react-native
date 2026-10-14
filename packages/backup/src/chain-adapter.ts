@@ -24,11 +24,11 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import type {
-    AsbBackupAccount,
-    AsbBackupEnvelope,
-    AsbBackupPayload,
-    AsbImportablePartition,
-} from './asb/models'
+    SecureBackupAccount,
+    SecureBackupEnvelope,
+    SecureBackupImportablePartition,
+    SecureBackupPayload,
+} from './secure-backup/models'
 import type {
     AddressBackupPayload,
     BackupItemKind,
@@ -112,18 +112,28 @@ export interface BackupChainAdapter {
     mnemonicBackupKeyId(account: WalletAccount): string | null
     /** Imports one account from its raw ed25519 key and marks it backed up. */
     useImportFromSeed(): ImportFromSeed
+    /**
+     * Decodes a backup row's `private_key` into the raw key `useImportFromSeed`
+     * takes; `null` when the string isn't one.
+     */
+    decodePrivateKey(
+        raw: string,
+        options?: { allowCommaSeparated?: boolean },
+    ): Uint8Array | null
     readonly secureBackup: {
-        parseEnvelope(raw: string): AsbBackupEnvelope
+        /** Words in the recovery phrase that opens a secure backup. */
+        readonly recoveryWordCount: number
+        parseEnvelope(raw: string): SecureBackupEnvelope
         decryptPayload(
-            envelope: AsbBackupEnvelope,
+            envelope: SecureBackupEnvelope,
             recoveryIndices: Uint16Array,
-        ): AsbBackupPayload
+        ): SecureBackupPayload
         partitionImportable(
-            accounts: AsbBackupAccount[],
+            accounts: SecureBackupAccount[],
             existing: WalletAccount[],
-        ): AsbImportablePartition
+        ): SecureBackupImportablePartition
         useImportAccount(): (
-            account: AsbBackupAccount,
+            account: SecureBackupAccount,
         ) => Promise<WalletAccount>
     }
 }

@@ -10,17 +10,9 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { backupAdapterFor } from '../../chain-adapter'
-import type { AsbBackupAccount, AsbImportablePartition } from '../models'
+// ARC-35 envelope: the outer JSON that lives inside the base64-encoded
+// backup file. The whole file is `base64(JSON.stringify(envelope))`.
+export const ASB_BACKUP_PROTOCOL_VERSION = '1.0'
+export const ASB_BACKUP_CIPHER_SUITE = 'HMAC-SHA256:sodium_secretbox_easy'
 
-export const partitionImportableAccounts = (
-    asbAccounts: AsbBackupAccount[],
-    existingAccounts: WalletAccount[],
-    chainId: ChainId,
-): AsbImportablePartition =>
-    backupAdapterFor(chainId).secureBackup.partitionImportable(
-        asbAccounts,
-        existingAccounts,
-    )
+export const ASB_RECOVERY_MNEMONIC_WORD_COUNT = 12

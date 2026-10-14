@@ -21,13 +21,13 @@ import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { isValidAlgorandAddress } from '../../blockchain'
 import { useImportAlgo25FromSeed } from '../useImportAlgo25FromSeed'
 import {
-    AsbAccountKind,
-    type AsbBackupAccount,
+    SecureBackupAccountKind,
+    type SecureBackupAccount,
 } from '@perawallet/wallet-core-backup'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 
 export type UseAsbAccountImportResult = {
-    importAccount: (account: AsbBackupAccount) => Promise<WalletAccount>
+    importAccount: (account: SecureBackupAccount) => Promise<WalletAccount>
 }
 
 /**
@@ -55,8 +55,8 @@ export const useAsbAccountImport = (): UseAsbAccountImportResult => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     const importAccount = useCallback(
-        async (account: AsbBackupAccount): Promise<WalletAccount> => {
-            if (account.kind === AsbAccountKind.Single) {
+        async (account: SecureBackupAccount): Promise<WalletAccount> => {
+            if (account.kind === SecureBackupAccountKind.Single) {
                 if (!account.privateKey) {
                     throw new Error(
                         'ASB single account missing private_key after parse',

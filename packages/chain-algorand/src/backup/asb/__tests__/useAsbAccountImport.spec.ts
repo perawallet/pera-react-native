@@ -18,8 +18,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    AsbAccountKind,
-    type AsbBackupAccount,
+    SecureBackupAccountKind,
+    type SecureBackupAccount,
 } from '@perawallet/wallet-core-backup'
 import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    AsbAccountKind: { Single: 'single', Watch: 'watch' },
+    SecureBackupAccountKind: { Single: 'single', Watch: 'watch' },
     useMarkMnemonicBackupComplete: () => mockMarkBackupComplete,
 }))
 
@@ -91,22 +91,22 @@ const VALID_ADDRESS_B =
     '7TTLR5VQAY5YVQ5QV4IBOVIKUULGVNPURNWM5NG7M7ELEOQPVROA4CS3FM'
 
 const singleAccount = (
-    overrides: Partial<AsbBackupAccount> = {},
-): AsbBackupAccount => ({
+    overrides: Partial<SecureBackupAccount> = {},
+): SecureBackupAccount => ({
     address: VALID_ADDRESS_A,
     name: null,
-    kind: AsbAccountKind.Single,
+    kind: SecureBackupAccountKind.Single,
     // tweetnacl secret key shape: seed (32) || pubKey (32)
     privateKey: new Uint8Array(64).fill(1),
     ...overrides,
 })
 
 const watchAccount = (
-    overrides: Partial<AsbBackupAccount> = {},
-): AsbBackupAccount => ({
+    overrides: Partial<SecureBackupAccount> = {},
+): SecureBackupAccount => ({
     address: VALID_ADDRESS_B,
     name: null,
-    kind: AsbAccountKind.Watch,
+    kind: SecureBackupAccountKind.Watch,
     privateKey: null,
     ...overrides,
 })

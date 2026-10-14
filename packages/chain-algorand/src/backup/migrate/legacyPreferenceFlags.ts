@@ -10,17 +10,11 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { backupAdapterFor } from '../../chain-adapter'
-import type { AsbBackupAccount } from '../models'
+import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
 
-export type UseAsbAccountImportResult = {
-    importAccount: (account: AsbBackupAccount) => Promise<WalletAccount>
-}
-
-export const useAsbAccountImport = (
-    chainId: ChainId,
-): UseAsbAccountImportResult => ({
-    importAccount: backupAdapterFor(chainId).secureBackup.useImportAccount(),
+export const algorandLegacyPreferenceFlags = (
+    preferences: LegacyPreferences,
+): Readonly<Record<string, boolean | null>> => ({
+    rekeySupport: preferences.rekeySupport,
+    arc59ExpressSendWarningEnabled: preferences.arc59ExpressSendWarningEnabled,
 })

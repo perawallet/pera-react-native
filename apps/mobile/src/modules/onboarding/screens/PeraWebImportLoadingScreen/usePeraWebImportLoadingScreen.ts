@@ -118,6 +118,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
                 payload = decryptPeraWebBackupPayload(
                     response,
                     qr.encryptionKey,
+                    LEGACY_CHAIN_ID,
                 )
             } catch (error) {
                 if (cancelled) return

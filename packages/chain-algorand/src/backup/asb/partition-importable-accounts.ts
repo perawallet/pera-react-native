@@ -13,8 +13,8 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '../../blockchain'
 import type {
-    AsbBackupAccount,
-    AsbImportablePartition,
+    SecureBackupAccount,
+    SecureBackupImportablePartition,
 } from '@perawallet/wallet-core-backup'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 
@@ -32,16 +32,16 @@ import { algorandAddressOf } from '../../accounts/vocabulary'
  * since Algorand addresses are canonical base32.
  */
 export const partitionImportableAccounts = (
-    asbAccounts: AsbBackupAccount[],
+    asbAccounts: SecureBackupAccount[],
     existingAccounts: WalletAccount[],
-): AsbImportablePartition => {
+): SecureBackupImportablePartition => {
     const existingAddresses = new Set(
         existingAccounts.flatMap(a => algorandAddressOf(a) ?? []),
     )
 
-    const importable: AsbBackupAccount[] = []
-    const alreadyImported: AsbBackupAccount[] = []
-    const unsupported: AsbBackupAccount[] = []
+    const importable: SecureBackupAccount[] = []
+    const alreadyImported: SecureBackupAccount[] = []
+    const unsupported: SecureBackupAccount[] = []
 
     for (const account of asbAccounts) {
         if (!isValidAlgorandAddress(account.address)) {

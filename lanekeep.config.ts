@@ -11,6 +11,7 @@ import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import localeKeyParity from './lanekeep/rules/locale-key-parity.js'
 import localePlaceholderSuffix from './lanekeep/rules/locale-placeholder-suffix.js'
 import noAlgorandAccountVocabulary from './lanekeep/rules/no-algorand-account-vocabulary.js'
+import noAlgorandTermsInChainNeutralPackages from './lanekeep/rules/no-algorand-terms-in-chain-neutral-packages.js'
 import noAssertionlessTest from './lanekeep/rules/no-assertionless-test.js'
 import noChainIdentityInSharedPackages from './lanekeep/rules/no-chain-identity-in-shared-packages.js'
 import noChainPackageImports from './lanekeep/rules/no-chain-package-imports.js'
@@ -84,6 +85,7 @@ export default defineConfig({
         noChainIdentityInSharedPackages,
         noChainPackageImports,
         noAlgorandAccountVocabulary,
+        noAlgorandTermsInChainNeutralPackages,
         noDeepModuleImports,
         noTypographyInStyles,
         noEmptyStyleObjects,

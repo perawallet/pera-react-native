@@ -12,8 +12,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-    AsbErrorReason,
-    AsbImportError,
+    SecureBackupErrorReason,
+    SecureBackupImportError,
     parseBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -66,7 +66,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     }, [envelope])
 
     const showValidationError = useCallback(
-        (reason: AsbErrorReason) => {
+        (reason: SecureBackupErrorReason) => {
             errorToast(
                 t('onboarding.asb_import.backup.errors.title'),
                 t(`onboarding.asb_import.backup.errors.${reason}` as const),
@@ -86,13 +86,15 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
                 setLoadedFile({ name: fileName, contents: rawContents })
             } catch (e) {
                 setLoadedFile(null)
-                if (e instanceof AsbImportError) {
+                if (e instanceof SecureBackupImportError) {
                     showValidationError(e.reason)
                 } else {
                     logger.error('Unexpected ASB envelope parse error', {
                         error: e,
                     })
-                    showValidationError(AsbErrorReason.MalformedEnvelope)
+                    showValidationError(
+                        SecureBackupErrorReason.MalformedEnvelope,
+                    )
                 }
             }
         },

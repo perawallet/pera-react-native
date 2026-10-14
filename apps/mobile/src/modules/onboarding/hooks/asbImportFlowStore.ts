@@ -12,8 +12,8 @@
 
 import { create } from 'zustand'
 import type {
-    AsbBackupEnvelope,
-    AsbBackupPayload,
+    SecureBackupEnvelope,
+    SecureBackupPayload,
 } from '@perawallet/wallet-core-backup'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
@@ -26,14 +26,14 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
 // state, not domain state. Screens reset it on entry to the flow.
 
 type State = {
-    envelope: AsbBackupEnvelope | null
-    payload: AsbBackupPayload | null
+    envelope: SecureBackupEnvelope | null
+    payload: SecureBackupPayload | null
     selectedAddresses: string[]
 }
 
 type Actions = {
-    setEnvelope: (envelope: AsbBackupEnvelope) => void
-    setPayload: (payload: AsbBackupPayload) => void
+    setEnvelope: (envelope: SecureBackupEnvelope) => void
+    setPayload: (payload: SecureBackupPayload) => void
     toggleSelection: (address: string) => void
     setSelection: (addresses: string[]) => void
     reset: () => void

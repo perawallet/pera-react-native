@@ -28,12 +28,7 @@ import {
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import { sha512_256 } from '@noble/hashes/sha2.js'
-import { concatBytes } from '@noble/hashes/utils.js'
-import { base32nopad } from '@scure/base'
-
-const algorandAddressOf = (publicKey: Uint8Array): string =>
-    base32nopad.encode(concatBytes(publicKey, sha512_256(publicKey).slice(-4)))
+import { encodeAlgorandAddress } from '../../../../blockchain'
 
 const HD_ENTROPY_HEX =
     '6d6967726174696f6e2d73696d756c61746f722d68642d77616c6c65742d3031'
@@ -70,6 +65,7 @@ const OUTPUT_PATH = resolve(
     '..',
     '..',
     '..',
+    '..',
     'apps',
     'mobile',
     'native-modules',
@@ -88,6 +84,7 @@ const OUTPUT_PATH = resolve(
 
 const OUTPUT_PATH_SWIFT = resolve(
     __dirname,
+    '..',
     '..',
     '..',
     '..',
@@ -127,7 +124,7 @@ const sk64FromSeed = (seed: Buffer): Buffer => {
 }
 
 const addressFromSeed = (seed: Buffer): string =>
-    algorandAddressOf(new Uint8Array(seedToPublicKey(seed)))
+    encodeAlgorandAddress(new Uint8Array(seedToPublicKey(seed)))
 
 describe('generateMigrationFixtures (tool)', () => {
     test('emits FixtureCrypto.kt', async () => {
@@ -152,7 +149,7 @@ describe('generateMigrationFixtures (tool)', () => {
                 keyIndex,
                 BIP32DerivationType.Peikert,
             )
-            const address = algorandAddressOf(pubkey)
+            const address = encodeAlgorandAddress(pubkey)
             const sk64 = Buffer.concat([
                 Buffer.from(pubkey),
                 Buffer.from(pubkey),

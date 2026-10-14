@@ -3251,9 +3251,6 @@ importers:
 
   packages/migrate:
     dependencies:
-      '@algorandfoundation/dp256':
-        specifier: 1.1.0
-        version: 1.1.0
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3269,9 +3266,6 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
       '@perawallet/wallet-core-contacts':
         specifier: workspace:*
         version: link:../contacts
@@ -3321,21 +3315,12 @@ importers:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.18)(react@19.2.3)(use-sync-external-store@1.7.0(react@19.2.3))
     devDependencies:
-      '@algorandfoundation/xhd-wallet-api':
-        specifier: 'catalog:'
-        version: 2.0.0-canary.1
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@perawallet/wallet-extension-connections':
         specifier: workspace:*
         version: link:../../extensions/connections
-      '@scure/base':
-        specifier: 'catalog:'
-        version: 2.4.0
-      '@scure/bip39':
-        specifier: 'catalog:'
-        version: 2.2.0
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react@19.2.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
