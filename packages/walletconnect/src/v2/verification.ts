@@ -30,8 +30,9 @@ export const toPeerVerification = (
 ): ConnectionPeerVerification => {
     const verified = context?.verified
     const status = statusOf(verified)
-    // sign-client fills `origin` with the peer's own metadata url when the
-    // Verify server had no attestation, so an unknown status never carries it.
+    // Without an attestation sign-client echoes the peer's own url as `origin`,
+    // so unknown never carries it. Link mode echoes it under VALID/INVALID too:
+    // guard here before enabling `redirect.linkMode` in the client metadata.
     const origin = verified?.origin
     return status !== 'unknown' && typeof origin === 'string' && origin !== ''
         ? { status, verifiedOrigin: origin }

@@ -62,6 +62,35 @@ const ORIGIN_WARNINGS: Record<
     scam: 'scam',
 }
 
+export type OriginWarningMessage = {
+    key: string
+    params?: Record<string, string>
+}
+
+export const toOriginWarningMessage = (
+    originWarning: Exclude<ConnectionOriginWarning, 'unverified'>,
+    verifiedOriginLabel: string | undefined,
+    peerUrlLabel: string | undefined,
+): OriginWarningMessage => {
+    if (originWarning === 'scam') {
+        return { key: 'walletconnect.request.origin_scam' }
+    }
+    if (!verifiedOriginLabel) {
+        return { key: 'walletconnect.request.origin_unverified' }
+    }
+    // Hosts can match when only the scheme differs; "from X, not X" reads as nonsense.
+    if (!peerUrlLabel || peerUrlLabel === verifiedOriginLabel) {
+        return {
+            key: 'dapp.approval.request_origin',
+            params: { origin: verifiedOriginLabel },
+        }
+    }
+    return {
+        key: 'dapp.approval.requester_mismatch',
+        params: { origin: verifiedOriginLabel, claimed: peerUrlLabel },
+    }
+}
+
 // Every action goes straight through `proposal.approve` / `proposal.reject`, so
 // the screen carries no protocol branching. The success sheet is deliberately
 // NOT shown here: it belongs to whoever outlives this sheet (see `useProposalQueue`).

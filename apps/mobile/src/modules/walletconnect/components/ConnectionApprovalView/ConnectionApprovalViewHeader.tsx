@@ -31,7 +31,10 @@ import {
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
-import type { ConnectionOriginWarning } from './useConnectionApprovalView'
+import {
+    toOriginWarningMessage,
+    type ConnectionOriginWarning,
+} from './useConnectionApprovalView'
 
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer
@@ -93,22 +96,14 @@ export const ConnectionApprovalViewHeader = ({
 
     const preferredIcon = getPreferredDappIcon(peer.icons)
 
-    const originWarningText = (): string => {
-        if (originWarning === 'scam') {
-            return t('walletconnect.request.origin_scam')
-        }
-        if (!verifiedOriginLabel) {
-            return t('walletconnect.request.origin_unverified')
-        }
-        return peerUrlLabel
-            ? t('dapp.approval.requester_mismatch', {
-                  origin: verifiedOriginLabel,
-                  claimed: peerUrlLabel,
-              })
-            : t('dapp.approval.request_origin', {
-                  origin: verifiedOriginLabel,
-              })
-    }
+    const originWarningMessage =
+        originWarning === 'scam' || originWarning === 'mismatch'
+            ? toOriginWarningMessage(
+                  originWarning,
+                  verifiedOriginLabel,
+                  peerUrlLabel,
+              )
+            : undefined
 
     return (
         <PWView style={styles.headerContainer}>
@@ -163,7 +158,7 @@ export const ConnectionApprovalViewHeader = ({
                 </PWView>
                 {/* A peer whose real origin is not the url it claims must not
                     get that url as a link: the warning names both instead. */}
-                {originWarning === 'scam' || originWarning === 'mismatch' ? (
+                {originWarningMessage ? (
                     <PWView
                         style={styles.originWarning}
                         testID='wc_origin_warning'
@@ -177,7 +172,10 @@ export const ConnectionApprovalViewHeader = ({
                             variant='body'
                             style={styles.originWarningText}
                         >
-                            {originWarningText()}
+                            {t(
+                                originWarningMessage.key,
+                                originWarningMessage.params,
+                            )}
                         </PWText>
                     </PWView>
                 ) : (

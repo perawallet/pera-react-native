@@ -14,7 +14,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { AppError } from '@perawallet/wallet-core-shared'
-import { useConnectionApprovalView } from '../useConnectionApprovalView'
+import {
+    toOriginWarningMessage,
+    useConnectionApprovalView,
+} from '../useConnectionApprovalView'
 
 const {
     trackEvent,
@@ -433,7 +436,7 @@ describe('useConnectionApprovalView', () => {
             expect(result.peerUrlLabel).toBeUndefined()
         })
 
-        it('flags a known-scam origin as scam even when it also mismatches', () => {
+        it('flags a scam verdict as scam', () => {
             const result = renderWithVerification({
                 name: 'Tinyman',
                 url: 'https://tinyman.org',
@@ -456,5 +459,46 @@ describe('useConnectionApprovalView', () => {
             expect(result.originWarning).toBe('unverified')
             expect(result.verifiedOriginLabel).toBeUndefined()
         })
+    })
+})
+
+describe('toOriginWarningMessage', () => {
+    it('names the attested origin first and the claimed one second', () => {
+        expect(
+            toOriginWarningMessage('mismatch', 'evil.example', 'tinyman.org'),
+        ).toEqual({
+            key: 'dapp.approval.requester_mismatch',
+            params: { origin: 'evil.example', claimed: 'tinyman.org' },
+        })
+    })
+
+    it('names only the attested origin when the peer claims no url', () => {
+        expect(
+            toOriginWarningMessage('mismatch', 'evil.example', undefined),
+        ).toEqual({
+            key: 'dapp.approval.request_origin',
+            params: { origin: 'evil.example' },
+        })
+    })
+
+    it('names the origin once when it differs from the claim only by scheme', () => {
+        expect(
+            toOriginWarningMessage('mismatch', 'dapp.example', 'dapp.example'),
+        ).toEqual({
+            key: 'dapp.approval.request_origin',
+            params: { origin: 'dapp.example' },
+        })
+    })
+
+    it('says the site is unverified when no origin was attested', () => {
+        expect(
+            toOriginWarningMessage('mismatch', undefined, 'tinyman.org'),
+        ).toEqual({ key: 'walletconnect.request.origin_unverified' })
+    })
+
+    it('uses the security-risk copy for a scam verdict', () => {
+        expect(
+            toOriginWarningMessage('scam', 'evil.example', 'tinyman.org'),
+        ).toEqual({ key: 'walletconnect.request.origin_scam' })
     })
 })

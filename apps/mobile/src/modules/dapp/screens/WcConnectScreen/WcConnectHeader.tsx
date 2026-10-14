@@ -11,7 +11,7 @@
  */
 
 // Not a reuse of ConnectionApprovalViewHeader: that one carries network badges
-// and no requester-origin row. Fidelity comes from importing its stylesheet
+// and warns from the transport's origin verdict, not the requesting tab. Fidelity comes from importing its stylesheet
 // (see __tests__/visualFidelity.spec.ts).
 import React from 'react'
 import {
