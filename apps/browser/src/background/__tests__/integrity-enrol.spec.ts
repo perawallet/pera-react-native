@@ -415,7 +415,7 @@ describe('integrity enrolment', () => {
                 deviceInstallationId: 'install-1',
                 publicKey: 'spki-b64',
                 turnstileToken: 'tok',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             })
             expect(markers.get('mainnet')?.kid).toBe(KID)
             expect(fake.session.has(BACKOFF_KEY)).toBe(false)

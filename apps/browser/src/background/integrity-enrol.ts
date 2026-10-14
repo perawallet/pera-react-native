@@ -14,6 +14,7 @@ import {
     enrolDevice,
     readIntegrityErrorCode,
 } from '@perawallet/wallet-core-app-integrity/api'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
@@ -315,7 +316,7 @@ const submitEnrolment = async (
             deviceInstallationId,
             publicKey,
             turnstileToken,
-            network: attempt.network,
+            scope: scopeForLegacyNetwork(attempt.network),
         })
         if (kid !== attempt.kid) {
             logger.warn('Web integrity enrolment answered for another key', {

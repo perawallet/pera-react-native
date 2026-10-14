@@ -17,6 +17,7 @@ import {
     readIntegrityErrorCode,
     requestChallenge,
 } from '@perawallet/wallet-core-app-integrity/api'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
     logger,
@@ -87,7 +88,7 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
     const challenge = await requestChallenge({
         deviceInstallationId,
         platform: 'web',
-        network,
+        scope: scopeForLegacyNetwork(network),
     })
     const [publicKey, signature] = await Promise.all([
         exportInstallPublicKey(),
@@ -102,7 +103,7 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
             publicKey,
             signature,
         },
-        network,
+        scope: scopeForLegacyNetwork(network),
     })
 
     await putSessionIntegrityToken({

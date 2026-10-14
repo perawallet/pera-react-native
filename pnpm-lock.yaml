@@ -387,6 +387,9 @@ importers:
       '@perawallet/wallet-core-chain-algorand':
         specifier: workspace:*
         version: link:../../packages/chain-algorand
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../../packages/chain-contract
       '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
         version: link:../../packages/chain-shared
