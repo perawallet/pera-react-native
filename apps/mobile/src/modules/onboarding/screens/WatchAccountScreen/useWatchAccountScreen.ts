@@ -19,10 +19,11 @@ import {
     useAllAccounts,
     findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { trackEvent, OnboardingEvent } from '@analytics'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { trackEvent, OnboardingEvent } from '@analytics'
+import { useCapabilityCheck } from '@hooks/useCapability'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 
@@ -49,24 +50,45 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
         useNfdResolve(address)
 
-    const isValidAddress = isValidAlgorandAddress(resolvedAddress)
+    const checkCapability = useCapabilityCheck()
+    const { chains } = getProvider()
+    // Registration order decides when several chains accept the same address.
+    const watchChainId = addressCodecs.list().find(
+        codec =>
+            chains.has(codec.chainId) &&
+            checkCapability({
+                chain: {
+                    chainId: codec.chainId,
+                    capability: 'watchAccounts',
+                },
+            }) &&
+            codec.isValid(resolvedAddress),
+    )?.chainId
+
+    const isValidAddress = watchChainId !== undefined
     const isDuplicateAddress =
-        isValidAddress &&
-        !!findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, resolvedAddress)
+        watchChainId !== undefined &&
+        !!findAccountByAddressOn(accounts, watchChainId, resolvedAddress)
 
     const handleAddressChange = useCallback((text: string) => {
         setAddress(text)
     }, [])
 
     const handleWatchAccount = useCallback(() => {
-        if (!isValidAlgorandAddress(resolvedAddress) || isDuplicateAddress) {
+        if (watchChainId === undefined || isDuplicateAddress) {
             return
         }
 
         const newAccount = buildAccount({
             custody: { kind: 'watch' },
-            chainId: LEGACY_CHAIN_ID,
-            chains: { [LEGACY_CHAIN_ID]: { address: resolvedAddress } },
+            chainId: watchChainId,
+            chains: {
+                [watchChainId]: {
+                    address: addressCodecs
+                        .get(watchChainId)
+                        .normalize(resolvedAddress),
+                },
+            },
         })
 
         setAccounts([...accounts, newAccount])
@@ -74,7 +96,14 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         navigation.push('NameAccount', {
             account: newAccount,
         })
-    }, [resolvedAddress, isDuplicateAddress, accounts, setAccounts, navigation])
+    }, [
+        watchChainId,
+        resolvedAddress,
+        isDuplicateAddress,
+        accounts,
+        setAccounts,
+        navigation,
+    ])
 
     return {
         address,

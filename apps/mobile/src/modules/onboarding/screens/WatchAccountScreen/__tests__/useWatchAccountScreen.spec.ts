@@ -15,11 +15,34 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    FIXTURE_CHAIN_ID,
+    fixtureCodec,
+} from '@packages/chain-contract/src/__tests__/testing'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandAddressCodec,
+} from '@test-utils/algorandAccountsAdapter'
+import {
+    allCapabilities,
+    fixtureEthereumDescriptor,
+} from '@test-utils/chain-fixtures'
 
-// A pinned, syntactically-valid Algorand address (passes the real
-// `isValidAlgorandAddress` checksum round-trip mocked above) used to exercise
-// the quantum-looking-address code path. Not derived from any real quantum
+const VALID_ALGORAND_ADDRESS =
+    'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
+const OTHER_ALGORAND_ADDRESS =
+    'T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
+// The fixture chain's codec reads addresses case-insensitively and normalizes
+// them to lower case.
+const FIXTURE_ADDRESS = `fx${'ab'.repeat(20)}`
+
+// A pinned, checksum-valid Algorand address used to exercise the
+// quantum-looking-address code path. Not derived from any real quantum
 // keypair — `@perawallet/wallet-core-kms` is globally stubbed in
 // vitest.setup.ts, so this is a plain literal rather than a live derivation.
 const QUANTUM_TEST_ADDRESS =
@@ -56,21 +79,14 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
-    >('@perawallet/wallet-core-chain-algorand/blockchain')
-    return {
-        ...actual,
-        // Keep the existing sentinel for legacy test cases, but delegate any
-        // other address (e.g. QUANTUM_TEST_ADDRESS) to the real
-        // `isValidAlgorandAddress` (pure algosdk decodeAddress round-trip)
-        // so the quantum-address pin below exercises the actual validator.
-        isValidAlgorandAddress: (address?: string) =>
-            address === 'VALID_ALGORAND_ADDRESS' ||
-            actual.isValidAlgorandAddress(address),
-    }
-})
+const watchAccountsOff = vi.hoisted(() => new Set<string>())
+
+vi.mock('@hooks/useCapability', () => ({
+    useCapabilityCheck:
+        () =>
+        ({ chain }: { chain?: { chainId: string } }) =>
+            chain === undefined || !watchAccountsOff.has(chain.chainId),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
@@ -90,6 +106,18 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
 describe('useWatchAccountScreen', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
+        registerAlgorandAddressCodec()
+        const { chains } = getProvider()
+        if (!chains.has(FIXTURE_CHAIN_ID)) {
+            chains.register(
+                { ...fixtureEthereumDescriptor, id: FIXTURE_CHAIN_ID },
+                allCapabilities(true),
+            )
+        }
+        if (!addressCodecs.has(FIXTURE_CHAIN_ID)) {
+            addressCodecs.register(fixtureCodec)
+        }
+        watchAccountsOff.clear()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         vi.mocked(useNfdSearchQuery).mockReturnValue({
@@ -125,7 +153,7 @@ describe('useWatchAccountScreen', () => {
         expect(result.current.isValidAddress).toBe(false)
 
         act(() => {
-            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
+            result.current.handleAddressChange(VALID_ALGORAND_ADDRESS)
         })
         expect(result.current.isValidAddress).toBe(true)
     })
@@ -134,7 +162,7 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
+                chains: { algorand: { address: VALID_ALGORAND_ADDRESS } },
                 custody: { kind: 'watch' },
             } as WalletAccount,
         ])
@@ -142,7 +170,7 @@ describe('useWatchAccountScreen', () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
-            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
+            result.current.handleAddressChange(VALID_ALGORAND_ADDRESS)
         })
 
         expect(result.current.isDuplicateAddress).toBe(true)
@@ -185,7 +213,7 @@ describe('useWatchAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
-                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
+                chains: { algorand: { address: VALID_ALGORAND_ADDRESS } },
                 custody: { kind: 'watch' },
             } as WalletAccount,
         ])
@@ -193,7 +221,7 @@ describe('useWatchAccountScreen', () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
-            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
+            result.current.handleAddressChange(VALID_ALGORAND_ADDRESS)
         })
 
         act(() => {
@@ -208,7 +236,7 @@ describe('useWatchAccountScreen', () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
-            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
+            result.current.handleAddressChange(VALID_ALGORAND_ADDRESS)
         })
 
         act(() => {
@@ -218,7 +246,7 @@ describe('useWatchAccountScreen', () => {
         const expectedAccount = {
             id: 'mock-uuid',
             custody: { kind: 'watch' },
-            chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
+            chains: { algorand: { address: VALID_ALGORAND_ADDRESS } },
         }
 
         expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
@@ -230,7 +258,7 @@ describe('useWatchAccountScreen', () => {
     it('handleWatchAccount appends to existing accounts', () => {
         const existingAccount = {
             id: 'existing',
-            chains: { algorand: { address: 'OTHER_ADDRESS' } },
+            chains: { algorand: { address: OTHER_ALGORAND_ADDRESS } },
             custody: { kind: 'watch' },
         } as WalletAccount
 
@@ -239,7 +267,7 @@ describe('useWatchAccountScreen', () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
-            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
+            result.current.handleAddressChange(VALID_ALGORAND_ADDRESS)
         })
 
         act(() => {
@@ -251,7 +279,7 @@ describe('useWatchAccountScreen', () => {
             {
                 id: 'mock-uuid',
                 custody: { kind: 'watch' },
-                chains: { algorand: { address: 'VALID_ALGORAND_ADDRESS' } },
+                chains: { algorand: { address: VALID_ALGORAND_ADDRESS } },
             },
         ])
     })
@@ -261,7 +289,7 @@ describe('useWatchAccountScreen', () => {
             data: [
                 {
                     name: 'alice.algo',
-                    address: 'VALID_ALGORAND_ADDRESS',
+                    address: VALID_ALGORAND_ADDRESS,
                     service: { name: 'NFD', logo: '' },
                 },
             ],
@@ -276,7 +304,7 @@ describe('useWatchAccountScreen', () => {
 
         expect(result.current.isNfdResolved).toBe(true)
         expect(result.current.nfdName).toBe('alice.algo')
-        expect(result.current.resolvedAddress).toBe('VALID_ALGORAND_ADDRESS')
+        expect(result.current.resolvedAddress).toBe(VALID_ALGORAND_ADDRESS)
         expect(result.current.isValidAddress).toBe(true)
     })
 
@@ -329,5 +357,102 @@ describe('useWatchAccountScreen', () => {
         })
 
         expect(result.current.isNfdResolving).toBe(true)
+    })
+
+    describe('on a second registered chain', () => {
+        it("accepts an address that chain's codec validates and watches it there", () => {
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange(
+                    FIXTURE_ADDRESS.toUpperCase(),
+                )
+            })
+
+            expect(result.current.isValidAddress).toBe(true)
+
+            act(() => {
+                result.current.handleWatchAccount()
+            })
+
+            const expectedAccount = {
+                id: 'mock-uuid',
+                custody: { kind: 'watch' },
+                chains: { [FIXTURE_CHAIN_ID]: { address: FIXTURE_ADDRESS } },
+            }
+            expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
+            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                account: expectedAccount,
+            })
+        })
+
+        it('rejects an address no registered codec validates', () => {
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange('not-an-address')
+            })
+            act(() => {
+                result.current.handleWatchAccount()
+            })
+
+            expect(result.current.isValidAddress).toBe(false)
+            expect(mockSetAccounts).not.toHaveBeenCalled()
+        })
+
+        it('rejects its addresses while that chain cannot watch accounts', () => {
+            watchAccountsOff.add(FIXTURE_CHAIN_ID)
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange(FIXTURE_ADDRESS)
+            })
+            act(() => {
+                result.current.handleWatchAccount()
+            })
+
+            expect(result.current.isValidAddress).toBe(false)
+            expect(mockSetAccounts).not.toHaveBeenCalled()
+        })
+
+        it('ignores a codec whose chain is not registered', () => {
+            const unregisteredChainId = 'fixtureorphan' as ChainId
+            const orphanAddress = `orphan-${'1'.repeat(8)}`
+            if (!addressCodecs.has(unregisteredChainId)) {
+                addressCodecs.register({
+                    ...fixtureCodec,
+                    chainId: unregisteredChainId,
+                    isValid: address => address === orphanAddress,
+                })
+            }
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange(orphanAddress)
+            })
+
+            expect(result.current.isValidAddress).toBe(false)
+        })
+
+        it('flags an address already held on that chain, compared through its codec', () => {
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    id: 'existing',
+                    chains: {
+                        [FIXTURE_CHAIN_ID]: { address: FIXTURE_ADDRESS },
+                    },
+                    custody: { kind: 'watch' },
+                } as unknown as WalletAccount,
+            ])
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange(
+                    FIXTURE_ADDRESS.toUpperCase(),
+                )
+            })
+
+            expect(result.current.isDuplicateAddress).toBe(true)
+        })
     })
 })

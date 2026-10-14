@@ -27,8 +27,8 @@ import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
 
 // Use the existing pinned algo25 address as the watch target. It's a
-// real, valid Algorand address — the form's `isValidAlgorandAddress`
-// check enforces base32 + checksum so we can't use a placeholder.
+// real, valid Algorand address: the Algorand address codec enforces
+// base32 + checksum, so we can't use a placeholder.
 const WATCH_TARGET_ADDRESS = ALGO25_TEST_ADDRESS
 
 describe('Flow: Add Account → Watch address', () => {
