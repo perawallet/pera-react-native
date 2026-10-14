@@ -18,7 +18,7 @@ import type {
 import type { ChainDescriptor } from './descriptor'
 import type { ChainScope } from './identity'
 
-/** Base URLs keyed by the chain's own endpoint names. */
+/** Base URLs keyed by the chain's own endpoint names. Each chain parses its own record, and it may be empty. */
 export type ChainEndpoints = Readonly<Record<string, string>>
 
 /**
@@ -44,9 +44,9 @@ export interface ChainPeraBackend {
  * change. Pera backend requests go through shared's `queryClient`, which
  * holds the Pera credential.
  */
-export interface ChainContext<E extends ChainEndpoints = ChainEndpoints> {
+export interface ChainContext {
     getScope(): ChainScope
-    getEndpoints(): E
+    getEndpoints(): ChainEndpoints
     getPeraBackend(scope: ChainScope): ChainPeraBackend
     timeouts: ChainRequestTimeouts
     kms: ChainKeyStore
@@ -73,13 +73,13 @@ export interface ChainPinnedHosts {
     domains: readonly string[]
 }
 
-export interface ChainModule<E extends ChainEndpoints = ChainEndpoints> {
+export interface ChainModule {
     descriptor: ChainDescriptor
     capabilityDefaults: ChainCapabilities
     /** The developer modes each capability is off in, e.g. because the chain's backend only serves mainnet. */
     capabilityRestrictions?: ChainCapabilityRestrictions
     /** Adds every adapter the chain implements to its feature registry; `registerChainSetup` registers the descriptor. */
-    register(ctx: ChainContext<E>): void
+    register(ctx: ChainContext): void
     /** Key names are the wire contract with remote config, so they never change. */
     remoteConfigDefaults?: ChainRemoteConfigDefaults
     /** Called once at registration. */

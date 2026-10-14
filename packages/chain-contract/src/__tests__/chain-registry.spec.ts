@@ -70,14 +70,10 @@ const descriptor: ChainDescriptor = {
     protocol: {
         feeModel: 'flat',
         hasAccountNonce: false,
-        requiresAssetOptIn: true,
-        hasMinimumBalance: true,
-        supportsAtomicGroups: true,
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
         hasTokenApproval: false,
-        multipleAddressesPerAccount: false,
     },
     explorer: {
         accountUrl: (networkId, address) =>
@@ -402,6 +398,7 @@ describe('buildChainSetup', () => {
         const setup = buildChainSetup(
             { enabled: ['algorand'], capabilities: {} },
             modules,
+            () => ({}),
         )
         registerChainSetup(setup, chains, () => context)
 
@@ -414,6 +411,7 @@ describe('buildChainSetup', () => {
         const [entry] = buildChainSetup(
             { enabled: ['algorand'], capabilities: {} },
             { algorand: moduleWith() },
+            () => ({}),
         )
 
         expect(entry).toEqual({
@@ -431,6 +429,7 @@ describe('buildChainSetup', () => {
                 capabilities: { algorand: ['send', 'receive'] },
             },
             { algorand: moduleWith() },
+            () => ({}),
         )
 
         expect(entry.capabilities).toEqual({
@@ -442,7 +441,11 @@ describe('buildChainSetup', () => {
 
     it('throws when an enabled chain has no module', () => {
         expect(() =>
-            buildChainSetup({ enabled: ['algorand'], capabilities: {} }, {}),
+            buildChainSetup(
+                { enabled: ['algorand'], capabilities: {} },
+                {},
+                () => ({}),
+            ),
         ).toThrow(/no chain module/)
     })
 
@@ -450,6 +453,7 @@ describe('buildChainSetup', () => {
         const setup = buildChainSetup(
             { enabled: ['algorand'], capabilities: {} },
             { algorand: moduleWith(), ethereum: undefined },
+            () => ({}),
         )
 
         expect(setup.map(entry => entry.chainId)).toEqual(['algorand'])
@@ -460,7 +464,26 @@ describe('buildChainSetup', () => {
             buildChainSetup(
                 { enabled: ['algorand', 'ethereum'], capabilities: {} },
                 { algorand: moduleWith(), ethereum: undefined },
+                () => ({}),
             ),
         ).toThrow(/no chain module/)
+    })
+
+    it("fills every entry's endpoints from endpointsFor, a disabled chain's included", () => {
+        const endpointsFor = vi.fn((chainId: ChainId) => ({
+            [chainId]: `https://${chainId}.test`,
+        }))
+
+        const setup = buildChainSetup(
+            { enabled: ['algorand'], capabilities: {} },
+            { algorand: moduleWith(), ethereum: moduleWith() },
+            endpointsFor,
+        )
+
+        expect(setup.map(entry => entry.endpoints)).toEqual([
+            { algorand: 'https://algorand.test' },
+            { ethereum: 'https://ethereum.test' },
+        ])
+        expect(endpointsFor).toHaveBeenCalledTimes(2)
     })
 })

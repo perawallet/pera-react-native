@@ -529,3 +529,48 @@ describe('ethereum scopes', () => {
         expect(freshDeployment(ETHEREUM_MAINNET)).toBeUndefined()
     })
 })
+
+describe('chainEndpointsFor', () => {
+    afterEach(() => {
+        vi.doUnmock('../main')
+        vi.resetModules()
+    })
+
+    test('keys Ethereum RPC URLs by network id', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+            ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+        })
+
+        expect(chainEndpointsFor('ethereum')).toStrictEqual({
+            mainnet: 'https://mainnet.rpc.example',
+            sepolia: 'https://sepolia.rpc.example',
+        })
+    })
+
+    test('leaves out a network without an RPC URL', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+            ethereumSepoliaRpcUrl: '',
+        })
+
+        expect(chainEndpointsFor('ethereum')).toStrictEqual({
+            mainnet: 'https://mainnet.rpc.example',
+        })
+    })
+
+    test('is empty for a build with no RPC URLs', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: '',
+            ethereumSepoliaRpcUrl: '',
+        })
+
+        expect(chainEndpointsFor('ethereum')).toStrictEqual({})
+    })
+
+    test('is empty for Algorand, whose node URLs come from getAlgorandChainConfig', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({})
+
+        expect(chainEndpointsFor('algorand')).toStrictEqual({})
+    })
+})
