@@ -39,8 +39,15 @@ export interface ChainSigning {
     standaloneSecret?: StandaloneSecret
 }
 
+/**
+ * How a chain prices a transaction: `'flat'` charges one fixed amount, `'gas'`
+ * prices per unit of execution with tip presets, `'rate'` prices per unit of
+ * transaction size.
+ */
+export type FeeModel = 'flat' | 'gas' | 'rate'
+
 export interface ChainProtocolFacts {
-    feeModel: 'flat' | 'gas' | 'rate'
+    feeModel: FeeModel
     hasAccountNonce: boolean
     requiresAssetOptIn: boolean
     hasMinimumBalance: boolean
