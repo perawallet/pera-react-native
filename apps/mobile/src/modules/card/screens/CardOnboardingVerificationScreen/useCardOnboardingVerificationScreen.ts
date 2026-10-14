@@ -30,6 +30,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { isForegroundTransition } from '@utils/app-state'
 import { useCardScope } from '../../hooks/useCardScope'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type UseCardOnboardingVerificationScreenResult = {
     /** Start request in flight — disables the CTA and shows its spinner. */
@@ -47,8 +48,8 @@ export const useCardOnboardingVerificationScreen =
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.verification.error_title',
-            bodyKey: 'peraCard.verification.error_body',
+            titleKey: i18nKey('peraCard.verification.error_title'),
+            bodyKey: i18nKey('peraCard.verification.error_body'),
         })
         const { handleLogout } = useCardOnboardingLogout()
         const onboardingId = useCardStore(state => state.onboardingId)

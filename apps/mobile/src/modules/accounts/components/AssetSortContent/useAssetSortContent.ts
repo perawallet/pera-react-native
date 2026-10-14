@@ -17,28 +17,29 @@ import {
     useAssetPreferencesStore,
 } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type SortOption = {
     mode: AssetSortMode
-    labelKey: string
+    labelKey: I18nKey
 }
 
 const SORT_OPTIONS: SortOption[] = [
     {
         mode: AssetSortModes.alphabeticalAsc,
-        labelKey: 'asset_sort.alphabetical_asc',
+        labelKey: i18nKey('asset_sort.alphabetical_asc'),
     },
     {
         mode: AssetSortModes.alphabeticalDesc,
-        labelKey: 'asset_sort.alphabetical_desc',
+        labelKey: i18nKey('asset_sort.alphabetical_desc'),
     },
     {
         mode: AssetSortModes.balanceDesc,
-        labelKey: 'asset_sort.balance_desc',
+        labelKey: i18nKey('asset_sort.balance_desc'),
     },
     {
         mode: AssetSortModes.balanceAsc,
-        labelKey: 'asset_sort.balance_asc',
+        labelKey: i18nKey('asset_sort.balance_asc'),
     },
 ]
 

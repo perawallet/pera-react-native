@@ -25,6 +25,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** Seconds the user must wait before the SMS code can be re-sent. */
 const RESEND_COOLDOWN_SECONDS = 60
@@ -55,8 +56,8 @@ export const useCardOnboardingPhoneVerifyScreen =
         const { t } = useLanguage()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.verify_phone.verify_error_title',
-            bodyKey: 'peraCard.verify_phone.verify_error_body',
+            titleKey: i18nKey('peraCard.verify_phone.verify_error_title'),
+            bodyKey: i18nKey('peraCard.verify_phone.verify_error_body'),
         })
         const navigation = useAppNavigation()
         const phoneCountryCode = useCardStore(state => state.phoneCountryCode)

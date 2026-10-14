@@ -27,6 +27,7 @@ import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
 } from '../../utils/cardTransactions'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const PDF_MIME_TYPE = 'application/pdf'
 
@@ -65,8 +66,8 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
     const { mutateAsync: exportStatement, isPending: isExporting } =
         useExportCardStatementMutation(scope)
     const showExportError = useCardErrorToast({
-        titleKey: 'peraCard.transactions.export_error_title',
-        bodyKey: 'peraCard.transactions.export_error_body',
+        titleKey: i18nKey('peraCard.transactions.export_error_title'),
+        bodyKey: i18nKey('peraCard.transactions.export_error_body'),
         shouldUseBackendMessage: false,
     })
 

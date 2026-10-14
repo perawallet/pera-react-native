@@ -16,17 +16,18 @@ import { ScreenHeader } from '@components/ScreenHeader'
 
 import { useStyles } from './styles'
 import { useLedgerInstructionsScreen } from './useLedgerInstructionsScreen'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const BLE_INSTRUCTIONS = [
-    { step: 1, key: 'ledger.instructions.step_1' },
-    { step: 2, key: 'ledger.instructions.step_2' },
-    { step: 3, key: 'ledger.instructions.step_3' },
+    { step: 1, key: i18nKey('ledger.instructions.step_1') },
+    { step: 2, key: i18nKey('ledger.instructions.step_2') },
+    { step: 3, key: i18nKey('ledger.instructions.step_3') },
 ] as const
 
 const USB_INSTRUCTIONS = [
-    { step: 1, key: 'ledger.instructions.usb.step_1' },
-    { step: 2, key: 'ledger.instructions.usb.step_2' },
-    { step: 3, key: 'ledger.instructions.usb.step_3' },
+    { step: 1, key: i18nKey('ledger.instructions.usb.step_1') },
+    { step: 2, key: i18nKey('ledger.instructions.usb.step_2') },
+    { step: 3, key: i18nKey('ledger.instructions.usb.step_3') },
 ] as const
 
 export const LedgerInstructionsScreen = () => {
@@ -36,11 +37,11 @@ export const LedgerInstructionsScreen = () => {
 
     const isUsb = transportType === 'usb'
     const titleKey = isUsb
-        ? 'ledger.instructions.usb.title'
-        : 'ledger.instructions.title'
+        ? i18nKey('ledger.instructions.usb.title')
+        : i18nKey('ledger.instructions.title')
     const descriptionKey = isUsb
-        ? 'ledger.instructions.usb.description'
-        : 'ledger.instructions.description'
+        ? i18nKey('ledger.instructions.usb.description')
+        : i18nKey('ledger.instructions.description')
     const instructions = isUsb ? USB_INSTRUCTIONS : BLE_INSTRUCTIONS
 
     return (

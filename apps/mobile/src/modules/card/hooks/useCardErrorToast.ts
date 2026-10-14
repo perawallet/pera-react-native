@@ -25,7 +25,11 @@ import {
     getCardApiError,
     type CardApiError,
 } from '@perawallet/wallet-core-card'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    i18nKey,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     isConnectivityError,
     isPeraNetworkError,
@@ -37,9 +41,9 @@ import { useCardScope } from './useCardScope'
 
 export type CardErrorToastKeys = {
     /** i18n key for the toast title. */
-    titleKey?: string
+    titleKey?: I18nKey
     /** i18n key for the body shown when the error carries no message. */
-    bodyKey?: string
+    bodyKey?: I18nKey
     /**
      * Whether the backend's own message may be shown as the body. Defaults to
      * true (most card errors are short, actionable Baanx validation strings).
@@ -50,7 +54,7 @@ export type CardErrorToastKeys = {
     shouldUseBackendMessage?: boolean
 }
 
-export type CardErrorCopy = { titleKey: string; bodyKey: string }
+export type CardErrorCopy = { titleKey: I18nKey; bodyKey: I18nKey }
 
 // Direct Baanx/AB calls surface ky's TimeoutError; proxied ones arrive wrapped.
 const isTimeoutError = (error: unknown): boolean =>
@@ -71,38 +75,54 @@ export const resolveCardErrorCopy = (
     if (error instanceof UserRejectedSigningError) return null
     if (isTimeoutError(error)) {
         return {
-            titleKey: 'errors.network.timeout.title',
-            bodyKey: 'errors.network.timeout.body',
+            titleKey: i18nKey('errors.network.timeout.title'),
+            bodyKey: i18nKey('errors.network.timeout.body'),
         }
     }
     if (error instanceof CardAccountLinkedElsewhereError) {
         return {
-            titleKey: 'peraCard.setup_status.linked_elsewhere_error_title',
-            bodyKey: 'peraCard.setup_status.linked_elsewhere_error_body',
+            titleKey: i18nKey(
+                'peraCard.setup_status.linked_elsewhere_error_title',
+            ),
+            bodyKey: i18nKey(
+                'peraCard.setup_status.linked_elsewhere_error_body',
+            ),
         }
     }
     if (error instanceof CardCreateInProgressError) {
         return {
-            titleKey: 'peraCard.setup_status.create_in_progress_title',
-            bodyKey: 'peraCard.setup_status.create_in_progress_body',
+            titleKey: i18nKey('peraCard.setup_status.create_in_progress_title'),
+            bodyKey: i18nKey('peraCard.setup_status.create_in_progress_body'),
         }
     }
     if (error instanceof CardSetupIncompleteError) {
         return {
-            titleKey: 'peraCard.setup_status.setup_incomplete_error_title',
-            bodyKey: 'peraCard.setup_status.setup_incomplete_error_body',
+            titleKey: i18nKey(
+                'peraCard.setup_status.setup_incomplete_error_title',
+            ),
+            bodyKey: i18nKey(
+                'peraCard.setup_status.setup_incomplete_error_body',
+            ),
         }
     }
     if (error instanceof CardOwnershipProofRejectedError) {
         return {
-            titleKey: 'peraCard.setup_status.create_card_account_error_title',
-            bodyKey: 'peraCard.setup_status.create_card_account_error_body',
+            titleKey: i18nKey(
+                'peraCard.setup_status.create_card_account_error_title',
+            ),
+            bodyKey: i18nKey(
+                'peraCard.setup_status.create_card_account_error_body',
+            ),
         }
     }
     if (error instanceof CardCreateUnavailableError) {
         return {
-            titleKey: 'peraCard.setup_status.create_card_unavailable_title',
-            bodyKey: 'peraCard.setup_status.create_card_unavailable_body',
+            titleKey: i18nKey(
+                'peraCard.setup_status.create_card_unavailable_title',
+            ),
+            bodyKey: i18nKey(
+                'peraCard.setup_status.create_card_unavailable_body',
+            ),
         }
     }
     if (
@@ -112,20 +132,24 @@ export const resolveCardErrorCopy = (
         error instanceof AutoDrawDelegationRejectedError
     ) {
         return {
-            titleKey: 'peraCard.account.auto_funding_unavailable_title',
-            bodyKey: 'peraCard.account.auto_funding_unavailable_body',
+            titleKey: i18nKey(
+                'peraCard.account.auto_funding_unavailable_title',
+            ),
+            bodyKey: i18nKey('peraCard.account.auto_funding_unavailable_body'),
         }
     }
     if (apiError?.code === 'CARD_OWNERSHIP_MISMATCH') {
         return {
-            titleKey: 'peraCard.account.auto_funding_unavailable_title',
-            bodyKey: 'peraCard.account.auto_funding_unavailable_body',
+            titleKey: i18nKey(
+                'peraCard.account.auto_funding_unavailable_title',
+            ),
+            bodyKey: i18nKey('peraCard.account.auto_funding_unavailable_body'),
         }
     }
     if (apiError?.code === 'SIGNATURE_VERIFICATION_FAILED') {
         return {
-            titleKey: 'peraCard.account.auto_funding_rejected_title',
-            bodyKey: 'peraCard.account.auto_funding_rejected_body',
+            titleKey: i18nKey('peraCard.account.auto_funding_rejected_title'),
+            bodyKey: i18nKey('peraCard.account.auto_funding_rejected_body'),
         }
     }
     // Every card chain call is paid by the linked account, whose spendable
@@ -136,8 +160,8 @@ export const resolveCardErrorCopy = (
         describeCardChainError(error, scope) === 'insufficient-native-balance'
     ) {
         return {
-            titleKey: 'peraCard.account.insufficient_algo_title',
-            bodyKey: 'peraCard.account.insufficient_algo_body',
+            titleKey: i18nKey('peraCard.account.insufficient_algo_title'),
+            bodyKey: i18nKey('peraCard.account.insufficient_algo_body'),
         }
     }
     return undefined
@@ -150,8 +174,8 @@ export const resolveCardErrorCopy = (
  * the error (for a branch check) pass it as the second arg to avoid re-parsing.
  */
 export const useCardErrorToast = ({
-    titleKey = 'peraCard.account.error_title',
-    bodyKey = 'peraCard.account.error_body',
+    titleKey = i18nKey('peraCard.account.error_title'),
+    bodyKey = i18nKey('peraCard.account.error_body'),
     shouldUseBackendMessage = true,
 }: CardErrorToastKeys = {}): ((
     error: unknown,

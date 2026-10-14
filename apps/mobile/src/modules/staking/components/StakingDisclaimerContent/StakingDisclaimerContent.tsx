@@ -14,22 +14,23 @@ import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView, withLanguageParam } from '@modules/webview'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStakingDisclaimerSheet } from './useStakingDisclaimerContent'
 import { useStyles } from './styles'
 
 const DISCLAIMER_BULLET_KEYS = [
-    'staking.disclaimer.bullet_liability',
-    'staking.disclaimer.bullet_interruptions',
-    'staking.disclaimer.bullet_availability',
-    'staking.disclaimer.bullet_rewards_control',
-    'staking.disclaimer.bullet_no_advice',
-    'staking.disclaimer.bullet_no_custody',
-    'staking.disclaimer.bullet_no_guarantee',
-    'staking.disclaimer.bullet_provider_failures',
-    'staking.disclaimer.bullet_no_error_free',
-    'staking.disclaimer.bullet_user_breaches',
+    i18nKey('staking.disclaimer.bullet_liability'),
+    i18nKey('staking.disclaimer.bullet_interruptions'),
+    i18nKey('staking.disclaimer.bullet_availability'),
+    i18nKey('staking.disclaimer.bullet_rewards_control'),
+    i18nKey('staking.disclaimer.bullet_no_advice'),
+    i18nKey('staking.disclaimer.bullet_no_custody'),
+    i18nKey('staking.disclaimer.bullet_no_guarantee'),
+    i18nKey('staking.disclaimer.bullet_provider_failures'),
+    i18nKey('staking.disclaimer.bullet_no_error_free'),
+    i18nKey('staking.disclaimer.bullet_user_breaches'),
 ] as const
 
 export const StakingDisclaimerContent = () => {

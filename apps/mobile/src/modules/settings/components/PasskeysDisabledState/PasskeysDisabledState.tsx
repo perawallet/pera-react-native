@@ -15,6 +15,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { isAndroid } from '@utils/platform'
 import { PasskeysHero } from '../PasskeysHero'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type PasskeysDisabledStateProps = {
     onOpenSettings: () => void
@@ -27,11 +28,11 @@ export const PasskeysDisabledState = ({
     const { t } = useLanguage()
 
     const bodyKey = isAndroid()
-        ? 'settings.passkeys.disabled_body_android'
-        : 'settings.passkeys.disabled_body_ios'
+        ? i18nKey('settings.passkeys.disabled_body_android')
+        : i18nKey('settings.passkeys.disabled_body_ios')
     const infoBodyKey = isAndroid()
-        ? 'settings.passkeys.disabled_info_body_android'
-        : 'settings.passkeys.disabled_info_body_ios'
+        ? i18nKey('settings.passkeys.disabled_info_body_android')
+        : i18nKey('settings.passkeys.disabled_info_body_ios')
 
     return (
         <PWView

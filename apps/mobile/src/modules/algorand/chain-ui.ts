@@ -17,6 +17,7 @@ import { AlgorandTransactionPreviewRow } from './components/AlgorandTransactionP
 import { AlgorandTransactionReviewBody } from './components/AlgorandTransactionReviewBody'
 import { AssetSecurityTags } from './components/AssetSecurityTags'
 import { AssetVerificationCard } from './components/AssetVerificationCard'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 // ALGO's backend link points at Algoscan, which the descriptor's explorer builders can't express.
 export const resolveAlgorandAssetAbout = ({
@@ -25,10 +26,12 @@ export const resolveAlgorandAssetAbout = ({
 }: AssetAboutParams): AssetAboutDisplay => {
     const explorerUrl = asset.peraMetadata?.explorerUrl
     return {
-        idLabelKey: isNativeAsset ? null : 'asset_details.about.asa_id',
+        idLabelKey: isNativeAsset
+            ? null
+            : i18nKey('asset_details.about.asa_id'),
         urlLabelKey: isNativeAsset
-            ? 'asset_details.about.url'
-            : 'asset_details.about.asa_url',
+            ? i18nKey('asset_details.about.url')
+            : i18nKey('asset_details.about.asa_url'),
         explorerLink: explorerUrl?.length
             ? {
                   url: explorerUrl,

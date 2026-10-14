@@ -26,6 +26,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type UseCardOnboardingPasswordScreenResult = {
     control: Control<PasswordSetFormValues>
@@ -49,8 +50,8 @@ export const useCardOnboardingPasswordScreen =
         const { t } = useLanguage()
         const { errorToast, infoToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.create_account.error_title',
-            bodyKey: 'peraCard.create_account.error_body',
+            titleKey: i18nKey('peraCard.create_account.error_title'),
+            bodyKey: i18nKey('peraCard.create_account.error_body'),
         })
         const navigation = useAppNavigation()
         const email = useCardStore(state => state.email)

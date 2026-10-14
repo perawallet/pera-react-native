@@ -18,6 +18,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import { getCountryName } from '../../utils/getCountryName'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** KYC presentation tone — drives the status color in the sheet. */
 export type KycTone = 'verified' | 'pending' | 'rejected' | 'unverified'
@@ -37,22 +38,22 @@ type UseCardAccountDetailsSheetResult = {
 
 const KYC_BY_STATE: Record<
     VerificationState,
-    { labelKey: string; tone: KycTone }
+    { labelKey: I18nKey; tone: KycTone }
 > = {
     [VerificationState.Verified]: {
-        labelKey: 'peraCard.account_details.kyc_verified',
+        labelKey: i18nKey('peraCard.account_details.kyc_verified'),
         tone: 'verified',
     },
     [VerificationState.Pending]: {
-        labelKey: 'peraCard.account_details.kyc_pending',
+        labelKey: i18nKey('peraCard.account_details.kyc_pending'),
         tone: 'pending',
     },
     [VerificationState.Rejected]: {
-        labelKey: 'peraCard.account_details.kyc_rejected',
+        labelKey: i18nKey('peraCard.account_details.kyc_rejected'),
         tone: 'rejected',
     },
     [VerificationState.Unverified]: {
-        labelKey: 'peraCard.account_details.kyc_unverified',
+        labelKey: i18nKey('peraCard.account_details.kyc_unverified'),
         tone: 'unverified',
     },
 }

@@ -28,6 +28,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardStackParamList } from '../../routes/types'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type UseCardForgotPasswordNewPasswordScreenResult = {
     control: Control<PasswordSetFormValues>
@@ -55,8 +56,8 @@ export const useCardForgotPasswordNewPasswordScreen =
         const { email, token } = route.params
         const confirmReset = useConfirmPasswordResetMutation(scope)
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.forgot_password.error_title',
-            bodyKey: 'peraCard.forgot_password.error_body',
+            titleKey: i18nKey('peraCard.forgot_password.error_title'),
+            bodyKey: i18nKey('peraCard.forgot_password.error_body'),
         })
 
         const {

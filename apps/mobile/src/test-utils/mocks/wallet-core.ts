@@ -711,8 +711,12 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const warnings = await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/warnings')
     >('@packages/chain-algorand/src/blockchain/utils/warnings')
+    const { ALGOD_ERROR_MESSAGE_KEYS } = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/errors/algodErrorCodes')
+    >('@packages/chain-algorand/src/blockchain/errors/algodErrorCodes')
 
     return {
+        ALGOD_ERROR_MESSAGE_KEYS,
         ...arc0001,
         ...transactionView,
         ...warnings,

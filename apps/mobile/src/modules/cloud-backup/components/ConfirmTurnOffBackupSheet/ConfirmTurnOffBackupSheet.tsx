@@ -16,6 +16,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ConfirmationCheckbox } from '../ConfirmationCheckbox'
 import type { TurnOffBackupChoice } from '../TurnOffBackupSheet'
 import { useConfirmTurnOffBackupSheet } from './useConfirmTurnOffBackupSheet'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type ConfirmTurnOffBackupSheetProps = {
     choice: TurnOffBackupChoice
@@ -23,30 +24,32 @@ type ConfirmTurnOffBackupSheetProps = {
 
 type ConfirmCopy = {
     icon: IconName
-    titleKey: string
-    bodyKey: string
-    confirmKey: string
+    titleKey: I18nKey
+    bodyKey: I18nKey
+    confirmKey: I18nKey
     confirmVariant: PWButtonProps['variant']
     /** Set where the consequence is irreversible: the confirm button stays
      *  disabled until this is ticked. */
-    checkboxKey?: string
+    checkboxKey?: I18nKey
 }
 
 const COPY: Record<TurnOffBackupChoice, ConfirmCopy> = {
     turnOff: {
         icon: 'cloud-off',
-        titleKey: 'cloud_backup.turn_off.confirm_title',
-        bodyKey: 'cloud_backup.turn_off.confirm_body',
-        confirmKey: 'cloud_backup.turn_off.confirm_button',
+        titleKey: i18nKey('cloud_backup.turn_off.confirm_title'),
+        bodyKey: i18nKey('cloud_backup.turn_off.confirm_body'),
+        confirmKey: i18nKey('cloud_backup.turn_off.confirm_button'),
         confirmVariant: 'destructiveLight',
     },
     turnOffAndRemove: {
         icon: 'trash',
-        titleKey: 'cloud_backup.turn_off_and_remove.confirm_title',
-        bodyKey: 'cloud_backup.turn_off_and_remove.confirm_body',
-        confirmKey: 'cloud_backup.turn_off_and_remove.confirm_button',
+        titleKey: i18nKey('cloud_backup.turn_off_and_remove.confirm_title'),
+        bodyKey: i18nKey('cloud_backup.turn_off_and_remove.confirm_body'),
+        confirmKey: i18nKey('cloud_backup.turn_off_and_remove.confirm_button'),
         confirmVariant: 'destructive',
-        checkboxKey: 'cloud_backup.turn_off_and_remove.confirm_checkbox_label',
+        checkboxKey: i18nKey(
+            'cloud_backup.turn_off_and_remove.confirm_checkbox_label',
+        ),
     },
 }
 

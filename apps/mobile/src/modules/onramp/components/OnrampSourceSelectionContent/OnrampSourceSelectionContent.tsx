@@ -19,6 +19,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
@@ -31,10 +32,13 @@ import {
 } from './useOnrampSourceSelection'
 import { useStyles } from './styles'
 
-const FILTERS: { value: OnrampSourceFilter; labelKey: string }[] = [
-    { value: 'all', labelKey: 'onramp.source_selection.filter_all' },
-    { value: 'fiat', labelKey: 'onramp.source_selection.filter_fiat' },
-    { value: 'crypto', labelKey: 'onramp.source_selection.filter_crypto' },
+const FILTERS: { value: OnrampSourceFilter; labelKey: I18nKey }[] = [
+    { value: 'all', labelKey: i18nKey('onramp.source_selection.filter_all') },
+    { value: 'fiat', labelKey: i18nKey('onramp.source_selection.filter_fiat') },
+    {
+        value: 'crypto',
+        labelKey: i18nKey('onramp.source_selection.filter_crypto'),
+    },
 ]
 
 export const OnrampSourceSelectionContent = () => {

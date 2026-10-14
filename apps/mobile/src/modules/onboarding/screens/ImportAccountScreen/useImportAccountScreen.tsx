@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import {
+    i18nKey,
     isPostQuantumScheme,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
@@ -83,10 +84,10 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         importKind !== undefined &&
         isPostQuantumScheme(importKind.signingScheme)
     const titleKey = isQuantum
-        ? 'onboarding.import_account.quantum_title'
-        : 'onboarding.import_account.title'
+        ? i18nKey('onboarding.import_account.quantum_title')
+        : i18nKey('onboarding.import_account.title')
     const infoNoteKey = isQuantum
-        ? 'onboarding.import_account.quantum_info_note'
+        ? i18nKey('onboarding.import_account.quantum_info_note')
         : null
 
     const onTooManyWords = useCallback(() => {

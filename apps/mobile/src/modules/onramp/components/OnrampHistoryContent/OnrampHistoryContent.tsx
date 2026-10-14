@@ -24,6 +24,7 @@ import type {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'
+import { ONRAMP_STATUS_DESCRIPTORS } from '../OnrampStatusBadge/onrampStatus'
 import { OnrampHistoryListItem } from './OnrampHistoryListItem'
 import { useOnrampHistory } from './useOnrampHistory'
 import { useStyles } from './styles'
@@ -113,7 +114,7 @@ export const OnrampHistoryContent = ({
                 label:
                     value === null
                         ? t('onramp.history.filter_all')
-                        : t(`onramp.status.${value}`),
+                        : t(ONRAMP_STATUS_DESCRIPTORS[value].labelKey),
                 testID: `onramp-history-filter-${value ?? 'all'}`,
             }))}
             selectedValue={statusFilter}

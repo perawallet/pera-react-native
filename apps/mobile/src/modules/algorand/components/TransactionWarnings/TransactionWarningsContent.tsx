@@ -21,6 +21,7 @@ import {
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     LONG_ADDRESS_LENGTH,
@@ -39,8 +40,8 @@ export type TransactionWarningsContentProps = {
 type WarningDisplay = {
     type: AddressWarningType
     icon: IconName
-    copyKey: string
-    boldKey?: string
+    copyKey: I18nKey
+    boldKey?: I18nKey
 }
 
 // Array order is the sheet's render order — a transaction can carry several of
@@ -49,24 +50,24 @@ const WARNING_DISPLAYS: WarningDisplay[] = [
     {
         type: 'close-account',
         icon: 'trash',
-        copyKey: 'transactions.warning.close_account_warning',
+        copyKey: i18nKey('transactions.warning.close_account_warning'),
     },
     {
         type: 'close-asset',
         icon: 'unlink',
-        copyKey: 'transactions.warning.close_asset_warning',
+        copyKey: i18nKey('transactions.warning.close_asset_warning'),
     },
     {
         type: 'rekey',
         icon: 'rekey',
-        copyKey: 'transactions.warning.rekey_warning',
-        boldKey: 'transactions.warning.rekey_warning_bold',
+        copyKey: i18nKey('transactions.warning.rekey_warning'),
+        boldKey: i18nKey('transactions.warning.rekey_warning_bold'),
     },
     {
         type: 'asset-freeze',
         icon: 'snowflake',
-        copyKey: 'transactions.warning.asset_freeze_warning',
-        boldKey: 'transactions.warning.asset_freeze_warning_bold',
+        copyKey: i18nKey('transactions.warning.asset_freeze_warning'),
+        boldKey: i18nKey('transactions.warning.asset_freeze_warning_bold'),
     },
 ]
 

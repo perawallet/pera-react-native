@@ -27,7 +27,10 @@ import {
     useSigningRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useToast } from '@hooks/useToast'
 import { getSignedResponseCount } from '../utils/signRequestStatus'
 
@@ -52,14 +55,14 @@ export type UseMultisigSignRequestDeclineResult = {
 }
 
 const DECLINE_ERROR_KEYS = {
-    title: 'multisig.decline.error.title',
-    body: 'multisig.decline.error.body',
-} as const
+    title: i18nKey('multisig.decline.error.title'),
+    body: i18nKey('multisig.decline.error.body'),
+}
 
 const CANCEL_ERROR_KEYS = {
-    title: 'multisig.cancel_transaction.error.title',
-    body: 'multisig.cancel_transaction.error.body',
-} as const
+    title: i18nKey('multisig.cancel_transaction.error.title'),
+    body: i18nKey('multisig.cancel_transaction.error.body'),
+}
 
 /**
  * Decline-mutation orchestration for a multisig sign request, covering two

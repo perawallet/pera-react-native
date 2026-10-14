@@ -12,6 +12,7 @@
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
@@ -24,12 +25,12 @@ export type SecurityGuardContentProps = {
 }
 
 type GuardedWarningMessages = {
-    confirmTitle: string
-    confirmDescription: string
-    confirmGoToSettings: string
-    areYouSureTitle: string
-    areYouSureDescription: string
-    areYouSureContinue: string
+    confirmTitle: I18nKey
+    confirmDescription: I18nKey
+    confirmGoToSettings: I18nKey
+    areYouSureTitle: I18nKey
+    areYouSureDescription: I18nKey
+    areYouSureContinue: I18nKey
 }
 
 const preferenceKeyMap: Record<GuardedWarningType, string> = {
@@ -39,26 +40,42 @@ const preferenceKeyMap: Record<GuardedWarningType, string> = {
 
 const i18nKeyMap: Record<GuardedWarningType, GuardedWarningMessages> = {
     rekey: {
-        confirmTitle: 'transactions.warning.rekey_confirm_title',
-        confirmDescription: 'transactions.warning.rekey_confirm_description',
-        confirmGoToSettings:
+        confirmTitle: i18nKey('transactions.warning.rekey_confirm_title'),
+        confirmDescription: i18nKey(
+            'transactions.warning.rekey_confirm_description',
+        ),
+        confirmGoToSettings: i18nKey(
             'transactions.warning.rekey_confirm_go_to_settings',
-        areYouSureTitle: 'transactions.warning.rekey_are_you_sure_title',
-        areYouSureDescription:
+        ),
+        areYouSureTitle: i18nKey(
+            'transactions.warning.rekey_are_you_sure_title',
+        ),
+        areYouSureDescription: i18nKey(
             'transactions.warning.rekey_are_you_sure_description',
-        areYouSureContinue: 'transactions.warning.rekey_are_you_sure_continue',
+        ),
+        areYouSureContinue: i18nKey(
+            'transactions.warning.rekey_are_you_sure_continue',
+        ),
     },
     'asset-freeze': {
-        confirmTitle: 'transactions.warning.asset_freeze_confirm_title',
-        confirmDescription:
+        confirmTitle: i18nKey(
+            'transactions.warning.asset_freeze_confirm_title',
+        ),
+        confirmDescription: i18nKey(
             'transactions.warning.asset_freeze_confirm_description',
-        confirmGoToSettings:
+        ),
+        confirmGoToSettings: i18nKey(
             'transactions.warning.asset_freeze_confirm_go_to_settings',
-        areYouSureTitle: 'transactions.warning.asset_freeze_are_you_sure_title',
-        areYouSureDescription:
+        ),
+        areYouSureTitle: i18nKey(
+            'transactions.warning.asset_freeze_are_you_sure_title',
+        ),
+        areYouSureDescription: i18nKey(
             'transactions.warning.asset_freeze_are_you_sure_description',
-        areYouSureContinue:
+        ),
+        areYouSureContinue: i18nKey(
             'transactions.warning.asset_freeze_are_you_sure_continue',
+        ),
     },
 }
 

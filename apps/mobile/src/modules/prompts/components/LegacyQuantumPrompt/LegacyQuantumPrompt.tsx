@@ -17,6 +17,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useLegacyQuantumPrompt } from '@modules/prompts/hooks/useLegacyQuantumPrompt'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /**
  * One-time nudge, shown when the wallet holds at least one legacy-derivation
@@ -35,8 +36,8 @@ export const LegacyQuantumPrompt = ({ onDismiss }: PromptViewProps) => {
     }, [onDismiss])
 
     const bodyKey = shouldUseDependentAwareCopy
-        ? 'accounts.legacyQuantum.bodyWithDependents'
-        : 'accounts.legacyQuantum.body'
+        ? i18nKey('accounts.legacyQuantum.bodyWithDependents')
+        : i18nKey('accounts.legacyQuantum.body')
 
     return (
         <PWView

@@ -14,11 +14,12 @@ import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { CardWithdrawState } from './usePeraCardOverview'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const WITHDRAW_TITLE_KEYS = {
-    idle: 'peraCard.account.withdraw',
-    waiting: 'peraCard.withdraw.in_progress_button',
-    ready: 'peraCard.withdraw.complete_button',
+    idle: i18nKey('peraCard.account.withdraw'),
+    waiting: i18nKey('peraCard.withdraw.in_progress_button'),
+    ready: i18nKey('peraCard.withdraw.complete_button'),
 } as const
 
 type PeraCardActionButtonsProps = {

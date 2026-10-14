@@ -14,6 +14,7 @@ import {
     useCloudBackupRestoreProgressStore,
     type RestoreProgress,
 } from '@perawallet/wallet-core-backup'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -25,10 +26,10 @@ export type UseCloudBackupRestoreProgressResult = {
 }
 
 const PHASE_TITLE_KEYS = {
-    unlocking: 'cloud_backup.restore.progress_unlocking',
-    downloading: 'cloud_backup.restore.progress_downloading',
-    importing: 'cloud_backup.restore.progress_importing',
-    finishing: 'cloud_backup.restore.progress_finishing',
+    unlocking: i18nKey('cloud_backup.restore.progress_unlocking'),
+    downloading: i18nKey('cloud_backup.restore.progress_downloading'),
+    importing: i18nKey('cloud_backup.restore.progress_importing'),
+    finishing: i18nKey('cloud_backup.restore.progress_finishing'),
 } as const satisfies Record<RestoreProgress['phase'], string>
 
 const titleFor = (

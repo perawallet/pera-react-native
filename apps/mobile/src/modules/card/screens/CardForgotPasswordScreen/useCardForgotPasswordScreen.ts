@@ -24,6 +24,7 @@ import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardStackParamList } from '../../routes/types'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type UseCardForgotPasswordScreenResult = {
     control: Control<ForgotPasswordEmailFormValues>
@@ -40,8 +41,8 @@ export const useCardForgotPasswordScreen =
             useRoute<RouteProp<PeraCardStackParamList, 'CardForgotPassword'>>()
         const requestReset = useRequestPasswordResetMutation(scope)
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.forgot_password.error_title',
-            bodyKey: 'peraCard.forgot_password.error_body',
+            titleKey: i18nKey('peraCard.forgot_password.error_title'),
+            bodyKey: i18nKey('peraCard.forgot_password.error_body'),
         })
 
         const {

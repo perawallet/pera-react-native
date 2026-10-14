@@ -10,14 +10,30 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
+import {
+    RekeyIntroScreen,
+    type RekeyIntroCopy,
+} from '../../../components/RekeyIntroScreen'
+
+const INTRO_COPY: RekeyIntroCopy = {
+    titleKey: i18nKey('rekey.to_shared.intro.title'),
+    bodyKey: i18nKey('rekey.to_shared.intro.body'),
+    learnMoreKey: i18nKey('rekey.to_shared.intro.learn_more'),
+    expectLabelKey: i18nKey('rekey.to_shared.intro.expect_label'),
+    ctaKey: i18nKey('rekey.to_shared.intro.cta'),
+    expectationKeys: [
+        i18nKey('rekey.to_shared.intro.expect_1'),
+        i18nKey('rekey.to_shared.intro.expect_2'),
+        i18nKey('rekey.to_shared.intro.expect_3'),
+    ],
+}
 
 export const RekeyToSharedIntroScreen = () => (
     <RekeyIntroScreen
-        i18nBaseKey='rekey.to_shared.intro'
+        copy={INTRO_COPY}
         testIdPrefix='rekey-to-shared'
-        expectationCount={3}
         navConfig={{
             parentRoute: 'RekeyToShared',
             selectTargetScreen: 'RekeyToSharedSelectTarget',

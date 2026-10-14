@@ -10,18 +10,26 @@
  limitations under the License
  */
 
-import type { RekeyIntroScreenProps } from '../../../components/RekeyIntroScreen'
+import type { RekeyIntroCopy } from '../../../components/RekeyIntroScreen'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
-const I18N_BASE_KEY = 'rekey.to_standard.intro'
+const COPY: RekeyIntroCopy = {
+    titleKey: i18nKey('rekey.to_standard.intro.title'),
+    bodyKey: i18nKey('rekey.to_standard.intro.body'),
+    learnMoreKey: i18nKey('rekey.to_standard.intro.learn_more'),
+    expectLabelKey: i18nKey('rekey.to_standard.intro.expect_label'),
+    ctaKey: i18nKey('rekey.to_standard.intro.cta'),
+    expectationKeys: [
+        i18nKey('rekey.to_standard.intro.expect_1'),
+        i18nKey('rekey.to_standard.intro.expect_2'),
+        i18nKey('rekey.to_standard.intro.expect_3'),
+        i18nKey('rekey.to_standard.intro.expect_4'),
+    ],
+}
 
 export type UseRekeyToStandardIntroScreenResult = {
-    i18nBaseKey: string
-    /** Kept with the keys so the spec can hold the two in sync. */
-    expectationCount: RekeyIntroScreenProps['expectationCount']
+    copy: RekeyIntroCopy
 }
 
 export const useRekeyToStandardIntroScreen =
-    (): UseRekeyToStandardIntroScreenResult => ({
-        i18nBaseKey: I18N_BASE_KEY,
-        expectationCount: 4,
-    })
+    (): UseRekeyToStandardIntroScreenResult => ({ copy: COPY })

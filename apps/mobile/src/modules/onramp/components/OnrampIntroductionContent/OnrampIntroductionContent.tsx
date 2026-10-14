@@ -25,11 +25,12 @@ import { useBottomSheetResult } from '@modules/bottom-sheet'
 import onrampIntroHeroLight from '@assets/images/onramp-intro-hero-light.png'
 import onrampIntroHeroDark from '@assets/images/onramp-intro-hero-dark.png'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const FEATURE_KEYS = [
-    'onramp.introduction.feature_buy',
-    'onramp.introduction.feature_swap',
-    'onramp.introduction.feature_portal',
+    i18nKey('onramp.introduction.feature_buy'),
+    i18nKey('onramp.introduction.feature_swap'),
+    i18nKey('onramp.introduction.feature_portal'),
 ] as const
 
 export const OnrampIntroductionContent = () => {

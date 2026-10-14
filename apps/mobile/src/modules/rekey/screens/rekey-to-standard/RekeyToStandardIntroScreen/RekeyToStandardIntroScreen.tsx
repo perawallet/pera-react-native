@@ -15,13 +15,12 @@ import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
 import { useRekeyToStandardIntroScreen } from './useRekeyToStandardIntroScreen'
 
 export const RekeyToStandardIntroScreen = () => {
-    const { i18nBaseKey, expectationCount } = useRekeyToStandardIntroScreen()
+    const { copy } = useRekeyToStandardIntroScreen()
 
     return (
         <RekeyIntroScreen
-            i18nBaseKey={i18nBaseKey}
+            copy={copy}
             testIdPrefix='rekey-to-standard'
-            expectationCount={expectationCount}
             navConfig={{
                 parentRoute: 'RekeyToStandard',
                 selectTargetScreen: 'RekeyToStandardSelectTarget',

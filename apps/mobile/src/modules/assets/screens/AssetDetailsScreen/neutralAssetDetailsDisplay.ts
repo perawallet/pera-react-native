@@ -12,6 +12,7 @@
 
 import type { AssetDetailsDisplay } from '../../types/asset-details-display'
 import { extractDomain } from '../../utils/extractDomain'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** A chain with no entry in the chain-UI registry gets no sections and its descriptor's explorer link. */
 export const neutralAssetDetailsDisplay: AssetDetailsDisplay = {
@@ -20,8 +21,8 @@ export const neutralAssetDetailsDisplay: AssetDetailsDisplay = {
         return {
             idLabelKey: isNativeAsset
                 ? null
-                : 'asset_details.collectible.asset_id',
-            urlLabelKey: 'asset_details.about.url',
+                : i18nKey('asset_details.collectible.asset_id'),
+            urlLabelKey: i18nKey('asset_details.about.url'),
             explorerLink: url ? { url, label: extractDomain(url) } : null,
         }
     },

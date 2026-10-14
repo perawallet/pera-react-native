@@ -14,12 +14,13 @@ import { PWIcon, PWSheetLayout, PWText, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const STEP_KEYS = [
-    'ledger.how_does_it_work.step_1',
-    'ledger.how_does_it_work.step_2',
-    'ledger.how_does_it_work.step_3',
-    'ledger.how_does_it_work.step_4',
+    i18nKey('ledger.how_does_it_work.step_1'),
+    i18nKey('ledger.how_does_it_work.step_2'),
+    i18nKey('ledger.how_does_it_work.step_3'),
+    i18nKey('ledger.how_does_it_work.step_4'),
 ] as const
 
 export const LedgerHowItWorksContent = () => {

@@ -13,21 +13,22 @@
 import { PWResultView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTransactionSuccessScreen } from './useTransactionSuccessScreen'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const titleKey = {
-    close_account: 'send_funds.close_account.success_title',
-    asset_transfer: 'send_funds.success.asset_transferred_title',
-    claim: 'messages.claim.success_title',
-    reject: 'messages.claim.success_title',
-    payment: 'send_funds.success.title',
+    close_account: i18nKey('send_funds.close_account.success_title'),
+    asset_transfer: i18nKey('send_funds.success.asset_transferred_title'),
+    claim: i18nKey('messages.claim.success_title'),
+    reject: i18nKey('messages.claim.success_title'),
+    payment: i18nKey('send_funds.success.title'),
 }
 
 const subtitleKey = {
-    close_account: 'send_funds.close_account.success_subtitle',
-    asset_transfer: 'send_funds.success.subtitle',
-    claim: 'messages.claim.success_subtitle',
-    reject: 'messages.claim.success_subtitle',
-    payment: 'send_funds.success.subtitle',
+    close_account: i18nKey('send_funds.close_account.success_subtitle'),
+    asset_transfer: i18nKey('send_funds.success.subtitle'),
+    claim: i18nKey('messages.claim.success_subtitle'),
+    reject: i18nKey('messages.claim.success_subtitle'),
+    payment: i18nKey('send_funds.success.subtitle'),
 }
 
 export const TransactionSuccessScreen = () => {

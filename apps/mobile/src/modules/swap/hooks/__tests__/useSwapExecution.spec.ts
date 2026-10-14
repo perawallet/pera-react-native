@@ -28,6 +28,7 @@ import {
     useSwapExecution,
     type SwapExecutionOutcome,
 } from '../useSwapExecution'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const mockT = vi.fn((key: string) => key)
 const mockExecuteSwap = vi.fn()
@@ -467,7 +468,7 @@ describe('useSwapExecution', () => {
         failWith({
             phase: 'signing',
             reason: 'quantum-blocked',
-            translationKey: 'swap.execution.quantum_fee_unsupported',
+            translationKey: i18nKey('swap.execution.quantum_fee_unsupported'),
         })
         const { result } = renderHook(() => useSwapExecution())
 

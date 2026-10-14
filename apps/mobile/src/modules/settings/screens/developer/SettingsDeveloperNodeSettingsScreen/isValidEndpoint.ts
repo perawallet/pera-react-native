@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+
 /**
  * Platform-neutral on purpose: this file has no `.web` twin, unlike
  * `useSettingsDeveloperNodeSettingsScreen(.web).ts`. A bare import of THAT
@@ -28,5 +30,6 @@ export const isValidEndpoint = (value: string): boolean => {
     }
 }
 
-export const INVALID_ENDPOINT_MESSAGE_KEY =
-    'settings.developer.node_settings.invalid_url'
+export const INVALID_ENDPOINT_MESSAGE_KEY: I18nKey = i18nKey(
+    'settings.developer.node_settings.invalid_url',
+)

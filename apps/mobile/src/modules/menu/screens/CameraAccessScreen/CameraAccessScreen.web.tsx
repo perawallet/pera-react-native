@@ -20,11 +20,12 @@ import {
     type CameraAccessState,
 } from './useCameraAccessScreen.web'
 import { useStyles } from './styles'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
-const DESCRIPTION_KEYS: Record<CameraAccessState, string> = {
-    requesting: 'qr_scanner.camera_access_requesting',
-    granted: 'qr_scanner.camera_access_granted',
-    denied: 'qr_scanner.camera_access_denied',
+const DESCRIPTION_KEYS: Record<CameraAccessState, I18nKey> = {
+    requesting: i18nKey('qr_scanner.camera_access_requesting'),
+    granted: i18nKey('qr_scanner.camera_access_granted'),
+    denied: i18nKey('qr_scanner.camera_access_denied'),
 }
 
 export const CameraAccessScreen = () => {

@@ -11,6 +11,7 @@
  */
 
 import { useWindowDimensions } from 'react-native'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { type IconName, PWIcon } from '@components/core'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
@@ -83,18 +84,18 @@ export const TabBarStackNavigator = () => {
                         )
                     },
                     tabBarLabel: ({ focused }) => {
-                        const labelMap: Record<string, string> = {
-                            Home: 'tabbar.home',
-                            Discover: 'tabbar.discover',
-                            Swap: 'tabbar.swap',
-                            Fund: 'tabbar.fund',
-                            Menu: 'tabbar.menu',
+                        const labelMap: Record<string, I18nKey> = {
+                            Home: i18nKey('tabbar.home'),
+                            Discover: i18nKey('tabbar.discover'),
+                            Swap: i18nKey('tabbar.swap'),
+                            Fund: i18nKey('tabbar.fund'),
+                            Menu: i18nKey('tabbar.menu'),
                         }
-                        const i18nKey = labelMap[route.name]
-                        if (!i18nKey) return null
+                        const labelKey = labelMap[route.name]
+                        if (!labelKey) return null
                         return (
                             <TabLabel
-                                i18nKey={i18nKey}
+                                labelKey={labelKey}
                                 active={focused}
                             />
                         )

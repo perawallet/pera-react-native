@@ -28,7 +28,10 @@ import {
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
@@ -96,8 +99,8 @@ describe('useCardErrorToast', () => {
     it('uses the provided title/body keys for the fallback', async () => {
         const { result } = renderHook(() =>
             useCardErrorToast({
-                titleKey: 'peraCard.verification.error_title',
-                bodyKey: 'peraCard.verification.error_body',
+                titleKey: i18nKey('peraCard.verification.error_title'),
+                bodyKey: i18nKey('peraCard.verification.error_body'),
             }),
         )
 
@@ -165,8 +168,8 @@ describe('useCardErrorToast', () => {
     it('prefers the backend message over the provided body key', async () => {
         const { result } = renderHook(() =>
             useCardErrorToast({
-                titleKey: 'peraCard.verification.error_title',
-                bodyKey: 'peraCard.verification.error_body',
+                titleKey: i18nKey('peraCard.verification.error_title'),
+                bodyKey: i18nKey('peraCard.verification.error_body'),
             }),
         )
 
@@ -199,8 +202,8 @@ describe('useCardErrorToast', () => {
     it('lets precise copy win over shouldUseBackendMessage=false', async () => {
         const { result } = renderHook(() =>
             useCardErrorToast({
-                titleKey: 'peraCard.auto_funding_signing.error_title',
-                bodyKey: 'peraCard.auto_funding_signing.error_body',
+                titleKey: i18nKey('peraCard.auto_funding_signing.error_title'),
+                bodyKey: i18nKey('peraCard.auto_funding_signing.error_body'),
                 shouldUseBackendMessage: false,
             }),
         )

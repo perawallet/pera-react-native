@@ -144,7 +144,6 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
             capabilityRestrictions:
                 descriptorEntry.algorandCapabilityRestrictions,
             register: mocks.registerModule,
-            i18nKeys: () => [],
             remoteConfigDefaults: { fixture_fee: 1000 },
             pinnedHosts: () => FIXTURE_PINNED_HOSTS,
         },

@@ -27,19 +27,20 @@ import { useStyles } from './styles'
 
 import cloudBackupIntroHeroDark from '@assets/images/cloud-backup-intro-hero-dark.png'
 import cloudBackupIntroHeroLight from '@assets/images/cloud-backup-intro-hero-light.png'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const STEP_KEYS = [
     {
-        title: 'cloud_backup.intro.encryption_title',
-        description: 'cloud_backup.intro.encryption_description',
+        title: i18nKey('cloud_backup.intro.encryption_title'),
+        description: i18nKey('cloud_backup.intro.encryption_description'),
     },
     {
-        title: 'cloud_backup.intro.sync_title',
-        description: 'cloud_backup.intro.sync_description',
+        title: i18nKey('cloud_backup.intro.sync_title'),
+        description: i18nKey('cloud_backup.intro.sync_description'),
     },
     {
-        title: 'cloud_backup.intro.recovery_title',
-        description: 'cloud_backup.intro.recovery_description',
+        title: i18nKey('cloud_backup.intro.recovery_title'),
+        description: i18nKey('cloud_backup.intro.recovery_description'),
     },
 ] as const
 

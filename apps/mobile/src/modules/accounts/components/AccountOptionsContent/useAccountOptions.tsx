@@ -31,7 +31,11 @@ import {
     useRemoveAccount,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
@@ -432,7 +436,7 @@ export const useAccountOptions = ({
         async (
             choice: BackupChoice,
             choose: () => Promise<boolean>,
-            errorKey: string,
+            errorKey: I18nKey,
         ) => {
             const isRecorded = await runBackupChoice(async () => {
                 try {
@@ -466,7 +470,7 @@ export const useAccountOptions = ({
                 (await getBackupSyncManager().deleteAccountFromBackup(
                     address,
                 )) !== 'refused',
-            'cloud_backup.accounts.delete_error',
+            i18nKey('cloud_backup.accounts.delete_error'),
         )
     }, [finishRemoveWithBackupChoice, address])
 
@@ -475,7 +479,7 @@ export const useAccountOptions = ({
         return finishRemoveWithBackupChoice(
             'keep',
             () => getBackupSyncManager().keepAccountInBackup(address),
-            'cloud_backup.accounts.keep_error',
+            i18nKey('cloud_backup.accounts.keep_error'),
         )
     }, [finishRemoveWithBackupChoice, address])
 
@@ -526,8 +530,8 @@ export const useAccountOptions = ({
                 icon: 'key',
                 title: t(
                     isHdWallet
-                        ? 'account_options.view_passphrase_hd'
-                        : 'account_options.view_passphrase_algo25',
+                        ? i18nKey('account_options.view_passphrase_hd')
+                        : i18nKey('account_options.view_passphrase_algo25'),
                 ),
                 onPress: handleViewPassphrase,
             })

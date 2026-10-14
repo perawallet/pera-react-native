@@ -26,6 +26,7 @@ import {
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { getCardSettlementAssetId } from '@perawallet/wallet-core-card'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useTranslation } from 'react-i18next'
@@ -175,8 +176,8 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
 
     const { deposit, isDepositing } = useCardManualDeposit()
     const showDepositError = useCardErrorToast({
-        titleKey: 'peraCard.add_funds.deposit_error_title',
-        bodyKey: 'peraCard.add_funds.deposit_error_body',
+        titleKey: i18nKey('peraCard.add_funds.deposit_error_title'),
+        bodyKey: i18nKey('peraCard.add_funds.deposit_error_body'),
         shouldUseBackendMessage: false,
     })
 

@@ -78,6 +78,7 @@ import { PWText } from '@components/core'
 import { GallerySheetBoundary } from './GallerySheetBoundary'
 
 import type { GallerySection } from './types'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 
 const A = MOCK_ADDRESS
@@ -1300,7 +1301,20 @@ export const getSheetSections = (): GallerySection[] => [
                         contents: (
                             <GallerySheetBoundary>
                                 <PreviousRekeyWarningSheet
-                                    i18nPrefix='rekey.to_ledger.confirm.replace_warning'
+                                    copy={{
+                                        titleKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.title',
+                                        ),
+                                        bodyKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.body',
+                                        ),
+                                        confirmKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.confirm',
+                                        ),
+                                        cancelKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.cancel',
+                                        ),
+                                    }}
                                     testID='previous-rekey-warning-gallery'
                                     currentAuthName='Ledger Account'
                                     sourceName='Mock Account'

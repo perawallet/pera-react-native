@@ -14,28 +14,29 @@ import { PWIcon, PWText, PWView } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type ARC59WarningContentProps = Record<string, never>
 
 const WARNING_ITEMS = [
     {
-        title: 'send_funds.arc59_warning.item1',
+        title: i18nKey('send_funds.arc59_warning.item1'),
         success: true,
     },
     {
-        title: 'send_funds.arc59_warning.item2',
+        title: i18nKey('send_funds.arc59_warning.item2'),
         success: true,
     },
     {
-        title: 'send_funds.arc59_warning.item3',
+        title: i18nKey('send_funds.arc59_warning.item3'),
         success: false,
     },
     {
-        title: 'send_funds.arc59_warning.item4',
+        title: i18nKey('send_funds.arc59_warning.item4'),
         success: false,
     },
     {
-        title: 'send_funds.arc59_warning.item5',
+        title: i18nKey('send_funds.arc59_warning.item5'),
         success: false,
     },
 ]

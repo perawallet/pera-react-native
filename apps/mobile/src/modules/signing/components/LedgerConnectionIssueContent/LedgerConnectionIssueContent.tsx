@@ -16,13 +16,14 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 const TIP_KEYS = [
-    'ledger.troubleshooting.tip_unlocked',
-    'ledger.troubleshooting.tip_nearby',
-    'ledger.troubleshooting.tip_bluetooth',
-    'ledger.troubleshooting.tip_app_open',
-    'ledger.troubleshooting.tip_repair',
+    i18nKey('ledger.troubleshooting.tip_unlocked'),
+    i18nKey('ledger.troubleshooting.tip_nearby'),
+    i18nKey('ledger.troubleshooting.tip_bluetooth'),
+    i18nKey('ledger.troubleshooting.tip_app_open'),
+    i18nKey('ledger.troubleshooting.tip_repair'),
 ] as const
 
 /**

@@ -17,6 +17,7 @@ import { useStyles } from './styles'
 
 import multisigIntroHero from '@assets/images/multisig-intro-hero.png'
 import multisigIntroHeroDark from '@assets/images/multisig-intro-hero-dark.png'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 type MultisigIntroductionDialogProps = {
     isVisible: boolean
@@ -25,9 +26,9 @@ type MultisigIntroductionDialogProps = {
 }
 
 const BULLET_KEYS = [
-    'multisig.introduction.bullet_1',
-    'multisig.introduction.bullet_2',
-    'multisig.introduction.bullet_3',
+    i18nKey('multisig.introduction.bullet_1'),
+    i18nKey('multisig.introduction.bullet_2'),
+    i18nKey('multisig.introduction.bullet_3'),
 ] as const
 
 export const MultisigIntroductionDialog = ({

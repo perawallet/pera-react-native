@@ -26,6 +26,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import type { PeraCardStackParamList } from '../../routes/types'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** Seconds the user must wait before the reset code can be re-requested. */
 const RESEND_COOLDOWN_SECONDS = 60
@@ -63,8 +64,8 @@ export const useCardForgotPasswordVerifyScreen =
         const requestReset = useRequestPasswordResetMutation(scope)
         const verifyReset = useVerifyPasswordResetMutation(scope)
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.forgot_password.error_title',
-            bodyKey: 'peraCard.forgot_password.error_body',
+            titleKey: i18nKey('peraCard.forgot_password.error_title'),
+            bodyKey: i18nKey('peraCard.forgot_password.error_body'),
         })
 
         const [code, setCode] = useState('')

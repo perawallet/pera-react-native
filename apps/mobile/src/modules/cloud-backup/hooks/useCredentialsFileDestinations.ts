@@ -16,11 +16,12 @@ import type { OptionListOption } from '@components/OptionList'
 import { CREDENTIALS_FILE_SOURCE_ICONS } from '../components/credentialsFileSourceIcons'
 import type { CredentialsFileSource } from '../storage'
 import { useCredentialsFileSaveSources } from './useCredentialsFileSources'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
-const TITLE_KEYS: Record<CredentialsFileSource, string> = {
-    device: 'cloud_backup.store_credentials.store_locally',
-    icloud: 'cloud_backup.store_credentials.icloud',
-    googleDrive: 'cloud_backup.store_credentials.google_drive',
+const TITLE_KEYS: Record<CredentialsFileSource, I18nKey> = {
+    device: i18nKey('cloud_backup.store_credentials.store_locally'),
+    icloud: i18nKey('cloud_backup.store_credentials.icloud'),
+    googleDrive: i18nKey('cloud_backup.store_credentials.google_drive'),
 }
 
 const TEST_IDS: Record<CredentialsFileSource, string> = {

@@ -10,11 +10,21 @@
  limitations under the License
  */
 
-import { RekeySuccessScreen } from '../../../components/RekeySuccessScreen'
+import {
+    RekeySuccessScreen,
+    type RekeySuccessCopy,
+} from '../../../components/RekeySuccessScreen'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+
+const SUCCESS_COPY: RekeySuccessCopy = {
+    titleKey: i18nKey('rekey.to_standard.success.title'),
+    bodyKey: i18nKey('rekey.to_standard.success.body'),
+    ctaKey: i18nKey('rekey.to_standard.success.cta'),
+}
 
 export const RekeyToStandardSuccessScreen = () => (
     <RekeySuccessScreen
-        i18nPrefix='rekey.to_standard.success'
+        copy={SUCCESS_COPY}
         testIdPrefix='rekey-to-standard'
     />
 )

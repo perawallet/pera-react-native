@@ -17,14 +17,21 @@ import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRekeySuccessScreen } from './useRekeySuccessScreen'
 import { useStyles } from './styles'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
+
+export type RekeySuccessCopy = {
+    titleKey: I18nKey
+    bodyKey: I18nKey
+    ctaKey: I18nKey
+}
 
 export type RekeySuccessScreenProps = {
-    i18nPrefix: string
+    copy: RekeySuccessCopy
     testIdPrefix: string
 }
 
 export const RekeySuccessScreen = ({
-    i18nPrefix,
+    copy,
     testIdPrefix,
 }: RekeySuccessScreenProps) => {
     const styles = useStyles()
@@ -41,7 +48,7 @@ export const RekeySuccessScreen = ({
             footer={
                 <PWButton
                     variant='primary'
-                    title={t(`${i18nPrefix}.cta`)}
+                    title={t(copy.ctaKey)}
                     onPress={handleDone}
                     style={styles.cta}
                     testID={`${testIdPrefix}-success-done`}
@@ -62,14 +69,14 @@ export const RekeySuccessScreen = ({
                         variant='h1'
                         style={styles.title}
                     >
-                        {t(`${i18nPrefix}.title`)}
+                        {t(copy.titleKey)}
                     </PWText>
                     <PWText
                         variant='bodyLarge'
                         style={styles.body}
                     >
                         <Trans
-                            i18nKey={`${i18nPrefix}.body`}
+                            i18nKey={copy.bodyKey}
                             values={{ source: sourceName }}
                             components={[
                                 <PWText

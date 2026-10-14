@@ -23,6 +23,7 @@ import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePassphraseAcknowledgeContent } from './usePassphraseAcknowledgeContent'
 import { useStyles } from './styles'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type PassphraseAcknowledgeContentProps = {
     testID?: string
@@ -31,10 +32,10 @@ export type PassphraseAcknowledgeContentProps = {
 export type PassphraseAcknowledgeContentResult = 'confirm'
 
 const ACKNOWLEDGE_ROW_KEYS = [
-    'view_passphrase.acknowledge.row_screen',
-    'view_passphrase.acknowledge.row_share',
-    'view_passphrase.acknowledge.row_lose',
-    'view_passphrase.acknowledge.row_pera',
+    i18nKey('view_passphrase.acknowledge.row_screen'),
+    i18nKey('view_passphrase.acknowledge.row_share'),
+    i18nKey('view_passphrase.acknowledge.row_lose'),
+    i18nKey('view_passphrase.acknowledge.row_pera'),
 ] as const
 
 export const PassphraseAcknowledgeContent = ({

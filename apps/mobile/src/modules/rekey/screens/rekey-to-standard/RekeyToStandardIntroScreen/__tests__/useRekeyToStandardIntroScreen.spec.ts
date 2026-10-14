@@ -17,30 +17,28 @@ import { useRekeyToStandardIntroScreen } from '../useRekeyToStandardIntroScreen'
 import en from '@i18n/locales/en.json'
 
 describe('useRekeyToStandardIntroScreen', () => {
-    // Neither half of this pairing is visible to the i18n lint rules — the
-    // keys are built dynamically and their namespace claim covers anything
-    // under them — so a mismatch renders the raw key string on screen with
-    // every check green.
-    it('keeps expectationCount in sync with the expect_N keys in en.json', () => {
+    // The keys are literals, but nothing ties the list to en.json: an extra
+    // expect_N line there would never render.
+    it('lists every expect_N line in en.json, in order', () => {
         const { result } = renderHook(() => useRekeyToStandardIntroScreen())
 
         const copy: Record<string, string> = en.rekey.to_standard.intro
-        const { expectationCount } = result.current
+        const expectKeys = Object.keys(copy).filter(key =>
+            /^expect_\d+$/.test(key),
+        )
 
-        for (let n = 1; n <= expectationCount; n++) {
-            expect(copy[`expect_${n}`]).toBeTruthy()
-        }
-        expect(copy[`expect_${expectationCount + 1}`]).toBeUndefined()
+        expect(result.current.copy.expectationKeys).toEqual(
+            expectKeys.map(key => `rekey.to_standard.intro.${key}`),
+        )
     })
 
-    // A missing key renders as the raw key string on the screen, which no
-    // integration test asserting testIDs would catch.
-    it('resolves the title to a real en.json string', () => {
+    it('points the screen copy at the standard intro namespace', () => {
         const { result } = renderHook(() => useRekeyToStandardIntroScreen())
 
-        const copy: Record<string, string> = en.rekey.to_standard.intro
-
-        expect(result.current.i18nBaseKey).toBe('rekey.to_standard.intro')
-        expect(copy.title).toBeTruthy()
+        expect(result.current.copy).toMatchObject({
+            titleKey: 'rekey.to_standard.intro.title',
+            bodyKey: 'rekey.to_standard.intro.body',
+            ctaKey: 'rekey.to_standard.intro.cta',
+        })
     })
 })

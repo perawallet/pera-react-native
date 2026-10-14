@@ -30,6 +30,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCardScope } from '../../hooks/useCardScope'
 
@@ -50,8 +51,8 @@ export const useCardOnboardingPhoneScreen =
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.verify_phone.send_error_title',
-            bodyKey: 'peraCard.verify_phone.send_error_body',
+            titleKey: i18nKey('peraCard.verify_phone.send_error_title'),
+            bodyKey: i18nKey('peraCard.verify_phone.send_error_body'),
         })
         const { request } = useBottomSheet()
         const countryIso = useCardStore(state => state.countryIso)
