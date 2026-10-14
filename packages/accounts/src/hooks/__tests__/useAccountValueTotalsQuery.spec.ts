@@ -329,9 +329,9 @@ describe('useAccountValueTotalsQuery', () => {
             expect(mainnet.portfolioUsdValue).toEqual(new Decimal(40))
             expect(testTier.hasFiatTotal).toBe(false)
             expect(testTier.portfolioUsdValue).toEqual(new Decimal(0))
-            expect(
-                testTier.accountValueTotals.get('E1')?.usdValue,
-            ).toEqual(new Decimal(40))
+            expect(testTier.accountValueTotals.get('E1')?.usdValue).toEqual(
+                new Decimal(40),
+            )
             expect(testTier.portfolioNativeValue).toEqual(new Decimal(20))
         })
 

@@ -116,12 +116,9 @@ describe('networkTierOf', () => {
         [algorandLike, 'testnet', 'testnet'],
         [ethereumLike, 'sepolia', 'testnet'],
         [ethereumLike, 'goerli', 'testnet'],
-    ] as const)(
-        'chain %#: %s is %s',
-        (chain, networkId, expected) => {
-            expect(networkTierOf(chain, networkId)).toBe(expected)
-        },
-    )
+    ] as const)('chain %#: %s is %s', (chain, networkId, expected) => {
+        expect(networkTierOf(chain, networkId)).toBe(expected)
+    })
 
     it('has no tier for a network the descriptor does not list', () => {
         expect(networkTierOf(ethereumLike, 'custom')).toBeUndefined()
