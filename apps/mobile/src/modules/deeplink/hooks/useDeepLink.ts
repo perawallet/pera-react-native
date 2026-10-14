@@ -43,11 +43,7 @@ import { navigateHome, navigateToScreen } from '../navigateToScreen'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
 import { isPeraOwnedDeeplink } from '../utils'
-import {
-    buildAccountDeeplink,
-    buildDeeplink,
-    type BuildDeeplinkInput,
-} from '../builders'
+import { buildDeeplink, type BuildDeeplinkInput } from '../builders'
 import {
     useAssetOptInDeeplink,
     useBrowserDeeplink,
@@ -76,7 +72,6 @@ type UseDeepLinkResult = {
     isDeepLinkAvailable: (url: string) => boolean
     handleDeepLink: HandleDeepLink
     parseDeeplink: typeof parseDeeplink
-    buildAccountDeeplink: typeof buildAccountDeeplink
     buildDeeplink: (input: BuildDeeplinkInput) => string
 }
 
@@ -599,7 +594,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
         isDeepLinkAvailable,
         handleDeepLink,
         parseDeeplink,
-        buildAccountDeeplink,
         buildDeeplink,
     }
 }

@@ -13,16 +13,16 @@
 import { useCallback, useMemo } from 'react'
 
 import {
-    chainAccountOf,
+    addressOn,
     getAccountDisplayName,
+    useAccountCapabilityScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { shareText } from '@utils/shareText'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
-import { useDeepLink } from '@modules/deeplink'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { bottomSheetNotifier } from '@components/core'
@@ -30,8 +30,14 @@ import { useReceiveFunds } from '@modules/transactions/hooks'
 
 type UseQRViewScreenResult = {
     account: Optional<WalletAccount>
+    /** The account's display name on its receive chain; '' when it has none. */
+    accountName: string
+    /** The receive address in its chain's canonical form; '' when the account can't receive. */
     address: string
-    deeplink: string
+    /** What the QR encodes: the chain codec's payment URI for `address`; '' when the account can't receive. */
+    paymentUri: string
+    /** False when there is no account, its chain has `receive` off, or no codec is registered for it. */
+    canReceive: boolean
     /**
      * True when the user reached this screen via AccountSelection — the
      * header back button navigates back to the picker. False when QRView is
@@ -43,43 +49,66 @@ type UseQRViewScreenResult = {
     handleShareAddress: () => Promise<void>
 }
 
+type ReceiveTarget = {
+    accountName: string
+    address: string
+    paymentUri: string
+}
+
+const NO_RECEIVE_TARGET: ReceiveTarget = {
+    accountName: '',
+    address: '',
+    paymentUri: '',
+}
+
 export const useQRViewScreen = (): UseQRViewScreenResult => {
     const { selectedAccount, canSelectAccount, onFinished } = useReceiveFunds()
     const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
-    const { buildAccountDeeplink } = useDeepLink()
-    const address = selectedAccount
-        ? (chainAccountOf(selectedAccount, LEGACY_CHAIN_ID)?.address ?? '')
-        : ''
+    const scope = useAccountCapabilityScope(selectedAccount ?? null, 'receive')
 
-    const deeplink = useMemo(() => {
-        if (!selectedAccount) {
-            return ''
+    const { accountName, address, paymentUri } = useMemo((): ReceiveTarget => {
+        if (!selectedAccount || !scope || !addressCodecs.has(scope.chainId)) {
+            return NO_RECEIVE_TARGET
         }
-        return buildAccountDeeplink(selectedAccount, LEGACY_CHAIN_ID)
-    }, [selectedAccount, buildAccountDeeplink])
+        const codec = addressCodecs.get(scope.chainId)
+        const rawAddress = addressOn(selectedAccount, scope)
+        // normalize is only defined for input that passes isValid.
+        if (!rawAddress || !codec.isValid(rawAddress, scope.networkId)) {
+            return NO_RECEIVE_TARGET
+        }
+        const normalized = codec.normalize(rawAddress)
+        return {
+            accountName: getAccountDisplayName(selectedAccount, scope.chainId),
+            address: normalized,
+            paymentUri: codec.toPaymentUri(normalized, {
+                networkId: scope.networkId,
+            }),
+        }
+    }, [selectedAccount, scope])
+    const canReceive = paymentUri !== ''
 
     const handleCopyAddress = useCallback(() => {
+        if (!canReceive) {
+            return
+        }
         void copyToClipboard(address)
-    }, [copyToClipboard, address])
+    }, [canReceive, copyToClipboard, address])
 
     const handleShareAddress = useCallback(async () => {
         try {
-            if (!selectedAccount) {
+            if (!canReceive) {
                 return
             }
-            await shareText({
-                title: getAccountDisplayName(selectedAccount, LEGACY_CHAIN_ID),
-                message: address,
-            })
+            await shareText({ title: accountName, message: address })
         } catch (error) {
             showError(error, t('errors.general.title'), {
                 notifier: bottomSheetNotifier.current ?? undefined,
             })
         }
-    }, [selectedAccount, address, showError, t])
+    }, [canReceive, accountName, address, showError, t])
 
     const handleBack = useCallback(() => {
         if (canSelectAccount) {
@@ -91,8 +120,10 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
 
     return {
         account: selectedAccount,
+        accountName,
         address,
-        deeplink,
+        paymentUri,
+        canReceive,
         canSelectAccount,
         handleBack,
         handleCopyAddress,
