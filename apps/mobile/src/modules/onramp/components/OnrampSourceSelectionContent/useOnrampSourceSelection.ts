@@ -17,6 +17,7 @@ import {
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 export type OnrampSourceFilter = 'all' | 'fiat' | 'crypto'
 
@@ -56,8 +57,9 @@ type UseOnrampSourceSelectionResult = {
  * search query + filter chip + collapsed-fiat state.
  */
 export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
-    const { data: pairs, isLoading } = useRampPairsQuery()
-    const { data: region } = useRampRegionQuery()
+    const { scope } = useOnrampAccount()
+    const { data: pairs, isLoading } = useRampPairsQuery({ scope })
+    const { data: region } = useRampRegionQuery({ scope })
     const { preferredCurrency } = useCurrency()
     const [filter, setFilter] = useState<OnrampSourceFilter>('all')
     const [search, setSearch] = useState('')

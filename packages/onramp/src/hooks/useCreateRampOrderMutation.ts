@@ -11,14 +11,16 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 
 import { createRampOrder, type CreateRampOrderParams } from '../api'
 import type { RampOrder } from '../models'
+import type { WithRampScope } from './withRampScope'
 
 export type UseCreateRampOrderMutationResult = {
-    mutate: (params: CreateRampOrderParams) => void
-    mutateAsync: (params: CreateRampOrderParams) => Promise<RampOrder>
+    mutate: (params: WithRampScope<CreateRampOrderParams>) => void
+    mutateAsync: (
+        params: WithRampScope<CreateRampOrderParams>,
+    ) => Promise<RampOrder>
     isSuccess: boolean
     isError: boolean
     isPaused: boolean
@@ -26,11 +28,12 @@ export type UseCreateRampOrderMutationResult = {
 
 export const useCreateRampOrderMutation =
     (): UseCreateRampOrderMutationResult => {
-        const { network } = useNetwork()
-
         const mutation = useMutation({
-            mutationFn: (params: CreateRampOrderParams) =>
-                createRampOrder(params, network),
+            mutationFn: ({
+                scope,
+                ...params
+            }: WithRampScope<CreateRampOrderParams>) =>
+                createRampOrder(params, scope),
             // Handled inline by the form's confirm flow (toast). Mirrors
             // `mutationDefaults` (@perawallet/wallet-core-shared), which already
             // sets throwOnError: false.

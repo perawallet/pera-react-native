@@ -11,19 +11,14 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     useRampHistoryInfiniteQuery,
     type OnrampStatus,
     type RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 export type UseOnrampHistoryResult = {
     items: RampHistoryItem[]
@@ -41,14 +36,9 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
     const [statusFilter, setStatusFilter] =
         useState<Nullable<OnrampStatus>>(null)
 
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network) ?? ''
-    const selectedAccount = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const selectedAccountAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
-    const accountAddress = selectedAccountAddress ?? ''
+    const { scope, address } = useOnrampAccount()
+    const deviceId = useScopedDeviceID(scope) ?? ''
+    const accountAddress = address ?? ''
 
     const {
         items,
@@ -59,6 +49,7 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
         fetchNextPage,
         refetch,
     } = useRampHistoryInfiniteQuery({
+        scope,
         deviceId,
         accountAddress,
         status: statusFilter ?? undefined,

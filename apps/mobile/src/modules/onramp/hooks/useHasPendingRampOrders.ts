@@ -11,17 +11,12 @@
  */
 
 import { useIsFocused } from '@react-navigation/native'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     hasPendingRampOrder,
     useRampHistoryInfiniteQuery,
 } from '@perawallet/wallet-core-onramp'
+import { useOnrampAccount } from './useOnrampAccount'
 
 /**
  * Drives the "needs attention" dot on the History tab. Observes the same
@@ -34,18 +29,14 @@ import {
  * anywhere", this needs a dedicated pending-only signal again.
  */
 export const useHasPendingRampOrders = (): boolean => {
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network) ?? ''
-    const selectedAccount = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const selectedAccountAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
+    const { scope, address } = useOnrampAccount()
+    const deviceId = useScopedDeviceID(scope) ?? ''
     const isFocused = useIsFocused()
 
     const { items } = useRampHistoryInfiniteQuery({
+        scope,
         deviceId,
-        accountAddress: selectedAccountAddress ?? '',
+        accountAddress: address ?? '',
         isActive: isFocused,
     })
 

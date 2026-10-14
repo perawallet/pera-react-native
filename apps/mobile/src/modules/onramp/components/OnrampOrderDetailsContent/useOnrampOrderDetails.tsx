@@ -12,13 +12,7 @@
 
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     useCancelRampOrderMutation,
     toOnrampUserMessage,
@@ -34,6 +28,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 type UseOnrampOrderDetailsResult = {
     status: OnrampStatus
@@ -89,16 +84,11 @@ export const useOnrampOrderDetails = (
     item: RampHistoryItem,
 ): UseOnrampOrderDetailsResult => {
     const { t } = useLanguage()
-    const { network } = useNetwork()
     const { dismiss } = useBottomSheetResult()
     const { request: requestBottomSheet } = useBottomSheet()
     const { successToast, errorToast } = useToast()
-    const deviceId = useDeviceID(network)
-    const selectedAccount = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const selectedAccountAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
+    const { scope, address: selectedAccountAddress } = useOnrampAccount()
+    const deviceId = useScopedDeviceID(scope)
     const { mutateAsync: cancelOrder, isPending: isCancelling } =
         useCancelRampOrderMutation()
 
@@ -120,7 +110,14 @@ export const useOnrampOrderDetails = (
             : null
 
     const handleCancelOrder = useCallback(async () => {
-        if (!item.swapOrderId || !deviceId || !selectedAccountAddress) return
+        if (
+            !item.swapOrderId ||
+            !deviceId ||
+            !selectedAccountAddress ||
+            scope === null
+        ) {
+            return
+        }
 
         // Confirm before cancelling — cancellation is irreversible.
         const confirmed = await requestBottomSheet<boolean>({
@@ -143,6 +140,7 @@ export const useOnrampOrderDetails = (
 
         try {
             await cancelOrder({
+                scope,
                 swapOrderId: item.swapOrderId,
                 deviceId,
                 accountAddress: selectedAccountAddress,
@@ -163,6 +161,7 @@ export const useOnrampOrderDetails = (
         item.swapOrderId,
         deviceId,
         selectedAccountAddress,
+        scope,
         cancelOrder,
         dismiss,
         requestBottomSheet,

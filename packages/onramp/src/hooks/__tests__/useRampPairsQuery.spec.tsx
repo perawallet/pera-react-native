@@ -28,7 +28,12 @@ import React from 'react'
 import { mockRampPairs } from '../../test-handlers'
 import type { RampPairApiResponse } from '../../api/pairs/schema'
 import { useRampPairsQuery } from '../useRampPairsQuery'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { registerFakeRampAdapter } from '../../__tests__/fakeRampAdapter'
+import { registerFakeChain } from '../../__tests__/fakeChains'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const server = setupServer()
 
@@ -36,6 +41,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 beforeEach(() => {
+    getProvider().chains.reset()
     registerFakeRampAdapter()
 })
 
@@ -84,9 +90,12 @@ describe('onramp/useRampPairsQuery', () => {
     test('returns transformed pairs on success', async () => {
         server.use(mockRampPairs({ response: [apiPair] }))
 
-        const { result } = renderHook(() => useRampPairsQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useRampPairsQuery({ scope: SCOPE }),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.data).toHaveLength(1))
 
@@ -95,7 +104,7 @@ describe('onramp/useRampPairsQuery', () => {
     })
     test('returns one stable empty array while disabled', () => {
         const { result, rerender } = renderHook(
-            () => useRampPairsQuery(false),
+            () => useRampPairsQuery({ scope: SCOPE, enabled: false }),
             { wrapper: createWrapper() },
         )
         const initialData = result.current.data
@@ -117,11 +126,81 @@ describe('onramp/useRampPairsQuery', () => {
             }),
         )
 
-        const { result } = renderHook(() => useRampPairsQuery(), {
-            wrapper: createWrapper(),
-        })
+        const { result } = renderHook(
+            () => useRampPairsQuery({ scope: SCOPE }),
+            {
+                wrapper: createWrapper(),
+            },
+        )
 
         await waitFor(() => expect(result.current.data).toHaveLength(1))
         expect(requested).toBe('NATIVE,STABLE')
+    })
+
+    test('stays idle without a scope', () => {
+        const { result } = renderHook(
+            () => useRampPairsQuery({ scope: null }),
+            { wrapper: createWrapper() },
+        )
+
+        expect(result.current.data).toEqual([])
+        expect(result.current.fetchStatus).toBe('idle')
+    })
+
+    describe('crypto sources', () => {
+        const ethereumSource: RampPairApiResponse = {
+            ...apiPair,
+            id: 'pair-eth',
+            source_token: {
+                ...apiPair.source_token,
+                id: 'ETH',
+                symbol: 'ETH',
+                network: { id: 'ETHEREUM', name: 'Ethereum', logo: null },
+                caip19: 'eip155:1/slip44:60',
+                extra: {},
+            },
+        }
+        const bitcoinSource: RampPairApiResponse = {
+            ...apiPair,
+            id: 'pair-btc',
+            source_token: {
+                ...apiPair.source_token,
+                id: 'BTC',
+                symbol: 'BTC',
+                network: { id: 'BITCOIN', name: 'Bitcoin', logo: null },
+                caip19: 'bip122:000000000019d6689c085ae165831e93/slip44:0',
+                extra: {},
+            },
+        }
+
+        const offeredIds = async () => {
+            server.use(
+                mockRampPairs({
+                    response: [apiPair, ethereumSource, bitcoinSource],
+                }),
+            )
+            const { result } = renderHook(
+                () => useRampPairsQuery({ scope: SCOPE }),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() =>
+                expect(result.current.data.length).toBeGreaterThan(0),
+            )
+            return result.current.data.map(pair => pair.id)
+        }
+
+        test('leaves out a source on a chain the wallet runs', async () => {
+            registerFakeChain({ chainId: 'ethereum', caip2: 'eip155:1' })
+
+            expect(await offeredIds()).toEqual(['pair-1', 'pair-btc'])
+        })
+
+        test('offers that source while the chain is not enabled', async () => {
+            expect(await offeredIds()).toEqual([
+                'pair-1',
+                'pair-eth',
+                'pair-btc',
+            ])
+        })
     })
 })

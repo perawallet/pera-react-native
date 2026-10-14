@@ -61,6 +61,7 @@ describe('onramp/useCreateRampOrderMutation (offline fail-fast)', () => {
 
         act(() => {
             result.current.mutate({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 quote: 'quote-1',
                 sourceAmount: '100',
                 sourceAddress: 'SOURCE_ADDRESS',
@@ -74,5 +75,13 @@ describe('onramp/useCreateRampOrderMutation (offline fail-fast)', () => {
         // auto-resume.
         expect(result.current.isPaused).toBe(false)
         expect(createRampOrder).toHaveBeenCalledTimes(1)
+        expect(createRampOrder).toHaveBeenCalledWith(
+            {
+                quote: 'quote-1',
+                sourceAmount: '100',
+                sourceAddress: 'SOURCE_ADDRESS',
+            },
+            { chainId: 'algorand', networkId: 'mainnet' },
+        )
     })
 })

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 
 import type { RampPair } from '../../models'
 import { rampPairsResponseSchema, type RampPairsApiResponse } from './schema'
@@ -18,11 +19,11 @@ import { transformRampPair } from './transformers'
 
 export const getRampPairs = async (
     destinationTokenIds: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<RampPair[]> => {
     const response = await queryClient<RampPairsApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/ramp/pairs/`,
         params: { destination_tokens: destinationTokenIds.join(',') },

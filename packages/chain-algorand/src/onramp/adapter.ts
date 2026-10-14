@@ -11,32 +11,21 @@
  */
 
 import type { RampChainAdapter } from '@perawallet/wallet-core-onramp'
-import {
-    ALGO_ASSET_NAME,
-    isAlgoAssetName,
-} from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
+import {
+    algorandRampTokenAssetId,
+    isAlgorandNativeRampToken,
+} from './tokenAsset'
 import { useEnsureDestinationOptIn } from './useEnsureDestinationOptIn'
-
-// A numeric id is an on-chain id and wins; the ticker is trusted only when the
-// provider gives a code instead. That fallback assumes the provider names its
-// own listings honestly, which holds for a brokered provider list and never
-// for an on-chain unit name.
-const isNativeToken: RampChainAdapter['isNativeToken'] = token =>
-    /^\d+$/.test(token.id)
-        ? isAlgorandNativeAssetId(token.id)
-        : isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
 
 const useEnsureCanReceive = () => useEnsureDestinationOptIn().ensureOptIn
 
 export const algorandRampAdapter: RampChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    rampNetworkIds: ['ALGORAND'],
     destinationTokenIds: [ALGO_ASSET_NAME, 'USDC_ALGORAND'],
-    isNativeToken,
-    toAssetId: token =>
-        isNativeToken(token)
-            ? algorandDescriptor.nativeAsset.ref.assetId
-            : token.id,
+    isNativeToken: isAlgorandNativeRampToken,
+    toAssetId: algorandRampTokenAssetId,
     useEnsureCanReceive,
 }

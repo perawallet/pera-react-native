@@ -74,7 +74,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
-    useSelectedAccount: () => selectedAccountMock(),
     useAccountsStore: {
         getState: () => ({ getSelectedAccount: () => selectedAccountMock() }),
     },
@@ -134,11 +133,19 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
+    useOnrampAccount: () => ({
+        account: selectedAccountMock(),
+        scope:
+            mockSelectedAccountAddress === null
+                ? null
+                : { chainId: 'algorand', networkId: 'mainnet' },
+        address: mockSelectedAccountAddress,
+    }),
+}))
+
+vi.mock('@modules/onramp/hooks/useTrackOnrampEvent', () => ({
+    useTrackOnrampEvent: () => vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -196,7 +203,7 @@ const meldPair: RampPair = {
         name: 'Algorand',
         fractionDecimals: 6,
         logo: null,
-        network: { id: 'algorand', name: 'Algorand', logo: null },
+        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
         priceInUsd: null,
     },
     provider: { id: 'meld', paymentTypes: ['CARD'], limits: null },
@@ -211,7 +218,7 @@ const usdcMeldPair: RampPair = {
         name: 'USD Coin',
         fractionDecimals: 6,
         logo: null,
-        network: { id: 'algorand', name: 'Algorand', logo: null },
+        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
         priceInUsd: null,
     },
 }
@@ -326,7 +333,9 @@ describe('useOnrampForm', () => {
         expect(mockCreateQuote).toHaveBeenCalledTimes(1)
         expect(mockCreateQuote).toHaveBeenCalledWith(
             expect.objectContaining({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 pair: 'pair-meld',
+                destinationAddress: 'ACCOUNT_ADDRESS',
                 sourceAmount: 100,
             }),
         )
@@ -710,7 +719,7 @@ describe('useOnrampForm', () => {
         expect(mockErrorToast).toHaveBeenCalled()
     })
 
-    it('passes the ASA id as destinationAssetId for a USDC pair', async () => {
+    it('hands the USDC destination token to the receive preparation', async () => {
         mockCreateQuote.mockResolvedValue([makeMeldQuote({ quoteId: 'm1' })])
 
         const { result } = renderHook(() => useOnrampForm(usdcMeldPair))
@@ -727,12 +736,12 @@ describe('useOnrampForm', () => {
         })
 
         expect(mockEnsureOptIn).toHaveBeenCalledWith(
-            expect.objectContaining({ address: 'ACCOUNT_ADDRESS' }),
+            expect.objectContaining({
+                address: 'ACCOUNT_ADDRESS',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                destinationToken: usdcMeldPair.destinationToken,
+            }),
         )
-        const arg = mockEnsureOptIn.mock.calls[0]![0] as {
-            destinationAssetId: unknown
-        }
-        expect(arg.destinationAssetId).not.toBe('ALGO')
     })
 
     it('opens the Meld widget in the OS browser when the order is a Meld order', async () => {

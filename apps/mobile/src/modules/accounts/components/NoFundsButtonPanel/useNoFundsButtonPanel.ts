@@ -11,31 +11,32 @@
  */
 
 import { useCallback } from 'react'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCapability } from '@hooks/useCapability'
+import { useCanFundAccount } from '@modules/onramp'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
 export type UseNoFundsButtonPanelResult = {
     canBuy: boolean
-    handleBuyAlgo: () => void
+    handleBuy: () => void
     handleReceive: () => void
     handleMore: () => void
 }
 
 export const useNoFundsButtonPanel = (): UseNoFundsButtonPanelResult => {
     const navigation = useAppNavigation()
-    const canBuy = useCapability({ anyChain: 'onramp' })
+    const canBuy = useCanFundAccount(useSelectedAccount())
     const { openReceiveFunds, openAccountOptions } = useAccountOverviewModal()
 
-    const handleBuyAlgo = useCallback(() => {
+    const handleBuy = useCallback(() => {
         trackEvent(HomeEvent.Fund)
         navigation.navigate('TabBar', { screen: 'Fund' })
     }, [navigation])
 
     return {
         canBuy,
-        handleBuyAlgo,
+        handleBuy,
         handleReceive: openReceiveFunds,
         handleMore: openAccountOptions,
     }

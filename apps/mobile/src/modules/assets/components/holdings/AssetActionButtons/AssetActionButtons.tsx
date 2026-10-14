@@ -62,7 +62,7 @@ export const AssetActionButtons = ({
     const isFrozen =
         assetHolding?.restriction === HoldingRestrictions.transferBlocked
     const nativeAsset = useNativeAsset()
-    const { canSwap, canBuy } = useAssetActionButtons()
+    const { canSwap, canBuy } = useAssetActionButtons(account)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)

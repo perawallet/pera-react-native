@@ -14,15 +14,22 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { renderHook } from '@test-utils/render'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    algorandAccountAt,
+    registerAlgorandRampAdapter,
+} from '@test-utils/rampChainAdapter'
 import { useAssetActionButtons } from '../useAssetActionButtons'
+
+const account = algorandAccountAt('ALGORAND_ADDRESS')
 
 describe('useAssetActionButtons', () => {
     beforeEach(() => {
         useRemoteConfigStore.getState().resetState()
+        registerAlgorandRampAdapter()
     })
 
     it('offers both actions at the Algorand defaults', () => {
-        const { result } = renderHook(() => useAssetActionButtons())
+        const { result } = renderHook(() => useAssetActionButtons(account))
 
         expect(result.current).toEqual({ canSwap: true, canBuy: true })
     })
@@ -35,9 +42,21 @@ describe('useAssetActionButtons', () => {
         (capability, expected) => {
             setCapabilityOverrides({ [capability]: false })
 
-            const { result } = renderHook(() => useAssetActionButtons())
+            const { result } = renderHook(() => useAssetActionButtons(account))
 
             expect(result.current).toEqual(expected)
         },
     )
+
+    it('hides buying for an account with no address on an onramp chain', () => {
+        const { result } = renderHook(() =>
+            useAssetActionButtons({
+                id: 'elsewhere',
+                custody: { kind: 'watch' },
+                chains: { ethereum: { address: '0xADDRESS' } },
+            }),
+        )
+
+        expect(result.current.canBuy).toBe(false)
+    })
 })

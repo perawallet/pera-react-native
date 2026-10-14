@@ -113,6 +113,7 @@ describe('onramp/useRampHistoryInfiniteQuery', () => {
         const { result } = renderHook(
             () =>
                 useRampHistoryInfiniteQuery({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
                     deviceId: 'device-1',
                     accountAddress: 'ADDRESS',
                 }),
@@ -141,6 +142,7 @@ describe('onramp/useRampHistoryInfiniteQuery', () => {
         const { result } = renderHook(
             () =>
                 useRampHistoryInfiniteQuery({
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
                     deviceId: '',
                     accountAddress: '',
                 }),

@@ -10,14 +10,19 @@
  limitations under the License
  */
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useCapability } from '@hooks/useCapability'
+import { useCanFundAccount } from '@modules/onramp'
 
 export type UseAssetActionButtonsResult = {
     canSwap: boolean
     canBuy: boolean
 }
 
-export const useAssetActionButtons = (): UseAssetActionButtonsResult => ({
+export const useAssetActionButtons = (
+    account: Nullable<WalletAccount> | undefined,
+): UseAssetActionButtonsResult => ({
     canSwap: useCapability({ anyChain: 'swap' }),
-    canBuy: useCapability({ anyChain: 'onramp' }),
+    canBuy: useCanFundAccount(account),
 })

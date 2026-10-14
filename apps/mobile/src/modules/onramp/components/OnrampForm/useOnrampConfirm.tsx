@@ -12,22 +12,14 @@
 
 import { useCallback, useState } from 'react'
 import type { Decimal } from 'decimal.js'
-import {
-    addressOn,
-    useAccountsStore,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { addressOn, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     useCreateRampOrderMutation,
     useEnsureRampDestination,
     useOnramp,
     toOnrampUserMessage,
     parseRampAmount,
+    rampTokenAsset,
     type RampPair,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
@@ -36,18 +28,17 @@ import {
     ZERO_DECIMAL,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { trackEvent, OnrampEvent } from '@analytics'
+import { OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { openValidatedBrowserUrl } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { OptInConfirmationContent } from '@modules/assets'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
 import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'
 import { OnrampTermsContent } from '../OnrampTermsContent'
-import {
-    buildPendingXoHistoryItem,
-    resolveDestinationAssetId,
-} from './onrampFormHelpers'
+import { buildPendingXoHistoryItem } from './onrampFormHelpers'
 import { useOnrampTerms } from './useOnrampTerms'
 
 type UseOnrampConfirmParams = {
@@ -82,18 +73,16 @@ export const useOnrampConfirm = ({
     onNavigateToHistory,
 }: UseOnrampConfirmParams): UseOnrampConfirmResult => {
     const { t } = useLanguage()
-    const { network } = useNetwork()
-    const selectedAccount = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const selectedAccountAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
+    const { scope, address: selectedAccountAddress } = useOnrampAccount()
+    const trackOnrampEvent = useTrackOnrampEvent()
     const { senderAddress } = useOnramp()
     const { request: requestBottomSheet } = useBottomSheet()
     const { errorToast } = useToast()
     const { isTermsAccepted, markTermsAccepted } = useOnrampTerms()
     const { mutateAsync: createOrder } = useCreateRampOrderMutation()
-    const { ensureCanReceive } = useEnsureRampDestination(network)
+    const { ensureCanReceive } = useEnsureRampDestination(
+        scope?.chainId ?? null,
+    )
 
     const [isConfirming, setIsConfirming] = useState(false)
 
@@ -103,12 +92,13 @@ export const useOnrampConfirm = ({
             !selectedPair ||
             !selectedQuote ||
             parsedSourceAmount === null ||
-            !selectedAccountAddress
+            !selectedAccountAddress ||
+            scope === null
         ) {
             return
         }
 
-        // First XO (crypto→ALGO) order requires a one-time Terms acceptance.
+        // First XO (crypto→crypto) order requires a one-time Terms acceptance.
         // Gate runs BEFORE setIsConfirming(true) so the button isn't stuck in a
         // loading state while the sheet is open, and so an early return on
         // dismiss leaves isConfirming untouched.
@@ -121,7 +111,7 @@ export const useOnrampConfirm = ({
             markTermsAccepted()
         }
 
-        trackEvent(OnrampEvent.ProceedTap)
+        trackOnrampEvent(OnrampEvent.ProceedTap)
         setIsConfirming(true)
         try {
             // v2 safety: re-read the selected account at call time in case it
@@ -134,30 +124,25 @@ export const useOnrampConfirm = ({
                     ? addressOn(currentAccount, scope)
                     : undefined) ?? selectedAccountAddress
 
-            const destinationAssetId = resolveDestinationAssetId(
-                selectedPair,
-                scope,
-            )
-
-            // No known USDC id on this network — the destination asset is
-            // unavailable here (a Pera-backed feature, already dead off that
-            // lane). Nothing to opt into or fund, so bail out quietly.
-            if (destinationAssetId === null) {
+            // The destination has no asset on this network, so there is
+            // nothing to prepare or fund: bail out quietly.
+            if (rampTokenAsset(selectedPair.destinationToken, scope) === null) {
                 return
             }
 
-            // Opt-in MUST resolve before the order is created. The user
-            // confirms it via the standard opt-in sheet — with a 0 fee when
-            // the opt-in is sponsored (fee-delegated). Declining cancels the
-            // whole order quietly.
-            const optInConfirmed = await ensureCanReceive({
+            // Preparation (an asset opt-in, say) MUST resolve before the
+            // order is created. The user confirms it via the standard opt-in
+            // sheet — with a 0 fee when it is sponsored (fee-delegated).
+            // Declining cancels the whole order quietly.
+            const canReceive = await ensureCanReceive({
                 address: currentAddress,
-                destinationAssetId,
-                confirmOptIn: async ({ assetId, isSponsored }) => {
+                scope,
+                destinationToken: selectedPair.destinationToken,
+                confirm: async ({ assetId, isSponsored }) => {
                     const result = await requestBottomSheet<'confirm'>({
                         contents: (
                             <OptInConfirmationContent
-                                assetId={assetId.toString()}
+                                assetId={assetId}
                                 accountAddress={currentAddress}
                                 fee={isSponsored ? ZERO_DECIMAL : undefined}
                             />
@@ -167,7 +152,7 @@ export const useOnrampConfirm = ({
                     return result === 'confirm'
                 },
             })
-            if (!optInConfirmed) {
+            if (!canReceive) {
                 return
             }
 
@@ -177,6 +162,7 @@ export const useOnrampConfirm = ({
                 ? currentAddress
                 : senderAddress.trim() || null
             const order = await createOrder({
+                scope,
                 quote: selectedQuote.quoteId,
                 sourceAmount,
                 sourceAddress,
@@ -241,6 +227,7 @@ export const useOnrampConfirm = ({
         markTermsAccepted,
         ensureCanReceive,
         createOrder,
+        trackOnrampEvent,
         requestBottomSheet,
         errorToast,
         onNavigateToHistory,

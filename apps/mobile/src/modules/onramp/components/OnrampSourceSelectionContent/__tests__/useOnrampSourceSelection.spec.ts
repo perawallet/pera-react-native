@@ -22,6 +22,14 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 import { useOnrampSourceSelection } from '../useOnrampSourceSelection'
 
+vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
+    useOnrampAccount: () => ({
+        account: null,
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
+        address: 'ADDR',
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-onramp', () => ({
     useRampPairsQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),

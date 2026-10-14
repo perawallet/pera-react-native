@@ -13,10 +13,15 @@
 // @vitest-environment node
 
 import { Decimal } from 'decimal.js'
-import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetVerificationTier,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { buildAccountBalanceFromRampToken } from '../buildAccountBalanceFromRampToken'
+
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const makeToken = (overrides: Partial<RampToken> = {}): RampToken => ({
     id: 'USDC_ALGORAND',
@@ -24,10 +29,18 @@ const makeToken = (overrides: Partial<RampToken> = {}): RampToken => ({
     name: 'USD Coin',
     fractionDecimals: 6,
     logo: 'https://example.com/usdc.png',
-    network: { id: 'algorand', name: 'Algorand', logo: null },
+    network: { id: 'ALGORAND', name: 'Algorand', logo: null },
     priceInUsd: new Decimal(1),
     ...overrides,
 })
+
+const assetWithTier = (
+    verificationTier: PeraAssetVerificationTier,
+): PeraAsset =>
+    ({
+        assetId: '31566704',
+        peraMetadata: { verificationTier },
+    }) as PeraAsset
 
 describe('buildAccountBalanceFromRampToken', () => {
     beforeEach(() => {
@@ -38,48 +51,65 @@ describe('buildAccountBalanceFromRampToken', () => {
         const result = buildAccountBalanceFromRampToken(
             makeToken({ id: 'ALGO', symbol: 'ALGO', name: 'Algorand' }),
             null,
-            { chainId: 'algorand', networkId: 'mainnet' },
+            MAINNET,
+            null,
         )
         expect(result.assetId).toBe('0')
     })
 
-    it('maps name, unit name and decimals from the token', () => {
-        const result = buildAccountBalanceFromRampToken(makeToken(), null, {
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
-        expect(result.assetId).toBe('USDC_ALGORAND')
+    it("maps a token to its asset on the network, with the token's names", () => {
+        const result = buildAccountBalanceFromRampToken(
+            makeToken(),
+            null,
+            MAINNET,
+            null,
+        )
+        expect(result.assetId).toBe('31566704')
         expect(result.asset?.name).toBe('USD Coin')
         expect(result.asset?.unitName).toBe('USDC')
         expect(result.asset?.decimals).toBe(6)
     })
 
-    it('applies the verified tier to known tokens', () => {
-        const result = buildAccountBalanceFromRampToken(makeToken(), null, {
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
-        expect(result.asset?.peraMetadata?.verificationTier).toBe(
-            PeraAssetVerificationTier.verified,
-        )
-    })
-
-    it('verifies ALGO listed under its on-chain id', () => {
-        const result = buildAccountBalanceFromRampToken(
-            makeToken({ id: '0', symbol: 'ALGO', name: 'Algorand' }),
-            null,
-            { chainId: 'algorand', networkId: 'mainnet' },
-        )
-        expect(result.asset?.peraMetadata?.verificationTier).toBe(
-            PeraAssetVerificationTier.verified,
-        )
-    })
-
-    it('falls back to the default tier for unknown tokens', () => {
+    it('keeps the ramp id for a token with no asset on the network', () => {
         const result = buildAccountBalanceFromRampToken(
             makeToken({ id: 'MYSTERY', symbol: 'MYS' }),
             null,
-            { chainId: 'algorand', networkId: 'mainnet' },
+            MAINNET,
+            null,
+        )
+        expect(result.assetId).toBe('MYSTERY')
+    })
+
+    it("takes the verification tier from the token's asset", () => {
+        const result = buildAccountBalanceFromRampToken(
+            makeToken(),
+            null,
+            MAINNET,
+            assetWithTier(PeraAssetVerificationTier.suspicious),
+        )
+        expect(result.asset?.peraMetadata?.verificationTier).toBe(
+            PeraAssetVerificationTier.suspicious,
+        )
+    })
+
+    it('verifies the native coin listed under its on-chain id', () => {
+        const result = buildAccountBalanceFromRampToken(
+            makeToken({ id: '0', symbol: 'ALGO', name: 'Algorand' }),
+            null,
+            MAINNET,
+            null,
+        )
+        expect(result.asset?.peraMetadata?.verificationTier).toBe(
+            PeraAssetVerificationTier.verified,
+        )
+    })
+
+    it('falls back to the default tier until the asset loads', () => {
+        const result = buildAccountBalanceFromRampToken(
+            makeToken(),
+            null,
+            MAINNET,
+            null,
         )
         expect(result.asset?.peraMetadata?.verificationTier).toBe(
             PeraAssetVerificationTier.unverified,
@@ -90,16 +120,19 @@ describe('buildAccountBalanceFromRampToken', () => {
         const result = buildAccountBalanceFromRampToken(
             makeToken({ id: 'ALGO', symbol: 'ALGO' }),
             new Decimal(12.5),
-            { chainId: 'algorand', networkId: 'mainnet' },
+            MAINNET,
+            null,
         )
         expect(result.amount.toString()).toBe('12.5')
     })
 
     it('defaults the amount to zero when balance is null', () => {
-        const result = buildAccountBalanceFromRampToken(makeToken(), null, {
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
+        const result = buildAccountBalanceFromRampToken(
+            makeToken(),
+            null,
+            MAINNET,
+            null,
+        )
         expect(result.amount.toString()).toBe('0')
     })
 })

@@ -21,7 +21,7 @@ const makeToken = (id: string, name: string, symbol: string): RampToken => ({
     name,
     fractionDecimals: 6,
     logo: null,
-    network: { id: 'algorand', name: 'Algorand', logo: null },
+    network: { id: 'ALGORAND', name: 'Algorand', logo: null },
     priceInUsd: null,
 })
 
@@ -42,8 +42,16 @@ const PAIRS: RampPair[] = [
     },
 ]
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const SELECTED = {
+    id: 'selected',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: 'ADDR' } },
+}
+const USDC_MAINNET_ASSET_ID = '31566704'
+
 const mockResolve = vi.fn()
-const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
+const mockUseAssetsQuery = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 const mockUseRampPairsQuery = vi.hoisted(() => vi.fn())
 
@@ -56,8 +64,22 @@ vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
     useRampPairsQuery: mockUseRampPairsQuery,
 }))
 
+vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
+    useOnrampAccount: () => ({
+        account: SELECTED,
+        scope: SCOPE,
+        address: 'ADDR',
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    useAssetsQuery: mockUseAssetsQuery,
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: mockUseSelectedAccount,
     addressOn: (
         account: { chains: Record<string, { address: string }> },
         scope: { chainId: string },
@@ -73,11 +95,7 @@ describe('useOnrampPairSelectionContent', () => {
         registerAlgorandRampAdapter()
         vi.clearAllMocks()
         mockUseRampPairsQuery.mockReturnValue({ data: PAIRS, isLoading: false })
-        mockUseSelectedAccount.mockReturnValue({
-            id: 'selected',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: 'ADDR' } },
-        })
+        mockUseAssetsQuery.mockReturnValue({ data: new Map() })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map(),
         })
@@ -85,7 +103,10 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('dedupes to one row per destination token', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination' }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         expect(result.current.items.map(i => i.token.id)).toEqual([
@@ -96,7 +117,7 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('dedupes to one row per source token', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'source' }),
+            useOnrampPairSelectionContent({ variant: 'source', scope: SCOPE }),
         )
 
         expect(result.current.items.map(i => i.token.id)).toEqual(['usd'])
@@ -104,7 +125,10 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('filters by name or symbol (case-insensitive)', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination' }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         act(() => {
@@ -131,16 +155,75 @@ describe('useOnrampPairSelectionContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination' }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         const algo = result.current.items.find(i => i.token.id === 'ALGO')
         expect(algo?.balance?.toString()).toBe('1000000')
     })
 
+    it("looks up USDC's balance under its asset id on the network", () => {
+        mockUseAccountBalancesQuery.mockReturnValue({
+            accountBalances: new Map([
+                [
+                    'ADDR',
+                    {
+                        assetBalances: [
+                            {
+                                assetId: USDC_MAINNET_ASSET_ID,
+                                amount: new Decimal('25'),
+                            },
+                        ],
+                    },
+                ],
+            ]),
+        })
+
+        const { result } = renderHook(() =>
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
+        )
+
+        const usdc = result.current.items.find(
+            i => i.token.id === 'USDC_ALGORAND',
+        )
+        expect(usdc?.balance?.toString()).toBe('25')
+    })
+
+    it("reads each token's asset for the network", () => {
+        const usdcAsset = { assetId: USDC_MAINNET_ASSET_ID, name: 'USDC' }
+        mockUseAssetsQuery.mockReturnValue({
+            data: new Map([[USDC_MAINNET_ASSET_ID, usdcAsset]]),
+        })
+
+        const { result } = renderHook(() =>
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
+        )
+
+        expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+            ['0', USDC_MAINNET_ASSET_ID],
+            { fetchMissing: true, scope: SCOPE },
+        )
+        const usdc = result.current.items.find(
+            i => i.token.id === 'USDC_ALGORAND',
+        )
+        expect(usdc?.asset).toBe(usdcAsset)
+    })
+
     it('returns null balance for tokens with no holding', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination' }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         result.current.items.forEach(item => {
@@ -150,7 +233,10 @@ describe('useOnrampPairSelectionContent', () => {
 
     it('resolves the selected token id', () => {
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination' }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         const algoPair = PAIRS.find(
@@ -170,7 +256,10 @@ describe('useOnrampPairSelectionContent', () => {
         })
 
         const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'destination' }),
+            useOnrampPairSelectionContent({
+                variant: 'destination',
+                scope: SCOPE,
+            }),
         )
 
         expect(result.current.isLoading).toBe(true)

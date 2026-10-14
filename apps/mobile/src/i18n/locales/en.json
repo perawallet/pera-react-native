@@ -350,7 +350,7 @@
         "no_balance": {
             "welcome": "Welcome to Pera!",
             "get_started": "To get started, deposit ALGO",
-            "buy_algo": "Buy Algo",
+            "buy": "Buy Crypto",
             "receive": "Receive",
             "more": "More"
         }
@@ -3506,7 +3506,11 @@
         },
         "testnet": {
             "title": "Not available on TestNet",
-            "body": "Funding your wallet is only available on MainNet. Switch to MainNet to buy ALGO or USDC."
+            "body": "Funding is only available on MainNet. Switch to MainNet to buy crypto."
+        },
+        "account_unsupported": {
+            "title": "This account can't be funded",
+            "body": "Choose an account on a network that supports buying."
         },
         "region": {
             "unknown": "--",
@@ -3519,8 +3523,8 @@
             "title": "Fund",
             "new_chip": "NEW",
             "continue": "Continue",
-            "feature_buy": "Buy ALGO or USDC with fiat or crypto",
-            "feature_swap": "Swap assets from other networks into Algorand",
+            "feature_buy": "Buy crypto with fiat or other crypto",
+            "feature_swap": "Swap assets from other networks into your wallet",
             "feature_portal": "One portal for on-ramps and cross-chain swaps"
         },
         "form": {

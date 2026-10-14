@@ -12,9 +12,9 @@
 
 import { AssetIcon } from '@components/AssetIcon'
 import type { PWIconSize } from '@components/core'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 
 export type OnrampTokenIconProps = {
@@ -28,12 +28,12 @@ export const OnrampTokenIcon = ({
     size = 'md',
     shape = 'circle',
 }: OnrampTokenIconProps) => {
-    const { network } = useNetwork()
+    const { scope } = useOnrampAccount()
     if (!token) return null
 
     return (
         <AssetIcon
-            asset={buildDisplayableAssetFromRampToken(token, network)}
+            asset={buildDisplayableAssetFromRampToken(token, scope)}
             logoUrl={token.logo ?? undefined}
             size={size}
             shape={shape}

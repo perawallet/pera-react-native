@@ -25,7 +25,7 @@ import { useClaimAssets } from '@modules/transactions/hooks'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import type { MessagesStackParamList } from '@modules/messages'
 import { Decimal } from 'decimal.js'
-import { useCapability } from '@hooks/useCapability'
+import { useCanFundAccount } from '@modules/onramp'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -63,13 +63,13 @@ export const useAssetClaimDetailScreen =
         const { copyToClipboard } = useClipboard()
         const { request: requestBottomSheet } = useBottomSheet()
         const { showToast, errorToast } = useToast()
-        const canBuy = useCapability({ anyChain: 'onramp' })
         const { t } = useLanguage()
 
         const request = assetRequests[assetIndex] ?? null
         const account = accountAddress
             ? findAccountByAddressOn(accounts, LEGACY_CHAIN_ID, accountAddress)
             : undefined
+        const canBuy = useCanFundAccount(account)
 
         // The opt-in this claim performs raises the account's minimum balance,
         // so a claim the backend says is unaffordable can only be unblocked by

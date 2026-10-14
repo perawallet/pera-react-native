@@ -179,14 +179,34 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 const mockImportAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 
+type StoredAccount = {
+    id: string
+    chains: Record<string, { address: string }>
+}
+const { mockSetSelectedAccountId, mockStoredAccounts } = vi.hoisted(() => ({
+    mockSetSelectedAccountId: vi.fn(),
+    mockStoredAccounts: { current: [] as StoredAccount[] },
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({
         id: 'selected',
         custody: { kind: 'watch' },
         chains: { algorand: { address: 'addr1' } },
     }),
-    useSelectedAccountId: () => ({ setSelectedAccountId: vi.fn() }),
-    useAccountsStore: { getState: () => ({ accounts: [] }) },
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
+    }),
+    useAccountsStore: {
+        getState: () => ({ accounts: mockStoredAccounts.current }),
+    },
+    findAccountByAnyChainAddress: (
+        accounts: StoredAccount[],
+        address: string,
+    ) =>
+        accounts.find(a =>
+            Object.values(a.chains).some(entry => entry.address === address),
+        ),
     findAccountByAddressOn: (
         accounts: { chains: Record<string, { address: string }> }[],
         chainId: string,
@@ -1522,6 +1542,60 @@ describe('useDeepLink', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Fund',
+        })
+    })
+
+    describe('BUY deeplink account selection', () => {
+        const heldOnTwoChains: StoredAccount = {
+            id: 'two-chains',
+            chains: {
+                algorand: { address: 'ALGORAND_ADDRESS' },
+                ethereum: { address: '0xETHEREUM_ADDRESS' },
+            },
+        }
+
+        beforeEach(() => {
+            mockStoredAccounts.current = [heldOnTwoChains]
+            mockSetSelectedAccountId.mockClear()
+        })
+
+        afterEach(() => {
+            mockStoredAccounts.current = []
+        })
+
+        const openBuyLink = async (address: string) => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.BUY,
+                address,
+            })
+            const { result } = renderHook(() => useDeepLink())
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/buy',
+                    false,
+                    'deeplink',
+                )
+            })
+        }
+
+        it.each(['ALGORAND_ADDRESS', '0xETHEREUM_ADDRESS'])(
+            'opens Fund on the account holding %s',
+            async address => {
+                await openBuyLink(address)
+
+                expect(mockSetSelectedAccountId).toHaveBeenCalledWith(
+                    'two-chains',
+                )
+                expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                    screen: 'Fund',
+                })
+            },
+        )
+
+        it('keeps the selection for an address the wallet does not hold', async () => {
+            await openBuyLink('NOT_HELD')
+
+            expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         })
     })
 

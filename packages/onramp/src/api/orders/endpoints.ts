@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    queryClient,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 
 import type { RampOrder } from '../../models'
 import {
@@ -33,12 +30,12 @@ export type CreateRampOrderParams = {
 
 export const createRampOrder = async (
     params: CreateRampOrderParams,
-    network: Network,
+    scope: ChainScope,
     signal?: AbortSignal,
 ): Promise<RampOrder> => {
     const response = await queryClient<RampOrderApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v1/ramp/orders/`,
         data: {
@@ -61,12 +58,12 @@ export type CancelRampOrderParams = {
 
 export const cancelRampOrder = async (
     params: CancelRampOrderParams,
-    network: Network,
+    scope: ChainScope,
     signal?: AbortSignal,
 ): Promise<void> => {
     const response = await queryClient<CancelRampOrderApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v1/ramp/orders/cancel/`,
         data: {

@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    queryClient,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 
 import type { RampQuote } from '../../models'
 import {
@@ -31,12 +28,12 @@ export type CreateRampQuoteParams = {
 
 export const createRampQuote = async (
     params: CreateRampQuoteParams,
-    network: Network,
+    scope: ChainScope,
     signal?: AbortSignal,
 ): Promise<RampQuote[]> => {
     const response = await queryClient<CreateRampQuoteApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v1/ramp/quotes/`,
         data: {

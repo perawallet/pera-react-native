@@ -15,3 +15,6 @@ export const USDC_DISPLAY_PRECISION = 2
 
 /** USDC is 6-decimal on every network; used until asset metadata loads. */
 export const USDC_FALLBACK_DECIMALS = 6
+
+/** The ramp catalogue's id for USDC on Algorand, which Fund opens on to top up the card. */
+export const USDC_RAMP_TOKEN_ID = 'USDC_ALGORAND'

@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useOnrampChainOf } from '@perawallet/wallet-core-onramp'
 import {
     useSigningAccounts,
     type WalletAccount,
@@ -26,7 +27,7 @@ import type { AccountDrawerPickerProps } from './types'
  * than the props themselves: the props include a header element rebuilt on every
  * render, and pushing that through context state would re-render on a loop.
  */
-export type AccountPickerKind = 'portfolio' | 'select' | 'card'
+export type AccountPickerKind = 'portfolio' | 'select' | 'card' | 'fund'
 
 /** Browsing: portfolio value on top, search, and the Pera Card row. */
 export const usePortfolioPicker = (): AccountDrawerPickerProps =>
@@ -52,6 +53,25 @@ export const useSigningPicker = (): AccountDrawerPickerProps => {
             headerContent: <AccountDrawerSelectHeader />,
         }),
         [accountFilter],
+    )
+}
+
+/** Picking an account to fund: signing accounts that live on a chain Fund can buy onto. */
+export const useFundPicker = (): AccountDrawerPickerProps => {
+    const signing = useSigningPicker()
+    const onrampChainOf = useOnrampChainOf()
+    const signingFilter = signing.accountFilter
+
+    const accountFilter = useCallback(
+        (account: WalletAccount) =>
+            (signingFilter?.(account) ?? true) &&
+            onrampChainOf(account.chains) !== null,
+        [signingFilter, onrampChainOf],
+    )
+
+    return useMemo(
+        () => ({ ...signing, accountFilter }),
+        [signing, accountFilter],
     )
 }
 
@@ -92,9 +112,10 @@ export const useAccountPickers = (): Record<
     const portfolio = usePortfolioPicker()
     const select = useSigningPicker()
     const card = useCardPicker()
+    const fund = useFundPicker()
 
     return useMemo(
-        () => ({ portfolio, select, card }),
-        [portfolio, select, card],
+        () => ({ portfolio, select, card, fund }),
+        [portfolio, select, card, fund],
     )
 }

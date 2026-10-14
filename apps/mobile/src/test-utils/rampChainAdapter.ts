@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { algorandRampAdapter } from '@perawallet/wallet-core-chain-algorand/onramp'
 
@@ -19,3 +20,12 @@ export const registerAlgorandRampAdapter = (): void => {
     rampChainAdapters.reset()
     rampChainAdapters.register(algorandRampAdapter)
 }
+
+export const algorandAccountAt = (
+    address: string,
+    id: string = address,
+): WalletAccount => ({
+    id,
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address } },
+})

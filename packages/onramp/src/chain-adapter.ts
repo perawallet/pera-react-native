@@ -12,30 +12,31 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { ALGO_ASSET_NAME, Network } from '@perawallet/wallet-core-shared'
-import type { RampToken } from './models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { RampTokenIdentity } from './models'
 
 export type ConfirmReceiveContext = {
-    assetId: bigint
+    /** The destination asset, in the chain's own asset-id encoding. */
+    assetId: string
     /** True when fees and minimum balance are sponsor-covered (display the fee as 0). */
     isSponsored: boolean
 }
 
 export type EnsureCanReceiveParams = {
     address: string
-    /** 'ALGO' is the native asset and needs no preparation; otherwise the on-chain asset id. */
-    destinationAssetId: bigint | typeof ALGO_ASSET_NAME
+    scope: ChainScope
+    destinationToken: RampTokenIdentity
     /**
      * Shown before anything is signed. Resolve false to cancel: `EnsureCanReceive`
      * then resolves false. When omitted, the preparation proceeds unconfirmed.
      */
-    confirmOptIn?: (context: ConfirmReceiveContext) => Promise<boolean>
+    confirm?: (context: ConfirmReceiveContext) => Promise<boolean>
 }
 
-/** Resolves false when the user declined the confirmation. */
+/** Resolves false when the user declined, or when there is nothing to receive into. */
 export type EnsureCanReceive = (
     params: EnsureCanReceiveParams,
 ) => Promise<boolean>
@@ -43,11 +44,19 @@ export type EnsureCanReceive = (
 /** How the ramp catalogue maps onto a chain; registered by the chain package. */
 export interface RampChainAdapter {
     chainId: ChainId
+    /**
+     * The backend's ramp network ids whose tokens live on this chain. Read only
+     * for a token the backend sends without a `caip19`.
+     */
+    rampNetworkIds: readonly string[]
     /** Catalogue ids of the tokens the ramp delivers on this chain. */
     destinationTokenIds: readonly string[]
-    isNativeToken(token: Pick<RampToken, 'id' | 'symbol'>): boolean
-    /** The on-chain asset id the token arrives as, as a decimal string. */
-    toAssetId(token: Pick<RampToken, 'id' | 'symbol'>): string
+    isNativeToken(token: RampTokenIdentity): boolean
+    /**
+     * The asset the token arrives as on `scope`'s network, in the chain's own
+     * asset-id encoding; null when it has no asset there.
+     */
+    toAssetId(token: RampTokenIdentity, scope: ChainScope): Nullable<string>
     /**
      * Prepares an account to receive the destination asset before an order is
      * created. Throws `RampAttestationRequiredError` when a sponsored path needs
@@ -58,6 +67,3 @@ export interface RampChainAdapter {
 
 export const rampChainAdapters =
     createChainAdapterRegistry<RampChainAdapter>('ramp')
-
-export const rampAdapterFor = (network: Network): RampChainAdapter =>
-    rampChainAdapters.get(scopeForLegacyNetwork(network).chainId)
