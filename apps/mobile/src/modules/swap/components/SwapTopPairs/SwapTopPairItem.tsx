@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useTheme } from '@rneui/themed'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { TopPairItem } from '@perawallet/wallet-core-swaps'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -20,21 +21,20 @@ import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { useStyles } from './styles'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type SwapTopPairItemProps = {
+    scope: ChainScope
     index: number
     pair: TopPairItem
     onPress: (pair: TopPairItem) => void
 }
 
 export const SwapTopPairItem = ({
+    scope,
     index,
     pair,
     onPress,
 }: SwapTopPairItemProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const { theme } = useTheme()
     const { preferredCurrency, usdToPreferred } = useCurrency(scope)

@@ -18,6 +18,7 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
@@ -31,12 +32,11 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { useStyles } from './styles'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
 
 type UseSwapConfirmationParams = {
+    scope: ChainScope
     quote: Nullable<SwapQuote>
     swapStatus: SwapExecutionStatus
 }
@@ -64,10 +64,10 @@ type UseSwapConfirmationResult = {
 }
 
 export const useSwapConfirmation = ({
+    scope,
     quote,
     swapStatus,
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
     const { preferredCurrency, usdToPreferred } = useCurrency(scope)

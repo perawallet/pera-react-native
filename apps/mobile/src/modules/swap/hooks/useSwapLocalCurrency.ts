@@ -21,9 +21,8 @@ import {
 import { useAssetUsdRate } from '@perawallet/wallet-core-assets'
 
 import type { Decimal } from 'decimal.js'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSwapLocalCurrencyResult = {
     isLocalCurrencyInput: boolean
@@ -40,9 +39,9 @@ type UseSwapLocalCurrencyResult = {
  * flag. Conversions return null until both rates are loaded (`isReady`).
  */
 export const useSwapLocalCurrency = (
+    scope: ChainScope,
     assetId: string,
 ): UseSwapLocalCurrencyResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { isLocalCurrencyInput } = useSwapSettings()
     const { localCurrency, localCurrencySymbol, localRate } =
         useLocalCurrency(scope)

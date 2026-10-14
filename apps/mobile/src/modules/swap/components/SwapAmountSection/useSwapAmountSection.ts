@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { FIAT_DECIMAL_PLACES } from '@perawallet/wallet-core-currencies'
 import {
     formatCurrency,
@@ -20,10 +21,9 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSwapAmountSectionParams = {
+    scope: ChainScope
     variant: 'pay' | 'receive'
     assetId: string
     amount: Nullable<Decimal>
@@ -75,6 +75,7 @@ const constrainDecimals = (text: string, maxDecimals: number): string => {
 }
 
 export const useSwapAmountSection = ({
+    scope,
     variant,
     assetId,
     amount,
@@ -84,7 +85,6 @@ export const useSwapAmountSection = ({
     fiatToAsset,
     assetToFiat,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: assets } = useAssetsQuery(scope, [assetId])
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
