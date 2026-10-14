@@ -218,6 +218,7 @@ export const parsePerawalletUri = (
             receiverAddress: address,
             amount: params.amount,
             note: params.note,
+            xnote: params.xnote,
         } as AlgoTransferDeeplink
     }
 
