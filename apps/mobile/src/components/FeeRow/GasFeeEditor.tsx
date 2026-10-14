@@ -20,7 +20,7 @@ import { PWRadioButton, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { FEE_ROW_TEST_ID, type FeeRowProps } from './FeeRow'
+import { FEE_ROW_TEST_ID, type FeeRowProps } from './types'
 import { useStyles } from './styles'
 
 // Record keeps this exhaustive: a new preset fails to compile until labelled.

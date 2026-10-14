@@ -10,20 +10,11 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
-import type { Decimal } from 'decimal.js'
-import type {
-    ChainId,
-    FeeModel,
-    FeePreset,
-    FeePresetEstimate,
-} from '@perawallet/wallet-core-chain-contract'
+import type { FeeModel } from '@perawallet/wallet-core-chain-contract'
 import { useChainFeeModel } from '@perawallet/wallet-core-chain-shared'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { FlatFeeRow } from './FlatFeeRow'
 import { GasFeeEditor } from './GasFeeEditor'
-
-export const FEE_ROW_TEST_ID = 'transaction_fee_row'
+import type { FeeRowProps } from './types'
 
 // Record keeps this exhaustive: a new fee model fails to compile until it
 // picks a row. A size-rate chain shows its single fee until it prices presets.
@@ -31,19 +22,6 @@ const FEE_MODEL_HAS_PRESETS: Record<FeeModel, boolean> = {
     flat: false,
     gas: true,
     rate: false,
-}
-
-export type FeeRowProps = {
-    chainId: ChainId
-    /** Base units of the chain's native asset: the headline fee. */
-    amount: Optional<Decimal>
-    /** Base units of the chain's native asset. Set by a chain whose fee model has presets. */
-    presets?: Record<FeePreset, FeePresetEstimate>
-    isLoading: boolean
-    selectedPreset: FeePreset
-    onPresetChange: (preset: FeePreset) => void
-    /** Rendered beside the headline amount. */
-    accessory?: ReactNode
 }
 
 export const FeeRow = ({
@@ -57,8 +35,8 @@ export const FeeRow = ({
 }: FeeRowProps) => {
     const feeModel = useChainFeeModel(chainId)
 
-    // A presets-model estimate without presets breaks the fee contract; the
-    // headline amount is still right to show.
+    // Until presets arrive (loading, or none returned) the headline amount is
+    // the best fee to show.
     if (FEE_MODEL_HAS_PRESETS[feeModel] && presets) {
         return (
             <GasFeeEditor

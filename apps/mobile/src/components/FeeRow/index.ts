@@ -10,5 +10,6 @@
  limitations under the License
  */
 
-export { FeeRow, FEE_ROW_TEST_ID } from './FeeRow'
-export type { FeeRowProps } from './FeeRow'
+export { FeeRow } from './FeeRow'
+export { FEE_ROW_TEST_ID } from './types'
+export type { FeeRowProps } from './types'

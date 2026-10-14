@@ -21,7 +21,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainFeeModel } from '@perawallet/wallet-core-chain-shared'
 import { PWText } from '@components/core'
-import { FeeRow, FEE_ROW_TEST_ID, type FeeRowProps } from '../FeeRow'
+import { FeeRow, FEE_ROW_TEST_ID, type FeeRowProps } from '..'
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
@@ -99,11 +99,11 @@ describe('FeeRow', () => {
             expect(screen.getByText('extra')).toBeTruthy()
         })
 
-        it('shows no amount while the fee loads', () => {
-            renderRow({ amount: undefined, isLoading: true })
+        it('hides the amount while the fee loads', () => {
+            renderRow({ amount: new Decimal(1000), isLoading: true })
 
             expect(screen.getByTestId(FEE_ROW_TEST_ID)).toBeTruthy()
-            expect(screen.queryByText(/0\.00/)).toBeNull()
+            expect(screen.queryByText(/0\.001/)).toBeNull()
         })
     })
 

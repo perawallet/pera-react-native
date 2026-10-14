@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { capabilityState } from '@test-utils/capability-mock'
@@ -125,7 +126,7 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -198,6 +199,10 @@ describe('useTransactionConfirmationScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        ;(useSelectedScope as Mock).mockImplementation((chainId: string) => ({
+            chainId,
+            networkId: 'mainnet',
+        }))
         ;(useOnChainAccountStateQuery as Mock).mockReturnValue({
             data: undefined,
             isPending: false,
@@ -751,11 +756,16 @@ describe('useTransactionConfirmationScreen', () => {
 
     describe('fee row inputs', () => {
         it("prices the fee on the selected scope's chain", () => {
+            ;(useSelectedScope as Mock).mockReturnValue({
+                chainId: 'otherchain',
+                networkId: 'mainnet',
+            })
+
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.chainId).toBe('algorand')
+            expect(result.current.chainId).toBe('otherchain')
         })
 
         it('passes the fee preset and its setter through from the send flow', () => {
