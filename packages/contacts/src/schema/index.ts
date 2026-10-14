@@ -12,9 +12,10 @@
 
 import { z } from 'zod'
 import {
-    isValidAlgorandAddress,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { Contact } from '../models'
 
 export const contactSchema = z.object({
@@ -26,9 +27,12 @@ export const contactSchema = z.object({
     // a name attached to a mistyped address defeats the contact feature.
     address: z
         .string('Please enter a valid Algorand address')
-        .refine(isValidAlgorandAddress, {
-            message: 'Please enter a valid Algorand address',
-        }),
+        .refine(
+            address => addressCodecs.get(LEGACY_CHAIN_ID).isValid(address),
+            {
+                message: 'Please enter a valid Algorand address',
+            },
+        ),
     //TODO we can probably do better with the NFD regex
     nfd: z
         .string()

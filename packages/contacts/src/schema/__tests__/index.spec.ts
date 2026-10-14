@@ -10,41 +10,40 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { afterEach, beforeEach, describe, test, expect } from 'vitest'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import { fixtureCodec } from '@perawallet/wallet-core-chain-contract/testing'
 import type { ContactAddresses } from '../../models'
 import { contactFromFormValues, contactSchema, contactToFormValues } from '..'
 
-// Zero-key address (all-zero 32-byte public key)
-const VALID_ADDRESS =
-    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+// The form's address rule is whatever the Algorand-chain codec accepts, so a
+// stand-in codec under that chain id pins the delegation.
+const VALID_ADDRESS = `fx${'a'.repeat(40)}`
 
 const parseAddress = (address: string) =>
     contactSchema.safeParse({ name: 'Alice', address })
 
+beforeEach(() => {
+    addressCodecs.register({ ...fixtureCodec, chainId: LEGACY_CHAIN_ID })
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
+
 describe('contactSchema address validation', () => {
-    test('accepts a checksum-valid address', () => {
+    test("accepts an address the Algorand chain's codec accepts", () => {
         expect(parseAddress(VALID_ADDRESS).success).toBe(true)
     })
 
-    test('rejects a 58-char string with a bad checksum (typo)', () => {
-        expect(parseAddress(`${VALID_ADDRESS.slice(0, -1)}A`).success).toBe(
+    test("rejects an address the Algorand chain's codec rejects", () => {
+        expect(parseAddress(`${VALID_ADDRESS.slice(0, -1)}z`).success).toBe(
             false,
         )
-    })
-
-    test('rejects a lowercased valid address', () => {
-        expect(parseAddress(VALID_ADDRESS.toLowerCase()).success).toBe(false)
-    })
-
-    test('rejects 58 alphanumeric characters that are not an address', () => {
-        expect(parseAddress('a'.repeat(58)).success).toBe(false)
-    })
-
-    test('rejects wrong length and invalid characters', () => {
-        expect(parseAddress(VALID_ADDRESS.slice(1)).success).toBe(false)
-        expect(parseAddress(`${VALID_ADDRESS.slice(0, -1)}@`).success).toBe(
-            false,
-        )
+        expect(parseAddress('').success).toBe(false)
     })
 })
 

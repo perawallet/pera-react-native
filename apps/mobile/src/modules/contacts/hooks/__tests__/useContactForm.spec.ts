@@ -11,8 +11,9 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import type { Contact } from '@perawallet/wallet-core-contacts'
+import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useContactForm } from '../useContactForm'
 
 // Override the global vitest-setup mock so contactSchema (used by the hook's
@@ -49,6 +50,10 @@ vi.mock('@hooks/useNfdResolve', () => ({
         nfdName: undefined,
     }),
 }))
+
+beforeEach(() => {
+    registerAlgorandAddressCodec()
+})
 
 describe('useContactForm', () => {
     it('exposes the raw address input and updates it via onAddressInputChange', () => {
