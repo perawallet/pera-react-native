@@ -19,10 +19,6 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    chainAccountOf: (
-        account: { chains: Record<string, { address: string }> },
-        chainId: string,
-    ) => account.chains[chainId],
     useAccountsStore: {
         getState: () => ({
             accounts: [
@@ -41,14 +37,31 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
                     custody: { kind: 'watch' },
                     chains: { ethereum: { address: '0xABC' } },
                 },
+                {
+                    id: '4',
+                    custody: { kind: 'local', seed: 'bip39' },
+                    chains: {
+                        algorand: { address: 'ADDR4' },
+                        ethereum: { address: '0xDEF' },
+                    },
+                },
+                {
+                    id: '5',
+                    custody: { kind: 'watch' },
+                    // A record from a build that knows more chains.
+                    chains: { unknownchain: { address: 'UNKNOWN' } },
+                },
             ],
         }),
     },
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: { getState: () => ({ network: 'testnet' }) },
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
+
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 
 vi.mock('../polling', () => ({
     useSyncCursorStore: {
@@ -67,38 +80,50 @@ vi.mock('../polling', () => ({
 }))
 
 describe('createSyncStorePorts', () => {
-    it('reads Algorand account addresses and the active network from the stores', () => {
+    it('lists every known chain entry of every account, in account order', () => {
         const ports = createSyncStorePorts()
 
-        expect(ports.getAccountAddresses()).toEqual(['ADDR1', 'ADDR2'])
-        expect(ports.getActiveNetwork()).toBe('testnet')
+        expect(ports.getAccountChainAddresses()).toEqual([
+            { chainId: 'algorand', address: 'ADDR1' },
+            { chainId: 'algorand', address: 'ADDR2' },
+            { chainId: 'ethereum', address: '0xABC' },
+            { chainId: 'algorand', address: 'ADDR4' },
+            { chainId: 'ethereum', address: '0xDEF' },
+        ])
     })
 
-    it('reads a network absent from the round map as never-synced (null)', () => {
+    it('resolves a chain to its selected scope', () => {
+        expect(createSyncStorePorts().getSelectedScope('ethereum')).toEqual({
+            chainId: 'ethereum',
+            networkId: 'testnet',
+        })
+    })
+
+    it('reads a scope absent from the cursor map as never-synced (null)', () => {
         const ports = createSyncStorePorts()
 
-        expect(ports.getLastRefreshedRound('mainnet')).toBe(42)
-        expect(ports.getLastRefreshedRound('testnet')).toBeNull()
+        expect(ports.getChangeCursor(MAINNET)).toBe(42)
+        expect(ports.getChangeCursor(TESTNET)).toBeNull()
     })
 
-    it('writes the checkpoint through the sync cursor store', () => {
-        createSyncStorePorts().setLastRefreshedRound('mainnet', 99)
+    it('writes the cursor through the sync cursor store', () => {
+        createSyncStorePorts().setChangeCursor(MAINNET, 99)
 
-        expect(mocks.setRefreshRound).toHaveBeenCalledWith('mainnet', 99)
+        expect(mocks.setRefreshRound).toHaveBeenCalledWith(MAINNET, 99)
     })
 
     it('reads each asset sync timestamp from its own cursor field, null when absent', () => {
         const ports = createSyncStorePorts()
 
-        expect(ports.getLastSyncAt('mainnet', 'assets')).toBe(1000)
-        expect(ports.getLastSyncAt('mainnet', 'prices')).toBe(2000)
-        expect(ports.getLastSyncAt('testnet', 'assets')).toBeNull()
-        expect(ports.getLastSyncAt('testnet', 'prices')).toBeNull()
+        expect(ports.getLastSyncAt(MAINNET, 'assets')).toBe(1000)
+        expect(ports.getLastSyncAt(MAINNET, 'prices')).toBe(2000)
+        expect(ports.getLastSyncAt(TESTNET, 'assets')).toBeNull()
+        expect(ports.getLastSyncAt(TESTNET, 'prices')).toBeNull()
     })
 
     it('writes an asset sync timestamp through the sync cursor store', () => {
-        createSyncStorePorts().setLastSyncAt('testnet', 'prices', 3000)
+        createSyncStorePorts().setLastSyncAt(TESTNET, 'prices', 3000)
 
-        expect(mocks.markSynced).toHaveBeenCalledWith('testnet', 'prices', 3000)
+        expect(mocks.markSynced).toHaveBeenCalledWith(TESTNET, 'prices', 3000)
     })
 })

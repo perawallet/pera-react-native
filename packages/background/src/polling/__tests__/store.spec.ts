@@ -51,6 +51,10 @@ const cursor = (overrides: Record<string, number | null> = {}) => ({
     ...overrides,
 })
 
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
 describe('polling/store - useSyncCursorStore', () => {
     beforeEach(() => {
         vi.resetModules()
@@ -65,21 +69,23 @@ describe('polling/store - useSyncCursorStore', () => {
         expect(result.current).toEqual({})
     })
 
-    test('setRefreshRound writes each network under its own scope key', async () => {
+    test('setRefreshRound writes each scope under its own scope key', async () => {
         const { useSyncCursorStore } = await import('../store')
         const { setRefreshRound } = useSyncCursorStore.getState()
 
         act(() => {
-            setRefreshRound('mainnet', 100)
-            setRefreshRound('testnet', 200)
+            setRefreshRound(MAINNET, 100)
+            setRefreshRound(TESTNET, 200)
+            setRefreshRound(ETHEREUM, 300)
         })
         act(() => {
-            setRefreshRound('mainnet', null)
+            setRefreshRound(MAINNET, null)
         })
 
         expect(useSyncCursorStore.getState().cursors).toEqual({
             'algorand/mainnet': cursor(),
             'algorand/testnet': cursor({ refreshRound: 200 }),
+            'ethereum/mainnet': cursor({ refreshRound: 300 }),
         })
     })
 
@@ -88,10 +94,10 @@ describe('polling/store - useSyncCursorStore', () => {
         const { setRefreshRound, markSynced } = useSyncCursorStore.getState()
 
         act(() => {
-            setRefreshRound('mainnet', 100)
-            markSynced('mainnet', 'assets', 1000)
-            markSynced('mainnet', 'prices', 2000)
-            markSynced('testnet', 'prices', 3000)
+            setRefreshRound(MAINNET, 100)
+            markSynced(MAINNET, 'assets', 1000)
+            markSynced(MAINNET, 'prices', 2000)
+            markSynced(TESTNET, 'prices', 3000)
         })
 
         expect(useSyncCursorStore.getState().cursors).toEqual({
@@ -109,12 +115,12 @@ describe('polling/store - useSyncCursorStore', () => {
         const { setRefreshRound, markSynced } = useSyncCursorStore.getState()
 
         act(() => {
-            setRefreshRound('mainnet', 100)
-            markSynced('mainnet', 'prices', 2000)
+            setRefreshRound(MAINNET, 100)
+            markSynced(MAINNET, 'prices', 2000)
         })
         act(() => {
-            setRefreshRound('testnet', 500)
-            markSynced('testnet', 'prices', 9000)
+            setRefreshRound(TESTNET, 500)
+            markSynced(TESTNET, 'prices', 9000)
         })
 
         expect(
@@ -128,8 +134,8 @@ describe('polling/store - useSyncCursorStore', () => {
         const { useSyncCursorStore } = await import('../store')
 
         act(() => {
-            useSyncCursorStore.getState().setRefreshRound('mainnet', 100)
-            useSyncCursorStore.getState().markSynced('mainnet', 'assets', 1000)
+            useSyncCursorStore.getState().setRefreshRound(MAINNET, 100)
+            useSyncCursorStore.getState().markSynced(MAINNET, 'assets', 1000)
         })
 
         expect(
@@ -155,8 +161,8 @@ describe('polling/store - useSyncCursorStore', () => {
         const { useSyncCursorStore } = await import('../store')
 
         act(() => {
-            useSyncCursorStore.getState().setRefreshRound('mainnet', 100)
-            useSyncCursorStore.getState().markSynced('testnet', 'prices', 1)
+            useSyncCursorStore.getState().setRefreshRound(MAINNET, 100)
+            useSyncCursorStore.getState().markSynced(TESTNET, 'prices', 1)
         })
         act(() => {
             useSyncCursorStore.getState().resetState()
@@ -180,7 +186,7 @@ describe('polling/store - useSyncCursorStore', () => {
         expect(registration?.name).toBe('polling-store')
 
         act(() => {
-            useSyncCursorStore.getState().setRefreshRound('mainnet', 42)
+            useSyncCursorStore.getState().setRefreshRound(MAINNET, 42)
         })
         act(() => registration.resetState())
         expect(useSyncCursorStore.getState().cursors).toEqual({})

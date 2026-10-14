@@ -11,8 +11,8 @@
  */
 
 import { onlineManager } from '@tanstack/react-query'
-import { isHTTPError } from 'ky'
 import {
+    accountsChainAdapters,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
@@ -24,16 +24,25 @@ import {
 import {
     logger,
     calculateBackoff,
+    isPeraNetworkError,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
-import { sendShouldRefreshRequest, type AssetSyncKind } from '../polling'
-import type { SyncServiceDeps } from '../models'
 import {
+    scopeForLegacyNetwork,
+    toScopeKey,
+    type ChainScope,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    broadcasterChainAdapters,
+    reconcileOpenSubmissions,
+} from '@perawallet/wallet-core-signing'
+import type { AssetSyncKind } from '../polling'
+import type { SyncServiceDeps } from '../models'
+import { groupAddressesByScope, type ScopeAddresses } from './scope-groups'
+import {
+    legacyNetworkFor,
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
@@ -72,14 +81,33 @@ const ASSET_RESYNC_INTERVAL_MS = 10 * 60 * 1000
 // TTL gate would classify every periodic pass as fresh and stop re-pricing.
 const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
 
+type ScopeSyncOutcome = {
+    hadTotalFailure: boolean
+    hadAccountFailure: boolean
+    isRateLimited: boolean
+}
+
+const CLEAN_OUTCOME: ScopeSyncOutcome = {
+    hadTotalFailure: false,
+    hadAccountFailure: false,
+    isRateLimited: false,
+}
+
+type ChangeDecision = { changed: boolean; cursor: Nullable<number> }
+
+const isRefusedCredential = (error: unknown): boolean =>
+    isPeraNetworkError(error) && (error.status === 401 || error.status === 403)
+
 export class SyncService {
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
-    private hasCompletedInitialSync = false
-    // Set once should-refresh gets a 401/403: the key is wrong/missing, a
+    // A scope's first sync of the session skips its change signal: the
+    // persisted cursor may predate a relaunch, and the DB must be populated.
+    private forceSyncedScopes = new Set<ChainScopeKey>()
+    // A scope whose change signal got a 401/403: the key is wrong/missing, a
     // config-level problem retrying every tick can't fix. Reset on
     // start()/restart() so a rebuilt or reconfigured session recovers.
-    private hasAuthError = false
+    private authRefusedScopes = new Set<ChainScopeKey>()
     private currentInterval: number
     // Coalesce query invalidations. invalidateAccountQueries fans out to every
     // mounted balance/summary/list query (a wide read each), so firing it
@@ -135,7 +163,7 @@ export class SyncService {
         this.onlineUnsubscribe ??= onlineManager.subscribe(isOnline => {
             if (isOnline) this.handleReconnect()
         })
-        this.hasAuthError = false
+        this.authRefusedScopes.clear()
         void this.tick()
     }
 
@@ -182,7 +210,7 @@ export class SyncService {
 
     restart(): void {
         this.stop()
-        this.hasCompletedInitialSync = false
+        this.forceSyncedScopes.clear()
         this.currentInterval = this.baseInterval
         this.start()
     }
@@ -251,7 +279,7 @@ export class SyncService {
         if (this.syncInProgress) return
 
         // Connectivity gate: while offline, perform zero network work — no
-        // should-refresh POST, no syncAll. The loop stays cheaply scheduled so
+        // change signal, no reads. The loop stays cheaply scheduled so
         // it resumes on its own, and the online-transition listener (subscribed
         // in start) triggers an immediate tick on reconnect.
         if (!onlineManager.isOnline()) {
@@ -273,73 +301,64 @@ export class SyncService {
             return
         }
 
-        // Gated before the first-tick flag below flips, so a chain switched
-        // back on still gets its force-sync.
-        const { chainId } = scopeForLegacyNetwork(
-            this.deps.stores.getActiveNetwork(),
-        )
-        if (getProvider().chains.isSwitchedOff(chainId)) {
-            this.scheduleNextTick()
-            return
-        }
-
         // Claimed before the first await below: the reconcile pass issues
         // network probes, and a reconnect landing mid-pass would otherwise
         // pass handleReconnect's guard and start a second overlapping tick.
         this.syncInProgress = true
 
         try {
-            // Settle open submission-attempt rows before the sync
-            // phases. Piggybacks the tick's online gate and cadence — the pass
-            // is bounded, a no-op when nothing is open, and never throws.
-            const reconcileSummary = await reconcileOpenSubmissions(chainId)
-            if (reconcileSummary.confirmed + reconcileSummary.failed > 0) {
-                // A settled row changes the "pending — verifying" badge set and
-                // must drop the pending history entry (history queries are
-                // DB-cached with staleTime: Infinity, so a settle on a no-work
-                // tick would otherwise leave a resolved row showing).
-                // Covers the badge set too — its key sits under the same
-                // module prefix.
-                invalidateTransactionQueries(this.deps.queryClient)
+            await this.reconcileSubmissions()
+
+            const { chains, stores } = this.deps
+            const groups = groupAddressesByScope(
+                stores.getAccountChainAddresses(),
+                stores.getSelectedScope,
+            ).filter(
+                ({ scope }) =>
+                    !chains.isSwitchedOff(scope.chainId) &&
+                    accountsChainAdapters.has(scope.chainId),
+            )
+
+            // Scopes sync one after another; one scope's failure never stops
+            // the next, it only feeds the backoff.
+            let shouldBackOff = false
+            for (const group of groups) {
+                try {
+                    const outcome = await this.syncScope(group)
+                    if (outcome.isRateLimited) {
+                        logger.warn('Sync scope rate limited', {
+                            scope: group.scope,
+                        })
+                    }
+                    if (
+                        outcome.hadTotalFailure ||
+                        outcome.hadAccountFailure ||
+                        outcome.isRateLimited
+                    ) {
+                        shouldBackOff = true
+                    }
+                } catch (error) {
+                    logger.warn('Sync scope failed', {
+                        scope: group.scope,
+                        error,
+                    })
+                    shouldBackOff = true
+                }
             }
 
-            const activeNetwork = this.deps.stores.getActiveNetwork()
-            let networksToSync: Network[]
-            let shouldRefreshRound: Nullable<number> = null
-
-            if (!this.hasCompletedInitialSync) {
-                // First tick: force-sync the active network to ensure DB is populated
-                networksToSync = [activeNetwork]
-                this.hasCompletedInitialSync = true
-            } else {
-                const check = await this.checkShouldRefresh(activeNetwork)
-                networksToSync = check.networks
-                shouldRefreshRound = check.round
-            }
-
-            if (networksToSync.length > 0) {
-                const { hadTotalFailure, hadAccountFailure } =
-                    await this.syncAll(networksToSync, shouldRefreshRound)
-                // Back off when the tick made no progress at all, or when an
-                // account fetch failed — the frozen checkpoint means the next
-                // tick re-syncs the whole network, so pace those retries.
-                // A clean tick, or one with no work to do, resets to base.
-                this.currentInterval =
-                    hadTotalFailure || hadAccountFailure
-                        ? calculateBackoff(
-                              this.currentInterval,
-                              BACKOFF_MULTIPLIER,
-                              MAX_BACKOFF_INTERVAL,
-                          )
-                        : this.baseInterval
-            } else {
-                // No networks needed syncing (should-refresh reported no work,
-                // or there are no accounts) — a successful, cheap tick.
-                this.currentInterval = this.baseInterval
-            }
+            // Back off when a scope made no progress, hit a rate limit, or
+            // had an account fetch fail — the frozen cursor means the next
+            // tick re-syncs that scope, so pace those retries. A clean tick,
+            // or one with no work to do, resets to base.
+            this.currentInterval = shouldBackOff
+                ? calculateBackoff(
+                      this.currentInterval,
+                      BACKOFF_MULTIPLIER,
+                      MAX_BACKOFF_INTERVAL,
+                  )
+                : this.baseInterval
         } catch (error) {
             logger.warn('Sync tick failed', { error })
-            // Back off on errors to avoid hammering a rate-limited API
             this.currentInterval = calculateBackoff(
                 this.currentInterval,
                 BACKOFF_MULTIPLIER,
@@ -361,193 +380,199 @@ export class SyncService {
     }
 
     /**
-     * Ask the backend whether any watched address has activity newer than the
-     * checkpoint. Deliberately does NOT advance the checkpoint here — that
-     * happens in syncAll (see resolveCheckpointRound) only after the sync pass
-     * actually observed the new state. Advancing up front loses updates: if
-     * the data source still lags the backend-reported round when we read it,
-     * every subsequent tick asks "anything since round R?" and is told no,
-     * so the stale balances stick until unrelated on-chain activity.
+     * Settles open submission-attempt rows of every chain that is on and
+     * broadcasts. Per chain rather than per account group, so rows still
+     * settle once no account is left on the chain. Bounded, a no-op when
+     * nothing is open, and never throws.
      */
-    private async checkShouldRefresh(
-        activeNetwork: Network,
-    ): Promise<{ networks: Network[]; round: Nullable<number> }> {
-        const addresses = this.deps.stores.getAccountAddresses()
+    private async reconcileSubmissions(): Promise<void> {
+        let settled = 0
+        for (const { id } of this.deps.chains.list()) {
+            if (this.deps.chains.isSwitchedOff(id)) continue
+            if (!broadcasterChainAdapters.has(id)) continue
+            const summary = await reconcileOpenSubmissions(id)
+            settled += summary.confirmed + summary.failed
+        }
+        if (settled > 0) {
+            // A settled row changes the "pending — verifying" badge set and
+            // must drop the pending history entry (history queries are
+            // DB-cached with staleTime: Infinity, so a settle on a no-work
+            // tick would otherwise leave a resolved row showing).
+            invalidateTransactionQueries(this.deps.queryClient)
+        }
+    }
 
-        if (addresses.length === 0) return { networks: [], round: null }
+    private async syncScope(group: ScopeAddresses): Promise<ScopeSyncOutcome> {
+        const { scope, addresses } = group
+        const key = toScopeKey(scope)
 
-        const lastRefreshedRound =
-            this.deps.stores.getLastRefreshedRound(activeNetwork)
-        const neverSynced = lastRefreshedRound === null
-
-        // Networks with no Pera deployment (betanet, custom) have no should-refresh
-        // endpoint to consult — the request throws PeraServiceUnavailableError every
-        // tick. Returning the active network here keeps chain sync alive: algod and
-        // indexer need no Pera service and are the only sources these networks have.
-        // Checked BEFORE the request so the tick never pays for a throw that cannot
-        // succeed, and never reaches the rethrow below that engages backoff.
-        if (!isPeraBackedNetwork(activeNetwork)) {
-            return { networks: [activeNetwork], round: null }
+        if (!this.forceSyncedScopes.has(key)) {
+            this.forceSyncedScopes.add(key)
+            return this.syncScopeState(scope, addresses, null)
         }
 
-        // A prior tick's should-refresh request got 401/403 (BACKEND_API_KEY
-        // is wrong/missing) — skip re-issuing that request until
-        // start()/restart(). This backs off the should-refresh REQUEST only:
-        // algod/indexer use separate credentials (ALGOD_API_KEY/
-        // INDEXER_API_KEY), so a never-synced network still needs its
-        // force-sync fallback below — including a network the user switches
-        // to after the flag is already set.
-        if (this.hasAuthError) {
-            return neverSynced
-                ? { networks: [activeNetwork], round: null }
-                : { networks: [], round: null }
+        const cursor = this.deps.stores.getChangeCursor(scope)
+        const signal = await this.readChangeSignal(scope, addresses, cursor)
+        if (!signal.changed) {
+            // Forward only: a signal source behind the reads' node would
+            // otherwise rewind the cursor and re-sync what was already read.
+            if (
+                typeof signal.cursor === 'number' &&
+                Number.isFinite(signal.cursor) &&
+                (cursor === null || signal.cursor > cursor)
+            ) {
+                this.deps.stores.setChangeCursor(scope, signal.cursor)
+            }
+            return CLEAN_OUTCOME
+        }
+        return this.syncScopeState(scope, addresses, signal.cursor ?? null)
+    }
+
+    /**
+     * Whether `scope` has anything to read. Deliberately does NOT advance the
+     * cursor on a change — that happens in syncScopeState (see
+     * resolveCheckpointRound) only after the pass actually observed the new
+     * state. Advancing up front loses updates: if the data source still lags
+     * the signal's source when we read it, every subsequent tick asks
+     * "anything since R?" and is told no, so the stale balances stick until
+     * unrelated on-chain activity.
+     */
+    private async readChangeSignal(
+        scope: ChainScope,
+        addresses: string[],
+        cursor: Nullable<number>,
+    ): Promise<ChangeDecision> {
+        const adapter = accountsChainAdapters.get(scope.chainId)
+        if (!adapter.fetchChangeSignal) {
+            return { changed: true, cursor: null }
+        }
+
+        const key = toScopeKey(scope)
+        // This backs off the signal REQUEST only: the account reads use other
+        // credentials, so a never-synced scope still needs its force-sync.
+        if (this.authRefusedScopes.has(key)) {
+            return { changed: cursor === null, cursor: null }
         }
 
         try {
-            const result = await sendShouldRefreshRequest(
-                activeNetwork,
-                addresses,
-                lastRefreshedRound,
-            )
-
-            if (result.refresh || neverSynced) {
-                return {
-                    networks: [activeNetwork],
-                    round: result.round ?? null,
-                }
-            }
+            return await adapter.fetchChangeSignal(addresses, scope, cursor)
         } catch (error) {
-            const status = isHTTPError(error) ? error.response?.status : null
-            const isAuthError = status === 401 || status === 403
-            if (isAuthError) {
-                this.hasAuthError = true
+            const isRefused = isRefusedCredential(error)
+            if (isRefused) {
+                this.authRefusedScopes.add(key)
                 logger.warn(
-                    'Should-refresh rejected as unauthorized — check BACKEND_API_KEY is set (see apps/browser/README.md)',
-                    { status },
+                    'Change signal refused (401/403); not asked again until restart',
+                    {
+                        scope,
+                        status: isPeraNetworkError(error)
+                            ? error.status
+                            : undefined,
+                    },
                 )
             }
-            // Check neverSynced before the auth branch: a never-synced
-            // network must force-sync regardless of the backend 401 — see
-            // the hasAuthError guard's comment above.
-            if (neverSynced) {
-                return { networks: [activeNetwork], round: null }
-            }
-            if (isAuthError) {
-                return { networks: [], round: null }
-            }
-            // Rethrow so the tick's catch engages backoff — swallowing here
-            // kept a persistently failing should-refresh retrying at the base
-            // 3 s interval forever.
+            // A never-synced scope must sync regardless of the refusal — see
+            // the authRefusedScopes guard above.
+            if (cursor === null) return { changed: true, cursor: null }
+            if (isRefused) return { changed: false, cursor: null }
+            // Rethrown so the tick backs off — swallowing here kept a
+            // persistently failing signal retrying at the base interval.
             throw error
         }
-
-        return { networks: [], round: null }
     }
 
-    // Phase order matters: the checkpoint advances off the account pass, and
-    // the asset gate reads that pass's holdings change.
-    private async syncAll(
-        networks: Network[],
-        shouldRefreshRound: Nullable<number> = null,
-    ): Promise<{ hadTotalFailure: boolean; hadAccountFailure: boolean }> {
-        const addresses = this.deps.stores.getAccountAddresses()
-        let hasRateLimitError = false
-        // Rejections freeze the checkpoint (see resolveCheckpointRound), so
-        // the caller must back off or it re-syncs the whole network every tick.
-        let hadAccountFailure = false
+    // Phase order matters: the cursor advances off the account pass, and the
+    // asset gate reads that pass's holdings change.
+    private async syncScopeState(
+        scope: ChainScope,
+        addresses: string[],
+        fallbackCursor: Nullable<number>,
+    ): Promise<ScopeSyncOutcome> {
+        let isRateLimited = false
         // Tracked across all phases because allSettled absorbs non-429 failures,
-        // so syncAll can make zero progress without ever throwing.
+        // so a pass can make zero progress without ever throwing.
         let hadAnySuccess = false
         let hadAnyFailure = false
         const recordOutcome = (phase: SyncPhaseResult<unknown>) => {
             if (phase.hasSuccess) hadAnySuccess = true
             if (phase.hasFailure) hadAnyFailure = true
-            if (phase.isRateLimited) hasRateLimitError = true
+            if (phase.isRateLimited) isRateLimited = true
         }
 
-        for (const network of networks) {
-            const accountPass = await syncAccountsPhase(
-                addresses,
-                network,
-                'account',
-            )
-            recordOutcome(accountPass)
-            if (accountPass.hasFailure) hadAccountFailure = true
+        const accountPass = await syncAccountsPhase(addresses, scope, 'account')
+        recordOutcome(accountPass)
 
-            const round = resolveCheckpointRound(
-                accountPass.results,
-                shouldRefreshRound,
+        const round = resolveCheckpointRound(
+            accountPass.results,
+            fallbackCursor,
+        )
+        if (round !== null) {
+            this.deps.stores.setChangeCursor(scope, round)
+        }
+
+        // Invalidation forces a wide DB re-read per account, so skip the
+        // unchanged ones — which is the common tick.
+        const { changedAddresses } = accountPass
+        if (changedAddresses.length > 0) {
+            this.debouncedInvalidate('accounts', () =>
+                invalidateAccountQueriesForAddresses(
+                    this.deps.queryClient,
+                    changedAddresses,
+                ),
             )
-            if (round !== null) {
-                this.deps.stores.setLastRefreshedRound(network, round)
+        }
+
+        const nowMs = Date.now()
+        const dueKinds = this.dueAssetKinds(
+            scope,
+            nowMs,
+            accountPass.hasHoldingsChanged,
+        )
+        if (dueKinds.length > 0) {
+            const assetPass = await syncAssetsPhase(
+                scope,
+                dueKinds,
+                'asset-metadata-or-prices',
+            )
+            recordOutcome(assetPass)
+            // Only on success, so a failed pass retries next tick instead of
+            // waiting out the interval.
+            for (const kind of assetPass.succeededKinds) {
+                this.deps.stores.setLastSyncAt(scope, kind, nowMs)
             }
-
-            // Invalidation forces a wide DB re-read per account, so skip the
-            // unchanged ones — which is the common tick.
-            const { changedAddresses } = accountPass
-            if (changedAddresses.length > 0) {
-                this.debouncedInvalidate('accounts', () =>
-                    invalidateAccountQueriesForAddresses(
-                        this.deps.queryClient,
-                        changedAddresses,
-                    ),
+            // Skipped when every batch was rejected. Account queries go too:
+            // the balance/holdings read joins in metadata + price, and any
+            // account may hold the new assets, so this one is necessarily
+            // broad.
+            if (assetPass.hasSuccess) {
+                this.debouncedInvalidate('assets', () =>
+                    invalidateAssetQueries(this.deps.queryClient),
                 )
-            }
-
-            const nowMs = Date.now()
-            const dueKinds = this.dueAssetKinds(
-                network,
-                nowMs,
-                accountPass.hasHoldingsChanged,
-            )
-            if (dueKinds.length > 0) {
-                const assetPass = await syncAssetsPhase(
-                    network,
-                    dueKinds,
-                    'asset-metadata-or-prices',
-                )
-                recordOutcome(assetPass)
-                // Only on success, so a failed pass retries next tick instead of
-                // waiting out the interval.
-                for (const kind of assetPass.succeededKinds) {
-                    this.deps.stores.setLastSyncAt(network, kind, nowMs)
-                }
-                // Skipped when every batch was rejected. Account queries go too:
-                // the balance/holdings read joins in metadata + price, and any
-                // account may hold the new assets, so this one is necessarily
-                // broad.
-                if (assetPass.hasSuccess) {
-                    this.debouncedInvalidate('assets', () =>
-                        invalidateAssetQueries(this.deps.queryClient),
-                    )
-                    this.debouncedInvalidate('accounts-assets', () =>
-                        invalidateAccountQueries(this.deps.queryClient),
-                    )
-                }
-            }
-
-            const txPass = await syncTransactionsPhase(
-                addresses,
-                network,
-                'transactions',
-            )
-            recordOutcome(txPass)
-            // Skipped when every fetch was rejected — invalidation forces a DB
-            // re-read with no new data to surface.
-            if (txPass.hasSuccess) {
-                this.debouncedInvalidate('transactions', () =>
-                    invalidateTransactionQueries(this.deps.queryClient),
+                this.debouncedInvalidate('accounts-assets', () =>
+                    invalidateAccountQueries(this.deps.queryClient),
                 )
             }
         }
 
-        if (hasRateLimitError) {
-            throw new Error('Rate limited by API')
+        const txPass = await syncTransactionsPhase(
+            addresses,
+            scope,
+            'transactions',
+        )
+        recordOutcome(txPass)
+        // Skipped when every fetch was rejected — invalidation forces a DB
+        // re-read with no new data to surface.
+        if (txPass.hasSuccess) {
+            this.debouncedInvalidate('transactions', () =>
+                invalidateTransactionQueries(this.deps.queryClient),
+            )
         }
 
         return {
             hadTotalFailure: hadAnyFailure && !hadAnySuccess,
-            hadAccountFailure,
+            // Rejections freeze the cursor (see resolveCheckpointRound), so
+            // the caller must back off or it re-syncs the scope every tick.
+            hadAccountFailure: accountPass.hasFailure,
+            isRateLimited,
         }
     }
 
@@ -556,21 +581,26 @@ export class SyncService {
     // The timestamps are persisted per scope, so a relaunch or a network
     // switch back resumes the interval rather than re-pricing straight away.
     private dueAssetKinds(
-        network: Network,
+        scope: ChainScope,
         nowMs: number,
         hasHoldingsChanged: boolean,
     ): AssetSyncKind[] {
         const isDue = (kind: AssetSyncKind, intervalMs: number): boolean => {
             if (hasHoldingsChanged) return true
             const elapsedMs =
-                nowMs - (this.deps.stores.getLastSyncAt(network, kind) ?? 0)
+                nowMs - (this.deps.stores.getLastSyncAt(scope, kind) ?? 0)
             // Negative when the device clock moved back past a persisted
             // timestamp; without this the pass stalls until the clock catches up.
             return elapsedMs < 0 || elapsedMs >= intervalMs
         }
         const kinds: AssetSyncKind[] = []
         if (isDue('assets', ASSET_RESYNC_INTERVAL_MS)) kinds.push('assets')
-        if (isDue('prices', PRICE_RESYNC_INTERVAL_MS)) kinds.push('prices')
+        if (
+            legacyNetworkFor(scope) !== undefined &&
+            isDue('prices', PRICE_RESYNC_INTERVAL_MS)
+        ) {
+            kinds.push('prices')
+        }
         return kinds
     }
 
@@ -598,12 +628,13 @@ export class SyncService {
     ): Promise<void> {
         if (addresses.length === 0) return
 
+        const scope = scopeForLegacyNetwork(network)
         const accountPass = await syncAccountsPhase(
             addresses,
-            network,
+            scope,
             'refresh-accounts',
         )
-        await syncTransactionsPhase(addresses, network, 'refresh-transactions')
+        await syncTransactionsPhase(addresses, scope, 'refresh-transactions')
 
         // New holdings land here with no metadata or price, so the asset row
         // renders a skeleton. Enrich immediately rather than waiting for the
@@ -615,7 +646,7 @@ export class SyncService {
             // below. refreshAccounts logs but never throws.
             try {
                 const assetPass = await syncAssetsPhase(
-                    network,
+                    scope,
                     ['assets', 'prices'],
                     'refresh-asset-metadata-or-prices',
                 )

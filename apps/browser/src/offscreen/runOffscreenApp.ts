@@ -128,6 +128,7 @@ export const runOffscreenApp = async ({
     initializeSyncService({
         queryClient,
         stores: createSyncStorePorts(),
+        chains: getProvider().chains,
         pollIntervalMs: OFFSCREEN_POLL_INTERVAL_MS,
     })
     getSyncService().start()

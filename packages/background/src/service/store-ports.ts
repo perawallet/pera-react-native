@@ -10,44 +10,44 @@
  limitations under the License
  */
 
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    chainAccountOf,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    scopeKeyForLegacyNetwork,
+    CHAIN_IDS,
+    toScopeKey,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useSyncCursorStore } from '../polling'
-import type { SyncStorePorts } from '../models'
+import type { AccountChainAddress, SyncStorePorts } from '../models'
 
-const cursorFor = (network: Network) =>
-    useSyncCursorStore.getState().cursors[scopeKeyForLegacyNetwork(network)]
+const cursorFor = (scope: ChainScope) =>
+    useSyncCursorStore.getState().cursors[toScopeKey(scope)]
 
 export const createSyncStorePorts = (): SyncStorePorts => ({
-    getAccountAddresses: () =>
-        useAccountsStore
-            .getState()
-            .accounts.flatMap(
-                a => chainAccountOf(a, LEGACY_CHAIN_ID)?.address ?? [],
-            ),
-    getActiveNetwork: () => useNetworkStore.getState().network,
+    // Walks the known chain ids rather than the record's keys: a key this
+    // build doesn't know (a record from a newer build) has no scope to sync.
+    getAccountChainAddresses: () =>
+        useAccountsStore.getState().accounts.flatMap(account =>
+            CHAIN_IDS.flatMap((chainId): AccountChainAddress[] => {
+                const address = account.chains[chainId]?.address
+                return address === undefined ? [] : [{ chainId, address }]
+            }),
+        ),
+    getSelectedScope,
     // The persisted map can be partial, and an absent key must read as
     // never-synced (null), not as undefined — which `!== null` would treat
     // as already synced and skip the force-sync.
-    getLastRefreshedRound: network => cursorFor(network)?.refreshRound ?? null,
-    setLastRefreshedRound: (network, round) =>
-        useSyncCursorStore.getState().setRefreshRound(network, round),
-    getLastSyncAt: (network, kind) => {
-        const cursor = cursorFor(network)
+    getChangeCursor: scope => cursorFor(scope)?.refreshRound ?? null,
+    setChangeCursor: (scope, cursor) =>
+        useSyncCursorStore.getState().setRefreshRound(scope, cursor),
+    getLastSyncAt: (scope, kind) => {
+        const cursor = cursorFor(scope)
         return (
             (kind === 'assets'
                 ? cursor?.lastAssetSyncAt
                 : cursor?.lastPriceSyncAt) ?? null
         )
     },
-    setLastSyncAt: (network, kind, atMs) =>
-        useSyncCursorStore.getState().markSynced(network, kind, atMs),
+    setLastSyncAt: (scope, kind, atMs) =>
+        useSyncCursorStore.getState().markSynced(scope, kind, atMs),
 })

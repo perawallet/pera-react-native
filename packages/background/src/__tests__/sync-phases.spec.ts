@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AccountSyncResult } from '@perawallet/wallet-core-accounts'
 import {
+    legacyNetworkFor,
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
@@ -26,9 +27,14 @@ const mocks = vi.hoisted(() => ({
     fetchAndPersistPrices: vi.fn(),
     fetchAndPersistTransactions: vi.fn(),
     warn: vi.fn(),
+    concurrencyLimits: [] as number[],
+    adapters: {} as Record<string, { maxConcurrentStateReads?: number }>,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    accountsChainAdapters: {
+        get: (chainId: string) => mocks.adapters[chainId],
+    },
     fetchAndPersistAccount: mocks.fetchAndPersistAccount,
     getAllHeldAssetIdsForNetwork: mocks.getAllHeldAssetIdsForNetwork,
 }))
@@ -44,12 +50,22 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: mocks.warn },
+    // Unbounded stand-in that records the limit it was given.
     mapWithConcurrency: async <T, R>(
         items: T[],
-        _limit: number,
+        limit: number,
         mapper: (item: T, index: number) => Promise<R>,
-    ) => Promise.allSettled(items.map((item, index) => mapper(item, index))),
+    ) => {
+        mocks.concurrencyLimits.push(limit)
+        return Promise.allSettled(
+            items.map((item, index) => mapper(item, index)),
+        )
+    },
 }))
+
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
 const syncResult = (
     overrides: Partial<AccountSyncResult> = {},
@@ -76,6 +92,11 @@ const rejected = (reason: unknown): PromiseRejectedResult => ({
 describe('sync phases', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.concurrencyLimits = []
+        mocks.adapters = {
+            algorand: { maxConcurrentStateReads: 6 },
+            ethereum: {},
+        }
     })
 
     describe('syncAccountsPhase', () => {
@@ -89,7 +110,7 @@ describe('sync phases', () => {
 
             const result = await syncAccountsPhase(
                 ['A', 'B'],
-                'mainnet',
+                MAINNET,
                 'account',
             )
 
@@ -117,7 +138,7 @@ describe('sync phases', () => {
 
             const result = await syncAccountsPhase(
                 ['A', 'B'],
-                'testnet',
+                TESTNET,
                 'refresh-accounts',
             )
 
@@ -129,7 +150,7 @@ describe('sync phases', () => {
                 'Sync step failed',
                 expect.objectContaining({
                     phase: 'refresh-accounts',
-                    network: 'testnet',
+                    scope: TESTNET,
                     subject: 'B',
                 }),
             )
@@ -140,11 +161,35 @@ describe('sync phases', () => {
                 new Error('HTTP 429 Too Many Requests'),
             )
 
-            const result = await syncAccountsPhase(['A'], 'mainnet', 'account')
+            const result = await syncAccountsPhase(['A'], MAINNET, 'account')
 
             expect(result.isRateLimited).toBe(true)
             expect(result.hasSuccess).toBe(false)
             expect(mocks.warn).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('syncAccountsPhase read concurrency', () => {
+        const addresses = Array.from({ length: 10 }, (_, i) => `0x${i}`)
+
+        beforeEach(() => {
+            mocks.fetchAndPersistAccount.mockResolvedValue(syncResult())
+        })
+
+        it('caps the reads in flight at the chain cap', async () => {
+            await syncAccountsPhase(addresses, MAINNET, 'account')
+
+            expect(mocks.concurrencyLimits).toEqual([6])
+        })
+
+        it('starts every read at once on a chain without a cap', async () => {
+            await syncAccountsPhase(addresses, ETHEREUM, 'account')
+
+            expect(mocks.concurrencyLimits).toEqual([10])
+            expect(mocks.fetchAndPersistAccount).toHaveBeenCalledWith(
+                '0x0',
+                ETHEREUM,
+            )
         })
     })
 
@@ -156,7 +201,7 @@ describe('sync phases', () => {
 
             const result = await syncTransactionsPhase(
                 ['A', 'B'],
-                'mainnet',
+                MAINNET,
                 'transactions',
             )
 
@@ -182,7 +227,7 @@ describe('sync phases', () => {
             mocks.fetchAndPersistPrices.mockResolvedValue(undefined)
 
             const result = await syncAssetsPhase(
-                'mainnet',
+                MAINNET,
                 ['prices'],
                 'asset-metadata-or-prices',
             )
@@ -203,7 +248,7 @@ describe('sync phases', () => {
             mocks.fetchAndPersistPrices.mockResolvedValue(undefined)
 
             const result = await syncAssetsPhase(
-                'mainnet',
+                MAINNET,
                 ['assets', 'prices'],
                 'asset-metadata-or-prices',
             )
@@ -216,15 +261,43 @@ describe('sync phases', () => {
             )
         })
 
+        it('rejects, rather than throws, the price kind on a scope without a legacy network', async () => {
+            mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
+
+            const result = await syncAssetsPhase(
+                ETHEREUM,
+                ['assets', 'prices'],
+                'asset-metadata-or-prices',
+            )
+
+            expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith(
+                ['1', '2'],
+                ETHEREUM,
+            )
+            expect(mocks.fetchAndPersistPrices).not.toHaveBeenCalled()
+            expect(result.succeededKinds).toEqual(['assets'])
+            expect(result.hasFailure).toBe(true)
+        })
+
         it('lets a failed held-id read throw so the caller decides', async () => {
             mocks.getAllHeldAssetIdsForNetwork.mockRejectedValue(
                 new Error('db locked'),
             )
 
             await expect(
-                syncAssetsPhase('mainnet', ['assets'], 'asset'),
+                syncAssetsPhase(MAINNET, ['assets'], 'asset'),
             ).rejects.toThrow('db locked')
             expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('legacyNetworkFor', () => {
+        it('is the network of a legacy scope', () => {
+            expect(legacyNetworkFor(TESTNET)).toBe('testnet')
+        })
+
+        it('is undefined for a scope with no legacy network', () => {
+            expect(legacyNetworkFor(ETHEREUM)).toBeUndefined()
         })
     })
 
@@ -241,7 +314,7 @@ describe('sync phases', () => {
             expect(round).toBe(110)
         })
 
-        it('falls back to the backend round when no fetch observed one', () => {
+        it('falls back to the signal cursor when no fetch observed one', () => {
             expect(resolveCheckpointRound([fulfilled(syncResult())], 200)).toBe(
                 200,
             )

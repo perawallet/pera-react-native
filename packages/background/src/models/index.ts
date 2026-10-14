@@ -11,6 +11,11 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
+import type {
+    ChainId,
+    ChainRegistry,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { AssetSyncKind } from '../polling/models'
 
@@ -25,25 +30,35 @@ export type SyncCompletionHandler = (
     network: Network,
 ) => void | Promise<void>
 
+/** One account's address on one chain it holds an entry for. */
+export type AccountChainAddress = { chainId: ChainId; address: string }
+
 /**
  * The app state the sync loop reads and the per-scope cursor it writes.
  * Injected so the service never reaches into global stores;
  * `createSyncStorePorts` is the store-backed implementation every app wires in.
  */
 export type SyncStorePorts = {
-    getAccountAddresses: () => string[]
-    getActiveNetwork: () => Network
-    /** Null for a network never synced, including one absent from the map. */
-    getLastRefreshedRound: (network: Network) => Nullable<number>
-    setLastRefreshedRound: (network: Network, round: number) => void
+    /** Every chain entry of every account, in account order. */
+    getAccountChainAddresses: () => AccountChainAddress[]
+    getSelectedScope: (chainId: ChainId) => ChainScope
+    /** Null for a scope never synced, including one absent from the map. */
+    getChangeCursor: (scope: ChainScope) => Nullable<number>
+    setChangeCursor: (scope: ChainScope, cursor: number) => void
     /** Epoch ms of the last successful pass of `kind`; null when it never ran. */
-    getLastSyncAt: (network: Network, kind: AssetSyncKind) => Nullable<number>
-    setLastSyncAt: (network: Network, kind: AssetSyncKind, atMs: number) => void
+    getLastSyncAt: (scope: ChainScope, kind: AssetSyncKind) => Nullable<number>
+    setLastSyncAt: (
+        scope: ChainScope,
+        kind: AssetSyncKind,
+        atMs: number,
+    ) => void
 }
 
 export type SyncServiceDeps = {
     queryClient: QueryClient
     stores: SyncStorePorts
+    /** The kill switch, and the chains whose open submissions each tick settles. */
+    chains: ChainRegistry
     /**
      * Optional registration function for the post-confirmation refresh
      * hook. When provided, `initializeSyncService` wires the freshly-built
