@@ -15,7 +15,7 @@ import type { Decimal } from 'decimal.js'
 import {
     useAccountValueBasis,
     useAccountValueTotalsQuery,
-    useSigningAccounts,
+    useSigningAccountsOnOwnChain,
     type AccountValueBasis,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -46,7 +46,9 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
     const { usdToPreferred } = useCurrency()
     const basis = useAccountValueBasis(scope.chainId)
 
-    const accounts = useSigningAccounts(scope.chainId)
+    // Each account counts when it can sign on its own chain, so an Ethereum
+    // account joins the fiat total without an Algorand address.
+    const accounts = useSigningAccountsOnOwnChain()
     const {
         portfolioNativeValue,
         portfolioUsdValue,

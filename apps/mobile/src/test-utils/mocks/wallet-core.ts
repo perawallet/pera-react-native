@@ -220,6 +220,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
     useNativeAsset: () => nativeAsset,
     nativeAssetFor: () => nativeAsset,
+    findNativeAsset: () => nativeAsset,
     isNativeAssetId: (_chainId: string, assetId: string) =>
         assetId === nativeAsset.assetId,
     useIsNativeAssetId:
@@ -355,7 +356,36 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     const authorityOf = vi.fn(
         (_account: any, _scope?: any): string | null => null,
     )
+    const accountChainIdOf = (account: any): string =>
+        Object.keys(account?.chains ?? {})[0] ?? 'algorand'
+    // One object per chain, so hooks that depend on the scope keep its identity.
+    const scopes = new Map<string, { chainId: string; networkId: string }>()
+    const scopeOf = (chainId: string) => {
+        if (!scopes.has(chainId)) {
+            scopes.set(chainId, { chainId, networkId: 'mainnet' })
+        }
+        return scopes.get(chainId)!
+    }
     return {
+        accountChainIdOf: vi.fn(accountChainIdOf),
+        useRegisteredChainIds: vi.fn(() => ['algorand']),
+        useAccountChainId: vi.fn((account: any) =>
+            account ? accountChainIdOf(account) : 'algorand',
+        ),
+        useAccountScope: vi.fn((account: any) =>
+            scopeOf(account ? accountChainIdOf(account) : 'algorand'),
+        ),
+        accountValueOf: vi.fn(
+            (account: any, chainId: string, values: Map<string, unknown>) => {
+                const address = chainAccountOf(account, chainId)?.address
+                return address ? values.get(address) : undefined
+            },
+        ),
+        ownAddressOf: vi.fn(
+            (account: any) =>
+                chainAccountOf(account, accountChainIdOf(account))?.address,
+        ),
+        useSigningAccountsOnOwnChain: vi.fn(() => []),
         custodyOf: vi.fn((account: any) => account.custody),
         hasCustody: vi.fn(
             (account: any, kind: string) => kindOf(account) === kind,

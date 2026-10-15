@@ -29,8 +29,8 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { ChainNotice } from '@components/ChainNotice'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
 import { AccountOverviewHeaderSkeleton } from './AccountOverviewHeaderSkeleton'
@@ -46,10 +46,12 @@ export const AccountOverviewHeader = ({
     chartVisible,
     isLoading,
 }: AccountOverviewHeaderProps) => {
-    const nativeAsset = useNativeAsset()
     const styles = useStyles()
     const { t } = useLanguage()
     const {
+        nativeAsset,
+        chainName,
+        isChainUnavailable,
         portfolioNativeValue,
         portfolioPreferredValue,
         isPending,
@@ -69,6 +71,18 @@ export const AccountOverviewHeader = ({
     const showPrimary = hasBalance || isLoading
 
     const renderContent = useCallback(() => {
+        if (isChainUnavailable || !nativeAsset) {
+            return (
+                <ChainNotice
+                    kind='warning'
+                    titleKey='accounts.chain_unavailable'
+                    params={{ chain: chainName }}
+                    style={styles.chainNotice}
+                    testID='account_chain_unavailable'
+                />
+            )
+        }
+
         if (showPrimary) {
             return (
                 <>
@@ -213,6 +227,8 @@ export const AccountOverviewHeader = ({
         setPeriod,
         t,
         nativeAsset,
+        isChainUnavailable,
+        chainName,
     ])
 
     const useLoadingHeight = isLoading && chartVisible

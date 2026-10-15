@@ -11,10 +11,11 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
+import { ChainBadge } from '@components/ChainBadge'
+import { ChainNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -30,10 +31,18 @@ export const AccountWithBalance = ({
     isHighlighted,
     ...rest
 }: AccountWithBalanceProps) => {
-    const nativeAsset = useNativeAsset()
     const styles = useStyles({ isHighlighted })
     const { t } = useLanguage()
-    const { nativeValue, isTestTier } = useAccountWithBalance(account)
+    const {
+        chainId,
+        chainName,
+        nativeAsset,
+        nativeValue,
+        preferredValue,
+        isMultiChain,
+        isTestTier,
+        isChainSwitchedOff,
+    } = useAccountWithBalance(account)
 
     return (
         <PWView
@@ -46,30 +55,49 @@ export const AccountWithBalance = ({
                 showAccountType
                 style={styles.accountDisplay}
             />
+            {isMultiChain && <ChainBadge chainId={chainId} />}
             {isTestTier && (
                 <PWBadge
                     variant='testnet'
                     value={t('common.network_label.testnet')}
                 />
             )}
-            <PWView style={styles.balanceContainer}>
-                <AssetAmount
-                    asset={nativeAsset}
-                    value={nativeValue}
-                    density='compact'
-                    variant='bodyLarge'
-                    weight={500}
+            {isChainSwitchedOff || !nativeAsset ? (
+                <ChainNotice
+                    kind='warning'
+                    titleKey='accounts.chain_unavailable'
+                    params={{ chain: chainName }}
+                    testID='account_chain_unavailable'
                 />
-
-                <PreferredAmount
-                    sourceAssetId={nativeAsset.assetId}
-                    sourceAmount={nativeValue}
-                    density='compact'
-                    variant='footnoteMedium'
-                    weight={400}
-                    style={styles.fiatBalance}
-                />
-            </PWView>
+            ) : (
+                <PWView style={styles.balanceContainer}>
+                    <AssetAmount
+                        asset={nativeAsset}
+                        value={nativeValue}
+                        density='compact'
+                        variant='bodyLarge'
+                        weight={500}
+                    />
+                    {isMultiChain ? (
+                        <PreferredAmount
+                            value={preferredValue}
+                            density='compact'
+                            variant='footnoteMedium'
+                            weight={400}
+                            style={styles.fiatBalance}
+                        />
+                    ) : (
+                        <PreferredAmount
+                            sourceAssetId={nativeAsset.assetId}
+                            sourceAmount={nativeValue}
+                            density='compact'
+                            variant='footnoteMedium'
+                            weight={400}
+                            style={styles.fiatBalance}
+                        />
+                    )}
+                </PWView>
+            )}
         </PWView>
     )
 }

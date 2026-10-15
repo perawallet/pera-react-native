@@ -15,19 +15,30 @@ import type { Decimal } from 'decimal.js'
 import {
     addressOn,
     type AccountBalanceHistoryItem,
+    useAccountScope,
     useAccountSummaryQuery,
     useAllAccounts,
     useCanSignWith,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { findNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { useIsChainSwitchedOff } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    HistoryPeriod,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewHeaderResult = {
+    /** The account's own chain's native asset; undefined when this build doesn't ship its assets adapter. */
+    nativeAsset: Optional<PeraAsset>
+    chainName: string
+    /** The chain's kill switch is on: the header shows a notice instead of balances and actions. */
+    isChainUnavailable: boolean
     /** `null` when unknown — renders as a placeholder, not 0. */
     portfolioNativeValue: Nullable<Decimal>
     /** `null` while the preferred-currency rate is unresolved — renders as a placeholder, not 0. */
@@ -49,7 +60,16 @@ export type UseAccountOverviewHeaderResult = {
 export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account)
+    const isChainSwitchedOff = useIsChainSwitchedOff(scope.chainId)
+    const nativeAsset = useMemo(
+        () => findNativeAsset(scope.chainId),
+        [scope.chainId],
+    )
+    const { chains } = getProvider()
+    const chainName = chains.has(scope.chainId)
+        ? chains.get(scope.chainId).descriptor.displayName
+        : scope.chainId
     const { usdToPreferred } = useCurrency()
     const canSign = useCanSignWith(account, scope.chainId)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
@@ -90,6 +110,9 @@ export const useAccountOverviewHeader = (
     )
 
     return {
+        nativeAsset,
+        chainName,
+        isChainUnavailable: isChainSwitchedOff || !nativeAsset,
         portfolioNativeValue,
         portfolioPreferredValue,
         isBalanceComplete: isComplete,

@@ -19,19 +19,23 @@ import {
     useAccountAssetsQuery,
     useCanSignWith,
     assetFromHoldingLiteRow,
+    useAccountScope,
     type WalletAccount,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import {
+    findNativeAsset,
     useAssetPreferencesStore,
     isCollectible,
 } from '@perawallet/wallet-core-assets'
-import { useDebouncedValue } from '@perawallet/wallet-core-shared'
+import {
+    useDebouncedValue,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
@@ -52,6 +56,9 @@ import {
 } from './useAssetListFiat'
 
 type UseAccountAssetListResult = {
+    chainId: ChainId
+    /** Undefined when this build doesn't ship the chain's assets adapter. */
+    nativeAssetId: Optional<string>
     holdings: AccountHoldingsLiteRow[]
     convertFiat: AssetFiatConverter
     isPending: boolean
@@ -87,7 +94,11 @@ export const useAccountAssetList = ({
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account)
+    const nativeAssetId = useMemo(
+        () => findNativeAsset(scope.chainId)?.assetId,
+        [scope.chainId],
+    )
     const accountAddress = addressOn(account, scope) ?? ''
     const canManageAssets = useCapability({
         chain: { chainId: scope.chainId, capability: 'manageAssets' },
@@ -324,6 +335,8 @@ export const useAccountAssetList = ({
     )
 
     return {
+        chainId: scope.chainId,
+        nativeAssetId,
         holdings,
         convertFiat,
         isPending,

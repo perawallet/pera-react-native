@@ -13,12 +13,12 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+    addressOn,
+    useAccountScope,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -107,7 +107,7 @@ export type UseAccountHistoryResult = {
  */
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account)
     const accountAddress = account ? addressOn(account, scope) : undefined
     const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()

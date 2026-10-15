@@ -21,12 +21,14 @@ import {
     PWView,
 } from '@components/core'
 import type { AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetListItemView } from '../AssetListItemView'
 import type { AssetFiatConverter } from '../useAssetListFiat'
 import { useStyles } from './styles'
 
 export type SwipeableAssetItemProps = {
     item: AccountHoldingsLiteRow
+    chainId: ChainId
     isSwipeEnabled: boolean
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
@@ -35,6 +37,7 @@ export type SwipeableAssetItemProps = {
 
 const SwipeableAssetItemInner = ({
     item,
+    chainId,
     isSwipeEnabled,
     convertFiat,
     onPress,
@@ -72,6 +75,7 @@ const SwipeableAssetItemInner = ({
         return (
             <AssetListItemView
                 holding={item}
+                chainId={chainId}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
                 onPress={handlePress}
@@ -101,6 +105,7 @@ const SwipeableAssetItemInner = ({
             <PWView style={styles.swipeableContent}>
                 <AssetListItemView
                     holding={item}
+                    chainId={chainId}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}
                     onPress={handlePress}

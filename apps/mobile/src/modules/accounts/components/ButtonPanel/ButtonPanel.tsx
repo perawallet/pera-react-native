@@ -19,8 +19,15 @@ import { useButtonPanel } from './useButtonPanel'
 export const ButtonPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
-    const { canSwap, handleSwap, handleSend, handleReceive, handleMore } =
-        useButtonPanel()
+    const {
+        canSwap,
+        canSend,
+        canReceive,
+        handleSwap,
+        handleSend,
+        handleReceive,
+        handleMore,
+    } = useButtonPanel()
 
     return (
         <PWView
@@ -37,22 +44,26 @@ export const ButtonPanel = () => {
                     style={themeStyle.button}
                 />
             )}
-            <RoundButton
-                title={t('account_details.button_panel.send')}
-                icon='outflow'
-                variant='secondary'
-                onPress={handleSend}
-                testID='send_button'
-                style={themeStyle.button}
-            />
-            <RoundButton
-                title={t('account_details.button_panel.receive')}
-                icon='inflow'
-                variant='secondary'
-                onPress={handleReceive}
-                testID='receive_button'
-                style={themeStyle.button}
-            />
+            {canSend && (
+                <RoundButton
+                    title={t('account_details.button_panel.send')}
+                    icon='outflow'
+                    variant='secondary'
+                    onPress={handleSend}
+                    testID='send_button'
+                    style={themeStyle.button}
+                />
+            )}
+            {canReceive && (
+                <RoundButton
+                    title={t('account_details.button_panel.receive')}
+                    icon='inflow'
+                    variant='secondary'
+                    onPress={handleReceive}
+                    testID='receive_button'
+                    style={themeStyle.button}
+                />
+            )}
             <RoundButton
                 title={t('account_details.button_panel.more')}
                 icon='chevron-down'

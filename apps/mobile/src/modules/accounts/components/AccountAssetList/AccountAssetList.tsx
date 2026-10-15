@@ -28,7 +28,7 @@ import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
-import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
+import { assetRefKey } from '@perawallet/wallet-core-chain-contract'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -46,10 +46,11 @@ export const AccountAssetList = ({
     refreshControl,
 }: AccountAssetListProps) => {
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
     const { t } = useLanguage()
 
     const {
+        chainId,
+        nativeAssetId,
         holdings,
         convertFiat,
         isPending,
@@ -70,12 +71,13 @@ export const AccountAssetList = ({
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
                 renderItemProps.canManageAssets &&
-                !isNativeAssetId(item.assetId) &&
+                item.assetId !== nativeAssetId &&
                 item.amount.isZero()
 
             return (
                 <SwipeableAssetItem
                     item={item}
+                    chainId={chainId}
                     isSwipeEnabled={isSwipeable}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
@@ -83,7 +85,7 @@ export const AccountAssetList = ({
                 />
             )
         },
-        [isNativeAssetId, renderItemProps, convertFiat],
+        [nativeAssetId, chainId, renderItemProps, convertFiat],
     )
 
     const listHeader = (
@@ -145,7 +147,9 @@ export const AccountAssetList = ({
                 renderItem={renderItem}
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
-                keyExtractor={item => item.assetId}
+                keyExtractor={item =>
+                    assetRefKey({ chainId, assetId: item.assetId })
+                }
                 // Same anchoring hazard as the NFT gallery: FlashList
                 // v2 re-anchors on the previously-first-visible row after every
                 // data change, and a re-sort moves every row, so the anchor drags

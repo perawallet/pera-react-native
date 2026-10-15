@@ -20,7 +20,7 @@ import {
     useIsNativeAssetId,
     isCollectible,
 } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     assetFromHoldingLiteRow,
     type AccountHoldingsLiteRow,
@@ -36,6 +36,7 @@ import { useStyles } from './styles'
 
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
+    chainId: ChainId
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
     onPress?: (event: GestureResponderEvent) => void
@@ -52,6 +53,7 @@ export type AssetListItemViewProps = {
  */
 const AssetListItemViewBase = ({
     holding,
+    chainId,
     convertFiat,
     onPress,
     style,
@@ -60,8 +62,8 @@ const AssetListItemViewBase = ({
     const isNativeAssetId = useIsNativeAssetId()
 
     const asset = useMemo(
-        () => assetFromHoldingLiteRow(holding, LEGACY_CHAIN_ID),
-        [holding],
+        () => assetFromHoldingLiteRow(holding, chainId),
+        [holding, chainId],
     )
 
     const amount = useMemo(
@@ -123,7 +125,7 @@ const AssetListItemViewBase = ({
                 currency={fiat.displayCurrency}
                 assetId={displayCurrencyToAssetId(
                     fiat.displayCurrency,
-                    LEGACY_CHAIN_ID,
+                    chainId,
                 )}
                 value={fiat.value}
                 precision='compact'

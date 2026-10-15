@@ -18,6 +18,7 @@ import { useAccountDisplay } from '../useAccountDisplay'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
 
 let mockNfdNames: { name: string }[] | undefined
 let mockAccountTypeLabel: string | undefined
@@ -209,5 +210,28 @@ describe('useAccountDisplay', () => {
         )
 
         expect(result.current.showBackupBadge).toBe(false)
+    })
+
+    it("truncates an Ethereum account's address with its own chain's codec", () => {
+        registerEthereumChain()
+        const ethAddress = `0x${'c'.repeat(40)}`
+        const account: WalletAccount = {
+            id: 'account-eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ethAddress } },
+        }
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account,
+                compact: false,
+                showAccountType: false,
+                iconSize: 'xl',
+            }),
+        )
+
+        expect(result.current.displayName).not.toBe('No Address Found')
+        expect(result.current.displayName).not.toBe(ethAddress)
+        expect(result.current.displayName.startsWith('0x')).toBe(true)
     })
 })

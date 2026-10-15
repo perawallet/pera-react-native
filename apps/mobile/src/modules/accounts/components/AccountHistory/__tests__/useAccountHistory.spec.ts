@@ -50,6 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         '@packages/accounts/src/models/accounts',
     )),
     useSelectedAccount: vi.fn(),
+    useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
 }))

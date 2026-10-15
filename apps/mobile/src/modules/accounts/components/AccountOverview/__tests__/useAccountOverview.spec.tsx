@@ -72,6 +72,7 @@ vi.mock('@modules/transactions/routes', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     addressOn: (
         account: { chains: Record<string, { address: string }> },
         scope: { chainId: string },

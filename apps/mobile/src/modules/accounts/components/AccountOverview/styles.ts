@@ -66,6 +66,9 @@ export const useStyles = makeStyles(theme => {
             marginBottom: theme.spacing.md,
             maxWidth: '100%',
         },
+        chainNotice: {
+            marginVertical: theme.spacing.xl,
+        },
         noBalanceContainer: {
             paddingVertical: theme.spacing.xl,
             alignItems: 'center',

@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatList } from '@components/core'
 import {
     addressOn,
+    useAccountScope,
     useSelectedAccount,
     useAccountCollectiblesQuery,
     useHoldingAcquisitionOrderQuery,
@@ -29,8 +30,6 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCapability } from '@hooks/useCapability'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -68,7 +67,7 @@ type UseAccountNftsResult = {
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account)
     const address = account ? addressOn(account, scope) : undefined
     const canSign = useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({

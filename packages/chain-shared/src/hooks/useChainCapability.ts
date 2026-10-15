@@ -77,3 +77,12 @@ export const useChainCapability = (
 export const useAnyEnabledChainHasCapability = (
     capability: ChainCapability,
 ): boolean => useChainCapabilityRequirement({ anyChain: capability })
+
+/**
+ * The chain's kill switch. Distinct from a capability being off: a switched-off
+ * chain's accounts stay listed and render a notice rather than disappearing.
+ */
+export const useIsChainSwitchedOff = (chainId: ChainId): boolean => {
+    useRemoteConfigOverrides()
+    return getProvider().chains.isSwitchedOff(chainId)
+}

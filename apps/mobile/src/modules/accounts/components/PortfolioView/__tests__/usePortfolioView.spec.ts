@@ -16,6 +16,8 @@ import { Decimal } from 'decimal.js'
 import {
     useAccountValueBasis,
     useAccountValueTotalsQuery,
+    useSigningAccountsOnOwnChain,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { usePortfolioView } from '../usePortfolioView'
 
@@ -24,7 +26,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAllAccounts: vi.fn(() => []),
-    useSigningAccounts: vi.fn(() => []),
+    useSigningAccountsOnOwnChain: vi.fn(() => []),
     useAccountValueBasis: vi.fn(),
     useAccountValueTotalsQuery: vi.fn(),
 }))
@@ -94,5 +96,25 @@ describe('usePortfolioView', () => {
         const { result } = renderHook(() => usePortfolioView())
 
         expect(result.current.portfolioPreferredValue).toBeNull()
+    })
+
+    it('totals every account that signs on its own chain, Ethereum included', () => {
+        const ethAccount: WalletAccount = {
+            id: 'eth',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                ethereum: { address: `0x${'a'.repeat(40)}`, keyPairId: 'k' },
+            },
+        }
+        vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([ethAccount])
+        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.accounts).toEqual([ethAccount])
+        expect(vi.mocked(useAccountValueTotalsQuery)).toHaveBeenCalledWith(
+            [ethAccount],
+            expect.objectContaining({ chainId: 'algorand' }),
+        )
     })
 })

@@ -11,6 +11,8 @@
  */
 
 import { useCallback } from 'react'
+import { useAccountChainId } from '@perawallet/wallet-core-accounts'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -18,6 +20,8 @@ import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModal
 
 export type UseButtonPanelResult = {
     canSwap: boolean
+    canSend: boolean
+    canReceive: boolean
     handleSwap: () => void
     handleSend: () => void
     handleReceive: () => void
@@ -29,6 +33,9 @@ export const useButtonPanel = (): UseButtonPanelResult => {
     const { account, openSendFunds, openReceiveFunds, openAccountOptions } =
         useAccountOverviewModal()
     const canSwap = useSwapScope(account) !== null
+    const chainId = useAccountChainId(account)
+    const canSend = useChainCapability(chainId, 'send')
+    const canReceive = useChainCapability(chainId, 'receive')
 
     const handleSwap = useCallback(() => {
         trackEvent(HomeEvent.Swap)
@@ -37,6 +44,8 @@ export const useButtonPanel = (): UseButtonPanelResult => {
 
     return {
         canSwap,
+        canSend,
+        canReceive,
         handleSwap,
         handleSend: openSendFunds,
         handleReceive: openReceiveFunds,

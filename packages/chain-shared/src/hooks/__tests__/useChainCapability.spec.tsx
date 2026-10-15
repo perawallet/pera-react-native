@@ -34,6 +34,7 @@ import {
     useChainCapability,
     useChainCapabilityCheck,
     useChainCapabilityRequirement,
+    useIsChainSwitchedOff,
 } from '../useChainCapability'
 
 // Overrides the shared setup's provider stub: this suite needs `chains` and
@@ -314,4 +315,28 @@ describe('useChainCapabilityRequirement', () => {
             expect(result.current).toBe(expected)
         },
     )
+})
+
+describe('useIsChainSwitchedOff', () => {
+    beforeEach(() => {
+        store.clear()
+        useRemoteConfigStore.getState().resetState()
+        provide(setUpChains())
+    })
+
+    it('follows the kill switch without a remount', () => {
+        const { result } = renderHook(() => useIsChainSwitchedOff('algorand'))
+        expect(result.current).toBe(false)
+
+        act(() => {
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride(
+                    chainOverridesKey('algorand'),
+                    JSON.stringify({ enabled: false }),
+                )
+        })
+
+        expect(result.current).toBe(true)
+    })
 })

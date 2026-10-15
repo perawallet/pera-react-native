@@ -16,6 +16,8 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import { useAccountOverviewHeader } from '../useAccountOverviewHeader'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { setChainEnabled } from '@test-utils/capability-overrides'
 import {
     AccountOverviewModalContext,
     type UseAccountOverviewModalResult,
@@ -94,6 +96,29 @@ describe('useAccountOverviewHeader', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it("shows balances in the account's own chain's native asset", () => {
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.nativeAsset).toBeDefined()
+        expect(result.current.isChainUnavailable).toBe(false)
+    })
+
+    it("swaps balances and actions for a notice when the chain's kill switch is off", () => {
+        act(() => setChainEnabled('algorand', false))
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.isChainUnavailable).toBe(true)
+        expect(result.current.chainName).toBe('Algorand')
     })
 
     it('returns canSign true when canSignWith returns true', () => {
