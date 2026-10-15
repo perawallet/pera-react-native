@@ -117,6 +117,10 @@ vi.mock('@hooks/useIsGiftCardsEnabled', () => ({
     useIsGiftCardsEnabled: () => true,
 }))
 
+vi.mock('../handlers/useE2eFixtureDeeplink', () => ({
+    useE2eFixtureDeeplink: () => vi.fn(),
+}))
+
 vi.mock('@routes/navigationRef', () => ({
     navigationRef: {
         navigate: mockNavigate,

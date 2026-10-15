@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
+import { DeeplinkType, type DevDeeplinkType } from './types'
 
 /**
  * Whether web content may fire a given deeplink at the app.
@@ -25,17 +25,17 @@ import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
  * can never be admitted by forgetting about this file. Default-deny, because
  * the failure mode of the opposite default is a phishing primitive.
  *
- * The locale tour is the one excluded key: its type has no runtime member to
- * write here (see types.ts), and naming it as a bare string would put the tag
- * back into release bundles that the resolver swap exists to keep it out of.
- * `isOriginGatedDeeplinkType` reads an absent entry as gated, so excluding it
- * is default-deny too — and a dev build can still load the Discover webview,
+ * The dev deeplinks (locale tour, E2E fixtures) are the excluded keys: their
+ * types have no runtime member to write here (see types.ts), and naming one as
+ * a bare string would put the tag back into release bundles that the resolver
+ * swap exists to keep it out of. `isOriginGatedDeeplinkType` reads an absent
+ * entry as gated, so excluding them is default-deny too — and a dev build can still load the Discover webview,
  * where page content must never be able to drive in-app navigation.
  */
 export type DeeplinkPagePolicy = 'page-allowed' | 'origin-gated'
 
 export const DEEPLINK_PAGE_POLICY: Record<
-    Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
+    Exclude<DeeplinkType, DevDeeplinkType>,
     DeeplinkPagePolicy
 > = {
     // --- Pure navigation ------------------------------------------------

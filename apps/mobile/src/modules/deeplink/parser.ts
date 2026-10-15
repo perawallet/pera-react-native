@@ -19,6 +19,7 @@ import {
 } from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
+import { parseDevE2eFixtureUri } from './dev-e2e-fixture-parser'
 import { parseDevLocaleTourUri } from './dev-locale-tour-parser'
 import {
     getUniversalLinkPath,
@@ -226,9 +227,12 @@ const parseUncheckedDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
 
     if (normalizedUrl.includes('/app/')) {
         // Checked ahead of parsePerawalletAppUri: it owns the same
-        // `perawallet://app/...` scheme but not this `dev/` path.
+        // `perawallet://app/...` scheme but not these `dev/` paths.
         const devLocaleTour = parseDevLocaleTourUri(url)
         if (devLocaleTour) return devLocaleTour
+
+        const devE2eFixture = parseDevE2eFixtureUri(url)
+        if (devE2eFixture) return devE2eFixture
 
         const result = parsePerawalletAppUri(url)
         if (result) return result

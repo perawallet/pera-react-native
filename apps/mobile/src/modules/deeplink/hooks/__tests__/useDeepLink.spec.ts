@@ -399,6 +399,14 @@ const { mockRunTourStep } = vi.hoisted(() => ({
     mockRunTourStep: vi.fn().mockResolvedValue(undefined),
 }))
 
+const { mockApplyE2eFixture } = vi.hoisted(() => ({
+    mockApplyE2eFixture: vi.fn(),
+}))
+
+vi.mock('../../handlers/useE2eFixtureDeeplink', () => ({
+    useE2eFixtureDeeplink: () => mockApplyE2eFixture,
+}))
+
 vi.mock('@modules/locale-tour/registry', () => ({
     getLocaleTourRunner: () => ({
         runTourStep: mockRunTourStep,
@@ -2414,6 +2422,50 @@ describe('useDeepLink', () => {
                 locale: 'en-XA',
             })
         })
+    })
+
+    describe('the e2e fixture deeplink', () => {
+        const url = 'perawallet://app/dev/e2e-fixture?name=contacts-empty'
+
+        beforeEach(() => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: 'DEV_E2E_FIXTURE',
+                sourceUrl: url,
+                fixture: 'contacts-empty',
+            })
+        })
+
+        it('applies the fixture from an OS deeplink', async () => {
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(url, false, 'deeplink')
+            })
+
+            expect(mockApplyE2eFixture).toHaveBeenCalledWith(
+                expect.objectContaining({ fixture: 'contacts-empty' }),
+            )
+        })
+
+        it.each(['qr', 'in-app', 'notification'] as const)(
+            'refuses it from %s',
+            async source => {
+                const onError = vi.fn()
+                const { result } = renderHook(() => useDeepLink())
+
+                await act(async () => {
+                    await result.current.handleDeepLink(
+                        url,
+                        false,
+                        source,
+                        onError,
+                    )
+                })
+
+                expect(mockApplyE2eFixture).not.toHaveBeenCalled()
+                expect(onError).toHaveBeenCalledTimes(1)
+            },
+        )
     })
 })
 

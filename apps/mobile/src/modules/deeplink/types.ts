@@ -50,9 +50,17 @@ export const DeeplinkType = {
  */
 export type DevLocaleTourDeeplinkType = 'DEV_LOCALE_TOUR'
 
+/** Same no-runtime-member rule as the locale tour, for the E2E fixture hook. */
+export type DevE2eFixtureDeeplinkType = 'DEV_E2E_FIXTURE'
+
+/** Dev-only tags; every exhaustive policy table excludes them by this type. */
+export type DevDeeplinkType =
+    | DevLocaleTourDeeplinkType
+    | DevE2eFixtureDeeplinkType
+
 export type DeeplinkType =
     | (typeof DeeplinkType)[keyof typeof DeeplinkType]
-    | DevLocaleTourDeeplinkType
+    | DevDeeplinkType
 
 /**
  * Where a link entered the app. 'deeplink' means the OS Linking layer only
@@ -300,6 +308,19 @@ export interface DevLocaleTourDeeplink extends ParsedDeeplink {
     run?: 'all'
 }
 
+export type E2eFixtureName = 'contacts-empty' | 'contacts-one'
+
+/**
+ * `perawallet://app/dev/e2e-fixture?name=<fixture>` puts the app into a named
+ * state for a device test. Only names, never data: the URL cannot carry
+ * contacts, addresses or key material. Ships only in a bundle built with
+ * E2E_FIXTURES=1 (see metro-build-gates.js).
+ */
+export interface DevE2eFixtureDeeplink extends ParsedDeeplink {
+    type: DevE2eFixtureDeeplinkType
+    fixture: E2eFixtureName
+}
+
 export type AnyParsedDeeplink =
     | AddContactDeeplink
     | EditContactDeeplink
@@ -330,3 +351,4 @@ export type AnyParsedDeeplink =
     | LiquidAuthDeeplink
     | HomeDeeplink
     | DevLocaleTourDeeplink
+    | DevE2eFixtureDeeplink

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
+import { DeeplinkType, type DevDeeplinkType } from './types'
 
 /**
  * Whether server-chosen content (a push, an in-app notification or a banner
@@ -22,11 +22,11 @@ import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
  * transfer, signs, pairs, or writes wallet state is refused.
  *
  * Exhaustive `Record` for the same reason as `DEEPLINK_PAGE_POLICY`: a new
- * `DeeplinkType` fails to compile until it is classified here. The locale tour
- * is excluded and therefore denied (see page-initiated-policy.ts).
+ * `DeeplinkType` fails to compile until it is classified here. The dev deeplinks
+ * are excluded and therefore denied (see page-initiated-policy.ts).
  */
 export const DEEPLINK_NOTIFICATION_POLICY: Record<
-    Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
+    Exclude<DeeplinkType, DevDeeplinkType>,
     boolean
 > = {
     [DeeplinkType.HOME]: true,

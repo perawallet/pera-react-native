@@ -17,6 +17,7 @@ import { useToast } from '@hooks/useToast'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { parseDeeplink } from '../parser'
 import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
+import { isDevE2eFixtureDeeplink } from '../dev-e2e-fixture-parser'
 import { DeeplinkType, type LinkSource } from '../types'
 import {
     findAccountByAddressOn,
@@ -48,6 +49,7 @@ import {
     useAssetOptInDeeplink,
     useBrowserDeeplink,
     useDiscoverPathDeeplink,
+    useE2eFixtureDeeplink,
     useKeyregDeeplink,
     useLocaleTourDeeplink,
     usePeraWebImportDeeplink,
@@ -131,6 +133,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const optInAsset = useAssetOptInDeeplink()
     const showError = useDeeplinkErrorHandler()
     const runLocaleTourStep = useLocaleTourDeeplink()
+    const applyE2eFixture = useE2eFixtureDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
     const nativeAsset = useNativeAsset(scope)
 
@@ -213,6 +216,19 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
             if (isDevLocaleTourDeeplink(parsedData)) {
                 await runLocaleTourStep(parsedData)
+                onSuccess?.()
+                return
+            }
+
+            if (isDevE2eFixtureDeeplink(parsedData)) {
+                // In-app sources (QR, webview, banner, push) must never reset
+                // wallet state. Any OS-level sender still gets through, which
+                // is why the build gate, not this check, is the boundary.
+                if (source !== 'deeplink') {
+                    onError?.()
+                    return
+                }
+                applyE2eFixture(parsedData)
                 onSuccess?.()
                 return
             }

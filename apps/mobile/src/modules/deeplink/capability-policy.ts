@@ -11,7 +11,7 @@
  */
 
 import type { CapabilityRequirement } from '@hooks/useCapability'
-import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
+import { DeeplinkType, type DevDeeplinkType } from './types'
 
 /**
  * What a deeplink needs before it may navigate: a deeplink must never reach a
@@ -22,7 +22,7 @@ import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
  * `SELL` beside this table, since their flag hooks already fold in the capability.
  */
 export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
-    Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
+    Exclude<DeeplinkType, DevDeeplinkType>,
     CapabilityRequirement | null
 > = {
     [DeeplinkType.DISCOVER_PATH]: {

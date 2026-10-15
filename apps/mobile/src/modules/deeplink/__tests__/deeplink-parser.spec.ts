@@ -39,6 +39,7 @@ import { isValidAlgorandAddress as isChecksummedAlgorandAddress } from '@package
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { parseDeeplink } from '../parser'
 import { parseDevLocaleTourUri } from '../dev-locale-tour-parser'
+import { parseDevE2eFixtureUri } from '../dev-e2e-fixture-parser'
 
 import { DeeplinkType } from '../types'
 
@@ -501,5 +502,31 @@ describe('Deeplink Parser - dev locale tour', () => {
             parseDeeplink('perawallet://app/dev/locale-tour?locale=en-XA')
                 ?.type,
         ).toBe(DeeplinkType.HOME)
+    })
+})
+
+describe('Deeplink Parser - dev e2e fixture', () => {
+    it.each(['contacts-empty', 'contacts-one'])(
+        'parses the %s fixture',
+        name => {
+            const parsed = parseDeeplink(
+                `perawallet://app/dev/e2e-fixture?name=${name}`,
+            )
+
+            expect(parsed).toMatchObject({
+                type: 'DEV_E2E_FIXTURE',
+                fixture: name,
+            })
+        },
+    )
+
+    it.each([
+        'perawallet://app/dev/e2e-fixture',
+        'perawallet://app/dev/e2e-fixture?name=',
+        'perawallet://app/dev/e2e-fixture?name=wallet-with-funds',
+        'perawallet://app/dev/e2e-fixture-extra?name=contacts-empty',
+    ])('rejects %s at the parse boundary and falls through to HOME', url => {
+        expect(parseDevE2eFixtureUri(url)).toBeNull()
+        expect(parseDeeplink(url)?.type).toBe(DeeplinkType.HOME)
     })
 })
