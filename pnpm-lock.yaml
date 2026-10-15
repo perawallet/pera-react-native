@@ -2357,6 +2357,9 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
+      '@perawallet/wallet-core-deeplinks':
+        specifier: workspace:*
+        version: link:../deeplinks
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device

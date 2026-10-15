@@ -59,7 +59,11 @@ export type ChainDeeplinkIntent =
           address?: string
       }
     | { kind: 'explorer'; target: ChainLinkTarget; url: string }
-    | { kind: 'wallet-connect'; uri: string }
+    | {
+          kind: 'wallet-connect'
+          /** A `wc:` URI, possibly still wrapping the pairing URI in `?uri=`; the WalletConnect layer unwraps and validates it. */
+          uri: string
+      }
     | {
           kind: 'chain-action'
           target: ChainLinkTarget

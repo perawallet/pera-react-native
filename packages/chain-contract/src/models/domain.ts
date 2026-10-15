@@ -194,10 +194,33 @@ export type ChainTransactionData =
     | { family: 'evm' }
 
 /** Payment-link fields only the parsing chain reads; each family adds a member discriminated by `family`. */
-export type ChainPaymentData = never
+export type ChainPaymentData = {
+    family: 'algorand'
+    /** The ARC-26 note the user cannot edit. */
+    xnote?: string
+}
 
-/** A link action only its own chain can build; each family adds a member discriminated by `family`. */
-export type ChainActionData = never
+/**
+ * A link action only its own chain can build; each family adds a member
+ * discriminated by `family`. Algorand keys are base64 or base64url, padded or
+ * not, as the link spells them; rounds and dilution are decimal digits; `fee`
+ * is microAlgos.
+ */
+export type ChainActionData = {
+    family: 'algorand'
+    action: 'keyreg'
+    sender: string
+    keyregType: 'online' | 'offline'
+    voteKey?: string
+    selectionKey?: string
+    stateProofKey?: string
+    voteFirst?: string
+    voteLast?: string
+    voteKeyDilution?: string
+    fee?: Decimal
+    note?: string
+    xnote?: string
+}
 
 export interface UnsignedTransaction {
     scope: ChainScope

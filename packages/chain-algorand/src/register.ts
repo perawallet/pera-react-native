@@ -22,6 +22,7 @@ import {
     transactionPlanners,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import { migrationChainAdapters } from '@perawallet/wallet-core-migrate'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
@@ -43,6 +44,7 @@ import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
 import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
+import { algorandDeeplinkAdapter } from './deeplinks/adapter'
 import {
     algorandHistoryAdapter,
     algorandSendFlowAdapter,
@@ -108,4 +110,5 @@ export const registerChain = (): void => {
     migrationChainAdapters.register(algorandMigrationAdapter)
     messageSignerChainAdapters.register(algorandMessageSignerAdapter)
     deviceChainAdapters.register(algorandDeviceAdapter)
+    deeplinkAdapters.register(algorandDeeplinkAdapter)
 }
