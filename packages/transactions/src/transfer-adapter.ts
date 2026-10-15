@@ -43,12 +43,27 @@ export type EmptyAccountOffer = {
     notice: ChainNotice
 }
 
+/** A broadcast the chain may not have mined yet, as the submission ledger records it. */
+export type InFlightSpend = {
+    /** Absent on chains with no account sequence number. */
+    nonce?: number
+    /** Base units of each asset the transaction moves out of the account. */
+    outflows: readonly { assetRef: AssetRef; value: Decimal }[]
+    /** Base units of the native asset: the most it can be charged; absent when unknown. */
+    maxFee?: Decimal
+}
+
 export type SpendableBalanceInput = {
     account: WalletAccount
     asset: AssetRef
     scope: ChainScope
     /** Base units of the native asset. */
     fee: Decimal
+    /**
+     * The account's open submission attempts in `scope`. A chain whose
+     * attempts settle before its synced balance can lag behind them ignores it.
+     */
+    inFlight?: readonly InFlightSpend[]
 }
 
 export type SpendableBalance = {
@@ -59,7 +74,7 @@ export type SpendableBalance = {
      * the fee is already off for the native asset. Never negative.
      */
     max: Decimal
-    /** Base units of the native asset the chain holds back; zero with no reserve. */
+    /** Base units of the asset held back from `max`, besides the fee; zero when none is. */
     reserved: Decimal
     /** Explains the reserve when more than `max` is asked for, offering `max` instead. */
     reserveNotice?: ReserveNotice

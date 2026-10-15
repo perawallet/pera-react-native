@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import { nameServiceAdapterFor } from '../chain-adapter'
 import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
 import type {
@@ -41,9 +41,9 @@ export const transformBulkResults = (
 
 export const transformSearchResults = (
     response: NfdSearchApiResponse,
-    network: Network,
+    scope: ChainScope,
 ): NfdSearchResult[] => {
-    const adapter = nameServiceAdapterFor(scopeForLegacyNetwork(network))
+    const adapter = nameServiceAdapterFor(scope)
     // A name search returns a backend-asserted address that can become a send
     // destination. The backend is semi-trusted, so a malformed/garbage address
     // must never reach the destination picker. This closes the malformed-response

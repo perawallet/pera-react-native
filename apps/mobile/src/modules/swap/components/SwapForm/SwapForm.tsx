@@ -56,7 +56,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
     } = useSwapForm(scope, initialPayAmount)
 
     const { localCurrencySymbol, fiatToAsset, assetToFiat } =
-        useSwapLocalCurrency(payAssetId)
+        useSwapLocalCurrency(scope, payAssetId)
 
     return (
         <PWScrollView contentContainerStyle={styles.formContainer}>

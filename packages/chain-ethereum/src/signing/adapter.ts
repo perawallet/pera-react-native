@@ -25,10 +25,8 @@ import type {
     TransactionPlanner,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    eip155ChainIdOf,
-    ethereumAddressCodec,
-} from '../accounts/address-codec'
+import { ethereumAddressCodec } from '../accounts/address-codec'
+import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { transactionDigest } from './digests'
 import { toViemSignature } from './sign'
@@ -67,7 +65,7 @@ export const readEthereumTransaction = (
     }
     const transaction = payload.transaction as TransactionSerializableEIP1559
     // A transaction for another EIP-155 chain would be replayable there.
-    if (transaction.chainId !== eip155ChainIdOf(scope.networkId)) {
+    if (transaction.chainId !== eip155ChainIdOf(scope)) {
         throw new Error(
             `The transaction is for EIP-155 chain ${transaction.chainId}, not ${scope.networkId}`,
         )

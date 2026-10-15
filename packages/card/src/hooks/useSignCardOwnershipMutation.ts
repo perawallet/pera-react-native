@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     buildSiwxAuthData,
     type AuthDataMetadata,
@@ -70,8 +67,6 @@ export type UseSignCardOwnershipMutationResult = CardMutationResult<
 export const useSignCardOwnershipMutation = (
     scope: ChainScope,
 ): UseSignCardOwnershipMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<
         CardOwnershipProof,
         Error,
@@ -80,7 +75,7 @@ export const useSignCardOwnershipMutation = (
         mutationFn: async ({ address, signAuthData }) => {
             // Baanx binds the proof to this token: its nonce has to be
             // inside the payload the user signs, so it is fetched first.
-            const { token, nonce } = await fetchDelegationToken({ network })
+            const { token, nonce } = await fetchDelegationToken({ scope })
             const { authData, metadata } = buildSiwxAuthData(scope.chainId, {
                 domain: CARD_SIGN_IN_DOMAIN,
                 address,

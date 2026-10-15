@@ -20,12 +20,18 @@ const { sendLoginOtpRequest } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/auth', () => ({ sendLoginOtpRequest }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSendLoginOtpMutation } from '../useSendLoginOtpMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useSendLoginOtpMutation', () => {
+describe.each(SCOPES)('useSendLoginOtpMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -55,7 +61,7 @@ describe('useSendLoginOtpMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(sendLoginOtpRequest).toHaveBeenCalledWith(
-            expect.objectContaining({ userId: 'user-1', network: 'mainnet' }),
+            expect.objectContaining({ userId: 'user-1', scope: SCOPE }),
         )
     })
 

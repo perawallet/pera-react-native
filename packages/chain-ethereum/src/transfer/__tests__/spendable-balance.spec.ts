@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { InFlightSpend } from '@perawallet/wallet-core-transactions'
 
 const mocks = vi.hoisted(() => ({
     getAccountChainStateRow: vi.fn(),
@@ -77,5 +78,127 @@ describe('readEthereumSpendableBalance', () => {
         })
 
         expect(result.max).toEqual(new Decimal(0))
+    })
+
+    describe('with open sends', () => {
+        const ETH = { chainId: 'ethereum', assetId: 'native' } as const
+        const TOKEN = { chainId: 'ethereum', assetId: USDC } as const
+        const FEE = new Decimal(21)
+
+        const givenNativeBalance = (amount: number, latestNonce = 0) => {
+            mocks.getAccountChainStateRow.mockResolvedValue({
+                accountAddress: SENDER,
+                nativeBalance: new Decimal(amount),
+                chainData: {
+                    family: 'evm',
+                    nonce: { latest: latestNonce, pending: latestNonce },
+                },
+            })
+        }
+
+        const read = (
+            asset: typeof ETH | typeof TOKEN,
+            inFlight: InFlightSpend[],
+        ) =>
+            readEthereumSpendableBalance({
+                account: ACCOUNT,
+                asset,
+                scope: SCOPE,
+                fee: FEE,
+                inFlight,
+            })
+
+        it("holds back an open ether send's value and max fee", async () => {
+            givenNativeBalance(1000)
+
+            const result = await read(ETH, [
+                {
+                    nonce: 0,
+                    outflows: [{ assetRef: ETH, value: new Decimal(100) }],
+                    maxFee: new Decimal(30),
+                },
+            ])
+
+            expect(result).toEqual({
+                balance: new Decimal(1000),
+                max: new Decimal(849),
+                reserved: new Decimal(130),
+            })
+        })
+
+        it("holds back an open token send's amount from the token and its gas from ether", async () => {
+            givenNativeBalance(1000)
+            mocks.getAccountHoldings.mockResolvedValue([
+                { assetId: USDC, amount: new Decimal(250), native: null },
+            ])
+            const inFlight: InFlightSpend[] = [
+                {
+                    nonce: 0,
+                    // Lowercased, as a decoded dApp request may spell it.
+                    outflows: [
+                        {
+                            assetRef: { ...TOKEN, assetId: USDC.toLowerCase() },
+                            value: new Decimal(40),
+                        },
+                    ],
+                    maxFee: new Decimal(30),
+                },
+            ]
+
+            const token = await read(TOKEN, inFlight)
+            const ether = await read(ETH, inFlight)
+
+            expect(token).toEqual({
+                balance: new Decimal(250),
+                max: new Decimal(210),
+                reserved: new Decimal(40),
+            })
+            expect(ether.max).toEqual(new Decimal(949))
+        })
+
+        it('does not hold back a send mined in the block the balance was read at', async () => {
+            givenNativeBalance(1000, 5)
+
+            const result = await read(ETH, [
+                {
+                    nonce: 4,
+                    outflows: [{ assetRef: ETH, value: new Decimal(100) }],
+                    maxFee: new Decimal(30),
+                },
+                {
+                    nonce: 5,
+                    outflows: [{ assetRef: ETH, value: new Decimal(200) }],
+                    maxFee: new Decimal(30),
+                },
+            ])
+
+            expect(result.reserved).toEqual(new Decimal(230))
+        })
+
+        it('holds back only the fee of a send with no summary, and nothing when the fee is unknown', async () => {
+            givenNativeBalance(1000)
+
+            const withFee = await read(ETH, [
+                { nonce: 0, outflows: [], maxFee: new Decimal(30) },
+            ])
+            const withoutFee = await read(ETH, [{ nonce: 1, outflows: [] }])
+
+            expect(withFee.reserved).toEqual(new Decimal(30))
+            expect(withoutFee.reserved).toEqual(new Decimal(0))
+        })
+
+        it('never offers a negative amount when open sends spend more than the balance', async () => {
+            givenNativeBalance(100)
+
+            const result = await read(ETH, [
+                {
+                    nonce: 0,
+                    outflows: [{ assetRef: ETH, value: new Decimal(100) }],
+                    maxFee: new Decimal(30),
+                },
+            ])
+
+            expect(result.max).toEqual(new Decimal(0))
+        })
     })
 })

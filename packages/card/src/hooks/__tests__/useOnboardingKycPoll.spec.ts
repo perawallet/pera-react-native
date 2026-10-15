@@ -76,7 +76,10 @@ vi.mock('../../store', () => ({
 
 import { useOnboardingKycPoll } from '../useOnboardingKycPoll'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 /** Evaluates the interval the hook would schedule for the current data. */
 const scheduledInterval = () => {
@@ -97,7 +100,7 @@ beforeEach(() => {
     mockOnboardingStep = 'VERIFICATION'
 })
 
-describe('useOnboardingKycPoll', () => {
+describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
     it('exposes the polled state and keeps polling while a decision is pending', () => {
         mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))

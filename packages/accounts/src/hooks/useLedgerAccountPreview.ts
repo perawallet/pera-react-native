@@ -39,7 +39,7 @@ export const useLedgerAccountPreview = (
     const nativeAsset = nativeAssetFor(scope.chainId)
     const onChain = useOnChainAccountStateQuery(address, scope)
     const delegated = useDelegatedAddressesQuery(address, scope)
-    const { usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency(scope)
     const authorityAddress = onChain.data?.authorityAddress
 
     // The sheet's synthetic watch row reads its delegation state from the slice.
@@ -61,12 +61,12 @@ export const useLedgerAccountPreview = (
         [heldAssets],
     )
 
-    const { data: assets } = useAssetsQuery(assetIds)
+    const { data: assets } = useAssetsQuery(scope, assetIds)
     const priceIds = useMemo(
         () => [nativeAsset.assetId, ...assetIds],
         [nativeAsset.assetId, assetIds],
     )
-    const { data: prices } = useAssetPricesQuery(priceIds)
+    const { data: prices } = useAssetPricesQuery(scope, priceIds)
 
     const preview = useMemo<LedgerAccountPreview | undefined>(() => {
         if (!onChain.data) return undefined

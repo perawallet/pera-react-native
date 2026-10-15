@@ -20,12 +20,18 @@ const { fetchCardTransactions } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/transactions', () => ({ fetchCardTransactions }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardTransactionsQuery } from '../useCardTransactionsQuery'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useCardTransactionsQuery', () => {
+describe.each(SCOPES)('useCardTransactionsQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -63,7 +69,9 @@ describe('useCardTransactionsQuery', () => {
         expect(result.current.transactions.map(t => t.id)).toEqual(['tx_1'])
         expect(result.current.hasNextPage).toBe(true)
 
-        act(() => result.current.fetchNextPage())
+        await act(async () => {
+            await result.current.fetchNextPage()
+        })
 
         await waitFor(() => expect(result.current.transactions).toHaveLength(2))
         expect(result.current.transactions.map(t => t.id)).toEqual([

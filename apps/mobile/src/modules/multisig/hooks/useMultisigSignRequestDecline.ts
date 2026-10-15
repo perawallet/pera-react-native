@@ -15,8 +15,8 @@ import {
     useAllAccounts,
     findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -81,8 +81,8 @@ const CANCEL_ERROR_KEYS = {
 export const useMultisigSignRequestDecline = (
     params: UseMultisigSignRequestDeclineParams,
 ): UseMultisigSignRequestDeclineResult => {
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network) ?? ''
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const deviceId = useScopedDeviceID(scope) ?? ''
     const { errorToast } = useToast()
     const { rejectRequest } = useSigningRequest()
     const accounts = useAllAccounts()
@@ -96,7 +96,7 @@ export const useMultisigSignRequestDecline = (
             : (params.signRequest?.id ?? '')
 
     const declineMutation = useDeclineSignRequestMutation({
-        network,
+        scope,
         signRequestId,
     })
 

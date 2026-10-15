@@ -22,11 +22,28 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     transferChainAdapters,
+    type InFlightSpend,
     type SpendableBalance,
     type SpendableBalanceInput,
     type TransferChainAdapter,
 } from '../../transfer-adapter'
 import { useSpendableBalanceQuery } from '../useSpendableBalanceQuery'
+
+const mocks = vi.hoisted(() => ({
+    getInFlightSpends: vi.fn(),
+    ledgerListeners: new Set<() => void>(),
+}))
+
+vi.mock('../../in-flight', () => ({
+    getInFlightSpends: mocks.getInFlightSpends,
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    subscribeToSubmissionLedger: (listener: () => void) => {
+        mocks.ledgerListeners.add(listener)
+        return () => mocks.ledgerListeners.delete(listener)
+    },
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     addressOn: (account: WalletAccount, scope: { chainId: 'algorand' }) =>
@@ -63,6 +80,11 @@ const inputWith = (fee: number): SpendableBalanceInput => ({
     fee: new Decimal(fee),
 })
 
+const adapterInputWith = (fee: number): SpendableBalanceInput => ({
+    ...inputWith(fee),
+    inFlight: [],
+})
+
 describe('useSpendableBalanceQuery', () => {
     let queryClient: QueryClient
 
@@ -79,6 +101,8 @@ describe('useSpendableBalanceQuery', () => {
             spendableBalance,
         })
         spendableBalance.mockResolvedValue(SPENDABLE)
+        mocks.getInFlightSpends.mockResolvedValue([])
+        mocks.ledgerListeners.clear()
     })
 
     it('waits, without reporting pending, until it has an input', () => {
@@ -100,7 +124,7 @@ describe('useSpendableBalanceQuery', () => {
         expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.data).toEqual(SPENDABLE))
         expect(result.current.isPending).toBe(false)
-        expect(spendableBalance).toHaveBeenCalledWith(inputWith(1_000))
+        expect(spendableBalance).toHaveBeenCalledWith(adapterInputWith(1_000))
     })
 
     it('re-prices when the fee arrives, showing the earlier answer as pending meanwhile', async () => {
@@ -126,7 +150,9 @@ describe('useSpendableBalanceQuery', () => {
         resolveRepriced(repriced)
         await waitFor(() => expect(result.current.data).toEqual(repriced))
         expect(result.current.isPending).toBe(false)
-        expect(spendableBalance).toHaveBeenLastCalledWith(inputWith(1_000))
+        expect(spendableBalance).toHaveBeenLastCalledWith(
+            adapterInputWith(1_000),
+        )
     })
 
     it('re-reads for a second account', async () => {
@@ -166,5 +192,45 @@ describe('useSpendableBalanceQuery', () => {
 
         expect(result.current.isPending).toBe(false)
         expect(spendableBalance).not.toHaveBeenCalled()
+    })
+
+    it("passes the account's open submission attempts to the adapter", async () => {
+        const inFlight: InFlightSpend[] = [
+            {
+                outflows: [{ assetRef: ALGO, value: new Decimal(1_000_000) }],
+                maxFee: new Decimal(1_000),
+            },
+        ]
+        mocks.getInFlightSpends.mockResolvedValue(inFlight)
+
+        const { result } = renderHook(
+            () => useSpendableBalanceQuery(inputWith(1_000)),
+            { wrapper: wrapper(queryClient) },
+        )
+
+        await waitFor(() => expect(result.current.data).toEqual(SPENDABLE))
+        expect(mocks.getInFlightSpends).toHaveBeenCalledWith({
+            address: 'SENDER',
+            scope: SCOPE,
+        })
+        expect(spendableBalance).toHaveBeenCalledWith({
+            ...inputWith(1_000),
+            inFlight,
+        })
+    })
+
+    it('re-reads when the submission ledger records or settles an attempt', async () => {
+        const { result } = renderHook(
+            () => useSpendableBalanceQuery(inputWith(1_000)),
+            { wrapper: wrapper(queryClient) },
+        )
+        await waitFor(() => expect(result.current.data).toEqual(SPENDABLE))
+        const held = { ...SPENDABLE, max: new Decimal(3_899_000) }
+        spendableBalance.mockResolvedValue(held)
+
+        for (const listener of mocks.ledgerListeners) listener()
+
+        await waitFor(() => expect(result.current.data).toEqual(held))
+        expect(mocks.getInFlightSpends).toHaveBeenCalledTimes(2)
     })
 })

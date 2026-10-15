@@ -14,7 +14,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useWalletDeployment,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     ALGO_ASSET_NAME,
     isAlgoAssetName,
@@ -47,32 +50,33 @@ type UseSettingsCurrencyScreenResult = {
 
 export const useSettingsCurrencyScreen =
     (): UseSettingsCurrencyScreenResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const deployment = useWalletDeployment()
         const {
             setPreferredCurrency,
             setFallbackCurrency,
             fallbackCurrency,
             preferredCurrency,
-        } = useCurrency()
+        } = useCurrency(scope)
         const [search, setSearch] = useState<string>()
         const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-        const { data } = useCurrenciesQuery()
+        const { data } = useCurrenciesQuery(scope)
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { hasInternet } = useNetworkStatus()
         const queryClient = useQueryClient()
 
         const isRateUnavailableOffline = useMemo(() => {
             if (hasInternet) return false
             // USD is the identity path in useCurrency, and ALGO rides the
-            // DB-backed algo-usd query, which works offline.
+            // DB-backed native-usd query, which works offline.
             if (preferredCurrency === USD_CURRENCY_ID) return false
             if (isAlgoAssetName(preferredCurrency)) return false
 
             return !queryClient.getQueryData(
-                currencyQueryKeys.price(scope, preferredCurrency),
+                currencyQueryKeys.price(deployment, preferredCurrency),
             )
-        }, [hasInternet, preferredCurrency, scope, queryClient])
+        }, [hasInternet, preferredCurrency, deployment, queryClient])
 
         useEffect(() => {
             if (!search?.length) {

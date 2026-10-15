@@ -47,6 +47,7 @@ import {
     mockAlgodStatusAfterBlock,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
 import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'
@@ -263,7 +264,7 @@ describe('Flow: Card withdraw', () => {
         useCardStore.getState().setEscrowCard({
             cardAddress: CARD_ADDRESS,
             ownerAddress: ALGO25_TEST_ADDRESS,
-            network: 'mainnet',
+            scope: scopeForLegacyNetwork('mainnet'),
             txId: 'CREATE_TX',
         })
         server.use(

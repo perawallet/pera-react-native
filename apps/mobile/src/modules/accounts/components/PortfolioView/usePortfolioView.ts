@@ -43,7 +43,7 @@ export type UsePortfolioViewResult = {
 
 export const usePortfolioView = (): UsePortfolioViewResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency(scope)
     const basis = useAccountValueBasis(scope.chainId)
 
     const accounts = useSigningAccounts(scope.chainId)

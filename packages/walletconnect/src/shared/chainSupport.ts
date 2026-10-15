@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
@@ -24,15 +27,13 @@ import {
 /** Shared by v1 and v2 (`pera/no-cross-protocol-imports` forbids them importing each other). */
 export type WalletConnectSupport = DappRequestChainAdapter['walletConnect']
 
-/** `null` when no chain adapter is registered for the chain `network` belongs to. */
+/** `null` when no chain adapter is registered for the scope's chain. */
 export const dappRequestAdapterFor = (
-    network: Network,
-): Nullable<DappRequestChainAdapter> => {
-    const { chainId } = scopeForLegacyNetwork(network)
-    return dappRequestChainAdapters.has(chainId)
-        ? dappRequestChainAdapters.get(chainId)
+    scope: ChainScope,
+): Nullable<DappRequestChainAdapter> =>
+    dappRequestChainAdapters.has(scope.chainId)
+        ? dappRequestChainAdapters.get(scope.chainId)
         : null
-}
 
 /**
  * Every network resolves to one chain package, which owns the whole
@@ -42,7 +43,7 @@ export const dappRequestAdapterFor = (
 export const walletConnectSupportFor = (
     network: Network,
 ): Nullable<WalletConnectSupport> =>
-    dappRequestAdapterFor(network)?.walletConnect ?? null
+    dappRequestAdapterFor(scopeForLegacyNetwork(network))?.walletConnect ?? null
 
 /** Fails closed: no adapter, or a chain that serves no v1, accepts nothing. */
 export const isV1ChainIdAcceptable = (

@@ -12,6 +12,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import {
     gateSignDataRequest,
@@ -22,7 +23,8 @@ import { AlgorandWalletConnectChainId } from '../../models'
 // The real adapter this package's setup file registers, not a fixture: v1's
 // inbound gate must screen through the same chain adapter v2 routes through.
 const screenRequestOfRegisteredAdapter = () => {
-    const v1 = dappRequestAdapterFor(Networks.mainnet)?.walletConnect.v1
+    const v1 = dappRequestAdapterFor(scopeForLegacyNetwork(Networks.mainnet))
+        ?.walletConnect.v1
     if (!v1) throw new Error('the registered adapter serves no v1')
     return vi.spyOn(v1, 'screenRequest')
 }

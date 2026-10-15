@@ -16,6 +16,11 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useMultisigAccountDetailQuery } from '../useMultisigAccountDetailQuery'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     getMultisigAccountDetail: vi.fn(),
 }))
@@ -60,7 +65,7 @@ describe('useMultisigAccountDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useMultisigAccountDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'MSIG_ADDR_ABC',
                 }),
             { wrapper },
@@ -80,25 +85,30 @@ describe('useMultisigAccountDetailQuery', () => {
         expect(result.current.data?.createdAt).toBeInstanceOf(Date)
     })
 
-    test('calls endpoint with correct network and address', async () => {
-        mocks.getMultisigAccountDetail.mockResolvedValue(validAccountResponse)
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'calls endpoint with correct network and address for $chainId',
+        async scope => {
+            mocks.getMultisigAccountDetail.mockResolvedValue(
+                validAccountResponse,
+            )
 
-        renderHook(
-            () =>
-                useMultisigAccountDetailQuery({
-                    network: 'testnet',
-                    address: 'TEST_ADDR',
-                }),
-            { wrapper },
-        )
+            renderHook(
+                () =>
+                    useMultisigAccountDetailQuery({
+                        scope,
+                        address: 'TEST_ADDR',
+                    }),
+                { wrapper },
+            )
 
-        await waitFor(() =>
-            expect(mocks.getMultisigAccountDetail).toHaveBeenCalledWith(
-                'testnet',
-                'TEST_ADDR',
-            ),
-        )
-    })
+            await waitFor(() =>
+                expect(mocks.getMultisigAccountDetail).toHaveBeenCalledWith(
+                    scope,
+                    'TEST_ADDR',
+                ),
+            )
+        },
+    )
 
     test('returns error state when request fails', async () => {
         mocks.getMultisigAccountDetail.mockRejectedValue(
@@ -108,7 +118,7 @@ describe('useMultisigAccountDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useMultisigAccountDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'MSIG_ADDR',
                 }),
             { wrapper },
@@ -123,7 +133,7 @@ describe('useMultisigAccountDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useMultisigAccountDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'MSIG_ADDR',
                     enabled: false,
                 }),
@@ -140,7 +150,7 @@ describe('useMultisigAccountDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useMultisigAccountDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: '',
                 }),
             { wrapper },
@@ -156,7 +166,7 @@ describe('useMultisigAccountDetailQuery', () => {
         renderHook(
             () =>
                 useMultisigAccountDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'MSIG_ADDR',
                 }),
             { wrapper },

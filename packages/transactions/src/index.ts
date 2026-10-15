@@ -45,8 +45,10 @@ export {
     type EmptyAccountOffer,
     type SpendableBalance,
     type SpendableBalanceInput,
+    type InFlightSpend,
     type RecipientWarningInput,
 } from './transfer-adapter'
+export { getInFlightSpends } from './in-flight'
 export {
     historyChainAdapters,
     fetchTransactionHistory,

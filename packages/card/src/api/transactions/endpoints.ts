@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getCardTransport } from '../transport'
 import {
     StatementFormat,
@@ -41,7 +41,7 @@ const buildFilterParams = (
 }
 
 export type FetchCardTransactionsParams = {
-    network: Network
+    scope: ChainScope
     /** Zero-indexed page. */
     page?: number
     filters?: CardTransactionFilters
@@ -51,10 +51,10 @@ export type FetchCardTransactionsParams = {
 export const fetchCardTransactions = async (
     params: FetchCardTransactionsParams,
 ): Promise<CardTransactionPage> => {
-    const { network, page = 0, filters, signal } = params
+    const { scope, page = 0, filters, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'GET',
         path: '/v1/card/transactions',
         authenticated: true,
@@ -71,7 +71,7 @@ export const fetchCardTransactions = async (
 }
 
 export type ExportCardStatementParams = {
-    network: Network
+    scope: ChainScope
     format: StatementFormat
     filters?: CardTransactionFilters
     signal?: AbortSignal
@@ -80,7 +80,7 @@ export type ExportCardStatementParams = {
 export const exportCardStatement = async (
     params: ExportCardStatementParams,
 ): Promise<CardStatement> => {
-    const { network, format, filters, signal } = params
+    const { scope, format, filters, signal } = params
 
     // Statement supports only a date range (no search/MCC filtering).
     const dateParams: Record<string, string> = {}
@@ -88,7 +88,7 @@ export const exportCardStatement = async (
     if (filters?.dateTo) dateParams.dateTo = filters.dateTo
 
     const response = await getCardTransport().request<ArrayBuffer>({
-        network,
+        scope,
         method: 'GET',
         path: '/v1/card/transactions/statement',
         authenticated: true,

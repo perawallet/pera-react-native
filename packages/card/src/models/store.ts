@@ -11,10 +11,10 @@
  */
 
 import type {
-    BaseStoreState,
-    Network,
-    Nullable,
-} from '@perawallet/wallet-core-shared'
+    ChainScope,
+    ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { OnboardingStep } from './onboarding'
 import type { CardStatus } from './card'
 import type { CardTransactionFilters } from './transaction'
@@ -72,13 +72,13 @@ export type CardUxState = BaseStoreState & {
     /**
      * Persisted, and left intact by `resetOnboardingProgress`, so a retry
      * reuses the created card instead of creating a second one. Reuse is scoped
-     * to BOTH {@link escrowCardOwner} and {@link escrowCardNetwork}.
+     * to BOTH {@link escrowCardOwner} and {@link escrowCardScopeKey}.
      */
     escrowCardAddress: Nullable<string>
     /** Funding-source address that owns {@link escrowCardAddress}. */
     escrowCardOwner: Nullable<string>
-    /** Network {@link escrowCardAddress} was created on. */
-    escrowCardNetwork: Nullable<Network>
+    /** Scope {@link escrowCardAddress} was created on. */
+    escrowCardScopeKey: Nullable<ChainScopeKey>
     /** Transaction id of the on-chain `cardCreate` call. */
     escrowCardTxId: Nullable<string>
     /**
@@ -111,12 +111,12 @@ export type CardUxState = BaseStoreState & {
      */
     adoptCardUser: (userId: string) => void
     setSelectedFundingType: (type: Nullable<FundingType>) => void
-    /** Records (or clears, with null) the escrow card, its owner, network, and txId. */
+    /** Records (or clears, with null) the escrow card, its owner, scope, and txId. */
     setEscrowCard: (
         card: Nullable<{
             cardAddress: string
             ownerAddress: string
-            network: Network
+            scope: ChainScope
             txId: string
         }>,
     ) => void
@@ -128,7 +128,7 @@ export type CardUxState = BaseStoreState & {
     restoreEscrowCard: (card: {
         cardAddress: string
         ownerAddress: string
-        network: Network
+        scope: ChainScope
     }) => void
     /** Marks the current escrow card as approved by AB. */
     markEscrowCardApproved: () => void

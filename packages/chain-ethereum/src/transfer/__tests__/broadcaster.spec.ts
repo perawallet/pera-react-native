@@ -26,6 +26,7 @@ import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
+    getOpenSubmissionSpends,
     getSubmissionAttemptsWithHistoryEntry,
     SubmissionAttemptsSchema,
     TransportError,
@@ -147,7 +148,7 @@ describe('Ethereum broadcaster adapter', () => {
             })
         })
 
-        it('records no history entry for a transaction the result lists none for', async () => {
+        it('records no history entry for a transaction the result lists none for, but still its max fee', async () => {
             useRpc()
 
             await adapter.createSubmitTransport(SCOPE).send(
@@ -165,6 +166,14 @@ describe('Ethereum broadcaster adapter', () => {
                     scope: SCOPE,
                 }),
             ).toEqual([])
+            expect(
+                await getOpenSubmissionSpends({ db, scope: SCOPE }),
+            ).toMatchObject([
+                {
+                    historyEntry: null,
+                    maxFee: new Decimal('420000000000000'),
+                },
+            ])
         })
 
         it('resolves the row failed and rejects as rejected-by-node when the node refuses', async () => {

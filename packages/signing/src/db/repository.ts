@@ -23,6 +23,7 @@ import {
     or,
     sql,
 } from 'drizzle-orm'
+import type { Decimal } from 'decimal.js'
 import {
     getDatabase,
     parseDecimalJson,
@@ -35,11 +36,13 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { notifySubmissionLedgerChanged } from './ledger-events'
 import { SubmissionAttemptsSchema } from './schema'
 import {
     OPEN_SUBMISSION_STATUSES,
     SUBMISSION_HISTORY_ENTRY_VERSION,
     type IntentKey,
+    type OpenSubmissionSpend,
     type SubmissionAttempt,
     type SubmissionAttemptWithHistoryEntry,
     type SubmissionHistoryEntry,
@@ -92,6 +95,8 @@ export type RecordSubmissionAttemptParams = {
     lastValid?: number
     /** The account sequence number the transaction consumes. */
     nonce?: number
+    /** Base units of the native asset: the most the transaction can be charged. */
+    maxFee?: Decimal
     historyEntry?: SubmissionHistoryEntry
 }
 
@@ -108,6 +113,7 @@ export const recordSubmissionAttempt = async ({
     sender,
     lastValid,
     nonce,
+    maxFee,
     historyEntry,
 }: RecordSubmissionAttemptParams): Promise<string> => {
     const id = generateOrderedUniqueId()
@@ -131,8 +137,10 @@ export const recordSubmissionAttempt = async ({
                       entry: historyEntry,
                   } satisfies StoredHistoryEntry)
                 : null,
+            maxFee: maxFee ?? null,
         })
         .run()
+    notifySubmissionLedgerChanged()
     return id
 }
 
@@ -152,6 +160,7 @@ export const resolveSubmissionAttempt = async ({
         .set({ status, resolvedAt: Date.now() })
         .where(eq(SubmissionAttemptsSchema.id, id))
         .run()
+    notifySubmissionLedgerChanged()
 }
 
 export type MarkSubmissionUnknownParams = {
@@ -172,6 +181,7 @@ export const markSubmissionUnknown = async ({
         .set({ status: 'unknown' })
         .where(eq(SubmissionAttemptsSchema.id, id))
         .run()
+    notifySubmissionLedgerChanged()
 }
 
 export type GetOpenSubmissionAttemptsParams = {
@@ -361,6 +371,44 @@ export const getSubmissionAttemptsWithHistoryEntry = async ({
         const historyEntry = parseHistoryEntry(row.historyEntryJson!)
         return historyEntry ? [{ ...fromDb(row), historyEntry }] : []
     })
+}
+
+export type GetOpenSubmissionSpendsParams = {
+    db?: Database
+    scope: ChainScope
+}
+
+/**
+ * Every open attempt in the scope with what it spends, oldest first. An
+ * unreadable history entry reads as null rather than dropping the row, so
+ * its fee still counts. The sender is left to the caller, as in
+ * {@link getSubmissionAttemptsWithHistoryEntry}.
+ */
+export const getOpenSubmissionSpends = async ({
+    db = getDatabase(),
+    scope,
+}: GetOpenSubmissionSpendsParams): Promise<OpenSubmissionSpend[]> => {
+    const rows = await db
+        .select()
+        .from(SubmissionAttemptsSchema)
+        .where(
+            and(
+                eq(SubmissionAttemptsSchema.network, toScopeKey(scope)),
+                inArray(SubmissionAttemptsSchema.status, [
+                    ...OPEN_SUBMISSION_STATUSES,
+                ]),
+            ),
+        )
+        .orderBy(SubmissionAttemptsSchema.createdAt)
+        .all()
+
+    return rows.map(row => ({
+        ...fromDb(row),
+        maxFee: row.maxFee,
+        historyEntry: row.historyEntryJson
+            ? parseHistoryEntry(row.historyEntryJson)
+            : null,
+    }))
 }
 
 export type PruneResolvedSubmissionAttemptsParams = {

@@ -45,7 +45,10 @@ export const useCardEscrowBalance = (): UseCardEscrowBalanceResult => {
         escrowCardAddress ?? '',
         scope,
     )
-    const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
+    const { data: assets } = useAssetsQuery(
+        scope,
+        usdcAssetId ? [usdcAssetId] : [],
+    )
 
     const balance = useMemo(() => {
         if (usdcAssetId === null) return ZERO_BALANCE

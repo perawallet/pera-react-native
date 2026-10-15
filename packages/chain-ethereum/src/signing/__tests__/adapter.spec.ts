@@ -19,6 +19,7 @@ import {
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
+import { UnknownEvmNetworkError } from '../../blockchain/utils/caip19'
 import { transactionDigest } from '../digests'
 import { ethereumPlannerAdapter } from '../adapter'
 import {
@@ -116,17 +117,25 @@ describe('ethereumPlannerAdapter', () => {
         expect(bytesToHex(result.bytes)).toBe(VIEM_TRANSFER_NONCE_0)
     })
 
-    it.each([
-        ['a transaction for another network', { networkId: 'sepolia' }],
-        ['an unknown network', { networkId: 'custom' }],
-    ])('refuses %s', (_label, scope) => {
+    it('refuses a transaction for another network', () => {
         const input = unsigned(TRANSFER, {
-            scope: { chainId: 'ethereum', ...scope },
+            scope: { chainId: 'ethereum', networkId: 'sepolia' },
         })
-        const message = `The transaction is for EIP-155 chain 1, not ${scope.networkId}`
+        const message = 'The transaction is for EIP-155 chain 1, not sepolia'
 
         expect(() => plan(input)).toThrow(message)
         expect(() => assemble(input, [signature()])).toThrow(message)
+    })
+
+    it('refuses an unknown network', () => {
+        const input = unsigned(TRANSFER, {
+            scope: { chainId: 'ethereum', networkId: 'custom' },
+        })
+
+        expect(() => plan(input)).toThrow(UnknownEvmNetworkError)
+        expect(() => assemble(input, [signature()])).toThrow(
+            UnknownEvmNetworkError,
+        )
     })
 
     it.each([

@@ -21,7 +21,7 @@ const { kyCreate, clientCall, hasSecret, withSecret } = vi.hoisted(() => ({
 
 vi.mock('ky', () => ({ default: { create: kyCreate } }))
 vi.mock('@perawallet/wallet-core-config', () => ({
-    getNetworkConfig: () => ({
+    getPeraServicesConfig: () => ({
         baanxBaseUrl: 'https://baanx.test',
         baanxClientKey: 'CK_TEST',
     }),
@@ -29,6 +29,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 vi.mock('@perawallet/wallet-core-kms', () => ({ hasSecret, withSecret }))
 
 import { baanxDirectRequest, resetBaanxClients } from '../baanx-client'
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 type FakeRequest = { headers: Headers }
 
@@ -56,7 +58,7 @@ describe('baanxDirectRequest', () => {
 
     it('creates a client prefixed with the network Baanx base URL', async () => {
         await baanxDirectRequest({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/status',
         })
@@ -66,9 +68,24 @@ describe('baanxDirectRequest', () => {
         )
     })
 
+    it('reuses one client per scope and never shares it across scopes', async () => {
+        const request = (scope: typeof ALGORAND_MAINNET) =>
+            baanxDirectRequest({
+                scope,
+                method: 'GET',
+                path: '/v1/card/status',
+            })
+
+        await request(ALGORAND_MAINNET)
+        await request(ALGORAND_MAINNET)
+        await request({ chainId: 'ethereum', networkId: 'sepolia' } as never)
+
+        expect(kyCreate).toHaveBeenCalledTimes(2)
+    })
+
     it('attaches x-client-key (not Authorization) in the client beforeRequest hook', async () => {
         await baanxDirectRequest({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/status',
         })
@@ -85,7 +102,7 @@ describe('baanxDirectRequest', () => {
         hasSecret.mockReturnValue(true)
 
         await baanxDirectRequest({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/status',
             authenticated: true,
@@ -109,7 +126,7 @@ describe('baanxDirectRequest', () => {
         hasSecret.mockReturnValue(false)
 
         await baanxDirectRequest({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'POST',
             path: '/v1/auth/login',
             data: { email: 'e@x.com' },
@@ -127,7 +144,7 @@ describe('baanxDirectRequest', () => {
         hasSecret.mockReturnValue(true)
 
         await baanxDirectRequest({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'POST',
             path: '/v1/auth/register/email/verify',
             data: { email: 'e@x.com' },
@@ -142,7 +159,7 @@ describe('baanxDirectRequest', () => {
         clientCall.mockResolvedValue(fakeJsonResponse({ id: 'card_1' }))
 
         const res = await baanxDirectRequest({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/status',
         })
@@ -162,7 +179,7 @@ describe('baanxDirectRequest', () => {
         })
 
         const res = await baanxDirectRequest({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/transactions/statement',
             responseType: 'blob',

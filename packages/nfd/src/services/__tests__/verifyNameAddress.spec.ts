@@ -16,6 +16,11 @@ import { nameServiceChainAdapters } from '../../chain-adapter'
 import { verifyNameAddress } from '../verifyNameAddress'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const ADDRESS = 'A'.repeat(58)
 
 describe('verifyNameAddress', () => {
@@ -23,26 +28,34 @@ describe('verifyNameAddress', () => {
         nameServiceChainAdapters.reset()
     })
 
-    it("delegates to the network's chain adapter with the network's scope", async () => {
-        const verifyForwardResolution = vi.fn().mockResolvedValue('verified')
-        registerFakeNameServiceAdapter({ verifyForwardResolution })
-        const { signal } = new AbortController()
+    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        "delegates to the scope's chain adapter with that scope for $chainId",
+        async scope => {
+            const verifyForwardResolution = vi
+                .fn()
+                .mockResolvedValue('verified')
+            registerFakeNameServiceAdapter({
+                chainId: scope.chainId,
+                verifyForwardResolution,
+            })
+            const { signal } = new AbortController()
 
-        const result = await verifyNameAddress({
-            name: 'alice.algo',
-            address: ADDRESS,
-            network: 'testnet',
-            signal,
-        })
+            const result = await verifyNameAddress({
+                name: 'alice.algo',
+                address: ADDRESS,
+                scope,
+                signal,
+            })
 
-        expect(result).toBe('verified')
-        expect(verifyForwardResolution).toHaveBeenCalledWith({
-            name: 'alice.algo',
-            address: ADDRESS,
-            scope: { chainId: 'algorand', networkId: 'testnet' },
-            signal,
-        })
-    })
+            expect(result).toBe('verified')
+            expect(verifyForwardResolution).toHaveBeenCalledWith({
+                name: 'alice.algo',
+                address: ADDRESS,
+                scope,
+                signal,
+            })
+        },
+    )
 
     it('is unavailable when the chain has no way to verify a name', async () => {
         registerFakeNameServiceAdapter()
@@ -51,7 +64,7 @@ describe('verifyNameAddress', () => {
             verifyNameAddress({
                 name: 'alice.algo',
                 address: ADDRESS,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).resolves.toBe('unavailable')
     })
@@ -61,7 +74,7 @@ describe('verifyNameAddress', () => {
             verifyNameAddress({
                 name: 'alice.algo',
                 address: ADDRESS,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
     })

@@ -20,6 +20,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import { fetchCurrentRegion } from '../endpoints'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('region endpoints', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
@@ -35,11 +37,11 @@ describe('region endpoints', () => {
             },
         })
 
-        const region = await fetchCurrentRegion({ network: 'mainnet' })
+        const region = await fetchCurrentRegion({ scope: ALGORAND_MAINNET })
 
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             url: 'v1/cards/supported-countries/',
             signal: undefined,

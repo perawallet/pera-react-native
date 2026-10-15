@@ -17,6 +17,8 @@ import {
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
@@ -43,8 +45,9 @@ export const useAssetItemView = (
     asset: DisplayableAsset,
     options?: UseAssetItemViewOptions,
 ): UseAssetItemViewResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { copyToClipboard } = useClipboard()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const meta = asset.peraMetadata
     const isAlgo = isNativeAssetId(asset.assetId)
     const isCollectible = meta?.type === PeraAssetType.collectible

@@ -16,6 +16,11 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useDeleteImportInboxMutation } from '../useDeleteImportInboxMutation'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     deleteImportInbox: vi.fn(),
 }))
@@ -54,7 +59,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                 }),
             { wrapper },
@@ -69,32 +74,35 @@ describe('useDeleteImportInboxMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
     })
 
-    test('calls endpoint with correct network, deviceId and multisigAddress', async () => {
-        mocks.deleteImportInbox.mockResolvedValue(undefined)
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'calls endpoint with correct network, deviceId and multisigAddress for $chainId',
+        async scope => {
+            mocks.deleteImportInbox.mockResolvedValue(undefined)
 
-        const { result } = renderHook(
-            () =>
-                useDeleteImportInboxMutation({
-                    network: 'testnet',
-                    deviceId: 'device-abc',
-                }),
-            { wrapper },
-        )
+            const { result } = renderHook(
+                () =>
+                    useDeleteImportInboxMutation({
+                        scope,
+                        deviceId: 'device-abc',
+                    }),
+                { wrapper },
+            )
 
-        await act(async () => {
-            result.current.mutate({
-                multisigAddress: 'TEST_MSIG_ADDR',
+            await act(async () => {
+                result.current.mutate({
+                    multisigAddress: 'TEST_MSIG_ADDR',
+                })
             })
-        })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mocks.deleteImportInbox).toHaveBeenCalledWith(
-            'testnet',
-            'device-abc',
-            'TEST_MSIG_ADDR',
-        )
-    })
+            expect(mocks.deleteImportInbox).toHaveBeenCalledWith(
+                scope,
+                'device-abc',
+                'TEST_MSIG_ADDR',
+            )
+        },
+    )
 
     test('returns error state when request fails', async () => {
         mocks.deleteImportInbox.mockRejectedValue(new Error('Delete failed'))
@@ -102,7 +110,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                 }),
             { wrapper },
@@ -123,7 +131,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                 }),
             { wrapper },
@@ -143,7 +151,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                 }),
             { wrapper },
@@ -170,7 +178,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                 }),
             { wrapper },
@@ -191,7 +199,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'specific-device-id',
                 }),
             { wrapper },
@@ -206,7 +214,7 @@ describe('useDeleteImportInboxMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(mocks.deleteImportInbox).toHaveBeenCalledWith(
-            'mainnet',
+            ALGORAND_MAINNET,
             'specific-device-id',
             'MSIG_ADDR',
         )
@@ -219,7 +227,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                     onSuccess,
                 }),
@@ -241,7 +249,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-123',
                     onSuccess,
                 }),
@@ -262,7 +270,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result: mainnetResult } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                 }),
             { wrapper },
@@ -271,7 +279,7 @@ describe('useDeleteImportInboxMutation', () => {
         const { result: testnetResult } = renderHook(
             () =>
                 useDeleteImportInboxMutation({
-                    network: 'testnet',
+                    scope: ALGORAND_TESTNET,
                     deviceId: 'device-2',
                 }),
             { wrapper },
@@ -290,12 +298,12 @@ describe('useDeleteImportInboxMutation', () => {
         await waitFor(() => expect(testnetResult.current.isSuccess).toBe(true))
 
         expect(mocks.deleteImportInbox).toHaveBeenCalledWith(
-            'mainnet',
+            ALGORAND_MAINNET,
             'device-1',
             'ADDR1',
         )
         expect(mocks.deleteImportInbox).toHaveBeenCalledWith(
-            'testnet',
+            ALGORAND_TESTNET,
             'device-2',
             'ADDR2',
         )

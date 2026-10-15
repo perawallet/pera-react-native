@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import {
+    keepPreviousData,
+    skipToken,
+    useQuery,
+    useQueryClient,
+} from '@tanstack/react-query'
 import { addressOn } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { subscribeToSubmissionLedger } from '@perawallet/wallet-core-signing'
+import { getInFlightSpends } from '../in-flight'
 import {
     transferChainAdapters,
     type SpendableBalance,
@@ -30,8 +38,21 @@ export type UseSpendableBalanceQueryResult = {
 export const useSpendableBalanceQuery = (
     input: Optional<SpendableBalanceInput>,
 ): UseSpendableBalanceQueryResult => {
+    const queryClient = useQueryClient()
     const address = input ? addressOn(input.account, input.scope) : undefined
     const isEnabled = !!input && !!address
+
+    // The open attempts are read inside the query, so a broadcast, or a
+    // settle, must re-run it for MAX to drop and come back.
+    useEffect(
+        () =>
+            subscribeToSubmissionLedger(() => {
+                void queryClient.invalidateQueries({
+                    queryKey: [MODULE_PREFIX, 'spendable-balance'],
+                })
+            }),
+        [queryClient],
+    )
 
     const query = useQuery({
         queryKey:
@@ -45,10 +66,17 @@ export const useSpendableBalanceQuery = (
                 : [MODULE_PREFIX, 'spendable-balance'],
         queryFn:
             input && address
-                ? () =>
-                      transferChainAdapters
+                ? async () => {
+                      // The hook reads the ledger: an adapter must not read
+                      // the signing database.
+                      const inFlight = await getInFlightSpends({
+                          address,
+                          scope: input.scope,
+                      })
+                      return transferChainAdapters
                           .get(input.scope.chainId)
-                          .spendableBalance(input)
+                          .spendableBalance({ ...input, inFlight })
+                  }
                 : skipToken,
         // A synced-state read, so it must not pause offline.
         networkMode: 'always',

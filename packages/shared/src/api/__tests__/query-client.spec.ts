@@ -142,12 +142,11 @@ const {
     // resetMockScopeConfig (afterEach) restores it.
     const servicesByScopeKey: Record<string, string[]> = {}
 
-    // Scopes beyond the four Algorand ones, e.g. a fixture chain. The query
-    // client builds clients for every configured scope once, so a test that
-    // adds one must vi.resetModules() and re-import it.
+    // Scopes beyond the four Algorand ones, e.g. a fixture chain, each with
+    // the deployment serving it.
     const extraScopes: Array<{
         scope: { chainId: string; networkId: string }
-        backendUrl: string
+        deployment: 'live' | 'developer'
     }> = []
 
     const resetMockScopeConfig = () => {
@@ -222,11 +221,18 @@ vi.mock('@perawallet/wallet-core-config', () => {
             })),
             ...extraScopes.map(extra => extra.scope),
         ],
-        getPeraServicesConfig: (scope: Scope) => ({
-            backendUrl: isAlgorand(scope)
-                ? (backendUrlByNetwork[scope.networkId] ?? '')
-                : (findExtraScope(scope)?.backendUrl ?? ''),
+        getPeraDeploymentConfig: (deployment: string) => ({
+            backendUrl:
+                backendUrlByNetwork[
+                    deployment === 'live' ? 'mainnet' : 'testnet'
+                ] ?? '',
         }),
+        peraDeploymentOf: (scope: Scope) =>
+            isAlgorand(scope)
+                ? ({ mainnet: 'live', testnet: 'developer' } as const)[
+                      scope.networkId as 'mainnet' | 'testnet'
+                  ]
+                : findExtraScope(scope)?.deployment,
         hasPeraService: (scope: Scope, service: string) =>
             servicesByScopeKey[`${scope.chainId}/${scope.networkId}`]?.includes(
                 service,
@@ -474,18 +480,6 @@ describe('queryClient', () => {
         ).rejects.toThrow('URL is required')
     })
 
-    it('should throw an error for a network with no clients', async () => {
-        const { queryClient } = await import('../query-client')
-        await expect(
-            queryClient({
-                backend: 'backup',
-                network: 'invalid-network' as any,
-                url: '/test',
-                method: 'GET',
-            }),
-        ).rejects.toThrow('Could not get backends for algorand/invalid-network')
-    })
-
     it('should throw an error for invalid backend', async () => {
         const { queryClient } = await import('../query-client')
         await expect(
@@ -711,7 +705,7 @@ describe('queryClient', () => {
         expect(options).not.toHaveProperty('retry')
     })
 
-    it("builds every scope's Pera clients on first use, never at import time, and a node client only when asked", async () => {
+    it("builds every deployment's Pera client on first use, never at import time, and a node client only when asked", async () => {
         vi.resetModules()
         await registerAlgorandNodes()
         mockKy.create.mockClear()
@@ -732,14 +726,13 @@ describe('queryClient', () => {
             url: '/v2/status',
         })
 
-        // One request builds ALL 4 networks × (pera + backup), since the gate is
-        // shared rather than a per-network build-on-miss, plus the one algod
-        // client that request needed.
-        expect(mockKy.create).toHaveBeenCalledTimes(9)
+        // One request builds both deployments' Pera clients and the one backup
+        // client, since the gate is shared rather than a build-on-miss, plus
+        // the one algod client that request needed.
+        expect(mockKy.create).toHaveBeenCalledTimes(4)
 
-        // Every client is built uniformly — a `prefix` (empty for betanet's
-        // and custom's `pera` slot, which is never invoked) and the same
-        // retry policy. No client is special-cased at construction time; the
+        // Every client is built uniformly — a `prefix` and the same retry
+        // policy. No client is special-cased at construction time; the
         // "no Pera deployment" refusal lives on the request path instead.
         for (const [clientConfig] of mockKy.create.mock.calls) {
             expect(clientConfig).toMatchObject({ retry: { limit: 1 } })
@@ -937,6 +930,64 @@ describe('queryClient', () => {
         expect(mockKy).toHaveBeenCalled()
     })
 
+    describe('Pera deployments', () => {
+        test.each([
+            ['live', 'https://mainnet.pera.algo'],
+            ['developer', 'https://testnet.pera.algo'],
+        ] as const)(
+            'a %s deployment target reaches its own host',
+            async (deployment, host) => {
+                vi.resetModules()
+                await registerAlgorandNodes()
+                mockKy.create.mockClear()
+                const { queryClient } = await import('../query-client')
+                mockJson.mockResolvedValue({ results: [] })
+
+                await queryClient({
+                    backend: 'pera',
+                    deployment,
+                    method: 'GET',
+                    url: '/v1/currencies/',
+                })
+
+                expect(findClientInstance(host)).toHaveBeenCalledTimes(1)
+            },
+        )
+
+        test('a deployment the build has no host for is refused before ky', async () => {
+            const saved = backendUrlByNetwork.testnet
+            delete backendUrlByNetwork.testnet
+            try {
+                vi.resetModules()
+                await registerAlgorandNodes()
+                mockKy.mockClear()
+                const { queryClient } = await import('../query-client')
+                const {
+                    PeraServiceUnavailableError:
+                        FreshPeraServiceUnavailableError,
+                } = await import('../../errors/pera-service')
+
+                const request = queryClient({
+                    backend: 'pera',
+                    deployment: 'developer',
+                    method: 'GET',
+                    url: '/v1/currencies/',
+                })
+
+                await expect(request).rejects.toBeInstanceOf(
+                    FreshPeraServiceUnavailableError,
+                )
+                await expect(request).rejects.toMatchObject({
+                    scope: undefined,
+                    targetKey: 'deployment/developer',
+                })
+                expect(mockKy).not.toHaveBeenCalled()
+            } finally {
+                backendUrlByNetwork.testnet = saved
+            }
+        })
+    })
+
     describe('Pera services by scope', () => {
         // A chain id outside the compiled-in union, standing in for a chain
         // package that is not built in.
@@ -976,10 +1027,7 @@ describe('queryClient', () => {
         })
 
         test('a configured scope serves only the services its configuration lists', async () => {
-            extraScopes.push({
-                scope: FIXTURE_MAINNET,
-                backendUrl: 'https://fixture.pera.test',
-            })
+            extraScopes.push({ scope: FIXTURE_MAINNET, deployment: 'live' })
             servicesByScopeKey['fixture/mainnet'] = ['prices']
             vi.resetModules()
             await registerAlgorandNodes()
@@ -1000,7 +1048,7 @@ describe('queryClient', () => {
                 }),
             ).resolves.toBeDefined()
             const fixturePeraClient = findClientInstance(
-                'https://fixture.pera.test',
+                'https://mainnet.pera.algo',
             )
             expect(fixturePeraClient).toHaveBeenCalledTimes(1)
 
@@ -1104,7 +1152,7 @@ describe('queryClient', () => {
         })
     })
 
-    it('updateBackendHeaders reaches every network even when called before any request', async () => {
+    it('updateBackendHeaders reaches every deployment even when called before any request', async () => {
         vi.resetModules()
         await registerAlgorandNodes()
         mockKy.extend.mockClear()
@@ -1112,9 +1160,9 @@ describe('queryClient', () => {
 
         updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
 
-        // 4 networks × (pera + backup). algod and indexer are deliberately not extended,
-        // so a Pera credential can never reach a chain node.
-        expect(mockKy.extend).toHaveBeenCalledTimes(8)
+        // 2 deployments' Pera clients plus the backup client. algod and indexer are
+        // deliberately not extended, so a Pera credential can never reach a chain node.
+        expect(mockKy.extend).toHaveBeenCalledTimes(3)
     })
 
     it('does not re-append the request logger when extending clients', async () => {

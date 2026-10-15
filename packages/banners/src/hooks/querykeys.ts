@@ -10,22 +10,20 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import type { Query } from '@tanstack/react-query'
 
 export const BANNERS_MODULE_PREFIX = 'banners'
 
-export const getBannersQueryKey = (scope: ChainScope, deviceID: string) => [
-    BANNERS_MODULE_PREFIX,
-    'list',
-    { scope, deviceID },
-]
+export const getBannersQueryKey = (
+    deployment: WalletMode,
+    deviceID: string,
+) => [BANNERS_MODULE_PREFIX, 'list', { deployment, deviceID }]
 
-export const getSpotBannersQueryKey = (scope: ChainScope, deviceID: string) => [
-    BANNERS_MODULE_PREFIX,
-    'spot-list',
-    { scope, deviceID },
-]
+export const getSpotBannersQueryKey = (
+    deployment: WalletMode,
+    deviceID: string,
+) => [BANNERS_MODULE_PREFIX, 'spot-list', { deployment, deviceID }]
 
 export const invalidateAllBannersPredicate = (query: Query) =>
     query.queryKey.at(0) === BANNERS_MODULE_PREFIX

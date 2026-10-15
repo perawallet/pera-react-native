@@ -13,6 +13,7 @@
 export {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
+    getOpenSubmissionSpends,
     getSubmissionAttemptsByTxIds,
     getSubmissionAttemptsWithHistoryEntry,
     markSubmissionUnknown,
@@ -20,12 +21,14 @@ export {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
 } from './repository'
+export { subscribeToSubmissionLedger } from './ledger-events'
 export { SubmissionAttemptsSchema } from './schema'
 export {
     LANDABLE_SUBMISSION_STATUSES,
     OPEN_SUBMISSION_STATUSES,
     STALE_OPEN_ATTEMPT_MS,
     type IntentKey,
+    type OpenSubmissionSpend,
     type SubmissionAttempt,
     type SubmissionAttemptWithHistoryEntry,
     type SubmissionFlow,

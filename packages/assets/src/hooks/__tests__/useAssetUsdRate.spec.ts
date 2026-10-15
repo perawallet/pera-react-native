@@ -25,6 +25,9 @@ vi.mock('../useAssetsQuery', () => ({
     useAssetsQuery: mockUseAssetsQuery,
 }))
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
 const ASSET_ID = '31566704'
 
 describe('useAssetUsdRate', () => {
@@ -34,32 +37,52 @@ describe('useAssetUsdRate', () => {
         mockUseAssetsQuery.mockReturnValue({ data: undefined })
     })
 
-    it('returns the usd price and decimals for the asset', () => {
-        mockUseAssetPricesQuery.mockReturnValue({
-            data: new Map([
-                [ASSET_ID, { assetId: ASSET_ID, usdPrice: new Decimal('1.0') }],
-            ]),
-        })
-        mockUseAssetsQuery.mockReturnValue({
-            data: new Map([[ASSET_ID, { assetId: ASSET_ID, decimals: 6 }]]),
-        })
+    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'returns the usd price and decimals for the asset on $chainId',
+        scope => {
+            mockUseAssetPricesQuery.mockReturnValue({
+                data: new Map([
+                    [
+                        ASSET_ID,
+                        { assetId: ASSET_ID, usdPrice: new Decimal('1.0') },
+                    ],
+                ]),
+            })
+            mockUseAssetsQuery.mockReturnValue({
+                data: new Map([[ASSET_ID, { assetId: ASSET_ID, decimals: 6 }]]),
+            })
 
-        const { result } = renderHook(() => useAssetUsdRate(ASSET_ID))
+            const { result } = renderHook(() =>
+                useAssetUsdRate(scope, ASSET_ID),
+            )
 
-        expect(result.current.assetUsdPrice?.toString()).toBe('1')
-        expect(result.current.assetDecimals).toBe(6)
-    })
+            expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+                scope,
+                [ASSET_ID],
+                true,
+            )
+            expect(mockUseAssetsQuery).toHaveBeenCalledWith(scope, [ASSET_ID])
+            expect(result.current.assetUsdPrice?.toString()).toBe('1')
+            expect(result.current.assetDecimals).toBe(6)
+        },
+    )
 
     it('returns nulls while the queries have no data', () => {
-        const { result } = renderHook(() => useAssetUsdRate(ASSET_ID))
+        const { result } = renderHook(() =>
+            useAssetUsdRate(ALGORAND_TESTNET, ASSET_ID),
+        )
 
         expect(result.current.assetUsdPrice).toBeNull()
         expect(result.current.assetDecimals).toBeNull()
     })
 
     it('disables the price query for an empty asset id', () => {
-        renderHook(() => useAssetUsdRate(''))
+        renderHook(() => useAssetUsdRate(ALGORAND_TESTNET, ''))
 
-        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith([''], false)
+        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+            ALGORAND_TESTNET,
+            [''],
+            false,
+        )
     })
 })

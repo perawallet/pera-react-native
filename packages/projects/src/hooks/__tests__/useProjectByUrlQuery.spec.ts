@@ -18,14 +18,11 @@ import { useProjectByUrlQuery } from '../useProjectByUrlQuery'
 import * as projectsEndpoints from '../../api/projects/endpoints'
 import type { PeraProject } from '../../models/types'
 
-vi.mock('../../api/projects/endpoints')
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({
-        chainId,
-        networkId: 'mainnet',
-    }),
-}))
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+
+vi.mock('../../api/projects/endpoints')
 
 const mockProject: PeraProject = {
     name: 'Tinyman',
@@ -49,28 +46,35 @@ describe('useProjectByUrlQuery', () => {
         vi.clearAllMocks()
     })
 
-    test('fetches project by URL and returns first match', async () => {
-        vi.mocked(projectsEndpoints.fetchProjectByUrl).mockResolvedValue([
-            mockProject,
-        ])
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'fetches project by URL and returns first match for $chainId',
+        async scope => {
+            vi.mocked(projectsEndpoints.fetchProjectByUrl).mockResolvedValue([
+                mockProject,
+            ])
 
-        const { result } = renderHook(
-            () =>
-                useProjectByUrlQuery({
-                    url: 'https://tinyman.org',
-                }),
-            { wrapper: createWrapper() },
-        )
+            const { result } = renderHook(
+                () =>
+                    useProjectByUrlQuery({
+                        scope,
+                        url: 'https://tinyman.org',
+                    }),
+                { wrapper: createWrapper() },
+            )
 
-        expect(result.current.isLoading).toBe(true)
+            expect(result.current.isLoading).toBe(true)
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
-        })
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false)
+            })
 
-        expect(result.current.data).toEqual(mockProject)
-        expect(result.current.isError).toBe(false)
-    })
+            expect(projectsEndpoints.fetchProjectByUrl).toHaveBeenCalledWith(
+                expect.objectContaining({ scope }),
+            )
+            expect(result.current.data).toEqual(mockProject)
+            expect(result.current.isError).toBe(false)
+        },
+    )
 
     test('returns null when no projects match', async () => {
         vi.mocked(projectsEndpoints.fetchProjectByUrl).mockResolvedValue([])
@@ -78,6 +82,7 @@ describe('useProjectByUrlQuery', () => {
         const { result } = renderHook(
             () =>
                 useProjectByUrlQuery({
+                    scope: ALGORAND_TESTNET,
                     url: 'https://unknown.com',
                 }),
             { wrapper: createWrapper() },
@@ -94,6 +99,7 @@ describe('useProjectByUrlQuery', () => {
         const { result } = renderHook(
             () =>
                 useProjectByUrlQuery({
+                    scope: ALGORAND_TESTNET,
                     url: undefined,
                 }),
             { wrapper: createWrapper() },
@@ -108,6 +114,7 @@ describe('useProjectByUrlQuery', () => {
         const { result } = renderHook(
             () =>
                 useProjectByUrlQuery({
+                    scope: ALGORAND_TESTNET,
                     url: 'https://tinyman.org',
                     isEnabled: false,
                 }),
@@ -126,6 +133,7 @@ describe('useProjectByUrlQuery', () => {
         const { result } = renderHook(
             () =>
                 useProjectByUrlQuery({
+                    scope: ALGORAND_TESTNET,
                     url: 'https://tinyman.org',
                 }),
             { wrapper: createWrapper() },

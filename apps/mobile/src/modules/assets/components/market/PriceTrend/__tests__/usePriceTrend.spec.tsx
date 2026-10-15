@@ -63,9 +63,9 @@ describe('usePriceTrend', () => {
         )
 
         expect(useAssetPriceHistoryQuery).toHaveBeenCalledWith(
+            testnet,
             '123',
             'one-week',
-            testnet,
         )
     })
 

@@ -73,7 +73,7 @@ export const teardownTestDatabase = async (): Promise<void> => {
 
 /**
  * Insert the native asset into the assets cache. Required by any flow that
- * goes through `useAssetsQuery(['0'])` (send, receive, asset details,
+ * goes through `useAssetsQuery(scope, ['0'])` (send, receive, asset details,
  * confirmation screens). Defaults to mainnet — pass `network` if your
  * test needs testnet.
  */

@@ -35,13 +35,19 @@ vi.mock('../../store', () => ({
     },
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { CardUserUnavailableError } from '../../api/card-creation'
 import { useRestoreEscrowCardMutation } from '../useRestoreEscrowCardMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useRestoreEscrowCardMutation', () => {
+describe.each(SCOPES)('useRestoreEscrowCardMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -83,14 +89,14 @@ describe('useRestoreEscrowCardMutation', () => {
             result.current.mutateAsync(['OTHER', 'BROKEN', 'OWNER']),
         ).resolves.toBe('CARD1')
         expect(fetchFundingAddressLink).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             address: 'OWNER',
             baanxUserId: 'baanx-user-1',
         })
         expect(mockRestoreEscrowCard).toHaveBeenCalledWith({
             cardAddress: 'CARD1',
             ownerAddress: 'OWNER',
-            network: 'mainnet',
+            scope: SCOPE,
         })
     })
 

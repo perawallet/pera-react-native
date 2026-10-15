@@ -51,7 +51,7 @@ export const AssetPriceChart = memo(function AssetPriceChart({
         isPaused,
         refetch,
         isUnavailableOnNetwork,
-    } = useAssetPriceHistoryQuery(asset.assetId, period, scope)
+    } = useAssetPriceHistoryQuery(scope, asset.assetId, period)
 
     return (
         <BalanceLineChart

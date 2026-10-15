@@ -17,6 +17,8 @@ import {
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AssetIcon } from '@components/AssetIcon'
 import { useStyles } from './styles'
 
@@ -112,7 +114,8 @@ const AssetSelectorById = ({
     fallbackLabel,
     ...rest
 }: AssetSelectorByIdProps) => {
-    const { data: assets } = useAssetsQuery([assetId])
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { data: assets } = useAssetsQuery(scope, [assetId])
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     return (

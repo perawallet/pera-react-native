@@ -11,7 +11,7 @@
  */
 
 import { queryClient } from '@perawallet/wallet-core-shared'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 /** Pera-backend request body (snake_case), unlike the camelCase Baanx bodies. */
 type CountryAvailabilityRequestBody = {
@@ -20,7 +20,7 @@ type CountryAvailabilityRequestBody = {
 }
 
 export type RequestCountryAvailabilityParams = {
-    network: Network
+    scope: ChainScope
     /** ISO 3166-1 alpha-2 of the unsupported country the user picked. */
     countryCode: string
     deviceId: string
@@ -38,7 +38,7 @@ export const requestCountryAvailability = async (
 ): Promise<void> => {
     await queryClient<void, CountryAvailabilityRequestBody>({
         backend: 'pera',
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         url: 'v1/cards/country-availability-request/',
         data: {

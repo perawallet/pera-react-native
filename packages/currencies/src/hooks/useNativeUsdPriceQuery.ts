@@ -16,14 +16,10 @@ import {
     getAssetPricesByIds,
     nativeAssetFor,
 } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { currencyQueryKeys } from './querykeys'
 
-async function getAlgoPriceFromDb(scope: ChainScope): Promise<Decimal> {
+async function getNativeUsdPriceFromDb(scope: ChainScope): Promise<Decimal> {
     const [price] = await getAssetPricesByIds({
         assetIds: [nativeAssetFor(scope.chainId).assetId],
         scope,
@@ -31,14 +27,15 @@ async function getAlgoPriceFromDb(scope: ChainScope): Promise<Decimal> {
     return price?.usdPrice ?? new Decimal(0)
 }
 
-export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-
+export const useNativeUsdPriceQuery = (
+    scope: ChainScope,
+    enabled: boolean = true,
+) => {
     return useQuery({
-        queryKey: currencyQueryKeys.algoUsdPrice(scope),
-        queryFn: () => getAlgoPriceFromDb(scope),
+        queryKey: currencyQueryKeys.nativeUsdPrice(scope),
+        queryFn: () => getNativeUsdPriceFromDb(scope),
         staleTime: Infinity,
-        // SQLite is the source of truth for the ALGO price. Force the queryFn
+        // SQLite is the source of truth for the native price. Force the queryFn
         // to run even while offline — TanStack's default networkMode: 'online'
         // would pause it before the DB read, stranding consumers in `pending`.
         networkMode: 'always',

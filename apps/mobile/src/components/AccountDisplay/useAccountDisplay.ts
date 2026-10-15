@@ -66,7 +66,7 @@ export const useAccountDisplay = ({
         [account, fullAddress],
     )
 
-    const { data: nfdNames } = useNfdForAddressQuery(fullAddress ?? '', {
+    const { data: nfdNames } = useNfdForAddressQuery(scope, fullAddress ?? '', {
         enabled: !!fullAddress,
     })
 

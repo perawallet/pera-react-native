@@ -12,6 +12,8 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
@@ -30,7 +32,8 @@ export const AccountWithBalance = ({
     isHighlighted,
     ...rest
 }: AccountWithBalanceProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles({ isHighlighted })
     const { t } = useLanguage()
     const { nativeValue, isTestTier } = useAccountWithBalance(account)

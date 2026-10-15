@@ -11,10 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { orderCard, CardOrderNotVerifiedError } from '../api/card'
 import {
     getCardApiError,
@@ -39,14 +36,13 @@ export type UseOrderCardMutationResult = CardMutationResult<void>
 export const useOrderCardMutation = (
     scope: ChainScope,
 ): UseOrderCardMutationResult => {
-    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<void, Error, void>({
         mutationKey: cardMutationKeys.order,
         mutationFn: async () => {
             try {
-                await orderCard({ network })
+                await orderCard({ scope })
             } catch (error) {
                 const apiError = await getCardApiError(error)
                 if (

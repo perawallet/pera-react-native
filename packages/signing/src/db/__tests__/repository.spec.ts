@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { eq, sql } from 'drizzle-orm'
 import {
@@ -27,7 +27,9 @@ import {
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
     getSubmissionAttemptsWithHistoryEntry,
+    getOpenSubmissionSpends,
     pruneResolvedSubmissionAttempts,
+    subscribeToSubmissionLedger,
     LANDABLE_SUBMISSION_STATUSES,
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
@@ -511,6 +513,106 @@ describe('submission ledger repository', () => {
             expect(rows.map(row => row.status).sort()).toEqual(
                 [...statuses].sort(),
             )
+        })
+    })
+
+    describe('open spends', () => {
+        const record = (
+            overrides: Partial<
+                Parameters<typeof recordSubmissionAttempt>[0]
+            > = {},
+        ) =>
+            recordSubmissionAttempt({
+                db,
+                scope: ETHEREUM,
+                txIds: ['0xabc'],
+                flow: 'pipeline',
+                sender: '0xSENDER',
+                nonce: 7,
+                maxFee: new Decimal('420000000000000'),
+                historyEntry: HISTORY_ENTRY,
+                ...overrides,
+            })
+
+        it('reads back the nonce, max fee and entry of an open attempt', async () => {
+            await record()
+
+            const [spend] = await getOpenSubmissionSpends({
+                db,
+                scope: ETHEREUM,
+            })
+
+            expect(spend!.nonce).toBe(7)
+            expect(spend!.maxFee).toBeInstanceOf(Decimal)
+            expect(spend!.maxFee!.toString()).toBe('420000000000000')
+            expect(spend!.historyEntry!.summary.amount!.value.toString()).toBe(
+                '1500000000000000000',
+            )
+        })
+
+        it('keeps the max fee of an attempt with no or an unreadable entry', async () => {
+            await record({ historyEntry: undefined })
+            const unreadable = await record({ txIds: ['0xdef'] })
+            await db
+                .update(SubmissionAttemptsSchema)
+                .set({ historyEntryJson: 'not json' })
+                .where(eq(SubmissionAttemptsSchema.id, unreadable))
+                .run()
+
+            const spends = await getOpenSubmissionSpends({
+                db,
+                scope: ETHEREUM,
+            })
+
+            expect(spends).toHaveLength(2)
+            for (const spend of spends) {
+                expect(spend.historyEntry).toBeNull()
+                expect(spend.maxFee!.toString()).toBe('420000000000000')
+            }
+        })
+
+        it('returns only open attempts of the scope', async () => {
+            const submitted = await record({ txIds: ['0x1'] })
+            const unknown = await record({ txIds: ['0x2'] })
+            await markSubmissionUnknown({ db, id: unknown })
+            for (const status of ['confirmed', 'failed', 'replaced'] as const) {
+                const id = await record({ txIds: [`0x${status}`] })
+                await resolveSubmissionAttempt({ db, id, status })
+            }
+            await record({
+                scope: { chainId: 'ethereum', networkId: 'sepolia' },
+            })
+
+            const spends = await getOpenSubmissionSpends({
+                db,
+                scope: ETHEREUM,
+            })
+
+            expect(spends.map(spend => spend.id).sort()).toEqual(
+                [submitted, unknown].sort(),
+            )
+        })
+
+        it('notifies subscribers when an attempt opens or settles', async () => {
+            const listener = vi.fn()
+            const unsubscribe = subscribeToSubmissionLedger(listener)
+
+            const id = await record()
+            await markSubmissionUnknown({ db, id })
+            await resolveSubmissionAttempt({ db, id, status: 'confirmed' })
+            unsubscribe()
+            await record({ txIds: ['0xafter'] })
+
+            expect(listener).toHaveBeenCalledTimes(3)
+        })
+
+        it('still records when a subscriber throws', async () => {
+            const unsubscribe = subscribeToSubmissionLedger(() => {
+                throw new Error('boom')
+            })
+
+            await expect(record()).resolves.toEqual(expect.any(String))
+            unsubscribe()
         })
     })
 })

@@ -30,7 +30,6 @@ const chainId: ChainId = scope.chainId
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(),
-    useSelectedScope: () => scope,
 }))
 
 const fetchSendSummary = vi.fn()
@@ -71,7 +70,7 @@ describe('useAssetInboxSendSummaryQuery', () => {
         fetchSendSummary.mockResolvedValue(summary)
 
         const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(RECEIVER, ASSET_ID, chainId),
+            () => useAssetInboxSendSummaryQuery(scope, RECEIVER, ASSET_ID),
             { wrapper },
         )
 
@@ -93,7 +92,7 @@ describe('useAssetInboxSendSummaryQuery', () => {
         ['an empty asset id', RECEIVER, ''],
     ])('does not fetch with %s', async (_, receiver, assetId) => {
         const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(receiver, assetId, chainId),
+            () => useAssetInboxSendSummaryQuery(scope, receiver, assetId),
             { wrapper },
         )
 
@@ -107,7 +106,7 @@ describe('useAssetInboxSendSummaryQuery', () => {
         vi.mocked(useChainCapability).mockReturnValue(false)
 
         const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(RECEIVER, ASSET_ID, chainId),
+            () => useAssetInboxSendSummaryQuery(scope, RECEIVER, ASSET_ID),
             { wrapper },
         )
 
@@ -121,7 +120,7 @@ describe('useAssetInboxSendSummaryQuery', () => {
         fetchSendSummary.mockRejectedValue(error)
 
         const { result } = renderHook(
-            () => useAssetInboxSendSummaryQuery(RECEIVER, ASSET_ID, chainId),
+            () => useAssetInboxSendSummaryQuery(scope, RECEIVER, ASSET_ID),
             { wrapper },
         )
 

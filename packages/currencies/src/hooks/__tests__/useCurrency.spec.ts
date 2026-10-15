@@ -16,6 +16,25 @@ import { useCurrency } from '../useCurrency'
 import { Decimal } from 'decimal.js'
 import { useCurrenciesStore } from '../../store'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const ALGORAND_BETANET = { chainId: 'algorand', networkId: 'betanet' } as const
+
+const DESCRIPTORS = {
+    algorand: { displayName: 'Algorand', nativeAsset: { symbol: 'ALGO' } },
+    ethereum: { displayName: 'Ethereum', nativeAsset: { symbol: 'ETH' } },
+} as const
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        chains: {
+            get: (chainId: keyof typeof DESCRIPTORS) => ({
+                descriptor: DESCRIPTORS[chainId],
+            }),
+        },
+    }),
+}))
+
 // Mock the store
 vi.mock('../../store', () => ({
     useCurrenciesStore: vi.fn(),
@@ -27,9 +46,9 @@ vi.mock('../usePreferredCurrencyPriceQuery', () => ({
     usePreferredCurrencyPriceQuery: mockUsePreferredCurrencyPriceQuery,
 }))
 
-const mockUseAlgoUsdPriceQuery = vi.hoisted(() => vi.fn())
-vi.mock('../useAlgoUsdPriceQuery', () => ({
-    useAlgoUsdPriceQuery: mockUseAlgoUsdPriceQuery,
+const mockUseNativeUsdPriceQuery = vi.hoisted(() => vi.fn())
+vi.mock('../useNativeUsdPriceQuery', () => ({
+    useNativeUsdPriceQuery: mockUseNativeUsdPriceQuery,
 }))
 
 describe('services/currencies/hooks', () => {
@@ -39,7 +58,7 @@ describe('services/currencies/hooks', () => {
         vi.clearAllMocks()
         mockUseAppStore = vi.mocked(useCurrenciesStore)
 
-        mockUseAlgoUsdPriceQuery.mockReturnValue({
+        mockUseNativeUsdPriceQuery.mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -62,7 +81,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             expect(result.current.preferredCurrency).toBe(mockPreferredCurrency)
             expect(result.current.setPreferredCurrency).toBe(
@@ -85,7 +104,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             act(() => {
                 result.current.setPreferredCurrency('GBP')
@@ -106,7 +125,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             expect(typeof result.current.usdToPreferred).toBe('function')
         })
@@ -123,7 +142,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -143,7 +162,7 @@ describe('services/currencies/hooks', () => {
                 isPending: true,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -163,7 +182,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -183,12 +202,30 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
             expect(converted).toBeNull()
+        })
+
+        it('treats a zero fiat rate as pending even on a network without a Pera backend', () => {
+            // Fiat rates come from the wallet mode's deployment, so the
+            // network's missing backend never makes a zero fiat rate real.
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'EUR' }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: new Decimal('0') },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCurrency(ALGORAND_BETANET))
+
+            expect(result.current.isRatePending).toBe(true)
+            expect(result.current.usdToPreferred(new Decimal(100))).toBeNull()
         })
 
         it('passes an unknown USD amount through as unknown', () => {
@@ -203,7 +240,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             expect(result.current.usdToPreferred(null)).toBeNull()
         })
@@ -218,7 +255,7 @@ describe('services/currencies/hooks', () => {
                 isPending: true,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             expect(result.current.isRatePending).toBe(true)
         })
@@ -233,7 +270,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             expect(result.current.isRatePending).toBe(false)
         })
@@ -248,7 +285,7 @@ describe('services/currencies/hooks', () => {
                 isPending: true,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             expect(result.current.isRatePending).toBe(false)
         })
@@ -265,7 +302,7 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const usdAmount = new Decimal(2.5)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -282,12 +319,36 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
             expect(converted).toEqual(new Decimal(100))
+        })
+
+        it('converts USD to the native asset of an Ethereum scope', () => {
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'ETH' }),
+            )
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: undefined,
+                isPending: false,
+            })
+            mockUseNativeUsdPriceQuery.mockReturnValue({
+                data: new Decimal('2000'),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCurrency(ETHEREUM_SEPOLIA))
+
+            expect(mockUseNativeUsdPriceQuery).toHaveBeenCalledWith(
+                ETHEREUM_SEPOLIA,
+                true,
+            )
+            expect(
+                result.current.usdToPreferred(new Decimal('1000'))?.toString(),
+            ).toBe('0.5')
         })
 
         it('converts USD to ALGO when preferred currency is ALGO', () => {
@@ -300,12 +361,12 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            mockUseAlgoUsdPriceQuery.mockReturnValue({
+            mockUseNativeUsdPriceQuery.mockReturnValue({
                 data: new Decimal('0.15'),
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             // $1.50 / $0.15 per ALGO = 10 ALGO
             const converted = result.current.usdToPreferred(new Decimal('1.50'))
@@ -322,12 +383,12 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            mockUseAlgoUsdPriceQuery.mockReturnValue({
+            mockUseNativeUsdPriceQuery.mockReturnValue({
                 data: undefined,
                 isPending: true,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const converted = result.current.usdToPreferred(new Decimal(100))
             expect(converted).toBeNull()
@@ -343,12 +404,12 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            mockUseAlgoUsdPriceQuery.mockReturnValue({
+            mockUseNativeUsdPriceQuery.mockReturnValue({
                 data: undefined,
                 isPending: true,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             expect(result.current.isRatePending).toBe(true)
         })
@@ -363,18 +424,18 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            mockUseAlgoUsdPriceQuery.mockReturnValue({
+            mockUseNativeUsdPriceQuery.mockReturnValue({
                 data: new Decimal(0),
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
             const converted = result.current.usdToPreferred(new Decimal(100))
             expect(converted).toBeNull()
         })
 
-        it('exposes algoUsdPrice from the query', () => {
+        it('exposes nativeUsdPrice from the query', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({ preferredCurrency: 'ALGO' }),
             )
@@ -384,17 +445,17 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            mockUseAlgoUsdPriceQuery.mockReturnValue({
+            mockUseNativeUsdPriceQuery.mockReturnValue({
                 data: new Decimal('0.15'),
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
-            expect(result.current.algoUsdPrice).toEqual(new Decimal('0.15'))
+            expect(result.current.nativeUsdPrice).toEqual(new Decimal('0.15'))
         })
 
-        it('leaves algoUsdPrice null until the rate loads', () => {
+        it('leaves nativeUsdPrice null until the rate loads', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({ preferredCurrency: 'USD' }),
             )
@@ -404,9 +465,9 @@ describe('services/currencies/hooks', () => {
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrency())
+            const { result } = renderHook(() => useCurrency(ALGORAND_TESTNET))
 
-            expect(result.current.algoUsdPrice).toBeNull()
+            expect(result.current.nativeUsdPrice).toBeNull()
         })
     })
 })

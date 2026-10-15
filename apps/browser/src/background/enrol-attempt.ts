@@ -11,11 +11,14 @@
  */
 
 import {
+    isWalletMode,
+    type WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
     INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
     INTEGRITY_ENROL_NEEDED_SESSION_KEY,
 } from '@perawallet/wallet-core-browser-runtime'
-import type { ActiveNetwork } from './network'
 import { createSessionBackoff } from './session-backoff'
 
 const MINUTE_MS = 60 * 1000
@@ -32,7 +35,7 @@ export const enrolBackoff = createSessionBackoff({
 export type EnrolAttempt = {
     token: string
     kid: string
-    network: ActiveNetwork
+    deployment: WalletMode
     startedAt: number
     deadlineAt: number
     surface: 'frame' | 'tab'
@@ -53,7 +56,7 @@ export const readAttempt = async (): Promise<EnrolAttempt | null> => {
     if (
         typeof value?.token !== 'string' ||
         typeof value.kid !== 'string' ||
-        typeof value.network !== 'string' ||
+        !isWalletMode(value.deployment) ||
         typeof value.startedAt !== 'number' ||
         typeof value.deadlineAt !== 'number' ||
         (value.surface !== 'frame' && value.surface !== 'tab') ||

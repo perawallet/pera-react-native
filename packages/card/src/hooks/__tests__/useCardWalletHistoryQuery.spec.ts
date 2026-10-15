@@ -26,11 +26,17 @@ vi.mock('../useCardSession', () => ({
     useCardSession: () => ({ isAuthenticated: mockSession.isAuthenticated }),
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardWalletHistoryQuery } from '../useCardWalletHistoryQuery'
 import { CardWalletKind, TransactionSign } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 const entry = (name: string) => ({
     name,
@@ -40,7 +46,7 @@ const entry = (name: string) => ({
     dateTime: '2026-09-10T09:15:00.000Z',
 })
 
-describe('useCardWalletHistoryQuery', () => {
+describe.each(SCOPES)('useCardWalletHistoryQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -78,7 +84,7 @@ describe('useCardWalletHistoryQuery', () => {
                     kind,
                     walletId: 'w_1',
                     page: 0,
-                    network: 'mainnet',
+                    scope: SCOPE,
                 }),
             )
             expect(result.current.hasNextPage).toBe(false)

@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { sendLoginOtpRequest } from '../api/auth'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -34,10 +31,8 @@ export type UseSendLoginOtpMutationResult =
 export const useSendLoginOtpMutation = (
     scope: ChainScope,
 ): UseSendLoginOtpMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<void, Error, SendLoginOtpParams>({
-        mutationFn: ({ userId }) => sendLoginOtpRequest({ userId, network }),
+        mutationFn: ({ userId }) => sendLoginOtpRequest({ userId, scope }),
         throwOnError: false,
     })
 

@@ -277,6 +277,7 @@ export {
 export {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
+    getOpenSubmissionSpends,
     getSubmissionAttemptsByTxIds,
     getSubmissionAttemptsWithHistoryEntry,
     LANDABLE_SUBMISSION_STATUSES,
@@ -285,8 +286,10 @@ export {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     STALE_OPEN_ATTEMPT_MS,
+    subscribeToSubmissionLedger,
     SubmissionAttemptsSchema,
     type IntentKey,
+    type OpenSubmissionSpend,
     type SubmissionAttempt,
     type SubmissionAttemptWithHistoryEntry,
     type SubmissionFlow,

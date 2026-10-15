@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { deviceIdFor, deviceIdForScope, useDeviceStore } from '../store'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    deviceIdFor,
+    deviceIdForDeployment,
+    deviceIdForScope,
+    useDeviceStore,
+} from '../store'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 
 export const useDeviceID = (network: Network) => {
@@ -24,3 +32,8 @@ export const useScopedDeviceID = (
     useDeviceStore(state =>
         scope === null ? null : deviceIdForScope(state, scope),
     )
+
+export const useDeploymentDeviceID = (
+    deployment: WalletMode,
+): Nullable<string> =>
+    useDeviceStore(state => deviceIdForDeployment(state, deployment))

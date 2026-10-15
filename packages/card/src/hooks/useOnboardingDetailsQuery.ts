@@ -11,10 +11,7 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     fetchOnboardingDetails,
@@ -49,15 +46,13 @@ export const useOnboardingDetailsQuery = (
         refetchInterval,
     }: UseOnboardingDetailsQueryOptions,
 ) => {
-    const network = legacyNetworkOf(scope)
-
     return useQuery({
         queryKey: cardQueryKeys.onboardingDetails(scope, onboardingId),
         queryFn: ({ signal }) =>
             fetchOnboardingDetails({
                 // queryFn only runs when enabled, which requires a non-null id.
                 onboardingId: onboardingId as string,
-                network,
+                scope,
                 signal,
             }),
         enabled: Boolean(onboardingId) && (enabled ?? true),

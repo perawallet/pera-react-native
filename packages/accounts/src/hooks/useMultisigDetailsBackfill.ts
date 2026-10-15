@@ -11,10 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     multisigChainAdapters,
@@ -55,7 +52,7 @@ export const useMultisigDetailsBackfill = (
         !multisigParametersOf(account, scope.chainId)
 
     const { data, isFetching } = useMultisigAccountDetailQuery({
-        network: legacyNetworkOf(scope),
+        scope,
         address: address ?? '',
         enabled: needsBackfill,
     })

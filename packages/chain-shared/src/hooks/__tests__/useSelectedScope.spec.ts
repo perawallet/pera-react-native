@@ -24,6 +24,7 @@ import {
     useSelectedChainMode,
     useSelectedNetworkId,
     useSelectedScope,
+    useWalletDeployment,
 } from '../useSelectedScope'
 
 describe('useSelectedScope', () => {
@@ -68,6 +69,18 @@ describe('useSelectedScope', () => {
             useNetworkStore.getState().selectNetwork('algorand', 'betanet')
         })
         expect(result.current).toBe('developer-override')
+    })
+
+    test('useWalletDeployment stays on the developer deployment under a chain override', () => {
+        const { result } = renderHook(() => useWalletDeployment())
+        expect(result.current).toBe('live')
+
+        act(() => {
+            useNetworkStore.getState().setMode('developer')
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
+        })
+
+        expect(result.current).toBe('developer')
     })
 
     test('a registered chain with no stored entry follows the mode', () => {
