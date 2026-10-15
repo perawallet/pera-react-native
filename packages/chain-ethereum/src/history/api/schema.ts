@@ -18,7 +18,9 @@ const amount = z.string().regex(/^\d+$/)
 /** Only the fields the adapter reads; the full wire shape is `EvmHistoryItemResponse`. */
 export const evmHistoryItemSchema = z.object({
     kind: z.enum(['transaction', 'withdrawal']),
-    hash: z.string().nullable(),
+    // Lowercase, as viem's keccak256 gives the submission ledger, so a
+    // pending send and its mined row share one id.
+    hash: z.string().toLowerCase().nullable(),
     block_time: z.iso.datetime({ offset: true }),
     from: address.nullable(),
     to: address.nullable(),

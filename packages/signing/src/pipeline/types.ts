@@ -22,6 +22,7 @@ import type {
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
+import type { SubmissionHistoryEntry } from '../db/types'
 
 /** Algorand transactions in the shape Algorand's sources build and decode. */
 export interface PeraTransactionsSignableData {
@@ -380,6 +381,8 @@ export interface SignedTransactionData {
 export interface SignedChainTransactionsData {
     type: 'signed-transactions'
     signed: SignedTransaction[]
+    /** Index-aligned with `signed`; carries no fee, which only the signed bytes give. */
+    historyEntries: SubmissionHistoryEntry[]
 }
 
 export interface SignedArbitraryData {

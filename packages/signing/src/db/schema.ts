@@ -42,6 +42,12 @@ export const SubmissionAttemptsSchema = sqliteTable(
         nonce: integer('nonce'),
         createdAt: integer('created_at').notNull(),
         resolvedAt: integer('resolved_at'),
+        /**
+         * Versioned, Decimal-tagged JSON of a SubmissionHistoryEntry. Plain
+         * text, not a JSON column type: only the history read parses it, so a
+         * bad blob can't fail the reconcile and nonce reads of the same rows.
+         */
+        historyEntryJson: text('history_entry_json'),
     },
     table => [
         index('submission_attempts_open_idx').on(table.network, table.status),

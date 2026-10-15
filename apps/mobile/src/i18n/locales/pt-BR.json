@@ -3150,7 +3150,6 @@
             "completed": "Concluída",
             "failed": "Falhou",
             "pending": "Pendente",
-            "pending_verifying": "Pendente — verificando",
             "raw_transaction": "Transação bruta"
         },
         "notice": {

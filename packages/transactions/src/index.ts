@@ -62,6 +62,11 @@ export {
     type FetchTransactionHistoryParams,
     type FetchMoreTransactionsParams,
 } from './history-adapter'
+export {
+    getPendingTransactionRecords,
+    getTransactionHistoryWithPending,
+    type GetPendingTransactionRecordsParams,
+} from './pending-history'
 export * from './utils'
 
 // Export DB functions for sync service and other consumers

@@ -96,6 +96,7 @@ describe('allocateEthereumNonce', () => {
             scope: SCOPE,
             signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
             flow: 'pipeline',
+            historyEntries: [],
             db,
         })
 

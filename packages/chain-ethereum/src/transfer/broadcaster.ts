@@ -84,6 +84,7 @@ export const createEthereumBroadcasterAdapter = (
                         signedTransactions: signedData.signed.map(
                             signed => signed.bytes,
                         ),
+                        historyEntries: signedData.historyEntries,
                         flow: 'pipeline',
                     })
                     return { type: 'submitted', txIds }

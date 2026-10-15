@@ -47,10 +47,29 @@ const isTaggedDecimal = (value: unknown): value is { [DECIMAL_TAG]: string } =>
     Object.keys(value).length === 1 &&
     typeof (value as Record<string, unknown>)[DECIMAL_TAG] === 'string'
 
+/** JSON text whose `Decimal` values, at any depth, are tagged as `{"$decimal": "<string>"}`. */
+export const stringifyDecimalJson = (value: unknown): string =>
+    // The replacer sees Decimal.toJSON's string; the holder still has the
+    // Decimal itself, which is what tells the two apart.
+    JSON.stringify(
+        value,
+        function (this: Record<string, unknown>, key, encoded) {
+            const raw = this[key]
+            return Decimal.isDecimal(raw)
+                ? { [DECIMAL_TAG]: raw.toString() }
+                : encoded
+        },
+    )
+
+/** Inverse of {@link stringifyDecimalJson}. Throws on text that is not JSON. */
+export const parseDecimalJson = <T>(text: string): T =>
+    JSON.parse(text, (_key, parsed: unknown) =>
+        isTaggedDecimal(parsed) ? new Decimal(parsed[DECIMAL_TAG]) : parsed,
+    ) as T
+
 /**
  * A JSON TEXT column whose `Decimal` values, at any depth, come back as
- * `Decimal`. Each one is stored tagged as `{"$decimal": "<string>"}`, so the
- * column needs no knowledge of the shape it holds.
+ * `Decimal`, so the column needs no knowledge of the shape it holds.
  */
 export const decimalJsonColumn = <T>(name: string) =>
     customType<{ data: T }>({
@@ -58,24 +77,10 @@ export const decimalJsonColumn = <T>(name: string) =>
             return 'text'
         },
         fromDriver(value: unknown): T {
-            return JSON.parse(String(value), (_key, parsed: unknown) =>
-                isTaggedDecimal(parsed)
-                    ? new Decimal(parsed[DECIMAL_TAG])
-                    : parsed,
-            ) as T
+            return parseDecimalJson<T>(String(value))
         },
         toDriver(value: T): string {
-            // The replacer sees Decimal.toJSON's string; the holder still has
-            // the Decimal itself, which is what tells the two apart.
-            return JSON.stringify(
-                value,
-                function (this: Record<string, unknown>, key, encoded) {
-                    const raw = this[key]
-                    return Decimal.isDecimal(raw)
-                        ? { [DECIMAL_TAG]: raw.toString() }
-                        : encoded
-                },
-            )
+            return stringifyDecimalJson(value)
         },
     })(name)
 
