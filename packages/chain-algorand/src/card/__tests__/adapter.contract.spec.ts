@@ -39,6 +39,26 @@ vi.mock('../escrow/lsig', async () => ({
     ...(await vi.importActual<object>('../escrow/lsig')),
     compileAutoDrawProgram: async () => new Uint8Array([6, 129, 1]),
 }))
+// The escrow calls' own builds are covered in withdrawal.spec; here they only
+// need to hand the adapter a real transaction to wrap.
+vi.mock('../escrow/withdrawal', async () => {
+    const { makeTestAddress, makeTestPaymentTx } = await import(
+        '../../signing/__tests__/transactions'
+    )
+    const build = async () => [
+        makeTestPaymentTx(makeTestAddress(1), { receiver: makeTestAddress(2) }),
+    ]
+    return {
+        ...(await vi.importActual<object>('../escrow/withdrawal')),
+        algorandEscrowWithdrawals: {
+            buildRequest: build,
+            buildWithdraw: build,
+            buildCancel: build,
+            getPending: async () => null,
+            getWaitTimeSeconds: async () => null,
+        },
+    }
+})
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     postAutoDrawDelegation: async () => undefined,
@@ -119,6 +139,15 @@ cardContractTests(() => algorandCardAdapter, {
                     }),
                 }),
             }),
+    },
+    withdrawal: {
+        params: {
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            sender: ADDRESS,
+            cardAddress: ADDRESS,
+            amount: 1n,
+        },
+        arrangeBuild: () => {},
     },
     eligibility: {
         account: algorandAccount(ADDRESS),

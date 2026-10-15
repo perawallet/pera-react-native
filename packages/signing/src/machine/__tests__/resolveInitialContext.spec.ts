@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
+import {
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import {
     registerAlgorandRulesAs,
     seedAuthority,
@@ -36,6 +44,8 @@ import {
 } from '../../__tests__/transactions'
 
 import { resolveInitialContext } from '../actions'
+import { plannerChainAdapters } from '../../chain-adapter'
+import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import type { SigningMachineInput } from '../context'
 import type {
     ArbitraryDataSignRequest,
@@ -548,6 +558,81 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
 
     beforeEach(() => {
         registerFakeTransactionPlanner()
+    })
+
+    describe('delivery callbacks', () => {
+        const signed = {
+            scope: SECOND_CHAIN_SCOPE,
+            id: 'tx-id',
+            bytes: new Uint8Array([1]),
+        }
+        const approve = vi.fn(async () => undefined)
+        const approveSignedBytes = vi.fn(async () => undefined)
+        const onProposed = vi.fn(async () => undefined)
+
+        const withCallbacks = (): SigningMachineInput => {
+            const base = input([makeUnsignedTransaction(OURS)])
+            return {
+                ...base,
+                request: {
+                    ...base.request,
+                    transport: 'callback',
+                    sourceType: 'walletconnect',
+                    transportId: 'peer-1',
+                    approve,
+                    approveSignedBytes,
+                    onProposed,
+                    chainData: {
+                        algorand: {
+                            payloadId: 77,
+                            totalLength: 3,
+                            signableIndices: [2],
+                        },
+                    },
+                } as TransactionSignRequest,
+            }
+        }
+        const sourceOf = () =>
+            resolveInitialContext(withCallbacks()).signableGroups![0].source
+
+        afterEach(() => plannerChainAdapters.reset())
+
+        it("hands approve the chain's signed transactions for the result", async () => {
+            const signedTransactionsOf = vi.fn(() => [signed, null])
+            registerFakePlannerAdapter({
+                chainId: SECOND_CHAIN_SCOPE.chainId,
+                signedTransactionsOf,
+            })
+            const result = {
+                signedData: { type: 'transactions', signed: [] },
+                signers: [],
+            } as never
+            const submission = { txIds: ['tx-id'] }
+
+            await sourceOf().callbacks?.approve?.(result, submission)
+
+            expect(signedTransactionsOf).toHaveBeenCalledWith(
+                result,
+                SECOND_CHAIN_SCOPE,
+            )
+            expect(approve).toHaveBeenCalledWith([signed, null], submission)
+        })
+
+        it('forwards the byte and proposal callbacks it carries', () => {
+            const { callbacks } = sourceOf()
+
+            expect(callbacks?.approveSignedBytes).toBe(approveSignedBytes)
+            expect(callbacks?.onProposed).toBe(onProposed)
+        })
+
+        it('builds the multisig handoff from its Algorand group facts', () => {
+            expect(sourceOf().handoffDelivery).toEqual({
+                clientId: 'peer-1',
+                payloadId: 77,
+                indicesToSign: [2],
+                totalLength: 3,
+            })
+        })
     })
 
     it("groups each transaction under the signer its chain's planner names, keeping its position", () => {
