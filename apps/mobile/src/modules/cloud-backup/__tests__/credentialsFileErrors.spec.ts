@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 const t = (key: string) => key
-const getAlgodMessage = () => ({ title: 'algod', body: 'algod' })
+const getAlgodMessage = () => undefined
 
 describe('backup credentials file errors', () => {
     test('iCloud being off names the situation and says what to do', () => {

@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Linking } from 'react-native'
 import { parseDeeplink } from '@modules/deeplink/parser'
 import { DeeplinkType } from '@modules/deeplink/types'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 
 const mockHandleDeepLink = vi.fn()
 const mockParseDeeplink = vi.fn()
@@ -34,12 +36,17 @@ const ADDRESS = 'M5RQKWSELEVRKEHAZ4CD62ZO5TY76ZLZXXS6VBQ3ACUFWKJGBRJGKOUS7I'
 const WC_URI = encodeURIComponent('wc:abc@2?relay-protocol=irn&symKey=x')
 
 beforeEach(() => {
+    registerLegacyAddressCodec()
     mockHandleDeepLink.mockReset()
     mockParseDeeplink.mockReset()
     mockParseDeeplink.mockReturnValue(null)
     mockIsDeepLinkAvailable.mockReset()
     mockIsDeepLinkAvailable.mockReturnValue(true)
     vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+})
+
+afterEach(() => {
+    addressCodecs.reset()
 })
 
 describe('useBannerLinkRouter', () => {

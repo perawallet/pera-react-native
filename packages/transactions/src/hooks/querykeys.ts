@@ -129,18 +129,18 @@ export function invalidateTransactionQueriesForAddresses(
 
 // Its own prefix, and deliberately not 'transactions': the app's query
 // persistence classifies this one (an inbox request list survives a restart).
-const ASSET_INBOX_PREFIX = 'asa-inbox'
+const ASSET_INBOX_MODULE_PREFIX = 'asa-inbox'
 
 export const getAssetInboxRequestsQueryKey = (
     address: string,
     scope: ChainScope,
-) => [ASSET_INBOX_PREFIX, 'requests', { address, scope }]
+) => [ASSET_INBOX_MODULE_PREFIX, 'requests', { address, scope }]
 
 export const getAssetInboxSendSummaryQueryKey = (
     receiver: string,
     assetId: string,
     scope: ChainScope,
-) => [ASSET_INBOX_PREFIX, 'send-summary', { receiver, assetId, scope }]
+) => [ASSET_INBOX_MODULE_PREFIX, 'send-summary', { receiver, assetId, scope }]
 
 export const isAssetInboxQuery = (query: Query): boolean =>
-    query.queryKey.at(0) === ASSET_INBOX_PREFIX
+    query.queryKey.at(0) === ASSET_INBOX_MODULE_PREFIX
