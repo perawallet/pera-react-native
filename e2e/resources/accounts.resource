@@ -48,7 +48,6 @@ ${ALGO_HOLDING_ROW}                 accessibility_id=asset_row_0
 # Containers, icons and the drawer search trigger carry their testID without an accessibility
 # label, so Android exposes it only as resource-id and iOS only as name.
 ${DRAWER_SEARCH_BUTTON}             xpath=//*[@resource-id='account_drawer_search_button' or @name='account_drawer_search_button']
-${DRAWER_CONTENT_SLIVER}            xpath=//*[@resource-id='pw_drawer_gesture_surface' or @name='pw_drawer_gesture_surface']
 ${ADD_ACCOUNT_CLOSE_BUTTON}         xpath=//*[@resource-id='add_account_close_button' or @name='add_account_close_button']
 ${PASSPHRASE_GRID}                  xpath=//*[@resource-id='view_passphrase_bottom_sheet_grid' or @name='view_passphrase_bottom_sheet_grid']
 ${NODE_CHAIN_NETWORKS}              xpath=//*[@resource-id='node_settings_chain_networks' or @name='node_settings_chain_networks']
@@ -66,12 +65,12 @@ Open Account Switcher
 Close Account Switcher
     [Documentation]    The switcher is a drawer with no close control; tapping the content it
     ...                slides aside dismisses it.
-    Tap    ${DRAWER_CONTENT_SLIVER}
+    Tap    ${ACCOUNT_DRAWER_SLIVER}
     Wait Until Switcher Closed
 
 Wait Until Switcher Closed
     # The closed panel stays mounted, so its buttons do not leave the tree; the sliver does.
-    Wait Until Page Does Not Contain Element    ${DRAWER_CONTENT_SLIVER}    timeout=10s
+    Wait Until Page Does Not Contain Element    ${ACCOUNT_DRAWER_SLIVER}    timeout=10s
 
 Switcher Row
     [Arguments]    ${address}
@@ -106,6 +105,8 @@ Add Account To Wallet
     ${added}=    Tap If Present    ${ADD_ACCOUNT_ADD_BUTTON}
     IF    not ${added}    Tap    ${ADD_ACCOUNT_UNIVERSAL_BUTTON}
     Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=60s
+    # The name field takes focus and the keyboard lifts the button; a tap while it moves misses.
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=60s
     # The PIN prompt and banners can come back after an account is added.
@@ -210,7 +211,7 @@ Select Watch Account
     Input Text    ${WATCH_ADDRESS_INPUT}    ${address}
     Dismiss Keyboard
     Tap    ${WATCH_SUBMIT_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=60s
     Wait Clear Of Startup Prompts

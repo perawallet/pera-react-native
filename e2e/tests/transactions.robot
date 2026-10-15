@@ -4,7 +4,7 @@ Documentation       Transactions and notifications on Android and iOS from one s
 Resource            ../resources/transactions.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
+Suite Teardown      Close Funded Suite
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
 Test Tags           transactions

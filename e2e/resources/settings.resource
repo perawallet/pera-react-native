@@ -1,4 +1,5 @@
 *** Settings ***
+Library             String
 Resource            app.resource
 
 
@@ -67,15 +68,15 @@ Open Settings
     Wait Until Page Contains Element    ${SETTINGS_ITEM_SECURITY}    timeout=15s
 
 Scroll To
-    [Documentation]    Brings an element on screen. Android lists only what is on screen, and iOS
-    ...                lists off-screen rows it cannot tap, so presence alone is not enough.
-    [Arguments]    ${locator}    ${swipes}=6
-    FOR    ${i}    IN RANGE    ${swipes}
-        ${shown}=    Is Visible    ${locator}
-        IF    ${shown}    RETURN
-        Swipe By Percent    50    75    50    35
+    [Documentation]    Brings an element on screen in one driver call. Takes this file's locators:
+    ...                accessibility_id=<id>, or an xpath on a bare testID (a resource-id on Android).
+    [Arguments]    ${locator}
+    ${bare}=    Get Regexp Matches    ${locator}    @resource-id='([^']+)'    1
+    IF    ${bare}
+        Scroll Into View    ${bare}[0]    by=resourceId
+    ELSE
+        Scroll Into View    ${locator.split('=', 1)[1]}
     END
-    Expect Element    ${locator}    visible    timeout=1s    loglevel=NONE
 
 Is Visible
     [Documentation]    Instant probe: one check, no retry.
@@ -142,6 +143,8 @@ Search Currency
     [Arguments]    ${term}
     Tap    ${CURRENCY_SEARCH_INPUT}
     Input Text    ${CURRENCY_SEARCH_INPUT}    ${term}
+    # With the keyboard up, the first tap on a result only dismisses the keyboard.
+    Dismiss Keyboard
 
 Select Currency
     [Arguments]    ${code}
@@ -169,6 +172,9 @@ Unlock Debug Tools
     # ponytail: one request per tap; a remote grid slower than ~1s per round trip needs a single
     # W3C action sequence instead.
     AppiumLibrary.Tap    ${point}    count=10    duration=50ms
+    Wait Until Page Contains    Debug tools enabled    timeout=10s
+    # The toast covers the top rows for ~3s and swallows taps there.
+    Wait Until Page Does Not Contain    Debug tools enabled    timeout=10s
 
 Open Feature Flags
     Unlock Debug Tools
@@ -176,7 +182,7 @@ Open Feature Flags
     Tap    ${DEVELOPER_DEBUG_TOOLS_ITEM}
     Wait Until Page Contains Element    ${DEBUG_TOOLS_FEATURE_FLAGS_ITEM}    timeout=15s
     Tap    ${DEBUG_TOOLS_FEATURE_FLAGS_ITEM}
-    Scroll To    ${FLAG_EXPAND_CLOUD_BACKUP}    swipes=12
+    Scroll To    ${FLAG_EXPAND_CLOUD_BACKUP}
 
 Set Cloud Backup Flag Expanded
     [Documentation]    Expanding a flag creates its override (off); collapsing removes it.
@@ -189,3 +195,13 @@ Set Cloud Backup Flag Expanded
         Wait Until Page Does Not Contain Element    ${FLAG_OVERRIDE_CLOUD_BACKUP}    timeout=10s
     END
     RETURN    ${now}
+
+Tap Backdrop Above
+    [Documentation]    Closes a short sheet by tapping the dimmed backdrop halfway above it. Hardware
+    ...                back is blocked while a sheet is open, and a swipe on the backdrop is no tap.
+    [Arguments]    ${sheet}
+    ${location}=    Get Element Location    ${sheet}
+    ${width}=    Get Window Width
+    VAR    @{point}    ${{ int($width / 2) }}    ${{ int($location['y'] / 2) }}
+    # The backdrop's tap recognizer rejects the default press, which is held too long to be a tap.
+    AppiumLibrary.Tap    ${point}    duration=50ms

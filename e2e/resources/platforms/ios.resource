@@ -91,14 +91,61 @@ Get Test ID
     RETURN    ${id}
 
 Scroll Into View
-    [Documentation]    XCUITest scrolls the nearest scroll view until the element is visible, in one call.
+    [Documentation]    Swipes until the element reports itself visible. iOS lists off-screen rows too,
+    ...                so presence is not enough. mobile: scrollToElement fails on this XCUITest
+    ...                (unrecognized selector), and mobile: scroll toVisible stops at its own count.
     [Arguments]    ${test_id}    ${by}=description
     Wait Until Page Contains Element    accessibility_id=${test_id}    timeout=10s
-    ${element}=    Get WebElement    accessibility_id=${test_id}
-    Execute Script    mobile: scrollToElement    elementId=${element.id}
+    FOR    ${i}    IN RANGE    8
+        ${visible}=    Get Element Attribute    accessibility_id=${test_id}    visible
+        IF    $visible == 'true'    RETURN
+        Swipe By Percent    50    75    50    35
+    END
+    Fail    ${test_id} never scrolled into view.
 
 Close Sheet
     # Modal sheets hide the drag handle and their scroll view swallows swipes; tap the backdrop above.
     ${w}=    Get Window Width
     ${h}=    Get Window Height
     Execute Script    mobile: tap    x=${{int(${w} * 0.5)}}    y=${{int(${h} * 0.08)}}
+
+Open Deeplink Cold
+    [Documentation]    Fires the link at a stopped app, so it cold-starts on it (Linking.getInitialURL).
+    [Arguments]    ${url}
+    Skip If    $IOS_DEV_CLIENT_URL
+    ...    A dev client cold-started by a link opens its launcher, not the bundle; cold links need a release build.
+    Terminate Application    ${IOS_BUNDLE_ID}
+    Open Deeplink    ${url}
+
+Simctl
+    [Arguments]    ${command}    @{args}
+    ${device}=    Set Variable If    $IOS_UDID    ${IOS_UDID}    booted
+    ${result}=    Run Process    xcrun    simctl    ${command}    ${device}    @{args}
+    Should Be Equal As Integers    ${result.rc}    0    simctl ${command} ${args} failed: ${result.stderr}
+
+Deny Camera Permission
+    [Documentation]    Simulator only. Changing a privacy grant terminates the app; relaunch it after.
+    Simctl    privacy    revoke    camera    ${IOS_BUNDLE_ID}
+
+Grant Camera Permission
+    Simctl    privacy    grant    camera    ${IOS_BUNDLE_ID}
+
+Screen Should Be Capture Protected
+    Skip    iOS does not blank screenshots
+
+Screen Should Not Be Capture Protected
+    Skip    iOS does not blank screenshots
+
+Set Network Offline
+    Skip    The iOS simulator uses the host's network and has no per-device connectivity switch.
+
+Set Network Online
+    No Operation
+
+Enroll Biometrics
+    Execute Script    mobile: enrollBiometric    isEnabled=${True}
+
+Match Biometric
+    [Documentation]    The simulator's model decides Face ID or Touch ID; the other notification is ignored.
+    Execute Script    mobile: sendBiometricMatch    type=faceId    match=${True}
+    Execute Script    mobile: sendBiometricMatch    type=touchId    match=${True}

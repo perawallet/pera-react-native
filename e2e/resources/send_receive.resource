@@ -66,8 +66,14 @@ Use Funded Testnet Account
     Wait Until Page Contains Element    ${SEND_BUTTON}    timeout=60s
 
 Leave Funded Testnet Account
-    Run Keyword If Test Failed    Capture Page Screenshot
+    Capture Failure Screenshot
     Run Keyword If    $FUNDED_MNEMONIC and $FUNDED_ADDRESS    Restore Suite Wallet
+
+Close Funded Suite
+    [Documentation]    Suite Teardown for suites with funded cases: those import the funded account,
+    ...                so the suite leaves a fresh wallet behind when they could have run.
+    IF    $FUNDED_MNEMONIC and $FUNDED_ADDRESS    Reset To Fresh Wallet
+    Close Pera
 
 Restore Suite Wallet
     Set Testnet    ${False}
@@ -101,10 +107,13 @@ Import Funded Account
     Wait Until Page Contains Element    ${IMPORT_INFO_RECOVER_BUTTON}    timeout=15s
     Tap    ${IMPORT_INFO_RECOVER_BUTTON}
     Wait Until Page Contains Element    ${IMPORT_FIRST_WORD_INPUT}    timeout=15s
-    # Logging is off so the phrase never lands in the run log.
+    # Read by env var name with logging off, so the phrase never appears as a resolved argument.
     ${level}=    Set Log Level    NONE
-    Enter Recovery Phrase    ${FUNDED_MNEMONIC.strip()}
-    Set Log Level    ${level}
+    TRY
+        Enter Recovery Phrase    %{E2E_FUNDED_MNEMONIC}
+    FINALLY
+        Set Log Level    ${level}
+    END
     Dismiss Keyboard
     Tap    ${IMPORT_SUBMIT_BUTTON}
     Pick Funded Address

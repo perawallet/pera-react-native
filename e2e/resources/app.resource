@@ -78,8 +78,16 @@ Go Home
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
 
 Create Wallet
+    # Onboarding slides in after Remove All; a tap while it moves misses the button.
+    Wait Until Settled    ${CREATE_WALLET_BUTTON}
     Tap    ${CREATE_WALLET_BUTTON}
-    Tap If Shown    ${TERMS_AGREE_BUTTON}    30s
+    # The terms sheet slides up; I Agree tapped mid-slide lands on the backdrop and closes it.
+    ${terms}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${TERMS_AGREE_BUTTON}    timeout=30s
+    IF    ${terms}
+        Wait Until Settled    ${TERMS_AGREE_BUTTON}
+        Click Element    ${TERMS_AGREE_BUTTON}
+    END
     Wait Until Page Contains Element    ${ACCOUNT_NAME_INPUT}    timeout=30s
     Input Text    ${ACCOUNT_NAME_INPUT}    E2E
     Tap    ${ACCOUNT_FINISH_BUTTON}

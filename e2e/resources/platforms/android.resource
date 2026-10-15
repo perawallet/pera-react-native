@@ -3,6 +3,7 @@ Documentation       Android adapter. Everything platform-specific lives in this 
 ...                 tests and shared keywords never branch on the platform.
 Library             AppiumLibrary    run_on_failure=Nothing
 Library             Collections
+Library             Process
 
 
 *** Variables ***
@@ -85,3 +86,51 @@ Scroll Into View
 
 Close Sheet
     Swipe By Percent    50    40    50    90    duration=800ms
+
+Open Deeplink Cold
+    [Documentation]    Fires the link at a stopped app, so it cold-starts on it (Linking.getInitialURL).
+    [Arguments]    ${url}
+    Terminate Application    ${ANDROID_PACKAGE}
+    Open Deeplink    ${url}
+
+Adb
+    [Documentation]    For what the Appium session cannot do. Needs adb on the machine that runs Robot.
+    [Arguments]    @{args}
+    @{target}=    Set Variable If    $ANDROID_UDID    ${{ ['-s', $ANDROID_UDID] }}    ${{ [] }}
+    ${result}=    Run Process    adb    @{target}    @{args}
+    Should Be Equal As Integers    ${result.rc}    0    adb ${args} failed: ${result.stderr}
+    RETURN    ${result.stdout}
+
+Deny Camera Permission
+    [Documentation]    Revoking kills the app; relaunch it after. user-fixed is "Don't ask again", so the
+    ...                app gets a denial without a system dialog (pm set-permission-flags needs Android 11+).
+    Adb    shell    pm    revoke    ${ANDROID_PACKAGE}    android.permission.CAMERA
+    Adb    shell    pm    set-permission-flags    ${ANDROID_PACKAGE}    android.permission.CAMERA    user-fixed
+
+Grant Camera Permission
+    Adb    shell    pm    clear-permission-flags    ${ANDROID_PACKAGE}    android.permission.CAMERA    user-fixed
+    Adb    shell    pm    grant    ${ANDROID_PACKAGE}    android.permission.CAMERA
+
+Screen Should Be Capture Protected
+    [Documentation]    FLAG_SECURE on the app's window is what blacks out screenshots and recordings.
+    ${windows}=    Adb    shell    dumpsys    window    ${ANDROID_PACKAGE}
+    Should Match Regexp    ${windows}    fl=.*\\bSECURE\\b    msg=No ${ANDROID_PACKAGE} window has FLAG_SECURE.
+
+Screen Should Not Be Capture Protected
+    ${windows}=    Adb    shell    dumpsys    window    ${ANDROID_PACKAGE}
+    Should Not Match Regexp    ${windows}    fl=.*\\bSECURE\\b    msg=A ${ANDROID_PACKAGE} window still has FLAG_SECURE.
+
+Set Network Offline
+    Execute Script    mobile: setConnectivity    wifi=${False}    data=${False}
+
+Set Network Online
+    Execute Script    mobile: setConnectivity    wifi=${True}    data=${True}
+
+Enroll Biometrics
+    [Documentation]    An emulator enrols a fingerprint only through the Settings screen-lock flow, which
+    ...                this harness does not drive; a device enrolled beforehand still runs biometric cases.
+    No Operation
+
+Match Biometric
+    [Documentation]    Emulator only: touches with fingerprint 1. A touch with no prompt up is ignored.
+    Adb    emu    finger    touch    1

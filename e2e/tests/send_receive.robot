@@ -4,7 +4,7 @@ Documentation       Receive and Send on Android and iOS from one suite. Send cas
 Resource            ../resources/send_receive.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
+Suite Teardown      Close Funded Suite
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
 Test Tags           send-receive
@@ -82,6 +82,6 @@ Send Executes On Testnet
 *** Keywords ***
 Leave Share Sheet
     [Documentation]    The OS share sheet is outside the app; a relaunch is the one way out on both platforms.
-    Run Keyword If Test Failed    Capture Page Screenshot
+    Capture Failure Screenshot
     Restart Pera
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s

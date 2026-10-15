@@ -97,7 +97,7 @@ Changed Regular Pin Is The Only One That Unlocks
     Unlock With Pin    ${NEW_REGULAR_PIN}
     Open Security Settings
     Regular Pin Should Still Be Set
-    [Teardown]    Run Keywords    Run Keyword If Test Failed    Capture Page Screenshot
+    [Teardown]    Run Keywords    Capture Failure Screenshot
     ...    AND    Restore Regular Pin
 
 Changing The Regular Pin Keeps The Duress Pin
@@ -111,7 +111,7 @@ Changing The Regular Pin Keeps The Duress Pin
     Open Security Settings
     Regular Pin Should Still Be Set
     Switch Should Turn    ${DURESS_TOGGLE_ID}    ${True}
-    [Teardown]    Run Keywords    Run Keyword If Test Failed    Capture Page Screenshot
+    [Teardown]    Run Keywords    Capture Failure Screenshot
     ...    AND    Restore Regular Pin
 
 Repeated Wrong Pins Lock Out Without Wiping

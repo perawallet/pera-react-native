@@ -4,7 +4,7 @@ Documentation       Assets on Android and iOS from one suite. Cases tagged needs
 Resource            ../resources/assets.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
+Suite Teardown      Close Funded Suite
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
 Test Tags           assets
@@ -99,13 +99,13 @@ Collectible Detail Opens From The NFTs Tab
 
 *** Keywords ***
 Restore Default Sort
-    Run Keyword If Test Failed    Capture Page Screenshot
+    Capture Failure Screenshot
     Go Home
     Apply Sort    ${SORT_DEFAULT}
 
 Restore Default Filter
     [Documentation]    The toggle flips a stored preference, so it is flipped back only once applied.
-    Run Keyword If Test Failed    Capture Page Screenshot
+    Capture Failure Screenshot
     IF    $TEST_STATUS == 'PASS'
         Go Home
         Toggle Display NFTs

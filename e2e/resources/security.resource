@@ -26,9 +26,10 @@ ${DURESS_TOGGLE}                accessibility_id=${DURESS_TOGGLE_ID}
 ${SHAKE_TOGGLE}                 accessibility_id=${SHAKE_TOGGLE_ID}
 ${REKEY_TOGGLE}                 accessibility_id=settings_security_rekey_toggle
 ${CHANGE_PIN_BUTTON}            accessibility_id=settings_security_change_pin_button
-${PIN_SHEET}                    accessibility_id=settings_security_pin_edit_view
+# A bare testID on the sheet's container: a resource-id on Android, a name on iOS.
+${PIN_SHEET}                    xpath=//*[@resource-id='settings_security_pin_edit_view' or @name='settings_security_pin_edit_view']
 ${PIN_SHEET_CLOSE}              accessibility_id=close-button
-${LOCKOUT_VIEW}                 accessibility_id=security_lockout_view
+${LOCKOUT_VIEW}                 xpath=//*[@resource-id='security_lockout_view' or @name='security_lockout_view']
 ${LOCKOUT_RESET_BUTTON}         accessibility_id=security_lockout_reset_button
 # The PIN steps and the lock screen carry no testID, only their title (security.pin.* in en.json).
 # Android exposes text as @text, iOS as @label; multi-line titles are matched on their first line.
@@ -77,7 +78,7 @@ Start On Security
 Require Regular Pin
     [Documentation]    ${REGULAR_PIN} as the PIN and no duress PIN, on the Security screen.
     ${top}=    Run Keyword And Return Status    Page Should Contain Element    ${PIN_TOGGLE}
-    IF    not ${top}    Swipe By Percent    50    35    50    75
+    IF    not ${top}    Scroll Into View    ${PIN_TOGGLE_ID}
     # The screen reads the PIN record after mount, so both switches start off; give the read a
     # moment before deciding the PIN is missing.
     ${pin_set}=    Run Keyword And Return Status
@@ -86,6 +87,8 @@ Require Regular Pin
     Ensure Duress Pin Off
 
 Open Security Settings
+    # Right after an unlock the lock screen is gone before Home has rendered.
+    Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     Tap    ${MENU_SETTINGS_BUTTON}
@@ -95,32 +98,29 @@ Open Security Settings
 
 Require Duress Pin Feature
     [Documentation]    Skips before any PIN is set when the flag is off.
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Security Switch    ${DURESS_TOGGLE_ID}    enable_duress_pin
     Require Regular Pin
 
 Require Security Switch
     [Documentation]    Duress PIN (enable_duress_pin) and shake to lock (enable_motion_lock) are
     ...                remote-config flags that default to off. The PIN switch proves this is the
     ...                Security screen, so a missing switch is the flag, not a broken navigation.
-    [Arguments]    ${locator}    ${flag}
+    [Arguments]    ${test_id}    ${flag}
     Page Should Contain Element    ${PIN_TOGGLE}
-    ${shown}=    Reveal On Security Screen    ${locator}
+    ${shown}=    Reveal On Security Screen    ${test_id}
     Skip If    not ${shown}    Remote config flag ${flag} is off on this build.
 
 Reveal On Security Screen
     [Documentation]    The advanced switches sit at the bottom of the screen and Android only reports
     ...                what is on screen.
-    [Arguments]    ${locator}
-    FOR    ${i}    IN RANGE    3
-        ${shown}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
-        IF    ${shown}    RETURN    ${True}
-        # The advanced panel starts collapsed when no advanced flag or setting is on; then the
-        # screen is too short to scroll and the switch is not rendered at all.
-        ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${REKEY_TOGGLE}
-        IF    not ${expanded}    RETURN    ${False}
-        Swipe By Percent    50    75    50    35
-    END
-    ${shown}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
+    [Arguments]    ${test_id}
+    ${shown}=    Run Keyword And Return Status    Page Should Contain Element    accessibility_id=${test_id}
+    IF    ${shown}    RETURN    ${True}
+    # The advanced panel starts collapsed when no advanced flag or setting is on; the switch is
+    # then not rendered at all, so there is nothing to scroll to.
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${REKEY_TOGGLE}
+    IF    not ${expanded}    RETURN    ${False}
+    ${shown}=    Run Keyword And Return Status    Scroll Into View    ${test_id}
     RETURN    ${shown}
 
 Enter Pin
@@ -147,7 +147,7 @@ Enter New Pin Twice
     Wait Until Page Does Not Contain Element    ${PIN_SHEET}    timeout=15s
 
 Start Duress Pin Setup
-    Reveal On Security Screen    ${DURESS_TOGGLE}
+    Reveal On Security Screen    ${DURESS_TOGGLE_ID}
     Tap    ${DURESS_TOGGLE}
     Wait Until Page Contains Element    ${PIN_SETUP_TITLE}    timeout=15s
 
@@ -160,7 +160,7 @@ Set Duress Pin
 Disable Duress Pin
     [Documentation]    Turning duress off asks for the regular PIN first, so someone holding an
     ...                unlocked phone cannot quietly remove it.
-    Reveal On Security Screen    ${DURESS_TOGGLE}
+    Reveal On Security Screen    ${DURESS_TOGGLE_ID}
     Tap    ${DURESS_TOGGLE}
     Wait Until Page Contains Element    ${PIN_VERIFY_TITLE}    timeout=15s
     Enter Pin    ${REGULAR_PIN}
@@ -168,7 +168,7 @@ Disable Duress Pin
     Switch Should Turn    ${DURESS_TOGGLE_ID}    ${False}
 
 Ensure Duress Pin Off
-    ${present}=    Reveal On Security Screen    ${DURESS_TOGGLE}
+    ${present}=    Reveal On Security Screen    ${DURESS_TOGGLE_ID}
     IF    not ${present}    RETURN
     ${on}=    Switch Is On    ${DURESS_TOGGLE_ID}
     IF    ${on}    Disable Duress Pin
@@ -209,8 +209,18 @@ Unlock If Locked
     ${locked}=    Run Keyword And Return Status    Page Should Contain Element    ${PIN_VERIFY_TITLE}
     IF    ${locked}    Unlock With Pin    ${pin}
 
+Clear Pin Pad
+    [Documentation]    The pad keeps typed digits across attempts and has no testID on its dots, so a
+    ...                tap lost or doubled under load would shift every later PIN. Start each lock
+    ...                screen entry from an empty pad.
+    Wait Until Page Contains Element    accessibility_id=numpad_key_delete    timeout=15s
+    FOR    ${i}    IN RANGE    6
+        Click Element    accessibility_id=numpad_key_delete
+    END
+
 Unlock With Pin
     [Arguments]    ${pin}
+    Clear Pin Pad
     Enter Pin    ${pin}
     Wait Until Page Does Not Contain Element    ${PIN_VERIFY_TITLE}    timeout=30s
 
@@ -218,6 +228,7 @@ Enter Rejected Pin
     [Documentation]    A PIN the lock screen must refuse. It is verified behind a Logging in overlay,
     ...                then the dots shake for 250ms and clear; digits typed during the shake are lost.
     [Arguments]    ${pin}
+    Clear Pin Pad
     Enter Pin    ${pin}
     Wait Until Page Does Not Contain Element    ${PIN_LOGGING_IN}    timeout=30s
     Sleep    0.5s
@@ -227,6 +238,7 @@ Enter Duress Pin At Lock Screen
     [Documentation]    The wipe and decoy wallet are created behind the Logging in overlay, and the
     ...                lock lifts only after both finish.
     [Arguments]    ${pin}
+    Clear Pin Pad
     Enter Pin    ${pin}
     Wait Until Page Does Not Contain Element    ${PIN_VERIFY_TITLE}    timeout=120s
 

@@ -32,6 +32,8 @@ Create Quantum Account
     Skip Unless Quantum Create Is Offered
     Tap    ${ADD_ACCOUNT_CREATE_QUANTUM}
     Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=${QUANTUM_KEYGEN_TIMEOUT}
+    # The name field takes focus and the keyboard lifts the button; a tap while it moves misses.
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     # The account screen stays in the Android page source under the naming screen.
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=60s
