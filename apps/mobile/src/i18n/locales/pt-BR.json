@@ -293,7 +293,9 @@
             "bodyWithDependents": "Infelizmente identificamos um problema na versão 7.1.0 na forma como o endereço das contas Quantum é derivado das suas 25 palavras, o que o torna incompatível com outras ferramentas.\n\nSeus fundos estão seguros e sua conta funciona normalmente.\n\nOutra conta está com rekey para esta, então não deixe de usá-la por enquanto — ela é a única signatária dessa conta no momento. No entanto, para evitar problemas de compatibilidade, recomendamos criar uma nova conta Quantum e mover seus fundos assim que o rekey da outra conta for refeito, assim sua passphrase de recuperação funciona em qualquer lugar.\n\nPedimos desculpas pelo transtorno e agradecemos sua compreensão.",
             "markerLabel": "Sobre esta conta Quantum",
             "dismiss": "Entendi"
-        }
+        },
+        "chain_unavailable": "{{chain}} está indisponível no momento",
+        "chain_unavailable_unnamed": "Esta blockchain está indisponível no momento"
     },
     "account_details": {
         "assets": {

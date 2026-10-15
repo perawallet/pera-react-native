@@ -17,16 +17,14 @@ import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'
 import {
     displayCurrencyToAssetId,
-    useIsNativeAssetId,
     isCollectible,
 } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     assetFromHoldingLiteRow,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import { pow10 } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     AssetItemView,
     CollectibleListItem,
@@ -37,6 +35,9 @@ import { useStyles } from './styles'
 
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
+    chainId: ChainId
+    /** The account chain's native asset, which shows its currency symbol. */
+    isNativeAsset: boolean
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
     onPress?: (event: GestureResponderEvent) => void
@@ -53,17 +54,17 @@ export type AssetListItemViewProps = {
  */
 const AssetListItemViewBase = ({
     holding,
+    chainId,
+    isNativeAsset,
     convertFiat,
     onPress,
     style,
 }: AssetListItemViewProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId(scope)
 
     const asset = useMemo(
-        () => assetFromHoldingLiteRow(holding, LEGACY_CHAIN_ID),
-        [holding],
+        () => assetFromHoldingLiteRow(holding, chainId),
+        [holding, chainId],
     )
 
     const amount = useMemo(
@@ -111,7 +112,7 @@ const AssetListItemViewBase = ({
                 asset={asset}
                 value={amount}
                 density='compact'
-                showSymbol={isNativeAssetId(holding.assetId)}
+                showSymbol={isNativeAsset}
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
@@ -125,7 +126,7 @@ const AssetListItemViewBase = ({
                 currency={fiat.displayCurrency}
                 assetId={displayCurrencyToAssetId(
                     fiat.displayCurrency,
-                    LEGACY_CHAIN_ID,
+                    chainId,
                 )}
                 value={fiat.value}
                 precision='compact'

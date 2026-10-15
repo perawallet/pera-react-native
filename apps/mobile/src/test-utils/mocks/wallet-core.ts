@@ -192,6 +192,17 @@ const nativeAsset = vi.hoisted(() => ({
     },
 }))
 
+// Distinct per chain, so a spec resolving the wrong chain gets the wrong asset.
+const ethereumNativeAsset = vi.hoisted(() => ({
+    assetId: 'native',
+    name: 'Ether',
+    unitName: 'ETH',
+    decimals: 18,
+    totalSupply: '0',
+    creator: { address: '' },
+    peraMetadata: { isDeleted: false, verificationTier: 'verified' },
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     // Chain modules register into it at bootstrap; nothing here reads it back.
     assetsChainAdapters: {
@@ -223,6 +234,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
     useNativeAsset: () => nativeAsset,
     nativeAssetFor: () => nativeAsset,
+    findNativeAsset: vi.fn((chainId: string) =>
+        chainId === 'algorand'
+            ? nativeAsset
+            : chainId === 'ethereum'
+              ? ethereumNativeAsset
+              : undefined,
+    ),
     isNativeAssetId: (_chainId: string, assetId: string) =>
         assetId === nativeAsset.assetId,
     useIsNativeAssetId:
@@ -358,7 +376,41 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     const authorityOf = vi.fn(
         (_account: any, _scope?: any): string | null => null,
     )
+    // Registry order, like the real resolver, so a record holding several chains
+    // resolves the same way in specs as in the app.
+    const REGISTRY_ORDER = ['algorand', 'ethereum']
+    const accountChainIdOf = (account: any): string =>
+        REGISTRY_ORDER.find(chainId => account?.chains?.[chainId]) ??
+        Object.keys(account?.chains ?? {})[0] ??
+        'algorand'
+    // One object per chain, so hooks that depend on the scope keep its identity.
+    const scopes = new Map<string, { chainId: string; networkId: string }>()
+    const scopeOf = (chainId: string) => {
+        if (!scopes.has(chainId)) {
+            scopes.set(chainId, { chainId, networkId: 'mainnet' })
+        }
+        return scopes.get(chainId)!
+    }
     return {
+        accountChainIdOf: vi.fn(accountChainIdOf),
+        useRegisteredChainIds: vi.fn(() => ['algorand']),
+        useAccountChainId: vi.fn((account: any) =>
+            account ? accountChainIdOf(account) : 'algorand',
+        ),
+        useAccountScope: vi.fn((account: any) =>
+            scopeOf(account ? accountChainIdOf(account) : 'algorand'),
+        ),
+        accountValueOf: vi.fn(
+            (account: any, chainId: string, values: Map<string, unknown>) => {
+                const address = chainAccountOf(account, chainId)?.address
+                return address ? values.get(address) : undefined
+            },
+        ),
+        ownAddressOf: vi.fn(
+            (account: any) =>
+                chainAccountOf(account, accountChainIdOf(account))?.address,
+        ),
+        useSigningAccountsOnOwnChain: vi.fn(() => []),
         custodyOf: vi.fn((account: any) => account.custody),
         hasCustody: vi.fn(
             (account: any, kind: string) => kindOf(account) === kind,

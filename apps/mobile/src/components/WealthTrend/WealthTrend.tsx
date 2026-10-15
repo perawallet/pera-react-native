@@ -22,11 +22,11 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     useAccountBalancesHistoryQuery,
     addressOn,
+    useAccountScope,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { TrendIndicator } from '@components/TrendIndicator'
 
@@ -46,7 +46,8 @@ export const WealthTrend = ({
     const { privacyMode } = useSettings()
 
     const accounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    // An account's own chain; the whole-wallet view stays on the legacy chain.
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const addresses = useMemo(
         () =>
             (account ? [account] : accounts).flatMap(

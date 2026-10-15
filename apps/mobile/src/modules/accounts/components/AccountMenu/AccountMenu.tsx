@@ -11,10 +11,9 @@
  */
 
 import {
-    chainAccountOf,
+    ownAddressOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWFlatList, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
@@ -72,7 +71,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
             }
 
             const acct = item.account
-            const address = chainAccountOf(acct, LEGACY_CHAIN_ID)?.address ?? ''
+            const address = ownAddressOf(acct) ?? ''
             return (
                 <CopyableText
                     copyValue={address}

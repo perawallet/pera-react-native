@@ -15,19 +15,38 @@ import type { Decimal } from 'decimal.js'
 import {
     addressOn,
     type AccountBalanceHistoryItem,
+    useAccountScope,
     useAccountSummaryQuery,
     useAllAccounts,
     useCanSignWith,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainAvailability,
+    type ChainAvailability,
+} from '@hooks/useChainAvailability'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    HistoryPeriod,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewHeaderResult = {
+    /** Unavailable: the header shows a notice instead of balances and actions. */
+    availability: ChainAvailability
+    /** Undefined for a chain this build doesn't register. */
+    chainName: Optional<string>
+    /** The account's chain has balance history to plot; the chart and trend hide without it. */
+    hasBalanceHistory: boolean
     /** `null` when unknown — renders as a placeholder, not 0. */
     portfolioNativeValue: Nullable<Decimal>
     /** `null` while the preferred-currency rate is unresolved — renders as a placeholder, not 0. */
@@ -49,8 +68,15 @@ export type UseAccountOverviewHeaderResult = {
 export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { usdToPreferred } = useCurrency(scope)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const availability = useChainAvailability(scope.chainId)
+    const hasBalanceHistory = useChainCapability(
+        scope.chainId,
+        'balanceHistory',
+    )
+    const chainName = chainDisplayNameOf(scope.chainId)
+    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { usdToPreferred } = useCurrency(currencyScope)
     const canSign = useCanSignWith(account, scope.chainId)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
     const {
@@ -90,6 +116,9 @@ export const useAccountOverviewHeader = (
     )
 
     return {
+        availability,
+        chainName,
+        hasBalanceHistory,
         portfolioNativeValue,
         portfolioPreferredValue,
         isBalanceComplete: isComplete,

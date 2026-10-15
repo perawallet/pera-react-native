@@ -15,7 +15,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountWithBalance } from '../AccountWithBalance'
 
-const mockHookResult = { nativeValue: undefined, isTestTier: false }
+const mockHookResult = {
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    chainName: 'Algorand',
+    availability: { isAvailable: true, nativeAsset: { assetId: '0' } } as
+        | { isAvailable: true; nativeAsset: { assetId: string } }
+        | { isAvailable: false },
+    nativeValue: undefined,
+    isMultiChain: false,
+    isTestTier: false,
+}
 
 vi.mock('../useAccountWithBalance', () => ({
     useAccountWithBalance: () => mockHookResult,
@@ -42,6 +51,11 @@ const ACCOUNT: WalletAccount = {
 describe('AccountWithBalance', () => {
     beforeEach(() => {
         mockHookResult.isTestTier = false
+        mockHookResult.isMultiChain = false
+        mockHookResult.availability = {
+            isAvailable: true,
+            nativeAsset: { assetId: '0' },
+        }
     })
 
     it('marks an account holding test funds with the tier badge', () => {
@@ -56,5 +70,27 @@ describe('AccountWithBalance', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(screen.queryByText('common.network_label.testnet')).toBeNull()
+    })
+
+    it('shows no chain badge while every account is on one chain', () => {
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(screen.queryByText('Algorand')).toBeNull()
+    })
+
+    it("shows the account's chain once the wallet spans chains", () => {
+        mockHookResult.isMultiChain = true
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(screen.getByText('Algorand')).toBeTruthy()
+    })
+
+    it("replaces the balances with a notice when the chain's kill switch is off", () => {
+        mockHookResult.availability = { isAvailable: false }
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(screen.getByTestId('account_chain_unavailable')).toBeTruthy()
     })
 })
