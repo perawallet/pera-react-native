@@ -17,6 +17,7 @@ import {
     ExecutionRevertedError,
     HttpRequestError,
     InsufficientFundsError,
+    InvalidInputRpcError,
     IntrinsicGasTooLowError,
     LimitExceededRpcError,
     NonceTooLowError,
@@ -79,6 +80,26 @@ describe('toEvmError', () => {
             params: { reason: 'ERC20: transfer amount exceeds balance' },
         },
         {
+            name: 'a revert whose reason mentions insufficient funds',
+            error: wrapped(
+                new ExecutionRevertedError({
+                    message: 'execution reverted: Vault: insufficient funds',
+                }),
+            ),
+            code: 'reverted_with_reason',
+            params: { reason: 'Vault: insufficient funds' },
+        },
+        {
+            name: 'a revert whose reason mentions nonce too low',
+            error: wrapped(
+                new ExecutionRevertedError({
+                    message: 'execution reverted: Relayer: nonce too low',
+                }),
+            ),
+            code: 'reverted_with_reason',
+            params: { reason: 'Relayer: nonce too low' },
+        },
+        {
             name: 'a revert with no reason',
             error: wrapped(
                 new ExecutionRevertedError({ message: 'execution reverted' }),
@@ -131,6 +152,22 @@ describe('toEvmError', () => {
         {
             name: 'an insufficient funds rejection',
             error: wrapped(new InsufficientFundsError()),
+            code: 'insufficient_funds',
+            params: {},
+        },
+        {
+            name: "a node's unclassified nonce too low rejection",
+            error: new InvalidInputRpcError(
+                rpcError('nonce too low: next nonce 5, tx nonce 3'),
+            ),
+            code: 'nonce_too_low',
+            params: {},
+        },
+        {
+            name: "a node's unclassified insufficient funds rejection",
+            error: new InvalidInputRpcError(
+                rpcError('insufficient funds for gas * price + value'),
+            ),
             code: 'insufficient_funds',
             params: {},
         },

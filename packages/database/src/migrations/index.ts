@@ -27,6 +27,7 @@ import m0011 from './0011_transactions_chain_data.sql?raw'
 import m0012 from './0012_account_chain_state.sql?raw'
 import m0013 from './0013_drop_account_balances.sql?raw'
 import m0014 from './0014_holdings_native.sql?raw'
+import m0015 from './0015_submission_attempts_nonce.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -72,4 +73,6 @@ export const migrations: MigrationConfig = {
     '0013_drop_account_balances': m0013,
     // The backfill means the first sync after upgrade writes nothing.
     '0014_holdings_native': m0014,
+    // Nullable: Algorand rows have no account sequence number and stay NULL.
+    '0015_submission_attempts_nonce': m0015,
 }

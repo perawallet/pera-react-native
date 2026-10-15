@@ -38,6 +38,8 @@ export const SubmissionAttemptsSchema = sqliteTable(
         status: text('status').notNull(),
         /** Decoded txn validity window, in rounds (null when undecodable). */
         lastValid: integer('last_valid'),
+        /** Account sequence number, on chains that have one (null otherwise). */
+        nonce: integer('nonce'),
         createdAt: integer('created_at').notNull(),
         resolvedAt: integer('resolved_at'),
     },

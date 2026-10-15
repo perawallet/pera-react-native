@@ -16,6 +16,7 @@ import {
     gt,
     inArray,
     isNotNull,
+    like,
     lt,
     notInArray,
     or,
@@ -25,6 +26,7 @@ import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
     toScopeKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { SubmissionAttemptsSchema } from './schema'
@@ -49,6 +51,7 @@ const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
     sender: row.sender,
     status: row.status as SubmissionStatus,
     lastValid: row.lastValid,
+    nonce: row.nonce,
     createdAt: row.createdAt,
     resolvedAt: row.resolvedAt,
 })
@@ -65,6 +68,8 @@ export type RecordSubmissionAttemptParams = {
     sender?: string
     /** Decoded txn validity window, in rounds. */
     lastValid?: number
+    /** The account sequence number the transaction consumes. */
+    nonce?: number
 }
 
 /**
@@ -79,6 +84,7 @@ export const recordSubmissionAttempt = async ({
     intentKey,
     sender,
     lastValid,
+    nonce,
 }: RecordSubmissionAttemptParams): Promise<string> => {
     const id = generateOrderedUniqueId()
     await db
@@ -92,6 +98,7 @@ export const recordSubmissionAttempt = async ({
             sender: sender ?? null,
             status: 'submitted',
             lastValid: lastValid ?? null,
+            nonce: nonce ?? null,
             createdAt: Date.now(),
             resolvedAt: null,
         })
@@ -102,7 +109,7 @@ export const recordSubmissionAttempt = async ({
 export type ResolveSubmissionAttemptParams = {
     db?: Database
     id: string
-    status: 'confirmed' | 'failed'
+    status: 'confirmed' | 'failed' | 'replaced'
 }
 
 export const resolveSubmissionAttempt = async ({
@@ -140,6 +147,8 @@ export const markSubmissionUnknown = async ({
 export type GetOpenSubmissionAttemptsParams = {
     db?: Database
     scope?: ChainScope
+    /** Scopes to every network of one chain. */
+    chainId?: ChainId
     /** Scopes to one account — history renders per account. */
     sender?: string
     /** Scopes to these flows — the swap guard's sender-wide fallback. */
@@ -156,6 +165,7 @@ export type GetOpenSubmissionAttemptsParams = {
 export const getOpenSubmissionAttempts = async ({
     db = getDatabase(),
     scope,
+    chainId,
     sender,
     flows,
     unevaluatableBefore,
@@ -166,6 +176,10 @@ export const getOpenSubmissionAttempts = async ({
     ]
     if (scope !== undefined) {
         conditions.push(eq(SubmissionAttemptsSchema.network, toScopeKey(scope)))
+    }
+    if (chainId !== undefined) {
+        // Every row's network is a scope key, `<chainId>/<networkId>`.
+        conditions.push(like(SubmissionAttemptsSchema.network, `${chainId}/%`))
     }
     if (sender !== undefined) {
         conditions.push(eq(SubmissionAttemptsSchema.sender, sender))

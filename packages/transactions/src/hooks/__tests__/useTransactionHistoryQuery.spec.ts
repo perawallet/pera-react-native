@@ -794,6 +794,7 @@ describe('useTransactionHistoryQuery', () => {
             sender: mockAddress,
             status: 'submitted',
             lastValid: null,
+            nonce: null,
             createdAt: 1704067200000,
             resolvedAt: null,
             ...overrides,

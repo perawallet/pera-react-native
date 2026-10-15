@@ -26,6 +26,7 @@ import {
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
     pruneResolvedSubmissionAttempts,
+    LANDABLE_SUBMISSION_STATUSES,
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
@@ -331,5 +332,46 @@ describe('submission ledger repository', () => {
             txIds: [],
         })
         expect(matches).toHaveLength(0)
+    })
+
+    it('round-trips the nonce, and stores null when omitted', async () => {
+        const withNonce = await recordRekey({ nonce: 7 })
+        const without = await recordRekey()
+
+        const open = await getOpenSubmissionAttempts({ db })
+        expect(open.find(row => row.id === withNonce)!.nonce).toBe(7)
+        expect(open.find(row => row.id === without)!.nonce).toBeNull()
+    })
+
+    it('treats a replaced row as terminal and not landable', async () => {
+        const id = await recordRekey()
+
+        await resolveSubmissionAttempt({ db, id, status: 'replaced' })
+
+        expect(await getOpenSubmissionAttempts({ db })).toHaveLength(0)
+        const byTxId = await getSubmissionAttemptsByTxIds({
+            db,
+            scope: scopeForLegacyNetwork('mainnet'),
+            txIds: ['TXID-REKEY-1'],
+            statuses: LANDABLE_SUBMISSION_STATUSES,
+        })
+        expect(byTxId).toHaveLength(0)
+    })
+
+    it('scopes open rows to one chain by its scope-key prefix', async () => {
+        await recordRekey()
+        const ethereumId = await recordSubmissionAttempt({
+            db,
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            txIds: ['0xabc'],
+            flow: 'pipeline',
+        })
+
+        const rows = await getOpenSubmissionAttempts({
+            db,
+            chainId: 'ethereum',
+        })
+
+        expect(rows.map(row => row.id)).toEqual([ethereumId])
     })
 })

@@ -2512,12 +2512,21 @@ importers:
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../signing
       '@perawallet/wallet-core-transactions':
         specifier: workspace:*
         version: link:../transactions
