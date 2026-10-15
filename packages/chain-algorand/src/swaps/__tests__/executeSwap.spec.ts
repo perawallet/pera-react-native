@@ -252,7 +252,7 @@ const standardAccountRekeyedToQuantum: WalletAccount = {
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
     ({
-        txn: { txID: () => id },
+        txn: { txID: () => id, sender: { toString: () => 'BACKEND' } },
         sig: new Uint8Array([1]),
     }) as unknown as PeraSignedTransaction
 

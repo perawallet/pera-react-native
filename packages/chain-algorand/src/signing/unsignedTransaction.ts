@@ -20,7 +20,15 @@ import type {
     TransactionSummary,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    authorityOf,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import {
+    encodeToBase64,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     TransportError,
     type SigningResult,
@@ -30,6 +38,7 @@ import {
     decodeTransaction,
     encodeSignedTransaction,
 } from '../blockchain/utils/transact'
+import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 import {
     APP_CALL_TITLE_KEY,
@@ -135,12 +144,30 @@ const chainDataOf = (transaction: PeraTransaction): ChainTransactionData => {
     }
 }
 
+// The review refuses a wallet sender whose payload names another signer than
+// its recorded authority, and the planner stamps the signer it reads here.
+const authorizerOf = (
+    transaction: PeraTransaction,
+    scope: ChainScope,
+): Optional<string> => {
+    const sender = transaction.sender.toString()
+    const account = useAccountsStore
+        .getState()
+        .accounts.find(candidate => algorandAddressOf(candidate) === sender)
+    const authority = account ? authorityOf(account, scope) : null
+    return authority !== null && authority !== sender ? authority : undefined
+}
+
 export const toUnsignedAlgorandTransaction = (
     transaction: PeraTransaction,
     scope: ChainScope,
 ): UnsignedTransaction => {
+    const authorizer = authorizerOf(transaction, scope)
     // `AlgorandTransactionPayload`'s shape; `readAlgorandTransaction` reads it.
-    const payload: { transaction: PeraTransaction } = { transaction }
+    const payload: { transaction: PeraTransaction; authorizer?: string } = {
+        transaction,
+        ...(authorizer !== undefined && { authorizer }),
+    }
     return {
         scope,
         payload,

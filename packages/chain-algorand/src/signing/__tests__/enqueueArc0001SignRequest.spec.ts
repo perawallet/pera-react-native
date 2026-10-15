@@ -118,7 +118,9 @@ const resolvedWithSlots = (
     return {
         allDecoded: Array.from(
             { length: totalCount },
-            (_, i) => toSign.find(t => t.index === i)?.decoded ?? ({} as any),
+            (_, i) =>
+                toSign.find(t => t.index === i)?.decoded ??
+                ({ sender: `external-${i}` } as any),
         ),
         toSign,
         signerOverrides: new Map(),

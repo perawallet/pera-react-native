@@ -114,7 +114,9 @@ cardContractTests(() => algorandCardAdapter, {
             arrangeClient({
                 newGroup: () => ({
                     addAssetTransfer: vi.fn(),
-                    build: async () => ({ transactions: [{ txn: {} }] }),
+                    build: async () => ({
+                        transactions: [{ txn: { sender: 'SENDER' } }],
+                    }),
                 }),
             }),
     },

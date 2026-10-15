@@ -59,6 +59,7 @@ vi.mock('../../../blockchain', () => ({
             txn: {
                 id: String.fromCharCode(...bytes),
                 txID: () => `${String.fromCharCode(...bytes)}-id`,
+                sender: { toString: () => 'SPONSOR' },
             },
         }),
     }),

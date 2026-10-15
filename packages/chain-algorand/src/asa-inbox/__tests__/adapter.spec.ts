@@ -33,7 +33,7 @@ vi.mock('../builders', () => ({
 }))
 
 const CLIENT = { name: 'wallet-client' }
-const TXNS = [{ txn: 'stub' }]
+const TXNS = [{ txn: 'stub', sender: 'SENDER' }]
 
 const summary = {
     is_arc59_opted_in: true,

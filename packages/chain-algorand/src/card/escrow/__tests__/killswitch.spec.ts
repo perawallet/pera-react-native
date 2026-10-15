@@ -64,7 +64,9 @@ beforeEach(() => {
         addPayment,
         addAppCallMethodCall,
         build: vi.fn(async () => ({
-            atc: { buildGroup: () => [{ txn: { id: 'txn-1' } }] },
+            atc: {
+                buildGroup: () => [{ txn: { id: 'txn-1', sender: 'SENDER' } }],
+            },
         })),
     }
     getAlgorandClient.mockReturnValue({
@@ -126,7 +128,7 @@ describe('algorandAutoDraw', () => {
         // ...but the returned txns are zero-fee and ungrouped: the
         // fee-delegation sponsor pays, and the backend re-groups.
         expect(txns.map(payloadTransactionOf)).toEqual([
-            { id: 'txn-1', fee: 0n, group: undefined },
+            { id: 'txn-1', sender: 'SENDER', fee: 0n, group: undefined },
         ])
         expect(txns[0].scope).toEqual(scopeForLegacyNetwork('testnet'))
     })
@@ -144,7 +146,9 @@ describe('algorandAutoDraw', () => {
             args: [10458941n],
         })
         expect(addAppCallMethodCall).toHaveBeenCalledWith(KILL_CALL)
-        expect(txns.map(payloadTransactionOf)).toEqual([{ id: 'txn-1' }])
+        expect(txns.map(payloadTransactionOf)).toEqual([
+            { id: 'txn-1', sender: 'SENDER' },
+        ])
     })
 
     describe('isEnabled', () => {

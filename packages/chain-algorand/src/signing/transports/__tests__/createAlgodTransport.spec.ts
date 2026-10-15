@@ -23,7 +23,13 @@ import {
     type SigningResult,
     type SourceMetadata,
 } from '@perawallet/wallet-core-signing'
+import { generateAccount } from 'algosdk'
 import { createAlgodTransport } from '../createAlgodTransport'
+import { signedAlgorandTransactionFromBytes } from '../../unsignedTransaction'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../__tests__/transactions'
 
 const ALGORAND_TESTNET: ChainScope = {
     chainId: 'algorand',
@@ -79,6 +85,37 @@ describe('createAlgodTransport', () => {
 
         expect(result).toEqual({ type: 'submitted', txIds: ['TX1'] })
         expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
+    })
+
+    test('posts planner-signed bytes unchanged and reports their ids', async () => {
+        const account = generateAccount()
+        const bytes = makeTestPaymentTx(account.addr, {
+            receiver: makeTestAddress(2),
+        }).signTxn(account.sk)
+        const signed = signedAlgorandTransactionFromBytes(
+            bytes,
+            ALGORAND_TESTNET,
+        )
+        const algokit = makeAlgokit([])
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+            ALGORAND_TESTNET,
+        )
+
+        const result = await transport.send(
+            {
+                signedData: { type: 'signed-transactions', signed: [signed] },
+                signers: [{ address: 'ADDR' }],
+            },
+            { type: 'local' },
+        )
+
+        expect(result).toEqual({ type: 'submitted', txIds: [signed.id] })
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalledWith(
+            bytes,
+        )
+        expect(encodeSignedTransactions).not.toHaveBeenCalled()
     })
 
     test('submits tx group and returns txIds from response array', async () => {
