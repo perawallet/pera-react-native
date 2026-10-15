@@ -71,6 +71,7 @@ export const ImportPrivateKeyScreen = () => {
                     spellCheck={false}
                     autoCapitalize='none'
                     autoComplete='off'
+                    importantForAutofill='no'
                     errorMessage={
                         hasInput && !isValidInput
                             ? t('onboarding.import_private_key.invalid')
