@@ -53,6 +53,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
             sourceType === 'injected',
     ),
     resolveAllSignerAddresses: vi.fn(() => ['QUANTUMADDRESS']),
+    chainIdOfSignRequest: vi.fn(
+        (request: { chainId?: string }) => request.chainId ?? 'algorand:test',
+    ),
 }))
 
 const mockConfirmQuantumDappUsage = vi.fn()
@@ -527,7 +530,7 @@ describe('useSigningActionButtons', () => {
     })
 
     describe('rekeyed-unsignable senders', () => {
-        const request = { id: 'r1' }
+        const request = { id: 'r1', chainId: 'eip155:1' }
 
         beforeEach(() => {
             ;(useSigningRequest as Mock).mockReturnValue({
@@ -548,6 +551,11 @@ describe('useSigningActionButtons', () => {
                 title: 'signing.cannot_sign.title',
                 body: 'signing.cannot_sign.rekeyed_auth_missing_body',
             })
+            expect(getDelegatedUnsignableReason).toHaveBeenCalledWith(
+                'eip155:1',
+                request,
+                [],
+            )
 
             act(() => {
                 result.current.handleSignAndSend()

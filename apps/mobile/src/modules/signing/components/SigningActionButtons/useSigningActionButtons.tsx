@@ -15,8 +15,8 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
+    chainIdOfSignRequest,
     getDelegatedUnsignableReason,
     isExternalCallbackSource,
     isSignRequestMultisigUnsignable,
@@ -145,7 +145,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             }
         }
         const delegatedReason = getDelegatedUnsignableReason(
-            LEGACY_CHAIN_ID,
+            chainIdOfSignRequest(currentRequest),
             currentRequest,
             allAccounts,
         )
@@ -190,7 +190,10 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 isExternalCallbackSource(currentRequest.sourceType)
             ) {
                 const decision = await confirmQuantumDappUsage(
-                    resolveAllSignerAddresses(LEGACY_CHAIN_ID, currentRequest),
+                    resolveAllSignerAddresses(
+                        chainIdOfSignRequest(currentRequest),
+                        currentRequest,
+                    ),
                 )
                 if (decision === 'cancel') {
                     if (walletConnectTxPayload) {
