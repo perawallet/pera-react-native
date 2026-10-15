@@ -9,6 +9,7 @@
       "@perawallet/wallet-core-assets/testing/adapter-contract": ["../assets/src/__tests__/assets-adapter-contract.ts"],
       "@perawallet/wallet-core-chain-contract/testing": ["../chain-contract/src/__tests__/testing.ts"],
       "@perawallet/wallet-core-connections/testing": ["../connections/src/__tests__/dapp-request-contract.ts"],
+      "@perawallet/wallet-core-deeplinks/testing": ["../deeplinks/src/__tests__/adapter-contract.ts"],
       "@perawallet/wallet-core-signing/testing": ["../signing/src/__tests__/testing.ts"],
       "@perawallet/wallet-core-transactions/testing": ["../transactions/src/__tests__/testing.ts"]
     }

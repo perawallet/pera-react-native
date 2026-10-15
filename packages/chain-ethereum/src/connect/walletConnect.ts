@@ -14,7 +14,7 @@ import { numberToHex } from 'viem'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { eip155ChainIdOf } from '../accounts/address-codec'
+import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumDescriptor } from '../descriptor'
 
 export const ETHEREUM_CAIP2_NAMESPACE = 'eip155'
@@ -98,7 +98,7 @@ const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
                 return {
                     kind: 'public-data',
                     answer: (_addresses, networkId) => {
-                        const eip155ChainId = eip155ChainIdOf(networkId)
+                        const eip155ChainId = eip155ChainIdOfNetwork(networkId)
                         return eip155ChainId === undefined
                             ? null
                             : numberToHex(eip155ChainId)
