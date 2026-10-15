@@ -12,6 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { buildResolvedSignRequest } from '../buildResolvedSignRequest'
+import { registerFakeMessageSignerAdapter } from '../../__tests__/fakeMessageSignerAdapter'
 import type { SigningMachineContext } from '../../machine/context'
 import type { TransactionSignRequest, AuthDataSignRequest } from '../../models'
 import {
@@ -151,5 +152,38 @@ describe('buildResolvedSignRequest', () => {
         if (result!.kind.type === 'auth-data') {
             expect(result!.kind.parsed).toBeDefined()
         }
+    })
+
+    it('shows an auth-data request on a chain that signs no auth data as unparseable', () => {
+        registerFakeMessageSignerAdapter({ authData: null })
+        const authDataRequest = {
+            id: 'r1',
+            type: 'auth-data',
+            chainId: 'algorand',
+            sourceType: 'card',
+            transport: 'callback',
+            authData: { data: 'SGVsbG8=', signer: 'A123' },
+            metadata: { scope: 1, encoding: 'base64' },
+        } as unknown as AuthDataSignRequest
+        const context = {
+            signerAddress: 'A123',
+            allAccounts: [makeAccount('A123', 'algo25')],
+            groupSigners: new Map([
+                ['A123', { custody: 'local', scheme: 'ed25519' }],
+            ]),
+            request: authDataRequest,
+            signableGroups: [{ signerAddress: 'A123' }],
+            deps,
+        } as unknown as SigningMachineContext
+
+        const result = buildResolvedSignRequest(context)
+
+        expect(result?.kind).toEqual({
+            type: 'auth-data',
+            parsed: {
+                type: 'error',
+                message: 'chain algorand has no auth-data signer',
+            },
+        })
     })
 })

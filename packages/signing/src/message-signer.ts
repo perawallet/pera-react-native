@@ -72,8 +72,16 @@ export type BuildSiwxAuthDataArgs = {
     now?: Date
 }
 
-/** What a message signer is asked to sign. */
-export type MessageSignKind = 'arbitraryData' | 'authData'
+/**
+ * What a message signer is asked to sign. `'message'` is free-form bytes the
+ * chain signs under its own message prefix; `'typedData'` is a schema-typed
+ * structured message.
+ */
+export type MessageSignKind =
+    | 'arbitraryData'
+    | 'authData'
+    | 'message'
+    | 'typedData'
 
 export type MessagePlanContext = {
     /** The record `request.signer` names, signed with its own key and never followed through rekey. */
@@ -110,6 +118,30 @@ export const authDataMessageRequest = (
     payload,
 })
 
+/** The sign-in (CAIP-122 auth-data) legs, which only a chain that signs `'authData'` provides. */
+export interface AuthDataSigner {
+    /**
+     * The host-side checks every signer shares.
+     * @throws when the request must be rejected.
+     */
+    validateAuthData(
+        authData: AuthData,
+        metadata: AuthDataMetadata,
+        accounts: WalletAccount[],
+    ): { decodedData: Uint8Array }
+    /** Never throws. */
+    parseAuthDataForDisplay(data: string, encoding: string): ParsedAuthData
+    isAuthDataWirePayload(params: unknown): boolean
+    parseAuthDataWireRequest(rawParams: unknown): AuthDataPayload
+    /**
+     * The public key a hardware device signs auth data against.
+     * @throws when `address` is invalid on the chain.
+     */
+    signerPublicKey(address: string): Uint8Array
+    /** Ready to sign: `signer` is the address, with domain, scope and encoding filled in. */
+    buildSiwxAuthData(args: BuildSiwxAuthDataArgs): AuthDataPayload
+}
+
 /** The chain-specific legs of signing a message; registered by the chain package. */
 export interface MessageSignerChainAdapter {
     chainId: ChainId
@@ -134,26 +166,7 @@ export interface MessageSignerChainAdapter {
     plan(request: MessageRequest, context: MessagePlanContext): SigningRequest[]
     /** @throws unless `signatures` answer `plan(request)` one for one. */
     assemble(request: MessageRequest, signatures: Signature[]): SignedMessage
-    /**
-     * The host-side checks every signer shares.
-     * @throws when the request must be rejected.
-     */
-    validateAuthData(
-        authData: AuthData,
-        metadata: AuthDataMetadata,
-        accounts: WalletAccount[],
-    ): { decodedData: Uint8Array }
-    /** Never throws. */
-    parseAuthDataForDisplay(data: string, encoding: string): ParsedAuthData
-    isAuthDataWirePayload(params: unknown): boolean
-    parseAuthDataWireRequest(rawParams: unknown): AuthDataPayload
-    /**
-     * The public key a hardware device signs auth data against.
-     * @throws when `address` is invalid on the chain.
-     */
-    signerPublicKey(address: string): Uint8Array
-    /** Ready to sign: `signer` is the address, with domain, scope and encoding filled in. */
-    buildSiwxAuthData(args: BuildSiwxAuthDataArgs): AuthDataPayload
+    authData?: AuthDataSigner
 }
 
 export const messageSignerChainAdapters =
@@ -191,20 +204,44 @@ export const messageSignerFor = (
     return messageSignerChainAdapters.get(chainId)
 }
 
+/** @throws {CannotSignError} when the chain has no message signer, or one that signs no auth data. */
+export const authDataSignerFor = (
+    chainId: ChainId,
+    signerAddress: string,
+): AuthDataSigner => {
+    const { authData } = messageSignerFor(chainId, signerAddress)
+    if (!authData) {
+        throw new CannotSignError(
+            signerAddress,
+            `chain ${chainId} signs no auth data`,
+        )
+    }
+    return authData
+}
+
+const requireAuthData = (chainId: ChainId): AuthDataSigner => {
+    const { authData } = messageSignerChainAdapters.get(chainId)
+    if (!authData) {
+        throw new Error(`chain ${chainId} has no auth-data signer`)
+    }
+    return authData
+}
+
 export const isAuthDataWirePayload: WithChain<
-    MessageSignerChainAdapter['isAuthDataWirePayload']
+    AuthDataSigner['isAuthDataWirePayload']
 > = (chainId, ...args) =>
-    messageSignerChainAdapters.get(chainId).isAuthDataWirePayload(...args)
+    messageSignerChainAdapters
+        .get(chainId)
+        .authData?.isAuthDataWirePayload(...args) ?? false
 
 export const parseAuthDataWireRequest: WithChain<
-    MessageSignerChainAdapter['parseAuthDataWireRequest']
+    AuthDataSigner['parseAuthDataWireRequest']
 > = (chainId, ...args) =>
-    messageSignerChainAdapters.get(chainId).parseAuthDataWireRequest(...args)
+    requireAuthData(chainId).parseAuthDataWireRequest(...args)
 
 export const buildSiwxAuthData: WithChain<
-    MessageSignerChainAdapter['buildSiwxAuthData']
-> = (chainId, ...args) =>
-    messageSignerChainAdapters.get(chainId).buildSiwxAuthData(...args)
+    AuthDataSigner['buildSiwxAuthData']
+> = (chainId, ...args) => requireAuthData(chainId).buildSiwxAuthData(...args)
 
 /**
  * Plans every request before the first key-store call, so a refused item never

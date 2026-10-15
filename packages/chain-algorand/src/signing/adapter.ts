@@ -179,10 +179,11 @@ export const algorandLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
 
 export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    canSign: (account, kind) =>
-        kind === 'authData'
-            ? canSignArc60(account)
-            : canSignArbitraryData(account),
+    canSign: (account, kind) => {
+        if (kind === 'arbitraryData') return canSignArbitraryData(account)
+        if (kind === 'authData') return canSignArc60(account)
+        return false
+    },
     // ARC-60 and arbitrary-data signatures are Ed25519-only, so no dApp can
     // verify a quantum account's Falcon signature yet.
     signsVerifiably: account => !isQuantumAccount(account),
@@ -190,10 +191,12 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     describe: describeAlgorandMessage,
     plan: planAlgorandMessage,
     assemble: assembleAlgorandMessage,
-    validateAuthData: validateArc60AuthRequest,
-    parseAuthDataForDisplay: parseArc60ForDisplay,
-    isAuthDataWirePayload: isArc60WirePayload,
-    parseAuthDataWireRequest: parseArc60WireRequest,
-    buildSiwxAuthData,
-    signerPublicKey: address => Address.fromString(address).publicKey,
+    authData: {
+        validateAuthData: validateArc60AuthRequest,
+        parseAuthDataForDisplay: parseArc60ForDisplay,
+        isAuthDataWirePayload: isArc60WirePayload,
+        parseAuthDataWireRequest: parseArc60WireRequest,
+        buildSiwxAuthData,
+        signerPublicKey: address => Address.fromString(address).publicKey,
+    },
 }

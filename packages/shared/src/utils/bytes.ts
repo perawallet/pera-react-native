@@ -53,3 +53,48 @@ export const decodeBytesToText = (value: unknown): string | undefined => {
 
     return text ? text : undefined
 }
+
+// Zero-width characters hide content; bidi controls (U+202E and friends) can
+// visually reorder text so the user reads something different from the bytes
+// they sign. None are control characters, so a regex class is safe here.
+const INVISIBLE_OR_BIDI_CHARS =
+    /[\u061C\u200B-\u200F\u2060\u202A-\u202E\u2066-\u2069\uFEFF]/
+
+// Characters that let a payload masquerade as innocuous text: C0/C1 controls
+// and DEL (valid UTF-8 no human can read), plus the invisible/bidi set above.
+const hasUnprintableChars = (text: string): boolean => {
+    if (INVISIBLE_OR_BIDI_CHARS.test(text)) {
+        return true
+    }
+    for (const char of text) {
+        const code = char.codePointAt(0) ?? 0
+        const isAllowedWhitespace =
+            code === 0x09 || code === 0x0a || code === 0x0d
+        if (
+            (code < 0x20 && !isAllowedWhitespace) ||
+            (code >= 0x7f && code <= 0x9f)
+        ) {
+            return true
+        }
+    }
+    return false
+}
+
+/**
+ * The text a human can safely review as what they sign, or `undefined` when
+ * the bytes are empty, not strict UTF-8, or hide content. Lossy decoding would
+ * collapse invalid sequences to U+FFFD, so the reviewer could approve bytes
+ * they never read.
+ */
+export const decodePrintableUtf8 = (bytes: Uint8Array): string | undefined => {
+    if (bytes.length === 0) {
+        return undefined
+    }
+    let text: string
+    try {
+        text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+    } catch {
+        return undefined
+    }
+    return hasUnprintableChars(text) ? undefined : text
+}

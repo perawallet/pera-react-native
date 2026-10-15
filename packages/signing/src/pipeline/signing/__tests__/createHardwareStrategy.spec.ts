@@ -962,7 +962,7 @@ describe('createHardwareStrategy', () => {
             messageSignerChainAdapters.register(
                 fakeMessageSignerAdapter({
                     chainId: 'ethereum',
-                    signerPublicKey,
+                    authData: { signerPublicKey },
                 }),
             )
             const strategy = createHardwareStrategy({
@@ -986,7 +986,7 @@ describe('createHardwareStrategy', () => {
             })
             const KEY = new Uint8Array(32).fill(0xaa)
             const signerPublicKey = vi.fn(() => KEY)
-            registerFakeMessageSignerAdapter({ signerPublicKey })
+            registerFakeMessageSignerAdapter({ authData: { signerPublicKey } })
             const provider = makeMockProvider(transport)
             const registry = makeRegistry(provider)
             const strategy = createHardwareStrategy({
@@ -1027,7 +1027,7 @@ describe('createHardwareStrategy', () => {
             })
             const onSigningStart = vi.fn()
             const validateAuthData = vi.fn()
-            registerFakeMessageSignerAdapter({ validateAuthData })
+            registerFakeMessageSignerAdapter({ authData: { validateAuthData } })
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: makeRegistry(
                     makeMockProvider(transport),
@@ -1054,8 +1054,10 @@ describe('createHardwareStrategy', () => {
                 signData: vi.fn(),
             })
             registerFakeMessageSignerAdapter({
-                validateAuthData: () => {
-                    throw new Error('rejected by the chain validator')
+                authData: {
+                    validateAuthData: () => {
+                        throw new Error('rejected by the chain validator')
+                    },
                 },
             })
             const strategy = createHardwareStrategy({
@@ -1084,7 +1086,7 @@ describe('createHardwareStrategy', () => {
             const validateAuthData = vi.fn(() => ({
                 decodedData: new Uint8Array(),
             }))
-            registerFakeMessageSignerAdapter({ validateAuthData })
+            registerFakeMessageSignerAdapter({ authData: { validateAuthData } })
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: makeRegistry(
                     makeMockProvider(transport),
@@ -1123,6 +1125,27 @@ describe('createHardwareStrategy', () => {
             ).rejects.toBeInstanceOf(CannotSignError)
             expect(provider.connect).not.toHaveBeenCalled()
             expect(transport.assertCanSignData).not.toHaveBeenCalled()
+            expect(transport.signData).not.toHaveBeenCalled()
+        })
+
+        it('refuses before any device prompt when the chain signs no auth data', async () => {
+            const transport = makeAuthDataTransport()
+            const provider = makeMockProvider(transport)
+            registerFakeMessageSignerAdapter({ authData: null })
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(provider),
+                encodeTransaction,
+                getAllAccounts: () => [],
+                chainId: 'algorand',
+            })
+
+            await expect(
+                strategy.sign(
+                    makeAuthDataGroup(),
+                    makeLedgerAccount(SIGNER_ADDRESS, 0),
+                ),
+            ).rejects.toBeInstanceOf(CannotSignError)
+            expect(provider.connect).not.toHaveBeenCalled()
             expect(transport.signData).not.toHaveBeenCalled()
         })
 
