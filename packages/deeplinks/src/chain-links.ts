@@ -19,7 +19,7 @@ export const linkFromIntent = (
     sourceUrl: string,
 ): AnyParsedDeeplink | null => {
     switch (intent.kind) {
-        case 'address':
+        case 'address': {
             return {
                 type: DeeplinkType.ADDRESS_ACTIONS,
                 sourceUrl,
@@ -27,7 +27,8 @@ export const linkFromIntent = (
                 address: intent.address,
                 label: intent.label,
             }
-        case 'payment':
+        }
+        case 'payment': {
             return {
                 type: DeeplinkType.TRANSFER,
                 sourceUrl,
@@ -39,7 +40,8 @@ export const linkFromIntent = (
                 label: intent.label,
                 chainData: intent.chainData,
             }
-        case 'asset-opt-in':
+        }
+        case 'asset-opt-in': {
             return {
                 type: DeeplinkType.ASSET_OPT_IN,
                 sourceUrl,
@@ -47,21 +49,25 @@ export const linkFromIntent = (
                 assetRef: intent.assetRef,
                 address: intent.address,
             }
-        case 'explorer':
+        }
+        case 'explorer': {
             return {
                 type: DeeplinkType.DISCOVER_BROWSER,
                 sourceUrl,
                 url: intent.url,
                 target: intent.target,
             }
-        case 'wallet-connect':
+        }
+        case 'wallet-connect': {
             return parseWalletConnectDeeplink(intent.uri, sourceUrl)
-        case 'chain-action':
+        }
+        case 'chain-action': {
             return {
                 type: DeeplinkType.CHAIN_ACTION,
                 sourceUrl,
                 target: intent.target,
                 chainData: intent.chainData,
             }
+        }
     }
 }
