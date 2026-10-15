@@ -59,7 +59,7 @@ const attempt = (
     historyEntry: {
         summary: {
             kind: 'transfer',
-            title: { key: 'transactions.summary.sent' },
+            title: { key: 'transactions.list_item.send' },
             direction: 'out',
             icon: 'send',
         },
@@ -79,7 +79,7 @@ const minedRecord = (
     timestamp,
     summary: {
         kind: 'transfer',
-        title: { key: 'transactions.summary.sent' },
+        title: { key: 'transactions.list_item.send' },
         direction: 'out',
         icon: 'send',
     },
@@ -145,7 +145,7 @@ describe('getPendingTransactionRecords', () => {
             id: '0xhash1',
             scope: SCOPE,
             chainData: { family: 'evm' },
-            summary: { title: { key: 'transactions.summary.sent' } },
+            summary: { title: { key: 'transactions.list_item.send' } },
         })
         expect(record.fee?.toString()).toBe('420000000000000')
     })

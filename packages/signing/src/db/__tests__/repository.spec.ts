@@ -39,7 +39,7 @@ const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const HISTORY_ENTRY: SubmissionHistoryEntry = {
     summary: {
         kind: 'transfer',
-        title: { key: 'transactions.summary.sent' },
+        title: { key: 'transactions.list_item.send' },
         direction: 'out',
         amount: {
             assetRef: { chainId: 'ethereum', assetId: 'native' },

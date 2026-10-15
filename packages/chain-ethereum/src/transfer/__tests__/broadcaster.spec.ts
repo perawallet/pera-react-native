@@ -78,7 +78,7 @@ const signed = (data: SigningResult['signedData']): SigningResult => ({
 const HISTORY_ENTRY: SubmissionHistoryEntry = {
     summary: {
         kind: 'transfer',
-        title: { key: 'transactions.summary.sent' },
+        title: { key: 'transactions.list_item.send' },
         direction: 'out',
         icon: 'send',
     },

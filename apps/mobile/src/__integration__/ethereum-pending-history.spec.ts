@@ -24,9 +24,10 @@ import {
     it,
     vi,
 } from 'vitest'
-import type {
-    ChainContext,
-    ChainScope,
+import {
+    i18nKey,
+    type ChainContext,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     SigningResult,
@@ -83,7 +84,7 @@ const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const BYTES = Uint8Array.from(
     Buffer.from(VIEM_TRANSFER_NONCE_0.slice(2), 'hex'),
 )
-const SUMMARY_TITLE = 'transactions.summary.sent'
+const SUMMARY_TITLE = i18nKey('transactions.list_item.send')
 
 const sendSigned = (): SigningResult => ({
     signedData: {
