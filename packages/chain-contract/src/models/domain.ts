@@ -359,10 +359,17 @@ export interface PaymentUriOpts {
     networkId?: NetworkId
 }
 
+/** Field names and values come from the requester and are never translated. */
+export type MessageTreeNode =
+    | { label: string; value: string }
+    | { label: string; children: MessageTreeNode[] }
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
     preview?: string
+    /** Set for kind `'typed-data'`: the signed fields, in schema order. */
+    tree?: MessageTreeNode[]
 }
 
 export interface MessageRequest {
