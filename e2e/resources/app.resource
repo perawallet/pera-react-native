@@ -34,9 +34,13 @@ Start Pera With Wallet
         Create Wallet
         Wait Clear Of Startup Prompts
     END
-    # The app may still be on whatever screen a previous run left up; a fixture resets that.
-    Load Fixture    contacts-empty
-    Wait Until Page Contains Element    accessibility_id=contacts_empty_add_button    timeout=30s
+    Go Home
+
+Go Home
+    [Documentation]    Home with a fresh back stack and no sheet open, data untouched. The usual
+    ...                per-test anchor for suites that do not need their own fixture.
+    Load Fixture    home
+    Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
 
 Create Wallet
     Tap    ${CREATE_WALLET_BUTTON}

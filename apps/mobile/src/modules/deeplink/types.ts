@@ -308,7 +308,7 @@ export interface DevLocaleTourDeeplink extends ParsedDeeplink {
     run?: 'all'
 }
 
-export type E2eFixtureName = 'contacts-empty' | 'contacts-one'
+export type E2eFixtureName = 'home' | 'contacts-empty' | 'contacts-one'
 
 /**
  * `perawallet://app/dev/e2e-fixture?name=<fixture>` puts the app into a named

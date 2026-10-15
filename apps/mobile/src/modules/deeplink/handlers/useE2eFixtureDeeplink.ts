@@ -28,7 +28,7 @@ export type E2eFixtureDeeplinkHandler = (
 ) => void
 
 // e2e/resources/contacts.resource mirrors these values; change both together.
-const FIXTURE_CONTACTS: Record<E2eFixtureName, Contact[]> = {
+const FIXTURE_CONTACTS: Record<Exclude<E2eFixtureName, 'home'>, Contact[]> = {
     'contacts-empty': [],
     'contacts-one': [
         {
@@ -43,8 +43,9 @@ const FIXTURE_CONTACTS: Record<E2eFixtureName, Contact[]> = {
 }
 
 /**
- * Replaces contacts wholesale and lands on the contacts list with a fresh back
- * stack and no sheet open, so a test starts from the same screen whatever the
+ * `home` lands on Home and leaves data alone; the contacts fixtures replace
+ * contacts wholesale and land on the contacts list. Either way the back stack is
+ * fresh and no sheet is open, so a test starts from the same screen whatever the
  * last one left up.
  * Does nothing without a wallet: TabBar only exists once an account does, and
  * resetting onto it anyway yields a state no user can reach. Creating the
@@ -62,11 +63,15 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
             // Sheets live above navigation, so a reset alone leaves the last
             // test's sheet up to swallow the next tap.
             useBottomSheetStore.getState().dismissAll()
+            if (!navigationRef.isReady()) return
+            if (fixture === 'home') {
+                navigationRef.reset({ index: 0, routes: [{ name: 'TabBar' }] })
+                return
+            }
             useContactsStore.setState({
                 contacts: FIXTURE_CONTACTS[fixture],
                 selectedContact: null,
             })
-            if (!navigationRef.isReady()) return
             navigationRef.reset({
                 index: 1,
                 routes: [

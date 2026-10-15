@@ -22,6 +22,7 @@ import { normalizeUrl, parseQueryParams } from './utils'
 const DEV_E2E_FIXTURE_URL_BASE = 'perawallet://app/dev/e2e-fixture'
 
 const FIXTURE_NAMES: ReadonlySet<string> = new Set<E2eFixtureName>([
+    'home',
     'contacts-empty',
     'contacts-one',
 ])

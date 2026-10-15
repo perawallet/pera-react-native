@@ -108,13 +108,26 @@ describe('useE2eFixtureDeeplink', () => {
         })
     })
 
-    it('still applies the state when navigation is not mounted yet', () => {
+    it('lands on Home without touching contacts', () => {
+        const { result } = renderHook(() => useE2eFixtureDeeplink())
+
+        result.current({ fixture: 'home' })
+
+        expect(mockDismissAll).toHaveBeenCalled()
+        expect(mockSetState).not.toHaveBeenCalled()
+        expect(mockReset).toHaveBeenCalledWith({
+            index: 0,
+            routes: [{ name: 'TabBar' }],
+        })
+    })
+
+    it('changes nothing while navigation is not mounted yet', () => {
         mockIsReady.mockReturnValue(false)
         const { result } = renderHook(() => useE2eFixtureDeeplink())
 
         result.current({ fixture: 'contacts-empty' })
 
-        expect(mockSetState).toHaveBeenCalled()
+        expect(mockSetState).not.toHaveBeenCalled()
         expect(mockReset).not.toHaveBeenCalled()
     })
 })
