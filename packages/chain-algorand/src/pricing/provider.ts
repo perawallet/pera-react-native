@@ -16,6 +16,7 @@ import {
     type AssetPrice,
     type AssetRef,
 } from '@perawallet/wallet-core-chain-contract'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { fetchPublicAssetDetails } from '../assets/api'
 import { algorandAssetIdOf } from '../assets/asset-ref'
@@ -56,6 +57,8 @@ export const fetchPeraUsdPrices = async (
     network: Network,
 ): Promise<AssetPrice[]> => {
     for (const ref of refs) algorandAssetIdOf(ref)
+    // No Pera backend on this network: both endpoints below would only throw.
+    if (!isPeraBackedNetwork(network)) return []
 
     const native = refs.filter(ref => isNativeAsset(ref, algorandDescriptor))
     const tokens = refs.filter(ref => !isNativeAsset(ref, algorandDescriptor))
