@@ -163,9 +163,9 @@ describe('Deeplink Parser - Helper Functions', () => {
 
     describe('readPeraAppLink', () => {
         it('reads the action and params of the scheme form', () => {
-            expect(readPeraAppLink('perawallet://app/web-import/?a=1&b=x')).toEqual(
-                { action: 'web-import', params: { a: '1', b: 'x' } },
-            )
+            expect(
+                readPeraAppLink('perawallet://app/web-import/?a=1&b=x'),
+            ).toEqual({ action: 'web-import', params: { a: '1', b: 'x' } })
         })
 
         it('reads the universal-link form', () => {

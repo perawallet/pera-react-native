@@ -92,7 +92,10 @@ describe('linkFromIntent', () => {
 
     it('returns null for a wallet-connect intent the WalletConnect layer refuses', () => {
         expect(
-            linkFromIntent({ kind: 'wallet-connect', uri: 'wc://?browser=x' }, URL),
+            linkFromIntent(
+                { kind: 'wallet-connect', uri: 'wc://?browser=x' },
+                URL,
+            ),
         ).toBeNull()
         expect(
             linkFromIntent({ kind: 'wallet-connect', uri: 'not-a-uri' }, URL),

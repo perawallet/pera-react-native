@@ -210,7 +210,10 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
         } as AssetOptInDeeplink
     }
 
-    if ((assetRef && params.amount && params.amount !== '0') || (params.amount && !assetRef)) {
+    if (
+        (assetRef && params.amount && params.amount !== '0') ||
+        (params.amount && !assetRef)
+    ) {
         const amount = readBaseUnits(params.amount)
         if (!amount) return null
         return {

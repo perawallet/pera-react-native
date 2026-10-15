@@ -40,8 +40,7 @@ describe('pera-link-chain', () => {
 
         it('infers online from any participation key, and offline from none', () => {
             expect(
-                toPeraKeyregAction({ sender: 'S', voteFirst: '1' })
-                    ?.keyregType,
+                toPeraKeyregAction({ sender: 'S', voteFirst: '1' })?.keyregType,
             ).toBe('online')
             expect(toPeraKeyregAction({ sender: 'S' })?.keyregType).toBe(
                 'offline',
@@ -50,7 +49,10 @@ describe('pera-link-chain', () => {
 
         it('reads the fee as base units', () => {
             expect(
-                toPeraKeyregAction({ sender: 'S', fee: '2000' })?.fee?.toFixed(),
+                toPeraKeyregAction({
+                    sender: 'S',
+                    fee: '2000',
+                })?.fee?.toFixed(),
             ).toBe('2000')
         })
 

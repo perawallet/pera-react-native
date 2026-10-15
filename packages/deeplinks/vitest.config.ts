@@ -34,7 +34,10 @@ export default defineConfig({
                 '../chain-contract/src/__tests__/testing.ts',
             ),
             '@perawallet/wallet-core-walletconnect/shared/deeplink':
-                path.resolve(__dirname, '../walletconnect/src/shared/deeplink.ts'),
+                path.resolve(
+                    __dirname,
+                    '../walletconnect/src/shared/deeplink.ts',
+                ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

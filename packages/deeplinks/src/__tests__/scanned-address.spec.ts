@@ -46,7 +46,9 @@ describe('readScannedAddress', () => {
         deeplinkAdapters.register(
             fakeDeeplinkAdapter(A, ['fixturehex'], fixtureCodec),
         )
-        deeplinkAdapters.register(fakeDeeplinkAdapter(B, ['fixturetwo'], codecB))
+        deeplinkAdapters.register(
+            fakeDeeplinkAdapter(B, ['fixturetwo'], codecB),
+        )
     })
 
     afterEach(() => {

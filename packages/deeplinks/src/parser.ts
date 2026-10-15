@@ -19,11 +19,7 @@ import {
     PERAWALLET_SCHEME,
     PERAWALLET_WC_SCHEME,
 } from './constants'
-import {
-    DeeplinkType,
-    linkTargetOf,
-    type AnyParsedDeeplink,
-} from './links'
+import { DeeplinkType, linkTargetOf, type AnyParsedDeeplink } from './links'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
 import { resolveChainDeeplink } from './resolve'

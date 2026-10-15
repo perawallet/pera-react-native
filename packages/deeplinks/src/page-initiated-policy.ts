@@ -30,8 +30,7 @@ import { DeeplinkType } from './links'
  */
 export type DeeplinkPagePolicy = 'page-allowed' | 'origin-gated'
 
-export const DEEPLINK_PAGE_POLICY: Record<DeeplinkType, DeeplinkPagePolicy> =
-    {
+export const DEEPLINK_PAGE_POLICY: Record<DeeplinkType, DeeplinkPagePolicy> = {
     // --- Pure navigation ------------------------------------------------
     [DeeplinkType.HOME]: 'page-allowed',
     [DeeplinkType.CARDS]: 'page-allowed',
