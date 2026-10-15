@@ -180,6 +180,19 @@ describe('getPendingTransactionRecords', () => {
         expect(await pendingRecords()).toEqual([])
     })
 
+    it('lists a hash recorded twice once, with the newest attempt', async () => {
+        ledger(
+            attempt({ id: 'retry', status: 'unknown' }),
+            attempt({ id: 'first', status: 'failed' }),
+        )
+
+        const records = await pendingRecords()
+
+        expect(records.map(r => [r.id, r.status])).toEqual([
+            ['0xhash1', 'pending'],
+        ])
+    })
+
     it('caps the rows', async () => {
         ledger(
             ...Array.from({ length: MAX_PENDING_HISTORY_ROWS + 5 }, (_, i) =>

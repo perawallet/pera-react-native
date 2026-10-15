@@ -76,6 +76,6 @@ export const migrations: MigrationConfig = {
     '0014_holdings_native': m0014,
     // Nullable: Algorand rows have no account sequence number and stay NULL.
     '0015_submission_attempts_nonce': m0015,
-    // Nullable: attempts recorded before it, or with nothing decodable, have no history row.
+    // Nullable: Algorand attempts and attempts recorded before it carry no history entry.
     '0016_submission_attempts_history_entry': m0016,
 }

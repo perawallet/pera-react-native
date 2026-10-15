@@ -106,7 +106,6 @@ describe('reconcileEthereumSubmissions', () => {
             scope: SCOPE,
             txIds: [HASH],
             flow: 'pipeline',
-            historyEntries: [],
             sender: SENDER,
             nonce: 0,
             ...overrides,

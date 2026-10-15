@@ -129,6 +129,7 @@ describe('submission reconciler', () => {
         nonce: null,
         createdAt: 0,
         resolvedAt: null,
+        historyEntry: null,
     })
 
     it('confirms a row whose transaction is committed on algod', async () => {

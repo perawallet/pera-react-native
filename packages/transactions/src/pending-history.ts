@@ -55,6 +55,8 @@ export const getPendingTransactionRecords = async ({
 }: GetPendingTransactionRecordsParams): Promise<TransactionRecord[]> => {
     const attempts = await getSubmissionAttemptsWithHistoryEntry({ scope })
     const records: TransactionRecord[] = []
+    // A transport retry records the same hash twice; newest-first, so the newest status wins.
+    const seen = new Set<string>()
     for (const attempt of attempts) {
         const { historyEntry, sender, txIds } = attempt
         if (
@@ -62,10 +64,11 @@ export const getPendingTransactionRecords = async ({
             sender === null ||
             !isSameAddress(scope.chainId, sender, address) ||
             txIds.length === 0 ||
-            txIds.some(id => listedIds.has(id))
+            txIds.some(id => listedIds.has(id) || seen.has(id))
         ) {
             continue
         }
+        for (const id of txIds) seen.add(id)
         const status = historyStatusOf(attempt.status)
         const notice = transactionStatusNotice(status, attempt.createdAt)
         records.push({

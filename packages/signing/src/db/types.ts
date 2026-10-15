@@ -113,6 +113,6 @@ export type SubmissionAttempt = {
     nonce: number | null
     createdAt: number
     resolvedAt: number | null
-    /** Null for attempts recorded before history entries, or with nothing decodable. */
+    /** Null for Algorand attempts, which carry no summary, and for attempts recorded before history entries. */
     historyEntry: SubmissionHistoryEntry | null
 }

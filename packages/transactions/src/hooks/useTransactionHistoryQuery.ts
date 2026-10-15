@@ -153,8 +153,8 @@ export type UseTransactionHistoryQueryResult = {
 
 /**
  * Synthesizes a list row for a broadcast attempt that has not yet been
- * definitively resolved. The real row replaces it (same txid) once the reconciler confirms it, so the
- * transaction appears in history exactly once.
+ * definitively resolved. The real row replaces it (same txid) once the
+ * reconciler confirms it, so the transaction appears in history exactly once.
  */
 const toPendingHistoryItem = (
     attempt: SubmissionAttempt,
