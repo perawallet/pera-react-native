@@ -177,6 +177,7 @@ export const AccountOptionsContent = ({
             o.id === 'copy-address' ||
             o.id === 'show-address' ||
             o.id === 'view-passphrase' ||
+            o.id === 'view-private-key' ||
             o.id === 'auth-address',
     )
 

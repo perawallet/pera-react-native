@@ -24,6 +24,10 @@ import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
 import { crypto_sign_keypair } from '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js'
 import { sha512 } from '@noble/hashes/sha2.js'
 import type { Optional } from '@perawallet/wallet-core-shared'
+// No package exports the shim's internals; the relative path reaches the same
+// secp256k1 code the device keystore runs.
+import { secp256k1Binding } from '../../../../extensions/provider/src/keystore/shims/secp256k1/binding'
+import { bip39SeedFromEntropy } from '../../../../extensions/provider/src/keystore/shims/secp256k1/bip39Seed'
 
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,
 // which are transitive deps not listed in apps/mobile's package.json. tsc
@@ -74,6 +78,8 @@ const ALGORITHMS: KeyStoreCapability[] = [
 ]
 
 const FALCON_KEY_TYPE = 'falcon-1024'
+const SECP256K1_DERIVED_KEY_TYPE = 'hd-derived-secp256k1'
+const SECP256K1_IMPORTED_KEY_TYPE = 'secp256k1'
 
 // Length of a real compressed Falcon-1024 signature for this build (max 1423,
 // typical 1228). Size-sensitive flows assert on it — the WC PQ-fee test checks
@@ -442,11 +448,19 @@ const createKeyStoreApi = (
         },
         // Mirrors `keyStore.deriveFromSeed` for HD wallets. Parses the BIP44
         // path to extract account/keyIndex, runs `xhdApi.keyGen`, and stores
-        // the derived public key alongside its derivation coords.
+        // the derived public key alongside its derivation coords. A secp256k1
+        // request derives through the device shim's BIP-32 code instead, from
+        // the BIP39 seed of the stored entropy.
         async deriveFromSeed(
             seedId: string,
             path: string,
-            opts?: { mode?: string; id?: string },
+            opts?: {
+                mode?: string
+                id?: string
+                curve?: string
+                algorithm?: string
+                metadata?: Record<string, unknown>
+            },
             _ctx?: unknown,
         ): Promise<string> {
             if (!reactiveStore) throw new Error('Keystore store missing')
@@ -455,6 +469,34 @@ const createKeyStoreApi = (
                 throw new Error(
                     `Test keystore: seed not found or missing privateKey: ${seedId}`,
                 )
+            }
+            if (opts?.curve === 'secp256k1') {
+                const seed = await bip39SeedFromEntropy(
+                    globalThis.crypto.subtle,
+                    parent.privateKey,
+                )
+                let privateKey: Uint8Array
+                try {
+                    privateKey = secp256k1Binding.deriveChildPrivateKey(
+                        seed,
+                        path,
+                    )
+                } finally {
+                    seed.fill(0)
+                }
+                const id = opts.id ?? newDerivedKeyId()
+                await commit({
+                    store: reactiveStore,
+                    keyData: {
+                        id,
+                        type: SECP256K1_DERIVED_KEY_TYPE,
+                        algorithm: opts.algorithm,
+                        publicKey: secp256k1Binding.publicKeyOf(privateKey),
+                        privateKey,
+                        metadata: { ...opts.metadata, path },
+                    },
+                })
+                return id
             }
             const parts = path
                 .replace(/^m\/?/, '')
@@ -500,7 +542,19 @@ const createKeyStoreApi = (
             _format?: string,
             _ctx?: unknown,
         ): Promise<string> {
-            await commit({ store: reactiveStore, keyData: data })
+            // The engine computes an imported secp256k1 key's public half.
+            const keyData =
+                data.type === SECP256K1_IMPORTED_KEY_TYPE &&
+                !data.publicKey &&
+                data.privateKey
+                    ? {
+                          ...data,
+                          publicKey: secp256k1Binding.publicKeyOf(
+                              data.privateKey,
+                          ),
+                      }
+                    : data
+            await commit({ store: reactiveStore, keyData })
             return data.id
         },
         async export(

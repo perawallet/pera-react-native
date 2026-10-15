@@ -1,0 +1,318 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import React, { useEffect } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+
+import {
+    chainAccountOf,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { parseEthereumPrivateKey } from '@perawallet/wallet-core-chain-ethereum'
+import { useKMS, type HDWalletKeyResult } from '@perawallet/wallet-core-kms'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { render } from '@test-utils/render'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { isElementDisabled } from '@test-utils/rnw'
+import { BottomSheetManager, useBottomSheet } from '@modules/bottom-sheet'
+import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
+import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen/AddAccountScreen'
+import { ImportPrivateKeyScreen } from '@modules/onboarding/screens/ImportPrivateKeyScreen/ImportPrivateKeyScreen'
+import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
+import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen/SelectHDWalletScreen'
+import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen/WatchAccountScreen'
+import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen/WatchInfoScreen'
+import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
+
+import {
+    HD_TEST_ADDRESS,
+    HD_TEST_MNEMONIC_24_INDICES,
+} from './__fixtures__/onboarding'
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: {
+            ...actual.config,
+            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+        },
+    }
+})
+
+const ETHEREUM = 'ethereum'
+
+// m/44'/60'/0'/0/0 of HD_TEST_MNEMONIC_24, computed independently with viem.
+const HD_ETHEREUM_ADDRESS = '0x60e94244Cb2053009e5a365D247A091D35BC6EbA'
+// Hardhat's first development account: a published test key.
+const TEST_PRIVATE_KEY =
+    'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+const TEST_PRIVATE_KEY_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+const WATCH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+
+const HD_ACCOUNT_ID = 'hd-root'
+
+const seedHdWallet = async (): Promise<WalletAccount> => {
+    const { result: kms } = renderHook(() => useKMS())
+    let rootKey: HDWalletKeyResult | null = null
+    await waitFor(async () => {
+        rootKey = await kms.current.createHDWalletKey({
+            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+        })
+        expect(rootKey).not.toBeNull()
+    })
+    const account: WalletAccount = {
+        id: HD_ACCOUNT_ID,
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        },
+        chains: {
+            algorand: {
+                address: HD_TEST_ADDRESS,
+                keyPairId: rootKey!.seedKey.id ?? '',
+            },
+        },
+        name: 'HD Root',
+    }
+    useAccountsStore.getState().setAccounts([account])
+    return account
+}
+
+const renderAddAccount = () =>
+    renderWithNavigation(AddAccountScreen, 'AddAccountHome', {
+        additionalScreens: [
+            { name: 'NameAccount', component: NameAccountScreen },
+            { name: 'SelectHDWallet', component: SelectHDWalletScreen },
+            { name: 'ImportPrivateKey', component: ImportPrivateKeyScreen },
+            { name: 'WatchInfo', component: WatchInfoScreen },
+            { name: 'WatchAccount', component: WatchAccountScreen },
+        ],
+    })
+
+const chooseEthereum = async (): Promise<void> => {
+    const row = await waitFor(() =>
+        screen.getByTestId(`add_account_chain_${ETHEREUM}_button`),
+    )
+    fireEvent.click(row)
+    await waitFor(() =>
+        expect(
+            screen.queryByTestId(`add_account_chain_${ETHEREUM}_button`),
+        ).toBeNull(),
+    )
+}
+
+const finishNaming = async (name: string): Promise<void> => {
+    await waitFor(() => screen.getByTestId('name_account_finish_button'), {
+        timeout: SLOW_WAIT_TIMEOUT_MS,
+    })
+    fireEvent.change(screen.getByTestId('name_account_name_input'), {
+        target: { value: name },
+    })
+    fireEvent.click(screen.getByTestId('name_account_finish_button'))
+    await waitFor(() =>
+        expect(
+            useAccountsStore.getState().accounts.some(a => a.name === name),
+        ).toBe(true),
+    )
+}
+
+const ethereumAccounts = (): WalletAccount[] =>
+    useAccountsStore
+        .getState()
+        .accounts.filter(a => chainAccountOf(a, ETHEREUM) !== undefined)
+
+const ethereumAddressOf = (account: WalletAccount | undefined) =>
+    account && chainAccountOf(account, ETHEREUM)?.address.toLowerCase()
+
+const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
+    const { request } = useBottomSheet()
+    useEffect(() => {
+        void request({
+            contents: (
+                <AccountOptionsContent
+                    account={account}
+                    onShowAddress={() => {}}
+                />
+            ),
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return <BottomSheetManager />
+}
+
+describe('Flow: Add an Ethereum account', () => {
+    beforeEach(async () => {
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useOnboardingStore.getState().reset()
+        await seedHdWallet()
+    })
+
+    afterEach(() => {
+        useRemoteConfigStore.getState().resetState()
+    })
+
+    it('Given an Algorand HD wallet, when the user picks Ethereum and adds from the wallet, then the wallet gains one Ethereum address and its Algorand address is unchanged', async () => {
+        renderAddAccount()
+        await chooseEthereum()
+
+        fireEvent.click(
+            await waitFor(() =>
+                screen.getByTestId('add_account_derive_from_wallet_button'),
+            ),
+        )
+        await finishNaming('Main')
+
+        const [holder] = ethereumAccounts()
+        expect(ethereumAccounts()).toHaveLength(1)
+        expect(ethereumAddressOf(holder)).toBe(
+            HD_ETHEREUM_ADDRESS.toLowerCase(),
+        )
+        expect(holder?.id).toBe(HD_ACCOUNT_ID)
+        expect(chainAccountOf(holder!, 'algorand')?.address).toBe(
+            HD_TEST_ADDRESS,
+        )
+    })
+
+    it('Given the Ethereum entries, when the user imports a private key, then a standalone Ethereum account holds its address', async () => {
+        renderAddAccount()
+        await chooseEthereum()
+
+        fireEvent.click(
+            await waitFor(() =>
+                screen.getByTestId('add_account_import_private_key_button'),
+            ),
+        )
+        const input = await waitFor(() =>
+            screen.getByTestId('import_private_key_input'),
+        )
+        fireEvent.change(input, { target: { value: `0x${TEST_PRIVATE_KEY}` } })
+        await waitFor(() =>
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('import_private_key_submit_button'),
+                ),
+            ).toBe(false),
+        )
+        fireEvent.click(screen.getByTestId('import_private_key_submit_button'))
+        await finishNaming('Imported')
+
+        const imported = ethereumAccounts()
+        expect(imported).toHaveLength(1)
+        expect(ethereumAddressOf(imported[0])).toBe(
+            TEST_PRIVATE_KEY_ADDRESS.toLowerCase(),
+        )
+        expect(imported[0]?.custody).toEqual({ kind: 'local', seed: null })
+        expect(useAccountsStore.getState().accounts).toHaveLength(2)
+    })
+
+    it('Given the Ethereum entries, when the user watches a 0x address, then a watch account on Ethereum holds it', async () => {
+        renderAddAccount()
+        await chooseEthereum()
+
+        fireEvent.click(
+            await waitFor(() =>
+                screen.getByTestId('add_account_see_other_options_button'),
+            ),
+        )
+        fireEvent.click(
+            await waitFor(() => screen.getByTestId('add_account_watch_button')),
+        )
+        fireEvent.click(
+            await waitFor(() =>
+                screen.getByText('onboarding.watch_account.info_button'),
+            ),
+        )
+        fireEvent.change(
+            await waitFor(() =>
+                screen.getByTestId('watch_account_address_input'),
+            ),
+            { target: { value: WATCH_ADDRESS } },
+        )
+        await waitFor(() =>
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('watch_account_submit_button'),
+                ),
+            ).toBe(false),
+        )
+        fireEvent.click(screen.getByTestId('watch_account_submit_button'))
+        await finishNaming('Watched')
+
+        const watched = ethereumAccounts()
+        expect(watched).toHaveLength(1)
+        expect(watched[0]?.custody).toEqual({ kind: 'watch' })
+        expect(ethereumAddressOf(watched[0])).toBe(WATCH_ADDRESS)
+    })
+
+    it('Given private keys are off for Ethereum, then neither the import entry nor View private key exists, while derive and watch remain', async () => {
+        setCapabilityOverrides({ privateKeys: false }, ETHEREUM)
+        renderAddAccount()
+        await chooseEthereum()
+
+        await waitFor(() =>
+            screen.getByTestId('add_account_derive_from_wallet_button'),
+        )
+        expect(
+            screen.queryByTestId('add_account_import_private_key_button'),
+        ).toBeNull()
+        fireEvent.click(
+            screen.getByTestId('add_account_see_other_options_button'),
+        )
+        await waitFor(() => screen.getByTestId('add_account_watch_button'))
+    })
+
+    it('Given private keys are off for Ethereum, when an imported account opens its options, then View private key is absent', async () => {
+        const imported = await useAccountsStore
+            .getState()
+            .importAccountFromPrivateKey(
+                ETHEREUM,
+                parseEthereumPrivateKey(TEST_PRIVATE_KEY),
+            )
+        setCapabilityOverrides({ privateKeys: false }, ETHEREUM)
+
+        render(<AccountOptionsHost account={imported} />)
+
+        await waitFor(() => screen.getByTestId('account_option_rename-account'))
+        expect(
+            screen.queryByTestId('account_option_view-private-key'),
+        ).toBeNull()
+    })
+
+    it('Given private keys are on, when an imported account opens its options, then View private key is offered', async () => {
+        const imported = await useAccountsStore
+            .getState()
+            .importAccountFromPrivateKey(
+                ETHEREUM,
+                parseEthereumPrivateKey(TEST_PRIVATE_KEY),
+            )
+
+        render(<AccountOptionsHost account={imported} />)
+
+        await waitFor(() =>
+            screen.getByTestId('account_option_view-private-key'),
+        )
+    })
+})
