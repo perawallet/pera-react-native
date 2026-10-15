@@ -20,14 +20,16 @@ import { useForm, Controller } from 'react-hook-form'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/useLanguage'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { noteSchema } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { useNoteSchema } from './useNoteSchema'
 
 export const AddNoteContent = () => {
     const { note, setNote } = useSendFunds()
     const [isEdit] = useState(!!note)
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult()
+    const noteSchema = useNoteSchema(LEGACY_CHAIN_ID)
 
     const {
         control,

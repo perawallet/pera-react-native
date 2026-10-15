@@ -18,7 +18,8 @@ import type {
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 
-export const MAX_TX_NOTE_BYTES = 1024
+// The descriptor owns the limit and must not import this algosdk-laden barrel.
+export { MAX_TX_NOTE_BYTES } from '../../descriptor'
 
 export type BlockchainStore = BaseStoreState
 

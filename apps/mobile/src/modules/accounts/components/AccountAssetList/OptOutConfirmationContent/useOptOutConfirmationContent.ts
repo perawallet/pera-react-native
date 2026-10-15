@@ -11,7 +11,8 @@
  */
 
 import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useFeeConfig } from '@perawallet/wallet-core-signing'
 
 import type { Decimal } from 'decimal.js'
 
@@ -23,6 +24,6 @@ type UseOptOutConfirmationContentResult = {
 export const useOptOutConfirmationContent =
     (): UseOptOutConfirmationContentResult => {
         const nativeAsset = useNativeAsset()
-        const { minTxnFee } = useMinimumFeeConfig()
+        const { minTxnFee } = useFeeConfig(LEGACY_CHAIN_ID)
         return { fee: toWholeUnits(minTxnFee, nativeAsset) }
     }
