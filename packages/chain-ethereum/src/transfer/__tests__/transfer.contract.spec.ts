@@ -10,17 +10,34 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll } from 'vitest'
+import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { transferContractTests } from '@perawallet/wallet-core-transactions/testing'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { createEthereumTransferAdapter } from '../builder'
 
+const mocks = vi.hoisted(() => ({ getAccountChainStateRow: vi.fn() }))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    getAccountChainStateRow: mocks.getAccountChainStateRow,
+}))
+
 const SENDER = '0x00000000000000000000000000000000000000aa'
 const RECEIVER = '0x00000000000000000000000000000000000000bb'
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+
+const SENDER_ACCOUNT: WalletAccount = {
+    id: 'sender',
+    custody: { kind: 'watch' },
+    chains: { ethereum: { address: SENDER } },
+}
+const NATIVE_BALANCE = new Decimal('2000000000000000000')
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
@@ -45,7 +62,21 @@ transferContractTests(() => adapter, {
         assetRef: { chainId: 'ethereum', assetId: USDC },
         amount: new Decimal(250),
     },
+    spendable: {
+        account: SENDER_ACCOUNT,
+        nativeBalance: NATIVE_BALANCE,
+        fee: new Decimal('21000000000000'),
+        hasReserve: false,
+    },
     arrange: () => {
         server.use(...evmRpcHandlers({ rpcUrl: TEST_RPC_URL }))
+        mocks.getAccountChainStateRow.mockResolvedValue({
+            accountAddress: SENDER,
+            nativeBalance: NATIVE_BALANCE,
+            chainData: {
+                family: 'evm',
+                nonce: { latest: 0, pending: 0 },
+            },
+        })
     },
 })

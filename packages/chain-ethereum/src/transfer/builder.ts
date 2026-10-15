@@ -43,6 +43,7 @@ import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { readTransferFees, toEthereumFeeEstimate } from './fees'
+import { readEthereumSpendableBalance } from './spendable-balance'
 import { SEND_TITLE_KEY, sendSummary } from './summary'
 
 /** Every i18n key a built transaction's summary can carry. */
@@ -183,4 +184,5 @@ export const createEthereumTransferAdapter = (
     build: (intent, context) => buildEthereumTransfer(ctx, intent, context),
     getFeeEstimate: (intent, context) =>
         estimateEthereumTransferFee(ctx, intent, context),
+    spendableBalance: readEthereumSpendableBalance,
 })

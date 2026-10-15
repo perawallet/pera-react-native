@@ -15,7 +15,10 @@ import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { generateAccount } from 'algosdk'
 import { setupServer } from 'msw/node'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     scopeForLegacyNetwork,
     type AssetRef,
@@ -24,6 +27,17 @@ import {
 import { transferContractTests } from '@perawallet/wallet-core-transactions/testing'
 import { mockAlgodTransactionParams } from '../../test-handlers'
 import { algorandTransferAdapter } from '../adapter'
+
+const mocks = vi.hoisted(() => ({ getAccountChainStateRow: vi.fn() }))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    getAccountChainStateRow: mocks.getAccountChainStateRow,
+    // The accounts adapter that answers this isn't registered here.
+    isDelegatedAccount: () => false,
+}))
 
 vi.mock('../../blockchain/fees/getMinimumFeeConfig', () => ({
     getMinimumFeeConfig: () => ({
@@ -36,6 +50,12 @@ vi.mock('../../blockchain/fees/getMinimumFeeConfig', () => ({
 
 const SENDER = generateAccount().addr.toString()
 const RECEIVER = generateAccount().addr.toString()
+const SENDER_ACCOUNT: WalletAccount = {
+    id: 'sender',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: SENDER } },
+}
+const NATIVE_BALANCE = new Decimal(5_000_000)
 const ALGO: AssetRef = { chainId: 'algorand' as ChainId, assetId: '0' }
 const USDC: AssetRef = { chainId: 'algorand' as ChainId, assetId: '31566704' }
 
@@ -61,8 +81,26 @@ transferContractTests(() => algorandTransferAdapter, {
         amount: new Decimal(250),
     },
     assetOptIn: { kind: 'asset-opt-in', account: SENDER, assetRef: USDC },
+    spendable: {
+        account: SENDER_ACCOUNT,
+        nativeBalance: NATIVE_BALANCE,
+        fee: new Decimal(1_000),
+        hasReserve: true,
+    },
     arrange: () => {
         useAccountsStore.setState({ accounts: [] })
+        mocks.getAccountChainStateRow.mockResolvedValue({
+            accountAddress: SENDER,
+            nativeBalance: NATIVE_BALANCE,
+            chainData: {
+                family: 'algorand',
+                minBalance: new Decimal(100_000),
+                status: 'Offline',
+                totalAssetsOptedIn: 0,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+            },
+        })
         server.use(mockAlgodTransactionParams())
     },
 })

@@ -26,7 +26,6 @@ import { usePlannerHook } from './usePlannerHook'
 const NO_FEE_CONFIG: ChainFeeConfig = {
     minTxnFee: 0n,
     pqMultiplier: 1n,
-    assetOptInMinBalance: 0n,
 }
 
 const NO_SUGGESTED_MIN_FEE: UseSuggestedMinFeeQueryResult = {

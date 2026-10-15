@@ -14,9 +14,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-    isDelegatedAccount,
     useAccountAssetBalanceQuery,
-    useAccountBalancesQuery,
     useSelectedAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
@@ -27,11 +25,14 @@ import {
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useSendFunds, useSenderBalances } from '@modules/transactions/hooks'
+import {
+    useSpendableBalanceQuery,
+    type ChainNotice,
+} from '@perawallet/wallet-core-transactions'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -111,10 +112,6 @@ export const useInputScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
 
-    const { accountBalances } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
-        scope,
-    )
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
         [selectedAssetId],
@@ -150,190 +147,131 @@ export const useInputScreen = () => {
     // any amount derived here must reserve the fee the transaction will
     // actually carry, not the base one.
     const { minFee } = useMinFeeForSender(selectedAddress, scope.chainId)
-    const { baseAccountMbr } = useMinimumFeeConfig()
-    const accountInformation = useSenderBalances(selectedAccount)
     const { data: accountAssetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         selectedAssetId,
         scope,
     )
 
-    const tokenBalance = useMemo(() => {
-        if (!selectedAddress) {
-            return null
-        }
-        const assetToUse = accountBalances
-            ?.get(selectedAddress)
-            ?.assetBalances?.find(b => b.assetId === selectedAssetId)
-        const assetAmount = assetToUse?.amount ?? new Decimal(0)
-        return assetAmount
-    }, [accountBalances, selectedAssetId, selectedAddress])
-
-    const maxAmount = useMemo(() => {
-        if (isNativeAssetId(selectedAssetId)) {
-            const balance = toWholeUnits(
-                accountInformation?.amount ?? 0n,
-                nativeAsset,
-            )
-            const minBalance = toWholeUnits(
-                accountInformation?.minBalance ?? 0n,
-                nativeAsset,
-            )
-            const fee = toWholeUnits(minFee ?? 0n, nativeAsset)
-            return Decimal.max(balance.sub(minBalance).sub(fee), new Decimal(0))
-        } else {
-            return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
-        }
-    }, [
-        isNativeAssetId,
-        selectedAssetId,
-        minFee,
-        accountInformation,
-        tokenBalance,
-        nativeAsset,
-    ])
-
-    const totalBalance = useMemo(() => {
-        if (isNativeAssetId(selectedAssetId)) {
-            const balance = toWholeUnits(
-                accountInformation?.amount ?? 0n,
-                nativeAsset,
-            )
-            return Decimal.max(balance, new Decimal(0))
-        } else {
-            return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
-        }
-    }, [
-        isNativeAssetId,
-        selectedAssetId,
-        accountInformation,
-        tokenBalance,
-        nativeAsset,
-    ])
-
-    // A close-out leaves nothing behind: everything moves except the fee that
-    // pays for the closing transaction.
-    const closeAmount = useMemo(
+    // The fee is a network read that pauses offline, so the balance is priced
+    // without it until it lands; Next stays gated on it below.
+    const spendableInput = useMemo(
         () =>
-            Decimal.max(
-                totalBalance.sub(toWholeUnits(minFee ?? 0n, nativeAsset)),
-                new Decimal(0),
-            ),
-        [totalBalance, minFee, nativeAsset],
+            selectedAccount && selectedAssetId
+                ? {
+                      account: selectedAccount,
+                      asset: {
+                          chainId: scope.chainId,
+                          assetId: selectedAssetId,
+                      },
+                      scope,
+                      fee: new Decimal((minFee ?? 0n).toString()),
+                  }
+                : undefined,
+        [selectedAccount, selectedAssetId, scope, minFee],
+    )
+    const { data: spendable, isPending: isSpendablePending } =
+        useSpendableBalanceQuery(spendableInput)
+
+    const totalBalance = useMemo(
+        () =>
+            asset && spendable
+                ? toWholeUnits(spendable.balance, asset)
+                : new Decimal(0),
+        [asset, spendable],
     )
 
-    const minBalanceDisplay = useMemo(() => {
-        if (isNativeAssetId(selectedAssetId)) {
-            return toWholeUnits(
-                accountInformation?.minBalance ?? 0n,
-                nativeAsset,
-            ).toString()
-        }
-        return '0'
-    }, [isNativeAssetId, selectedAssetId, accountInformation, nativeAsset])
+    const maxAmount = useMemo(
+        () =>
+            asset && spendable
+                ? toWholeUnits(spendable.max, asset)
+                : new Decimal(0),
+        [asset, spendable],
+    )
 
-    // A rekeyed account can never close out or spend below its minimum
-    // balance — the rekey would be lost and the account left unusable. So
-    // MAX is the spendable amount, and the close-account path is suppressed.
-    const isRekeyedSender = selectedAccount
-        ? isDelegatedAccount(selectedAccount, scope.chainId)
-        : false
+    const emptyAccount = spendable?.emptyAccount
+    const reserveNotice = spendable?.reserveNotice
+    const closeAmount = useMemo(
+        () =>
+            emptyAccount
+                ? toWholeUnits(emptyAccount.amount, nativeAsset)
+                : new Decimal(0),
+        [emptyAccount, nativeAsset],
+    )
+
+    // When the chain can release the reserve (by closing, or by asking first),
+    // MAX offers the whole balance and Next explains the reserve.
+    const isReserveReleasable =
+        !!emptyAccount || (!!reserveNotice && !reserveNotice.isFirm)
 
     const setMax = useCallback(() => {
-        setValueAndRef((isRekeyedSender ? maxAmount : totalBalance).toString())
-    }, [isRekeyedSender, maxAmount, totalBalance, setValueAndRef])
-
-    // An unraised minimum balance is what makes the close possible: the ASA
-    // list alone misses app opt-ins, created assets and boxes, each of which
-    // the node would reject the close-out for.
-    const canCloseAccount = useMemo(() => {
-        return (
-            isNativeAssetId(selectedAssetId) &&
-            !accountInformation?.hasOptedInAssets &&
-            (accountInformation?.minBalance ?? 0n) <= baseAccountMbr
+        setValueAndRef(
+            (isReserveReleasable ? totalBalance : maxAmount).toString(),
         )
-    }, [isNativeAssetId, selectedAssetId, accountInformation, baseAccountMbr])
+    }, [isReserveReleasable, maxAmount, totalBalance, setValueAndRef])
+
+    const translateParagraphs = useCallback(
+        (notice: ChainNotice) =>
+            notice.body.map(paragraph => t(paragraph.key, paragraph.params)),
+        [t],
+    )
 
     // Keeping the account open is the primary choice: some exchanges reject
     // incoming payments that carry a close-remainder-to.
-    const requestCloseAccountChoice = useCallback(async () => {
-        return requestBottomSheet<CloseAccountChoice>({
-            contents: (
-                <ConfirmActionContent<CloseAccountChoice>
-                    icon='warning'
-                    iconVariant='error'
-                    title={t('send_funds.close_account.title')}
-                    message={t('send_funds.close_account.body', {
-                        minBalance: minBalanceDisplay,
-                    })}
-                    confirmLabel={t('send_funds.close_account.keep_open')}
-                    confirmValue='keepOpen'
-                    cancelLabel={t('common.cancel.label')}
-                    tertiaryLabel={t('send_funds.close_account.confirm')}
-                    tertiaryValue='close'
-                    tertiaryVariant='destructiveLight'
-                    confirmTestID='close_account_keep_open_button'
-                    tertiaryTestID='close_account_confirm_button'
-                />
-            ),
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-    }, [requestBottomSheet, t, minBalanceDisplay])
+    const requestCloseAccountChoice = useCallback(
+        async (notice: ChainNotice) =>
+            requestBottomSheet<CloseAccountChoice>({
+                contents: (
+                    <ConfirmActionContent<CloseAccountChoice>
+                        icon='warning'
+                        iconVariant='error'
+                        title={t(notice.title.key, notice.title.params)}
+                        message={translateParagraphs(notice).join('\n')}
+                        confirmLabel={t('send_funds.close_account.keep_open')}
+                        confirmValue='keepOpen'
+                        cancelLabel={t('common.cancel.label')}
+                        tertiaryLabel={t('send_funds.close_account.confirm')}
+                        tertiaryValue='close'
+                        tertiaryVariant='destructiveLight'
+                        confirmTestID='close_account_keep_open_button'
+                        tertiaryTestID='close_account_confirm_button'
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            }),
+        [requestBottomSheet, t, translateParagraphs],
+    )
 
-    const requestInsufficientBalanceConfirm = useCallback(async () => {
-        return requestBottomSheet<boolean>({
-            contents: (
-                <ConfirmActionContent
-                    icon='warning'
-                    iconVariant='error'
-                    title={t('send_funds.input.min_balance_title')}
-                    message={
-                        <PWView style={styles.confirmMessage}>
-                            <PWText variant='body'>
-                                {t('send_funds.input.min_balance_amount', {
-                                    minBalance: minBalanceDisplay,
-                                })}
-                            </PWText>
-                            <PWText variant='body'>
-                                {t('send_funds.input.min_balance_body')}
-                            </PWText>
-                        </PWView>
-                    }
-                    confirmLabel={t('common.continue.label')}
-                    cancelLabel={t('common.cancel.label')}
-                />
-            ),
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-    }, [requestBottomSheet, t, minBalanceDisplay, styles.confirmMessage])
-
-    const requestRekeyedMinBalanceConfirm = useCallback(async () => {
-        return requestBottomSheet<boolean>({
-            contents: (
-                <ConfirmActionContent
-                    icon='warning'
-                    iconVariant='error'
-                    title={t('send_funds.input.rekeyed_min_balance_title')}
-                    message={
-                        <PWView style={styles.confirmMessage}>
-                            <PWText variant='body'>
-                                {t(
-                                    'send_funds.input.rekeyed_min_balance_amount',
-                                    { minBalance: minBalanceDisplay },
+    const requestReserveConfirm = useCallback(
+        async (notice: ChainNotice) =>
+            requestBottomSheet<boolean>({
+                contents: (
+                    <ConfirmActionContent
+                        icon='warning'
+                        iconVariant='error'
+                        title={t(notice.title.key, notice.title.params)}
+                        message={
+                            <PWView style={styles.confirmMessage}>
+                                {translateParagraphs(notice).map(
+                                    (paragraph, index) => (
+                                        <PWText
+                                            key={index}
+                                            variant='body'
+                                        >
+                                            {paragraph}
+                                        </PWText>
+                                    ),
                                 )}
-                            </PWText>
-                            <PWText variant='body'>
-                                {t('send_funds.input.rekeyed_min_balance_body')}
-                            </PWText>
-                        </PWView>
-                    }
-                    confirmLabel={t('common.continue.label')}
-                    cancelLabel={t('common.cancel.label')}
-                />
-            ),
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-    }, [requestBottomSheet, t, minBalanceDisplay, styles.confirmMessage])
+                            </PWView>
+                        }
+                        confirmLabel={t('common.continue.label')}
+                        cancelLabel={t('common.cancel.label')}
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            }),
+        [requestBottomSheet, t, translateParagraphs, styles.confirmMessage],
+    )
 
     const confirmCloseAccount = useCallback(() => {
         setIsCloseAccount(true)
@@ -349,8 +287,8 @@ export const useInputScreen = () => {
     ])
 
     // Resets the close flag too: coming back from a confirmed close and
-    // picking the min-balance path would otherwise still send a close-out.
-    const continuePastMbr = useCallback(() => {
+    // picking the reserve path would otherwise still send a close-out.
+    const continuePastMax = useCallback(() => {
         setIsCloseAccount(false)
         setAmount(maxAmount)
         setValueAndRef(maxAmount.toString())
@@ -362,6 +300,19 @@ export const useInputScreen = () => {
         setIsCloseAccount,
         setValueAndRef,
     ])
+
+    const showExceedsBalance = useCallback(() => {
+        showToast(
+            {
+                title: t('send_funds.input.exceeds_max_title'),
+                body: t('send_funds.input.exceeds_max_body'),
+                type: 'error',
+            },
+            {
+                notifier: bottomSheetNotifier.current ?? undefined,
+            },
+        )
+    }, [showToast, t])
 
     const handleNext = useCallback(async () => {
         const amountValue = value ? new Decimal(value) : null
@@ -389,39 +340,27 @@ export const useInputScreen = () => {
         }
 
         if (amountValue.gt(totalBalance)) {
-            showToast(
-                {
-                    title: t('send_funds.input.exceeds_max_title'),
-                    body: t('send_funds.input.exceeds_max_body'),
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
+            showExceedsBalance()
             return
         }
 
         if (amountValue.gt(maxAmount)) {
-            if (isRekeyedSender) {
-                // No close-account path for a rekeyed account — clamp to the
-                // spendable max instead.
-                const confirmed = await requestRekeyedMinBalanceConfirm()
-                if (confirmed) {
-                    continuePastMbr()
-                }
-            } else if (canCloseAccount) {
-                const choice = await requestCloseAccountChoice()
+            if (emptyAccount) {
+                const choice = await requestCloseAccountChoice(
+                    emptyAccount.notice,
+                )
                 if (choice === 'close') {
                     confirmCloseAccount()
                 } else if (choice === 'keepOpen') {
-                    continuePastMbr()
+                    continuePastMax()
+                }
+            } else if (reserveNotice) {
+                const confirmed = await requestReserveConfirm(reserveNotice)
+                if (confirmed) {
+                    continuePastMax()
                 }
             } else {
-                const confirmed = await requestInsufficientBalanceConfirm()
-                if (confirmed) {
-                    continuePastMbr()
-                }
+                showExceedsBalance()
             }
             return
         }
@@ -438,25 +377,22 @@ export const useInputScreen = () => {
         proceedToDestination,
         showToast,
         t,
-        canCloseAccount,
-        isRekeyedSender,
+        emptyAccount,
+        reserveNotice,
         setIsCloseAccount,
         setAmount,
         requestCloseAccountChoice,
-        requestInsufficientBalanceConfirm,
-        requestRekeyedMinBalanceConfirm,
+        requestReserveConfirm,
+        showExceedsBalance,
         confirmCloseAccount,
-        continuePastMbr,
+        continuePastMax,
     ])
 
     // Next checks the amount against these balances; pressing it before they
     // load would reject a valid amount as exceeding a zero balance.
+    const isBalanceReady = !!spendable
     const canCheckAmount =
-        !!asset &&
-        !!accountInformation &&
-        minFee !== undefined &&
-        (isNativeAssetId(selectedAssetId) ||
-            (!!selectedAddress && !!accountBalances?.get(selectedAddress)))
+        !!asset && isBalanceReady && !isSpendablePending && minFee !== undefined
 
     // A resumed send (see `shouldContinueToConfirm`) runs the user's own Next,
     // so every check a real tap makes still applies on the way to confirm.
@@ -550,8 +486,7 @@ export const useInputScreen = () => {
     return {
         asset,
         accountAssetBalance,
-        accountInformation,
-        minBalanceDisplay,
+        isBalanceReady,
         cryptoValue: value,
         setMax,
         handleNext,

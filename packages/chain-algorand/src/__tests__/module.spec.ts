@@ -43,6 +43,7 @@ import {
 } from '../transactions'
 import { ALGORAND_MESSAGE_TITLE_KEYS } from '../signing/message/messageSigner'
 import { ALGORAND_HISTORY_SUMMARY_KEYS } from '../transactions/summarize'
+import { ALGORAND_SPEND_NOTICE_KEYS } from '../transactions/spendable-balance'
 import { ALGORAND_TRANSFER_TITLE_KEYS } from '../transactions/transfer-builder'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
@@ -172,6 +173,7 @@ describe('chainModule', () => {
         expect(keys).toEqual(
             expect.arrayContaining([
                 ...ALGORAND_TRANSFER_TITLE_KEYS,
+                ...ALGORAND_SPEND_NOTICE_KEYS,
                 ...ALGORAND_MESSAGE_TITLE_KEYS,
                 ...ALGORAND_HISTORY_SUMMARY_KEYS,
             ]),

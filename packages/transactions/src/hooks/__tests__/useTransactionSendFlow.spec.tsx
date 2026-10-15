@@ -28,6 +28,7 @@ import {
     sendFlowChainAdapters,
     type SendFlowChainAdapter,
 } from '../../chain-adapter'
+import { transferChainAdapters } from '../../transfer-adapter'
 
 const mockSubmit = vi.fn()
 const mockBuildSendViaInbox = vi.fn()
@@ -43,6 +44,7 @@ const mockFetchAndPersistAssets = vi.fn()
 const mockInvalidateBalances = vi.fn()
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
+const mockHoldingReserve = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -135,6 +137,15 @@ describe('useTransactionSendFlow', () => {
         vi.clearAllMocks()
         sendFlowChainAdapters.reset()
         sendFlowChainAdapters.register(fakeSendFlowAdapter)
+        transferChainAdapters.reset()
+        transferChainAdapters.register({
+            chainId: 'algorand',
+            build: vi.fn(),
+            getFeeEstimate: vi.fn(),
+            spendableBalance: vi.fn(),
+            holdingReserve: () => mockHoldingReserve(),
+        })
+        mockHoldingReserve.mockReturnValue(new Decimal(100000))
         // Default: nothing frozen. The guard reads holdings on every send.
         freezeHoldings()
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
@@ -151,7 +162,6 @@ describe('useTransactionSendFlow', () => {
         mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetOptInMinBalance: 100000n,
         })
         // Default: no PQ signer — resolver returns the base fee, which must
         // never be passed on as a fee override (regression-safe default).
@@ -441,11 +451,7 @@ describe('useTransactionSendFlow', () => {
             // base receiver fee 1000. Funding must reserve
             // mbrAfterOptIn (100000 + 200000) + receiverFee (1000) = 301000.
             mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
-            mockUseFeeConfig.mockReturnValue({
-                minTxnFee: 1000n,
-                pqMultiplier: 3n,
-                assetOptInMinBalance: 200000n,
-            })
+            mockHoldingReserve.mockReturnValue(new Decimal(200000))
             const { result } = renderHook(() =>
                 useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
             )

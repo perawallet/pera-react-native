@@ -15,16 +15,17 @@ import { renderHook, act } from '@testing-library/react'
 import { useInputScreen } from '../useInputScreen'
 import { Decimal } from 'decimal.js'
 
-import {
-    useSelectedAccount,
-    useAccountBalancesQuery,
-} from '@perawallet/wallet-core-accounts'
-import { useSenderBalances } from '@modules/transactions/hooks'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
+import {
+    useSpendableBalanceQuery,
+    type ChainNotice,
+    type SpendableBalance,
+} from '@perawallet/wallet-core-transactions'
 import { useToast } from '@hooks/useToast'
 
 const mockNavigate = vi.fn()
@@ -61,7 +62,8 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
-    useAccountBalancesQuery: vi.fn(),
+    // Consumed by the shared useSendDestinationRouter.
+    useAccountBalancesQuery: vi.fn(() => ({ accountBalances: new Map() })),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         chainId: string,
@@ -74,7 +76,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             nativeValue: new Decimal(100),
         },
     })),
-    isDelegatedAccount: vi.fn(() => false),
     // Consumed by the shared useSendDestinationRouter that useInputScreen now
     // calls for the deeplink-prefill direct-navigation path.
     useAllAccounts: vi.fn(() => []),
@@ -105,6 +106,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useMinFeeForSender: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useSpendableBalanceQuery: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -140,15 +145,67 @@ const mockSendFundsState = {
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(() => mockSendFundsState),
-    useSenderBalances: vi.fn(),
 }))
+
+const RESERVE_NOTICE: ChainNotice = {
+    title: { key: 'reserve.title' },
+    body: [
+        { key: 'reserve.amount', params: { minBalance: '0.1' } },
+        { key: 'reserve.body' },
+    ],
+}
+const CLOSE_NOTICE: ChainNotice = {
+    title: { key: 'close.title' },
+    body: [{ key: 'close.body', params: { minBalance: '0.1' } }],
+}
+
+// Amounts are base units, as the chain's adapter returns them.
+const spendableOf = ({
+    balance,
+    max,
+    emptyAmount,
+    notice,
+}: {
+    balance: number
+    max: number
+    emptyAmount?: number
+    notice?: 'releasable' | 'firm'
+}) => {
+    const data: SpendableBalance = {
+        balance: new Decimal(balance),
+        max: new Decimal(max),
+        reserved: new Decimal(balance - max),
+        ...(notice
+            ? {
+                  reserveNotice: {
+                      ...RESERVE_NOTICE,
+                      isFirm: notice === 'firm',
+                  },
+              }
+            : {}),
+        ...(emptyAmount === undefined
+            ? {}
+            : {
+                  emptyAccount: {
+                      amount: new Decimal(emptyAmount),
+                      notice: CLOSE_NOTICE,
+                  },
+              }),
+    }
+    ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+        data,
+        isPending: false,
+    })
+}
+
+const sheetProps = (call = 0) =>
+    mockRequestBottomSheet.mock.calls[call][0].contents.props
 
 describe('useInputScreen', () => {
     const mockShowToast = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
-        // Reset the mock state
         mockSendFundsState.selectedAssetId = '0'
         mockSendFundsState.note = undefined
         mockSendFundsState.destination = undefined
@@ -169,87 +226,78 @@ describe('useInputScreen', () => {
         ;(useAssetPricesQuery as Mock).mockReturnValue({
             data: new Map([['0', { usdPrice: new Decimal(1.5) }]]),
         })
-        ;(useAccountBalancesQuery as Mock).mockReturnValue({
-            accountBalances: new Map([
-                [
-                    'test-addr',
-                    {
-                        assetBalances: [
-                            { assetId: '0', amount: new Decimal(100) },
-                            { assetId: '1', amount: new Decimal(50) },
-                        ],
-                    },
-                ],
-            ]),
-        })
         ;(useMinFeeForSender as Mock).mockReturnValue({
             minFee: 1000n,
             isPending: false,
         })
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: true,
+        spendableOf({
+            balance: 100_000_000,
+            max: 99_899_000,
+            notice: 'releasable',
         })
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
-    it('calculates max amount for Algo correctly', () => {
+    it("shows the chain's MAX and balance in display units", () => {
         const { result } = renderHook(() => useInputScreen())
-        expect(result.current.maxAmount.toNumber()).toBe(99.899)
+
+        expect(result.current.maxAmount.toString()).toBe('99.899')
+        expect(result.current.totalBalance.toString()).toBe('100')
+        expect(result.current.isBalanceReady).toBe(true)
     })
 
-    // A quantum signer pays a multiplied fee. Both the spendable max and the
-    // close-out amount must reserve the fee the transaction will actually
-    // carry, or the confirmation screen shows an amount the wire transaction
-    // never sends (observed on fnet: label said 0.886, chain moved 0.884).
-    it('reserves the quantum fee, not the base fee, in max amount', () => {
-        ;(useMinFeeForSender as Mock).mockReturnValue({
-            minFee: 3000n,
-            isPending: false,
-        })
-
-        const { result } = renderHook(() => useInputScreen())
-        expect(result.current.maxAmount.toString()).toBe('99.897')
-    })
-
-    it('reserves the quantum fee in the close-account amount', async () => {
-        ;(useMinFeeForSender as Mock).mockReturnValue({
-            minFee: 3000n,
-            isPending: false,
-        })
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: false,
-        })
-        mockRequestBottomSheet.mockResolvedValue('close')
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('100')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.997')
-    })
-
-    it('calculates total balance for Algo correctly', () => {
-        const { result } = renderHook(() => useInputScreen())
-        expect(result.current.totalBalance.toNumber()).toBe(100)
-    })
-
-    it('calculates minBalanceDisplay for Algo correctly', () => {
-        const { result } = renderHook(() => useInputScreen())
-        expect(result.current.minBalanceDisplay).toBe('0.1')
-    })
-
-    it('calculates max amount for ASA correctly', () => {
+    it("converts a token's balance with the token's own decimals", () => {
         mockSendFundsState.selectedAssetId = '1'
+        spendableOf({ balance: 50, max: 50 })
 
         const { result } = renderHook(() => useInputScreen())
-        expect(result.current.maxAmount.toNumber()).toBe(50)
+
+        expect(result.current.maxAmount.toString()).toBe('50')
+    })
+
+    // A quantum signer pays a multiplied fee, and MAX must reserve the fee the
+    // transaction will actually carry.
+    it("prices MAX with the sender's own fee", () => {
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: 3000n,
+            isPending: false,
+        })
+
+        renderHook(() => useInputScreen())
+
+        expect(useSpendableBalanceQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                asset: { chainId: 'algorand', assetId: '0' },
+                fee: new Decimal(3000),
+            }),
+        )
+    })
+
+    // The fee is a network read that pauses offline; the amount form must
+    // still render from the synced balance.
+    it('prices MAX without a fee while the fee is still loading', () => {
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: undefined,
+            isPending: true,
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+
+        expect(useSpendableBalanceQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ fee: new Decimal(0) }),
+        )
+        expect(result.current.isBalanceReady).toBe(true)
+    })
+
+    it('is not ready until the spendable balance loads', () => {
+        ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+            data: undefined,
+            isPending: true,
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+
+        expect(result.current.isBalanceReady).toBe(false)
     })
 
     it('handles keypad input correctly', () => {
@@ -322,15 +370,9 @@ describe('useInputScreen', () => {
     })
 
     it('shows toast when value exceeds total balance', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 10_000_000n,
-            minBalance: 0n,
-            hasOptedInAssets: false,
-        })
-
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('20')
+            result.current.setCryptoValue('120')
         })
         await act(async () => {
             await result.current.handleNext()
@@ -343,73 +385,71 @@ describe('useInputScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('opens insufficient-balance confirm when value exceeds MBR but within total balance', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 1_000_000n,
-            hasOptedInAssets: true,
-        })
-
+    it("opens the chain's reserve notice for an amount above MAX", async () => {
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('99.5')
+            result.current.setCryptoValue('99.95')
         })
         await act(async () => {
             await result.current.handleNext()
         })
+
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(sheetProps().title).toBe('reserve.title')
         expect(mockShowToast).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('continues past MBR when insufficient-balance confirm resolves true', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 1_000_000n,
-            hasOptedInAssets: true,
-        })
+    it('continues at MAX when the reserve notice is confirmed', async () => {
         mockRequestBottomSheet.mockResolvedValue(true)
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('99.5')
+            result.current.setCryptoValue('99.95')
         })
         await act(async () => {
             await result.current.handleNext()
         })
-        // maxAmount = 100 - 1 - 0.001 = 98.999
-        expect(mockSetAmount).toHaveBeenCalled()
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('98.999')
-        expect(result.current.cryptoValue).toBe('98.999')
+
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
+        expect(result.current.cryptoValue).toBe('99.899')
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
     })
 
-    it('does not navigate when insufficient-balance confirm is dismissed', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 1_000_000n,
-            hasOptedInAssets: true,
-        })
-        mockRequestBottomSheet.mockResolvedValue(undefined)
-
+    it('does not navigate when the reserve notice is dismissed', async () => {
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('99.5')
+            result.current.setCryptoValue('99.95')
         })
         await act(async () => {
             await result.current.handleNext()
         })
+
         expect(mockSetAmount).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('proceeds on next if valid', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 0n,
-            hasOptedInAssets: false,
+    it('treats an amount above MAX as exceeding the balance on a chain that holds nothing back', async () => {
+        spendableOf({ balance: 100_000_000, max: 99_999_000 })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('100')
+        })
+        await act(async () => {
+            await result.current.handleNext()
         })
 
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
+            expect.anything(),
+        )
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('proceeds on next if valid', async () => {
         const { result } = renderHook(() => useInputScreen())
         act(() => {
             result.current.setCryptoValue('5')
@@ -417,7 +457,7 @@ describe('useInputScreen', () => {
         await act(async () => {
             await result.current.handleNext()
         })
-        expect(mockSetAmount).toHaveBeenCalled()
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
         expect(mockSetAmount.mock.calls[0][0].toString()).toBe('5')
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
     })
@@ -426,11 +466,6 @@ describe('useInputScreen', () => {
         // Value-bearing deeplink: ALGO receiver already known, so tapping Next
         // must jump straight to Confirm instead of pushing SelectDestination.
         mockSendFundsState.destination = 'RECEIVERADDR'
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 0n,
-            hasOptedInAssets: false,
-        })
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -448,11 +483,6 @@ describe('useInputScreen', () => {
         mockSendFundsState.amount = new Decimal('5')
         mockSendFundsState.destination = 'RECEIVERADDR'
         mockSendFundsState.shouldContinueToConfirm = true
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 0n,
-            hasOptedInAssets: false,
-        })
 
         renderHook(() => useInputScreen())
         await act(async () => {})
@@ -465,7 +495,10 @@ describe('useInputScreen', () => {
         mockSendFundsState.amount = new Decimal('5')
         mockSendFundsState.destination = 'RECEIVERADDR'
         mockSendFundsState.shouldContinueToConfirm = true
-        ;(useSenderBalances as Mock).mockReturnValue(undefined)
+        ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+            data: undefined,
+            isPending: true,
+        })
 
         renderHook(() => useInputScreen())
         await act(async () => {})
@@ -475,13 +508,89 @@ describe('useInputScreen', () => {
         expect(mockShowToast).not.toHaveBeenCalled()
     })
 
-    it('setMax sets value to full account balance', () => {
+    // While the fee lands, the last answer (priced without it) is still shown;
+    // checking an amount against it would let one fee too much through.
+    it('holds a resumed send while MAX is being re-priced', async () => {
+        mockSendFundsState.amount = new Decimal('99.8995')
+        mockSendFundsState.destination = 'RECEIVERADDR'
+        mockSendFundsState.shouldContinueToConfirm = true
+        ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+            data: {
+                balance: new Decimal(100_000_000),
+                max: new Decimal(99_900_000),
+                reserved: new Decimal(100_000),
+            },
+            isPending: true,
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        await act(async () => {})
+
+        expect(result.current.isBalanceReady).toBe(true)
+        expect(mockSetShouldContinueToConfirm).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('holds a resumed send until the fee it is priced with is loaded', async () => {
+        mockSendFundsState.amount = new Decimal('5')
+        mockSendFundsState.destination = 'RECEIVERADDR'
+        mockSendFundsState.shouldContinueToConfirm = true
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: undefined,
+            isPending: true,
+        })
+
+        renderHook(() => useInputScreen())
+        await act(async () => {})
+
+        expect(mockSetShouldContinueToConfirm).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('fills the whole balance on MAX when the chain can release its reserve', () => {
         const { result } = renderHook(() => useInputScreen())
         act(() => {
             result.current.setMax()
         })
         expect(result.current.cryptoValue).toBe('100')
         expect(mockSetAmount).not.toHaveBeenCalled()
+    })
+
+    it('fills MAX itself when the reserve is firm', () => {
+        spendableOf({ balance: 100_000_000, max: 99_899_000, notice: 'firm' })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setMax()
+        })
+        expect(result.current.cryptoValue).toBe('99.899')
+    })
+
+    it('fills MAX itself on a chain that holds nothing back', () => {
+        spendableOf({ balance: 100_000_000, max: 99_999_000 })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setMax()
+        })
+        expect(result.current.cryptoValue).toBe('99.999')
+    })
+
+    it('opens the firm reserve notice, not a close, for an amount above MAX', async () => {
+        spendableOf({ balance: 100_000_000, max: 99_899_000, notice: 'firm' })
+        mockRequestBottomSheet.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.95')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+
+        expect(sheetProps().title).toBe('reserve.title')
+        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
     })
 
     describe('handlePaste', () => {
@@ -563,11 +672,7 @@ describe('useInputScreen', () => {
     })
 
     it('shows toast when value exceeds zero balance', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 0n,
-            minBalance: 0n,
-            hasOptedInAssets: false,
-        })
+        spendableOf({ balance: 0, max: 0, notice: 'releasable' })
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
@@ -583,160 +688,90 @@ describe('useInputScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('opens close-account confirm when the whole ALGO balance is sent and no opted-in ASAs', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: false,
+    describe('when the chain offers to empty the account', () => {
+        beforeEach(() => {
+            spendableOf({
+                balance: 100_000_000,
+                max: 99_899_000,
+                emptyAmount: 99_999_000,
+                notice: 'releasable',
+            })
         })
 
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('100')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
+        it("opens the close-account choice with the chain's copy", async () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setCryptoValue('100')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
 
-    it('offers the close for an amount that only the close can cover', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: false,
-        })
-        mockRequestBottomSheet.mockResolvedValue('close')
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('99.95')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(true)
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.999')
-    })
-
-    it('offers the min-balance confirm, not a close, for a partial spend that dips into the MBR', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 2_004_000n,
-            minBalance: 1_600_000n,
-            hasOptedInAssets: false,
-        })
-        mockRequestBottomSheet.mockResolvedValue(true)
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('0.5')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('0.403')
-    })
-
-    it('does not offer a close when an app opt-in holds the minimum balance up', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 328_500n,
-            hasOptedInAssets: false,
-        })
-        mockRequestBottomSheet.mockResolvedValue(true)
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('100')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
-    })
-
-    it('sends max without closing when the user keeps the account open', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: false,
-        })
-        mockRequestBottomSheet.mockResolvedValue('keepOpen')
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('100')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        // maxAmount = 100 - 0.1 - 0.001 = 99.899
-        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
-        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
-        expect(result.current.cryptoValue).toBe('99.899')
-        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
-    })
-
-    it('confirms close account when the user chooses to close', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: false,
-        })
-        mockRequestBottomSheet.mockResolvedValue('close')
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('100')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(true)
-        // amount = totalBalance - fee = 100 - 0.001 = 99.999
-        expect(mockSetAmount).toHaveBeenCalled()
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.999')
-        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
-    })
-
-    it('does not confirm close account when confirm is dismissed', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: false,
-        })
-        mockRequestBottomSheet.mockResolvedValue(undefined)
-
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('100')
-        })
-        await act(async () => {
-            await result.current.handleNext()
-        })
-        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
-        expect(mockSetAmount).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
-
-    it('resets isCloseAccount when amount is within maxAmount on next', async () => {
-        ;(useSenderBalances as Mock).mockReturnValue({
-            amount: 100_000_000n,
-            minBalance: 100_000n,
-            hasOptedInAssets: false,
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            expect(sheetProps().title).toBe('close.title')
+            expect(sheetProps().message).toBe('close.body')
+            expect(mockNavigate).not.toHaveBeenCalled()
         })
 
-        const { result } = renderHook(() => useInputScreen())
-        act(() => {
-            result.current.setCryptoValue('5')
+        it('sends the amount the chain prices for emptying it when the user closes', async () => {
+            mockRequestBottomSheet.mockResolvedValue('close')
+
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setCryptoValue('99.95')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetIsCloseAccount).toHaveBeenCalledWith(true)
+            expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.999')
+            expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
         })
-        await act(async () => {
-            await result.current.handleNext()
+
+        it('sends MAX without closing when the user keeps the account open', async () => {
+            mockRequestBottomSheet.mockResolvedValue('keepOpen')
+
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setCryptoValue('100')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
+            expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
+            expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
+            expect(result.current.cryptoValue).toBe('99.899')
+            expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
         })
-        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
-        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+
+        it('does nothing when the choice is dismissed', async () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setCryptoValue('100')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
+            expect(mockSetAmount).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('resets the close flag for an amount within MAX', async () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setCryptoValue('5')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
+            expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+        })
     })
 })

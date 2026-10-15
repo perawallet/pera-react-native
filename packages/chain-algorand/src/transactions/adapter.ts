@@ -34,6 +34,11 @@ import {
 import { summarizeAlgorandHistoryItem } from './summarize'
 import { buildAlgorandTransfer } from './transfer-builder'
 import { estimateAlgorandTransferFee } from './transfer-fees'
+import {
+    algorandHoldingReserve,
+    readAlgorandRecipientWarning,
+    readAlgorandSpendableBalance,
+} from './spendable-balance'
 
 export const algorandSendFlowAdapter: SendFlowChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -49,6 +54,9 @@ export const algorandTransferAdapter: TransferChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     build: buildAlgorandTransfer,
     getFeeEstimate: estimateAlgorandTransferFee,
+    spendableBalance: readAlgorandSpendableBalance,
+    recipientWarning: readAlgorandRecipientWarning,
+    holdingReserve: algorandHoldingReserve,
 }
 
 export const algorandHistoryAdapter = {

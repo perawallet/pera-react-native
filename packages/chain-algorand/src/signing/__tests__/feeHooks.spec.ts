@@ -44,7 +44,6 @@ describe('useAlgorandFeeConfig', () => {
         expect(result.current).toEqual({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetOptInMinBalance: 100_000n,
         })
     })
 })

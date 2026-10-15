@@ -16,16 +16,17 @@ import {
     decodeTransaction,
     encodeSignedTransactions,
     getAlgorandClient,
-    getMinimumFeeConfig,
 } from '../blockchain'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import { toBigInt } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../legacy-network'
+import { algorandHoldingReserve } from '../transactions/spendable-balance'
 import { executeAlgorandSwap } from './executeSwap'
 import { isAlgorandQuantumSwapEnabled } from './quantumSwapGate'
 
@@ -51,7 +52,7 @@ export const algorandSwapAdapter: SwapChainAdapter = {
             scope,
             network: algorandNetworkOf(scope),
             algorandClient: getAlgorandClient(scope),
-            assetMbr: getMinimumFeeConfig().assetMbr,
+            assetMbr: toBigInt(algorandHoldingReserve(scope)),
             isQuantumSwapEnabled: isAlgorandQuantumSwapEnabled(),
             decodeTransaction: bytes =>
                 decodeTransaction(bytes) as PeraTransaction,

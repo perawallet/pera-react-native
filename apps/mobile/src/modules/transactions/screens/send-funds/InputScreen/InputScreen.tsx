@@ -45,7 +45,7 @@ export const InputScreen = () => {
     const {
         asset,
         accountAssetBalance,
-        accountInformation,
+        isBalanceReady,
         cryptoValue,
         setMax,
         handleKey,
@@ -162,7 +162,7 @@ export const InputScreen = () => {
             isFocused &&
             !!asset &&
             !!accountAssetBalance &&
-            !!accountInformation &&
+            isBalanceReady &&
             !isResolvingDestination,
     })
 
@@ -172,7 +172,7 @@ export const InputScreen = () => {
     // useTransactionSendFlow) — not to render the amount form. Gating on
     // it kept the whole Send entry point on a spinner while offline.
     // The DB-backed gates below resolve offline.
-    if (!asset || !accountAssetBalance || !accountInformation) {
+    if (!asset || !accountAssetBalance || !isBalanceReady) {
         return <LoadingView variant='circle' />
     }
 

@@ -11,7 +11,6 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useFeeConfig } from '@perawallet/wallet-core-signing'
 import {
     fetchOnChainAccountState,
     insertAssetHolding,
@@ -28,6 +27,7 @@ import {
     InsufficientBalanceForOptInError,
 } from '../errors'
 import { sendFlowFeatureFor } from '../chain-adapter'
+import { holdingReserveOf } from '../transfer-adapter'
 import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -65,8 +65,6 @@ const formatAlgoShortfall = (shortfall: bigint): string =>
 export const useAssetOptInMutation = (
     scope: ChainScope,
 ): UseAssetOptInMutationResult => {
-    const { assetOptInMinBalance } = useFeeConfig(scope.chainId)
-
     const { mutateAsync, isLoading, isError, error } =
         useAssetHoldingMutation<AssetOptInParams>({
             scope,
@@ -103,7 +101,7 @@ export const useAssetOptInMutation = (
                 const balance = toBigInt(accountState.nativeBalanceBaseUnits)
                 const balanceNeeded =
                     toBigInt(accountState.reserveBalance) +
-                    assetOptInMinBalance +
+                    toBigInt(holdingReserveOf(scope)) +
                     feeTotal
                 if (balance < balanceNeeded) {
                     throw new InsufficientBalanceForOptInError(

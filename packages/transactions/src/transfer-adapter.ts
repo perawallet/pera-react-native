@@ -10,14 +10,70 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     createChainAdapterRegistry,
+    type AssetRef,
     type BuildContext,
     type ChainId,
+    type ChainScope,
     type FeeEstimate,
+    type LocalizedText,
     type TransactionIntent,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
+
+/** Copy a chain hands the app to render as is; every `params` value is display-ready. */
+export type ChainNotice = {
+    title: LocalizedText
+    /** One paragraph each. */
+    body: readonly LocalizedText[]
+}
+
+export type ReserveNotice = ChainNotice & {
+    /** No send can release the reserve, so MAX offers `max` rather than the whole balance. */
+    isFirm: boolean
+}
+
+export type EmptyAccountOffer = {
+    /** Base units of the native asset; sending it empties and closes the account. */
+    amount: Decimal
+    notice: ChainNotice
+}
+
+export type SpendableBalanceInput = {
+    account: WalletAccount
+    asset: AssetRef
+    scope: ChainScope
+    /** Base units of the native asset. */
+    fee: Decimal
+}
+
+export type SpendableBalance = {
+    /** Base units of the asset, as last synced. */
+    balance: Decimal
+    /**
+     * Base units of the asset a send can move while the account stays open;
+     * the fee is already off for the native asset. Never negative.
+     */
+    max: Decimal
+    /** Base units of the native asset the chain holds back; zero with no reserve. */
+    reserved: Decimal
+    /** Explains the reserve when more than `max` is asked for, offering `max` instead. */
+    reserveNotice?: ReserveNotice
+    /** Absent on a chain with no close-out. */
+    emptyAccount?: EmptyAccountOffer
+}
+
+export type RecipientWarningInput = {
+    recipient: string
+    asset: AssetRef
+    /** Base units of the asset. */
+    amount: Decimal
+    scope: ChainScope
+}
 
 /** Turns what the user asked for into a chain's transactions, and prices it. */
 export interface TransferChainAdapter {
@@ -35,7 +91,20 @@ export interface TransferChainAdapter {
         intent: TransactionIntent,
         context: BuildContext,
     ): Promise<FeeEstimate>
+    /** Reads synced state only, so it answers offline. */
+    spendableBalance(input: SpendableBalanceInput): Promise<SpendableBalance>
+    /** Why the send would leave the recipient unable to hold what it receives; undefined when it can. */
+    recipientWarning?(
+        input: RecipientWarningInput,
+    ): Promise<Optional<ChainNotice>>
+    /** Base units of the native asset an account must lock to hold one more asset. */
+    holdingReserve?(scope: ChainScope): Optional<Decimal>
 }
 
 export const transferChainAdapters =
     createChainAdapterRegistry<TransferChainAdapter>('transfer')
+
+/** Base units of the native asset; zero on a chain with no per-holding reserve. */
+export const holdingReserveOf = (scope: ChainScope): Decimal =>
+    transferChainAdapters.get(scope.chainId).holdingReserve?.(scope) ??
+    new Decimal(0)

@@ -26,6 +26,7 @@ import {
     InsufficientBalanceForOptInError,
 } from '../useAssetOptInMutation'
 import { sendFlowChainAdapters } from '../../chain-adapter'
+import { transferChainAdapters } from '../../transfer-adapter'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
@@ -40,6 +41,7 @@ const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
 const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
 const mockUseFeeConfig = vi.fn()
+const mockHoldingReserve = vi.fn()
 const mockAssignFeeToGroup = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -92,6 +94,15 @@ describe('useAssetOptInMutation', () => {
             buildTransferTxs: vi.fn(),
             assetHolding: { buildOptInTxs: mockBuild, buildOptOutTxs: vi.fn() },
         })
+        transferChainAdapters.reset()
+        transferChainAdapters.register({
+            chainId: 'algorand',
+            build: vi.fn(),
+            getFeeEstimate: vi.fn(),
+            spendableBalance: vi.fn(),
+            holdingReserve: () => mockHoldingReserve(),
+        })
+        mockHoldingReserve.mockReturnValue(new Decimal(100000))
         // Default: pass-through, which is what the calculator does for a
         // non-quantum sender.
         mockAssignFeeToGroup.mockImplementation(
@@ -104,7 +115,6 @@ describe('useAssetOptInMutation', () => {
         mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
-            assetOptInMinBalance: 100000n,
         })
     })
 
@@ -186,7 +196,7 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('reports the ALGO shortfall so the toast can say how much is missing', async () => {
-        // 100000 minBalance + 100000 assetOptInMinBalance + 1000 fee = 201000 needed;
+        // 100000 minBalance + 100000 holding reserve + 1000 fee = 201000 needed;
         // 100000 held leaves 101000 microAlgos short.
         mockAccountState.mockResolvedValueOnce(accountState(100000n, 100000n))
 
@@ -207,11 +217,7 @@ describe('useAssetOptInMutation', () => {
         // Non-default asset MBR (200000). Balance 250000 clears the old
         // threshold (100000 + 100000 + 1000 = 201000) but not the new one
         // (100000 + 200000 + 1000 = 301000), so the opt-in must be rejected.
-        mockUseFeeConfig.mockReturnValue({
-            minTxnFee: 1000n,
-            pqMultiplier: 3n,
-            assetOptInMinBalance: 200000n,
-        })
+        mockHoldingReserve.mockReturnValue(new Decimal(200000))
         mockAccountState.mockResolvedValueOnce(accountState(250000n, 100000n))
 
         const { result } = renderHook(() => useAssetOptInMutation(SCOPE), {
@@ -262,7 +268,7 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('balance check uses the raised PQ fee, not the base minimum', async () => {
-        // 100000 minBalance + 100000 assetOptInMinBalance leaves 2000 spare. That clears a
+        // 100000 minBalance + 100000 holding reserve leaves 2000 spare. That clears a
         // 1000 base fee but not the 3000 a quantum signer actually pays, so the
         // opt-in must be rejected before anything is signed.
         mockAssignFeeToGroup.mockResolvedValueOnce({
