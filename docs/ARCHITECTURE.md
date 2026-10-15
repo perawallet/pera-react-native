@@ -236,7 +236,9 @@ card, fee-delegation and EVM routes) also passes `headers: buildIntegrityHeaders
 `queryClient` serves the Pera and backup backends only, never a chain's nodes, so a Pera credential
 cannot reach a third-party node. Each chain builds its own node clients from the `ChainContext` it
 registered with: its endpoints, and the request ceilings in `ctx.timeouts`, which come from the
-chain's row in config's `chainRequestTimeouts`. Algorand keeps the context in
+chain's row in config's `chainRequestTimeouts`. Algorand is the exception for endpoints: its record
+is empty, and its node URLs come from `getAlgorandChainConfig` on every request so a saved custom
+node applies. Algorand keeps the context in
 `packages/chain-algorand/src/chain-context.ts` and builds every algod and indexer client, for algosdk
 and for raw JSON reads alike, through `createNodeHttpClient` (`blockchain/utils/nodeHttp.ts`).
 Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`.

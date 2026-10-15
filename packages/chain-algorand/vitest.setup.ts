@@ -31,11 +31,11 @@ const chains = createChainRegistry()
 beforeEach(() => {
     store.clear()
     chains.reset()
+    // Every Algorand request is bounded by the registered context, which specs
+    // otherwise never register; re-set each test so one spec's custom ceilings
+    // never leak into the next. A spec that resets modules sets its own.
+    setAlgorandChainContext(testChainContext())
 })
-
-// Every Algorand request is bounded by the registered context, which specs
-// otherwise never register. A spec that resets modules sets its own.
-setAlgorandChainContext(testChainContext())
 
 const keyValueStorage = {
     getItem: (key: string) => store.get(key) ?? null,

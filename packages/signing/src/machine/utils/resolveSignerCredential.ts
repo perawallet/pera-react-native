@@ -20,7 +20,7 @@ import type {
     ChainId,
     SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { CannotSignError } from '../../pipeline/errors'
 
 /** Picks the signing actor; a watch account has none. */
@@ -41,10 +41,7 @@ export const resolveSignerCredential = (
     chainId: ChainId,
 ): SignerCredential => {
     const custody = account.custody.kind
-    const scheme = credentialScheme(
-        account,
-        getProvider().chains.get(chainId).descriptor,
-    )
+    const scheme = credentialScheme(account, getChainDescriptor(chainId))
     if (custody === 'watch' || scheme === null) {
         throw new CannotSignError(
             chainAccountOf(account, chainId)?.address ?? account.id,
