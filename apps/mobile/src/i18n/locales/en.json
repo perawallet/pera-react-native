@@ -294,7 +294,8 @@
             "markerLabel": "About this quantum account",
             "dismiss": "Got it"
         },
-        "chain_unavailable": "{{chain}} is unavailable right now"
+        "chain_unavailable": "{{chain}} is unavailable right now",
+        "chain_unavailable_unnamed": "This blockchain is unavailable right now"
     },
     "account_details": {
         "assets": {

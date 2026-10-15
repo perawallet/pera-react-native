@@ -109,6 +109,7 @@ describe('accountValueOf', () => {
 
 describe('useSigningAccountsOnOwnChain', () => {
     beforeEach(() => {
+        vi.restoreAllMocks()
         useAccountsStore.getState().resetState()
         useNetworkStore.getState().setNetwork('mainnet')
     })
@@ -122,5 +123,17 @@ describe('useSigningAccountsOnOwnChain', () => {
         const { result } = renderHook(() => useSigningAccountsOnOwnChain())
 
         expect(result.current).toEqual([algorandAccount])
+    })
+
+    it("leaves out an account whose chain's kill switch is on", () => {
+        register('algorand')
+        useAccountsStore.getState().setAccounts([algorandAccount])
+        vi.spyOn(getProvider().chains, 'isSwitchedOff').mockImplementation(
+            chainId => chainId === 'algorand',
+        )
+
+        const { result } = renderHook(() => useSigningAccountsOnOwnChain())
+
+        expect(result.current).toEqual([])
     })
 })

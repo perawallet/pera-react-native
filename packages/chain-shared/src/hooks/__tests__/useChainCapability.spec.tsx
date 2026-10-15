@@ -34,7 +34,9 @@ import {
     useChainCapability,
     useChainCapabilityCheck,
     useChainCapabilityRequirement,
+    useIsCapabilityRestricted,
     useIsChainSwitchedOff,
+    useSwitchedOffChainIds,
 } from '../useChainCapability'
 
 // Overrides the shared setup's provider stub: this suite needs `chains` and
@@ -338,5 +340,54 @@ describe('useIsChainSwitchedOff', () => {
         })
 
         expect(result.current).toBe(true)
+    })
+})
+
+describe('useSwitchedOffChainIds', () => {
+    beforeEach(() => {
+        store.clear()
+        useRemoteConfigStore.getState().resetState()
+        provide(setUpChains())
+    })
+
+    it('lists the chains whose kill switch is on, keeping identity until that changes', () => {
+        const { result, rerender } = renderHook(() => useSwitchedOffChainIds())
+        const before = result.current
+        rerender()
+        expect(result.current).toBe(before)
+        expect(result.current).toEqual([])
+
+        act(() => {
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride(
+                    chainOverridesKey('algorand'),
+                    JSON.stringify({ enabled: false }),
+                )
+        })
+
+        expect(result.current).toEqual(['algorand'])
+    })
+})
+
+describe('useIsCapabilityRestricted', () => {
+    beforeEach(() => {
+        store.clear()
+        useRemoteConfigStore.getState().resetState()
+        provide(setUpRestrictedChains())
+        useNetworkStore.getState().resetState()
+    })
+
+    it('reports a capability off only for the current mode, following mode changes', () => {
+        const { result } = renderHook(() =>
+            useIsCapabilityRestricted('algorand', 'swap'),
+        )
+        expect(result.current).toBe(false)
+
+        act(() => useNetworkStore.getState().setMode('developer'))
+        expect(result.current).toBe(true)
+
+        act(() => useNetworkStore.getState().setMode('live'))
+        expect(result.current).toBe(false)
     })
 })

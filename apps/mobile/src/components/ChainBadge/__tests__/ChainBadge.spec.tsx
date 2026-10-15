@@ -12,14 +12,11 @@
 
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@test-utils/render'
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { ChainBadge } from '../ChainBadge'
 
 describe('ChainBadge', () => {
-    it("labels the badge with the chain's display name", () => {
-        registerEthereumChain()
-
-        render(<ChainBadge chainId='ethereum' />)
+    it('labels the badge with the chain name it is given', () => {
+        render(<ChainBadge name='Ethereum' />)
 
         expect(screen.getByText('Ethereum')).toBeTruthy()
     })

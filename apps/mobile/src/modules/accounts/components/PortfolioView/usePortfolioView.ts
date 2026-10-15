@@ -13,8 +13,10 @@
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
+    accountChainIdOf,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
+    useRegisteredChainIds,
     useSigningAccountsOnOwnChain,
     type AccountValueBasis,
     type WalletAccount,
@@ -23,7 +25,10 @@ import {
     LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapabilityCheck,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -38,6 +43,11 @@ export type UsePortfolioViewResult = {
     portfolioPreferredValue: Nullable<Decimal>
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
+    /**
+     * Every counted account's chain has balance history. The chart and trend
+     * plot only those chains, so once the total counts another they'd contradict it.
+     */
+    hasBalanceHistory: boolean
     isPending: boolean
 }
 
@@ -56,6 +66,16 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         hasFiatTotal,
         isPending,
     } = useAccountValueTotalsQuery(accounts, scope)
+    const check = useChainCapabilityCheck()
+    const registeredChainIds = useRegisteredChainIds()
+    const hasBalanceHistory = accounts.every(account =>
+        check({
+            chain: {
+                chainId: accountChainIdOf(account, registeredChainIds),
+                capability: 'balanceHistory',
+            },
+        }),
+    )
     const portfolioPreferredValue = useMemo(
         () =>
             usdToPreferred(
@@ -71,6 +91,7 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         portfolioNativeValue,
         portfolioPreferredValue,
         hasFiatTotal,
+        hasBalanceHistory,
         isPending,
     }
 }

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import type {
     ChainCapability,
     ChainId,
@@ -85,4 +86,29 @@ export const useAnyEnabledChainHasCapability = (
 export const useIsChainSwitchedOff = (chainId: ChainId): boolean => {
     useRemoteConfigOverrides()
     return getProvider().chains.isSwitchedOff(chainId)
+}
+
+/** Registered chains whose kill switch is on, keeping its identity until that set changes. */
+export const useSwitchedOffChainIds = (): ChainId[] => {
+    useRemoteConfigOverrides()
+    const { chains } = getProvider()
+    const key = chains
+        .list()
+        .map(({ id }) => id)
+        .filter(chainId => chains.isSwitchedOff(chainId))
+        .join()
+    return useMemo(() => (key ? (key.split(',') as ChainId[]) : []), [key])
+}
+
+/**
+ * The capability is off only because of the chain's current mode, so a control
+ * can stay and explain why instead of hiding as it would for a build without it.
+ */
+export const useIsCapabilityRestricted = (
+    chainId: ChainId,
+    capability: ChainCapability,
+): boolean => {
+    // Subscribes to the mode and override changes the registry read depends on.
+    useChainCapabilityCheck()
+    return getProvider().chains.isRestricted(chainId, capability)
 }

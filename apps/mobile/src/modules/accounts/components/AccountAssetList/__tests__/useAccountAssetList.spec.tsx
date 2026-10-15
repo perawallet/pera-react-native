@@ -22,6 +22,8 @@ import {
     setChainEnabled,
 } from '@test-utils/capability-overrides'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 
 const mockAccount: WalletAccount = {
     id: 'test-account',
@@ -127,6 +129,12 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
             id != null && String(id) === NATIVE_ASSET.assetId,
         useNativeAsset: () => NATIVE_ASSET,
         nativeAssetFor: () => NATIVE_ASSET,
+        findNativeAsset: (chainId: string) =>
+            chainId === 'algorand'
+                ? NATIVE_ASSET
+                : chainId === 'ethereum'
+                  ? { ...NATIVE_ASSET, assetId: 'native' }
+                  : undefined,
         isNativeAssetId: (_chainId: string, assetId: string) =>
             assetId === NATIVE_ASSET.assetId,
         useAssetPreferencesStore: vi.fn(
@@ -200,6 +208,33 @@ describe('useAccountAssetList', () => {
 
         expect(result.current.isChainSwitchedOff).toBe(true)
         expect(result.current.holdings).toEqual([])
+        expect(result.current.canManageAssets).toBe(false)
+    })
+
+    it("takes the native asset from the account's own chain", () => {
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: mockAccount, t: mockT }),
+        )
+
+        expect(result.current.chainId).toBe('algorand')
+        expect(result.current.nativeAssetId).toBe(NATIVE_ASSET.assetId)
+    })
+
+    it("reads an Ethereum account's holdings on Ethereum, with ETH as its native asset", () => {
+        registerEthereumChain()
+        registerEthereumAccountsAdapter()
+        const ethAccount: WalletAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'a'.repeat(40)}` } },
+        }
+
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: ethAccount, t: mockT }),
+        )
+
+        expect(result.current.chainId).toBe('ethereum')
+        expect(result.current.nativeAssetId).toBe('native')
         expect(result.current.canManageAssets).toBe(false)
     })
 

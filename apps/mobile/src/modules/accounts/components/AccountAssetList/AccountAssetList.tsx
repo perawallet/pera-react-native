@@ -69,16 +69,18 @@ export const AccountAssetList = ({
 
     const renderItem = useCallback(
         ({ item }: { item: AccountHoldingsLiteRow }) => {
+            const isNativeAsset = item.assetId === nativeAssetId
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
                 renderItemProps.canManageAssets &&
-                item.assetId !== nativeAssetId &&
+                !isNativeAsset &&
                 item.amount.isZero()
 
             return (
                 <SwipeableAssetItem
                     item={item}
                     chainId={chainId}
+                    isNativeAsset={isNativeAsset}
                     isSwipeEnabled={isSwipeable}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}

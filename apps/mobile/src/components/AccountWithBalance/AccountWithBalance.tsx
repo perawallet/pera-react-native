@@ -15,7 +15,7 @@ import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ChainBadge } from '@components/ChainBadge'
-import { ChainNotice } from '@components/ChainNotice'
+import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -34,14 +34,12 @@ export const AccountWithBalance = ({
     const styles = useStyles({ isHighlighted })
     const { t } = useLanguage()
     const {
-        chainId,
+        scope,
         chainName,
-        nativeAsset,
+        availability,
         nativeValue,
-        preferredValue,
         isMultiChain,
         isTestTier,
-        isChainSwitchedOff,
     } = useAccountWithBalance(account)
 
     return (
@@ -55,47 +53,38 @@ export const AccountWithBalance = ({
                 showAccountType
                 style={styles.accountDisplay}
             />
-            {isMultiChain && <ChainBadge chainId={chainId} />}
+            {isMultiChain && chainName && <ChainBadge name={chainName} />}
             {isTestTier && (
                 <PWBadge
                     variant='testnet'
                     value={t('common.network_label.testnet')}
                 />
             )}
-            {isChainSwitchedOff || !nativeAsset ? (
-                <ChainNotice
-                    kind='warning'
-                    titleKey='accounts.chain_unavailable'
-                    params={{ chain: chainName }}
+            {!availability.isAvailable ? (
+                <ChainUnavailableNotice
+                    chainName={chainName}
                     testID='account_chain_unavailable'
                 />
             ) : (
                 <PWView style={styles.balanceContainer}>
                     <AssetAmount
-                        asset={nativeAsset}
+                        asset={availability.nativeAsset}
                         value={nativeValue}
                         density='compact'
                         variant='bodyLarge'
                         weight={500}
                     />
-                    {isMultiChain ? (
-                        <PreferredAmount
-                            value={preferredValue}
-                            density='compact'
-                            variant='footnoteMedium'
-                            weight={400}
-                            style={styles.fiatBalance}
-                        />
-                    ) : (
-                        <PreferredAmount
-                            sourceAssetId={nativeAsset.assetId}
-                            sourceAmount={nativeValue}
-                            density='compact'
-                            variant='footnoteMedium'
-                            weight={400}
-                            style={styles.fiatBalance}
-                        />
-                    )}
+                    {/* Converts on the account's own chain, which keeps the
+                        ALGO-preferred fallback for an ALGO balance. */}
+                    <PreferredAmount
+                        sourceAssetId={availability.nativeAsset.assetId}
+                        sourceAmount={nativeValue}
+                        scope={scope}
+                        density='compact'
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.fiatBalance}
+                    />
                 </PWView>
             )}
         </PWView>

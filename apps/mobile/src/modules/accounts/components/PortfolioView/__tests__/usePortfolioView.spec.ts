@@ -19,6 +19,7 @@ import {
     useSigningAccountsOnOwnChain,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { usePortfolioView } from '../usePortfolioView'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -99,6 +100,7 @@ describe('usePortfolioView', () => {
     })
 
     it('totals every account that signs on its own chain, Ethereum included', () => {
+        registerEthereumChain()
         const ethAccount: WalletAccount = {
             id: 'eth',
             custody: { kind: 'local', seed: null },
@@ -116,5 +118,41 @@ describe('usePortfolioView', () => {
             [ethAccount],
             expect.objectContaining({ chainId: 'algorand' }),
         )
+    })
+
+    it('keeps the chart while every counted chain has balance history', () => {
+        vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([
+            {
+                id: 'algo',
+                custody: { kind: 'local', seed: null },
+                chains: { algorand: { address: 'ALGO', keyPairId: 'k' } },
+            },
+        ])
+        vi.mocked(useAccountValueBasis).mockReturnValue('native')
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.hasBalanceHistory).toBe(true)
+    })
+
+    it('drops the chart once the total counts a chain with no balance history', () => {
+        registerEthereumChain()
+        vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([
+            {
+                id: 'eth',
+                custody: { kind: 'local', seed: null },
+                chains: {
+                    ethereum: {
+                        address: `0x${'a'.repeat(40)}`,
+                        keyPairId: 'k',
+                    },
+                },
+            },
+        ])
+        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.hasBalanceHistory).toBe(false)
     })
 })

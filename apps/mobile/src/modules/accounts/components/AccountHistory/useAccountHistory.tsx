@@ -18,7 +18,11 @@ import {
     useAccountScope,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useIsCapabilityRestricted,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -259,7 +263,15 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // `transactions.length > 0` rather than `!isEmpty` also keeps the button
     // hidden during the initial load (when results may still end up empty),
     // avoiding a brief visible-then-gone flicker.
-    const isCsvExportVisible = transactions.length > 0
+    // A chain whose build has no CSV export hides the action outright; one that
+    // only restricts it on this network (BetaNet, custom) keeps it to explain why.
+    const hasCsvExport = useChainCapability(scope.chainId, 'csvExport')
+    const isCsvExportRestricted = useIsCapabilityRestricted(
+        scope.chainId,
+        'csvExport',
+    )
+    const isCsvExportVisible =
+        transactions.length > 0 && (hasCsvExport || isCsvExportRestricted)
 
     return {
         rows,

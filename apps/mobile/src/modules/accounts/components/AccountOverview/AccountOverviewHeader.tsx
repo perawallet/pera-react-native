@@ -30,7 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { ChainNotice } from '@components/ChainNotice'
+import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
 import { AccountOverviewHeaderSkeleton } from './AccountOverviewHeaderSkeleton'
@@ -49,9 +49,9 @@ export const AccountOverviewHeader = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        nativeAsset,
+        availability,
         chainName,
-        isChainUnavailable,
+        hasBalanceHistory,
         portfolioNativeValue,
         portfolioPreferredValue,
         isPending,
@@ -64,6 +64,7 @@ export const AccountOverviewHeader = ({
         togglePrivacyMode,
         handleChartSelectionChange,
     } = useAccountOverviewHeader(account)
+    const isChartShown = chartVisible && hasBalanceHistory
 
     // While loading we always render the primary layout underneath so its mount
     // animations (ExpandablePanel, LineChart) run hidden by the opaque skeleton
@@ -71,12 +72,10 @@ export const AccountOverviewHeader = ({
     const showPrimary = hasBalance || isLoading
 
     const renderContent = useCallback(() => {
-        if (isChainUnavailable || !nativeAsset) {
+        if (!availability.isAvailable) {
             return (
-                <ChainNotice
-                    kind='warning'
-                    titleKey='accounts.chain_unavailable'
-                    params={{ chain: chainName }}
+                <ChainUnavailableNotice
+                    chainName={chainName}
                     style={styles.chainNotice}
                     testID='account_chain_unavailable'
                 />
@@ -100,7 +99,7 @@ export const AccountOverviewHeader = ({
                                         ? selectedPoint.nativeValue
                                         : portfolioNativeValue
                                 }
-                                asset={nativeAsset}
+                                asset={availability.nativeAsset}
                                 style={styles.primaryCurrency}
                                 isLoading={isPending}
                             />
@@ -131,11 +130,11 @@ export const AccountOverviewHeader = ({
                                 isLoading={isPending}
                             />
 
-                            {!selectedPoint && (
+                            {hasBalanceHistory && !selectedPoint && (
                                 <WealthTrend
                                     account={account}
                                     period={period}
-                                    enabled={chartVisible}
+                                    enabled={isChartShown}
                                 />
                             )}
                             {selectedPoint && (
@@ -167,13 +166,13 @@ export const AccountOverviewHeader = ({
                         </PWView>
                     </PWTouchableOpacity>
 
-                    <ExpandablePanel isExpanded={chartVisible}>
+                    <ExpandablePanel isExpanded={isChartShown}>
                         <PWView style={styles.chartContainer}>
                             <WealthChart
                                 account={account}
                                 period={period}
                                 onSelectionChanged={handleChartSelectionChange}
-                                enabled={chartVisible}
+                                enabled={isChartShown}
                             />
                             <ChartPeriodSelection
                                 value={period}
@@ -222,16 +221,16 @@ export const AccountOverviewHeader = ({
         isBalanceComplete,
         account,
         period,
-        chartVisible,
+        isChartShown,
+        hasBalanceHistory,
         handleChartSelectionChange,
         setPeriod,
         t,
-        nativeAsset,
-        isChainUnavailable,
+        availability,
         chainName,
     ])
 
-    const useLoadingHeight = isLoading && chartVisible
+    const useLoadingHeight = isLoading && isChartShown
 
     return (
         <PWView
@@ -242,7 +241,7 @@ export const AccountOverviewHeader = ({
             {isLoading && (
                 <PWView style={styles.skeletonOverlay}>
                     <AccountOverviewHeaderSkeleton
-                        chartVisible={chartVisible}
+                        chartVisible={isChartShown}
                     />
                 </PWView>
             )}

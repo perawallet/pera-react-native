@@ -29,6 +29,7 @@ import { useStyles } from './styles'
 export type SwipeableAssetItemProps = {
     item: AccountHoldingsLiteRow
     chainId: ChainId
+    isNativeAsset: boolean
     isSwipeEnabled: boolean
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
@@ -38,6 +39,7 @@ export type SwipeableAssetItemProps = {
 const SwipeableAssetItemInner = ({
     item,
     chainId,
+    isNativeAsset,
     isSwipeEnabled,
     convertFiat,
     onPress,
@@ -76,6 +78,7 @@ const SwipeableAssetItemInner = ({
             <AssetListItemView
                 holding={item}
                 chainId={chainId}
+                isNativeAsset={isNativeAsset}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
                 onPress={handlePress}
@@ -106,6 +109,7 @@ const SwipeableAssetItemInner = ({
                 <AssetListItemView
                     holding={item}
                     chainId={chainId}
+                    isNativeAsset={isNativeAsset}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}
                     onPress={handlePress}

@@ -21,6 +21,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
 
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -168,5 +170,35 @@ describe('WealthChart', () => {
         )
 
         expect(screen.getByText('Not available on this network')).toBeTruthy()
+    })
+
+    it("reads an account's history on its own chain", () => {
+        registerEthereumChain()
+        const ethAddress = `0x${'d'.repeat(40)}`
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        render(
+            <WealthChart
+                account={{
+                    id: 'eth',
+                    custody: { kind: 'watch' },
+                    chains: { ethereum: { address: ethAddress } },
+                }}
+                period='one-week'
+                onSelectionChanged={vi.fn()}
+            />,
+        )
+
+        expect(
+            vi.mocked(useAccountBalancesHistoryQuery),
+        ).toHaveBeenLastCalledWith(
+            [ethAddress],
+            'one-week',
+            expect.objectContaining({ chainId: 'ethereum' }),
+            true,
+        )
     })
 })

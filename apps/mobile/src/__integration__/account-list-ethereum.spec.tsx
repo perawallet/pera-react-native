@@ -38,6 +38,7 @@ import {
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { setChainEnabled } from '@test-utils/capability-overrides'
@@ -159,6 +160,7 @@ describe('Flow: Account list with Ethereum registered', () => {
 
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
+        useCurrenciesStore.getState().resetState()
     })
 
     it('Given only Algorand accounts, when the account list renders, then rows carry no chain badge', async () => {
@@ -171,6 +173,7 @@ describe('Flow: Account list with Ethereum registered', () => {
             expect(within(row).getByText('Algo main')).toBeTruthy()
         })
         expect(within(row).queryByText('Algorand')).toBeNull()
+        expect(screen.getByText('portfolio.show_chart')).toBeTruthy()
     })
 
     it('Given an Algorand and an Ethereum account, when the list renders, then each row shows its chain badge and its own native balance', async () => {
@@ -187,6 +190,36 @@ describe('Flow: Account list with Ethereum registered', () => {
         await waitFor(() => {
             expect(within(ethRow).getByText(/1\.5/)).toBeTruthy()
         })
+        // Each row prices its native balance on its own chain.
+        await waitFor(() => {
+            expect(within(ethRow).getByText(/3,000\.00/)).toBeTruthy()
+        })
+        expect(within(algoRow).getByText(/^\$ ?3\.00$/)).toBeTruthy()
+    })
+
+    it('Given ALGO as the preferred currency, when a multi-chain list renders, then the Algorand row shows its value in the fallback currency', async () => {
+        useCurrenciesStore.getState().setPreferredCurrency('ALGO')
+        useAccountsStore
+            .getState()
+            .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
+
+        renderMenu()
+
+        // An ALGO balance can't be shown in ALGO twice over; it falls back to USD.
+        await waitFor(() => {
+            expect(
+                within(rowOf(ALGORAND_ACCOUNT)).getByText(/^\$ ?3\.00$/),
+            ).toBeTruthy()
+        })
+        // ETH has no such clash, so it follows the preference: 10,000 ALGO, not dollars.
+        await waitFor(() => {
+            expect(
+                within(rowOf(ETHEREUM_ACCOUNT)).getByText(/10,000\.00/),
+            ).toBeTruthy()
+        })
+        expect(
+            within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/\$ ?3,000/),
+        ).toBeNull()
     })
 
     it('Given an Ethereum account on mainnet, when the portfolio header renders, then its fiat value is in the total', async () => {
@@ -198,11 +231,15 @@ describe('Flow: Account list with Ethereum registered', () => {
 
         // $3 of ALGO plus $3,000 of ETH.
         await waitFor(() => {
-            expect(screen.getByText(/3,003\.00/)).toBeTruthy()
+            expect(
+                screen.getByTestId('portfolio_total_value').textContent,
+            ).toMatch(/3,003\.00/)
         })
+        // Ethereum has no balance history, so a chart would plot only the $3.
+        expect(screen.queryByText('portfolio.show_chart')).toBeNull()
     })
 
-    it('Given the Ethereum kill switch is off, when the list renders, then its account stays listed with the unavailable notice', async () => {
+    it('Given the Ethereum kill switch is off, when the list renders, then its account stays listed with the unavailable notice and out of the total', async () => {
         setChainEnabled('ethereum', false)
         useAccountsStore
             .getState()
@@ -219,6 +256,12 @@ describe('Flow: Account list with Ethereum registered', () => {
                 'account_chain_unavailable',
             ),
         ).toBeNull()
+        // Only the $3 of ALGO: the frozen ETH balance stays out of the total.
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('portfolio_total_value').textContent,
+            ).toMatch(/^\$ ?3\.00$/)
+        })
     })
 
     it('Given an Ethereum account is opened, when its actions render, then no Algorand-only action is offered', () => {

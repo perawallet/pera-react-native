@@ -16,14 +16,14 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountWithBalance } from '../AccountWithBalance'
 
 const mockHookResult = {
-    chainId: 'algorand',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     chainName: 'Algorand',
-    nativeAsset: { assetId: '0' } as { assetId: string } | undefined,
+    availability: { isAvailable: true, nativeAsset: { assetId: '0' } } as
+        | { isAvailable: true; nativeAsset: { assetId: string } }
+        | { isAvailable: false },
     nativeValue: undefined,
-    preferredValue: undefined,
     isMultiChain: false,
     isTestTier: false,
-    isChainSwitchedOff: false,
 }
 
 vi.mock('../useAccountWithBalance', () => ({
@@ -52,7 +52,10 @@ describe('AccountWithBalance', () => {
     beforeEach(() => {
         mockHookResult.isTestTier = false
         mockHookResult.isMultiChain = false
-        mockHookResult.isChainSwitchedOff = false
+        mockHookResult.availability = {
+            isAvailable: true,
+            nativeAsset: { assetId: '0' },
+        }
     })
 
     it('marks an account holding test funds with the tier badge', () => {
@@ -84,7 +87,7 @@ describe('AccountWithBalance', () => {
     })
 
     it("replaces the balances with a notice when the chain's kill switch is off", () => {
-        mockHookResult.isChainSwitchedOff = true
+        mockHookResult.availability = { isAvailable: false }
 
         render(<AccountWithBalance account={ACCOUNT} />)
 

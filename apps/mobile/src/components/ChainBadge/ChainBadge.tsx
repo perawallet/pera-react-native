@@ -10,24 +10,15 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { PWBadge } from '@components/core'
 
 export type ChainBadgeProps = {
-    chainId: ChainId
+    name: string
 }
 
-export const ChainBadge = ({ chainId }: ChainBadgeProps) => {
-    const { chains } = getProvider()
-    const label = chains.has(chainId)
-        ? chains.get(chainId).descriptor.displayName
-        : chainId
-
-    return (
-        <PWBadge
-            variant='secondary'
-            value={label}
-        />
-    )
-}
+export const ChainBadge = ({ name }: ChainBadgeProps) => (
+    <PWBadge
+        variant='secondary'
+        value={name}
+    />
+)

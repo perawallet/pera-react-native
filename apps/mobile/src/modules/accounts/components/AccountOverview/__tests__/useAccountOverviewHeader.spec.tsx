@@ -18,6 +18,8 @@ import { useAccountOverviewHeader } from '../useAccountOverviewHeader'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setChainEnabled } from '@test-utils/capability-overrides'
+import { findNativeAsset } from '@perawallet/wallet-core-assets'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     AccountOverviewModalContext,
     type UseAccountOverviewModalResult,
@@ -105,8 +107,64 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.nativeAsset).toBeDefined()
-        expect(result.current.isChainUnavailable).toBe(false)
+        expect(result.current.availability.isAvailable).toBe(true)
+    })
+
+    it('plots balance history on a chain that has it', () => {
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasBalanceHistory).toBe(true)
+    })
+
+    it('hides the chart and trend on a chain with no balance history', () => {
+        registerEthereumChain()
+        const ethAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'e'.repeat(40)}` } },
+        } as WalletAccount
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(ethAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasBalanceHistory).toBe(false)
+    })
+
+    it("shows an Ethereum account's balance in ETH under its chain's name", () => {
+        registerEthereumChain()
+        const ethAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'b'.repeat(40)}` } },
+        } as WalletAccount
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(ethAccount),
+            { wrapper },
+        )
+
+        expect(result.current.availability).toMatchObject({
+            isAvailable: true,
+            nativeAsset: { assetId: 'native', unitName: 'ETH' },
+        })
+        expect(result.current.chainName).toBe('Ethereum')
+    })
+
+    it('shows the notice when this build has no native asset for the chain', () => {
+        vi.mocked(findNativeAsset).mockReturnValue(undefined)
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.availability).toEqual({ isAvailable: false })
+        vi.mocked(findNativeAsset).mockReset()
     })
 
     it("swaps balances and actions for a notice when the chain's kill switch is off", () => {
@@ -117,7 +175,7 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.isChainUnavailable).toBe(true)
+        expect(result.current.availability).toEqual({ isAvailable: false })
         expect(result.current.chainName).toBe('Algorand')
     })
 

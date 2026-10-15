@@ -14,83 +14,69 @@ import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
     accountValueOf,
-    useAccountChainId,
+    useAccountScope,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { findNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    useIsChainSwitchedOff,
+    chainDisplayNameOf,
     useIsOnTestTier,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    useChainAvailability,
+    type ChainAvailability,
+} from '@hooks/useChainAvailability'
 
 export type UseAccountWithBalanceResult = {
-    chainId: ChainId
-    chainName: string
-    /** Undefined when this build doesn't ship the chain's assets adapter. */
-    nativeAsset: Optional<PeraAsset>
+    /** The account's own chain, where its native asset is priced. */
+    scope: ChainScope
+    /** Undefined for a chain this build doesn't register. */
+    chainName: Optional<string>
+    availability: ChainAvailability
     /** In the account's own native asset. `undefined` until loaded, `null` when unknown; both render a placeholder, not 0. */
     nativeValue: Maybe<Decimal>
-    /**
-     * The account's own fiat value in the preferred currency, set only on a
-     * `fiat` basis; on a `native` one the row converts `nativeValue` as before.
-     */
-    preferredValue: Maybe<Decimal>
     /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
     isMultiChain: boolean
     isTestTier: boolean
-    isChainSwitchedOff: boolean
 }
 
 export const useAccountWithBalance = (
     account: WalletAccount,
 ): UseAccountWithBalanceResult => {
-    const chainId = useAccountChainId(account)
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account)
+    const { chainId } = scope
+    const homeScope = useSelectedScope(LEGACY_CHAIN_ID)
     const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
-    const isChainSwitchedOff = useIsChainSwitchedOff(chainId)
-    const { usdToPreferred } = useCurrency()
+    const availability = useChainAvailability(chainId)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
-        scope,
-        !isChainSwitchedOff,
+        homeScope,
+        availability.isAvailable,
     )
     const chainIds = useMemo(
         () => Object.keys(account.chains) as ChainId[],
         [account.chains],
     )
     const isTestTier = useIsOnTestTier(chainIds)
-    const nativeAsset = useMemo(() => findNativeAsset(chainId), [chainId])
 
-    const { chains } = getProvider()
-    const chainName = chains.has(chainId)
-        ? chains.get(chainId).descriptor.displayName
-        : chainId
+    const chainName = chainDisplayNameOf(chainId)
 
     const totals = accountValueOf(account, chainId, accountValueTotals)
-    const isMultiChain = basis === 'fiat'
-    const preferredValue = useMemo(() => {
-        if (!isMultiChain || totals === undefined) return undefined
-        return usdToPreferred(totals.fiatValue)
-    }, [isMultiChain, totals, usdToPreferred])
 
     return {
-        chainId,
+        scope,
         chainName,
-        nativeAsset,
+        availability,
         nativeValue: totals?.nativeValue,
-        preferredValue,
-        isMultiChain,
+        isMultiChain: basis === 'fiat',
         isTestTier,
-        isChainSwitchedOff,
     }
 }

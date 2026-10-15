@@ -71,9 +71,8 @@ export const useAccountDisplay = ({
             : fullAddress
     }, [account, fullAddress, scope])
 
-    // NFD names resolve Algorand addresses only.
     const { data: nfdNames } = useNfdForAddressQuery(fullAddress ?? '', {
-        enabled: !!fullAddress && scope.chainId === LEGACY_CHAIN_ID,
+        enabled: !!fullAddress,
     })
 
     const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])

@@ -25,14 +25,17 @@ const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
 const mockAccountValueTotals = new Map<
     string,
-    { nativeValue: Decimal; fiatValue: Decimal | null }
+    { nativeValue: Decimal | null }
 >()
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
     const chainOf = (account: WalletAccount) =>
         Object.keys(account.chains)[0] as string
     return {
-        useAccountChainId: chainOf,
+        useAccountScope: (account: WalletAccount) => ({
+            chainId: chainOf(account),
+            networkId: 'mainnet',
+        }),
         useAccountValueBasis: () => mockBasis.current,
         accountValueOf: (
             account: WalletAccount,
@@ -52,13 +55,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 vi.mock('@perawallet/wallet-core-assets', () => ({
     findNativeAsset: (chainId: string) => ({
         assetId: chainId === 'ethereum' ? 'eth' : '0',
-    }),
-}))
-
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({
-        usdToPreferred: (usd: Decimal | null | undefined) =>
-            usd ? usd.times(2) : null,
     }),
 }))
 
@@ -97,51 +93,45 @@ describe('useAccountWithBalance', () => {
     it('renders an Algorand-only wallet as a single-chain row', () => {
         mockAccountValueTotals.set(ALGO_ADDRESS, {
             nativeValue: new Decimal(12),
-            fiatValue: new Decimal(3),
         })
 
         const { result } = renderHook(() => useAccountWithBalance(ALGO_ACCOUNT))
 
         expect(result.current).toMatchObject({
-            chainId: 'algorand',
-            nativeAsset: { assetId: '0' },
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            availability: { isAvailable: true, nativeAsset: { assetId: '0' } },
             nativeValue: new Decimal(12),
-            preferredValue: undefined,
             isMultiChain: false,
-            isChainSwitchedOff: false,
         })
     })
 
-    it('values an Ethereum account in ETH and its own fiat value', () => {
+    it('values an Ethereum account in ETH on its own chain', () => {
         registerEthereumChain()
         mockBasis.current = 'fiat'
         mockAccountValueTotals.set(ETH_ADDRESS, {
             nativeValue: new Decimal('1.5'),
-            fiatValue: new Decimal(4000),
         })
 
         const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
 
         expect(result.current).toMatchObject({
-            chainId: 'ethereum',
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
             chainName: 'Ethereum',
-            nativeAsset: { assetId: 'eth' },
+            availability: {
+                isAvailable: true,
+                nativeAsset: { assetId: 'eth' },
+            },
             nativeValue: new Decimal('1.5'),
-            preferredValue: new Decimal(8000),
             isMultiChain: true,
         })
     })
 
-    it('keeps an unpriced account unknown rather than 0', () => {
-        mockBasis.current = 'fiat'
-        mockAccountValueTotals.set(ETH_ADDRESS, {
-            nativeValue: new Decimal(1),
-            fiatValue: null,
-        })
+    it('keeps an unknown native value unknown rather than 0', () => {
+        mockAccountValueTotals.set(ETH_ADDRESS, { nativeValue: null })
 
         const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
 
-        expect(result.current.preferredValue).toBeNull()
+        expect(result.current.nativeValue).toBeNull()
     })
 
     it("flags an account whose chain's kill switch is off", () => {
@@ -150,7 +140,7 @@ describe('useAccountWithBalance', () => {
         const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
 
         expect(mockIsSwitchedOff).toHaveBeenCalledWith('ethereum')
-        expect(result.current.isChainSwitchedOff).toBe(true)
+        expect(result.current.availability).toEqual({ isAvailable: false })
     })
 
     it("marks the account as test tier from its chains' networks", () => {

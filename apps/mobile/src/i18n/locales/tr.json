@@ -294,7 +294,8 @@
             "markerLabel": "Bu Quantum hesabı hakkında",
             "dismiss": "Anladım"
         },
-        "chain_unavailable": "Şu anda kullanılamıyor: {{chain}}"
+        "chain_unavailable": "Şu anda kullanılamıyor: {{chain}}",
+        "chain_unavailable_unnamed": "Bu blokzincir şu anda kullanılamıyor"
     },
     "account_details": {
         "assets": {

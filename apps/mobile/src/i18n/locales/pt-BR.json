@@ -294,7 +294,8 @@
             "markerLabel": "Sobre esta conta Quantum",
             "dismiss": "Entendi"
         },
-        "chain_unavailable": "{{chain}} está indisponível no momento"
+        "chain_unavailable": "{{chain}} está indisponível no momento",
+        "chain_unavailable_unnamed": "Esta blockchain está indisponível no momento"
     },
     "account_details": {
         "assets": {

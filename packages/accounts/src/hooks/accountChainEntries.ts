@@ -23,31 +23,33 @@ export type AccountChainEntry = {
     isHome: boolean
 }
 
-/** Registered chains other than `homeChainId`, in registry order. */
-const otherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
-    const others = new Set(
-        getProvider()
-            .chains.list()
-            .map(({ id }) => id),
-    )
-    others.delete(homeChainId)
-    return [...others]
+/**
+ * Registered chains in registry order. Re-read every render, since the registry
+ * can change under a mounted hook; the result keeps its identity until the set
+ * of chains does, so memos keyed on it hold.
+ */
+export const useRegisteredChainIds = (): ChainId[] => {
+    const key = getProvider()
+        .chains.list()
+        .map(({ id }) => id)
+        .join()
+    return useMemo(() => (key ? (key.split(',') as ChainId[]) : []), [key])
 }
 
-/**
- * Re-read every render, since the registry can change under a mounted hook;
- * the result keeps its identity until the set of chains does, so memos keyed
- * on it hold.
- */
+/** Registered chains other than `homeChainId`, in registry order. */
 export const useOtherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
-    const key = otherRegisteredChainIds(homeChainId).join()
-    return useMemo(() => (key ? (key.split(',') as ChainId[]) : []), [key])
+    const registered = useRegisteredChainIds()
+    return useMemo(
+        () => registered.filter(chainId => chainId !== homeChainId),
+        [registered, homeChainId],
+    )
 }
 
 /**
  * Every address the account holds on `homeChainId` or another registered
- * chain, home first. An account derived on two chains from one HD path is one
- * record with both, so its value is the sum over these.
+ * chain, home first. Records are written with one chain each (see
+ * `accountChainIdOf`), so this holds one entry; summing over it keeps a value
+ * right should a record ever hold more.
  */
 export const accountChainEntries = (
     account: WalletAccount,

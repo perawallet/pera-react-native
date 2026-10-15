@@ -196,6 +196,16 @@ describe('createChainRegistry', () => {
             expect(registry.capabilities('algorand')).toEqual(swapOn)
         })
 
+        it('tells a capability restricted by the mode from one off in the build', () => {
+            mode = 'developer'
+
+            expect(registry.isRestricted('algorand', 'swap')).toBe(true)
+            expect(registry.isRestricted('algorand', 'staking')).toBe(false)
+
+            mode = 'live'
+            expect(registry.isRestricted('algorand', 'swap')).toBe(false)
+        })
+
         it('leaves an unrestricted capability alone in a developer mode', () => {
             mode = 'developer'
 
