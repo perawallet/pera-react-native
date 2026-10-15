@@ -26,10 +26,17 @@ import {
     type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    AppError,
+    isRetryableError,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../../../constants'
 import {
     CannotSignError,
     InvalidSignableDataError,
+    SIGNING_ERROR_KEYS,
     SigningError,
 } from '../../../pipeline/errors'
 import {
@@ -111,11 +118,7 @@ export const signPlannedGroups = async ({
                 requestIndex: request.requestIndex,
                 signer: request.signer,
                 scheme: request.scheme,
-                bytes: await keyStore.sign(
-                    keyPairId,
-                    request.payload,
-                    SIGNING_KEY_DOMAIN,
-                ),
+                bytes: await signOrReport(keyStore, keyPairId, request.payload),
             })
         }
         return assembleOrRefuse(planner, transaction, signatures)
@@ -146,6 +149,31 @@ export const signPlannedGroups = async ({
 
 const messageOf = (error: unknown): string =>
     error instanceof Error ? error.message : String(error)
+
+// The same reporting the chain's own local-key signer gives a keystore fault,
+// so the user sees the same copy whichever signer ran.
+const signOrReport = async (
+    keyStore: Pick<ChainKeyStore, 'sign'>,
+    keyPairId: string,
+    payload: Uint8Array,
+): Promise<Uint8Array> => {
+    try {
+        return await keyStore.sign(keyPairId, payload, SIGNING_KEY_DOMAIN)
+    } catch (error) {
+        const cause = toError(error)
+        const causeKey =
+            cause instanceof AppError ? cause.metadata.messageKey : undefined
+        logger.error('Local-key signing failed', { error: cause })
+        throw new SigningError(cause.message, cause, {
+            retryable: isRetryableError(cause),
+            messageKey: causeKey ?? SIGNING_ERROR_KEYS.localKeyFailed,
+            params:
+                causeKey && cause instanceof AppError
+                    ? cause.metadata.params
+                    : undefined,
+        })
+    }
+}
 
 const planOrRefuse = (
     planner: TransactionPlanner,

@@ -47,6 +47,7 @@ import { algo25Account, ledgerAccount } from '../../__tests__/accounts'
 import {
     CannotSignError,
     HardwareWalletError,
+    GenesisHashMismatchError,
     InvalidSignableDataError,
     SigningError,
 } from '../../pipeline/errors'
@@ -681,6 +682,24 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
         expect(() =>
             resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
         ).toThrow(InvalidSignableDataError)
+    })
+
+    it("keeps a payload for another network's own error", () => {
+        const mismatch = new GenesisHashMismatchError(
+            'mainnet',
+            0,
+            'expected',
+            'actual',
+        )
+        registerFakeTransactionPlanner(
+            fakeTransactionPlanner(() => {
+                throw mismatch
+            }),
+        )
+
+        expect(() =>
+            resolveInitialContext(input([makeUnsignedTransaction(OURS)])),
+        ).toThrow(mismatch)
     })
 
     it.each([

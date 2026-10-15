@@ -33,6 +33,7 @@ import {
 } from '../pipeline/types'
 import {
     CannotSignError,
+    GenesisHashMismatchError,
     HardwareWalletError,
     InvalidSignableDataError,
     SigningError,
@@ -367,7 +368,8 @@ const signedForAddresses = (
     )
 }
 
-// A payload the chain can't read is untrusted data, not an internal fault.
+// A payload the chain can't read is untrusted data, not an internal fault; a
+// wrong network keeps its own user-facing error.
 const planSigners = (
     planner: TransactionPlanner,
     transaction: UnsignedTransaction,
@@ -375,6 +377,7 @@ const planSigners = (
     try {
         return planner.plan(transaction).map(entry => entry.signer)
     } catch (error) {
+        if (error instanceof GenesisHashMismatchError) throw error
         throw new InvalidSignableDataError(
             error instanceof Error ? error.message : String(error),
         )
