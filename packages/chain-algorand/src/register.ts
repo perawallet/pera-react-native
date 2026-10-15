@@ -43,6 +43,8 @@ import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { customNodeAdapters } from '@perawallet/wallet-core-chain-shared'
+import { nodeErrorAdapters } from '@perawallet/wallet-core-shared'
+import { algorandNodeErrors } from './blockchain/errors/describeAlgodError'
 import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
 import { algorandDeeplinkAdapter } from './deeplinks/adapter'
 import {
@@ -88,6 +90,7 @@ export const registerChain = (): void => {
     keyDerivations.register(algorandKeyDerivation)
     accountsChainAdapters.register(algorandAccountsAdapter)
     accountPresentationChainAdapters.register(algorandAccountPresentation)
+    nodeErrorAdapters.register(algorandNodeErrors)
     customNodeAdapters.register(algorandCustomNode)
     assetsChainAdapters.register(algorandAssetsAdapter)
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
