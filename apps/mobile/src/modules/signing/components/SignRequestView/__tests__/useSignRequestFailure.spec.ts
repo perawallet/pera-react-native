@@ -82,8 +82,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
 }))
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
+vi.mock('@hooks/useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({
         getMessage: (err: unknown) =>
             err instanceof Error && err.message === 'overspend'
                 ? {

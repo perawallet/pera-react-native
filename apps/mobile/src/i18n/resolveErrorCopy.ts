@@ -29,7 +29,7 @@ export type TranslateFn = (
     params?: Record<string, unknown>,
 ) => string
 
-export type AlgodMessageFn = (err: unknown) => Optional<ErrorCopy>
+export type NodeErrorMessageFn = (err: unknown) => Optional<ErrorCopy>
 
 /**
  * Errors declare a body key, not a title. Titles come from the category so a
@@ -73,7 +73,7 @@ export const resolveErrorCopy = (
     error: unknown,
     t: TranslateFn,
     fallbackTitle: Optional<string>,
-    getAlgodMessage: AlgodMessageFn,
+    getNodeErrorMessage: NodeErrorMessageFn,
 ): ErrorCopy => {
     if (isPeraNetworkError(error)) {
         const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
@@ -87,7 +87,7 @@ export const resolveErrorCopy = (
     // The chain describes only what its node raised, and nothing for any other
     // AppError, so the branches below keep their meaning. An unrecognised plain
     // Error is left to the caller's copy.
-    const nodeCopy = getAlgodMessage(error)
+    const nodeCopy = getNodeErrorMessage(error)
     if (nodeCopy) {
         return nodeCopy
     }
@@ -105,7 +105,7 @@ export const resolveErrorCopy = (
             }
         }
         return (
-            getAlgodMessage(error.nodeError) ?? {
+            getNodeErrorMessage(error.nodeError) ?? {
                 title: fallbackTitle ?? t('errors.general.title'),
                 body: t('errors.general.body'),
             }

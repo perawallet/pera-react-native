@@ -24,8 +24,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
+vi.mock('@hooks/useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({
         getMessage: () => undefined,
     }),
 }))

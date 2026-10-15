@@ -18,7 +18,7 @@ import type {
 } from 'react-native-notifier'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import { useToast } from './useToast'
-import { useAlgodErrorMessage } from './useAlgodErrorMessage'
+import { useNodeErrorMessage } from './useNodeErrorMessage'
 import { useLanguage } from './useLanguage'
 
 type ToastOptions = ShowNotificationParams & { notifier?: NotifierRoot }
@@ -41,7 +41,7 @@ type UseErrorToastResult = {
  */
 export const useErrorToast = (): UseErrorToastResult => {
     const { showToast } = useToast()
-    const { getMessage } = useAlgodErrorMessage()
+    const { getMessage } = useNodeErrorMessage()
     const { t } = useLanguage()
 
     const showError = useCallback(

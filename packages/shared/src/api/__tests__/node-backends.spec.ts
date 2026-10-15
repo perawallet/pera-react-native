@@ -18,10 +18,9 @@ import {
     type NodeBackendsAdapter,
 } from '../node-backends'
 
-const chainId = 'test:chain' as ChainId
-
 const adapter = (
     describeError?: NodeBackendsAdapter['describeError'],
+    chainId = 'test:chain' as ChainId,
 ): NodeBackendsAdapter => ({
     chainId,
     backendsFor: () => ({}),
@@ -37,17 +36,29 @@ describe('describeNodeError', () => {
         nodeBackendAdapters.register(adapter(describeError))
         const error = new Error('boom')
 
-        expect(describeNodeError(chainId, error)).toBe(copy)
+        expect(describeNodeError(error)).toBe(copy)
         expect(describeError).toHaveBeenCalledWith(error)
     })
 
-    it('returns undefined when no adapter is registered for the chain', () => {
-        expect(describeNodeError(chainId, new Error('boom'))).toBeUndefined()
+    it('returns the copy of whichever chain recognises the error', () => {
+        const copy = { titleKey: 't', bodyKey: 'b', params: {} }
+        nodeBackendAdapters.register(
+            adapter(() => undefined, 'first:chain' as ChainId),
+        )
+        nodeBackendAdapters.register(
+            adapter(() => copy, 'second:chain' as ChainId),
+        )
+
+        expect(describeNodeError(new Error('boom'))).toBe(copy)
     })
 
-    it('returns undefined when the adapter has no describeError', () => {
+    it('returns undefined when no adapter is registered', () => {
+        expect(describeNodeError(new Error('boom'))).toBeUndefined()
+    })
+
+    it('returns undefined when no adapter has describeError', () => {
         nodeBackendAdapters.register(adapter())
 
-        expect(describeNodeError(chainId, new Error('boom'))).toBeUndefined()
+        expect(describeNodeError(new Error('boom'))).toBeUndefined()
     })
 })

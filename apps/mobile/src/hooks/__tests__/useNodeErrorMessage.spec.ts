@@ -12,16 +12,15 @@
 
 import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { describeNodeError } from '@perawallet/wallet-core-shared'
-import { useAlgodErrorMessage } from '../useAlgodErrorMessage'
+import { useNodeErrorMessage } from '../useNodeErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
 }))
 
-describe('useAlgodErrorMessage', () => {
+describe('useNodeErrorMessage', () => {
     const mockT = vi.fn((key: string) => key)
 
     beforeEach(() => {
@@ -36,11 +35,11 @@ describe('useAlgodErrorMessage', () => {
             params: { txId: 'ABC' },
         })
         const err = new Error('dup')
-        const { result } = renderHook(() => useAlgodErrorMessage())
+        const { result } = renderHook(() => useNodeErrorMessage())
 
         const message = result.current.getMessage(err)
 
-        expect(describeNodeError).toHaveBeenCalledWith(LEGACY_CHAIN_ID, err)
+        expect(describeNodeError).toHaveBeenCalledWith(err)
         expect(message).toEqual({
             title: 'errors.algod.duplicate_txn.title',
             body: 'errors.algod.duplicate_txn.body',
@@ -56,7 +55,7 @@ describe('useAlgodErrorMessage', () => {
             bodyKey: 'errors.algod.below_min_balance.body',
             params: { address: 'ADDR', balance: 148_000n, assetCount: 1 },
         })
-        const { result } = renderHook(() => useAlgodErrorMessage())
+        const { result } = renderHook(() => useNodeErrorMessage())
 
         result.current.getMessage(new Error('low'))
 
@@ -68,7 +67,7 @@ describe('useAlgodErrorMessage', () => {
 
     test('returns undefined when the chain describes nothing', () => {
         ;(describeNodeError as Mock).mockReturnValueOnce(undefined)
-        const { result } = renderHook(() => useAlgodErrorMessage())
+        const { result } = renderHook(() => useNodeErrorMessage())
 
         expect(result.current.getMessage(new Error('odd'))).toBeUndefined()
         expect(mockT).not.toHaveBeenCalled()

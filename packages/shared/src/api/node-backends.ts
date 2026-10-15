@@ -47,10 +47,14 @@ export interface NodeBackendsAdapter {
 export const nodeBackendAdapters =
     createChainAdapterRegistry<NodeBackendsAdapter>('nodeBackends')
 
+// An error doesn't carry the chain whose node raised it, so every chain is asked
+// and each describes only errors it recognises as its own.
 export const describeNodeError = (
-    chainId: ChainId,
     error: unknown,
-): NodeErrorCopy | undefined =>
-    nodeBackendAdapters.has(chainId)
-        ? nodeBackendAdapters.get(chainId).describeError?.(error)
-        : undefined
+): NodeErrorCopy | undefined => {
+    for (const adapter of nodeBackendAdapters.list()) {
+        const copy = adapter.describeError?.(error)
+        if (copy) return copy
+    }
+    return undefined
+}

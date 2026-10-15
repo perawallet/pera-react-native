@@ -82,8 +82,8 @@ vi.mock('@hooks/useIsDataSigningBlocked', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
+vi.mock('@hooks/useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({
         getMessage: () => undefined,
     }),
 }))

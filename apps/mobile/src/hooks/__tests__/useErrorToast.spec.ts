@@ -37,8 +37,8 @@ vi.mock('../useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('../useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({ getMessage: mockGetMessage }),
+vi.mock('../useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({ getMessage: mockGetMessage }),
 }))
 
 vi.mock('../useLanguage', () => ({

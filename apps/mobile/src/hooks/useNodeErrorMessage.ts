@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     describeNodeError,
     type Optional,
@@ -19,7 +18,7 @@ import {
 import type { ErrorCopy } from '@i18n/resolveErrorCopy'
 import { useLanguage } from './useLanguage'
 
-type UseAlgodErrorMessageResult = {
+type UseNodeErrorMessageResult = {
     getMessage: (err: unknown) => Optional<ErrorCopy>
 }
 
@@ -38,12 +37,12 @@ const toInterpolationParams = (
  * Maps a node error to a localized `{ title, body }` pair suitable for the
  * toast system, or `undefined` when the chain has no copy for it.
  */
-export const useAlgodErrorMessage = (): UseAlgodErrorMessageResult => {
+export const useNodeErrorMessage = (): UseNodeErrorMessageResult => {
     const { t } = useLanguage()
 
     const getMessage = useCallback(
         (err: unknown): Optional<ErrorCopy> => {
-            const copy = describeNodeError(LEGACY_CHAIN_ID, err)
+            const copy = describeNodeError(err)
             if (!copy) return undefined
             return {
                 title: t(copy.titleKey),

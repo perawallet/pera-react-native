@@ -24,11 +24,13 @@ import { resolveErrorCopy } from '../resolveErrorCopy'
 const t = (key: string) => key
 const NODE_COPY = { title: 'node title', body: 'node body' }
 // Describes only the one error a test names, like a chain does for its node errors.
-const getAlgodMessage = vi.fn((_err: unknown): typeof NODE_COPY | undefined => {
-    return undefined
-})
+const getNodeErrorMessage = vi.fn(
+    (_err: unknown): typeof NODE_COPY | undefined => {
+        return undefined
+    },
+)
 const describing = (described: unknown) =>
-    getAlgodMessage.mockImplementation(err =>
+    getNodeErrorMessage.mockImplementation(err =>
         err === described ? NODE_COPY : undefined,
     )
 
@@ -36,8 +38,8 @@ const nodeError = () =>
     Object.assign(new Error('node rejected'), { code: 'overspend' })
 
 beforeEach(() => {
-    getAlgodMessage.mockReset()
-    getAlgodMessage.mockReturnValue(undefined)
+    getNodeErrorMessage.mockReset()
+    getNodeErrorMessage.mockReturnValue(undefined)
 })
 
 describe('resolveErrorCopy', () => {
@@ -51,7 +53,7 @@ describe('resolveErrorCopy', () => {
             new SubmissionError(['TXID'], 'unknown-outcome', cause),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -70,10 +72,10 @@ describe('resolveErrorCopy', () => {
             new SubmissionError(['TXID'], 'rejected-by-node', cause),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
-        expect(getAlgodMessage).toHaveBeenCalledWith(cause)
+        expect(getNodeErrorMessage).toHaveBeenCalledWith(cause)
         expect(result).toEqual(NODE_COPY)
     })
 
@@ -82,7 +84,7 @@ describe('resolveErrorCopy', () => {
             new SubmissionError(['TXID'], 'rejected-by-node', nodeError()),
             t,
             'caller title',
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -96,7 +98,7 @@ describe('resolveErrorCopy', () => {
             new PeraNetworkError('offline'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -110,7 +112,7 @@ describe('resolveErrorCopy', () => {
             new PeraNetworkError('unknown'),
             t,
             'caller title',
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result.title).toBe('caller title')
@@ -121,14 +123,19 @@ describe('resolveErrorCopy', () => {
             new NoConnectionError(),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result.title).toBe('errors.network.no_connection.title')
     })
 
     it('falls back to generic copy for a non-Error value', () => {
-        const result = resolveErrorCopy('boom', t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            'boom',
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result).toEqual({
             title: 'errors.general.title',
@@ -141,7 +148,7 @@ describe('resolveErrorCopy', () => {
             new AppError('raw detail that must not leak', {}),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -156,7 +163,12 @@ describe('resolveErrorCopy', () => {
             messageKey: 'errors.webview.unsupported_url',
         })
 
-        const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result.body).toBe('errors.webview.unsupported_url')
     })
@@ -169,7 +181,7 @@ describe('resolveErrorCopy', () => {
             params: { url: 'ABC' },
         })
 
-        resolveErrorCopy(error, spy, undefined, getAlgodMessage)
+        resolveErrorCopy(error, spy, undefined, getNodeErrorMessage)
 
         expect(spy).toHaveBeenCalledWith('errors.webview.unsupported_url', {
             url: 'ABC',
@@ -182,7 +194,12 @@ describe('resolveErrorCopy', () => {
             messageKey: 'errors.account.no_hd_wallet',
         })
 
-        const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result.title).toBe('errors.account.title')
     })
@@ -197,7 +214,12 @@ describe('resolveErrorCopy', () => {
         })
         describing(error)
 
-        const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result).toEqual(NODE_COPY)
     })
@@ -206,7 +228,12 @@ describe('resolveErrorCopy', () => {
         const rawError = new Error('node says no')
         describing(rawError)
 
-        const result = resolveErrorCopy(rawError, t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            rawError,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result).toEqual(NODE_COPY)
     })
@@ -217,7 +244,12 @@ describe('resolveErrorCopy', () => {
             messageKey: 'errors.webview.unsupported_url',
         })
 
-        const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result.body).toBe('errors.webview.unsupported_url')
     })
@@ -232,7 +264,7 @@ describe('resolveErrorCopy', () => {
             error,
             t,
             'caller title',
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result.title).toBe('caller title')
@@ -245,7 +277,7 @@ describe('resolveErrorCopy', () => {
             }),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -259,7 +291,7 @@ describe('resolveErrorCopy', () => {
             new SigningError('hardware path'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -289,7 +321,7 @@ describe('resolveErrorCopy generic-banner logging', () => {
             new Error('Network request failed'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
         expect(logger.error).not.toHaveBeenCalled()
     })
@@ -299,7 +331,7 @@ describe('resolveErrorCopy generic-banner logging', () => {
             new Error('something we have no copy for'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
         expect(logger.error).toHaveBeenCalledWith(
             'Unrecognized error shown as generic banner',
