@@ -308,6 +308,21 @@ describe('a required chain with no approved address', () => {
     })
 })
 
+describe('a required chain that stops being connectable before approve', () => {
+    it('fails the approval with a terminal typed error', async () => {
+        const { walletKit, proposals, propose } = await open()
+        await propose(bothRequired())
+        const [proposal] = proposals
+
+        connectable.delete('ethereum')
+
+        await expect(proposal.approve([ADDRESS, ETH])).rejects.toMatchObject({
+            metadata: { retryable: false },
+        })
+        expect(walletKit.approveSession).not.toHaveBeenCalled()
+    })
+})
+
 describe('requests', () => {
     const seeded = () => [
         {

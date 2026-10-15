@@ -732,6 +732,18 @@ export const createWalletConnectV2Handler = (
             )
         }
 
+        // A required chain whose capability flipped off while the sheet was
+        // open is no longer in `chains`, so it never reaches `uncovered` below.
+        const refusal = screenRequiredNamespaces(
+            chains,
+            input.proposal.requiredNamespaces,
+        )
+        if (refusal) {
+            throw new WalletConnectError(
+                `The proposal is no longer supported: ${refusal}`,
+            )
+        }
+
         const supportedNamespaces = supportedNamespacesFor(
             chains,
             input.proposal,

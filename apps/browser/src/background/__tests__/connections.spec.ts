@@ -83,10 +83,7 @@ const proposalRequest = (
     pairingId: 'pairing-1',
     connectionKind: 'walletconnect-v1',
     peer: PEER,
-    requested: {
-        networks: ['mainnet'],
-        methods: ['algo_signTxn'],
-    },
+    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
     expiresAt: 1000,
     ...overrides,
 })

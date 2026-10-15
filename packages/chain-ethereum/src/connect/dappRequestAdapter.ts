@@ -26,8 +26,7 @@ const refuseTransactionGroup = (): never => {
 export const ethereumDappRequestAdapter: DappRequestChainAdapter = {
     chainId: ETHEREUM_CHAIN_ID,
     relayableErrorNames: [],
-    // The app's own kind id: the Ethereum bridge's wire vocabulary is not
-    // settled yet.
+    // The kind id, not a wire name: no Ethereum bridge vocabulary exists to map to.
     accountTypeOf: account => ethereumKindIdOf(account),
 
     parseSigningParams: type => ({
