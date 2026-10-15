@@ -79,7 +79,7 @@ Asset Opt-In Link Asks For An Account Then Shows The Opt-In
     [Tags]    id:deeplinks.asset-opt-in    p1
     Open Deeplink    ${OPT_IN_LINK}
     Wait Until Settled    ${OPT_IN_ACCOUNT_ROW}
-    Tap    ${OPT_IN_ACCOUNT_ROW}
+    Tap Upper Half    ${OPT_IN_ACCOUNT_ROW}
     Wait Until Settled    ${OPT_IN_COPY_ID}
     Page Should Contain Element    ${OPT_IN_CONFIRM}
     Page Should Contain Text    ${OPT_IN_ASSET_ID}

@@ -109,10 +109,14 @@ Deny Camera Permission
     [Documentation]    Revoking kills the app; relaunch it after. user-fixed is "Don't ask again", so the
     ...                app gets a denial without a system dialog (pm set-permission-flags needs Android 11+).
     Adb    shell    pm    revoke    ${ANDROID_PACKAGE}    android.permission.CAMERA
-    Adb    shell    pm    set-permission-flags    ${ANDROID_PACKAGE}    android.permission.CAMERA    user-fixed
+    ${fixed}=    Run Keyword And Return Status
+    ...    Adb    shell    pm    set-permission-flags    ${ANDROID_PACKAGE}    android.permission.CAMERA    user-fixed
+    Skip If    not ${fixed}
+    ...    This Android version cannot pre-deny the camera (pm set-permission-flags), so the app would get a permission dialog instead of a denial.
 
 Grant Camera Permission
-    Adb    shell    pm    clear-permission-flags    ${ANDROID_PACKAGE}    android.permission.CAMERA    user-fixed
+    Run Keyword And Ignore Error
+    ...    Adb    shell    pm    clear-permission-flags    ${ANDROID_PACKAGE}    android.permission.CAMERA    user-fixed
     Adb    shell    pm    grant    ${ANDROID_PACKAGE}    android.permission.CAMERA
 
 Screen Should Be Capture Protected

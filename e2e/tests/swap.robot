@@ -221,6 +221,11 @@ Asset Search Ignores Case
     ${unfiltered}=    Get Matching Xpath Count    ${RECEIVE_ASSET_ROW_ANY.replace('xpath=', '')}
     Search Assets    USDC
     Wait For Search To Apply    ${unfiltered}
+    # The backend search answers asynchronously: wait for either outcome before judging it.
+    Wait Until Keyword Succeeds    15s    0.5s
+    ...    Run Keyword And Expect Error    *    Run Keywords
+    ...    Page Should Not Contain Element    ${USDC_RECEIVE_ROW}    AND
+    ...    Page Should Not Contain Element    ${NO_MATCHING_ASSETS}
     ${found}=    Run Keyword And Return Status    Page Should Contain Element    ${USDC_RECEIVE_ROW}
     IF    not ${found}
         Page Should Contain Element    ${NO_MATCHING_ASSETS}

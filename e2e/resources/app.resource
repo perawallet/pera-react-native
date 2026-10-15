@@ -211,6 +211,16 @@ Reset To Fresh Wallet
     Create Wallet
     Wait Clear Of Startup Prompts
 
+Tap Upper Half
+    [Documentation]    For rows a system bar can cover: a sheet that ignores the bottom inset puts its
+    ...                last row under Android's three-button bar, where a centre tap lands on the bar.
+    [Arguments]    ${locator}
+    ${location}=    Get Element Location    ${locator}
+    ${size}=    Get Element Size    ${locator}
+    ${point}=    Evaluate
+    ...    (int($location['x'] + $size['width'] / 2), int($location['y'] + $size['height'] / 4))
+    AppiumLibrary.Tap With Positions    100ms    ${point}
+
 Tap Back
     Tap    ${NAVIGATION_BACK_BUTTON}
 
@@ -230,7 +240,15 @@ Wait Until Settled
 Tap If Present
     [Arguments]    ${locator}
     ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
-    IF    ${present}    Click Element    ${locator}
+    # Something it dismisses (a drawer, a prompt) can leave on its own between the check and the
+    # tap; gone is the outcome either way, so a vanished element is not an error.
+    IF    ${present}
+        ${tapped}=    Run Keyword And Return Status    Click Element    ${locator}
+        IF    not ${tapped}
+            ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
+            IF    ${present}    Click Element    ${locator}
+        END
+    END
     RETURN    ${present}
 
 Tap If Shown
