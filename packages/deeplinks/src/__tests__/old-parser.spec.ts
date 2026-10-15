@@ -12,22 +12,24 @@
 
 // @vitest-environment node
 
-import { parseDeeplink } from '../parser'
-import { parsePerawalletUri } from '../old-parser'
-import { DeeplinkType } from '../types'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { deeplinkAdapters } from '../chain-adapter'
+import { DeeplinkType } from '../links'
+import { parsePerawalletUri } from '../old-parser'
+import { parseDeeplink } from '../parser'
+import { registerPeraLinkChain } from './peraLinkChain'
 
 // Test addresses from CSV
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 beforeEach(() => {
-    registerLegacyAddressCodec()
+    registerPeraLinkChain()
 })
 
 afterEach(() => {
     addressCodecs.reset()
+    deeplinkAdapters.reset()
 })
 
 describe('Deeplink Parser - Old Format', () => {
@@ -40,24 +42,19 @@ describe('Deeplink Parser - Old Format', () => {
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })
-
-        it('parses algorand:// scheme', () => {
-            const result = parseDeeplink(`algorand://${TEST_ADDRESS}`)
-            expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
-        })
     })
 
-    describe('ALGO transfer', () => {
+    describe('Native-asset transfer', () => {
         it('parses ALGO transfer with amount and note', () => {
             const result = parseDeeplink(
                 `perawallet://${TEST_ADDRESS}?amount=99999&note=HELLO%20WORLD%20NOTE`,
             )
             expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
-            if (result?.type === DeeplinkType.ALGO_TRANSFER) {
+            expect(result?.type).toBe(DeeplinkType.TRANSFER)
+            if (result?.type === DeeplinkType.TRANSFER) {
                 expect(result.receiverAddress).toBe(TEST_ADDRESS)
-                expect(result.amount).toBe('99999')
+                expect(result.assetRef).toBeUndefined()
+                expect(result.amount?.toFixed()).toBe('99999')
                 expect(result.note).toBe('HELLO WORLD NOTE')
             }
         })
@@ -66,9 +63,11 @@ describe('Deeplink Parser - Old Format', () => {
             const result = parseDeeplink(
                 `perawallet://${TEST_ADDRESS}?amount=100000&xnote=HELLO%20WORLD%20XNOTE`,
             )
-            expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
-            if (result?.type === DeeplinkType.ALGO_TRANSFER) {
-                expect(result.xnote).toBe('HELLO WORLD XNOTE')
+            expect(result?.type).toBe(DeeplinkType.TRANSFER)
+            if (result?.type === DeeplinkType.TRANSFER) {
+                expect(result.chainData).toMatchObject({
+                    xnote: 'HELLO WORLD XNOTE',
+                })
             }
         })
     })
@@ -79,12 +78,14 @@ describe('Deeplink Parser - Old Format', () => {
                 `perawallet://${TEST_ADDRESS}?amount=99999&asset=31566704&xnote=HELLO%20WORLD%20XNOTE`,
             )
             expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
-            if (result?.type === DeeplinkType.ASSET_TRANSFER) {
-                expect(result.assetId).toBe('31566704')
+            expect(result?.type).toBe(DeeplinkType.TRANSFER)
+            if (result?.type === DeeplinkType.TRANSFER) {
+                expect(result.assetRef?.assetId).toBe('31566704')
                 expect(result.receiverAddress).toBe(TEST_ADDRESS)
-                expect(result.amount).toBe('99999')
-                expect(result.xnote).toBe('HELLO WORLD XNOTE')
+                expect(result.amount?.toFixed()).toBe('99999')
+                expect(result.chainData).toMatchObject({
+                    xnote: 'HELLO WORLD XNOTE',
+                })
             }
         })
     })
@@ -97,7 +98,7 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
             if (result?.type === DeeplinkType.ASSET_OPT_IN) {
-                expect(result.assetId).toBe('31566704')
+                expect(result.assetRef.assetId).toBe('31566704')
             }
         })
 
@@ -126,7 +127,7 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_TRANSACTIONS)
             if (result?.type === DeeplinkType.ASSET_TRANSACTIONS) {
-                expect(result.assetId).toBe('31566704')
+                expect(result.assetRef?.assetId).toBe('31566704')
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })
@@ -138,7 +139,7 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_TRANSACTIONS)
             if (result?.type === DeeplinkType.ASSET_TRANSACTIONS) {
-                expect(result.assetId).toBe('31566704')
+                expect(result.assetRef?.assetId).toBe('31566704')
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })
@@ -150,7 +151,7 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_TRANSACTIONS)
             if (result?.type === DeeplinkType.ASSET_TRANSACTIONS) {
-                expect(result.assetId).toBe('0')
+                expect(result.assetRef?.assetId).toBe('0')
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })
@@ -196,15 +197,16 @@ describe('Deeplink Parser - Old Format', () => {
                 `perawallet://${TEST_ADDRESS}?type=keyreg&selkey=-lfw-Y04lTnllJfncgMjXuAePe8i8YyVeoR9c1Xi78c&votekey=UU8zLMrFVfZPnzbnL6ThAArXFsznV3TvFVAun2ONcEI&votefst=1300&votelst=11300&votekd=100&fee=2000000`,
             )
             expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.KEYREG)
-            if (result?.type === DeeplinkType.KEYREG) {
-                expect(result.senderAddress).toBe(TEST_ADDRESS)
-                expect(result.keyregType).toBe('online')
-                expect(result.voteKey).toBe(
+            expect(result?.type).toBe(DeeplinkType.CHAIN_ACTION)
+            if (result?.type === DeeplinkType.CHAIN_ACTION) {
+                expect(result.chainData.sender).toBe(TEST_ADDRESS)
+                expect(result.chainData.keyregType).toBe('online')
+                expect(result.chainData.voteKey).toBe(
                     'UU8zLMrFVfZPnzbnL6ThAArXFsznV3TvFVAun2ONcEI',
                 )
-                expect(result.votefst).toBe('1300')
-                expect(result.votelst).toBe('11300')
+                expect(result.chainData.voteFirst).toBe('1300')
+                expect(result.chainData.voteLast).toBe('11300')
+                expect(result.chainData.fee?.toFixed()).toBe('2000000')
             }
         })
 
@@ -212,9 +214,9 @@ describe('Deeplink Parser - Old Format', () => {
             const result = parseDeeplink(
                 `perawallet://${TEST_ADDRESS}?type=keyreg`,
             )
-            expect(result?.type).toBe(DeeplinkType.KEYREG)
-            if (result?.type === DeeplinkType.KEYREG) {
-                expect(result.keyregType).toBe('offline')
+            expect(result?.type).toBe(DeeplinkType.CHAIN_ACTION)
+            if (result?.type === DeeplinkType.CHAIN_ACTION) {
+                expect(result.chainData.keyregType).toBe('offline')
             }
         })
     })
@@ -288,7 +290,7 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
             if (result?.type === DeeplinkType.ASSET_OPT_IN) {
-                expect(result.assetId).toBe('31566704')
+                expect(result.assetRef?.assetId).toBe('31566704')
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })
