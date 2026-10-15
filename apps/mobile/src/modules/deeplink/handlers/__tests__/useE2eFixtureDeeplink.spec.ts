@@ -79,7 +79,7 @@ describe('useE2eFixtureDeeplink', () => {
         expect(mockReset).toHaveBeenCalledWith({
             index: 1,
             routes: [
-                { name: 'TabBar' },
+                { name: 'TabBar', key: expect.stringMatching(/^TabBar-e2e-/) },
                 {
                     name: 'Contacts',
                     state: { routes: [{ name: 'ContactsList' }] },
@@ -117,7 +117,9 @@ describe('useE2eFixtureDeeplink', () => {
         expect(mockSetState).not.toHaveBeenCalled()
         expect(mockReset).toHaveBeenCalledWith({
             index: 0,
-            routes: [{ name: 'TabBar' }],
+            routes: [
+                { name: 'TabBar', key: expect.stringMatching(/^TabBar-e2e-/) },
+            ],
         })
     })
 

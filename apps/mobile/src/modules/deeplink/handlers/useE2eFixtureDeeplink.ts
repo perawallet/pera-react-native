@@ -64,8 +64,11 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
             // test's sheet up to swallow the next tap.
             useBottomSheetStore.getState().dismissAll()
             if (!navigationRef.isReady()) return
+            // A fresh key remounts the tab shell, which also closes the account
+            // drawer: its open state is local to the shell, not in navigation.
+            const tabBar = { name: 'TabBar', key: `TabBar-e2e-${Date.now()}` }
             if (fixture === 'home') {
-                navigationRef.reset({ index: 0, routes: [{ name: 'TabBar' }] })
+                navigationRef.reset({ index: 0, routes: [tabBar] })
                 return
             }
             useContactsStore.setState({
@@ -75,7 +78,7 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
             navigationRef.reset({
                 index: 1,
                 routes: [
-                    { name: 'TabBar' },
+                    tabBar,
                     {
                         name: 'Contacts',
                         state: { routes: [{ name: 'ContactsList' }] },

@@ -16,7 +16,11 @@ ${BANNERS_MODAL_CLOSE}          accessibility_id=banners_carousel_modal_close
 ${ANALYTICS_CONSENT_DECLINE}    accessibility_id=analytics_consent_prompt_decline_button
 ${NAVIGATION_BACK_BUTTON}       accessibility_id=navigation_back_button
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
-${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu']
+${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu' or @name='numpad_key_1' or @content-desc='numpad_key_1']
+${PIN_PAD_KEY}                  accessibility_id=numpad_key_1
+# The only PINs any suite sets (security.robot). A run that dies with one set leaves the next cold
+# start on the lock screen, so every relaunch unlocks with them rather than failing there.
+@{E2E_PINS}                     123456    445566
 ${FIXTURE_URL}                  perawallet://app/dev/e2e-fixture
 ${FIXTURE_SETTLE}               1.5s
 
@@ -38,11 +42,23 @@ Relaunch Pera
     Restart Pera
     Wait Until Page Contains Element    ${FIRST_SCREEN}    timeout=30s
     Dismiss Dev Client Intro
+    Unlock With Known Pins
     # An existing wallet meets an "Updated Terms" screen at launch when the terms version moved.
     Tap If Present    ${TERMS_AGREE_BUTTON}
     ${onboarding}=    Run Keyword And Return Status    Page Should Contain Element    ${CREATE_WALLET_BUTTON}
     IF    ${onboarding}    Create Wallet
     Wait Clear Of Startup Prompts
+
+Unlock With Known Pins
+    FOR    ${pin}    IN    @{E2E_PINS}
+        ${locked}=    Run Keyword And Return Status    Page Should Contain Element    ${PIN_PAD_KEY}
+        IF    not ${locked}    RETURN
+        FOR    ${digit}    IN    @{{ list($pin) }}
+            Tap    accessibility_id=numpad_key_${digit}
+        END
+        # A wrong PIN keeps the pad up; fall through to the next one.
+        Run Keyword And Return Status    Wait Until Page Does Not Contain Element    ${PIN_PAD_KEY}    timeout=10s
+    END
 
 Go Home
     [Documentation]    Home with a fresh back stack and no sheet open, data untouched. The usual
