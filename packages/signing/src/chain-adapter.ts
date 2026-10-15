@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-import { isDebug, type Network } from '@perawallet/wallet-core-config'
+import { isDebug } from '@perawallet/wallet-core-config'
 import type { Decimal } from 'decimal.js'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
@@ -747,7 +747,7 @@ export interface PlannerChainAdapter {
     /** The transactions a simulated run of `groupTxs` reveals beyond its top level. */
     simulateGroup(
         groupTxs: PeraTransaction[] | UnsignedTransaction[],
-        network: Network,
+        scope: ChainScope,
     ): Promise<TransactionNative[]>
 
     /** The bytes a program signature must cover. */

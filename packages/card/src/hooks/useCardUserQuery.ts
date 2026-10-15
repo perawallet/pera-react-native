@@ -11,10 +11,7 @@
  */
 
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchUser } from '../api/user'
 import type { CardUser } from '../models'
@@ -41,11 +38,9 @@ export const useCardUserQuery = (
     scope: ChainScope,
     options?: UseCardUserQueryOptions,
 ) => {
-    const network = legacyNetworkOf(scope)
-
     return useQuery({
         queryKey: cardQueryKeys.user(scope),
-        queryFn: ({ signal }) => fetchUser({ network, signal }),
+        queryFn: ({ signal }) => fetchUser({ scope, signal }),
         enabled: options?.enabled ?? true,
         refetchInterval: options?.refetchInterval,
     })

@@ -16,6 +16,11 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useProposeSignRequestMutation } from '../useProposeSignRequestMutation'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
 }))
@@ -81,7 +86,7 @@ describe('useProposeSignRequestMutation', () => {
         mocks.proposeSignRequest.mockResolvedValue(validSignRequestResponse)
 
         const { result } = renderHook(
-            () => useProposeSignRequestMutation({ network: 'mainnet' }),
+            () => useProposeSignRequestMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 
@@ -107,42 +112,45 @@ describe('useProposeSignRequestMutation', () => {
         expect(result.current.data?.status).toBe('pending')
     })
 
-    test('calls endpoint with correct network and params', async () => {
-        mocks.proposeSignRequest.mockResolvedValue(validSignRequestResponse)
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'calls endpoint with correct network and params for $chainId',
+        async scope => {
+            mocks.proposeSignRequest.mockResolvedValue(validSignRequestResponse)
 
-        const { result } = renderHook(
-            () => useProposeSignRequestMutation({ network: 'testnet' }),
-            { wrapper },
-        )
+            const { result } = renderHook(
+                () => useProposeSignRequestMutation({ scope }),
+                { wrapper },
+            )
 
-        const params = {
-            joint_account_address: 'MSIG_ADDR',
-            proposer_address: 'PROPOSER',
-            type: 'async',
-            raw_transaction_lists: [['tx1', 'tx2']],
-            responses: [
-                {
-                    address: 'PROPOSER',
-                    response: 'signed' as const,
-                    signatures: [['sig_a', 'sig_b']],
-                },
-            ],
-        }
+            const params = {
+                joint_account_address: 'MSIG_ADDR',
+                proposer_address: 'PROPOSER',
+                type: 'async',
+                raw_transaction_lists: [['tx1', 'tx2']],
+                responses: [
+                    {
+                        address: 'PROPOSER',
+                        response: 'signed' as const,
+                        signatures: [['sig_a', 'sig_b']],
+                    },
+                ],
+            }
 
-        await act(async () => {
-            result.current.mutate(params)
-        })
+            await act(async () => {
+                result.current.mutate(params)
+            })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mocks.proposeSignRequest).toHaveBeenCalledWith('testnet', params)
-    })
+            expect(mocks.proposeSignRequest).toHaveBeenCalledWith(scope, params)
+        },
+    )
 
     test('returns error state when request fails', async () => {
         mocks.proposeSignRequest.mockRejectedValue(new Error('Proposal failed'))
 
         const { result } = renderHook(
-            () => useProposeSignRequestMutation({ network: 'mainnet' }),
+            () => useProposeSignRequestMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 
@@ -169,7 +177,7 @@ describe('useProposeSignRequestMutation', () => {
 
     test('is idle before mutation is called', () => {
         const { result } = renderHook(
-            () => useProposeSignRequestMutation({ network: 'mainnet' }),
+            () => useProposeSignRequestMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 
@@ -181,7 +189,7 @@ describe('useProposeSignRequestMutation', () => {
         mocks.proposeSignRequest.mockResolvedValue(validSignRequestResponse)
 
         const { result } = renderHook(
-            () => useProposeSignRequestMutation({ network: 'mainnet' }),
+            () => useProposeSignRequestMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 

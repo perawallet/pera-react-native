@@ -11,10 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { withdrawWalletBalance } from '../api/wallet-balance'
 import type { CardWalletKind, WalletWithdrawResult } from '../models'
 import { cardQueryKeys } from './querykeys'
@@ -34,7 +31,6 @@ export const useWithdrawWalletBalanceMutation = (
     scope: ChainScope,
     kind: CardWalletKind,
 ): UseWithdrawWalletBalanceMutationResult => {
-    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<
@@ -43,7 +39,7 @@ export const useWithdrawWalletBalanceMutation = (
         WithdrawWalletBalanceVariables
     >({
         mutationFn: ({ amount }) =>
-            withdrawWalletBalance({ kind, amount, network }),
+            withdrawWalletBalance({ kind, amount, scope }),
         onSuccess: () => {
             void queryClient.invalidateQueries({
                 queryKey: cardQueryKeys.walletBalance(scope, kind),

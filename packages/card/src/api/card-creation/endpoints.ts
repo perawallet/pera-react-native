@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getCardApiError, type CardApiError } from '../errors'
 import { getCardTransport } from '../transport'
 import {
@@ -40,7 +41,7 @@ export type CardSignInData = {
 }
 
 export type CreateCardParams = {
-    network: Network
+    scope: ChainScope
     /** Funding-source address proving ownership via the sign-in signature. */
     address: string
     /**
@@ -77,7 +78,7 @@ export const createCard = async (
     params: CreateCardParams,
 ): Promise<CreateCardResult> => {
     const {
-        network,
+        scope,
         address,
         baanxUserId,
         currency,
@@ -88,7 +89,7 @@ export const createCard = async (
 
     try {
         const response = await getCardTransport().request({
-            network,
+            scope,
             route: 'proxy',
             method: 'POST',
             path: '/api/v3/baanx/escrow-card',
@@ -144,7 +145,7 @@ export type FundingAddressLink = {
 }
 
 export type FetchFundingAddressLinkParams = {
-    network: Network
+    scope: ChainScope
     address: string
     baanxUserId: string
     signal?: AbortSignal
@@ -161,10 +162,10 @@ export type FetchFundingAddressLinkParams = {
 export const fetchFundingAddressLink = async (
     params: FetchFundingAddressLinkParams,
 ): Promise<FundingAddressLink> => {
-    const { network, address, baanxUserId, signal } = params
+    const { scope, address, baanxUserId, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         route: 'proxy',
         method: 'GET',
         path: '/api/v3/baanx/card-address',

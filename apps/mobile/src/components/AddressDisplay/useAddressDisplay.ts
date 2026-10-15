@@ -24,6 +24,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import type { IconName } from '@components/core'
@@ -107,6 +108,7 @@ export const useAddressDisplay = ({
     displayType,
     showSecondaryAddress,
 }: UseAddressDisplayProps): UseAddressDisplayResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { copyToClipboard } = useClipboard()
     const isDarkMode = useIsDarkMode()
     const accounts = useAllAccounts()
@@ -137,7 +139,7 @@ export const useAddressDisplay = ({
         )
     }, [isAddressOnly, address, findContacts])
 
-    const { data: nfdNames } = useNfdForAddressQuery(address, {
+    const { data: nfdNames } = useNfdForAddressQuery(scope, address, {
         enabled: !isAddressOnly && !account && !contact,
     })
 

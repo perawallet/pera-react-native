@@ -18,9 +18,10 @@ import { setOnPeraBackendUnavailable } from '@providers/queryClient'
 /**
  * Surfaces one "not available on this network" toast the first time a
  * `backend: 'pera'` request raises `PeraServiceUnavailableError` (a Pera
- * request made on BetaNet or a custom node) for a given scope.
+ * request made on BetaNet or a custom node) for a given target: a scope, or a
+ * deployment for the chain-agnostic endpoints.
  *
- * Deduped per scope because an ungated Pera query — the preferred-currency
+ * Deduped per target because an ungated Pera query — the preferred-currency
  * price query behind every fiat value — fires the error once per mount, which
  * would otherwise toast on every screen change.
  */
@@ -39,15 +40,15 @@ export const usePeraServiceUnavailableToast = (): void => {
         tRef.current = t
     })
 
-    const notifiedScopesRef = useRef<Set<string>>(new Set())
+    const notifiedTargetsRef = useRef<Set<string>>(new Set())
 
     useEffect(() => {
         return setOnPeraBackendUnavailable(error => {
-            const scopeKey = `${error.scope.chainId}/${error.scope.networkId}`
-            if (notifiedScopesRef.current.has(scopeKey)) {
+            const { targetKey } = error
+            if (notifiedTargetsRef.current.has(targetKey)) {
                 return
             }
-            notifiedScopesRef.current.add(scopeKey)
+            notifiedTargetsRef.current.add(targetKey)
             showErrorRef.current(
                 error,
                 tRef.current('common.network_unavailable.title'),

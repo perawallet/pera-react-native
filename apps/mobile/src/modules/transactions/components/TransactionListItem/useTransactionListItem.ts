@@ -23,7 +23,6 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     summarizeHistoryItem,
-    useOpenSubmissionTxIdsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -52,11 +51,6 @@ export type UseTransactionListItemResult = {
     amounts: AmountDisplay[]
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
-    /**
-     * The transaction's id has an open submission-ledger row —
-     * broadcast but not yet definitively resolved.
-     */
-    isPendingVerifying: boolean
     /** Set when the chain flags a non-final status (pending, failed, replaced). */
     notice: Nullable<ChainNoticeContent>
     handlePress: () => void
@@ -72,7 +66,6 @@ export const useTransactionListItem = ({
     const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { openTxIds } = useOpenSubmissionTxIdsQuery({ scope })
     const address = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
@@ -107,8 +100,8 @@ export const useTransactionListItem = ({
         [allAmounts],
     )
     const { data: storedAssets } = useAssetsQuery(
+        scope,
         visibleAmounts.map(amount => amount.assetRef.assetId),
-        { scope },
     )
     const amounts = useMemo(
         () =>
@@ -139,7 +132,6 @@ export const useTransactionListItem = ({
             0,
             allAmounts.length - MAX_VISIBLE_AMOUNTS,
         ),
-        isPendingVerifying: openTxIds.has(transaction.id),
         notice,
         handlePress,
         handleLongPress,

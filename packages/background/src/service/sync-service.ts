@@ -396,10 +396,9 @@ export class SyncService {
             settled += summary.confirmed + summary.failed
         }
         if (settled > 0) {
-            // A settled row changes the "pending — verifying" badge set and
-            // must drop the pending history entry (history queries are
-            // DB-cached with staleTime: Infinity, so a settle on a no-work
-            // tick would otherwise leave a resolved row showing).
+            // A settled row changes the pending history row's status, and
+            // history queries are DB-cached with staleTime: Infinity, so a
+            // settle on a no-work tick would otherwise leave a stale row.
             invalidateTransactionQueries(this.deps.queryClient)
         }
     }

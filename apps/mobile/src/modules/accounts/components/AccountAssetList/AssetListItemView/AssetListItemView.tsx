@@ -26,6 +26,7 @@ import {
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import { pow10 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     AssetItemView,
     CollectibleListItem,
@@ -56,8 +57,9 @@ const AssetListItemViewBase = ({
     onPress,
     style,
 }: AssetListItemViewProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
 
     const asset = useMemo(
         () => assetFromHoldingLiteRow(holding, LEGACY_CHAIN_ID),

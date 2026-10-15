@@ -138,8 +138,11 @@ export const signPlannedGroups = async ({
         for (const transaction of group.data.transactions) {
             signed.push(await signTransaction(transaction, group))
         }
+        const historyEntries = group.data.transactions.map(
+            ({ summary, chainData }) => ({ summary, chainData }),
+        )
         results.push({
-            signedData: { type: 'signed-transactions', signed },
+            signedData: { type: 'signed-transactions', signed, historyEntries },
             signers: [{ address: group.signerAddress }],
             originalIndices: group.originalIndices,
         })

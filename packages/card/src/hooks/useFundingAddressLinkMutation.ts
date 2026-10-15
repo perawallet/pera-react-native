@@ -12,10 +12,7 @@
 
 import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     CardUserUnavailableError,
     fetchFundingAddressLink,
@@ -46,16 +43,14 @@ export type UseFundingAddressLinkMutationResult = {
 export const useFundingAddressLinkMutation = (
     scope: ChainScope,
 ): UseFundingAddressLinkMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<FundingAddressLink, Error, string>({
         mutationFn: async address => {
-            const user = await fetchUser({ network })
+            const user = await fetchUser({ scope })
             if (!user) {
                 throw new CardUserUnavailableError()
             }
             return fetchFundingAddressLink({
-                network,
+                scope,
                 address,
                 baanxUserId: user.id,
             })

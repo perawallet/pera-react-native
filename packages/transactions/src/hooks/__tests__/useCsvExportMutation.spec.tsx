@@ -58,7 +58,10 @@ describe('useCsvExportMutation', () => {
         vi.clearAllMocks()
     })
 
-    it('successfully exports CSV', async () => {
+    it.each([
+        scopeForLegacyNetwork(Networks.mainnet),
+        { chainId: 'ethereum', networkId: 'sepolia' } as const,
+    ])('successfully exports CSV for $chainId', async scope => {
         const mockResult = {
             csvContent: 'date,amount\n2024-01-01,1000',
             filename: 'export.csv',
@@ -70,7 +73,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    scope: scopeForLegacyNetwork(Networks.mainnet),
+                    scope,
                     onSuccess: mockOnSuccess,
                     onError: mockOnError,
                 }),
@@ -88,7 +91,7 @@ describe('useCsvExportMutation', () => {
             accountAddress: VALID_ADDRESS,
             dateRange: undefined,
             filename: undefined,
-            network: Networks.mainnet,
+            scope,
         })
     })
 
@@ -220,7 +223,7 @@ describe('useCsvExportMutation', () => {
             dateRange: undefined,
             filename: undefined,
             assetId: '12345',
-            network: Networks.mainnet,
+            scope: scopeForLegacyNetwork(Networks.mainnet),
         })
         expect(result.current.result?.assetId).toBe('12345')
     })

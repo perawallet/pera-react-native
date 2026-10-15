@@ -204,7 +204,14 @@ decision at startup (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend
 
-Each chain scope's configuration in `packages/config/src/network-config.ts` lists the Pera services
+There are two Pera deployments, one per `WalletMode`: `live` (the MainNet host) and `developer` (the
+TestNet host). A deployment is a host, not a chain, so every chain of a tier shares it. A
+chain-agnostic request (integrity, banners, notifications, fiat rates, Pera Web backups) names the
+wallet mode's deployment with `queryClient({ backend: 'pera', deployment })` and reaches it whatever
+network a chain is on. Device ids belong to a deployment too.
+
+A request for a chain's data names its scope instead, and reaches the deployment holding that
+chain's data (`peraDeploymentOf(scope)`). Each chain scope's configuration in `packages/config/src/network-config.ts` lists the Pera services
 its deployment serves (`peraServicesFor(scope)`, `hasPeraService(scope, service)`): Algorand MainNet
 and TestNet list every service, betanet and a custom node list none. A request declaring
 `backend: 'pera'` throws `PeraServiceUnavailableError` in `packages/shared/src/api/query-client.ts`

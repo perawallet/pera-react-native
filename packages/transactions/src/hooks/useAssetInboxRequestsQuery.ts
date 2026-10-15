@@ -11,11 +11,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { sendFlowFeatureFor, type AssetInboxRequest } from '../chain-adapter'
 import { getAssetInboxRequestsQueryKey } from './querykeys'
@@ -30,11 +27,13 @@ export type UseAssetInboxRequestsQueryResult = {
 }
 
 export const useAssetInboxRequestsQuery = (
+    scope: ChainScope,
     address: Nullable<string>,
-    chainId: ChainId,
 ): UseAssetInboxRequestsQueryResult => {
-    const scope = useSelectedScope(chainId)
-    const isUnavailableOnNetwork = !useChainCapability(chainId, 'assetInbox')
+    const isUnavailableOnNetwork = !useChainCapability(
+        scope.chainId,
+        'assetInbox',
+    )
 
     const query = useQuery({
         queryKey: getAssetInboxRequestsQueryKey(address ?? '', scope),

@@ -27,6 +27,8 @@ import {
     verifyPasswordReset,
 } from '../endpoints'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('auth endpoints', () => {
     beforeEach(() => vi.clearAllMocks())
 
@@ -43,7 +45,7 @@ describe('auth endpoints', () => {
         await loginRequest({
             email: 'e@x.com',
             password: 'pw',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         const call = request.mock.calls[0][0]
@@ -63,7 +65,7 @@ describe('auth endpoints', () => {
     it('sends the login OTP via the direct route', async () => {
         request.mockResolvedValue({ data: { success: true } })
 
-        await sendLoginOtpRequest({ userId: 'user-1', network: 'mainnet' })
+        await sendLoginOtpRequest({ userId: 'user-1', scope: ALGORAND_MAINNET })
 
         const call = request.mock.calls[0][0]
         expect(call).toEqual(
@@ -81,7 +83,7 @@ describe('auth endpoints', () => {
         request.mockResolvedValue({ data: { success: false } })
 
         await expect(
-            sendLoginOtpRequest({ userId: 'user-1', network: 'mainnet' }),
+            sendLoginOtpRequest({ userId: 'user-1', scope: ALGORAND_MAINNET }),
         ).rejects.toThrow('Baanx declined to send the login OTP')
     })
 
@@ -93,7 +95,7 @@ describe('auth endpoints', () => {
         const initiation = await oauthInitiateRequest({
             state: 'csrf-state-123',
             codeChallenge: 'challenge-abc',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(request).toHaveBeenCalledWith(
@@ -118,7 +120,7 @@ describe('auth endpoints', () => {
         const authorization = await oauthAuthorizeRequest({
             sessionToken: 'jwt-session',
             accessToken: 'login-access-token',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         const call = request.mock.calls[0][0]
@@ -148,7 +150,7 @@ describe('auth endpoints', () => {
         const tokens = await oauthTokenRequest({
             code: 'auth-code',
             codeVerifier: 'verifier-123',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(request).toHaveBeenCalledWith(
@@ -167,7 +169,10 @@ describe('auth endpoints', () => {
             data: { access_token: 'x', refresh_token: 'y', expires_in: 60 },
         })
 
-        await refreshTokenRequest({ refreshToken: 'r', network: 'mainnet' })
+        await refreshTokenRequest({
+            refreshToken: 'r',
+            scope: ALGORAND_MAINNET,
+        })
 
         const call = request.mock.calls[0][0]
         expect(call).toEqual(
@@ -190,7 +195,10 @@ describe('auth endpoints', () => {
     it('requests a password reset via the direct route', async () => {
         request.mockResolvedValue({ data: { success: true } })
 
-        await requestPasswordReset({ email: 'e@x.com', network: 'mainnet' })
+        await requestPasswordReset({
+            email: 'e@x.com',
+            scope: ALGORAND_MAINNET,
+        })
 
         const call = request.mock.calls[0][0]
         expect(call).toEqual(
@@ -209,7 +217,7 @@ describe('auth endpoints', () => {
         request.mockResolvedValue({ data: { success: false } })
 
         await expect(
-            requestPasswordReset({ email: 'e@x.com', network: 'mainnet' }),
+            requestPasswordReset({ email: 'e@x.com', scope: ALGORAND_MAINNET }),
         ).rejects.toThrow('Baanx declined to send the password reset code')
     })
 
@@ -219,7 +227,7 @@ describe('auth endpoints', () => {
         const token = await verifyPasswordReset({
             email: 'e@x.com',
             code: '123456',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         const call = request.mock.calls[0][0]
@@ -242,7 +250,7 @@ describe('auth endpoints', () => {
             token: 'reset-token-1',
             password: 'aA1!aA1!aA1!aA1',
             confirmPassword: 'aA1!aA1!aA1!aA1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         const call = request.mock.calls[0][0]
@@ -269,7 +277,7 @@ describe('auth endpoints', () => {
                 token: 'reset-token-1',
                 password: 'aA1!aA1!aA1!aA1',
                 confirmPassword: 'aA1!aA1!aA1!aA1',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toThrow('Baanx declined the password reset confirmation')
     })

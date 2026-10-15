@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { startRegisterVerification } from '../api/onboarding'
 import type { VeriffSession } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
@@ -33,12 +30,10 @@ export type UseStartVerificationMutationResult = CardMutationResult<
 export const useStartVerificationMutation = (
     scope: ChainScope,
 ): UseStartVerificationMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<VeriffSession, Error, StartVerificationParams>(
         {
             mutationFn: ({ onboardingId }) =>
-                startRegisterVerification({ onboardingId, network }),
+                startRegisterVerification({ onboardingId, scope }),
             throwOnError: false,
         },
     )

@@ -12,9 +12,7 @@
 
 import { useCallback } from 'react'
 import { compactSignedResults, useTransactionEncoder } from '../../blockchain'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
-    scopeForLegacyNetwork,
     type SignedTransaction,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -32,7 +30,10 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { algorandNetworkOf } from '../../legacy-network'
 import {
     algorandTransactionOf,
     toUnsignedAlgorandTransactions,
@@ -133,7 +134,7 @@ const requestSignatures = (
  *    submitted.
  */
 export const useFeeDelegation = (): UseFeeDelegationResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { addSignRequest } = useSigningRequest()
     const {
         encodeTransaction,
@@ -155,7 +156,6 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                 throw new FeeDelegationAttestationRequiredError()
             }
 
-            const scope = scopeForLegacyNetwork(network)
             const sent = transactions.map(algorandTransactionOf)
             const { txnGroup } = await requestFeeDelegation(
                 {
@@ -171,7 +171,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     includeAssetOptInMbr,
                     optInAssetIds: optInAssetIds.map(id => id.toString()),
                 },
-                network,
+                algorandNetworkOf(scope),
             )
 
             // Decode the re-grouped txns into a merge plan: slots carrying
@@ -259,7 +259,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             })
         },
         [
-            network,
+            scope,
             addSignRequest,
             encodeTransaction,
             encodeTransactionRaw,

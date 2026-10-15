@@ -11,17 +11,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
     FINALIZED_SIGN_REQUEST_STATUSES,
@@ -129,8 +126,7 @@ export const usePendingSignaturesContent =
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { t } = useLanguage()
         const { errorToast } = useToast()
-        const { network } = useNetwork()
-        const deviceId = useDeviceID(network) ?? ''
+        const deviceId = useScopedDeviceID(scope) ?? ''
         const accounts = useAllAccounts()
         const { addSignRequest, pendingSignRequests } = useSigningRequest()
         const signRequestId = usePendingSignaturesSheetStore(
@@ -164,7 +160,7 @@ export const usePendingSignaturesContent =
             isError,
             refetch,
         } = useSignRequestDetailQuery({
-            network,
+            scope,
             deviceId,
             signRequestId: signRequestId ?? '',
             // Disable the backend query in draft mode — there is no backend

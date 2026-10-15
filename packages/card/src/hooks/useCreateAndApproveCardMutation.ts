@@ -12,8 +12,8 @@
 
 import { useMutation } from '@tanstack/react-query'
 import {
+    toScopeKey,
     type ChainScope,
-    legacyNetworkOf,
 } from '@perawallet/wallet-core-chain-contract'
 import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {
@@ -51,7 +51,7 @@ export type UseCreateAndApproveCardMutationResult = CardMutationResult<
  * persists immediately, then reuses the SAME proof to register the delegated
  * wallet with Baanx, quoting the creation txId.
  *
- * Idempotent by (address, network): if a card already exists for this
+ * Idempotent by (address, scope): if a card already exists for this
  * account, its creation is skipped; if it exists but wasn't approved (e.g. an
  * app restart between create and approve), only the approval call retries —
  * both cases still require a Step-1 proof, since a retry's original signature
@@ -60,7 +60,7 @@ export type UseCreateAndApproveCardMutationResult = CardMutationResult<
 export const useCreateAndApproveCardMutation = (
     scope: ChainScope,
 ): UseCreateAndApproveCardMutationResult => {
-    const network = legacyNetworkOf(scope)
+    const scopeKey = toScopeKey(scope)
 
     const mutation = useMutation<
         CreateAndApproveCardResult,
@@ -71,17 +71,17 @@ export const useCreateAndApproveCardMutation = (
             const currency = DEFAULT_CARD_CURRENCY.toLowerCase()
 
             // Reuse an already-created card ONLY for the same funding
-            // account on the same network. A card created for a
-            // different account — or on the other network — must never
+            // account in the same scope. A card created for a
+            // different account — or in another scope — must never
             // be reused: that would skip the ownership proof and bind a
             // wrong card.
             const store = useCardStore.getState()
-            const sameOwnerNetwork =
+            const sameOwnerScope =
                 store.escrowCardOwner === address &&
-                store.escrowCardNetwork === network
-            let cardAddress = sameOwnerNetwork ? store.escrowCardAddress : null
-            let txId = sameOwnerNetwork ? store.escrowCardTxId : null
-            let approved = sameOwnerNetwork ? store.escrowCardApproved : false
+                store.escrowCardScopeKey === scopeKey
+            let cardAddress = sameOwnerScope ? store.escrowCardAddress : null
+            let txId = sameOwnerScope ? store.escrowCardTxId : null
+            let approved = sameOwnerScope ? store.escrowCardApproved : false
 
             if (!cardAddress || !txId) {
                 if (!canCallIntegrityGuardedRoute()) {
@@ -91,13 +91,13 @@ export const useCreateAndApproveCardMutation = (
                 // The backend links the funding address to this Baanx
                 // user as part of the create call, so every attempt
                 // self-heals a missing link instead of being stuck.
-                const user = await fetchUser({ network })
+                const user = await fetchUser({ scope })
                 if (!user) {
                     throw new CardUserUnavailableError()
                 }
 
                 const created = await createCard({
-                    network,
+                    scope,
                     address,
                     baanxUserId: user.id,
                     currency,
@@ -107,12 +107,12 @@ export const useCreateAndApproveCardMutation = (
                 cardAddress = created.cardAddress
                 txId = created.txId
                 // Durable from here — the card exists on-chain, bound to
-                // the account that proved ownership and to this network,
+                // the account that proved ownership and to this scope,
                 // even if the approval call below fails.
                 useCardStore.getState().setEscrowCard({
                     cardAddress,
                     ownerAddress: address,
-                    network,
+                    scope,
                     txId,
                 })
                 approved = false

@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
     chainAccountOf,
@@ -53,7 +50,7 @@ export const buildMultisigCosignRequest = ({
         )
     }
 
-    const adapter = multisigAdapterFor(legacyNetworkOf(scope))
+    const adapter = multisigAdapterFor(scope)
     const rawTransactionsBase64 = transactionList.rawTransactions
     const { version, threshold, participantAddresses } =
         signRequest.multisigAccount

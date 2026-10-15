@@ -15,6 +15,7 @@ import {
     type ChainId,
     type ChainScope,
     type NetworkId,
+    type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import { UnconfiguredScopeError } from './errors'
 import { type Network, Networks } from './models/network'
@@ -204,12 +205,13 @@ const EMPTY_PERA_SERVICES = {
 } satisfies PeraServices
 
 /**
- * `Record<Network, …>`, not `Partial<…>` plus a fallback: a fifth network added
- * to the union fails TypeScript here until someone decides its Pera services,
- * rather than silently resolving to TestNet's deployment.
+ * The two Pera deployments, keyed by the wallet mode that reaches each. A
+ * deployment is a backend host, not a chain: it serves every chain of its
+ * tier, so chain-agnostic requests (integrity, banners, notifications, fiat
+ * rates) go to the wallet mode's deployment whatever network a chain is on.
  */
-const peraServicesByNetwork: Record<Network, PeraServices> = {
-    [Networks.mainnet]: {
+const peraServicesByDeployment: Record<WalletMode, PeraServices> = {
+    live: {
         backendUrl: config.mainnetBackendUrl,
         bidaliBaseUrl: config.mainnetBidaliBaseUrl,
         bidaliApiKey: config.mainnetBidaliApiKey,
@@ -217,7 +219,7 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxClientKey: config.mainnetBaanxClientKey,
         baanxTenantId: config.mainnetBaanxTenantId,
     },
-    [Networks.testnet]: {
+    developer: {
         backendUrl: config.testnetBackendUrl,
         bidaliBaseUrl: config.testnetBidaliBaseUrl,
         bidaliApiKey: config.testnetBidaliApiKey,
@@ -225,10 +227,19 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxClientKey: config.testnetBaanxClientKey,
         baanxTenantId: config.testnetBaanxTenantId,
     },
-    // No Pera deployment. Empty, never borrowed: the query client refuses a
-    // Pera request for a scope whose backendUrl is empty.
-    [Networks.betanet]: EMPTY_PERA_SERVICES,
-    [Networks.custom]: EMPTY_PERA_SERVICES,
+}
+
+/**
+ * `Record<Network, …>`, not `Partial<…>` plus a fallback: a fifth network added
+ * to the union fails TypeScript here until someone decides its deployment,
+ * rather than silently resolving to TestNet's. Betanet and custom have none:
+ * their chain data does not exist on either deployment.
+ */
+const peraDeploymentByNetwork: Record<Network, WalletMode | undefined> = {
+    [Networks.mainnet]: 'live',
+    [Networks.testnet]: 'developer',
+    [Networks.betanet]: undefined,
+    [Networks.custom]: undefined,
 }
 
 /** `Record<Network, …>` for the same reason as the table above. */
@@ -241,6 +252,8 @@ const peraServiceNamesByNetwork: Record<Network, readonly PeraService[]> = {
 
 type ScopeConfigOf<C extends ChainId> = {
     scope: ChainScope & { chainId: C }
+    /** The deployment serving the scope's chain data; absent where none does. */
+    deployment: WalletMode | undefined
     /** Absent while the build carries no endpoint for the scope. */
     chain: ChainConfigByChain[C] | undefined
     peraServices: PeraServices
@@ -252,45 +265,54 @@ type ScopeConfigOf<C extends ChainId> = {
 type ScopeConfig = { [C in ChainId]: ScopeConfigOf<C> }[ChainId]
 
 const ALGORAND_SCOPE_CONFIGS: readonly ScopeConfigOf<'algorand'>[] =
-    Object.values(Networks).map(network => ({
-        scope: scopeForLegacyNetwork(network),
-        chain: chainConfigByNetwork[network],
-        peraServices: peraServicesByNetwork[network],
-        services: new Set(peraServiceNamesByNetwork[network]),
-        acceptsCustomNode: true,
-    }))
+    Object.values(Networks).map(network => {
+        const deployment = peraDeploymentByNetwork[network]
+        return {
+            scope: scopeForLegacyNetwork(network),
+            deployment,
+            chain: chainConfigByNetwork[network],
+            peraServices:
+                deployment === undefined
+                    ? EMPTY_PERA_SERVICES
+                    : peraServicesByDeployment[deployment],
+            services: new Set(peraServiceNamesByNetwork[network]),
+            acceptsCustomNode: true,
+        }
+    })
 
 const ethereumScopeConfig = (
     networkId: NetworkId,
     rpcUrl: string,
-    peraBackendUrl: string,
+    deployment: WalletMode,
     services: readonly PeraService[],
 ): ScopeConfigOf<'ethereum'> => ({
     scope: { chainId: 'ethereum', networkId },
+    // An empty list drops the deployment too: the query client refuses every
+    // Pera request for such a scope, including requests that name no service.
+    deployment: services.length > 0 ? deployment : undefined,
     chain: rpcUrl === '' ? undefined : { rpcUrl },
-    // An empty list empties backendUrl too: the query client refuses every Pera
-    // request for a scope without one, including requests that name no service.
     peraServices: {
         ...EMPTY_PERA_SERVICES,
-        backendUrl: services.length > 0 ? peraBackendUrl : '',
+        backendUrl:
+            services.length > 0
+                ? peraServicesByDeployment[deployment].backendUrl
+                : '',
     },
     services: new Set(services),
     acceptsCustomNode: false,
 })
 
-// The Pera backend serves Ethereum from the same host as the Algorand network
-// of the same tier.
 const ETHEREUM_SCOPE_CONFIGS: readonly ScopeConfigOf<'ethereum'>[] = [
     ethereumScopeConfig(
         'mainnet',
         config.ethereumMainnetRpcUrl,
-        config.mainnetBackendUrl,
+        'live',
         config.ethereumMainnetPeraServices,
     ),
     ethereumScopeConfig(
         'sepolia',
         config.ethereumSepoliaRpcUrl,
-        config.testnetBackendUrl,
+        'developer',
         config.ethereumSepoliaPeraServices,
     ),
 ]
@@ -371,6 +393,14 @@ export const getPeraServicesConfig = (scope: ChainScope): PeraServices => ({
     ...(findScopeConfig(scope)?.peraServices ?? EMPTY_PERA_SERVICES),
 })
 
+export const getPeraDeploymentConfig = (
+    deployment: WalletMode,
+): PeraServices => ({ ...peraServicesByDeployment[deployment] })
+
+/** The deployment holding the scope's chain data, or `undefined` where none does (betanet, a custom node). */
+export const peraDeploymentOf = (scope: ChainScope): WalletMode | undefined =>
+    findScopeConfig(scope)?.deployment
+
 const NO_PERA_SERVICES: ReadonlySet<PeraService> = new Set()
 
 const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
@@ -378,6 +408,10 @@ const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
 
 export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
     new Set(servicesOf(scope))
+
+/** True when the scope has a Pera deployment; the query client refuses Pera requests otherwise. */
+export const hasPeraBackend = (scope: ChainScope): boolean =>
+    servicesOf(scope).size > 0
 
 export const hasPeraService = (
     scope: ChainScope,

@@ -21,6 +21,8 @@ import {
     createSetPinSession,
 } from '../endpoints'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('card-sensitive endpoints', () => {
     beforeEach(() => vi.clearAllMocks())
 
@@ -32,7 +34,7 @@ describe('card-sensitive endpoints', () => {
             },
         })
 
-        const view = await fetchCardDetailsToken({ network: 'mainnet' })
+        const view = await fetchCardDetailsToken({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -61,7 +63,7 @@ describe('card-sensitive endpoints', () => {
             panTextColor: '#000000',
         }
 
-        await fetchCardDetailsToken({ network: 'mainnet', customCss })
+        await fetchCardDetailsToken({ scope: ALGORAND_MAINNET, customCss })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -79,7 +81,7 @@ describe('card-sensitive endpoints', () => {
             },
         })
 
-        const view = await fetchCardPinToken({ network: 'mainnet' })
+        const view = await fetchCardPinToken({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -98,7 +100,7 @@ describe('card-sensitive endpoints', () => {
             },
         })
 
-        const session = await createSetPinSession({ network: 'mainnet' })
+        const session = await createSetPinSession({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -113,7 +115,7 @@ describe('card-sensitive endpoints', () => {
         request.mockRejectedValue(new Error('boom'))
 
         await expect(
-            fetchCardDetailsToken({ network: 'mainnet' }),
+            fetchCardDetailsToken({ scope: ALGORAND_MAINNET }),
         ).rejects.toThrow('boom')
     })
 })

@@ -695,6 +695,7 @@ describe('useAddressSearchView', () => {
 
         expect(vi.mocked(useNfdSearchQuery)).toHaveBeenCalledWith(
             expect.anything(),
+            expect.anything(),
             expect.objectContaining({ enabled: false }),
         )
 

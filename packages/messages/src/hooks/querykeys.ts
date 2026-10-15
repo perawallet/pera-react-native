@@ -10,30 +10,33 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Query } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'notifications'
 
 export const getNotificationsListQueryKey = (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
 ) => {
-    return [MODULE_PREFIX, 'listv2', { deviceID, scope }]
+    return [MODULE_PREFIX, 'listv2', { deviceID, deployment }]
 }
 
 export const getNotificationStatusQueryKey = (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
 ) => {
-    return [MODULE_PREFIX, 'notification-status', { deviceID, scope }]
+    return [MODULE_PREFIX, 'notification-status', { deviceID, deployment }]
 }
 
 export const getMessageStatusQueryKey = (
-    scope: ChainScope,
+    deployment: WalletMode,
     deviceID: string,
 ) => {
-    return [MODULE_PREFIX, 'message-status', { deviceID, scope }]
+    return [MODULE_PREFIX, 'message-status', { deviceID, deployment }]
 }
 
 export const getInboxQueryKey = (

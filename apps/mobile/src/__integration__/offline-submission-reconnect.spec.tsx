@@ -12,7 +12,7 @@
 
 // Kill-after-submit reconnect. The real submit chokepoint
 // writes the ledger row before the algod POST; a relaunch offline surfaces it
-// as a "Pending — verifying" history row; a relaunch online reconciles it to
+// as a pending history row with its ChainNotice; a relaunch online reconciles it to
 // confirmed and the synced transaction appears exactly once.
 
 import { type ReactNode } from 'react'
@@ -195,7 +195,7 @@ describe('Flow: offline submission reconnect', () => {
             expect(open[0]!.status).toBe('submitted')
         })
 
-        // Relaunch offline: the pending entry and its badge are observable
+        // Relaunch offline: the pending entry and its notice are observable
         // even though nothing has been persisted as a sign request.
         onlineManager.setOnline(false)
 
@@ -208,24 +208,24 @@ describe('Flow: offline submission reconnect', () => {
         const firstHistoryItem = history.result.current.transactions[0]!
         expect(firstHistoryItem.id).toBe(txid)
         expect(firstHistoryItem.confirmedRound).toBe(0)
+        expect(firstHistoryItem.status).toBe('pending')
 
-        // The badge query is a pure DB read pinned to networkMode 'always'
-        // in source; mirror that here so the badge is observable offline.
-        const offlineBadgeClient = new QueryClient({
+        const offlineClient = new QueryClient({
             defaultOptions: {
                 queries: { retry: false, gcTime: 0, networkMode: 'always' },
                 mutations: { retry: false },
             },
         })
         render(<TransactionListItem transaction={firstHistoryItem} />, {
-            queryClient: offlineBadgeClient,
+            queryClient: offlineClient,
         })
         await waitFor(() => {
             // The integration harness leaves i18n uninitialised, so `t`
             // returns the key rather than the English translation.
             expect(
-                screen.getByText('transactions.common.pending_verifying'),
+                screen.getByTestId(`transaction_row_notice_${txid}`),
             ).toBeTruthy()
+            expect(screen.getByText('transactions.notice.pending')).toBeTruthy()
         })
 
         const signingClient = createTestQueryClient()

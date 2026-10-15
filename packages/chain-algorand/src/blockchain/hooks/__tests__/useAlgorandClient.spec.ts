@@ -16,8 +16,8 @@ import { renderHook } from '@testing-library/react'
 import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import {
-    useNetwork,
     useNetworkStore,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { setCustomNetwork } from '../../store'
 import { createTimeoutBoundedAlgorandClient } from '../../utils/createAlgorandClient'
@@ -39,12 +39,15 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
     }
 })
 
-// Mock useNetwork
+// Mock useSelectedScope
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    useSelectedScope: vi.fn(() => ({
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    })),
 }))
 
 // Mock encodeSignedTransactions
@@ -72,12 +75,18 @@ vi.mock('../../utils/createAlgorandClient', async importOriginal => {
 describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useSelectedScope as Mock).mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         useNetworkStore.getState().resetState()
     })
 
     test('returns fromClients client for mainnet', () => {
-        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useSelectedScope as Mock).mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
@@ -85,7 +94,10 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromClients client for testnet', () => {
-        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
+        ;(useSelectedScope as Mock).mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
@@ -115,7 +127,10 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('configures signer when provided', async () => {
-        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useSelectedScope as Mock).mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         const mockSigner = vi.fn().mockResolvedValue(['signed-tx'])
         const { result } = renderHook(() => useAlgorandClient(mockSigner))
 
@@ -131,7 +146,10 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('re-memoizes the client when the custom-network config changes while the active network is custom', () => {
-        ;(useNetwork as Mock).mockReturnValue({ network: 'custom' })
+        ;(useSelectedScope as Mock).mockReturnValue({
+            chainId: 'algorand',
+            networkId: 'custom',
+        })
         setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',

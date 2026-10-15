@@ -18,14 +18,11 @@ import { useApplicationQuery } from '../useApplicationQuery'
 import * as applicationsEndpoints from '../../api/applications/endpoints'
 import type { PeraApplication } from '../../models/types'
 
-vi.mock('../../api/applications/endpoints')
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({
-        chainId,
-        networkId: 'mainnet',
-    }),
-}))
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+
+vi.mock('../../api/applications/endpoints')
 
 const mockApplication: PeraApplication = {
     applicationId: 123456,
@@ -51,33 +48,41 @@ describe('useApplicationQuery', () => {
         vi.clearAllMocks()
     })
 
-    test('fetches application by ID', async () => {
-        vi.mocked(applicationsEndpoints.fetchApplication).mockResolvedValue(
-            mockApplication,
-        )
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'fetches application by ID for $chainId',
+        async scope => {
+            vi.mocked(applicationsEndpoints.fetchApplication).mockResolvedValue(
+                mockApplication,
+            )
 
-        const { result } = renderHook(
-            () =>
-                useApplicationQuery({
-                    applicationId: '123456',
-                }),
-            { wrapper: createWrapper() },
-        )
+            const { result } = renderHook(
+                () =>
+                    useApplicationQuery({
+                        scope,
+                        applicationId: '123456',
+                    }),
+                { wrapper: createWrapper() },
+            )
 
-        expect(result.current.isLoading).toBe(true)
+            expect(result.current.isLoading).toBe(true)
 
-        await waitFor(() => {
-            expect(result.current.isLoading).toBe(false)
-        })
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false)
+            })
 
-        expect(result.current.data).toEqual(mockApplication)
-        expect(result.current.isError).toBe(false)
-    })
+            expect(applicationsEndpoints.fetchApplication).toHaveBeenCalledWith(
+                expect.objectContaining({ scope }),
+            )
+            expect(result.current.data).toEqual(mockApplication)
+            expect(result.current.isError).toBe(false)
+        },
+    )
 
     test('is disabled when applicationId is empty', () => {
         const { result } = renderHook(
             () =>
                 useApplicationQuery({
+                    scope: ALGORAND_TESTNET,
                     applicationId: '',
                 }),
             { wrapper: createWrapper() },
@@ -92,6 +97,7 @@ describe('useApplicationQuery', () => {
         const { result } = renderHook(
             () =>
                 useApplicationQuery({
+                    scope: ALGORAND_TESTNET,
                     applicationId: '123456',
                     isEnabled: false,
                 }),
@@ -110,6 +116,7 @@ describe('useApplicationQuery', () => {
         const { result } = renderHook(
             () =>
                 useApplicationQuery({
+                    scope: ALGORAND_TESTNET,
                     applicationId: '999999',
                 }),
             { wrapper: createWrapper() },

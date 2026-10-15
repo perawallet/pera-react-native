@@ -16,8 +16,7 @@ import {
     useQueryClient,
     type RefetchOptions,
 } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigSignRequest } from '../models'
 import { getSignRequestDetail, type SignRequestDetailResponse } from '../api'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '../constants'
@@ -25,7 +24,7 @@ import { mapSignRequest } from '../mappers'
 import { getSignRequestDetailQueryKey } from './querykeys'
 
 type UseSignRequestDetailQueryParams = {
-    network: Network
+    scope: ChainScope
     deviceId: string
     signRequestId: string
     enabled?: boolean
@@ -52,7 +51,7 @@ export type UseSignRequestDetailQueryResult = {
 }
 
 export const useSignRequestDetailQuery = ({
-    network,
+    scope,
     deviceId,
     signRequestId,
     enabled = true,
@@ -60,10 +59,7 @@ export const useSignRequestDetailQuery = ({
     pollWhileFailed = false,
 }: UseSignRequestDetailQueryParams): UseSignRequestDetailQueryResult => {
     const queryClient = useQueryClient()
-    const queryKey = getSignRequestDetailQueryKey(
-        scopeForLegacyNetwork(network),
-        signRequestId,
-    )
+    const queryKey = getSignRequestDetailQueryKey(scope, signRequestId)
 
     const query = useQuery({
         queryKey,
@@ -78,7 +74,7 @@ export const useSignRequestDetailQuery = ({
         // `useMultisigTransportAdapters`.
         queryFn: async () => {
             const fresh = await getSignRequestDetail(
-                network,
+                scope,
                 deviceId,
                 signRequestId,
             )

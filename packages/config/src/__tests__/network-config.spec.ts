@@ -11,13 +11,17 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import { LEGACY_NETWORKS } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_NETWORKS,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 import { Networks, type Network } from '../models/network'
 import { config } from '../main'
 import {
     getArc59Config,
     getIframeOrigins,
     getNetworkConfig,
+    hasPeraBackend,
     isMainnet,
     isPeraBackedNetwork,
     isTestnet,
@@ -110,6 +114,23 @@ describe('network-config', () => {
         expect(isPeraBackedNetwork(Networks.testnet)).toBe(true)
         expect(isPeraBackedNetwork(Networks.betanet)).toBe(false)
         expect(isPeraBackedNetwork(Networks.custom)).toBe(false)
+    })
+
+    test('hasPeraBackend agrees with isPeraBackedNetwork for every Algorand network', () => {
+        for (const network of Object.values(Networks)) {
+            expect(hasPeraBackend(scopeForLegacyNetwork(network))).toBe(
+                isPeraBackedNetwork(network),
+            )
+        }
+    })
+
+    test('hasPeraBackend follows the Ethereum service list', () => {
+        expect(
+            hasPeraBackend({ chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toBe(config.ethereumMainnetPeraServices.length > 0)
+        expect(
+            hasPeraBackend({ chainId: 'ethereum', networkId: 'sepolia' }),
+        ).toBe(config.ethereumSepoliaPeraServices.length > 0)
     })
 
     test('networks without a Pera deployment get empty services, never borrowed ones', () => {

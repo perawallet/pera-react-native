@@ -75,7 +75,7 @@ describe('registerAppIntegrity', () => {
     })
 
     it('runs the android handshake and stores the token', async () => {
-        const result = await registerAppIntegrity({ network: 'mainnet' })
+        const result = await registerAppIntegrity({ deployment: 'live' })
         expect(result.status).toBe('success')
         expect(providerMock.appIntegrity.attest).toHaveBeenCalledWith(
             'challenge-1',
@@ -97,7 +97,7 @@ describe('registerAppIntegrity', () => {
             attestation: 'attestation-1',
             keyId: 'key-1',
         })
-        const result = await registerAppIntegrity({ network: 'mainnet' })
+        const result = await registerAppIntegrity({ deployment: 'live' })
         expect(result.status).toBe('success')
         expect(attestDeviceMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -113,7 +113,7 @@ describe('registerAppIntegrity', () => {
 
     it('skips on development builds without attesting', async () => {
         providerMock.deviceInfo.getAppEnvironment.mockReturnValue('development')
-        const result = await registerAppIntegrity({ network: 'mainnet' })
+        const result = await registerAppIntegrity({ deployment: 'live' })
         expect(result.status).toBe('skipped')
         expect(requestChallengeMock).not.toHaveBeenCalled()
         expect(attestDeviceMock).not.toHaveBeenCalled()
@@ -122,7 +122,7 @@ describe('registerAppIntegrity', () => {
 
     it('attests on staging builds (production flow)', async () => {
         providerMock.deviceInfo.getAppEnvironment.mockReturnValue('staging')
-        const result = await registerAppIntegrity({ network: 'mainnet' })
+        const result = await registerAppIntegrity({ deployment: 'live' })
         expect(result.status).toBe('success')
         expect(attestDeviceMock).toHaveBeenCalled()
     })
@@ -130,7 +130,7 @@ describe('registerAppIntegrity', () => {
     it('skips when attestation is unsupported', async () => {
         providerMock.deviceInfo.getDevicePlatform.mockReturnValue('ios')
         providerMock.appIntegrity.isSupported.mockResolvedValueOnce(false)
-        const result = await registerAppIntegrity({ network: 'mainnet' })
+        const result = await registerAppIntegrity({ deployment: 'live' })
         expect(result.status).toBe('skipped')
         expect(attestDeviceMock).not.toHaveBeenCalled()
         expect(useAppIntegrityStore.getState().status).toBe('skipped')
@@ -138,7 +138,7 @@ describe('registerAppIntegrity', () => {
 
     it('records errors without throwing', async () => {
         requestChallengeMock.mockRejectedValueOnce(new Error('network down'))
-        const result = await registerAppIntegrity({ network: 'mainnet' })
+        const result = await registerAppIntegrity({ deployment: 'live' })
         expect(result.status).toBe('error')
         expect(useAppIntegrityStore.getState().status).toBe('error')
         expect(useAppIntegrityStore.getState().lastError).toContain(
@@ -153,7 +153,7 @@ describe('registerAppIntegrity', () => {
         const cause = new Error('play integrity unavailable')
         providerMock.appIntegrity.attest.mockRejectedValueOnce(cause)
 
-        await registerAppIntegrity({ network: 'mainnet' })
+        await registerAppIntegrity({ deployment: 'live' })
 
         expect(loggerMocks.error).toHaveBeenCalledWith(cause, {
             step: 'registerAppIntegrity',
@@ -166,7 +166,7 @@ describe('registerAppIntegrity', () => {
             new PeraNetworkError('offline'),
         )
 
-        const result = await registerAppIntegrity({ network: 'mainnet' })
+        const result = await registerAppIntegrity({ deployment: 'live' })
 
         expect(result.status).toBe('error')
         expect(loggerMocks.error).not.toHaveBeenCalled()

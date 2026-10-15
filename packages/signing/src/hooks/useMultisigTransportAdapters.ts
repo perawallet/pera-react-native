@@ -12,17 +12,16 @@
 
 import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     multisigParametersOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import {
+    deviceIdForScope,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import {
     addSignature,
     getSignRequestDetailQueryKey,
@@ -57,7 +56,7 @@ export type MultisigTransportAdapters = {
      */
     getMsigMetadata: GetMsigMetadataFn
     /**
-     * Returns the persistent device id for the current network, used by
+     * Returns the persistent device id for the scope, used by
      * the `with-signatures` and `mark-confirmed` API calls. May be
      * undefined briefly during app startup before the device is
      * registered; the propose transport throws in that case.
@@ -107,14 +106,16 @@ const buildResponses = (
  */
 export const useMultisigTransportAdapters =
     (): UseMultisigTransportAdaptersResult => {
-        const { network: activeNetwork } = useNetwork()
         const queryClient = useQueryClient()
         const allAccounts = useAllAccounts()
-        const deviceId = useDeviceID(activeNetwork)
-
-        const getDeviceId = useCallback<GetDeviceIdFn>(
-            () => deviceId ?? undefined,
-            [deviceId],
+        // Read at call time: a request can outlive the scope that was selected
+        // when its adapters were built.
+        const getDeviceIdOn = useCallback(
+            (scope: ChainScope): GetDeviceIdFn =>
+                () =>
+                    deviceIdForScope(useDeviceStore.getState(), scope) ??
+                    undefined,
+            [],
         )
 
         // A record without stored parameters has no threshold or
@@ -141,7 +142,6 @@ export const useMultisigTransportAdapters =
         const proposeSignRequestOn = useCallback(
             (scope: ChainScope): ProposeSignRequestFn =>
                 async ({ multisigAddress, signedData, signers, type }) => {
-                    const network = legacyNetworkOf(scope)
                     if (signedData.type !== 'transactions') {
                         throw new Error(
                             `Multisig propose requires transaction data, got: ${signedData.type}`,
@@ -180,7 +180,7 @@ export const useMultisigTransportAdapters =
                     }
 
                     const proposeResponse = await proposeSignRequestApi(
-                        network,
+                        scope,
                         proposeParams,
                     )
                     const signRequestId = proposeResponse.id
@@ -235,7 +235,6 @@ export const useMultisigTransportAdapters =
         const addSignaturesOn = useCallback(
             (scope: ChainScope): AddSignaturesFn =>
                 async ({ signRequestId, signers }) => {
-                    const network = legacyNetworkOf(scope)
                     // The signRequestId here is a local draft — no backend record
                     // exists yet. Bootstrap the real propose from this signature and
                     // hand the real id back so the sheet swaps draft -> real.
@@ -264,7 +263,7 @@ export const useMultisigTransportAdapters =
                             responses: buildResponses([proposer]),
                         }
                         const proposeResponse = await proposeSignRequestApi(
-                            network,
+                            scope,
                             proposeParams,
                         )
                         // Backfilled for the reason given on the propose path above.
@@ -291,7 +290,8 @@ export const useMultisigTransportAdapters =
                             ).takeDraftProposeContext(signRequestId)
                         if (context) {
                             const { source, msigMetadata } = context
-                            const handoffDeviceId = deviceId ?? context.deviceId
+                            const handoffDeviceId =
+                                getDeviceIdOn(scope)() ?? context.deviceId
                             if (
                                 isExternalCallbackSource(source.type) &&
                                 msigMetadata &&
@@ -369,7 +369,7 @@ export const useMultisigTransportAdapters =
                     })
                     return { status: response.status }
                 },
-            [queryClient, deviceId],
+            [queryClient, getDeviceIdOn],
         )
 
         const createDraftSignRequestOn = useCallback(
@@ -392,7 +392,7 @@ export const useMultisigTransportAdapters =
                             ),
                     )
                     return useDraftSignRequestStore.getState().createDraft({
-                        network: legacyNetworkOf(scope),
+                        scope,
                         multisigAddress: input.multisigAddress,
                         multisigDetails: {
                             threshold: msig.threshold,
@@ -413,7 +413,7 @@ export const useMultisigTransportAdapters =
                     proposeSignRequest: proposeSignRequestOn(scope),
                     addSignatures: addSignaturesOn(scope),
                     getMsigMetadata: address => msigByAddress.get(address),
-                    getDeviceId,
+                    getDeviceId: getDeviceIdOn(scope),
                     createDraftSignRequest: createDraftSignRequestOn(scope),
                 }
             },
@@ -421,7 +421,7 @@ export const useMultisigTransportAdapters =
                 msigByAddressOn,
                 proposeSignRequestOn,
                 addSignaturesOn,
-                getDeviceId,
+                getDeviceIdOn,
                 createDraftSignRequestOn,
             ],
         )

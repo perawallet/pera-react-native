@@ -13,6 +13,9 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { fetchProjectByUrl } from '../endpoints'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mockQueryClient = vi.fn()
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
@@ -46,7 +49,7 @@ describe('fetchProjectByUrl', () => {
 
         const result = await fetchProjectByUrl({
             sourceUrl: 'https://test.com',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual([
@@ -69,10 +72,10 @@ describe('fetchProjectByUrl', () => {
     describe('non-Pera-backed networks', () => {
         test.each(['betanet', 'custom'] as const)(
             'returns [] on %s without calling the client',
-            async network => {
+            async networkId => {
                 const result = await fetchProjectByUrl({
                     sourceUrl: 'https://test.com',
-                    network,
+                    scope: { chainId: 'algorand', networkId },
                 })
 
                 expect(result).toEqual([])
@@ -101,7 +104,7 @@ describe('fetchProjectByUrl', () => {
 
             const result = await fetchProjectByUrl({
                 sourceUrl: 'https://test.com',
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
             })
 
             expect(result).toHaveLength(1)

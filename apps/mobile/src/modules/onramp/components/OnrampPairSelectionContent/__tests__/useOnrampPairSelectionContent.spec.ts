@@ -209,8 +209,9 @@ describe('useOnrampPairSelectionContent', () => {
         )
 
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+            SCOPE,
             ['0', USDC_MAINNET_ASSET_ID],
-            { fetchMissing: true, scope: SCOPE },
+            { fetchMissing: true },
         )
         const usdc = result.current.items.find(
             i => i.token.id === 'USDC_ALGORAND',

@@ -14,6 +14,8 @@ import { useCallback } from 'react'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
@@ -30,13 +32,14 @@ export type UseViewContactScreenResult = {
 }
 
 export const useViewContactScreen = (): UseViewContactScreenResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedContact } = useContacts()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
 
     const address = selectedContact?.addresses.algorand ?? ''
 
-    const { data: nfdNames } = useNfdForAddressQuery(address, {
+    const { data: nfdNames } = useNfdForAddressQuery(scope, address, {
         enabled: !!address,
     })
     const nfdName = nfdNames?.at(0)?.name

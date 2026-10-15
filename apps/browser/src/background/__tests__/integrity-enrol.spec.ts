@@ -63,13 +63,13 @@ vi.mock('@perawallet/wallet-core-browser-runtime', async () => {
         exportInstallPublicKey: async () => 'spki-b64',
         clearInstallKey: mockClearInstallKey,
         clearSessionIntegrityToken: mockClearSessionIntegrityToken,
-        getEnrolmentMarker: async (network: string) =>
-            markers.get(network) ?? null,
+        getEnrolmentMarker: async (deployment: string) =>
+            markers.get(deployment) ?? null,
         putEnrolmentMarker: async (
-            network: string,
+            deployment: string,
             marker: { kid: string; enrolledAt: string },
         ) => {
-            markers.set(network, marker)
+            markers.set(deployment, marker)
         },
     }
 })
@@ -203,7 +203,7 @@ describe('integrity enrolment', () => {
             expect(url.searchParams.get('peraCheckToken')).toBe(attempt.token)
             expect(attempt).toMatchObject({
                 kid: KID,
-                network: 'mainnet',
+                deployment: 'live',
                 surface: 'frame',
                 isReady: false,
                 phase: 'checking',
@@ -213,8 +213,8 @@ describe('integrity enrolment', () => {
             expect(fake.alarms.has(INTEGRITY_ENROL_DEADLINE_ALARM)).toBe(true)
         })
 
-        it('does nothing once this key is enrolled on the active network, and clears the needed flag', async () => {
-            markers.set('mainnet', { kid: KID, enrolledAt: 'x' })
+        it('does nothing once this key is enrolled on the active deployment, and clears the needed flag', async () => {
+            markers.set('live', { kid: KID, enrolledAt: 'x' })
             fake.session.set(NEEDED_KEY, 1)
             const { requestEnrolment } = await load()
 
@@ -224,8 +224,8 @@ describe('integrity enrolment', () => {
             expect(fake.session.has(NEEDED_KEY)).toBe(false)
         })
 
-        it('still enrols when only another network knows this key', async () => {
-            markers.set('testnet', { kid: KID, enrolledAt: 'x' })
+        it('still enrols when only another deployment knows this key', async () => {
+            markers.set('developer', { kid: KID, enrolledAt: 'x' })
             const { requestEnrolment } = await load()
 
             expect((await requestEnrolment('page-open')).action).toBe('host')
@@ -415,9 +415,9 @@ describe('integrity enrolment', () => {
                 deviceInstallationId: 'install-1',
                 publicKey: 'spki-b64',
                 turnstileToken: 'tok',
-                network: 'mainnet',
+                deployment: 'live',
             })
-            expect(markers.get('mainnet')?.kid).toBe(KID)
+            expect(markers.get('live')?.kid).toBe(KID)
             expect(fake.session.has(BACKOFF_KEY)).toBe(false)
             expect(fake.session.has(NEEDED_KEY)).toBe(false)
             expect(fake.alarms.has(module.INTEGRITY_ENROL_DEADLINE_ALARM)).toBe(
@@ -458,7 +458,7 @@ describe('integrity enrolment', () => {
                 connect(token).deliver(solved)
 
                 await vi.waitFor(() => expect(attempt().phase).toBe('done'))
-                expect(markers.has('mainnet')).toBe(false)
+                expect(markers.has('live')).toBe(false)
                 expect(fake.session.has(BACKOFF_KEY)).toBe(true)
                 expect(mockResumeIntegrityMint).not.toHaveBeenCalled()
             },
@@ -475,7 +475,7 @@ describe('integrity enrolment', () => {
             expect(mockEnrolDevice).not.toHaveBeenCalled()
             expect(fake.session.has(BACKOFF_KEY)).toBe(false)
             expect(fake.session.has(NEEDED_KEY)).toBe(true)
-            expect(markers.has('mainnet')).toBe(false)
+            expect(markers.has('live')).toBe(false)
             expect(mockResumeIntegrityMint).not.toHaveBeenCalled()
         })
 
@@ -493,7 +493,7 @@ describe('integrity enrolment', () => {
             expect(mockClearInstallKey).toHaveBeenCalledTimes(1)
             expect(mockClearSessionIntegrityToken).toHaveBeenCalledTimes(1)
             expect(fake.session.has(BACKOFF_KEY)).toBe(true)
-            expect(markers.has('mainnet')).toBe(false)
+            expect(markers.has('live')).toBe(false)
         })
 
         it('still finishes the attempt when dropping the key fails', async () => {

@@ -16,7 +16,7 @@ import {
     isLedgerAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { describeError, logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -59,7 +59,6 @@ export const useSelectFundingTypeSheet =
         const { resolve, dismiss } = useBottomSheetResult<'applied'>()
         const showError = useCardErrorToast()
         const scope = useCardScope()
-        const network = legacyNetworkOf(scope)
 
         const storedType = useCardStore(state => state.selectedFundingType)
         const connectedAddress = useCardStore(
@@ -67,18 +66,20 @@ export const useSelectFundingTypeSheet =
         )
         const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
         const escrowCardOwner = useCardStore(state => state.escrowCardOwner)
-        const escrowCardNetwork = useCardStore(state => state.escrowCardNetwork)
+        const escrowCardScopeKey = useCardStore(
+            state => state.escrowCardScopeKey,
+        )
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
             () => findCardAccount(accounts, connectedAddress, scope.chainId),
             [accounts, connectedAddress, scope.chainId],
         )
 
-        // The switch acts on the card created for THIS account on THIS network
-        // (owner + network scoped, like the create mutation's reuse guard).
+        // The switch acts on the card created for THIS account in THIS scope
+        // (owner + scope keyed, like the create mutation's reuse guard).
         const cardAddress =
             escrowCardOwner === connectedAddress &&
-            escrowCardNetwork === network
+            escrowCardScopeKey === toScopeKey(scope)
                 ? escrowCardAddress
                 : null
 

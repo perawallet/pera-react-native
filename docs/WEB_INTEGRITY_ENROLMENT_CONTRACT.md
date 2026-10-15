@@ -379,9 +379,11 @@ the token is only ever forwarded to the backend, whose `siteverify` result is th
 ### 5.5 Storage
 
 In the `pera-integrity` IndexedDB's `keys` store, beside the install key (`install-key`), one
-marker per network: `enrolment:<network>` = `{ kid, enrolledAt }`. Per network because mainnet and
-testnet are separate backend deployments with separate databases, so a key enrolled on one is
-unknown to the other. The worker treats "this network's marker present and its `kid` matches the
+marker per Pera deployment: `enrolment:<tier>` = `{ kid, enrolledAt }`, where the tier is `mainnet`
+for `live` and `testnet` for `developer`. Per deployment because the two are separate backends with
+separate databases, so a key enrolled on one is unknown to the other. The worker reads the
+deployment from the persisted wallet mode, so developer mode on any Algorand network enrols against
+the developer deployment. It treats "this deployment's marker present and its `kid` matches the
 current key" as enrolled. A key regenerated for any reason invalidates every marker by construction.
 
 ### 5.6 Revocation handling in the mint loop
@@ -389,7 +391,7 @@ current key" as enrolled. A key regenerated for any reason invalidates every mar
 The mint loop never enrols; it distinguishes attest 403s by `code` and raises
 `integrity:enrol-needed` for section 5.1's third trigger:
 
-- `APP_INTEGRITY_ENROLMENT_REQUIRED` keeps the key, clears only the active network's marker (the
+- `APP_INTEGRITY_ENROLMENT_REQUIRED` keeps the key, clears only the active deployment's marker (the
   backend is the authority, whatever the marker says), and raises the flag. When that marker held
   the current `kid`, the backend contradicts an enrolment it accepted (replica lag, a defect), so
   it also records an enrolment failure: otherwise the successful enrol that just cleared the backoff

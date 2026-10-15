@@ -12,7 +12,6 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    legacyNetworkOf,
     type ChainScope,
     type PeraTransaction,
     type TransactionNative,
@@ -58,10 +57,7 @@ export const useGroupSimulationQuery = ({
         staleTime: Infinity,
         retry: false,
         queryFn: () =>
-            plannerAdapterForScope(scope).simulateGroup(
-                groupTxs ?? [],
-                legacyNetworkOf(scope),
-            ),
+            plannerAdapterForScope(scope).simulateGroup(groupTxs ?? [], scope),
     })
 
     return {

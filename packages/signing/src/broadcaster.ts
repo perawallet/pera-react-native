@@ -17,18 +17,14 @@ import {
     type SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
-import type {
-    AppError,
-    Network,
-    Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from './models'
 import type { DataTransport } from './pipeline/types'
 import type { IntentKey, SubmissionFlow } from './db/types'
 
 export type OnConfirmedHandler = (
     affectedAddresses: string[],
-    network: Network,
+    scope: ChainScope,
 ) => void | Promise<void>
 
 /**

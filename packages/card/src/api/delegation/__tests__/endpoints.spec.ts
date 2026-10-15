@@ -26,6 +26,9 @@ import {
 import { AutoDrawDelegationRejectedError } from '../errors'
 import { registerFakeCardAdapter } from '../../../__tests__/fakeCardAdapter'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
 describe('fetchDelegationToken', () => {
@@ -36,7 +39,7 @@ describe('fetchDelegationToken', () => {
             data: { token: 'tok-1', nonce: 'bm9uY2U=' },
         })
 
-        const result = await fetchDelegationToken({ network: 'mainnet' })
+        const result = await fetchDelegationToken({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -52,7 +55,7 @@ describe('fetchDelegationToken', () => {
         request.mockResolvedValue({ data: { token: 'tok-1' } })
 
         await expect(
-            fetchDelegationToken({ network: 'mainnet' }),
+            fetchDelegationToken({ scope: ALGORAND_MAINNET }),
         ).rejects.toThrow()
     })
 })
@@ -73,7 +76,7 @@ describe('fetchExternalWallets', () => {
             ],
         })
 
-        const wallets = await fetchExternalWallets({ network: 'mainnet' })
+        const wallets = await fetchExternalWallets({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -92,7 +95,7 @@ describe('fetchExternalWallets', () => {
             data: [{ address: 'ALGO_ADDR', currency: 'usdc' }],
         })
 
-        const wallets = await fetchExternalWallets({ network: 'mainnet' })
+        const wallets = await fetchExternalWallets({ scope: ALGORAND_MAINNET })
 
         expect(wallets[0].allowance.isZero()).toBe(true)
         expect(wallets[0].balance.isZero()).toBe(true)
@@ -126,7 +129,7 @@ describe('postDelegationApproval', () => {
         expect(adapter.delegationApprovalRequest).toHaveBeenCalledWith(approval)
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 method: 'POST',
                 path: '/v1/delegation/chain/post-approval',
                 authenticated: true,
@@ -188,7 +191,7 @@ describe('postCardDelegation', () => {
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 method: 'POST',
                 path: '/v1/delegation/chain/delegator-lsig',
                 authenticated: true,

@@ -21,12 +21,18 @@ vi.mock('../../api/card', async () => ({
     orderCard,
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useOrderCardMutation } from '../useOrderCardMutation'
 import { CardOrderNotVerifiedError } from '../../api/card'
 import { cardMutationKeys } from '../querykeys'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 /** A ky-shaped rejection whose body getCardApiError can read. */
 const baanxError = (status: number, body: Record<string, unknown>) => ({
@@ -34,7 +40,7 @@ const baanxError = (status: number, body: Record<string, unknown>) => ({
     response: { status },
 })
 
-describe('useOrderCardMutation', () => {
+describe.each(SCOPES)('useOrderCardMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -64,7 +70,7 @@ describe('useOrderCardMutation', () => {
         result.current.mutate()
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(orderCard).toHaveBeenCalledWith({ network: 'mainnet' })
+        expect(orderCard).toHaveBeenCalledWith({ scope: SCOPE })
         expect(invalidateSpy).toHaveBeenCalledWith(
             expect.objectContaining({
                 queryKey: expect.arrayContaining(['card', 'status']),

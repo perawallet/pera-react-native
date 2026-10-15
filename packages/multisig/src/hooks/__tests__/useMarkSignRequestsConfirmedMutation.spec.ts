@@ -16,6 +16,11 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useMarkSignRequestsConfirmedMutation } from '../useMarkSignRequestsConfirmedMutation'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     markSignRequestsConfirmed: vi.fn(),
 }))
@@ -44,30 +49,33 @@ describe('useMarkSignRequestsConfirmedMutation', () => {
             children,
         )
 
-    test('calls the endpoint with the scope and request payload from the input', async () => {
-        mocks.markSignRequestsConfirmed.mockResolvedValue(undefined)
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'calls the endpoint with the scope and request payload from the input for $chainId',
+        async scope => {
+            mocks.markSignRequestsConfirmed.mockResolvedValue(undefined)
 
-        const { result } = renderHook(
-            () => useMarkSignRequestsConfirmedMutation(),
-            { wrapper },
-        )
+            const { result } = renderHook(
+                () => useMarkSignRequestsConfirmedMutation(),
+                { wrapper },
+            )
 
-        await act(async () => {
-            await result.current.markConfirmed({
-                scope: { chainId: 'algorand', networkId: 'testnet' },
-                deviceId: 'device-1',
-                signRequestIds: ['sr-1', 'sr-2'],
+            await act(async () => {
+                await result.current.markConfirmed({
+                    scope,
+                    deviceId: 'device-1',
+                    signRequestIds: ['sr-1', 'sr-2'],
+                })
             })
-        })
 
-        expect(mocks.markSignRequestsConfirmed).toHaveBeenCalledWith(
-            { chainId: 'algorand', networkId: 'testnet' },
-            {
-                device_id: 'device-1',
-                proposed_sign_request_ids: ['sr-1', 'sr-2'],
-            },
-        )
-    })
+            expect(mocks.markSignRequestsConfirmed).toHaveBeenCalledWith(
+                scope,
+                {
+                    device_id: 'device-1',
+                    proposed_sign_request_ids: ['sr-1', 'sr-2'],
+                },
+            )
+        },
+    )
 
     test('rejects when the endpoint rejects', async () => {
         mocks.markSignRequestsConfirmed.mockRejectedValue(new Error('500'))
@@ -80,7 +88,7 @@ describe('useMarkSignRequestsConfirmedMutation', () => {
         await act(async () => {
             await expect(
                 result.current.markConfirmed({
-                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestIds: ['sr-1'],
                 }),
@@ -103,7 +111,7 @@ describe('useMarkSignRequestsConfirmedMutation', () => {
 
         act(() => {
             void result.current.markConfirmed({
-                scope: { chainId: 'algorand', networkId: 'testnet' },
+                scope: ALGORAND_TESTNET,
                 deviceId: 'device-1',
                 signRequestIds: ['sr-1'],
             })

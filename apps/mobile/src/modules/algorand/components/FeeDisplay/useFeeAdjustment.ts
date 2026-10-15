@@ -13,9 +13,10 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
+import {
+    LEGACY_CHAIN_ID,
+    type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
@@ -26,6 +27,7 @@ import {
     type FeeAdjustment,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type UseFeeAdjustmentResult = {
     isAdjusted: boolean
@@ -57,8 +59,9 @@ const NOT_ADJUSTED: UseFeeAdjustmentResult = {
 export const useFeeAdjustment = (
     transaction?: AlgorandTransactionView,
 ): UseFeeAdjustmentResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { feeAdjustments, currentRequest } = useSigningPipeline()
-    const { decimals: nativeDecimals } = useNativeAsset()
+    const { decimals: nativeDecimals } = useNativeAsset(scope)
 
     return useMemo(() => {
         if (feeAdjustments.length === 0) {

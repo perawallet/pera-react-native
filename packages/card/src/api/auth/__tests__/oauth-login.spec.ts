@@ -31,6 +31,8 @@ import {
 } from '../oauth-login'
 import { createCodeChallenge } from '../pkce'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('exchangeLoginForOauthTokens', () => {
     beforeEach(() => vi.clearAllMocks())
 
@@ -48,7 +50,7 @@ describe('exchangeLoginForOauthTokens', () => {
 
         const tokens = await exchangeLoginForOauthTokens({
             accessToken: 'login-token',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         const initiateArgs = oauthInitiateRequest.mock.calls[0][0]
@@ -58,7 +60,7 @@ describe('exchangeLoginForOauthTokens', () => {
             expect.objectContaining({
                 sessionToken: 'jwt-session',
                 accessToken: 'login-token',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         )
 
@@ -83,7 +85,7 @@ describe('exchangeLoginForOauthTokens', () => {
         await expect(
             exchangeLoginForOauthTokens({
                 accessToken: 'login-token',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toBeInstanceOf(OauthStateMismatchError)
         expect(oauthTokenRequest).not.toHaveBeenCalled()
@@ -103,7 +105,7 @@ describe('exchangeLoginForOauthTokens', () => {
         await expect(
             acquireCardSessionTokens({
                 accessToken: 'login-token',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).resolves.toEqual({ accessToken: 'x', refreshToken: 'y' })
     })
@@ -116,7 +118,7 @@ describe('exchangeLoginForOauthTokens', () => {
         await expect(
             acquireCardSessionTokens({
                 accessToken: 'login-token',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).resolves.toEqual({ accessToken: 'login-token', refreshToken: '' })
         expect(oauthTokenRequest).not.toHaveBeenCalled()
@@ -135,11 +137,11 @@ describe('exchangeLoginForOauthTokens', () => {
 
         await exchangeLoginForOauthTokens({
             accessToken: 'login-token',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
         await exchangeLoginForOauthTokens({
             accessToken: 'login-token',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         const [first, second] = oauthInitiateRequest.mock.calls

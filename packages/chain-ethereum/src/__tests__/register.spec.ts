@@ -25,11 +25,13 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import {
     historyChainAdapters,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { ethereumAddressCodec } from '../accounts/address-codec'
+import { ethereumDeeplinkAdapter } from '../deeplinks/adapter'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
 import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
 import { ethereumDappRequestAdapter } from '../connect/dappRequestAdapter'
@@ -53,9 +55,10 @@ describe('registerChain', () => {
         historyChainAdapters.reset()
         broadcasterChainAdapters.reset()
         dappRequestChainAdapters.reset()
+        deeplinkAdapters.reset()
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster, history and dApp request adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster, history, dApp request and deeplink adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
@@ -78,6 +81,7 @@ describe('registerChain', () => {
         expect(dappRequestChainAdapters.get('ethereum')).toBe(
             ethereumDappRequestAdapter,
         )
+        expect(deeplinkAdapters.get('ethereum')).toBe(ethereumDeeplinkAdapter)
     })
 
     it('can run more than once, so a repeated bootstrap is harmless', () => {

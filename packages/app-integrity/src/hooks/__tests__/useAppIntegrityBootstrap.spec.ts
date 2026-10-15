@@ -13,6 +13,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
+const mockMode = vi.hoisted(() => ({ current: 'live' }))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useWalletDeployment: () => mockMode.current,
+}))
+
 const registerMock = vi.fn()
 vi.mock('../../services/registerAppIntegrity', () => ({
     registerAppIntegrity: (...a: unknown[]) => registerMock(...a),
@@ -30,10 +35,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 import { useAppIntegrityBootstrap } from '../useAppIntegrityBootstrap'
 import { useAppIntegrityStore } from '../../store'
 
@@ -41,12 +42,18 @@ describe('useAppIntegrityBootstrap', () => {
     beforeEach(() => {
         registerMock.mockReset().mockResolvedValue({ status: 'success' })
         useAppIntegrityStore.getState().resetState()
+        mockMode.current = 'live'
     })
 
-    it('registers on boot when there is no valid token', async () => {
-        renderHook(() => useAppIntegrityBootstrap())
-        await waitFor(() => expect(registerMock).toHaveBeenCalledOnce())
-    })
+    it.each(['live', 'developer'])(
+        'registers on boot against the %s deployment when there is no valid token',
+        async deployment => {
+            mockMode.current = deployment
+            renderHook(() => useAppIntegrityBootstrap())
+            await waitFor(() => expect(registerMock).toHaveBeenCalledOnce())
+            expect(registerMock).toHaveBeenCalledWith({ deployment })
+        },
+    )
 
     it('does not re-register when an unexpired token exists', async () => {
         useAppIntegrityStore.getState().setRegistration({

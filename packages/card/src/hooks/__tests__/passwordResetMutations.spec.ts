@@ -27,14 +27,20 @@ vi.mock('../../api/auth', () => ({
     confirmPasswordReset,
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useRequestPasswordResetMutation } from '../useRequestPasswordResetMutation'
 import { useVerifyPasswordResetMutation } from '../useVerifyPasswordResetMutation'
 import { useConfirmPasswordResetMutation } from '../useConfirmPasswordResetMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('password reset mutations', () => {
+describe.each(SCOPES)('password reset mutations ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -67,7 +73,7 @@ describe('password reset mutations', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(requestPasswordReset).toHaveBeenCalledWith(
-            expect.objectContaining({ email: 'e@x.com', network: 'mainnet' }),
+            expect.objectContaining({ email: 'e@x.com', scope: SCOPE }),
         )
     })
 
@@ -101,7 +107,7 @@ describe('password reset mutations', () => {
             expect.objectContaining({
                 email: 'e@x.com',
                 code: '123456',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         expect(result.current.data).toBe('reset-token-1')
@@ -126,7 +132,7 @@ describe('password reset mutations', () => {
         expect(confirmPasswordReset).toHaveBeenCalledWith(
             expect.objectContaining({
                 token: 'reset-token-1',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
     })

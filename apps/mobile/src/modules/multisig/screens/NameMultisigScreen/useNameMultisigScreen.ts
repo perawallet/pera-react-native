@@ -25,8 +25,8 @@ import {
     multisigAdapterFor,
     useCreateMultisigAccountMutation,
 } from '@perawallet/wallet-core-multisig'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent, MultisigEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
@@ -75,10 +75,10 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const deviceId = useScopedDeviceID(scope)
     const createMultisigMutation = useCreateMultisigAccountMutation({
-        network,
+        scope,
     })
 
     const [accountName, setAccountName] = useState(() =>
@@ -110,7 +110,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const adapter = multisigAdapterFor(network)
+            const adapter = multisigAdapterFor(scope)
             const multisigAddress = adapter.deriveAddress({
                 version,
                 threshold,
@@ -181,7 +181,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         }
     }, [
         isCreating,
-        network,
+        scope,
         deviceId,
         importParams,
         addresses,

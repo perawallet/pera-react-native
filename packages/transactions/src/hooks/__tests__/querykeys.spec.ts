@@ -168,16 +168,6 @@ describe('transactionQueryKeys', () => {
             expect(mainnetKey).not.toEqual(testnetKey)
         })
     })
-
-    describe('openSubmissionTxIds', () => {
-        test('carries the scope object', () => {
-            expect(transactionQueryKeys.openSubmissionTxIds(MAINNET)).toEqual([
-                'transactions',
-                'open-submission-txids',
-                { scope: { chainId: 'algorand', networkId: 'mainnet' } },
-            ])
-        })
-    })
 })
 
 describe('invalidateTransactionQueriesForAddresses', () => {

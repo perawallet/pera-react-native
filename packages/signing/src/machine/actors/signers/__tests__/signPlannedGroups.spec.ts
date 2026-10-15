@@ -121,6 +121,10 @@ describe('signPlannedGroups', () => {
                     id: `signed-by-${OURS}`,
                     bytes: flipped(planned),
                 })),
+                historyEntries: transactions.map(({ summary, chainData }) => ({
+                    summary,
+                    chainData,
+                })),
             },
             signers: [{ address: OURS }],
             originalIndices: [0, 1],
