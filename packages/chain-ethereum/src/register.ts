@@ -25,6 +25,7 @@ import {
     transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import {
     broadcasterChainAdapters,
     type BroadcasterChainAdapter,
@@ -40,6 +41,7 @@ import {
     ethereumKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { ethereumDappRequestAdapter } from './connect/dappRequestAdapter'
 import { ethereumHistoryAdapter } from './history'
 import { ethereumPlannerAdapter } from './signing/adapter'
 import { ethereumReviewerAdapter } from './signing/review'
@@ -70,4 +72,5 @@ export const registerChain = (ctx: ChainContext): void => {
     transferChainAdapters.register(transferAdapter)
     broadcasterChainAdapters.register(broadcasterAdapter)
     historyChainAdapters.register(ethereumHistoryAdapter)
+    dappRequestChainAdapters.register(ethereumDappRequestAdapter)
 }

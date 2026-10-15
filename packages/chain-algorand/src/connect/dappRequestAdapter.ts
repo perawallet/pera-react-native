@@ -137,6 +137,13 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
             }
             return { ok: true, payload: params.txns }
         }
+        if (type !== 'sign-data') {
+            return {
+                ok: false,
+                reason: 'missing',
+                message: `Algorand has no ${type} request`,
+            }
+        }
         const payload = isArc60WirePayload(params) ? params : params.data
         if (payload === undefined) {
             return {
