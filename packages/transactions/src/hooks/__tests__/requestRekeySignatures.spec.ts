@@ -16,16 +16,16 @@ import { requestRekeySignatures } from '../requestRekeySignatures'
 import { RekeyError } from '../../errors'
 
 import type {
-    PeraSignedTransaction,
-    PeraTransaction,
+    SignedTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type { UnsignedTransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 describe('requestRekeySignatures', () => {
     const source = { name: 'src-name', description: 'src-description' }
     const unsignedTxs = [
-        { id: 'tx-1' } as unknown as PeraTransaction,
-        { id: 'tx-2' } as unknown as PeraTransaction,
+        { id: 'tx-1' } as unknown as UnsignedTransaction,
+        { id: 'tx-2' } as unknown as UnsignedTransaction,
     ]
 
     beforeEach(() => {
@@ -37,16 +37,15 @@ describe('requestRekeySignatures', () => {
 
         void requestRekeySignatures(
             addSignRequest,
-            'algorand',
             source,
             unsignedTxs,
         )
 
         expect(addSignRequest).toHaveBeenCalledTimes(1)
         const request = addSignRequest.mock
-            .calls[0][0] as TransactionSignRequest
+            .calls[0][0] as UnsignedTransactionSignRequest
         expect(request.type).toBe('transactions')
-        expect(request).toMatchObject({ chainId: 'algorand' })
+        expect(request).not.toHaveProperty('chainId')
         expect(request.transport).toBe('callback')
         expect(request.sourceType).toBe('local')
         expect(request.txs).toEqual(unsignedTxs)
@@ -54,15 +53,14 @@ describe('requestRekeySignatures', () => {
     })
 
     it('resolves with the signed bytes when the pipeline calls approve', async () => {
-        let capturedRequest: TransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: TransactionSignRequest) => {
+        let capturedRequest: UnsignedTransactionSignRequest | undefined
+        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
             capturedRequest = request
         })
-        const signed = [{ signed: true } as unknown as PeraSignedTransaction]
+        const signed = [{ signed: true } as unknown as SignedTransaction]
 
         const promise = requestRekeySignatures(
             addSignRequest,
-            'algorand',
             source,
             unsignedTxs,
         )
@@ -73,15 +71,14 @@ describe('requestRekeySignatures', () => {
     })
 
     it('drops padded null slots from the signed result', async () => {
-        let capturedRequest: TransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: TransactionSignRequest) => {
+        let capturedRequest: UnsignedTransactionSignRequest | undefined
+        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
             capturedRequest = request
         })
-        const signedA = { signed: true } as unknown as PeraSignedTransaction
+        const signedA = { signed: true } as unknown as SignedTransaction
 
         const promise = requestRekeySignatures(
             addSignRequest,
-            'algorand',
             source,
             unsignedTxs,
         )
@@ -92,14 +89,13 @@ describe('requestRekeySignatures', () => {
     })
 
     it('rejects with a user_rejected RekeyError when the pipeline calls reject', async () => {
-        let capturedRequest: TransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: TransactionSignRequest) => {
+        let capturedRequest: UnsignedTransactionSignRequest | undefined
+        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
             capturedRequest = request
         })
 
         const promise = requestRekeySignatures(
             addSignRequest,
-            'algorand',
             source,
             unsignedTxs,
         )
@@ -111,15 +107,14 @@ describe('requestRekeySignatures', () => {
     })
 
     it('rejects with a signing_failed RekeyError wrapping the original error', async () => {
-        let capturedRequest: TransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: TransactionSignRequest) => {
+        let capturedRequest: UnsignedTransactionSignRequest | undefined
+        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
             capturedRequest = request
         })
         const originalError = new Error('signing transport failed')
 
         const promise = requestRekeySignatures(
             addSignRequest,
-            'algorand',
             source,
             unsignedTxs,
         )

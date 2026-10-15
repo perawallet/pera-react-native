@@ -101,6 +101,7 @@ describe('useSubmitRekeyMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
+            transactionFee: vi.fn(),
             rekey: { buildTx: mockBuildRekeyTx },
         })
         mockUseFeeConfig.mockReturnValue({
@@ -483,6 +484,7 @@ describe('useSubmitRekeyMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
+            transactionFee: vi.fn(),
         })
 
         const { result } = renderHook(
