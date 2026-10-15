@@ -24,15 +24,49 @@ import {
 
 import { Transaction } from 'algosdk'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
-import type {
-    AssignFeeToGroupDeps,
-    AssignFeeToGroupParams,
-    AssignMinimumFeesToGroupResult,
-    FeeAdjustment,
-} from '@perawallet/wallet-core-signing'
+import type { FeeAdjustment } from '@perawallet/wallet-core-signing'
 
 import { validateTransactionGroupIntegrity } from './validateTransactionGroupIntegrity'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+
+/** `AssignFeeToGroupParams` over the transactions Algorand's payloads carry. */
+export type AlgorandAssignFeeParams = {
+    /** Full atomic payload (groupContext space), NOT just the signable subset */
+    transactions: PeraTransaction[]
+    /** Indices into `transactions` the wallet will sign; defaults to all */
+    signableIndices?: number[]
+    /** Subset-position → authorizer address (ARC-0001 `signers`) */
+    signerOverrides?: Map<number, string>
+    /** A dApp set the fees, so they may already price this wallet's signers. */
+    isExternallyPriced?: boolean
+}
+
+export type AlgorandAssignFeeResult = {
+    /** Same array reference as input when nothing was adjusted */
+    transactions: PeraTransaction[]
+    /** Empty when nothing was adjusted */
+    adjustments: FeeAdjustment[]
+}
+
+/** What the planner cannot read itself because it lives in React or a store. */
+export type AssignFeeToGroupDeps = {
+    /** Read at call time: a WalletConnect call can outlive the component that started it. */
+    accounts: WalletAccount[]
+    /** Network-suggested minimum fee in native base units; must resolve rather than throw. */
+    fetchSuggestedMinFee: () => Promise<bigint>
+    /** Remote-config base minimum txn fee in native base units */
+    configMinTxnFee: bigint
+    pqMultiplier: bigint
+    /**
+     * Indices whose partition already pays what its signers cost on chain,
+     * asked only for externally priced groups; resolves to none when unsure.
+     */
+    findFundedIndices?: (params: {
+        transactions: PeraTransaction[]
+        signableIndices: number[]
+        signerOverrides?: Map<number, string>
+    }) => Promise<ReadonlySet<number>>
+}
 
 export type AssignMinimumFeesToGroupParams = {
     /** Full atomic payload as received (groupContext), NOT the signable subset */
@@ -142,7 +176,7 @@ export const assignMinimumFeesToGroup = ({
     configMinTxnFee,
     pqMultiplier,
     fundedIndices,
-}: AssignMinimumFeesToGroupParams): AssignMinimumFeesToGroupResult => {
+}: AssignMinimumFeesToGroupParams): AlgorandAssignFeeResult => {
     // Congestion guard (same as resolveMinFeeForSender): derive both the
     // surcharge and the floor from the max of algod's suggested minimum and
     // the configured base, at most once.
@@ -263,7 +297,7 @@ export const assignFeeToGroup = async (
         signableIndices,
         signerOverrides,
         isExternallyPriced,
-    }: AssignFeeToGroupParams,
+    }: AlgorandAssignFeeParams,
     {
         accounts,
         fetchSuggestedMinFee,
@@ -271,7 +305,7 @@ export const assignFeeToGroup = async (
         pqMultiplier,
         findFundedIndices,
     }: AssignFeeToGroupDeps,
-): Promise<AssignMinimumFeesToGroupResult> => {
+): Promise<AlgorandAssignFeeResult> => {
     const indices = signableIndices ?? transactions.map((_, index) => index)
 
     if (

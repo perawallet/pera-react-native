@@ -79,6 +79,7 @@ describe('useAssetOptOutMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
+            transactionFee: vi.fn(),
             assetHolding: {
                 buildOptInTxs: vi.fn(),
                 buildOptOutTxs: mockBuild,

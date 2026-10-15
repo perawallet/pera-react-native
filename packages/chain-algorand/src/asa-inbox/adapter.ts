@@ -19,6 +19,7 @@ import {
     arc59SendSummaryResponseSchema,
 } from './api'
 import { getArc59SignedFundingAmount } from './getArc59SignedFundingAmount'
+import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import {
     buildArc59ClaimTxs,
     buildArc59RejectTxs,
@@ -40,7 +41,7 @@ export const algorandAssetInbox: AssetInboxSendFlow = {
     },
     buildSendTxs: async ({ scope, summary, ...params }) => {
         const network = algorandNetworkOf(scope)
-        return buildArc59SendViaInboxTxs(
+        const transactions = await buildArc59SendViaInboxTxs(
             { algokit: createWalletAlgorandClient(network), network },
             {
                 ...params,
@@ -49,19 +50,22 @@ export const algorandAssetInbox: AssetInboxSendFlow = {
                 summary: arc59SendSummaryResponseSchema.parse(summary),
             },
         )
+        return toUnsignedAlgorandTransactions(transactions, scope)
     },
-    buildClaimTxs: ({ scope, ...params }) => {
+    buildClaimTxs: async ({ scope, ...params }) => {
         const network = algorandNetworkOf(scope)
-        return buildArc59ClaimTxs(
+        const transactions = await buildArc59ClaimTxs(
             { algokit: createWalletAlgorandClient(network), network },
             params,
         )
+        return toUnsignedAlgorandTransactions(transactions, scope)
     },
-    buildRejectTxs: ({ scope, ...params }) => {
+    buildRejectTxs: async ({ scope, ...params }) => {
         const network = algorandNetworkOf(scope)
-        return buildArc59RejectTxs(
+        const transactions = await buildArc59RejectTxs(
             { algokit: createWalletAlgorandClient(network), network },
             params,
         )
+        return toUnsignedAlgorandTransactions(transactions, scope)
     },
 }

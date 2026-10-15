@@ -24,7 +24,6 @@ export {
     resolveMinFeeForSender,
     type AddSignaturesFn,
     type AssignFeeToGroup,
-    type AssignFeeToGroupDeps,
     type AssignFeeToGroupParams,
     type AssignMinimumFeesToGroupResult,
     type BalanceImpact,

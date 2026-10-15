@@ -23,6 +23,8 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
+    vi,
 } from 'vitest'
 
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -52,7 +54,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-import type { SignedTransaction } from 'algosdk'
+import { decodeSignedTransaction } from 'algosdk'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
 // The rekeyed sender holds no key of its own — only the auth account can
@@ -131,6 +135,12 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         }
         seedAuthority(REKEYED_SENDER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
+        // The in-memory keystore signs with 64 zero bytes, which the
+        // canonical encoding drops; a visible signature survives delivery.
+        const signSpy = vi
+            .spyOn(getProvider().key.store, 'sign')
+            .mockResolvedValue(new Uint8Array(64).fill(7))
+        onTestFinished(() => signSpy.mockRestore())
 
         const { request, approve, error } = buildTransactionSignRequest({
             sourceType: 'walletconnect',
@@ -160,9 +170,9 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         )
         expect(error).not.toHaveBeenCalled()
 
-        const signedTxs = approve.mock.calls[0][0] as SignedTransaction[]
-        expect(signedTxs).toHaveLength(1)
-        const signed = signedTxs[0]
+        const delivered = approve.mock.calls[0][0] as SignedTransaction[]
+        expect(delivered).toHaveLength(1)
+        const signed = decodeSignedTransaction(delivered[0].bytes)
         // The auth-addr rule: signature from the auth key, sgnr stamped
         // so validators resolve the signer, sender untouched.
         expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)

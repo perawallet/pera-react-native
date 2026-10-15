@@ -32,6 +32,8 @@ const { algorandCardConfig } = vi.hoisted(() => ({
 vi.mock('../../config', () => ({ algorandCardConfig }))
 
 import { algorandAutoDraw as autoDraw } from '../killswitch'
+import { payloadTransactionOf } from '../../../signing/__tests__/transactions'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const APP_ADDRESS = 'KILLSWITCHAPPADDR'
 const ENABLE_CALL = { method: 'enable' }
@@ -62,7 +64,9 @@ beforeEach(() => {
         addPayment,
         addAppCallMethodCall,
         build: vi.fn(async () => ({
-            atc: { buildGroup: () => [{ txn: { id: 'txn-1' } }] },
+            atc: {
+                buildGroup: () => [{ txn: { id: 'txn-1', sender: 'SENDER' } }],
+            },
         })),
     }
     getAlgorandClient.mockReturnValue({
@@ -123,7 +127,10 @@ describe('algorandAutoDraw', () => {
         expect(addAppCallMethodCall).toHaveBeenCalledWith(ENABLE_CALL)
         // ...but the returned txns are zero-fee and ungrouped: the
         // fee-delegation sponsor pays, and the backend re-groups.
-        expect(txns).toEqual([{ id: 'txn-1', fee: 0n, group: undefined }])
+        expect(txns.map(payloadTransactionOf)).toEqual([
+            { id: 'txn-1', sender: 'SENDER', fee: 0n, group: undefined },
+        ])
+        expect(txns[0].scope).toEqual(scopeForLegacyNetwork('testnet'))
     })
 
     it('buildKill calls kill(asset) with no funding and no extra fee', async () => {
@@ -139,7 +146,9 @@ describe('algorandAutoDraw', () => {
             args: [10458941n],
         })
         expect(addAppCallMethodCall).toHaveBeenCalledWith(KILL_CALL)
-        expect(txns).toEqual([{ id: 'txn-1' }])
+        expect(txns.map(payloadTransactionOf)).toEqual([
+            { id: 'txn-1', sender: 'SENDER' },
+        ])
     })
 
     describe('isEnabled', () => {

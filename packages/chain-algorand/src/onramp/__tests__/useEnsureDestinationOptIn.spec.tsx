@@ -103,7 +103,9 @@ function renderEnsure() {
 beforeEach(() => {
     vi.clearAllMocks()
     getSuggestedParamsMock.mockResolvedValue({ minFee: 1000n })
-    buildMock.mockResolvedValue({ transactions: [{ txn: { id: 'optin' } }] })
+    buildMock.mockResolvedValue({
+        transactions: [{ txn: { id: 'optin', sender: 'TESTADDRESS' } }],
+    })
     useMinimumFeeConfigMock.mockReturnValue({
         minTxnFee: 1000n,
         pqMultiplier: 3n,
@@ -209,7 +211,14 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         expect(submitWithFeeDelegationMock).toHaveBeenCalledTimes(1)
         expect(submitWithFeeDelegationMock).toHaveBeenCalledWith({
             account: ADDRESS,
-            transactions: [{ id: 'optin' }],
+            transactions: [
+                expect.objectContaining({
+                    payload: {
+                        transaction: { id: 'optin', sender: 'TESTADDRESS' },
+                    },
+                    scope: expect.objectContaining({ chainId: 'algorand' }),
+                }),
+            ],
             includeAssetOptInMbr: true,
             optInAssetIds: [ASSET_ID],
             sourceMetadata: expect.objectContaining({

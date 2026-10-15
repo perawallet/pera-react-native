@@ -11,7 +11,10 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { CardEscrowNotConfiguredError } from '../api/escrow/errors'
 import { cardContractTests } from './adapter-contract'
 import { fakeCardAdapter } from './fakeCardAdapter'
@@ -23,6 +26,18 @@ const isConfigured = (scope: ChainScope) => scope.networkId === SCOPE.networkId
 const account = { address: 'FUNDING' } as WalletAccount
 const rekeyed = { address: 'REKEYED' } as WalletAccount
 const insufficient = new Error('insufficient')
+
+const chainNeutral = (scope: ChainScope): UnsignedTransaction => ({
+    scope,
+    payload: {},
+    summary: {
+        kind: 'transfer',
+        title: { key: 'send' },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'algorand' },
+})
 
 let isAutoDrawOn = false
 let submissions = 0
@@ -39,7 +54,12 @@ const adapter = fakeCardAdapter({
     settlementAsset: scope => (isConfigured(scope) ? '1' : null),
     buildManualDeposit: async (_params, scope) => {
         if (!isConfigured(scope)) throw new CardEscrowNotConfiguredError()
-        return [{} as never]
+        return [chainNeutral(scope)]
+    },
+    withdrawal: {
+        buildRequest: async ({ scope }) => [chainNeutral(scope)],
+        buildWithdraw: async ({ scope }) => [chainNeutral(scope)],
+        buildCancel: async ({ scope }) => [chainNeutral(scope)],
     },
     fundingSourceEligibility: candidate => ({
         canFund: candidate !== rekeyed,
@@ -66,6 +86,15 @@ cardContractTests(() => adapter, {
     balance: { address: 'FUNDING', assetId: '1', arrangeNoHolding: () => {} },
     deposit: {
         params: { sender: 'FUNDING', cardAddress: 'CARD', amount: 1n },
+        arrangeBuild: () => {},
+    },
+    withdrawal: {
+        params: {
+            scope: SCOPE,
+            sender: 'FUNDING',
+            cardAddress: 'CARD',
+            amount: 1n,
+        },
         arrangeBuild: () => {},
     },
     eligibility: { account, ineligibleAccount: rekeyed },

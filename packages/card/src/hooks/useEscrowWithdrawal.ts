@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import type {
     ChainScope,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { cardAdapterFor } from '../chain-adapter'
@@ -25,7 +25,7 @@ export type UseEscrowWithdrawalResult = {
         sender: string
         cardAddress: string
         amount: bigint
-    }) => Promise<PeraTransaction[]>
+    }) => Promise<UnsignedTransaction[]>
     /**
      * Releases a matured request to the card owner. Throws rather than
      * building while the wait is still running.
@@ -34,11 +34,11 @@ export type UseEscrowWithdrawalResult = {
         sender: string
         cardAddress: string
         amount: bigint
-    }) => Promise<PeraTransaction[]>
+    }) => Promise<UnsignedTransaction[]>
     buildCancel: (params: {
         sender: string
         cardAddress: string
-    }) => Promise<PeraTransaction[]>
+    }) => Promise<UnsignedTransaction[]>
     /** The owner's open request, or null when there is none. */
     getPendingWithdrawal: (
         ownerAddress: string,

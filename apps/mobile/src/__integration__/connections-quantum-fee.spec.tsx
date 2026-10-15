@@ -103,6 +103,7 @@ import {
 import {
     useSigningRequest,
     type TransactionSignRequest,
+    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { AlgorandWalletConnectChainId } from '@perawallet/wallet-core-walletconnect'
 import {
@@ -130,6 +131,16 @@ import {
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
 import { addressOf } from './__fixtures__/accounts'
+
+// The Algorand group facts a chain-neutral request carries, and the group
+// itself as its payloads hold it.
+const algorandOf = (request: TransactionSignRequest) =>
+    (request as UnsignedTransactionSignRequest).chainData?.algorand ?? {}
+const groupOf = (request: TransactionSignRequest): PeraTransaction[] =>
+    (algorandOf(request).groupContext ?? []).map(
+        unsigned =>
+            (unsigned.payload as { transaction: PeraTransaction }).transaction,
+    )
 
 const ADJUSTED_LABEL_KEY = 'transactions.quantum_fee.adjusted_label'
 const EXTERNAL_PILL_KEY = 'signing.external_transaction.pill_label'
@@ -490,13 +501,13 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         const enqueued = signReq.current
             .pendingSignRequests[0] as TransactionSignRequest
         expect(enqueued).toBeTruthy()
-        expect(enqueued.feeAdjustments).toHaveLength(2)
-        for (const adjustment of enqueued.feeAdjustments!) {
+        expect(algorandOf(enqueued).feeAdjustments).toHaveLength(2)
+        for (const adjustment of algorandOf(enqueued).feeAdjustments!) {
             expect(adjustment.originalFee).toBe(1000n)
             expect(adjustment.adjustedFee).toBe(EXPECTED_PQ_FEE)
         }
 
-        const group = enqueued.groupContext as PeraTransaction[]
+        const group = groupOf(enqueued)
         expect(group[0].fee).toBe(EXPECTED_PQ_FEE)
         expect(group[1].fee).toBe(EXPECTED_PQ_FEE)
         // Regrouped over the whole group: both slots carry the SAME new grp
@@ -564,9 +575,11 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         const enqueued = signReq.current
             .pendingSignRequests[0] as TransactionSignRequest
         expect(enqueued).toBeTruthy()
-        expect(enqueued.feeAdjustments).toBeUndefined()
-        expect(enqueued.rawTransactionsBase64![0]).toBe(entries[0].txn)
-        const group = enqueued.groupContext as PeraTransaction[]
+        expect(algorandOf(enqueued).feeAdjustments).toBeUndefined()
+        expect(algorandOf(enqueued).rawTransactionsBase64![0]).toBe(
+            entries[0].txn,
+        )
+        const group = groupOf(enqueued)
         expect(group[0].fee).toBe(1000n)
         expect(originalGroup).toBeTruthy()
         expect(bytesEqual(group[0].group!, originalGroup!)).toBe(true)
@@ -628,8 +641,10 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         const enqueued = signReq.current
             .pendingSignRequests[0] as TransactionSignRequest
         expect(enqueued).toBeTruthy()
-        expect(enqueued.feeAdjustments).toBeUndefined()
-        expect(enqueued.rawTransactionsBase64![0]).toBe(entries[0].txn)
+        expect(algorandOf(enqueued).feeAdjustments).toBeUndefined()
+        expect(algorandOf(enqueued).rawTransactionsBase64![0]).toBe(
+            entries[0].txn,
+        )
 
         fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
 
@@ -857,12 +872,14 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
         fireSignRequest(connector, 7101, entries)
 
         const enqueued = await enqueuedAfter(signReq, baseline)
-        expect(enqueued.feeAdjustments).toHaveLength(2)
-        expect(enqueued.feeAdjustments![0].adjustedFee).toBe(EXPECTED_PQ_FEE)
-        expect(enqueued.feeAdjustments![1].adjustedFee).toBe(EXPECTED_PQ_FEE)
-        expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
+        expect(algorandOf(enqueued).feeAdjustments).toHaveLength(2)
+        expect(algorandOf(enqueued).feeAdjustments![0].adjustedFee).toBe(
             EXPECTED_PQ_FEE,
         )
+        expect(algorandOf(enqueued).feeAdjustments![1].adjustedFee).toBe(
+            EXPECTED_PQ_FEE,
+        )
+        expect(groupOf(enqueued)[0].fee).toBe(EXPECTED_PQ_FEE)
         expect(connector.rejectRequestCalls).toHaveLength(0)
 
         act(() => {
@@ -893,8 +910,8 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
         fireSignRequest(connector, 7102, entries)
 
         const enqueued = await enqueuedAfter(signReq, baseline)
-        expect(enqueued.feeAdjustments).toBeUndefined()
-        expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(1000n)
+        expect(algorandOf(enqueued).feeAdjustments).toBeUndefined()
+        expect(groupOf(enqueued)[0].fee).toBe(1000n)
         expect(connector.rejectRequestCalls).toHaveLength(0)
 
         act(() => {

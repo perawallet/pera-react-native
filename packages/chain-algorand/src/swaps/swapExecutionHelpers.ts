@@ -11,9 +11,9 @@
  */
 
 import {
-    type PeraSignedTransaction,
-    type PeraTransaction,
     type I18nKey,
+    type SignedTransaction,
+    type UnsignedTransaction,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { compactSignedResults } from '../blockchain'
@@ -22,7 +22,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type {
+    TransactionSignRequest,
+    UnsignedTransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 import type { UpdateSwapStatusFn } from '@perawallet/wallet-core-swaps'
 import {
     generateOrderedUniqueId,
@@ -140,8 +143,8 @@ export const requestSwapSignatures = (
     // account — see {@link rejectIfQuantumAccount}.
     signer: Nullable<WalletAccount>,
     source: { name: string; description: string },
-    unsignedTxs: PeraTransaction[],
-    groupContext: PeraTransaction[],
+    unsignedTxs: UnsignedTransaction[],
+    groupContext: UnsignedTransaction[],
     options: {
         /**
          * The quantum-swap gate (`isAlgorandQuantumSwapEnabled`).
@@ -150,7 +153,7 @@ export const requestSwapSignatures = (
          */
         isQuantumSwapEnabled: boolean
     },
-): Promise<PeraSignedTransaction[]> => {
+): Promise<SignedTransaction[]> => {
     if (!options.isQuantumSwapEnabled) {
         const blocked = rejectIfQuantumAccount(
             signer,
@@ -160,18 +163,17 @@ export const requestSwapSignatures = (
     }
 
     return new Promise((resolve, reject) => {
-        const request: TransactionSignRequest = {
+        const request: UnsignedTransactionSignRequest = {
             id: generateOrderedUniqueId(),
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
-            chainId: ALGORAND_CHAIN_ID,
             txs: unsignedTxs,
             // Full atomic group as the backend assembled it (pre-signed +
             // user-signable slots). The signing-machine analyzer recomputes
             // the group hash over this payload, not the wallet-signable
             // subset — see validateTransactionGroupIntegrity.
-            groupContext,
+            chainData: { algorand: { groupContext } },
             sourceMetadata: source,
             approve: async signed => {
                 // The null-filter is defensive narrowing back to the swap
@@ -213,8 +215,8 @@ export const requestSwapProposal = (
     // account — see {@link rejectIfQuantumAccount}.
     signer: Nullable<WalletAccount>,
     source: { name: string; description: string },
-    unsignedTxs: PeraTransaction[],
-    groupContext: PeraTransaction[],
+    unsignedTxs: UnsignedTransaction[],
+    groupContext: UnsignedTransaction[],
     onProposed: (info: SwapProposedInfo) => void,
 ): Promise<void> => {
     const blocked = rejectIfQuantumAccount(
@@ -224,18 +226,17 @@ export const requestSwapProposal = (
     if (blocked) return blocked
 
     return new Promise((resolve, reject) => {
-        const request: TransactionSignRequest = {
+        const request: UnsignedTransactionSignRequest = {
             id: generateOrderedUniqueId(),
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
-            chainId: ALGORAND_CHAIN_ID,
             // Force the sync protocol: the backend collects signatures but does
             // NOT broadcast — the proposer's device assembles + submits via the
             // cosign resolver once threshold is met.
             transportOptions: { multisig: { proposeMode: 'sync' } },
             txs: unsignedTxs,
-            groupContext,
+            chainData: { algorand: { groupContext } },
             sourceMetadata: source,
             onProposed: async info => {
                 onProposed({

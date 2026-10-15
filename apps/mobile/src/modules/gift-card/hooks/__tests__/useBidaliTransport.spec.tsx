@@ -429,6 +429,9 @@ describe('useBidaliTransport', () => {
                 amount: 1_500_000n,
                 note: undefined,
             })
+            expect(mockAddSignRequest).not.toHaveBeenCalledWith(
+                expect.objectContaining({ chainId: expect.anything() }),
+            )
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'transactions',

@@ -33,9 +33,11 @@ import {
     registerFakeTransactionPlanner,
 } from '../../../../__tests__/transactions'
 import { SIGNING_KEY_DOMAIN } from '../../../../constants'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     CannotSignError,
     InvalidSignableDataError,
+    SIGNING_ERROR_KEYS,
     SigningError,
 } from '../../../../pipeline/errors'
 import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
@@ -127,6 +129,31 @@ describe('signPlannedGroups', () => {
             signers: [{ address: OURS }],
             originalIndices: [0, 1],
         })
+    })
+
+    it('reports a keystore failure with the key it carries, as the local-key signer does', async () => {
+        const keyMissing = new AppError('key gone', {
+            category: ErrorCategory.ACCOUNT,
+            messageKey: 'errors.kms.key_not_found',
+        })
+        sign.mockRejectedValueOnce(keyMissing)
+
+        const failure = await run([neutralGroup()]).catch(error => error)
+
+        expect(failure).toBeInstanceOf(SigningError)
+        expect(failure.metadata.messageKey).toBe('errors.kms.key_not_found')
+        expect(failure.originalError).toBe(keyMissing)
+    })
+
+    it('reports an untyped keystore failure as a local-key signing failure', async () => {
+        sign.mockRejectedValueOnce(new Error('keystore exploded'))
+
+        const failure = await run([neutralGroup()]).catch(error => error)
+
+        expect(failure).toBeInstanceOf(SigningError)
+        expect(failure.metadata.messageKey).toBe(
+            SIGNING_ERROR_KEYS.localKeyFailed,
+        )
     })
 
     it('signs every request a transaction plans for the reviewed account', async () => {
