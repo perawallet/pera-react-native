@@ -33,12 +33,21 @@ const RAW_NETWORK_ERROR_FRAGMENTS = [
 // A browser's fetch rejects with a `TypeError` that ky only recognises when it
 // made the request itself. Matched exactly: "Load failed" is too generic for a
 // substring match.
-const BROWSER_FETCH_ERROR_MESSAGES = new Set([
+const BROWSER_FETCH_ERROR_MESSAGES = [
     'Failed to fetch', // Chrome
     'NetworkError when attempting to fetch resource.', // Firefox
     'Load failed', // Safari 17+
     'The Internet connection appears to be offline.', // Safari 16
-])
+]
+
+// Chrome appends the host: "Failed to fetch (example.com)". A prefix check
+// rather than a regex: the message is untrusted and `/ \(.*\)$/` is quadratic.
+const isBrowserFetchErrorMessage = (message: string): boolean =>
+    BROWSER_FETCH_ERROR_MESSAGES.some(
+        known =>
+            message === known ||
+            (message.startsWith(`${known} (`) && message.endsWith(')')),
+    )
 
 export const isRawPlatformNetworkError = (error: unknown): boolean => {
     if (!(error instanceof Error) || typeof error.message !== 'string') {
@@ -46,8 +55,7 @@ export const isRawPlatformNetworkError = (error: unknown): boolean => {
     }
     if (
         error instanceof TypeError &&
-        // Chrome appends the host: "Failed to fetch (example.com)".
-        BROWSER_FETCH_ERROR_MESSAGES.has(error.message.replace(/ \(.*\)$/, ''))
+        isBrowserFetchErrorMessage(error.message)
     ) {
         return true
     }

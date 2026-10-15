@@ -62,6 +62,13 @@ describe('isExpectedError', () => {
         expect(isExpectedError(new TypeError(message))).toBe(true)
     })
 
+    test.each(['Load failed to parse (x)', 'Load failed (x', 'Load failedx'])(
+        'is false for the near-miss browser message %s',
+        message => {
+            expect(isExpectedError(new TypeError(message))).toBe(false)
+        },
+    )
+
     test('is false for a browser fetch message on a non-TypeError', () => {
         expect(isExpectedError(new Error('Load failed'))).toBe(false)
     })
