@@ -18,6 +18,7 @@ import {
 } from './capability-defaults'
 import { keyKindOptionI18nKeys } from './accounts/key-kind-options'
 import { accountPresentationI18nKeys } from './accounts/presentation'
+import { ALGOD_ERROR_I18N_KEYS } from './blockchain/errors/describeAlgodError'
 import { algorandPinnedHosts } from './blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from './blockchain/remote-config'
 import { algorandDescriptor } from './descriptor'
@@ -42,6 +43,7 @@ export const chainModule: ChainModule = {
             ...ALGORAND_MESSAGE_TITLE_KEYS,
             ...ALGORAND_HISTORY_SUMMARY_KEYS,
             ...TRANSACTION_STATUS_NOTICE_KEYS,
+            ...ALGOD_ERROR_I18N_KEYS,
         ]),
     ],
     remoteConfigDefaults: algorandRemoteConfigDefaults,

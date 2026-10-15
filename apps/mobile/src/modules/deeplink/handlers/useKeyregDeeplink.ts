@@ -12,16 +12,12 @@
 
 import { useCallback } from 'react'
 import {
-    getExpectedGenesisHash,
-    isValidAlgorandAddress,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
-import {
     useNetwork,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -40,10 +36,11 @@ import {
     generateOrderedUniqueId,
     logger,
 } from '@perawallet/wallet-core-shared'
-import type { Network } from '@perawallet/wallet-core-config'
+import { getChainConfig, type Network } from '@perawallet/wallet-core-config'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import { withTimeout } from './timeout'
 import type { KeyregDeeplink } from '../types'
+import { isLegacyChainAddress } from '../utils'
 
 export type KeyregDeeplinkHandler = (data: KeyregDeeplink) => Promise<void>
 
@@ -119,8 +116,8 @@ const checkSigningEligibility = (
  * hash, so accept either spelling — plus the bare network name, which is what
  * the assetquery/appquery branches already compare against.
  *
- * Resolved through `getExpectedGenesisHash` rather than the static config so a
- * Custom network matches on its stored hash instead of config's empty string.
+ * `getChainConfig` folds in a saved custom node, so a Custom network matches
+ * its stored hash instead of an empty one.
  */
 const namesActiveNetwork = (
     target: string,
@@ -129,12 +126,11 @@ const namesActiveNetwork = (
 ): boolean =>
     target === network ||
     (!!genesisId && target === genesisId) ||
-    target === getExpectedGenesisHash(network)
+    target === getChainConfig(scopeForLegacyNetwork(network)).genesisHash
 
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network, networkConfig } = useNetwork()
-    const { encodeTransaction, decodeTransaction } = useTransactionEncoder()
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
@@ -142,7 +138,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
 
     return useCallback(
         async (data: KeyregDeeplink) => {
-            if (!isValidAlgorandAddress(data.senderAddress)) {
+            if (!isLegacyChainAddress(data.senderAddress)) {
                 showError({
                     variant: 'keyreg',
                     parsedType: 'KEYREG',
@@ -251,17 +247,11 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     )
                 }
 
-                // Encode-then-decode to normalize: algokit returns a sender as
-                // an `Address` instance, but the pipeline is built around
-                // `decodeTransaction(bytes)`'s shape (plain string sender,
-                // Uint8Array byte fields) and otherwise crashes with
-                // `Buffer.from(...) received type object`.
-                const normalizedTx = decodeTransaction(encodeTransaction(tx))
                 // Adds a quantum sender's PQ surcharge (mirrors the WC/webview
                 // enqueue path); a non-quantum sender is a free no-op — same
                 // reference, no network traffic.
                 const { transactions, adjustments } = await assignFeeToGroup({
-                    transactions: [normalizedTx],
+                    transactions: [tx],
                 })
                 // MUST be 'deeplink', not 'local': only an interactive source
                 // gets the review sheet. 'local' is headless and would silently
@@ -295,8 +285,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             addSignRequest,
             allAccounts,
             assignFeeToGroup,
-            decodeTransaction,
-            encodeTransaction,
             network,
             networkConfig,
             showError,

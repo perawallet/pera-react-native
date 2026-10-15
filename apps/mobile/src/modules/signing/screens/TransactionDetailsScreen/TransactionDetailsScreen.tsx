@@ -37,11 +37,9 @@ export const TransactionDetailsScreen = () => {
 
     const {
         renderState,
-        groupTransactions,
-        currentTransactionId,
+        groupId,
         isExternal,
         notice,
-        handleTransactionPress,
         handleRelatedTransactionPress,
         handleRetry,
     } = useTransactionDetailsScreen()
@@ -60,13 +58,11 @@ export const TransactionDetailsScreen = () => {
                     onRelatedTransactionPress={handleRelatedTransactionPress}
                 />
                 {isExternal && <ExternalTransactionCallout />}
-                {groupTransactions.length > 1 && (
-                    <GroupTransactionsPanel
-                        groupTransactions={groupTransactions}
-                        currentTransactionId={currentTransactionId}
-                        onGroupTransactionPress={handleTransactionPress}
-                    />
-                )}
+                <GroupTransactionsPanel
+                    groupId={groupId}
+                    currentTransaction={renderState.transaction}
+                    onGroupTransactionPress={handleRelatedTransactionPress}
+                />
             </PWScreen>
         )
     }

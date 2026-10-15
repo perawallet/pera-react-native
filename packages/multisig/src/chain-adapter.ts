@@ -15,6 +15,7 @@ import {
     scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
+    type PeraTransaction,
     type SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
@@ -101,6 +102,8 @@ export interface MultisigChainAdapter {
         request: MultisigSignRequest,
         authorizedSenders: ReadonlySet<string>,
     ): MultisigSignRequestValidation
+    /** One unsigned wire-encoded transaction from a request's list. */
+    decodeTransaction(bytes: Uint8Array): PeraTransaction
     /**
      * Whether a participant slot verifies signatures of `scheme`. A key of any
      * other scheme can never contribute a subsignature, so its account can't

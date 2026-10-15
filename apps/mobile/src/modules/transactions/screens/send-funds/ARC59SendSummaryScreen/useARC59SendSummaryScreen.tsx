@@ -15,10 +15,10 @@ import { Decimal } from 'decimal.js'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
-    getArc59SignedFundingAmount,
-    useArc59SendSummaryQuery,
-    type Arc59SendSummaryResponse,
-} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+    useAssetInboxSendSummaryQuery,
+    useSpendableBalanceQuery,
+    type AssetInboxSendSummary,
+} from '@perawallet/wallet-core-transactions'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     useNativeAsset,
@@ -37,7 +37,6 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -47,7 +46,7 @@ import { useThemeMode } from '@rneui/themed'
 import type { SvgProps } from 'react-native-svg'
 
 type UseARC59SendSummaryScreenResult = {
-    summary?: Arc59SendSummaryResponse
+    summary?: AssetInboxSendSummary
     isLoading: boolean
     isUnavailableOnNetwork: boolean
     assetId: string
@@ -81,7 +80,11 @@ export const useARC59SendSummaryScreen =
             data: summaryData,
             isLoading: summaryLoading,
             isUnavailableOnNetwork,
-        } = useArc59SendSummaryQuery(receiverAddress, assetId)
+        } = useAssetInboxSendSummaryQuery(
+            receiverAddress,
+            assetId,
+            LEGACY_CHAIN_ID,
+        )
         // Query data is Maybe<T> (null while unavailable); this screen only
         // distinguishes "have a summary" from "don't", so collapse to undefined.
         const summary = summaryData ?? undefined
@@ -114,9 +117,9 @@ export const useARC59SendSummaryScreen =
         useEffect(() => {
             if (!summary || !spendable) return
 
-            // Gate on the amount actually signed, not the
-            // independent `total_protocol_and_mbr_fee` field.
-            const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
+            // Gate on the amount actually signed, not any other fee the
+            // backend quotes.
+            const requiredMicroAlgo = summary.fundingAmount
 
             if (spendable.max.lt(requiredMicroAlgo.toString())) {
                 const requiredAlgo = toWholeUnits(
@@ -135,12 +138,12 @@ export const useARC59SendSummaryScreen =
 
         useEffect(() => {
             if (summary) {
-                setArc59Summary(summary)
+                setArc59Summary(summary.quote)
             }
         }, [summary, setArc59Summary])
 
         const fee = summary
-            ? toWholeUnits(getArc59SignedFundingAmount(summary), nativeAsset)
+            ? toWholeUnits(summary.fundingAmount, nativeAsset)
             : null
 
         const [isProcessing, setIsProcessing] = useState(false)

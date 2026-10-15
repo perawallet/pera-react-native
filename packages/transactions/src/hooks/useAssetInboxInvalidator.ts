@@ -10,7 +10,22 @@
  limitations under the License
  */
 
-export * from './querykeys'
-export * from './useArc59SendSummaryQuery'
-export * from './useArc59AssetRequestsQuery'
-export * from './useArc59Invalidator'
+import { useQueryClient } from '@tanstack/react-query'
+import { isAssetInboxQuery } from './querykeys'
+
+export const useAssetInboxInvalidator = (): {
+    invalidate: () => void
+    remove: () => void
+} => {
+    const queryClient = useQueryClient()
+
+    const invalidate = () => {
+        void queryClient.invalidateQueries({ predicate: isAssetInboxQuery })
+    }
+
+    const remove = () => {
+        queryClient.removeQueries({ predicate: isAssetInboxQuery })
+    }
+
+    return { invalidate, remove }
+}

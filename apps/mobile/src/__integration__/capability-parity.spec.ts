@@ -22,6 +22,7 @@ import {
     transactionPlanners,
     type ChainDescriptor,
 } from '@perawallet/wallet-core-chain-contract'
+import { customNodeAdapters } from '@perawallet/wallet-core-chain-shared'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
@@ -84,6 +85,7 @@ const registries: CapabilityAdapterRegistries = {
     'name service': nameServiceChainAdapters,
     ramp: rampChainAdapters,
     backup: backupChainAdapters,
+    'custom node': customNodeAdapters,
 }
 
 describe('composition-root capability parity', () => {

@@ -13,7 +13,6 @@
 import {
     legacyNetworkOf,
     type ChainScope,
-    type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
@@ -31,7 +30,6 @@ type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
     scope: ChainScope
-    decodeTransaction: (bytes: Uint8Array) => PeraTransaction
     /** Used to recognise senders the joint account authorizes via a rekey. */
     localAccounts: WalletAccount[]
 }
@@ -46,7 +44,6 @@ export const buildMultisigCosignRequest = ({
     signRequest,
     signerAddress,
     scope,
-    decodeTransaction,
     localAccounts,
 }: BuildMultisigCosignRequestParams): TransactionSignRequest => {
     const transactionList = signRequest.transactionLists[0]
@@ -56,9 +53,10 @@ export const buildMultisigCosignRequest = ({
         )
     }
 
+    const adapter = multisigAdapterFor(legacyNetworkOf(scope))
     const rawTransactionsBase64 = transactionList.rawTransactions
     const txs = rawTransactionsBase64.map(base64 =>
-        decodeTransaction(decodeFromBase64(base64)),
+        adapter.decodeTransaction(decodeFromBase64(base64)),
     )
 
     // The backend is a relay, not a trust anchor, for what we sign.
@@ -72,9 +70,10 @@ export const buildMultisigCosignRequest = ({
                     chainAccountOf(account, scope.chainId)?.address ?? [],
             ),
     ])
-    const validation = multisigAdapterFor(
-        legacyNetworkOf(scope),
-    ).validateSignRequest(signRequest, jointAuthorizedSenders)
+    const validation = adapter.validateSignRequest(
+        signRequest,
+        jointAuthorizedSenders,
+    )
     switch (validation.kind) {
         case 'valid': {
             break

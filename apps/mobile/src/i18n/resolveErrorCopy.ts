@@ -10,10 +10,6 @@
  limitations under the License
  */
 
-import {
-    AlgodError,
-    toAlgodError,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import {
     AppError,
@@ -33,7 +29,7 @@ export type TranslateFn = (
     params?: Record<string, unknown>,
 ) => string
 
-export type AlgodMessageFn = (err: unknown) => ErrorCopy
+export type NodeErrorMessageFn = (err: unknown) => Optional<ErrorCopy>
 
 /**
  * Errors declare a body key, not a title. Titles come from the category so a
@@ -77,7 +73,7 @@ export const resolveErrorCopy = (
     error: unknown,
     t: TranslateFn,
     fallbackTitle: Optional<string>,
-    getAlgodMessage: AlgodMessageFn,
+    getNodeErrorMessage: NodeErrorMessageFn,
 ): ErrorCopy => {
     if (isPeraNetworkError(error)) {
         const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
@@ -88,8 +84,12 @@ export const resolveErrorCopy = (
         return { title, body: t(bodyKey) }
     }
 
-    if (error instanceof AlgodError) {
-        return getAlgodMessage(error)
+    // The chain describes only what its node raised, and nothing for any other
+    // AppError, so the branches below keep their meaning. An unrecognised plain
+    // Error is left to the caller's copy.
+    const nodeCopy = getNodeErrorMessage(error)
+    if (nodeCopy) {
+        return nodeCopy
     }
 
     // Before the AppError branch: SubmissionError is an AppError subclass and
@@ -104,7 +104,12 @@ export const resolveErrorCopy = (
                 body: t('errors.submission.unknown_outcome.body'),
             }
         }
-        return getAlgodMessage(error.nodeError)
+        return (
+            getNodeErrorMessage(error.nodeError) ?? {
+                title: fallbackTitle ?? t('errors.general.title'),
+                body: t('errors.general.body'),
+            }
+        )
     }
 
     if (error instanceof NoConnectionError) {
@@ -130,13 +135,6 @@ export const resolveErrorCopy = (
     }
 
     if (error instanceof Error) {
-        // Raw algokit/algosdk Errors may carry a translatable algod message;
-        // `unknown_node_error` means nothing was recognized, so prefer the caller's copy.
-        const algodError = toAlgodError(error)
-        if (algodError.code !== 'unknown_node_error') {
-            return getAlgodMessage(algodError)
-        }
-
         logGenericBannerFallback(error, error.message)
         return {
             title: fallbackTitle ?? t('errors.general.title'),

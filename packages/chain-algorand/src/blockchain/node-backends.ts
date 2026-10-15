@@ -13,11 +13,13 @@
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import type { NodeBackendsAdapter } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { describeAlgodError } from './errors/describeAlgodError'
 
 // getAlgorandChainConfig folds in a saved custom node, which reaches the
 // clients once algorandClient's subscription resets them.
 export const algorandNodeBackends: NodeBackendsAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    describeError: describeAlgodError,
     backendsFor: scope => {
         const { algodUrl, algodToken, indexerUrl, indexerToken } =
             getAlgorandChainConfig(scope)

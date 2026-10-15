@@ -30,7 +30,7 @@ import {
     SubmissionError,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
@@ -90,7 +90,7 @@ export const useSignRequestFailure = (
     error: Nullable<Error>,
 ): UseSignRequestFailureResult => {
     const { t } = useLanguage()
-    const { getMessage } = useAlgodErrorMessage()
+    const { getMessage } = useNodeErrorMessage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const network = legacyNetworkOf(scope)
     const deviceId = useDeviceID(network) ?? ''

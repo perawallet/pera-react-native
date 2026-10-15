@@ -13,6 +13,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { DeeplinkType, type KeyregDeeplink } from '../../types'
 
 const {
@@ -20,8 +22,6 @@ const {
     mockShowError,
     mockOnlineKeyRegistration,
     mockOfflineKeyRegistration,
-    mockEncodeTransaction,
-    mockDecodeTransaction,
     mockAllAccounts,
     mockResolveAuthAccount,
     mockResolveSignerForAccount,
@@ -32,8 +32,6 @@ const {
     mockShowError: vi.fn(),
     mockOnlineKeyRegistration: vi.fn(),
     mockOfflineKeyRegistration: vi.fn(),
-    mockEncodeTransaction: vi.fn((tx: unknown) => tx),
-    mockDecodeTransaction: vi.fn((tx: unknown) => tx),
     mockAllAccounts: {
         current: [] as {
             id: string
@@ -49,16 +47,13 @@ const {
     mockAssignFeeToGroup: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    // Real-ish: matches the production base32-length check well enough for
-    // valid vs invalid sender discrimination in this hook.
-    isValidAlgorandAddress: (address: string) =>
-        typeof address === 'string' && /^[A-Z2-7]{58}$/.test(address),
-    useTransactionEncoder: () => ({
-        encodeTransaction: mockEncodeTransaction,
-        decodeTransaction: mockDecodeTransaction,
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-config')
+    >()),
+    getChainConfig: (scope: { networkId: string }) => ({
+        genesisHash: `hash-${scope.networkId}`,
     }),
-    getExpectedGenesisHash: (network: string) => `hash-${network}`,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -150,12 +145,12 @@ const seedSenderInWallet = () => {
 
 describe('useKeyregDeeplink', () => {
     beforeEach(() => {
+        // Base32 shape only, enough to tell a valid sender from an invalid one.
+        registerLegacyAddressCodec(address => /^[A-Z2-7]{58}$/.test(address))
         mockAddSignRequest.mockReset()
         mockShowError.mockReset()
         mockOnlineKeyRegistration.mockReset()
         mockOfflineKeyRegistration.mockReset()
-        mockEncodeTransaction.mockClear()
-        mockDecodeTransaction.mockClear()
         mockResolveAuthAccount.mockReset()
         mockResolveAuthAccount.mockImplementation(account => account)
         mockAllAccounts.current = []
@@ -177,6 +172,7 @@ describe('useKeyregDeeplink', () => {
 
     afterEach(() => {
         mockAllAccounts.current = []
+        addressCodecs.reset()
     })
 
     describe('preflight gating', () => {
@@ -256,8 +252,7 @@ describe('useKeyregDeeplink', () => {
         })
 
         // A `gh:` qualifier arrives as a base64 genesis hash, so match that
-        // too — and via getExpectedGenesisHash, so a Custom network resolves
-        // through its stored hash rather than an empty config value.
+        // too — read through getChainConfig, which folds in a saved custom node.
         it('accepts a target naming the active network by genesis hash', async () => {
             seedSenderInWallet()
 

@@ -13,7 +13,12 @@
 import { createWalletAlgorandClient } from '../blockchain'
 import type { AssetInboxSendFlow } from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../legacy-network'
-import { arc59SendSummaryResponseSchema } from './api'
+import {
+    fetchArc59AssetRequests,
+    fetchArc59SendSummary,
+    arc59SendSummaryResponseSchema,
+} from './api'
+import { getArc59SignedFundingAmount } from './getArc59SignedFundingAmount'
 import {
     buildArc59ClaimTxs,
     buildArc59RejectTxs,
@@ -23,6 +28,16 @@ import {
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
 // memo does.
 export const algorandAssetInbox: AssetInboxSendFlow = {
+    fetchRequests: ({ scope, address }) =>
+        fetchArc59AssetRequests(algorandNetworkOf(scope), address),
+    fetchSendSummary: async ({ scope, receiver, assetId }) => {
+        const quote = await fetchArc59SendSummary(
+            algorandNetworkOf(scope),
+            receiver,
+            assetId,
+        )
+        return { quote, fundingAmount: getArc59SignedFundingAmount(quote) }
+    },
     buildSendTxs: async ({ scope, summary, ...params }) => {
         const network = algorandNetworkOf(scope)
         return buildArc59SendViaInboxTxs(

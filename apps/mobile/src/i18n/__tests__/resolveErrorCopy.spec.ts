@@ -18,37 +18,42 @@ import {
     PeraNetworkError,
     logger,
 } from '@perawallet/wallet-core-shared'
-import { AlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { SubmissionError, SigningError } from '@perawallet/wallet-core-signing'
 import { resolveErrorCopy } from '../resolveErrorCopy'
 
-// Use the real Algorand runtime — this spec relies on actual AlgodError
-// instanceof checks and toAlgodError parsing, which the global mock in
-// vitest.setup.ts stubs out to always return unknown_node_error.
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
-    >('@perawallet/wallet-core-chain-algorand/blockchain')
-    return actual
-})
-
 const t = (key: string) => key
-const getAlgodMessage = vi.fn(() => ({
-    title: 'algod title',
-    body: 'algod body',
-}))
+const NODE_COPY = { title: 'node title', body: 'node body' }
+// Describes only the one error a test names, like a chain does for its node errors.
+const getNodeErrorMessage = vi.fn(
+    (_err: unknown): typeof NODE_COPY | undefined => {
+        return undefined
+    },
+)
+const describing = (described: unknown) =>
+    getNodeErrorMessage.mockImplementation(err =>
+        err === described ? NODE_COPY : undefined,
+    )
+
+const nodeError = () =>
+    Object.assign(new Error('node rejected'), { code: 'overspend' })
+
+beforeEach(() => {
+    getNodeErrorMessage.mockReset()
+    getNodeErrorMessage.mockReturnValue(undefined)
+})
 
 describe('resolveErrorCopy', () => {
     it('renders the status-unknown copy for an unverified unknown-outcome SubmissionError', () => {
         // The transaction may have landed (lost response, timeout) — calling
         // it failed or "no connection" would be a lie; the user needs to
         // check history before retrying.
-        const algodError = new AlgodError('network_unavailable', {})
+        const cause = nodeError()
+        describing(cause)
         const result = resolveErrorCopy(
-            new SubmissionError(['TXID'], 'unknown-outcome', algodError),
+            new SubmissionError(['TXID'], 'unknown-outcome', cause),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -57,22 +62,35 @@ describe('resolveErrorCopy', () => {
         })
     })
 
-    it('renders the wrapped algod copy for a SubmissionError', () => {
-        // A node rejection now reaches the UI wrapped in SubmissionError;
-        // falling into the generic AppError branch would lose the specific
-        // copy (e.g. the overspend explanation).
-        const algodError = new AlgodError('overspend', {
-            address: 'ADDR',
-        })
+    it('renders the described node copy for a SubmissionError', () => {
+        // A node rejection reaches the UI wrapped in SubmissionError; falling
+        // into the generic AppError branch would lose the specific copy
+        // (e.g. the overspend explanation).
+        const cause = nodeError()
+        describing(cause)
         const result = resolveErrorCopy(
-            new SubmissionError(['TXID'], 'rejected-by-node', algodError),
+            new SubmissionError(['TXID'], 'rejected-by-node', cause),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
-        expect(getAlgodMessage).toHaveBeenCalledWith(algodError)
-        expect(result).toEqual({ title: 'algod title', body: 'algod body' })
+        expect(getNodeErrorMessage).toHaveBeenCalledWith(cause)
+        expect(result).toEqual(NODE_COPY)
+    })
+
+    it('falls back to generic copy for a SubmissionError whose node error is not described', () => {
+        const result = resolveErrorCopy(
+            new SubmissionError(['TXID'], 'rejected-by-node', nodeError()),
+            t,
+            'caller title',
+            getNodeErrorMessage,
+        )
+
+        expect(result).toEqual({
+            title: 'caller title',
+            body: 'errors.general.body',
+        })
     })
 
     it('maps an offline PeraNetworkError to the no-connection copy', () => {
@@ -80,7 +98,7 @@ describe('resolveErrorCopy', () => {
             new PeraNetworkError('offline'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -94,7 +112,7 @@ describe('resolveErrorCopy', () => {
             new PeraNetworkError('unknown'),
             t,
             'caller title',
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result.title).toBe('caller title')
@@ -105,14 +123,19 @@ describe('resolveErrorCopy', () => {
             new NoConnectionError(),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result.title).toBe('errors.network.no_connection.title')
     })
 
     it('falls back to generic copy for a non-Error value', () => {
-        const result = resolveErrorCopy('boom', t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            'boom',
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result).toEqual({
             title: 'errors.general.title',
@@ -125,7 +148,7 @@ describe('resolveErrorCopy', () => {
             new AppError('raw detail that must not leak', {}),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -140,7 +163,12 @@ describe('resolveErrorCopy', () => {
             messageKey: 'errors.webview.unsupported_url',
         })
 
-        const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result.body).toBe('errors.webview.unsupported_url')
     })
@@ -153,7 +181,7 @@ describe('resolveErrorCopy', () => {
             params: { url: 'ABC' },
         })
 
-        resolveErrorCopy(error, spy, undefined, getAlgodMessage)
+        resolveErrorCopy(error, spy, undefined, getNodeErrorMessage)
 
         expect(spy).toHaveBeenCalledWith('errors.webview.unsupported_url', {
             url: 'ABC',
@@ -166,37 +194,64 @@ describe('resolveErrorCopy', () => {
             messageKey: 'errors.account.no_hd_wallet',
         })
 
-        const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
 
         expect(result.title).toBe('errors.account.title')
     })
 
-    it('resolves an AlgodError via getAlgodMessage, not the inherited BlockchainError messageKey', () => {
-        // AlgodError extends BlockchainError, which now carries a base
-        // messageKey (errors.blockchain.generic). If this branch were ever
-        // moved below the AppError branch, the error would match `instanceof
-        // AppError` first and render generic blockchain copy instead of the
-        // algod-specific message.
-        const error = new AlgodError('duplicate_txn', { txId: 'ABC' })
+    it('resolves a described AppError by its node copy, not its inherited messageKey', () => {
+        // A chain's node error can extend an AppError that carries a base
+        // messageKey. If the node copy were looked up below the AppError
+        // branch, the generic blockchain copy would win over the specific one.
+        const error = new AppError('duplicate', {
+            category: ErrorCategory.BLOCKCHAIN,
+            messageKey: 'errors.blockchain.generic',
+        })
+        describing(error)
 
-        const result = resolveErrorCopy(error, t, undefined, getAlgodMessage)
-
-        expect(getAlgodMessage).toHaveBeenCalledWith(error)
-        expect(result).toEqual({ title: 'algod title', body: 'algod body' })
-    })
-
-    it('resolves a recognized algod raw Error via getAlgodMessage', () => {
-        // toAlgodError() recognizes this message and assigns it a non-
-        // "unknown_node_error" code, so it must route through getAlgodMessage
-        // rather than falling into the generic-copy branch below.
-        const rawError = new Error(
-            `transaction already in ledger: ${'A'.repeat(52)}`,
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
         )
 
-        const result = resolveErrorCopy(rawError, t, undefined, getAlgodMessage)
+        expect(result).toEqual(NODE_COPY)
+    })
 
-        expect(getAlgodMessage).toHaveBeenCalled()
-        expect(result).toEqual({ title: 'algod title', body: 'algod body' })
+    it('resolves a described plain Error by its node copy', () => {
+        const rawError = new Error('node says no')
+        describing(rawError)
+
+        const result = resolveErrorCopy(
+            rawError,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
+
+        expect(result).toEqual(NODE_COPY)
+    })
+
+    it('keeps an AppError the chain does not describe on its own copy', () => {
+        const error = new AppError('log only', {
+            category: ErrorCategory.VALIDATION,
+            messageKey: 'errors.webview.unsupported_url',
+        })
+
+        const result = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getNodeErrorMessage,
+        )
+
+        expect(result.body).toBe('errors.webview.unsupported_url')
     })
 
     it('lets an explicit fallback title win over the category title', () => {
@@ -209,7 +264,7 @@ describe('resolveErrorCopy', () => {
             error,
             t,
             'caller title',
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result.title).toBe('caller title')
@@ -222,7 +277,7 @@ describe('resolveErrorCopy', () => {
             }),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -236,7 +291,7 @@ describe('resolveErrorCopy', () => {
             new SigningError('hardware path'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
 
         expect(result).toEqual({
@@ -266,7 +321,7 @@ describe('resolveErrorCopy generic-banner logging', () => {
             new Error('Network request failed'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
         expect(logger.error).not.toHaveBeenCalled()
     })
@@ -276,7 +331,7 @@ describe('resolveErrorCopy generic-banner logging', () => {
             new Error('something we have no copy for'),
             t,
             undefined,
-            getAlgodMessage,
+            getNodeErrorMessage,
         )
         expect(logger.error).toHaveBeenCalledWith(
             'Unrecognized error shown as generic banner',

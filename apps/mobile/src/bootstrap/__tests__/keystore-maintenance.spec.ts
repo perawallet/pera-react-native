@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import { z } from 'zod'
-import { MAX_TX_NOTE_BYTES } from '../models'
+import { describe, expect, it, vi } from 'vitest'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { keystoreMaintenanceDependencies } from '../keystore-maintenance'
 
-export const noteSchema = z.object({
-    note: z
-        .string()
-        .refine(
-            data =>
-                new TextEncoder().encode(data).byteLength <= MAX_TX_NOTE_BYTES,
-            {
-                error: 'Notes may not exceed 1kb in length',
-            },
+vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
+    derivePQKeygenSeed: vi.fn(),
+}))
+
+describe('keystoreMaintenanceDependencies', () => {
+    it("hands keystore maintenance Algorand's post-quantum keygen seed derivation", () => {
+        expect(keystoreMaintenanceDependencies.deriveKeygenSeed).toBe(
+            derivePQKeygenSeed,
         )
-        .optional(),
+    })
 })

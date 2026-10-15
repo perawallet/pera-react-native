@@ -11,6 +11,10 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    Address,
+    makeKeyRegistrationTxnWithSuggestedParamsFromObject,
+} from 'algosdk'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => {
@@ -44,6 +48,8 @@ import {
     buildRekeyTx,
     buildTransferTxs,
 } from '../builders'
+
+import { encodeTransaction } from '../../blockchain'
 
 const scope = scopeForLegacyNetwork('testnet')
 const TXNS = [{ id: 'one' }, { id: 'two' }]
@@ -249,12 +255,26 @@ describe('Algorand transaction builders', () => {
 
     describe('buildKeyRegistrationTx', () => {
         const note = new Uint8Array([1])
+        const keyreg = (sender: Address) =>
+            makeKeyRegistrationTxnWithSuggestedParamsFromObject({
+                sender,
+                nonParticipation: false,
+                suggestedParams: {
+                    fee: 1000,
+                    flatFee: true,
+                    firstValid: 1,
+                    lastValid: 1000,
+                    genesisHash: new Uint8Array(32),
+                    genesisID: 'testnet-v1.0',
+                },
+            })
 
         it('builds an offline registration with the fee and note', async () => {
-            const tx = { id: 'offline' }
-            mocks.offlineKeyRegistration.mockResolvedValueOnce(tx)
+            mocks.offlineKeyRegistration.mockResolvedValueOnce(
+                keyreg(Address.zeroAddress()),
+            )
 
-            const result = await buildKeyRegistrationTx({
+            await buildKeyRegistrationTx({
                 kind: 'offline',
                 scope,
                 sender: 'S',
@@ -262,7 +282,6 @@ describe('Algorand transaction builders', () => {
                 fee: 2000n,
             })
 
-            expect(result).toBe(tx)
             const arg = mocks.offlineKeyRegistration.mock.calls[0][0]
             expect(arg).toMatchObject({ sender: 'S', note })
             expect(micro(arg.staticFee)).toBe(2000n)
@@ -274,7 +293,9 @@ describe('Algorand transaction builders', () => {
                 selectionKey: new Uint8Array([2]),
                 stateProofKey: new Uint8Array([3]),
             }
-            mocks.onlineKeyRegistration.mockResolvedValueOnce({ id: 'online' })
+            mocks.onlineKeyRegistration.mockResolvedValueOnce(
+                keyreg(Address.zeroAddress()),
+            )
 
             await buildKeyRegistrationTx({
                 kind: 'online',
@@ -296,5 +317,35 @@ describe('Algorand transaction builders', () => {
                 staticFee: undefined,
             })
         })
+
+        it.each(['offline', 'online'] as const)(
+            'returns a %s registration normalized through the wire encoding',
+            async kind => {
+                const built = keyreg(Address.zeroAddress())
+                mocks.offlineKeyRegistration.mockResolvedValueOnce(built)
+                mocks.onlineKeyRegistration.mockResolvedValueOnce(built)
+                const params =
+                    kind === 'offline'
+                        ? ({ kind, scope, sender: 'S' } as const)
+                        : ({
+                              kind,
+                              scope,
+                              sender: 'S',
+                              voteKey: new Uint8Array([1]),
+                              selectionKey: new Uint8Array([2]),
+                              stateProofKey: new Uint8Array([3]),
+                              voteFirst: 10n,
+                              voteLast: 20n,
+                              voteKeyDilution: 5n,
+                          } as const)
+
+                const result = await buildKeyRegistrationTx(params)
+
+                expect(result).not.toBe(built)
+                expect(encodeTransaction(result)).toEqual(
+                    encodeTransaction(built),
+                )
+            },
+        )
     })
 })

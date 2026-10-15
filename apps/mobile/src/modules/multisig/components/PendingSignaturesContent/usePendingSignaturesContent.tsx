@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useTransactionEncoder } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -128,7 +127,6 @@ export const usePendingSignaturesContent =
         const { network } = useNetwork()
         const deviceId = useDeviceID(network) ?? ''
         const accounts = useAllAccounts()
-        const { decodeTransaction } = useTransactionEncoder()
         const { addSignRequest, pendingSignRequests } = useSigningRequest()
         const signRequestId = usePendingSignaturesSheetStore(
             state => state.signRequestId,
@@ -296,7 +294,6 @@ export const usePendingSignaturesContent =
                         signRequest,
                         signerAddress: address,
                         scope,
-                        decodeTransaction,
                         localAccounts: accounts,
                     })
                     addSignRequest(cosignRequest)
@@ -312,15 +309,7 @@ export const usePendingSignaturesContent =
                     )
                 }
             },
-            [
-                signRequest,
-                decodeTransaction,
-                addSignRequest,
-                accounts,
-                errorToast,
-                t,
-                scope,
-            ],
+            [signRequest, addSignRequest, accounts, errorToast, t, scope],
         )
 
         const handleSign = useCallback(() => {

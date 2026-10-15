@@ -15,10 +15,10 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useOptOutConfirmationContent } from '../useOptOutConfirmationContent'
 
-const mockUseMinimumFeeConfig = vi.fn()
+const mockUseFeeConfig = vi.fn()
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: (chainId: string) => mockUseFeeConfig(chainId),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({
@@ -39,14 +39,20 @@ describe('useOptOutConfirmationContent', () => {
         vi.clearAllMocks()
     })
 
+    it('reads the legacy chain fee config', () => {
+        mockUseFeeConfig.mockReturnValue({ minTxnFee: 1000n })
+        renderHook(() => useOptOutConfirmationContent())
+        expect(mockUseFeeConfig).toHaveBeenCalledWith('algorand')
+    })
+
     it('derives the fee from the remote-config minimum fee', () => {
-        mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 2000n })
+        mockUseFeeConfig.mockReturnValue({ minTxnFee: 2000n })
         const { result } = renderHook(() => useOptOutConfirmationContent())
         expect(result.current.fee.toString()).toBe('0.002')
     })
 
     it('uses the default minimum fee when config is unchanged', () => {
-        mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 1000n })
+        mockUseFeeConfig.mockReturnValue({ minTxnFee: 1000n })
         const { result } = renderHook(() => useOptOutConfirmationContent())
         expect(result.current.fee.toString()).toBe('0.001')
     })
