@@ -5,9 +5,9 @@ Documentation       Accounts on Android and iOS from one suite: the account home
 Resource            ../resources/accounts.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
+Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           accounts
 
 
@@ -120,7 +120,8 @@ Confirmed Removal Drops The Account
     ${before}=    Count Accounts
     Start Account Removal
     Tap    ${REMOVE_CONFIRM_BUTTON}
-    Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
+    # Home stays in the tree under the sheet; the sheet leaving is what proves removal finished.
+    Wait Until Page Does Not Contain Element    ${REMOVE_CONFIRM_BUTTON}    timeout=30s
     ${after}=    Count Accounts
     Should Be Equal As Integers    ${after}    ${before - 1}
 

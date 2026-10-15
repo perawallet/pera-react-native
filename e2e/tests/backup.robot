@@ -6,9 +6,8 @@ Documentation       Passphrase backup reminder on Android and iOS from one suite
 Resource            ../resources/backup.resource
 
 Suite Setup         Open Pera
-Suite Teardown      Close Pera
-Test Teardown       Run Keyword If Test Failed    Capture Screenshot Unless Showing
-...                 ${WORD_INPUT_0}    ${BACKUP_MNEMONIC_CONTINUE}    ${BACKUP_VERIFICATION_NEXT}
+Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
+Test Teardown       Capture Failure Screenshot
 Test Tags           backup
 
 

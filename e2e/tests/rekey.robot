@@ -5,9 +5,9 @@ Documentation       Rekey on Android and iOS from one suite. Fund-free cases sto
 Resource            ../resources/rekey.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
+Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home Without Rekey Sheet
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           rekey
 
 

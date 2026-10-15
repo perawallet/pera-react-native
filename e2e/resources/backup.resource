@@ -91,7 +91,10 @@ Answer Quiz Correctly
             ${digits}=    Get Regexp Matches    ${label}    \\d+
             Should Not Be Empty    ${digits}    msg=A quiz label no longer carries the word position.
             ${word}=    Get From List    ${PASSPHRASE}    ${{int($digits[0]) - 1}}
-            Tap    accessibility_id=backup_verification_item_${i}_option_${word}
+            # The locator holds a seed word, and a failed tap would print it in the failure message.
+            ${tapped}=    Run Keyword And Return Status
+            ...    Tap    accessibility_id=backup_verification_item_${i}_option_${word}
+            IF    not ${tapped}    Fail    Could not pick the answer for quiz item ${i}.
         END
     FINALLY
         Set Log Level    ${level}

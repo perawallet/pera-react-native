@@ -87,6 +87,7 @@ let mounted = new Map<string, string>()
 let focused = ''
 const reportedDoubleOpens = new Set<string>()
 let started = false
+let pendingSnapshot: string | undefined
 
 const onStateChange = (): void => {
     const state = navigationRef.getRootState() as StateNode | undefined
@@ -108,6 +109,11 @@ const onStateChange = (): void => {
         focused = nextFocused
     }
 
+    if (pendingSnapshot) {
+        traceSnapshot(pendingSnapshot)
+        pendingSnapshot = undefined
+    }
+
     for (const id of doubleOpens(state)) {
         if (reportedDoubleOpens.has(id)) continue
         reportedDoubleOpens.add(id)
@@ -115,7 +121,16 @@ const onStateChange = (): void => {
     }
 }
 
-/** Logs every mounted screen, after a fixture reset; anything outside TabBar is a leak. */
+/**
+ * Logs every mounted screen once the navigation state next settles. Called just
+ * before a fixture reset, so the line marks the reset as applied (the harness
+ * waits on it) and anything listed outside TabBar is a leak.
+ */
+export const snapshotOnNextState = (label: string): void => {
+    pendingSnapshot = label
+}
+
+/** Logs every mounted screen; anything outside TabBar after a fixture reset is a leak. */
 export const traceSnapshot = (label: string): void => {
     emit('snapshot', { label, screens: [...mounted.values()] })
 }

@@ -12,6 +12,7 @@ Flows are written to <outputdir>/nav-flows.json for tools/flow_diff.py.
 
 import json
 import os
+import time
 
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
@@ -66,6 +67,8 @@ class NavTrace:
         self.ROBOT_LIBRARY_LISTENER = self
         self.flows = {}
         self.outdir = None
+        self.pending = []
+        self.tracer_seen = None
 
     def _driver(self):
         try:
@@ -85,12 +88,35 @@ class NavTrace:
         except Exception:
             return []
 
+    def wait_for_nav_snapshot(self, label, timeout=5.0):
+        """Waits until the app logs the snapshot that follows a fixture reset.
+
+        Returns False when no such line arrives in time (for example a device log that
+        cannot be read), so the caller can fall back to a fixed wait.
+        """
+        if self.tracer_seen is False:
+            return False  # a build without the tracer: don't pay the timeout on every fixture
+        deadline = time.time() + float(timeout)
+        while time.time() < deadline:
+            lines = self._read()
+            self.pending.extend(lines)
+            for event in parse(lines):
+                if event.get("event") == "snapshot" and event.get("label") == label:
+                    self.tracer_seen = True
+                    return True
+            time.sleep(0.1)
+        if self.tracer_seen is None:
+            self.tracer_seen = False
+        return False
+
     def start_test(self, data, result):
         self.outdir = BuiltIn().get_variable_value("${OUTPUT DIR}")
         self._read()  # drop whatever was logged before this test
+        self.pending = []
 
     def end_test(self, data, result):
-        events = parse(self._read())
+        events = parse(self.pending + self._read())
+        self.pending = []
         test_id = next((t[3:] for t in result.tags if t.startswith("id:")), result.longname)
         self.flows[test_id] = {"flow": flow(events), "flags": red_flags(events), "status": result.status}
         if events:

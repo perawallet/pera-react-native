@@ -4,9 +4,9 @@ Documentation       Quantum accounts on Android and iOS from one suite. Fund-fre
 Resource            ../resources/quantum.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
+Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           quantum
 
 

@@ -5,7 +5,7 @@ Resource            ../resources/contacts.resource
 
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           contacts
 
 

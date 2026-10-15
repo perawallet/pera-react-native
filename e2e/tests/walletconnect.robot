@@ -6,7 +6,7 @@ Resource            ../resources/walletconnect.resource
 Suite Setup         Start Pera For WalletConnect
 Suite Teardown      Close Pera
 Test Setup          Go Home
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           walletconnect    needs-harness    excludefromci
 
 

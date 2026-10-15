@@ -22,7 +22,7 @@ import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { navigationRef } from '@routes/navigationRef'
 
 import type { DevE2eFixtureDeeplink, E2eFixtureName } from '../types'
-import { startNavTracer, traceSnapshot } from './e2eNavTracer'
+import { snapshotOnNextState, startNavTracer } from './e2eNavTracer'
 
 export type E2eFixtureDeeplinkHandler = (
     deeplink: Pick<DevE2eFixtureDeeplink, 'fixture'>,
@@ -70,9 +70,9 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
             // A fresh key remounts the tab shell, which also closes the account
             // drawer: its open state is local to the shell, not in navigation.
             const tabBar = { name: 'TabBar', key: `TabBar-e2e-${Date.now()}` }
+            snapshotOnNextState(`fixture:${fixture}`)
             if (fixture === 'home') {
                 navigationRef.reset({ index: 0, routes: [tabBar] })
-                setTimeout(() => traceSnapshot(`fixture:${fixture}`), 500)
                 return
             }
             useContactsStore.setState({
@@ -89,7 +89,6 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
                     },
                 ],
             })
-            setTimeout(() => traceSnapshot(`fixture:${fixture}`), 500)
         },
         [hasAccounts],
     )

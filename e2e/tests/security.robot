@@ -8,7 +8,7 @@ Resource            ../resources/security.resource
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Run Keywords    Turn Pin Off    AND    Close Pera
 Test Setup          Start On Security
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           security
 
 
@@ -47,10 +47,10 @@ Mismatched Duress Confirmation Saves Nothing
 Shake To Lock Can Be Switched On And Off
     [Documentation]    Only the switch: no device farm or simulator can drive the shake itself.
     [Tags]    id:security.shake-to-lock.toggle    p2
-    Require Security Switch    ${SHAKE_TOGGLE}    enable_motion_lock
+    Require Security Switch    ${SHAKE_TOGGLE_ID}    enable_motion_lock
     # The switch stays disabled until a PIN is set.
     Require Regular Pin
-    Reveal On Security Screen    ${SHAKE_TOGGLE}
+    Reveal On Security Screen    ${SHAKE_TOGGLE_ID}
     ${before}=    Switch Is On    ${SHAKE_TOGGLE_ID}
     Tap    ${SHAKE_TOGGLE}
     Switch Should Turn    ${SHAKE_TOGGLE_ID}    ${{not $before}}

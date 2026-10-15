@@ -6,7 +6,7 @@ Resource            ../resources/settings.resource
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Setup          Open Settings
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           settings
 
 
@@ -119,7 +119,7 @@ Rate App Sheet Opens And Closes
     [Tags]    id:settings.support.rate-sheet    p2
     Open From Settings    ${SETTINGS_ITEM_RATE_APP}    ${SETTINGS_RATINGS_SHEET}
     Wait Until Settled    ${SETTINGS_RATINGS_SHEET}
-    Close Sheet
+    Tap Backdrop Above    ${SETTINGS_RATINGS_SHEET}
     Wait Until Page Does Not Contain Element    ${SETTINGS_RATINGS_SHEET}    timeout=10s
 
 Cancelling Remove All Keeps The Wallet

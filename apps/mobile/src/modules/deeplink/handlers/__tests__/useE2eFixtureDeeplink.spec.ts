@@ -45,7 +45,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('../e2eNavTracer', () => ({
     startNavTracer: vi.fn(),
-    traceSnapshot: vi.fn(),
+    snapshotOnNextState: vi.fn(),
 }))
 
 vi.mock('@routes/navigationRef', () => ({

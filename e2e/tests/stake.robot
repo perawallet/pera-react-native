@@ -5,7 +5,7 @@ Resource            ../resources/stake.resource
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Setup          Go Home
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           stake
 
 
@@ -30,12 +30,8 @@ Disclaimer Unlocks Accept Only After Scrolling
     [Tags]    id:stake.disclaimer.scroll-to-accept    p1
     Open Staking
     Staking Projects Should Be Listed
-    ${disclaimer}=    Tap First Project
-    IF    not ${disclaimer}
-        Close Project Page
-        Skip    Disclaimer already accepted on this install.
-    END
-    Element Should Be Disabled    ${STAKING_DISCLAIMER_ACCEPT}
+    Open Disclaimer
+    Accept Should Be Disabled Before Scrolling
     Scroll Disclaimer To The End
     Close Disclaimer
     Page Should Not Contain Element    ${WEBVIEW_CLOSE_BUTTON}
@@ -44,11 +40,7 @@ Accepting The Disclaimer Opens The Project
     [Tags]    id:stake.disclaimer.accept    p2
     Open Staking
     Staking Projects Should Be Listed
-    ${disclaimer}=    Tap First Project
-    IF    not ${disclaimer}
-        Close Project Page
-        Skip    Disclaimer already accepted on this install.
-    END
+    Open Disclaimer
     Accept Disclaimer
     Project Page Should Be Open
     Close Project Page

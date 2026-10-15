@@ -6,7 +6,7 @@ Resource            ../resources/send_receive.resource
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Setup          Go Home
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Teardown       Capture Failure Screenshot
 Test Tags           send-receive
 
 

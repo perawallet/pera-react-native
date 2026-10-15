@@ -7,8 +7,8 @@ Documentation       Swap on Android and iOS from one suite. Every case opens Swa
 Resource            ../resources/swap.resource
 
 Suite Setup         Start Pera With Wallet
-Suite Teardown      Close Pera
-Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
+Test Teardown       Capture Failure Screenshot
 Test Tags           swap
 
 
