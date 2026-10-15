@@ -166,6 +166,7 @@ export const registerTestMultisigAdapter = (): void => {
         deriveAddress: notStubbed('deriveAddress'),
         assembleSignedTransactions: notStubbed('assembleSignedTransactions'),
         validateSignRequest: notStubbed('validateSignRequest'),
+        decodeTransaction: notStubbed('decodeTransaction'),
         acceptsParticipantScheme: notStubbed('acceptsParticipantScheme'),
         classifyParticipant: notStubbed('classifyParticipant'),
     }

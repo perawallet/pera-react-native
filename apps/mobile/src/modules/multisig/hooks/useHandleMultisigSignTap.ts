@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useTransactionEncoder } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -55,7 +54,6 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
     const accounts = useAllAccounts()
-    const { decodeTransaction } = useTransactionEncoder()
     const { addSignRequest, pendingSignRequests } = useSigningRequest()
     const { t } = useLanguage()
     const { errorToast } = useToast()
@@ -89,7 +87,6 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                                     signRequest,
                                     signerAddress: address,
                                     scope,
-                                    decodeTransaction,
                                     localAccounts: accounts,
                                 }),
                             )
@@ -119,7 +116,6 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
         [
             openSheet,
             accounts,
-            decodeTransaction,
             addSignRequest,
             pendingSignRequests,
             errorToast,

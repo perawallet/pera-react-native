@@ -124,6 +124,14 @@ export const multisigContractTests = (
             })
         })
 
+        it('decodes the unsigned transaction a request carries', () => {
+            const bytes = Uint8Array.from(atob(rawTransactionBase64), char =>
+                char.charCodeAt(0),
+            )
+
+            expect(makeAdapter().decodeTransaction(bytes)).toBeDefined()
+        })
+
         it('reports missing signatures as retryable, not as an error', async () => {
             const result = await makeAdapter().assembleSignedTransactions({
                 rawTransactionsBase64: [rawTransactionBase64],
