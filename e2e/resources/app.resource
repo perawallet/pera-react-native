@@ -15,6 +15,7 @@ ${ACCOUNT_FINISH_BUTTON}        accessibility_id=name_account_finish_button
 ${PIN_PROMPT_DONT_ASK}          accessibility_id=pin_security_prompt_dont_ask_button
 ${BANNERS_MODAL_CLOSE}          accessibility_id=banners_carousel_modal_close
 ${ANALYTICS_CONSENT_DECLINE}    accessibility_id=analytics_consent_prompt_decline_button
+${STARTUP_PROMPT_ANY}           xpath=//*[@content-desc='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button']
 ${NAVIGATION_BACK_BUTTON}       accessibility_id=navigation_back_button
 ${MENU_SETTINGS_BUTTON}         accessibility_id=menu_settings_button
 # Screens that can show a recovery phrase: the import word fields, the backup grid and quiz.
@@ -104,13 +105,18 @@ Create Wallet
 Wait Clear Of Startup Prompts
     [Documentation]    The PIN, analytics-consent and banner prompts arrive about 3s after Home and swallow taps.
     ...                Dismiss them until none has shown for longer than that delay.
-    VAR    ${clear}    ${0}
+    ...                One probe covers all three, so a quiet round costs one driver call instead of three.
+    ${quiet_since}=    Evaluate    time.time()    modules=time
     FOR    ${i}    IN RANGE    90
-        ${pin}=    Tap If Present    ${PIN_PROMPT_DONT_ASK}
-        ${banner}=    Tap If Present    ${BANNERS_MODAL_CLOSE}
-        ${consent}=    Tap If Present    ${ANALYTICS_CONSENT_DECLINE}
-        ${clear}=    Set Variable If    ${pin} or ${banner} or ${consent}    ${0}    ${clear + 1}
-        IF    ${clear} >= 8    RETURN
+        ${any}=    Run Keyword And Return Status    Page Should Contain Element    ${STARTUP_PROMPT_ANY}
+        IF    ${any}
+            Tap If Present    ${PIN_PROMPT_DONT_ASK}
+            Tap If Present    ${BANNERS_MODAL_CLOSE}
+            Tap If Present    ${ANALYTICS_CONSENT_DECLINE}
+            ${quiet_since}=    Evaluate    time.time()    modules=time
+        ELSE IF    ${{time.time() - $quiet_since}} > 4
+            RETURN
+        END
         Sleep    0.5s
     END
     Fail    Startup prompts kept coming back.
@@ -120,7 +126,9 @@ Load Fixture
     [Arguments]    ${name}
     # A snapshot from an earlier load can land late; drain first so only this load's line counts.
     Drain Nav Log
-    Open Deeplink    ${FIXTURE_URL}?name=${name}
+    # The app drops a link identical to one handled under 1.5s ago (useDeeplinkListener), as when a
+    # suite setup's Go Home is followed by the first test's; a unique parameter keeps every load.
+    Open Deeplink    ${FIXTURE_URL}?name=${name}&run=${{time.time_ns()}}
     # The driver returns before the app has handled the link, so an anchor checked right away can
     # match the previous test's screen. The tracer logs a snapshot once the reset has settled; wait
     # on that, and fall back to a fixed wait only when the device log cannot be read.
@@ -161,7 +169,14 @@ Reset To Fresh Wallet
     ...                state Start Pera With Wallet assumes instead of whatever this suite left.
     Go Home
     Tap    ${MENU_TAB}
-    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
+    # A wallet the suite created just before can still raise its startup prompts, which swallow the tap.
+    ${menu}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=5s
+    IF    not ${menu}
+        Wait Clear Of Startup Prompts
+        Tap    ${MENU_TAB}
+        Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
+    END
     Tap    ${MENU_SETTINGS_BUTTON}
     Scroll Into View    settings_remove_all_accounts_button
     Tap    accessibility_id=settings_remove_all_accounts_button

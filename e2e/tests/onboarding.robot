@@ -21,14 +21,16 @@ New Wallet Reaches Home With Its Name
     [Tags]    id:onboarding.create.named    p0    rc    release-gate
     Start Without Wallet
     Create Wallet Named    ${WALLET_NAME}
-    Wait Until Page Contains    ${WALLET_NAME}    timeout=15s
-    Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
+    Wait Clear Of Startup Prompts
+    Selected Account Should Be Named    ${WALLET_NAME}
 
 Confetti Plays After Wallet Creation
     [Tags]    id:onboarding.create.confetti    p2
     Start Without Wallet
     Tap    ${CREATE_WALLET_BUTTON}
     Accept Terms Until    ${ACCOUNT_NAME_INPUT}
+    # The naming screen is still sliding in (and on iOS the keyboard lifts the button) when the input appears.
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Contains Element    ${CONFETTI}    timeout=15s
 
@@ -37,7 +39,7 @@ Existing Wallet Offers Add Account
     Start With New Wallet
     Tap    ${ACCOUNT_SELECTION_BUTTON}
     Wait Until Settled    ${ACCOUNT_MENU_ADD_BUTTON}
-    Page Should Contain Text    ${WALLET_NAME}
+    Page Should Contain Element    ${ACCOUNT_SWITCHER_ROW_ANY}
 
 Import Lists Every Recovery Method
     [Tags]    id:onboarding.import.options    p0    rc
@@ -119,7 +121,7 @@ New Account Is Added To The Existing Wallet
     Open Add Account
     Tap    ${ADD_ACCOUNT_ADD_BUTTON}
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
-    Wait Until Page Contains    ${SECOND_ACCOUNT_NAME}    timeout=15s
+    Selected Account Should Be Named    ${SECOND_ACCOUNT_NAME}
 
 Algo25 Account Is Created From Other Options
     [Tags]    id:onboarding.add-account.algo25    p1
@@ -129,7 +131,7 @@ Algo25 Account Is Created From Other Options
     Scroll Until Present    ${ADD_ACCOUNT_ALGO25_BUTTON}
     Tap    ${ADD_ACCOUNT_ALGO25_BUTTON}
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
-    Wait Until Page Contains    ${SECOND_ACCOUNT_NAME}    timeout=15s
+    Selected Account Should Be Named    ${SECOND_ACCOUNT_NAME}
 
 Other Options Reveal Watch And Algo25
     [Tags]    id:onboarding.add-account.other-options    p1
@@ -150,6 +152,7 @@ Closing Add Account Returns Home
 
 Watch Account Is Added From An Address
     [Tags]    id:onboarding.add-account.watch    p1    needs-testid
+    Skip    WatchInfoScreen's Create button has no testID (watch_info_create_button).
     Start With New Wallet
     Open Add Account
     Reveal Other Add Account Options
@@ -162,7 +165,7 @@ Watch Account Is Added From An Address
     Expect Element    ${WATCH_SUBMIT_BUTTON}    enabled    timeout=5s    retry_interval=0.5s
     Tap    ${WATCH_SUBMIT_BUTTON}
     Name Account And Finish    ${WATCH_ACCOUNT_NAME}
-    Wait Until Page Contains    ${WATCH_ACCOUNT_NAME}    timeout=15s
+    Selected Account Should Be Named    ${WATCH_ACCOUNT_NAME}
 
 Node Switches To Testnet And Back To Mainnet
     [Tags]    id:onboarding.settings.node-testnet    p1

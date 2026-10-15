@@ -18,6 +18,9 @@ ${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
 ${SETTINGS_SECURITY_ROW}            accessibility_id=settings_item_security
 ${SETTINGS_DEVELOPER_ROW}           accessibility_id=settings_item_developer_settings
 ${SETTINGS_APP_VERSION}             xpath=//*[@resource-id='settings_app_version' or @name='settings_app_version']
+# The toast carries no testID; matched on settings.developer.debug_tools_enabled (English). iOS keeps
+# a dismissed toast in the tree off-screen with visible=false.
+${DEBUG_TOOLS_ENABLED_TOAST}        xpath=//*[(@text='Debug tools enabled' or @label='Debug tools enabled') and not(@visible='false')]
 ${DEBUG_TOOLS_ROW}                  accessibility_id=developer_settings_debug_tools_item
 ${FEATURE_FLAGS_ROW}                accessibility_id=debug_tools_feature_flags_item
 ${CB_FLAG_EXPAND}                   accessibility_id=feature_flag_expand_enable_cloud_backup
@@ -39,6 +42,8 @@ ${CB_SETUP_PROCEED}                 accessibility_id=cloud_backup_setup_proceed_
 
 ${CB_VERIFY_SCREEN}                 xpath=//*[@resource-id='cloud_backup_verify_screen' or @name='cloud_backup_verify_screen']
 ${CB_VERIFY_PROCEED}                accessibility_id=cloud_backup_verify_proceed_button
+# BackupQuizItem's label has no testID; matched on backup.verification.select_word (English).
+${QUIZ_LABEL_ANY}                   xpath=//*[starts-with(@text,'Select word #') or (starts-with(@label,'Select word #') and @accessible='true')]
 # The toast carries no testID; matched on cloud_backup.verify.error_message (English).
 ${CB_VERIFY_WRONG_TOAST}            xpath=//*[contains(@text,'Incorrect selection') or contains(@label,'Incorrect selection') or contains(@name,'Incorrect selection')]
 
@@ -103,23 +108,28 @@ Enable Cloud Backup Flag
     Tap    ${SETTINGS_DEVELOPER_ROW}
     Swipe Until In View    ${DEBUG_TOOLS_ROW}
     Tap    ${DEBUG_TOOLS_ROW}
-    Wait Until Page Contains Element    ${FEATURE_FLAGS_ROW}    timeout=15s
+    # Debug Tools is still sliding in when its rows appear; a tap then misses the row.
+    Wait Until Settled    ${FEATURE_FLAGS_ROW}
     Tap    ${FEATURE_FLAGS_ROW}
-    Wait Until Page Contains Element    ${CB_FLAG_EXPAND}    timeout=15s
-    Swipe Until In View    ${CB_FLAG_EXPAND}
+    Scroll Into View    feature_flag_expand_enable_cloud_backup
     Tap    ${CB_FLAG_EXPAND}
-    Wait Until Page Contains Element    ${CB_FLAG_OVERRIDE}    timeout=15s
+    Scroll Into View    feature_flag_override_enable_cloud_backup
     Tap    ${CB_FLAG_OVERRIDE}
 
 Unlock Debug Tools
     [Documentation]    Ten taps on the version row, each within 1s of the last (AppVersion.tsx resets the
     ...                count on a longer gap). Re-locating the element per tap can exceed that on a
     ...                loaded device, so the point is resolved once and tapped by coordinate.
-    Swipe Until In View    ${SETTINGS_APP_VERSION}
+    # The footer stays in the lower quarter even scrolled to the end, which Swipe Until In View refuses.
+    Scroll Into View    settings_app_version    by=resourceId
     ${loc}=    Get Element Location    ${SETTINGS_APP_VERSION}
     ${size}=    Get Element Size    ${SETTINGS_APP_VERSION}
     VAR    @{point}    ${{int($loc['x'] + $size['width'] / 2)}}    ${{int($loc['y'] + $size['height'] / 2)}}
     AppiumLibrary.Tap    ${point}    count=10    duration=0.05s
+    # The success toast proves the unlock, and while up it swallows taps on the top row of the next
+    # screens (Feature Flags on Debug Tools).
+    Wait Until Page Contains Element    ${DEBUG_TOOLS_ENABLED_TOAST}    timeout=5s
+    Wait Until Page Does Not Contain Element    ${DEBUG_TOOLS_ENABLED_TOAST}    timeout=10s
 
 Swipe Until In View
     [Documentation]    Swipes until the element sits in the upper three quarters of the window, clear of
@@ -190,11 +200,12 @@ Start At Overview
     Wait Until Page Contains Element    ${CB_OVERVIEW_SCREEN}    timeout=30s
 
 Acknowledge Passphrase
-    Swipe Until In View    ${CB_SETUP_CHECKBOX}
+    # Last row above the sticky footer: it never reaches the upper three quarters Swipe Until In View wants.
+    Scroll Into View    cloud_backup_setup_checkbox
     Tap    ${CB_SETUP_CHECKBOX}
 
 Acknowledge Store Key
-    Swipe Until In View    ${CB_STORE_KEY_CHECKBOX}
+    Scroll Into View    cloud_backup_store_encryption_key_checkbox
     Tap    ${CB_STORE_KEY_CHECKBOX}
 
 Should Be Enabled
@@ -204,20 +215,19 @@ Should Be Enabled
 
 Read Passphrase
     [Documentation]    The grid cell holds the testID and has no text of its own; the position number
-    ...                and the word follow it as text nodes (siblings on Android, children on iOS).
-    ...                Walking one page source in document order reads both trees the same way: the
-    ...                word is the second non-empty text after its cell. Safe to read: a fresh
-    ...                backup-encryption key for the throwaway wallet, not an account passphrase.
+    ...                and the word follow it as text nodes (siblings on Android, children on iOS,
+    ...                where each text also appears twice, nested in itself). Walking one page source
+    ...                in document order reads both trees the same way: the word is the second
+    ...                distinct text after its cell. Safe to read: a fresh backup-encryption key for
+    ...                the throwaway wallet, not an account passphrase.
     ${src}=    Get Source
     @{cells}=    Get Regexp Matches    ${src}    (?:resource-id|name)="passphrase_word_(\\d+)"    1
     @{cells}=    Remove Duplicates    ${cells}
     VAR    @{words}    @{EMPTY}
     FOR    ${n}    IN    @{cells}
-        ${pattern}=    Catenate    SEPARATOR=
-        ...    (?s)passphrase_word_${n}"(?:(?!passphrase_word_\\d+").)*?\\s(?:text|label)="[^"]+"
-        ...    (?:(?!passphrase_word_\\d+").)*?\\s(?:text|label)="([^"]+)"
-        @{found}=    Get Regexp Matches    ${src}    ${pattern}    1
-        VAR    ${word}    ${{$found[0] if $found else ''}}
+        @{segment}=    Get Regexp Matches    ${src}    (?s)passphrase_word_${n}"((?:(?!passphrase_word_\\d+").)*)    1
+        @{texts}=    Get Regexp Matches    ${segment}[0]    \\s(?:text|label)="([^"]+)"    1
+        ${word}=    Evaluate    ([t for i, t in enumerate($texts) if i == 0 or t != $texts[i - 1]] + ['', ''])[1]
         Append To List    ${words}    ${word}
     END
     RETURN    @{words}
@@ -227,16 +237,23 @@ Quiz Item
     RETURN    xpath=//*[@resource-id='cloud_backup_verify_item_${index}' or @name='cloud_backup_verify_item_${index}']
 
 Asked Word Position
-    [Documentation]    The "Select word #N" label that follows the item's container and precedes the
-    ...                next item's, read from the page source so a label from a neighbouring row can
-    ...                never be taken for this one.
+    [Documentation]    The "Select word #N" label drawn inside the item's container. Matched by position,
+    ...                since the label follows the container in Android's source but precedes it in
+    ...                iOS's, so a source-order match would take a neighbouring row's label there.
     [Arguments]    ${index}
-    ${src}=    Get Source
-    ${pattern}=    Catenate    SEPARATOR=
-    ...    (?s)cloud_backup_verify_item_${index}"(?:(?!cloud_backup_verify_item_\\d+").)*?Select word \#(\\d+)
-    @{found}=    Get Regexp Matches    ${src}    ${pattern}    1
-    Should Not Be Empty    ${found}    msg=Quiz item ${index} shows no "Select word #N" label.
-    RETURN    ${found}[0]
+    ${item}=    Quiz Item    ${index}
+    ${box}=    Get Element Location    ${item}
+    ${size}=    Get Element Size    ${item}
+    @{labels}=    Get WebElements    ${QUIZ_LABEL_ANY}
+    FOR    ${label}    IN    @{labels}
+        ${at}=    Get Element Location    ${label}
+        IF    ${box}[y] <= ${at}[y] < ${box}[y] + ${size}[height]
+            ${text}=    Get Text    ${label}
+            @{found}=    Get Regexp Matches    ${text}    Select word \\#(\\d+)    1
+            IF    $found    RETURN    ${found}[0]
+        END
+    END
+    Fail    Quiz item ${index} shows no "Select word #N" label.
 
 Distractor For
     [Documentation]    An option the app offers for the item that is not the correct word.
@@ -264,9 +281,9 @@ Answer Verify Quiz
             ${word}=    Distractor For    ${i}    ${word}
             VAR    ${wrong}    ${word}
         END
-        ${option}=    Set Variable    accessibility_id=cloud_backup_verify_item_${i}_option_${word}
-        Swipe Until In View    ${option}
-        Tap    ${option}
+        # The last item's options sit just above the sticky footer, below where Swipe Until In View settles.
+        Scroll Into View    cloud_backup_verify_item_${i}_option_${word}
+        Tap    accessibility_id=cloud_backup_verify_item_${i}_option_${word}
     END
     RETURN    ${wrong}
 

@@ -15,6 +15,10 @@ ${WATCH_ADDRESS}                        UUZB34HTTJ6GM2XB44YSL333AWASFH7K3HSAK7R2
 ${IMPORT_ACCOUNT_BUTTON}                accessibility_id=onboarding_import_account_button
 ${ACCOUNT_SELECTION_BUTTON}             accessibility_id=account_selection_button
 ${ACCOUNT_MENU_ADD_BUTTON}              accessibility_id=account_menu_add_account_button
+${ACCOUNT_OPTION_COPY_ADDRESS}          accessibility_id=account_option_copy-address
+# The switcher row and the header trigger take their testID as accessibility label, which on iOS
+# hides the account name inside them; only the options sheet's title shows it on both platforms.
+${ACCOUNT_SWITCHER_ROW_ANY}             xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
 ${MORE_BUTTON}                          accessibility_id=more_button
 ${SCAN_REKEYED_OPTION}                  accessibility_id=account_option_scan-rekeyed
 ${RESCAN_ADD_BUTTON}                    accessibility_id=rescan-rekeyed-add
@@ -71,6 +75,7 @@ Start Without Wallet
     Restart Pera
     Wait Until Page Contains Element    ${FIRST_SCREEN}    timeout=30s
     Dismiss Dev Client Intro
+    Unlock With Known Pins
     ${welcome}=    Is Shown    ${CREATE_WALLET_BUTTON}
     IF    ${welcome}    RETURN
     Wait Clear Of Startup Prompts
@@ -220,6 +225,7 @@ Open Add Account
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
 
 Reveal Other Add Account Options
+    Scroll Into View    add_account_see_other_options_button
     Tap    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}
     # The toggle unmounts once the options show, so its absence proves the tap landed.
     Wait Until Page Does Not Contain Element    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}    timeout=10s
@@ -233,6 +239,20 @@ Name Account And Finish
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
+
+Selected Account Should Be Named
+    [Documentation]    The account-options sheet is titled with the selected account's name.
+    [Arguments]    ${name}
+    Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
+    # While a new account's overview loads, a skeleton overlay (no testID) covers the button panel and
+    # takes taps without effect, so tap until the sheet opens.
+    Wait Until Keyword Succeeds    30s    0.5s    Open Account Options Sheet
+    Wait Until Settled    ${ACCOUNT_OPTION_COPY_ADDRESS}
+    Wait Until Page Contains    ${name}    timeout=10s
+
+Open Account Options Sheet
+    Tap    ${MORE_BUTTON}
+    Wait Until Page Contains Element    ${ACCOUNT_OPTION_COPY_ADDRESS}    timeout=2s
 
 Open Rescan For Rekeyed Accounts
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
