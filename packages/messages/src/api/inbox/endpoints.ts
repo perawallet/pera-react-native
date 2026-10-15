@@ -10,19 +10,20 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import { inboxResponseSchema, type InboxResponse } from './schema'
 
 const getInboxEndpoint = (deviceID: string) => `/v1/inbox/${deviceID}/`
 
 export const fetchInbox = async (
-    network: Network,
+    scope: ChainScope,
     deviceID: string,
     addresses: string[],
 ): Promise<InboxResponse> => {
     const response = await queryClient<InboxResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: getInboxEndpoint(deviceID),
         data: { addresses },

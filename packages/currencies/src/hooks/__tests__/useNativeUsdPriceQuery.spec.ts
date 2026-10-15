@@ -30,7 +30,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
+import { useNativeUsdPriceQuery } from '../useNativeUsdPriceQuery'
 
 const NATIVE_ASSET_ID = '0'
 
@@ -43,24 +43,19 @@ vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
     getDatabase: () => testDb.current,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({
-        chainId,
-        networkId: 'mainnet',
-    }),
-}))
-
 // No chain adapter is registered in this package's tests.
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-assets')
     >()),
-    nativeAssetFor: () => ({ assetId: '0' }),
+    nativeAssetFor: (chainId: string) => ({
+        assetId: chainId === 'ethereum' ? 'native-eth' : '0',
+    }),
 }))
 
 const MAINNET = scopeForLegacyNetwork('mainnet')
 
-describe('useAlgoUsdPriceQuery', () => {
+describe('useNativeUsdPriceQuery', () => {
     let queryClient: QueryClient
     let db: Database
     let teardown: () => void
@@ -108,7 +103,7 @@ describe('useAlgoUsdPriceQuery', () => {
     it(`returns the price stored under ${toScopeKey(MAINNET)}`, async () => {
         await storePrice('0.15')
 
-        const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
+        const { result } = renderHook(() => useNativeUsdPriceQuery(MAINNET), {
             wrapper,
         })
 
@@ -117,23 +112,43 @@ describe('useAlgoUsdPriceQuery', () => {
         expect(result.current.data).toEqual(new Decimal('0.15'))
     })
 
-    it('does not fetch when disabled', () => {
-        const { result } = renderHook(() => useAlgoUsdPriceQuery(false), {
+    it('reads the price of the scope chain native asset', async () => {
+        const sepolia = { chainId: 'ethereum', networkId: 'sepolia' } as const
+        await upsertAssetPrices({
+            db,
+            prices: [{ assetId: 'native-eth', usdPrice: new Decimal('2500') }],
+            scope: sepolia,
+        })
+
+        const { result } = renderHook(() => useNativeUsdPriceQuery(sepolia), {
             wrapper,
         })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data).toEqual(new Decimal('2500'))
+    })
+
+    it('does not fetch when disabled', () => {
+        const { result } = renderHook(
+            () => useNativeUsdPriceQuery(MAINNET, false),
+            {
+                wrapper,
+            },
+        )
 
         expect(result.current.fetchStatus).toBe('idle')
         expect(result.current.data).toBeUndefined()
     })
 
-    it('serves the ALGO price from SQLite while offline', async () => {
+    it('serves the native price from SQLite while offline', async () => {
         // SQLite is the source of truth; a DB-backed price read must run and
         // resolve even when onlineManager reports offline, instead of pausing
         // its queryFn (TanStack's default networkMode: 'online' behaviour).
         onlineManager.setOnline(false)
         await storePrice('0.15')
 
-        const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
+        const { result } = renderHook(() => useNativeUsdPriceQuery(MAINNET), {
             wrapper,
         })
 
@@ -145,7 +160,7 @@ describe('useAlgoUsdPriceQuery', () => {
     it('returns zero when only another scope has a price', async () => {
         await storePrice('0.15', scopeForLegacyNetwork('testnet'))
 
-        const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
+        const { result } = renderHook(() => useNativeUsdPriceQuery(MAINNET), {
             wrapper,
         })
 

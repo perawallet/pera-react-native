@@ -63,7 +63,7 @@ export const NETWORK_PARTITIONED_TABLES = [
  * asserting its own prefix is a member. A rename then fails a test in the package
  * doing the renaming.
  *
- * Reach isn't exactly "packages with a DB table": `currencies`' `algoUsdPrice`
+ * Reach isn't exactly "packages with a DB table": `currencies`' `nativeUsdPrice`
  * nests under `'assets'` for cache locality, so it's swept too. Fine — it's still
  * per-network price data.
  */

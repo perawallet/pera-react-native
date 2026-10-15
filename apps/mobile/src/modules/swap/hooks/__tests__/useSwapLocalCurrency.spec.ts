@@ -16,6 +16,7 @@ import { Decimal } from 'decimal.js'
 import { useSwapLocalCurrency } from '../useSwapLocalCurrency'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 let mockIsLocalCurrencyInput = false
 let mockLocalCurrency = 'EUR'
@@ -25,6 +26,7 @@ let mockAssetUsdPrice: Nullable<Decimal> = new Decimal('0.2') // USD per ALGO
 let mockAssetDecimals: Nullable<number> = 6
 
 const ASSET_ID = '0'
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapSettings: () => ({ isLocalCurrencyInput: mockIsLocalCurrencyInput }),
@@ -65,7 +67,9 @@ describe('useSwapLocalCurrency', () => {
     })
 
     it('exposes the local currency and converts both ways', () => {
-        const { result } = renderHook(() => useSwapLocalCurrency(ASSET_ID))
+        const { result } = renderHook(() =>
+            useSwapLocalCurrency(SCOPE, ASSET_ID),
+        )
 
         expect(result.current.localCurrency).toBe('EUR')
         expect(result.current.localCurrencySymbol).toBe('€')
@@ -85,7 +89,9 @@ describe('useSwapLocalCurrency', () => {
         mockAssetUsdPrice = new Decimal('0.333333') // awkward price
         mockAssetDecimals = 2
 
-        const { result } = renderHook(() => useSwapLocalCurrency(ASSET_ID))
+        const { result } = renderHook(() =>
+            useSwapLocalCurrency(SCOPE, ASSET_ID),
+        )
 
         const asset = result.current.fiatToAsset(new Decimal('1'))
         // 1 / (0.333333 × 0.9) = 3.3333… → floored to 2 dp = 3.33
@@ -95,7 +101,9 @@ describe('useSwapLocalCurrency', () => {
     it('is not ready and returns null when the asset has no USD price', () => {
         mockAssetUsdPrice = null
 
-        const { result } = renderHook(() => useSwapLocalCurrency(ASSET_ID))
+        const { result } = renderHook(() =>
+            useSwapLocalCurrency(SCOPE, ASSET_ID),
+        )
 
         expect(result.current.isReady).toBe(false)
         expect(result.current.fiatToAsset(new Decimal(1))).toBeNull()
@@ -105,7 +113,9 @@ describe('useSwapLocalCurrency', () => {
     it('is not ready and returns null while the fiat rate is missing', () => {
         mockLocalRate = null
 
-        const { result } = renderHook(() => useSwapLocalCurrency(ASSET_ID))
+        const { result } = renderHook(() =>
+            useSwapLocalCurrency(SCOPE, ASSET_ID),
+        )
 
         expect(result.current.isReady).toBe(false)
         expect(result.current.fiatToAsset(new Decimal(1))).toBeNull()
@@ -115,7 +125,9 @@ describe('useSwapLocalCurrency', () => {
     it('is not ready while the fiat rate is zero (loading)', () => {
         mockLocalRate = new Decimal(0)
 
-        const { result } = renderHook(() => useSwapLocalCurrency(ASSET_ID))
+        const { result } = renderHook(() =>
+            useSwapLocalCurrency(SCOPE, ASSET_ID),
+        )
 
         expect(result.current.isReady).toBe(false)
         expect(result.current.fiatToAsset(new Decimal(1))).toBeNull()
@@ -124,7 +136,9 @@ describe('useSwapLocalCurrency', () => {
     it('exposes the swap-scoped isLocalCurrencyInput flag', () => {
         mockIsLocalCurrencyInput = true
 
-        const { result } = renderHook(() => useSwapLocalCurrency(ASSET_ID))
+        const { result } = renderHook(() =>
+            useSwapLocalCurrency(SCOPE, ASSET_ID),
+        )
 
         expect(result.current.isLocalCurrencyInput).toBe(true)
     })

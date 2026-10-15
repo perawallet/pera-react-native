@@ -11,15 +11,13 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getGroupTransactionsQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 type UseGroupTransactionsQueryParams = {
     groupId: Optional<string>
@@ -38,7 +36,7 @@ export const useGroupTransactionsQuery = ({
     isEnabled = true,
 }: UseGroupTransactionsQueryParams): UseGroupTransactionsQueryResult => {
     const algokit = useAlgorandClient()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
     const query = useQuery({
         queryKey: getGroupTransactionsQueryKey(groupId ?? '', scope),

@@ -1137,6 +1137,14 @@ describe('signingMachine', () => {
                                 bytes: planned.map(byte => byte ^ 0xff),
                             },
                         ],
+                        historyEntries: [
+                            {
+                                summary: expect.objectContaining({
+                                    kind: 'transfer',
+                                }),
+                                chainData: { family: 'evm' },
+                            },
+                        ],
                     },
                     signers: [{ address: MOCK_ADDRESS }],
                     originalIndices: [0],

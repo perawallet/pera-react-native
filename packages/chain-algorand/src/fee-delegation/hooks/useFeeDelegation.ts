@@ -12,9 +12,7 @@
 
 import { useCallback } from 'react'
 import { compactSignedResults, useTransactionEncoder } from '../../blockchain'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import {
-    scopeForLegacyNetwork,
     type PeraSignedTransaction,
     type PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -29,8 +27,10 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { algorandNetworkOf } from '../../legacy-network'
 import { requestFeeDelegation } from '../api'
 import {
     FeeDelegationAttestationRequiredError,
@@ -131,7 +131,7 @@ const requestSignatures = (
  *    submitted.
  */
 export const useFeeDelegation = (): UseFeeDelegationResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { addSignRequest } = useSigningRequest()
     const {
         encodeTransaction,
@@ -166,7 +166,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     includeAssetOptInMbr,
                     optInAssetIds: optInAssetIds.map(id => id.toString()),
                 },
-                network,
+                algorandNetworkOf(scope),
             )
 
             // Decode the re-grouped txns into a merge plan: slots carrying
@@ -240,14 +240,13 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     : flatSigned[slot.flatIndex]!,
             )
 
-            await submitAndAutoRefresh(
-                scopeForLegacyNetwork(network),
-                orderedSigned,
-                { flow: 'fee-delegation', sender: account },
-            )
+            await submitAndAutoRefresh(scope, orderedSigned, {
+                flow: 'fee-delegation',
+                sender: account,
+            })
         },
         [
-            network,
+            scope,
             addSignRequest,
             encodeTransaction,
             encodeTransactionRaw,

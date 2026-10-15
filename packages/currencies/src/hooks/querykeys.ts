@@ -10,17 +10,20 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 
 const MODULE_PREFIX = 'currencies'
 
 export const currencyQueryKeys = {
     all: [MODULE_PREFIX] as const,
-    list: (scope: ChainScope) => [MODULE_PREFIX, { scope }] as const,
-    price: (scope: ChainScope, preferredFiatCurrency: string) =>
-        [MODULE_PREFIX, { scope, preferredFiatCurrency }] as const,
-    algoUsdPrice: (scope: ChainScope) =>
-        ['assets', 'prices', 'algo-usd', { scope }] as const,
+    list: (deployment: WalletMode) => [MODULE_PREFIX, { deployment }] as const,
+    price: (deployment: WalletMode, preferredFiatCurrency: string) =>
+        [MODULE_PREFIX, { deployment, preferredFiatCurrency }] as const,
+    nativeUsdPrice: (scope: ChainScope) =>
+        ['assets', 'prices', 'native-usd', { scope }] as const,
 }
 
 // Aliases for backward compatibility

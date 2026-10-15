@@ -94,7 +94,7 @@ describe('useMultisigDetailsBackfill', () => {
         )
 
         expect(mocks.useMultisigAccountDetailQuery).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: MAINNET_SCOPE,
             address: 'MSIG_ADDR',
             enabled: true,
         })

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from './useNativeAsset'
 
 export type IsNativeAssetId = (
@@ -19,8 +20,8 @@ export type IsNativeAssetId = (
 
 // Ids reach the UI as strings, numbers (DEX payloads) or bigints (AlgoKit), so
 // the predicate compares string forms; a raw `===` would miss `0n`.
-export const useIsNativeAssetId = (): IsNativeAssetId => {
-    const nativeAssetId = useNativeAsset().assetId
+export const useIsNativeAssetId = (scope: ChainScope): IsNativeAssetId => {
+    const nativeAssetId = useNativeAsset(scope).assetId
     return useCallback(
         assetId => assetId != null && String(assetId) === nativeAssetId,
         [nativeAssetId],

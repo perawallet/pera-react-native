@@ -14,9 +14,13 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAddSignatureMutation } from '../useAddSignatureMutation'
 import { getSignRequestDetailQueryKey } from '../querykeys'
+
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mocks = vi.hoisted(() => ({
     addSignature: vi.fn(),
@@ -88,7 +92,7 @@ describe('useAddSignatureMutation', () => {
         const { result } = renderHook(
             () =>
                 useAddSignatureMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -111,44 +115,95 @@ describe('useAddSignatureMutation', () => {
         expect(result.current.data?.status).toBe('ready')
     })
 
-    test('calls endpoint with correct network, signRequestId and responses', async () => {
-        mocks.addSignature.mockResolvedValue(validSignRequestResponse)
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'calls endpoint with correct network, signRequestId and responses for $chainId',
+        async scope => {
+            mocks.addSignature.mockResolvedValue(validSignRequestResponse)
 
-        const { result } = renderHook(
-            () =>
+            const { result } = renderHook(
+                () =>
+                    useAddSignatureMutation({
+                        scope,
+                        signRequestId: 'sr-456',
+                    }),
+                { wrapper },
+            )
+
+            const responses = [
+                {
+                    address: 'ADDR2',
+                    response: 'signed' as const,
+                    signatures: [['sig_a', 'sig_b']],
+                },
+            ]
+
+            await act(async () => {
+                result.current.mutate({ responses })
+            })
+
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+            expect(mocks.addSignature).toHaveBeenCalledWith(
+                scope,
+                'sr-456',
+                responses,
+            )
+        },
+    )
+
+    test('invalidates the scope the request was sent on when the scope changes mid-flight', async () => {
+        let resolve: (value: typeof validSignRequestResponse) => void = () => {}
+        mocks.addSignature.mockReturnValue(
+            new Promise(r => {
+                resolve = r
+            }),
+        )
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+        const { result, rerender } = renderHook(
+            ({ scope }) =>
                 useAddSignatureMutation({
-                    network: 'testnet',
-                    signRequestId: 'sr-456',
+                    scope,
+                    signRequestId: 'sr-123',
                 }),
-            { wrapper },
+            { wrapper, initialProps: { scope: ALGORAND_MAINNET } },
         )
 
-        const responses = [
-            {
-                address: 'ADDR2',
-                response: 'signed' as const,
-                signatures: [['sig_a', 'sig_b']],
-            },
-        ]
-
+        act(() => {
+            result.current.mutate({
+                responses: [
+                    {
+                        address: 'ADDR2',
+                        response: 'signed',
+                        signatures: [['sig']],
+                    },
+                ],
+            })
+        })
+        rerender({ scope: ALGORAND_TESTNET })
         await act(async () => {
-            result.current.mutate({ responses })
+            resolve(validSignRequestResponse)
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
         expect(mocks.addSignature).toHaveBeenCalledWith(
-            { chainId: 'algorand', networkId: 'testnet' },
-            'sr-456',
-            responses,
+            ALGORAND_MAINNET,
+            'sr-123',
+            expect.anything(),
         )
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            queryKey: getSignRequestDetailQueryKey(ALGORAND_MAINNET, 'sr-123'),
+        })
+        expect(invalidateSpy).not.toHaveBeenCalledWith({
+            queryKey: getSignRequestDetailQueryKey(ALGORAND_TESTNET, 'sr-123'),
+        })
     })
 
     test('invalidates sign request detail query on success', async () => {
         mocks.addSignature.mockResolvedValue(validSignRequestResponse)
 
         const queryKey = getSignRequestDetailQueryKey(
-            scopeForLegacyNetwork('mainnet'),
+            ALGORAND_MAINNET,
             'sr-123',
         )
         queryClient.setQueryData(queryKey, { id: 'sr-123', status: 'pending' })
@@ -158,7 +213,7 @@ describe('useAddSignatureMutation', () => {
         const { result } = renderHook(
             () =>
                 useAddSignatureMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -191,7 +246,7 @@ describe('useAddSignatureMutation', () => {
         const { result } = renderHook(
             () =>
                 useAddSignatureMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -220,7 +275,7 @@ describe('useAddSignatureMutation', () => {
         const { result } = renderHook(
             () =>
                 useAddSignatureMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -249,7 +304,7 @@ describe('useAddSignatureMutation', () => {
         const { result } = renderHook(
             () =>
                 useAddSignatureMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },
@@ -275,7 +330,7 @@ describe('useAddSignatureMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(mocks.addSignature).toHaveBeenCalledWith(
-            { chainId: 'algorand', networkId: 'mainnet' },
+            ALGORAND_MAINNET,
             'sr-123',
             multipleResponses,
         )
@@ -285,7 +340,7 @@ describe('useAddSignatureMutation', () => {
         const { result } = renderHook(
             () =>
                 useAddSignatureMutation({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     signRequestId: 'sr-123',
                 }),
             { wrapper },

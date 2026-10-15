@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetsQuery } from '../useAssetsQuery'
@@ -23,9 +22,12 @@ import {
     registerFakeAssetsAdapter,
 } from '../../__tests__/fakeAssetsChain'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
 const mocks = vi.hoisted(() => ({
     getAssetsByIds: vi.fn(),
-    useNetwork: vi.fn(),
     syncAssets: vi.fn(),
 }))
 
@@ -33,16 +35,11 @@ vi.mock('../../db', () => ({
     getAssetsByIds: mocks.getAssetsByIds,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mocks.useNetwork,
-}))
-
 describe('useAssetsQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetsByIds.mockReturnValue([])
         mocks.syncAssets.mockResolvedValue(undefined)
         registerFakeAssetsAdapter({ syncAssets: mocks.syncAssets })
@@ -69,53 +66,52 @@ describe('useAssetsQuery', () => {
             },
         ]
 
-        it('reads assets from the database', async () => {
-            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+        it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
+            'reads assets from the database for $chainId',
+            async scope => {
+                registerFakeAssetsAdapter({
+                    syncAssets: mocks.syncAssets,
+                    chainId: scope.chainId,
+                })
+                mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
-            const { result } = renderHook(() => useAssetsQuery(['123']), {
-                wrapper: createWrapper(queryClient),
-            })
+                const { result } = renderHook(
+                    () => useAssetsQuery(scope, ['123']),
+                    {
+                        wrapper: createWrapper(queryClient),
+                    },
+                )
 
-            await waitFor(() => expect(result.current.isPending).toBe(false))
+                await waitFor(() =>
+                    expect(result.current.isPending).toBe(false),
+                )
 
-            expect(result.current.isError).toBe(false)
-            expect(result.current.data.size).toBe(1)
+                expect(result.current.isError).toBe(false)
+                expect(result.current.data.size).toBe(1)
 
-            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
-                assetIds: ['123'],
-                scope: scopeForLegacyNetwork('mainnet'),
-            })
+                expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
+                    assetIds: ['123'],
+                    scope,
+                })
 
-            expect(result.current.data.get('123')).toEqual(
-                expect.objectContaining({
-                    assetId: '123',
-                    name: 'Test Asset',
-                }),
-            )
-        })
-
-        it('reads the requested scope instead of the selected network', async () => {
-            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
-            const scope = { chainId: 'algorand', networkId: 'testnet' } as const
-
-            const { result } = renderHook(
-                () => useAssetsQuery(['123'], { scope }),
-                { wrapper: createWrapper(queryClient) },
-            )
-
-            await waitFor(() => expect(result.current.isPending).toBe(false))
-            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
-                assetIds: ['123'],
-                scope,
-            })
-        })
+                expect(result.current.data.get('123')).toEqual(
+                    expect.objectContaining({
+                        assetId: '123',
+                        name: 'Test Asset',
+                    }),
+                )
+            },
+        )
 
         it('falls back to the adapter native asset when the seeded row is absent', async () => {
             mocks.getAssetsByIds.mockReturnValue([])
 
-            const { result } = renderHook(() => useAssetsQuery(['0', '123']), {
-                wrapper: createWrapper(queryClient),
-            })
+            const { result } = renderHook(
+                () => useAssetsQuery(ALGORAND_MAINNET, ['0', '123']),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -136,9 +132,12 @@ describe('useAssetsQuery', () => {
                 },
             ])
 
-            const { result } = renderHook(() => useAssetsQuery(['0']), {
-                wrapper: createWrapper(queryClient),
-            })
+            const { result } = renderHook(
+                () => useAssetsQuery(ALGORAND_MAINNET, ['0']),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -150,9 +149,12 @@ describe('useAssetsQuery', () => {
         it('does not touch the network by default', async () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
-            const { result } = renderHook(() => useAssetsQuery(['123']), {
-                wrapper: createWrapper(queryClient),
-            })
+            const { result } = renderHook(
+                () => useAssetsQuery(ALGORAND_MAINNET, ['123']),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -163,7 +165,10 @@ describe('useAssetsQuery', () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
             const { result } = renderHook(
-                () => useAssetsQuery(['123'], { fetchMissing: true }),
+                () =>
+                    useAssetsQuery(ALGORAND_MAINNET, ['123'], {
+                        fetchMissing: true,
+                    }),
                 { wrapper: createWrapper(queryClient) },
             )
 
@@ -182,7 +187,8 @@ describe('useAssetsQuery', () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
             const { result, rerender } = renderHook(
-                ({ ids }: { ids: string[] }) => useAssetsQuery(ids),
+                ({ ids }: { ids: string[] }) =>
+                    useAssetsQuery(ALGORAND_MAINNET, ids),
                 {
                     wrapper: createWrapper(queryClient),
                     initialProps: { ids: ['123'] },
@@ -202,7 +208,8 @@ describe('useAssetsQuery', () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
             const { result, rerender } = renderHook(
-                ({ ids }: { ids: string[] }) => useAssetsQuery(ids),
+                ({ ids }: { ids: string[] }) =>
+                    useAssetsQuery(ALGORAND_MAINNET, ids),
                 {
                     wrapper: createWrapper(queryClient),
                     initialProps: { ids: ['123'] },
@@ -225,7 +232,7 @@ describe('useAssetsQuery', () => {
             await waitFor(() =>
                 expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
                     assetIds: ['456'],
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: ALGORAND_MAINNET,
                 }),
             )
         })
@@ -233,9 +240,12 @@ describe('useAssetsQuery', () => {
         it('preserves the data Map identity across a refetch when the assets are unchanged', async () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
-            const { result } = renderHook(() => useAssetsQuery(['123']), {
-                wrapper: createWrapper(queryClient),
-            })
+            const { result } = renderHook(
+                () => useAssetsQuery(ALGORAND_MAINNET, ['123']),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
             const firstData = result.current.data
@@ -245,44 +255,39 @@ describe('useAssetsQuery', () => {
             // keep its identity for effects that dep on an asset.
             await act(async () => {
                 await queryClient.refetchQueries({
-                    queryKey: getAssetsQueryKey(
-                        ['123'],
-                        scopeForLegacyNetwork('mainnet'),
-                    ),
+                    queryKey: getAssetsQueryKey(['123'], ALGORAND_MAINNET),
                 })
             })
 
             expect(result.current.data).toBe(firstData)
         })
 
-        it('refetches when network changes', async () => {
+        it('refetches when the scope changes', async () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
-            const { result } = renderHook(() => useAssetsQuery(['123']), {
-                wrapper: createWrapper(queryClient),
-            })
+            const { result, rerender } = renderHook(
+                ({
+                    scope,
+                }: {
+                    scope: typeof ALGORAND_MAINNET | typeof ALGORAND_TESTNET
+                }) => useAssetsQuery(scope, ['123']),
+                {
+                    wrapper: createWrapper(queryClient),
+                    initialProps: { scope: ALGORAND_MAINNET },
+                },
+            )
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
             mocks.getAssetsByIds.mockClear()
 
-            // Switch to testnet — new queryClient ensures fresh cache
-            mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+            rerender({ scope: ALGORAND_TESTNET })
 
-            const testnetQueryClient = new QueryClient({
-                defaultOptions: { queries: { retry: false } },
-            })
-
-            const { result: result2 } = renderHook(
-                () => useAssetsQuery(['123']),
-                { wrapper: createWrapper(testnetQueryClient) },
+            await waitFor(() =>
+                expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
+                    assetIds: ['123'],
+                    scope: ALGORAND_TESTNET,
+                }),
             )
-
-            await waitFor(() => expect(result2.current.isPending).toBe(false))
-
-            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
-                assetIds: ['123'],
-                scope: scopeForLegacyNetwork('testnet'),
-            })
         })
     })
 })

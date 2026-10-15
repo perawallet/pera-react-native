@@ -3133,7 +3133,6 @@
             "completed": "Tamamlandı",
             "failed": "Başarısız",
             "pending": "Beklemede",
-            "pending_verifying": "Beklemede — doğrulanıyor",
             "raw_transaction": "Ham işlem"
         },
         "notice": {

@@ -60,6 +60,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     FundingType,
     useCardSessionStore,
@@ -118,7 +119,7 @@ describe('Flow: Card funding type switch', () => {
         store.setEscrowCard({
             cardAddress: CARD_ADDRESS,
             ownerAddress: addressOf(ACCOUNT),
-            network: useNetworkStore.getState().network,
+            scope: scopeForLegacyNetwork(useNetworkStore.getState().network),
             txId: 'CARD_TX_ID',
         })
         useCardSessionStore.getState().setAuthenticated(true)

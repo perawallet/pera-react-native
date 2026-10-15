@@ -21,6 +21,8 @@ import {
     useNativeAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AssetFiatValue = {
     displayCurrency: string
@@ -43,10 +45,11 @@ export type AssetFiatConverter = (
  * identical to the shared display component.
  */
 export const useAssetListFiatConverter = (): AssetFiatConverter => {
-    const nativeAsset = useNativeAsset()
-    const isNativeAssetId = useIsNativeAssetId()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
-        useCurrency()
+        useCurrency(scope)
     const isPreferredAlgo = preferredCurrency === nativeAsset.unitName
 
     // ALGO-denominated holdings can't price in ALGO, so they fall back to the

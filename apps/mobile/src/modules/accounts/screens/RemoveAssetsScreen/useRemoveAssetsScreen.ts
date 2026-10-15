@@ -55,7 +55,8 @@ export const useRemoveAssetsScreen = ({
     onAfterRemove,
 }: UseRemoveAssetsScreenProps = {}): UseRemoveAssetsScreenResult => {
     const { t } = useLanguage()
-    const isNativeAssetId = useIsNativeAssetId()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(
@@ -65,7 +66,6 @@ export const useRemoveAssetsScreen = ({
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const selectedAddress = selectedAccount
         ? addressOn(selectedAccount, scope)
         : undefined
@@ -97,7 +97,7 @@ export const useRemoveAssetsScreen = ({
         () => removableAssets.map(b => b.assetId),
         [removableAssets],
     )
-    const { data: assets } = useAssetsQuery(assetIDs)
+    const { data: assets } = useAssetsQuery(scope, assetIDs)
 
     // Filter out assets where the user is the creator (creators cannot opt out)
     const filteredRemovableAssets = useMemo(() => {

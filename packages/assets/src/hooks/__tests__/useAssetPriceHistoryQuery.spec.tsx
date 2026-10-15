@@ -13,24 +13,33 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-config'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
 import { useAssetPriceHistoryQuery } from '../useAssetPriceHistoryQuery'
-import { getAssetPriceHistoryQueryKey } from '../querykeys'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 
-const mocks = vi.hoisted(() => ({
-    fetchAssetPriceHistory: vi.fn(),
-    isPriceHistoryOn: true,
-}))
+// Algorand switches its Pera-backed capabilities off on BetaNet and custom
+// nodes, the networks only a developer-mode override reaches.
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const algorandScope = (networkId: string) =>
+    ({ chainId: 'algorand', networkId }) as const
+
+const capability = vi.hoisted(() => ({ networkId: 'mainnet' }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() => mocks.isPriceHistoryOn),
+    useChainCapability: vi.fn(
+        (chainId: string) =>
+            chainId !== 'algorand' ||
+            ['mainnet', 'testnet'].includes(capability.networkId),
+    ),
+}))
+
+// Mock endpoints
+const mocks = vi.hoisted(() => ({
+    fetchAssetPriceHistory: vi.fn(),
 }))
 
 vi.mock('../../api', async importOriginal => {
@@ -41,15 +50,12 @@ vi.mock('../../api', async importOriginal => {
     }
 })
 
-const MAINNET = scopeForLegacyNetwork(Networks.mainnet)
-const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
-
 describe('useAssetPriceHistoryQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.isPriceHistoryOn = true
+        capability.networkId = 'mainnet'
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -67,7 +73,12 @@ describe('useAssetPriceHistoryQuery', () => {
             mocks.fetchAssetPriceHistory.mockResolvedValue(mockData)
 
             const { result } = renderHook(
-                () => useAssetPriceHistoryQuery(assetID, period, MAINNET),
+                () =>
+                    useAssetPriceHistoryQuery(
+                        ALGORAND_MAINNET,
+                        assetID,
+                        period,
+                    ),
                 {
                     wrapper: createWrapper(queryClient),
                 },
@@ -84,7 +95,12 @@ describe('useAssetPriceHistoryQuery', () => {
             mocks.fetchAssetPriceHistory.mockReturnValue(new Promise(() => {}))
 
             const { result } = renderHook(
-                () => useAssetPriceHistoryQuery('123', 'one-day', MAINNET),
+                () =>
+                    useAssetPriceHistoryQuery(
+                        ALGORAND_MAINNET,
+                        '123',
+                        'one-day',
+                    ),
                 {
                     wrapper: createWrapper(queryClient),
                 },
@@ -93,78 +109,63 @@ describe('useAssetPriceHistoryQuery', () => {
             expect(result.current.isPending).toBe(true)
         })
 
-        it.each([Networks.testnet, Networks.mainnet])(
-            'caches under the scope it is given and fetches for its network on %s',
-            async network => {
-                const scope = scopeForLegacyNetwork(network)
-                mocks.fetchAssetPriceHistory.mockResolvedValue([])
+        it('requests the price history for the given scope on Ethereum', async () => {
+            mocks.fetchAssetPriceHistory.mockResolvedValue([])
 
-                const { result } = renderHook(
-                    () => useAssetPriceHistoryQuery('123', 'one-day', scope),
-                    { wrapper: createWrapper(queryClient) },
-                )
-
-                await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-                expect(mocks.fetchAssetPriceHistory).toHaveBeenCalledWith(
-                    '123',
-                    'one-day',
-                    network,
-                )
-                expect(
-                    queryClient.getQueryData(
-                        getAssetPriceHistoryQueryKey('123', 'one-day', scope),
+            const { result } = renderHook(
+                () =>
+                    useAssetPriceHistoryQuery(
+                        ETHEREUM_SEPOLIA,
+                        '123',
+                        'one-day',
                     ),
-                ).toEqual([])
-            },
-        )
-
-        it('checks priceHistory on the chain of the scope it is given', () => {
-            mocks.isPriceHistoryOn = false
-
-            renderHook(
-                () => useAssetPriceHistoryQuery('123', 'one-day', ETHEREUM),
-                {
-                    wrapper: createWrapper(queryClient),
-                },
+                { wrapper: createWrapper(queryClient) },
             )
 
-            expect(useChainCapability).toHaveBeenCalledWith(
-                'ethereum',
-                'priceHistory',
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            expect(mocks.fetchAssetPriceHistory).toHaveBeenCalledWith(
+                '123',
+                'one-day',
+                ETHEREUM_SEPOLIA,
             )
         })
 
-        it.each([
-            ['betanet', scopeForLegacyNetwork(Networks.betanet)],
-            ['custom', scopeForLegacyNetwork(Networks.custom)],
-            ['ethereum', ETHEREUM],
-        ])(
+        it.each(['betanet', 'custom'])(
             'reports isUnavailableOnNetwork and skips the fetch on %s',
-            (_name, scope) => {
-                mocks.isPriceHistoryOn = false
+            network => {
+                capability.networkId = network
 
                 const { result } = renderHook(
-                    () => useAssetPriceHistoryQuery('123', 'one-day', scope),
+                    () =>
+                        useAssetPriceHistoryQuery(
+                            algorandScope(network),
+                            '123',
+                            'one-day',
+                        ),
                     { wrapper: createWrapper(queryClient) },
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(useChainCapability).toHaveBeenCalledWith(
+                    'algorand',
+                    'priceHistory',
+                )
                 expect(mocks.fetchAssetPriceHistory).not.toHaveBeenCalled()
             },
         )
 
-        it.each([Networks.mainnet, Networks.testnet])(
+        it.each(['mainnet', 'testnet'])(
             'reports isUnavailableOnNetwork false and fetches normally on %s',
             async network => {
+                capability.networkId = network
                 mocks.fetchAssetPriceHistory.mockResolvedValue([])
 
                 const { result } = renderHook(
                     () =>
                         useAssetPriceHistoryQuery(
+                            algorandScope(network),
                             '123',
                             'one-day',
-                            scopeForLegacyNetwork(network),
                         ),
                     { wrapper: createWrapper(queryClient) },
                 )
@@ -177,16 +178,18 @@ describe('useAssetPriceHistoryQuery', () => {
             },
         )
 
-        it.each([
-            ['betanet', scopeForLegacyNetwork(Networks.betanet)],
-            ['ethereum', ETHEREUM],
-        ])(
+        it.each([Networks.betanet, Networks.custom])(
             'does not invoke the queryFn when refetch is called on %s',
-            async (_name, scope) => {
-                mocks.isPriceHistoryOn = false
+            async network => {
+                capability.networkId = network
 
                 const { result } = renderHook(
-                    () => useAssetPriceHistoryQuery('123', 'one-day', scope),
+                    () =>
+                        useAssetPriceHistoryQuery(
+                            algorandScope(network),
+                            '123',
+                            'one-day',
+                        ),
                     { wrapper: createWrapper(queryClient) },
                 )
 
@@ -199,14 +202,15 @@ describe('useAssetPriceHistoryQuery', () => {
         it.each([Networks.mainnet, Networks.testnet])(
             'still invokes the queryFn when refetch is called on %s',
             async network => {
+                capability.networkId = network
                 mocks.fetchAssetPriceHistory.mockResolvedValue([])
 
                 const { result } = renderHook(
                     () =>
                         useAssetPriceHistoryQuery(
+                            algorandScope(network),
                             '123',
                             'one-day',
-                            scopeForLegacyNetwork(network),
                         ),
                     { wrapper: createWrapper(queryClient) },
                 )
@@ -223,14 +227,14 @@ describe('useAssetPriceHistoryQuery', () => {
         it.each([Networks.betanet, Networks.custom])(
             'reports isPending false while unavailable on %s',
             network => {
-                mocks.isPriceHistoryOn = false
+                capability.networkId = network
 
                 const { result } = renderHook(
                     () =>
                         useAssetPriceHistoryQuery(
+                            algorandScope(network),
                             '123',
                             'one-day',
-                            scopeForLegacyNetwork(network),
                         ),
                     { wrapper: createWrapper(queryClient) },
                 )

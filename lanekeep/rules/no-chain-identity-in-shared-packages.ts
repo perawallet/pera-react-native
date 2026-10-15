@@ -12,49 +12,6 @@ import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
  */
 export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
-const SHARED_PACKAGES = [
-    'chain-contract',
-    'chain-shared',
-    'config',
-    'shared',
-    'accounts',
-    'assets',
-    'transactions',
-    'signing',
-    'kms',
-    'background',
-    'connections',
-    'walletconnect',
-    // Product packages that keep their generic code here and reach the chain
-    // through an adapter. asa-inbox and fee-delegation move whole, so they're out.
-    'swaps',
-    'card',
-    'onramp',
-    'nfd',
-    'deeplinks',
-    'staking',
-    'dapp',
-    'multisig',
-    'ledger',
-    'backup',
-    'migrate',
-    'device',
-    'contacts',
-    'hardware-wallet',
-    'passkeys',
-    'search',
-    'currencies',
-    'messages',
-    'banners',
-    'settings',
-    'security',
-    'browser-runtime',
-    'projects',
-    'remote-config',
-    'app-integrity',
-    'database',
-]
-
 // An app pins the legacy chain at its own call sites, so a chain id literal
 // there is fine; branching on one is not.
 const APP_SOURCE = /(^|\/)apps\/[^/]+\/src\//
@@ -118,6 +75,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Checks a ramp token lives on whichever scope the caller passes, never a named chain.',
     },
     {
+        file: 'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
+        text: 'assetScope.chainId === currencyScope.chainId',
+        reason: "Asks whether the asset lives on the currency's chain; compares two passed scopes, never a named chain.",
+    },
+    {
         file: 'packages/config/src/network-config.ts',
         text: 'row.scope.chainId === scope.chainId',
         reason: "Compares a table row's scope against whichever scope the caller passes, never a named chain.",
@@ -170,11 +132,9 @@ export default defineRule({
         },
     },
     gates: withoutTests({
-        pathMatches: [
-            `**/packages/{${SHARED_PACKAGES.join(',')}}/src/**`,
-            '**/apps/*/src/**',
-        ],
+        pathMatches: ['**/packages/*/src/**', '**/apps/*/src/**'],
         pathNotMatches: [
+            `**/packages/chain-{${CHAIN_IDS.join(',')}}/**`,
             '**/packages/chain-contract/src/models/identity.ts',
             ...TEST_SUPPORT,
             ...COMPOSITION_ROOTS.map(root => root.glob),

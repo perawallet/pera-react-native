@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getCardTransport } from '../transport'
 import type {
     CardImageCustomCss,
@@ -27,7 +27,7 @@ import {
 } from './transformers'
 
 export type SensitiveCardParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -45,7 +45,7 @@ export const fetchCardDetailsToken = async (
     params: CardDetailsTokenParams,
 ): Promise<CardSecureView> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/card/details/token',
         authenticated: true,
@@ -62,7 +62,7 @@ export const fetchCardPinToken = async (
     params: SensitiveCardParams,
 ): Promise<CardSecureView> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/card/pin/token',
         authenticated: true,
@@ -81,7 +81,7 @@ export const createSetPinSession = async (
     params: SensitiveCardParams,
 ): Promise<CardSetPinSession> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/card/set-pin/token',
         authenticated: true,

@@ -254,18 +254,29 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     // missing the named service; the crash-reporting sites in QueryProvider
     // branch on the guard below.
     class PeraServiceUnavailableError extends AppError {
-        public readonly scope: { chainId: string; networkId: string }
+        public readonly scope:
+            | { chainId: string; networkId: string }
+            | undefined
+        public readonly targetKey: string
         public readonly service: string | undefined
 
         constructor(
-            target: string | { chainId: string; networkId: string },
+            target:
+                | string
+                | { chainId: string; networkId: string }
+                | { deployment: string },
             service?: string,
         ) {
             const scope =
                 typeof target === 'string'
                     ? { chainId: 'algorand', networkId: target }
-                    : target
-            const scopeKey = `${scope.chainId}/${scope.networkId}`
+                    : 'deployment' in target
+                      ? undefined
+                      : target
+            const scopeKey =
+                scope === undefined
+                    ? `deployment/${(target as { deployment: string }).deployment}`
+                    : `${scope.chainId}/${scope.networkId}`
             super(
                 `Pera services are not deployed for ${scopeKey}` +
                     (service === undefined ? '' : ` (service: ${service})`),
@@ -279,6 +290,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 },
             )
             this.scope = scope
+            this.targetKey = scopeKey
             this.service = service
         }
     }

@@ -199,7 +199,7 @@ describe('buildMultisigCosignRequest', () => {
         return mocks.validateSignRequest.mock.calls[0][1] as Set<string>
     }
 
-    it('validates through the adapter of the given network', () => {
+    it('validates through the adapter of the given scope', () => {
         const signRequest = buildSignRequest()
 
         buildMultisigCosignRequest({
@@ -209,9 +209,10 @@ describe('buildMultisigCosignRequest', () => {
             localAccounts: [],
         })
 
-        expect(mocks.multisigAdapterFor).toHaveBeenCalledExactlyOnceWith(
-            'testnet',
-        )
+        expect(mocks.multisigAdapterFor).toHaveBeenCalledExactlyOnceWith({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         expect(mocks.validateSignRequest).toHaveBeenCalledWith(
             signRequest,
             new Set(['MULTISIG']),

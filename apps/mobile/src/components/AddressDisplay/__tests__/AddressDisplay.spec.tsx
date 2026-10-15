@@ -105,6 +105,7 @@ describe('AddressDisplay', () => {
         )
 
         expect(mockUseNfdForAddress).toHaveBeenCalledWith(
+            expect.anything(),
             expect.any(String),
             expect.objectContaining({ enabled: false }),
         )

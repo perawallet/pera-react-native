@@ -15,6 +15,7 @@ import { mergeSigningResults } from '../mergeSigningResults'
 import {
     SigningError,
     type SigningResult,
+    type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
 import type {
     PeraSignedTransaction,
@@ -30,6 +31,16 @@ const makePlannerSigned = (id: string): SignedTransaction => ({
     bytes: new Uint8Array(),
 })
 
+const makeHistoryEntry = (id: string): SubmissionHistoryEntry => ({
+    summary: {
+        kind: 'transfer',
+        title: { key: id },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'algorand' },
+})
+
 const plannerResult = (
     ids: string[],
     originalIndices: number[],
@@ -37,6 +48,7 @@ const plannerResult = (
     signedData: {
         type: 'signed-transactions',
         signed: ids.map(makePlannerSigned),
+        historyEntries: ids.map(makeHistoryEntry),
     },
     signers: [{ address: `ADDR_${ids[0]}` }],
     originalIndices,
@@ -53,6 +65,7 @@ describe('mergeSigningResults', () => {
             signedData: {
                 type: 'signed-transactions',
                 signed: ['tx0', 'tx1', 'tx2'].map(makePlannerSigned),
+                historyEntries: ['tx0', 'tx1', 'tx2'].map(makeHistoryEntry),
             },
             signers: [{ address: 'ADDR_tx0' }, { address: 'ADDR_tx1' }],
         })

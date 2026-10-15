@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
     verifyPhone: vi.fn(),
     submitPersonalDetails: vi.fn(),
     submitAddress: vi.fn(),
+    submitMailingAddress: vi.fn(),
     submitOnboardingConsent: vi.fn(),
     linkOnboardingConsent: vi.fn(),
 }))
@@ -33,26 +34,34 @@ vi.mock('../../session', () => session)
 const auth = vi.hoisted(() => ({ acquireCardSessionTokens: vi.fn() }))
 vi.mock('../../api/auth', () => auth)
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSendEmailVerificationMutation } from '../useSendEmailVerificationMutation'
 import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
 import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMutation'
 import { useVerifyPhoneMutation } from '../useVerifyPhoneMutation'
 import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMutation'
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
+import { useSubmitMailingAddressMutation } from '../useSubmitMailingAddressMutation'
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
 import { useLinkConsentMutation } from '../useLinkConsentMutation'
 import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 import { OnboardingNotVerifiedError } from '../../api/errors'
+import { cardQueryKeys } from '../querykeys'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
-describe('onboarding mutation hooks', () => {
+describe.each(SCOPES)('onboarding mutation hooks ($chainId)', SCOPE => {
     beforeEach(() => {
         queryClient = new QueryClient({
             defaultOptions: {
@@ -64,6 +73,11 @@ describe('onboarding mutation hooks', () => {
         Object.values(api).forEach(fn => fn.mockResolvedValue(undefined))
         // The address step returns a token-bearing body the mutation reads.
         api.submitAddress.mockResolvedValue({
+            accessToken: 'tok',
+            onboardingId: 'ob_1',
+            userId: 'user_1',
+        })
+        api.submitMailingAddress.mockResolvedValue({
             accessToken: 'tok',
             onboardingId: 'ob_1',
             userId: 'user_1',
@@ -94,7 +108,7 @@ describe('onboarding mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(api.sendEmailVerification).toHaveBeenCalledWith({
             email: 'e@x.com',
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(useCardStore.getState().contactVerificationId).toBe('cv_new')
         expect(useCardStore.getState().onboardingStep).toBe(
@@ -124,7 +138,7 @@ describe('onboarding mutation hooks', () => {
                 contactVerificationId: 'cv_1',
                 allowMarketing: true,
                 allowSms: false,
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         expect(useCardStore.getState().onboardingId).toBe('ob_new')
@@ -152,7 +166,7 @@ describe('onboarding mutation hooks', () => {
         expect(api.sendPhoneVerification).toHaveBeenCalledWith(
             expect.objectContaining({
                 phoneNumber: '7400846282',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         expect(useCardStore.getState().onboardingStep).toBe(
@@ -177,7 +191,7 @@ describe('onboarding mutation hooks', () => {
             expect.objectContaining({
                 onboardingId: 'ob_1',
                 verificationCode: '654321',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // Phone verified → the KYC (verification) step comes next.
@@ -186,7 +200,7 @@ describe('onboarding mutation hooks', () => {
         )
     })
 
-    it('useSubmitPersonalDetailsMutation wraps the details with the network', async () => {
+    it('useSubmitPersonalDetailsMutation wraps the details with the scope', async () => {
         const details = {
             onboardingId: 'ob_1',
             firstName: 'Jane',
@@ -206,7 +220,7 @@ describe('onboarding mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(api.submitPersonalDetails).toHaveBeenCalledWith({
             details,
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Address,
@@ -279,6 +293,53 @@ describe('onboarding mutation hooks', () => {
         expect(session.setCardSession).not.toHaveBeenCalled()
     })
 
+    const mailingAddress = {
+        onboardingId: 'ob_1',
+        addressLine1: '23 Werrington Bridge Rd',
+        city: 'Peterborough',
+        zip: 'PE6 7PP',
+        usState: 'NY',
+    }
+
+    it('useSubmitMailingAddressMutation forwards the scope and completes registration on it', async () => {
+        const { result } = renderHook(
+            () => useSubmitMailingAddressMutation(SCOPE),
+            { wrapper },
+        )
+        result.current.mutate(mailingAddress)
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.submitMailingAddress).toHaveBeenCalledWith({
+            address: mailingAddress,
+            scope: SCOPE,
+        })
+        expect(auth.acquireCardSessionTokens).toHaveBeenCalledWith({
+            accessToken: 'tok',
+            scope: SCOPE,
+        })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
+        )
+    })
+
+    it('useSubmitMailingAddressMutation types a not-verified refusal and refreshes the onboarding record for its scope', async () => {
+        api.submitMailingAddress.mockRejectedValue(NOT_VERIFIED_FAILURE)
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(
+            () => useSubmitMailingAddressMutation(SCOPE),
+            { wrapper },
+        )
+
+        result.current.mutate(mailingAddress)
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(OnboardingNotVerifiedError)
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            queryKey: cardQueryKeys.onboardingDetails(SCOPE, 'ob_1'),
+        })
+        expect(session.setCardSession).not.toHaveBeenCalled()
+    })
+
     it('useSubmitAddressMutation exchanges the registration token for the OAuth pair and completes onboarding', async () => {
         api.submitAddress.mockResolvedValue({
             accessToken: 'tok',
@@ -292,13 +353,13 @@ describe('onboarding mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(api.submitAddress).toHaveBeenCalledWith({
             address,
-            network: 'mainnet',
+            scope: SCOPE,
         })
         // The registration-issued token is only used to complete the OAuth
         // flow; the persisted session is the durable access+refresh pair.
         expect(auth.acquireCardSessionTokens).toHaveBeenCalledWith({
             accessToken: 'tok',
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(session.setCardSession).toHaveBeenCalledTimes(1)
         expect(session.setCardSession).toHaveBeenCalledWith({
@@ -377,7 +438,7 @@ describe('onboarding mutation hooks', () => {
                 allowSms: false,
                 cardTermsAccepted: true,
                 platformTermsAccepted: true,
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // The created consent set id is stashed for the link step.
@@ -416,7 +477,7 @@ describe('onboarding mutation hooks', () => {
         expect(api.linkOnboardingConsent).toHaveBeenCalledWith({
             consentSetId: 'cs_1',
             userId: 'user_1',
-            network: 'mainnet',
+            scope: SCOPE,
         })
     })
 })

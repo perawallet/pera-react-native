@@ -54,7 +54,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         refetch,
         isUnavailableOnNetwork,
         isDeviceUnregistered,
-    } = useNotificationsListQuery(scope)
+    } = useNotificationsListQuery()
     const { hasInternet } = useNetworkStatus()
 
     // Offline wins over a stale error: a paused, uncached fetch means there is
@@ -62,7 +62,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     // the same "nothing to show" situation — not a dead Retry. Mirrors the
     // charts / staking contract (docs/OFFLINE_PAUSED_STATE.md).
     const isOffline = isPaused || (isError && !hasInternet)
-    const { markAsRead } = useMarkNotificationsAsReadMutation(scope)
+    const { markAsRead } = useMarkNotificationsAsReadMutation()
     const { handleNotificationPress } = useNotificationPress()
 
     const notifications = useMemo(() => data ?? [], [data])

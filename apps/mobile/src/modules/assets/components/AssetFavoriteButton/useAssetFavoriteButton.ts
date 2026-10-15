@@ -12,12 +12,9 @@
 
 import { useCallback } from 'react'
 import { useAccountHoldingsInvalidator } from '@perawallet/wallet-core-accounts'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useNetwork,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,
@@ -30,8 +27,7 @@ export const useAssetFavoriteButton = (
     isFavorite: Optional<boolean>,
     scope: ChainScope,
 ) => {
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
+    const deviceId = useScopedDeviceID(scope)
     const { invalidate: invalidateHoldings } = useAccountHoldingsInvalidator()
     const { showError } = useErrorToast()
     const hasFavorites = useChainCapability(scope.chainId, 'assetFavorites')
@@ -39,7 +35,10 @@ export const useAssetFavoriteButton = (
         toggleAssetFavorite,
         isLoading,
         isUnavailableOnNetwork: isMutationUnavailable,
-    } = useToggleAssetFavoriteMutation({ onLocalWrite: invalidateHoldings })
+    } = useToggleAssetFavoriteMutation({
+        scope,
+        onLocalWrite: invalidateHoldings,
+    })
     const isUnavailableOnNetwork = isMutationUnavailable || !hasFavorites
 
     const handleToggleFavorite = useCallback(() => {
@@ -54,7 +53,6 @@ export const useAssetFavoriteButton = (
                 assetID: assetId,
                 deviceId: `${deviceId}`,
                 enabled: !isFavorite,
-                network,
             })
         }
     }, [
@@ -62,7 +60,6 @@ export const useAssetFavoriteButton = (
         deviceId,
         isFavorite,
         toggleAssetFavorite,
-        network,
         scope,
         isUnavailableOnNetwork,
         showError,

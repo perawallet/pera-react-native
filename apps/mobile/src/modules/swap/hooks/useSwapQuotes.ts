@@ -104,9 +104,13 @@ export const useSwapQuotes = ({
     // hold through the per-network API, so absence is authoritative. Empty
     // ids while disabled so a caller that isn't quoting doesn't pay the
     // lookup (useAssetsQuery has no enabled option of its own).
-    const pairAssets = useAssetsQuery(enabled ? [fromAssetId, toAssetId] : [], {
-        fetchMissing: true,
-    })
+    const pairAssets = useAssetsQuery(
+        scope,
+        enabled ? [fromAssetId, toAssetId] : [],
+        {
+            fetchMissing: true,
+        },
+    )
     const isPairChecked = pairAssets.isFetched
     const isPairOnNetwork =
         pairAssets.data.has(fromAssetId) && pairAssets.data.has(toAssetId)

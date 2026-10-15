@@ -425,7 +425,7 @@ export const createV1RequestHandlers = (deps: {
             ? emptySignaturesResult(
                   request.params,
                   connection.accounts,
-                  network,
+                  scopeForLegacyNetwork(network),
               )
             : null
 

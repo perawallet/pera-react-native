@@ -48,8 +48,8 @@ type CloseAccountChoice = 'close' | 'keepOpen'
 
 export const useInputScreen = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset()
-    const isNativeAssetId = useIsNativeAssetId()
+    const nativeAsset = useNativeAsset(scope)
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
@@ -116,7 +116,7 @@ export const useInputScreen = () => {
         () => (selectedAssetId ? [selectedAssetId] : []),
         [selectedAssetId],
     )
-    const { data: assets } = useAssetsQuery(assetIDs)
+    const { data: assets } = useAssetsQuery(scope, assetIDs)
 
     const asset = useMemo(() => {
         if (!selectedAssetId) return null

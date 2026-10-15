@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { eq, sql } from 'drizzle-orm'
 import {
     runMigrations,
@@ -25,11 +26,36 @@ import {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
+    getSubmissionAttemptsWithHistoryEntry,
     pruneResolvedSubmissionAttempts,
     LANDABLE_SUBMISSION_STATUSES,
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type { SubmissionHistoryEntry } from '../types'
+
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+const HISTORY_ENTRY: SubmissionHistoryEntry = {
+    summary: {
+        kind: 'transfer',
+        title: { key: 'transactions.list_item.send' },
+        direction: 'out',
+        amount: {
+            assetRef: { chainId: 'ethereum', assetId: 'native' },
+            value: new Decimal('1500000000000000000'),
+        },
+        balanceChanges: [
+            {
+                assetRef: { chainId: 'ethereum', assetId: 'native' },
+                value: new Decimal('-1500000000000000000'),
+            },
+        ],
+        icon: 'send',
+    },
+    chainData: { family: 'evm' },
+    fee: new Decimal('420000000000000'),
+}
 
 describe('submission ledger repository', () => {
     let db: Database
@@ -373,5 +399,118 @@ describe('submission ledger repository', () => {
         })
 
         expect(rows.map(row => row.id)).toEqual([ethereumId])
+    })
+
+    describe('history entry', () => {
+        const recordWithEntry = (
+            overrides: Partial<
+                Parameters<typeof recordSubmissionAttempt>[0]
+            > = {},
+        ) =>
+            recordSubmissionAttempt({
+                db,
+                scope: ETHEREUM,
+                txIds: ['0xabc'],
+                flow: 'pipeline',
+                sender: '0xSENDER',
+                historyEntry: HISTORY_ENTRY,
+                ...overrides,
+            })
+
+        it('reads the entry back with every Decimal intact', async () => {
+            await recordWithEntry()
+
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: ETHEREUM,
+            })
+
+            const entry = attempt!.historyEntry
+            expect(entry.summary.amount!.value).toBeInstanceOf(Decimal)
+            expect(entry.summary.amount!.value.eq('1500000000000000000')).toBe(
+                true,
+            )
+            expect(entry.summary.balanceChanges![0]!.value).toBeInstanceOf(
+                Decimal,
+            )
+            expect(entry.summary.balanceChanges![0]!.value.toString()).toBe(
+                '-1500000000000000000',
+            )
+            expect(entry.fee).toBeInstanceOf(Decimal)
+            expect(entry.fee!.toString()).toBe('420000000000000')
+            expect(entry.chainData).toEqual({ family: 'evm' })
+        })
+
+        it.each([
+            ['unparseable text', 'not json'],
+            [
+                'an entry of another version',
+                JSON.stringify({ v: 0, entry: { summary: {} } }),
+            ],
+        ])(
+            'skips %s and still serves the open-attempt read',
+            async (_label, historyEntryJson) => {
+                const id = await recordWithEntry()
+                await db
+                    .update(SubmissionAttemptsSchema)
+                    .set({ historyEntryJson })
+                    .where(eq(SubmissionAttemptsSchema.id, id))
+                    .run()
+
+                expect(
+                    await getSubmissionAttemptsWithHistoryEntry({
+                        db,
+                        scope: ETHEREUM,
+                    }),
+                ).toEqual([])
+                expect(
+                    (await getOpenSubmissionAttempts({ db })).map(
+                        row => row.id,
+                    ),
+                ).toEqual([id])
+            },
+        )
+
+        it('returns entry-bearing rows of every status for the scope, newest first', async () => {
+            const statuses = [
+                'submitted',
+                'unknown',
+                'confirmed',
+                'failed',
+                'replaced',
+            ] as const
+            const ids: string[] = []
+            for (const [index, status] of statuses.entries()) {
+                const id = await recordWithEntry({ txIds: [`0x${index}`] })
+                if (status === 'unknown')
+                    await markSubmissionUnknown({ db, id })
+                if (
+                    status === 'confirmed' ||
+                    status === 'failed' ||
+                    status === 'replaced'
+                ) {
+                    await resolveSubmissionAttempt({ db, id, status })
+                }
+                await backdate(id, 1_000 + index)
+                ids.push(id)
+            }
+            await recordWithEntry({ historyEntry: undefined })
+            await recordWithEntry({
+                scope: { chainId: 'ethereum', networkId: 'sepolia' },
+            })
+
+            const rows = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: ETHEREUM,
+            })
+
+            expect(rows.map(row => row.id).sort()).toEqual([...ids].sort())
+            expect(rows.map(row => row.createdAt)).toEqual([
+                1_004, 1_003, 1_002, 1_001, 1_000,
+            ])
+            expect(rows.map(row => row.status).sort()).toEqual(
+                [...statuses].sort(),
+            )
+        })
     })
 })

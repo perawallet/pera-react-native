@@ -77,6 +77,7 @@ export const SwapTopPairs = ({ scope }: SwapTopPairsProps) => {
                 !isError &&
                 pairs.map((pair, i) => (
                     <SwapTopPairItem
+                        scope={scope}
                         key={`${pair.assetA.assetId}-${pair.assetB.assetId}`}
                         index={i + 1}
                         pair={pair}

@@ -20,6 +20,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import { requestCountryAvailability } from '../endpoints'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('waitlist endpoints', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
@@ -29,14 +31,14 @@ describe('waitlist endpoints', () => {
         queryClientMock.mockResolvedValue({ data: undefined })
 
         await requestCountryAvailability({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             countryCode: 'RU',
             deviceId: 'device-1',
         })
 
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'POST',
             url: 'v1/cards/country-availability-request/',
             data: { alpha_2_country_code: 'RU', device: 'device-1' },

@@ -58,14 +58,6 @@ export const transactionQueryKeys = {
             { accountAddress, scope, url },
         ] as const,
 
-    /**
-     * Txids with an open submission-ledger row — the "pending —
-     * verifying" badge set. Kept under the module prefix so
-     * `invalidateTransactionQueries` also refreshes it.
-     */
-    openSubmissionTxIds: (scope: ChainScope) =>
-        [MODULE_PREFIX, 'open-submission-txids', { scope }] as const,
-
     /** `fee` is the base-unit fee as a string, so the key stays serialisable. */
     spendableBalance: (
         address: string,

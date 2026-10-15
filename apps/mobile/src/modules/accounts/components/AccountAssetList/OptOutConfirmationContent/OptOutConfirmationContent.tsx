@@ -36,20 +36,20 @@ export const OptOutConfirmationContent = ({
     assetId,
     accountAddress,
 }: OptOutConfirmationContentProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
     const { fee } = useOptOutConfirmationContent()
 
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const accountName = useAccountsStore(s => {
         const account = findAddressHolder(s.accounts, scope, accountAddress)
         return account?.name ?? accountAddress
     })
 
-    const { data: assets } = useAssetsQuery([assetId])
+    const { data: assets } = useAssetsQuery(scope, [assetId])
     const asset = assets?.get(assetId)
 
     const assetDisplayName = asset?.name ?? assetId

@@ -17,9 +17,9 @@ import { usePreferredCurrencyPriceQuery } from '../usePreferredCurrencyPriceQuer
 import React from 'react'
 import { Decimal } from 'decimal.js'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
+const mockMode = vi.hoisted(() => ({ current: 'live' }))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
+    useWalletDeployment: () => mockMode.current,
 }))
 
 // Mock the fetch function
@@ -40,10 +40,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue({
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
+        mockMode.current = 'live'
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -74,27 +71,26 @@ describe('usePreferredCurrencyPriceQuery', () => {
         })
     })
 
-    it('uses correct network and currency', async () => {
-        mockUseSelectedScope.mockReturnValue({
-            chainId: 'algorand',
-            networkId: 'testnet',
-        })
-        mockFetchCurrency.mockResolvedValue({
-            id: 'GBP',
-            usdPrice: new Decimal('1.25'),
-        })
+    it.each(['live', 'developer'])(
+        'requests the currency from the %s deployment',
+        async deployment => {
+            mockMode.current = deployment
+            mockFetchCurrency.mockResolvedValue({
+                id: 'GBP',
+                usdPrice: new Decimal('1.25'),
+            })
 
-        renderHook(() => usePreferredCurrencyPriceQuery('GBP'), { wrapper })
+            renderHook(() => usePreferredCurrencyPriceQuery('GBP'), {
+                wrapper,
+            })
 
-        await waitFor(() =>
-            expect(mockFetchCurrency).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    currencyId: 'GBP',
-                    network: 'testnet',
-                }),
-            ),
-        )
-    })
+            await waitFor(() =>
+                expect(mockFetchCurrency).toHaveBeenCalledWith(
+                    expect.objectContaining({ currencyId: 'GBP', deployment }),
+                ),
+            )
+        },
+    )
 
     it('handles loading state', () => {
         mockFetchCurrency.mockImplementation(() => new Promise(() => {}))

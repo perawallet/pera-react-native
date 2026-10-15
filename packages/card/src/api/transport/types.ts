@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 /**
  * `direct` (default) → the package-local Baanx client (always x-client-key; the
@@ -30,7 +30,7 @@ export type CardResponseType = 'json' | 'text' | 'blob' | 'arraybuffer'
 export type CardTransportRequest<TVars = unknown> = {
     /** Defaults to 'direct'. */
     route?: CardRoute
-    network: Network
+    scope: ChainScope
     method: CardHttpMethod
     /** Baanx-native path, e.g. '/v1/card/status'. */
     path: string

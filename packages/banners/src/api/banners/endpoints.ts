@@ -10,19 +10,20 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import { bannerListResponseSchema, type BannerListResponse } from './schema'
 
 const getBannersEndpoint = (deviceID: string) =>
     `/v1/devices/${deviceID}/banners/`
 
 export const fetchBanners = async (
-    network: Network,
+    deployment: WalletMode,
     deviceID: string,
 ): Promise<BannerListResponse> => {
     const response = await queryClient<BannerListResponse>({
         backend: 'pera',
-        network,
+        deployment,
         method: 'GET',
         url: getBannersEndpoint(deviceID),
     })

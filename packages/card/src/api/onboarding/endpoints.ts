@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     toEnumValueOrNull,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { getCardApiError, isConflictError, isDuplicateError } from '../errors'
 import { getCardTransport } from '../transport'
 import { VerificationState } from '../../models'
@@ -37,25 +37,25 @@ import {
 } from './schema'
 import { transformRegistrationSettings } from './transformers'
 
-type NetworkParams = {
-    network: Network
+type ScopeParams = {
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 const postRegisterStep = <TData>(
     path: string,
     data: TData,
-    { network, signal }: NetworkParams,
+    { scope, signal }: ScopeParams,
 ): Promise<unknown> =>
-    getCardTransport().request({ network, method: 'POST', path, data, signal })
+    getCardTransport().request({ scope, method: 'POST', path, data, signal })
 
-export type SendEmailVerificationParams = NetworkParams & { email: string }
+export type SendEmailVerificationParams = ScopeParams & { email: string }
 export type SendEmailVerificationResult = { contactVerificationId: string }
 export const sendEmailVerification = async (
     params: SendEmailVerificationParams,
 ): Promise<SendEmailVerificationResult> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/auth/register/email/send',
         data: { email: params.email },
@@ -68,7 +68,7 @@ export const sendEmailVerification = async (
 // call, per the spec; returns the onboarding id later steps require. Baanx
 // requires both `allowMarketing` and `allowSms` here (they're collected on the
 // Set-Password screen), so they're modelled as required, not optional.
-export type VerifyEmailParams = NetworkParams & {
+export type VerifyEmailParams = ScopeParams & {
     email: string
     password: string
     verificationCode: string
@@ -86,9 +86,9 @@ export type VerifyEmailResult = {
 export const verifyEmail = async (
     params: VerifyEmailParams,
 ): Promise<VerifyEmailResult> => {
-    const { network, signal, ...body } = params
+    const { scope, signal, ...body } = params
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/register/email/verify',
         data: body,
@@ -101,7 +101,7 @@ export const verifyEmail = async (
     }
 }
 
-export type SendPhoneVerificationParams = NetworkParams & {
+export type SendPhoneVerificationParams = ScopeParams & {
     phoneCountryCode: string
     phoneNumber: string
     contactVerificationId: string
@@ -109,14 +109,14 @@ export type SendPhoneVerificationParams = NetworkParams & {
 export const sendPhoneVerification = async (
     params: SendPhoneVerificationParams,
 ): Promise<void> => {
-    const { network, signal, ...body } = params
+    const { scope, signal, ...body } = params
     await postRegisterStep('/v1/auth/register/phone/send', body, {
-        network,
+        scope,
         signal,
     })
 }
 
-export type VerifyPhoneParams = NetworkParams & {
+export type VerifyPhoneParams = ScopeParams & {
     onboardingId: string
     phoneCountryCode: string
     phoneNumber: string
@@ -124,14 +124,14 @@ export type VerifyPhoneParams = NetworkParams & {
     verificationCode: string
 }
 export const verifyPhone = async (params: VerifyPhoneParams): Promise<void> => {
-    const { network, signal, ...body } = params
+    const { scope, signal, ...body } = params
     await postRegisterStep('/v1/auth/register/phone/verify', body, {
-        network,
+        scope,
         signal,
     })
 }
 
-export type SubmitPersonalDetailsParams = NetworkParams & {
+export type SubmitPersonalDetailsParams = ScopeParams & {
     details: PersonalDetailsInput
 }
 export const submitPersonalDetails = async (
@@ -144,7 +144,7 @@ export const submitPersonalDetails = async (
     )
 }
 
-export type StartRegisterVerificationParams = NetworkParams & {
+export type StartRegisterVerificationParams = ScopeParams & {
     onboardingId: string
 }
 /**
@@ -157,7 +157,7 @@ export const startRegisterVerification = async (
     params: StartRegisterVerificationParams,
 ): Promise<VeriffSession> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/auth/register/verification',
         data: { onboardingId: params.onboardingId },
@@ -166,7 +166,7 @@ export const startRegisterVerification = async (
     return registerVerificationResponseSchema.parse(response.data)
 }
 
-export type FetchOnboardingDetailsParams = NetworkParams & {
+export type FetchOnboardingDetailsParams = ScopeParams & {
     onboardingId: string
 }
 export type OnboardingDetails = {
@@ -189,7 +189,7 @@ export const fetchOnboardingDetails = async (
     params: FetchOnboardingDetailsParams,
 ): Promise<OnboardingDetails> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'GET',
         path: '/v1/auth/register',
         params: { onboardingId: params.onboardingId },
@@ -211,7 +211,7 @@ export const fetchOnboardingDetails = async (
     }
 }
 
-export type SubmitAddressParams = NetworkParams & { address: AddressInput }
+export type SubmitAddressParams = ScopeParams & { address: AddressInput }
 // The final registration step. Unlike the other register steps its response
 // matters: it carries the `accessToken` that authenticates the post-onboarding
 // user endpoints plus the permanent `userId` the consent-link step binds to, so
@@ -226,7 +226,7 @@ export const submitAddress = async (
     params: SubmitAddressParams,
 ): Promise<SubmitAddressResult> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/auth/register/address',
         data: params.address,
@@ -240,7 +240,7 @@ export const submitAddress = async (
     }
 }
 
-export type SubmitMailingAddressParams = NetworkParams & {
+export type SubmitMailingAddressParams = ScopeParams & {
     address: MailingAddressInput
 }
 // Reached only when the address step was posted with isSameMailingAddress
@@ -249,7 +249,7 @@ export const submitMailingAddress = async (
     params: SubmitMailingAddressParams,
 ): Promise<SubmitAddressResult> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/auth/register/mailing-address',
         data: params.address,
@@ -339,7 +339,7 @@ export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
 // registration (before the address step). The tenant id is build-time config
 // (per network), like the Baanx client key. Returns the `consentSetId` the link
 // step (below) binds to the user once the address step issues the userId.
-export type SubmitOnboardingConsentParams = NetworkParams &
+export type SubmitOnboardingConsentParams = ScopeParams &
     Omit<OnboardingConsentInput, 'tenantId'>
 export type SubmitOnboardingConsentResult = {
     /** Null when Baanx omitted it (e.g. a duplicate-onboardingId retry). */
@@ -348,16 +348,16 @@ export type SubmitOnboardingConsentResult = {
 export const submitOnboardingConsent = async (
     params: SubmitOnboardingConsentParams,
 ): Promise<SubmitOnboardingConsentResult> => {
-    const { network, signal, ...rest } = params
+    const { scope, signal, ...rest } = params
     const body = buildOnboardingConsentBody({
         ...rest,
-        tenantId: getNetworkConfig(network).baanxTenantId,
+        tenantId: getPeraServicesConfig(scope).baanxTenantId,
     })
     try {
         const response = await postRegisterStep(
             '/v2/consent/onboarding',
             body,
-            { network, signal },
+            { scope, signal },
         )
         // Lenient: the consentSetId is best-effort (the link step skips when it's
         // absent), so an unexpected body shape must not fail the address finalize.
@@ -385,17 +385,17 @@ export const submitOnboardingConsent = async (
 // Deliberately NOT `authenticated`: per the Baanx api-reference
 // (api-reference/consent/link-user-to-consent) this endpoint uses API-key
 // headers only — no user Bearer — even though it runs after the token exists.
-export type LinkOnboardingConsentParams = NetworkParams & {
+export type LinkOnboardingConsentParams = ScopeParams & {
     consentSetId: string
     userId: string
 }
 export const linkOnboardingConsent = async (
     params: LinkOnboardingConsentParams,
 ): Promise<void> => {
-    const { network, signal, consentSetId, userId } = params
+    const { scope, signal, consentSetId, userId } = params
     try {
         await getCardTransport().request({
-            network,
+            scope,
             method: 'PATCH',
             path: `/v2/consent/onboarding/${consentSetId}`,
             data: { userId },
@@ -409,10 +409,10 @@ export const linkOnboardingConsent = async (
 }
 
 export const fetchRegistrationSettings = async (
-    params: NetworkParams,
+    params: ScopeParams,
 ): Promise<RegistrationSettings> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'GET',
         path: '/v1/auth/settings',
         signal: params.signal,

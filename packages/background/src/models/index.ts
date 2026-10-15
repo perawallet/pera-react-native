@@ -21,9 +21,10 @@ import type { AssetSyncKind } from '../polling/models'
 
 /**
  * Handler invoked after a submitted transaction group involves wallet-held
- * addresses. Structurally compatible with `OnConfirmedHandler` from
- * `@perawallet/wallet-core-signing`; duplicated here to keep the
- * dependency edge `signing → background` (not the reverse).
+ * addresses. Declared here, not imported from `@perawallet/wallet-core-signing`,
+ * to keep the dependency edge `signing → background` (not the reverse). It
+ * takes the legacy `Network` where signing's `OnConfirmedHandler` takes a
+ * scope, so the app adapts between them.
  */
 export type SyncCompletionHandler = (
     addresses: string[],

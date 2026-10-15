@@ -542,7 +542,7 @@ describe('useSelectDestinationScreen', () => {
                 expect.objectContaining({
                     name: NFD_NAME,
                     address: EXTERNAL_ADDR,
-                    network: 'testnet',
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
                 }),
             )
             expect(mockSetDestination).toHaveBeenCalledWith(EXTERNAL_ADDR)
