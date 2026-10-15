@@ -574,13 +574,14 @@ describe('algorandDeeplinkAdapter', () => {
             expect(pairing(`algorand-wc:${WC.slice(3)}`)).toBe(WC)
         })
 
-        // The WalletConnect layer must read the intent exactly as it read the original.
+        // The WalletConnect layer reads the unwrapped intent: it no longer
+        // knows this chain's wrapper schemes, so the adapter alone unwraps them.
         it.each([
             ['algorand://wc?uri=', undefined],
             ['algorand://wc?uri=', 'chrome'],
             ['algorand-wc://wc?uri=', undefined],
         ])(
-            'unwraps %s with browser %s the same as the original link',
+            'unwraps %s with browser %s into a pairing the WalletConnect layer reads',
             (prefix, browserName) => {
                 const link = `${prefix}${wrapped}${browserName ? `&browser=${browserName}` : ''}`
 
@@ -588,9 +589,7 @@ describe('algorandDeeplinkAdapter', () => {
                     uri: WC,
                     browserName,
                 })
-                expect(parseWalletConnectUri(pairing(link))).toEqual(
-                    parseWalletConnectUri(link),
-                )
+                expect(parseWalletConnectUri(link)).toBeNull()
             },
         )
 
