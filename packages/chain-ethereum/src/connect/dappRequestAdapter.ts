@@ -16,10 +16,11 @@ import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 import { ethereumWalletConnectSupport } from './walletConnect'
 
+const NO_TRANSACTION_GROUP =
+    'eip155 signs no transaction group; use eth_sendTransaction'
+
 const refuseTransactionGroup = (): never => {
-    throw new Error(
-        'eip155 signs no transaction group; use eth_sendTransaction',
-    )
+    throw new Error(NO_TRANSACTION_GROUP)
 }
 
 export const ethereumDappRequestAdapter: DappRequestChainAdapter = {
@@ -47,7 +48,7 @@ export const ethereumDappRequestAdapter: DappRequestChainAdapter = {
 
     validateTransactionPayload: () => ({
         ok: false,
-        message: 'eip155 signs no transaction group; use eth_sendTransaction',
+        message: NO_TRANSACTION_GROUP,
     }),
 
     useEnqueueTransactionSigning: () => refuseTransactionGroup,

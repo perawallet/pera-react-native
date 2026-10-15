@@ -182,7 +182,7 @@ const screenRequiredNamespaces = (
 export type CreateWalletConnectV2HandlerOptions = {
     /**
      * Each chain's selected network. Injected, as in v1: a store default would
-     * drag the Algorand runtime into every importer's module graph,
+     * drag a chain's runtime into every importer's module graph,
      * `apps/browser` included. A session may name several networks per chain,
      * but a request is served only on the selected one.
      */
@@ -732,13 +732,30 @@ export const createWalletConnectV2Handler = (
             )
         }
 
+        const supportedNamespaces = supportedNamespacesFor(
+            chains,
+            input.proposal,
+            input.accounts,
+        )
+        // Typed and terminal: the library's own refusal is a plain Error the
+        // sheet would report as a network failure, and with no account on the
+        // chain a retry can never succeed.
+        const uncovered = chains.find(
+            ({ support }) =>
+                !(support.namespace in supportedNamespaces) &&
+                Object.keys(input.proposal.requiredNamespaces).some(key =>
+                    isChainNamespaceKey(support, key),
+                ),
+        )
+        if (uncovered) {
+            throw new WalletConnectError(
+                `No approved account on the required ${uncovered.support.namespace} chain`,
+            )
+        }
+
         const namespaces = requireSdk().buildApprovedNamespaces({
             proposal: input.proposal,
-            supportedNamespaces: supportedNamespacesFor(
-                chains,
-                input.proposal,
-                input.accounts,
-            ),
+            supportedNamespaces,
         })
 
         const session = await walletKit.approveSession({

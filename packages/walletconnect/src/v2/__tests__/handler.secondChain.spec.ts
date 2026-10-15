@@ -292,12 +292,14 @@ describe('a capability that flips between proposal and approve', () => {
 })
 
 describe('a required chain with no approved address', () => {
-    it('fails the approval and leaves the proposal answerable', async () => {
+    it('fails the approval with a terminal typed error and leaves the proposal answerable', async () => {
         const { walletKit, proposals, propose } = await open()
         await propose(bothRequired())
         const [proposal] = proposals
 
-        await expect(proposal.approve([ADDRESS])).rejects.toThrow()
+        await expect(proposal.approve([ADDRESS])).rejects.toMatchObject({
+            metadata: { retryable: false },
+        })
         expect(walletKit.approveSession).not.toHaveBeenCalled()
 
         await expect(proposal.approve([ADDRESS, ETH])).resolves.toMatchObject({

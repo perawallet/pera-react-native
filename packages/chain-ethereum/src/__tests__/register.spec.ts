@@ -55,7 +55,7 @@ describe('registerChain', () => {
         dappRequestChainAdapters.reset()
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster and history adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster, history and dApp request adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
