@@ -13,10 +13,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { Transaction, generateAccount } from 'algosdk'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { assignFeeToGroup as assignFeeToGroupMock } from '../assignMinimumFeesToGroup'
 import { useAssignFeeToGroup } from '../useAssignFeeToGroup'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeTestPaymentTx,
+    payloadTransactionOf,
+} from './transactions'
 
 let liveStoreAccounts: WalletAccount[] = []
 const mockFetchSuggestedMinFee = vi.fn()
@@ -48,8 +55,17 @@ vi.mock('../assignMinimumFeesToGroup', () => ({
     assignFeeToGroup: vi.fn(),
 }))
 
-const transactions = [{ fee: 1000n }] as unknown as PeraTransaction[]
-const assigned = { transactions, adjustments: [] }
+const payment = (): PeraTransaction =>
+    makeTestPaymentTx(generateAccount().addr, {
+        receiver: generateAccount().addr,
+        genesisHash: MAINNET_GENESIS_HASH,
+    })
+const transactions = [
+    asUnsignedAlgorandTransaction(payment()),
+    asUnsignedAlgorandTransaction(payment()),
+]
+const unchanged = (params: { transactions: PeraTransaction[] }) =>
+    Promise.resolve({ transactions: params.transactions, adjustments: [] })
 
 type PlannerDeps = {
     accounts: WalletAccount[]
@@ -69,7 +85,7 @@ describe('useAssignFeeToGroup', () => {
             minTxnFee: 1000n,
             pqMultiplier: 3n,
         })
-        assignFeeToGroup.mockResolvedValue(assigned)
+        assignFeeToGroup.mockImplementation(unchanged)
     })
 
     it('hands the assigner the params, the fee config and a fee fetcher that never throws', async () => {
@@ -78,10 +94,16 @@ describe('useAssignFeeToGroup', () => {
 
         const outcome = await result.current(params)
 
-        expect(outcome).toBe(assigned)
-        const [calledParams, deps] = assignFeeToGroup.mock
-            .calls[0] as unknown as [typeof params, PlannerDeps]
-        expect(calledParams).toBe(params)
+        expect(outcome).toEqual({ transactions, adjustments: [] })
+        expect(outcome.transactions).toBe(transactions)
+        const [calledParams, deps] = assignFeeToGroup.mock.calls[0] as unknown as [
+            { transactions: PeraTransaction[]; signableIndices: number[] },
+            PlannerDeps,
+        ]
+        expect(calledParams).toEqual({
+            transactions: transactions.map(payloadTransactionOf),
+            signableIndices: [0],
+        })
         expect(deps.configMinTxnFee).toBe(1000n)
         expect(deps.pqMultiplier).toBe(3n)
         await expect(deps.fetchSuggestedMinFee()).resolves.toBe(2000n)
@@ -104,5 +126,32 @@ describe('useAssignFeeToGroup', () => {
             PlannerDeps,
         ]
         expect(deps.accounts).toBe(rekeyed)
+    })
+
+    it('rewraps a raised transaction and keeps every unchanged one by reference', async () => {
+        const raised = Transaction.fromEncodingData(
+            payloadTransactionOf(transactions[0]).toEncodingData(),
+        )
+        raised.fee = 3000n
+        const adjustments = [
+            {
+                index: 0,
+                originalFee: 1000n,
+                adjustedFee: 3000n,
+                reason: 'quantum-minimum' as const,
+            },
+        ]
+        assignFeeToGroup.mockImplementation(async params => ({
+            transactions: [raised, params.transactions[1]],
+            adjustments,
+        }))
+        const { result } = renderHook(() => useAssignFeeToGroup())
+
+        const outcome = await result.current({ transactions })
+
+        expect(outcome.adjustments).toBe(adjustments)
+        expect(payloadTransactionOf(outcome.transactions[0])).toBe(raised)
+        expect(outcome.transactions[0].scope).toEqual(transactions[0].scope)
+        expect(outcome.transactions[1]).toBe(transactions[1])
     })
 })

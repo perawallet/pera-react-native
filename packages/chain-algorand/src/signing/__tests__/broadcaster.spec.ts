@@ -44,6 +44,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 import { algorandBroadcasterAdapter } from '../broadcaster'
+import { signedAlgorandTransactionFromBytes } from '../unsignedTransaction'
 
 describe('algorandBroadcasterAdapter.submitTimeoutError', () => {
     test('is a retryable network_unavailable error naming the timeout', () => {
@@ -108,9 +109,10 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
             }),
         )
 
+        const scope = scopeForLegacyNetwork('mainnet')
         const ids = await algorandBroadcasterAdapter.submitAndAutoRefresh(
-            scopeForLegacyNetwork('mainnet'),
-            signed.map(decodeSignedTransaction),
+            scope,
+            signed.map(bytes => signedAlgorandTransactionFromBytes(bytes, scope)),
         )
 
         expect(ids).toEqual([txIds[0]])

@@ -165,6 +165,11 @@ const payloadOf = (
 ): { transaction: PeraTransaction } =>
     unsigned.payload as { transaction: PeraTransaction }
 
+/** The transaction of a payload chain-algorand built itself, with no network check. */
+export const algorandTransactionOf = (
+    unsigned: UnsignedTransaction,
+): PeraTransaction => payloadOf(unsigned).transaction
+
 export const withAlgorandTransaction = (
     unsigned: UnsignedTransaction,
     transaction: PeraTransaction,

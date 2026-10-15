@@ -376,7 +376,12 @@ export const executeAlgorandSwap = async (
         return signingFailure(e)
     }
 
-    const allSignedGroups = scatterSigned(plans, flatSigned, scope)
+    // Re-encoded, as the backend's pre-signed slots always have been on submit.
+    const allSignedGroups = scatterSigned(plans, flatSigned, signed => ({
+        scope,
+        id: signed.txn.txID(),
+        bytes: encodeSignedTransactions([signed])[0],
+    }))
     const txIds: string[] = []
     try {
         onProgress('submitting')

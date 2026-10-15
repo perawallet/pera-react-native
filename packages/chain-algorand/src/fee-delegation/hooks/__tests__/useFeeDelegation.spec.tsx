@@ -56,7 +56,10 @@ vi.mock('../../../blockchain', () => ({
         }),
         decodeSignedTransaction: (bytes: Uint8Array) => ({
             sig: new Uint8Array([9]),
-            txn: { id: String.fromCharCode(...bytes) },
+            txn: {
+                id: String.fromCharCode(...bytes),
+                txID: () => `${String.fromCharCode(...bytes)}-id`,
+            },
         }),
     }),
 }))
@@ -89,12 +92,29 @@ const ASSET_ID = 31566704n
 // Inputs are ASCII, so btoa is byte-exact and needs no Node Buffer global.
 const toBase64 = (text: string) => btoa(text)
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+const payloadIdOf = (unsigned: { payload: unknown }) =>
+    (unsigned.payload as { transaction: { id: string } }).transaction.id
+
 const baseParams = {
     account: ACCOUNT,
     // Sender matches the encoder/decoder shape so the trust-anchor check can
     // assert the returned slot is byte-identical (modulo group) to this txn.
     transactions: [
-        { id: 'optin', sender: { toString: () => ACCOUNT } },
+        {
+            scope: SCOPE,
+            payload: {
+                transaction: { id: 'optin', sender: { toString: () => ACCOUNT } },
+            },
+            summary: {
+                kind: 'chain-specific',
+                title: { key: 'opt_in' },
+                direction: 'none',
+                icon: 'opt-in',
+            },
+            chainData: { family: 'algorand' },
+        },
     ] as never[],
     includeAssetOptInMbr: true,
     optInAssetIds: [ASSET_ID],
@@ -140,10 +160,15 @@ describe('fee-delegation/useFeeDelegation', () => {
             }
         })
 
+        const walletSigned = {
+            scope: SCOPE,
+            id: 'optin-id',
+            bytes: new Uint8Array([1]),
+        }
         addSignRequestMock.mockImplementation(request => {
             callOrder.push('sign')
             // The pipeline returns one signed txn per unsigned slot.
-            void request.approve([{ kind: 'signed', txn: { id: 'optin' } }])
+            void request.approve([walletSigned])
         })
 
         submitAndAutoRefreshMock.mockImplementation(async () => {
@@ -172,12 +197,12 @@ describe('fee-delegation/useFeeDelegation', () => {
         // is signable; the full group is the integrity context.
         expect(addSignRequestMock).toHaveBeenCalledTimes(1)
         const signRequest = addSignRequestMock.mock.calls[0]![0]
-        expect(signRequest.signableIndices).toEqual([1])
-        expect(signRequest.txs.map((tx: { id: string }) => tx.id)).toEqual([
-            'optin',
-        ])
+        expect(signRequest).not.toHaveProperty('chainId')
+        expect(signRequest.chainData.algorand.signableIndices).toEqual([1])
+        expect(signRequest.txs.map(payloadIdOf)).toEqual(['optin'])
+        expect(signRequest.txs[0].scope).toEqual(SCOPE)
         expect(
-            signRequest.groupContext.map((tx: { id: string }) => tx.id),
+            signRequest.chainData.algorand.groupContext.map(payloadIdOf),
         ).toEqual(['sponsor', 'optin'])
         expect(signRequest.sourceMetadata).toEqual(baseParams.sourceMetadata)
 
@@ -186,9 +211,14 @@ describe('fee-delegation/useFeeDelegation', () => {
         expect(submitAndAutoRefreshMock).toHaveBeenCalledTimes(1)
         const [scope, orderedSigned] = submitAndAutoRefreshMock.mock.calls[0]!
         expect(scope).toEqual({ chainId: 'algorand', networkId: 'mainnet' })
+        // The sponsor's slot keeps the bytes it signed.
         expect(orderedSigned).toEqual([
-            { sig: new Uint8Array([9]), txn: { id: 'sponsor' } },
-            { kind: 'signed', txn: { id: 'optin' } },
+            {
+                scope: SCOPE,
+                id: 'sponsor-id',
+                bytes: new Uint8Array([...'sponsor'].map(c => c.charCodeAt(0))),
+            },
+            walletSigned,
         ])
         expect(callOrder).toEqual(['request', 'sign', 'submit'])
     })

@@ -139,14 +139,18 @@ describe('scatterSigned', () => {
         ]
 
         const { plans } = buildGroupPlans(groups, decoders)
-        const userSigned = makeSignedTxn('user-signed')
+        const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+        const userSigned = { scope, id: 'user', bytes: new Uint8Array([1]) }
+        const preSigned = (signed: PeraSignedTransaction) => ({
+            scope,
+            id: (signed as unknown as { tag: string }).tag,
+            bytes: new Uint8Array(),
+        })
 
-        const result = scatterSigned(plans, [userSigned])
+        const result = scatterSigned(plans, [userSigned], preSigned)
 
         expect(result).toHaveLength(1)
-        expect(result[0]).toHaveLength(3)
-        expect(result[0][0]).toEqual(makeSignedTxn('p1'))
+        expect(result[0].map(signed => signed.id)).toEqual(['p1', 'user', 'p2'])
         expect(result[0][1]).toBe(userSigned)
-        expect(result[0][2]).toEqual(makeSignedTxn('p2'))
     })
 })

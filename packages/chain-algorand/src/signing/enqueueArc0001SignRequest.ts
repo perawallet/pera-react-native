@@ -35,8 +35,10 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { buildWalletConnectSignResult } from './multisig/buildWalletConnectSignResult'
-import { readAlgorandTransaction } from './planner'
-import { toUnsignedAlgorandTransactions } from './unsignedTransaction'
+import {
+    algorandTransactionOf,
+    toUnsignedAlgorandTransactions,
+} from './unsignedTransaction'
 
 // Bridges an ARC-0001 resolver result to the signing pipeline: builds the
 // TransactionSignRequest, short-circuits when nothing is signable, and pads the
@@ -101,8 +103,7 @@ export const enqueueArc0001SignRequest = async (
         rawTransactionsBase64 = indicesToSign.map(i =>
             encodeToBase64(
                 encodeTransactionRaw(
-                    readAlgorandTransaction(assigned.transactions[i])
-                        .transaction,
+                    algorandTransactionOf(assigned.transactions[i]),
                 ),
             ),
         )

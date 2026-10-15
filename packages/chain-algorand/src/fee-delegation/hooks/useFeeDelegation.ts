@@ -33,9 +33,8 @@ import {
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 
-import { algorandTransactionsOf } from '../../signing/algorandRequest'
 import {
-    signedAlgorandTransactionFromBytes,
+    algorandTransactionOf,
     toUnsignedAlgorandTransactions,
 } from '../../signing/unsignedTransaction'
 import { requestFeeDelegation } from '../api'
@@ -156,7 +155,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             }
 
             const scope = scopeForLegacyNetwork(network)
-            const sent = algorandTransactionsOf(transactions)
+            const sent = transactions.map(algorandTransactionOf)
             const { txnGroup } = await requestFeeDelegation(
                 {
                     // ARC-0001 carries prefix-free msgpack; `encodeTransaction`
@@ -183,12 +182,14 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
 
             for (const entry of txnGroup) {
                 if (entry.stxn) {
+                    // The sponsor's bytes go to the node as it signed them.
                     const bytes = decodeFromBase64(entry.stxn)
+                    const signed = decodeSignedTransaction(bytes)
                     slots.push({
                         kind: 'preSigned',
-                        signed: signedAlgorandTransactionFromBytes(bytes, scope),
+                        signed: { scope, id: signed.txn.txID(), bytes },
                     })
-                    groupContext.push(decodeSignedTransaction(bytes).txn)
+                    groupContext.push(signed.txn)
                 } else {
                     const unsignedTxn = decodeTransaction(
                         decodeFromBase64(entry.txn),

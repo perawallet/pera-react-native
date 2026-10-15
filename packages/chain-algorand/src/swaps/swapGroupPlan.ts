@@ -12,12 +12,10 @@
 
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type {
-    ChainScope,
     PeraSignedTransaction,
     PeraTransaction,
     SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { toSignedAlgorandTransaction } from '../signing/unsignedTransaction'
 import type {
     SerializedGroupPlan,
     TransactionGroup,
@@ -104,12 +102,12 @@ export const buildGroupPlans = (
 export const scatterSigned = (
     plans: GroupPlan[],
     flatSigned: SignedTransaction[],
-    scope: ChainScope,
+    preSigned: (signed: PeraSignedTransaction) => SignedTransaction,
 ): SignedTransaction[][] =>
     plans.map(plan =>
         plan.slots.map(slot =>
             slot.kind === 'preSigned'
-                ? toSignedAlgorandTransaction(slot.signed, scope)
+                ? preSigned(slot.signed)
                 : flatSigned[slot.flatIndex],
         ),
     )

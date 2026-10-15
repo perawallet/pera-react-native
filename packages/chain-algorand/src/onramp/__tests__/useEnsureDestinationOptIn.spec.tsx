@@ -209,7 +209,12 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         expect(submitWithFeeDelegationMock).toHaveBeenCalledTimes(1)
         expect(submitWithFeeDelegationMock).toHaveBeenCalledWith({
             account: ADDRESS,
-            transactions: [{ id: 'optin' }],
+            transactions: [
+                expect.objectContaining({
+                    payload: { transaction: { id: 'optin' } },
+                    scope: expect.objectContaining({ chainId: 'algorand' }),
+                }),
+            ],
             includeAssetOptInMbr: true,
             optInAssetIds: [ASSET_ID],
             sourceMetadata: expect.objectContaining({

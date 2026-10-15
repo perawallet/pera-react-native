@@ -34,6 +34,7 @@ import {
     type AssetRef,
     type ChainId,
     type PeraTransaction,
+    type UnsignedTransaction,
     type TransactionIntent,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -58,6 +59,11 @@ import {
     standaloneAccount,
 } from '../../__tests__/algorandAccounts'
 
+
+// The msw node's genesis isn't testnet's, so the payload is read without
+// `readAlgorandTransaction`'s network check.
+const transactionOf = (built: UnsignedTransaction): PeraTransaction =>
+    (built.payload as { transaction: PeraTransaction }).transaction
 const scope = scopeForLegacyNetwork('testnet')
 const SUGGESTED_MIN_FEE = 1000n
 const CONFIG = { configMinTxnFee: 1000n, pqMultiplier: 3n }
@@ -181,12 +187,12 @@ describe('buildAlgorandTransfer golden bytes', () => {
             const expected = await today()
 
             expect(
-                built.map(entry => (entry.payload as PeraTransaction).fee),
+                built.map(entry => transactionOf(entry).fee),
             ).toEqual(expected.map(() => fee))
             expect(
                 built.map(entry =>
                     encodeToBase64(
-                        encodeTransactionRaw(entry.payload as PeraTransaction),
+                        encodeTransactionRaw(transactionOf(entry)),
                     ),
                 ),
             ).toEqual(

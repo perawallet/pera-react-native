@@ -15,10 +15,12 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useFetchSuggestedMinFee, useMinimumFeeConfig } from '../blockchain'
 import type { AssignFeeToGroup } from '@perawallet/wallet-core-signing'
-import { algorandTransactionsOf } from './algorandRequest'
 import { assignFeeToGroup } from './assignMinimumFeesToGroup'
 import { findFundedIndices } from './feeCoverage'
-import { withAlgorandTransaction } from './unsignedTransaction'
+import {
+    algorandTransactionOf,
+    withAlgorandTransaction,
+} from './unsignedTransaction'
 
 // The suggested-params fetch goes through `useFetchSuggestedMinFee`, the
 // shared query cache, and never blocks the flow: on failure it falls back to
@@ -29,7 +31,9 @@ export const useAssignFeeToGroup = (): AssignFeeToGroup => {
 
     return useCallback<AssignFeeToGroup>(
         async params => {
-            const transactions = algorandTransactionsOf(params.transactions)
+            // A dApp group on the wrong network is the review's to report,
+            // so the payload isn't network-checked here.
+            const transactions = params.transactions.map(algorandTransactionOf)
             const assigned = await assignFeeToGroup(
                 { ...params, transactions },
                 {
