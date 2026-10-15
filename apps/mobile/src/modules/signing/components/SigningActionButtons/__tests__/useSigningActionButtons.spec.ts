@@ -64,16 +64,6 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-// The global setup stubs toAlgodError to always return unknown_node_error;
-// the classification cases below need the real parser.
-vi.mock(
-    '@perawallet/wallet-core-chain-algorand/blockchain',
-    async importOriginal =>
-        importOriginal<
-            typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
-        >(),
-)
-
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
 }))
@@ -341,36 +331,7 @@ describe('useSigningActionButtons', () => {
             expect(showError).toHaveBeenCalledOnce()
         })
 
-        it('classifies a recognized algod rejection into a typed AlgodError', () => {
-            setupPipelineCapturingHandler({
-                signerType: 'local',
-                transport: { kind: 'algod' },
-                kind: { type: 'transactions' },
-            })
-
-            renderHook(() => useSigningActionButtons())
-
-            const AUTH =
-                'PNVR2DIQNNCRVQFVVIVOZH4LWDOYRERK7VIQEWTUYAJRTLNLZY2M2SUENM'
-            const ACTUAL =
-                'GBFKIKHL55YJRTB4PSWXWQJDPHG6IHOLESWSWPPPR6HQ2N7H76RBI5JIT4'
-            act(() => {
-                capturedHandler?.({
-                    type: 'signing_failed',
-                    error: new Error(
-                        `Transport failed: transaction X: should have been authorized by ${AUTH} but was actually authorized by ${ACTUAL}`,
-                    ),
-                } as SigningPipelineEvent)
-            })
-
-            expect(showError).toHaveBeenCalledWith(
-                expect.objectContaining({ code: 'not_authorized' }),
-                expect.any(String),
-                expect.anything(),
-            )
-        })
-
-        it('passes an unrecognized error through unchanged', () => {
+        it('hands the pipeline error to showError unchanged', () => {
             setupPipelineCapturingHandler({
                 signerType: 'local',
                 transport: { kind: 'algod' },

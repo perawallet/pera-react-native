@@ -329,6 +329,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         ALGO_ASSET_NAME: 'ALGO',
         ALGO_DECIMALS: 6,
+        describeNodeError: vi.fn(() => undefined),
         ...unitConversion,
         percentChange,
         stringifyTypedJson,

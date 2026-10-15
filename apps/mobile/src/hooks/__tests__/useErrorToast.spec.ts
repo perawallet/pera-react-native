@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import {
     AppError,
@@ -18,10 +18,7 @@ import {
     PeraNetworkError,
     logger,
 } from '@perawallet/wallet-core-shared'
-import {
-    AlgodError,
-    toAlgodError,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { AlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '../useErrorToast'
@@ -58,18 +55,16 @@ describe('useErrorToast', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         ;(config as { debugEnabled: boolean }).debugEnabled = false
-        mockGetMessage.mockReturnValue({
-            title: 'algod title',
-            body: 'algod body',
-        })
-        ;(toAlgodError as Mock).mockReturnValue(
-            new AlgodError('unknown_node_error', { raw: 'unknown' }),
-        )
+        mockGetMessage.mockReturnValue(undefined)
     })
 
     it('uses the algod-specific title and body for an AlgodError', () => {
         const algodError = new AlgodError('overspend', {
             address: 'A',
+        })
+        mockGetMessage.mockReturnValueOnce({
+            title: 'algod title',
+            body: 'algod body',
         })
         const { result } = renderHook(() => useErrorToast())
 
@@ -120,12 +115,12 @@ describe('useErrorToast', () => {
         )
     })
 
-    it('translates a recognizable plain Error via toAlgodError', () => {
-        const recognizableAlgodError = new AlgodError('overspend', {
-            address: 'A',
-        })
-        ;(toAlgodError as Mock).mockReturnValueOnce(recognizableAlgodError)
+    it('translates a plain Error the chain recognises', () => {
         const raw = new Error('overspend (account ABC...)')
+        mockGetMessage.mockReturnValueOnce({
+            title: 'algod title',
+            body: 'algod body',
+        })
 
         const { result } = renderHook(() => useErrorToast())
 
@@ -133,14 +128,14 @@ describe('useErrorToast', () => {
             result.current.showError(raw, 'Transaction failed')
         })
 
-        expect(mockGetMessage).toHaveBeenCalledWith(recognizableAlgodError)
+        expect(mockGetMessage).toHaveBeenCalledWith(raw)
         expect(mockShowToast).toHaveBeenCalledWith(
             { title: 'algod title', body: 'algod body', type: 'error' },
             undefined,
         )
     })
 
-    it('falls back to generic body when toAlgodError yields unknown_node_error', () => {
+    it('falls back to generic body when the chain describes nothing', () => {
         const raw = new Error('something opaque')
 
         const { result } = renderHook(() => useErrorToast())

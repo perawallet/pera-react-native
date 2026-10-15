@@ -15,7 +15,6 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { toAlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getDelegatedUnsignableReason,
@@ -96,16 +95,11 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             if (pipeline.resolved?.signerType === 'hardware') return
 
             if (pipeline.resolved?.transport.kind === 'algod') {
-                // Pipeline errors wrap the node's rejection text, which the
-                // toast would otherwise print raw. Recognized node rejections
-                // (overspend, stale-rekey "should have been authorized by"…)
-                // get their localized copy; unrecognized ones keep the
-                // original error's message.
-                const algodError = toAlgodError(event.error)
+                // Recognized node rejections (overspend, stale-rekey "should
+                // have been authorized by"…) get their localized copy from
+                // the toast; unrecognized ones keep the caller's title.
                 showError(
-                    algodError.code === 'unknown_node_error'
-                        ? event.error
-                        : algodError,
+                    event.error,
                     t('signing.transaction_view.transaction_failed_title'),
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,

@@ -26,10 +26,7 @@ vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useAlgodErrorMessage', () => ({
     useAlgodErrorMessage: () => ({
-        getMessage: () => ({
-            title: 'errors.algod.unknown_node_error.title',
-            body: 'errors.algod.unknown_node_error.body',
-        }),
+        getMessage: () => undefined,
     }),
 }))
 

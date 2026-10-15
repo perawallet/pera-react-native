@@ -11,19 +11,22 @@
  */
 
 import { useCallback } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    AlgodError,
-    toAlgodError,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
+    describeNodeError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from './useLanguage'
 
+type NodeErrorMessage = { title: string; body: string }
+
 type UseAlgodErrorMessageResult = {
-    getMessage: (err: unknown) => { title: string; body: string }
+    getMessage: (err: unknown) => Optional<NodeErrorMessage>
 }
 
 // i18n interpolation doesn't accept bigint — convert to string at the boundary.
 const toInterpolationParams = (
-    params: Record<string, unknown>,
+    params: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> => {
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(params)) {
@@ -33,32 +36,19 @@ const toInterpolationParams = (
 }
 
 /**
- * Maps an algod/indexer error to a localized `{ title, body }` pair suitable
- * for the toast system. Accepts anything — raw Errors are routed through
- * `toAlgodError` first.
+ * Maps a node error to a localized `{ title, body }` pair suitable for the
+ * toast system, or `undefined` when the chain has no copy for it.
  */
 export const useAlgodErrorMessage = (): UseAlgodErrorMessageResult => {
     const { t } = useLanguage()
 
     const getMessage = useCallback(
-        (err: unknown): { title: string; body: string } => {
-            const algodError =
-                err instanceof AlgodError ? err : toAlgodError(err)
-
-            // Offline is a single source of truth — algod's
-            // network_unavailable and the PeraNetworkError 'offline' kind
-            // share the same copy.
-            if (algodError.code === 'network_unavailable') {
-                return {
-                    title: t('errors.network.no_connection.title'),
-                    body: t('errors.network.no_connection.body'),
-                }
-            }
-
-            const params = toInterpolationParams(algodError.params)
+        (err: unknown): Optional<NodeErrorMessage> => {
+            const copy = describeNodeError(LEGACY_CHAIN_ID, err)
+            if (!copy) return undefined
             return {
-                title: t(`errors.algod.${algodError.code}.title`),
-                body: t(`errors.algod.${algodError.code}.body`, params),
+                title: t(copy.titleKey),
+                body: t(copy.bodyKey, toInterpolationParams(copy.params)),
             }
         },
         [t],

@@ -12,25 +12,14 @@
 
 import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { AlgodError } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { describeNodeError } from '@perawallet/wallet-core-shared'
 import { useAlgodErrorMessage } from '../useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
 }))
-
-// Use the real Algorand runtime — the hook relies on actual AlgodError
-// instanceof checks and toAlgodError parsing, which the global mock in
-// vitest.setup.ts stubs out.
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-chain-algorand/blockchain')
-    >('@perawallet/wallet-core-chain-algorand/blockchain')
-    return actual
-})
-
-const ADDR = 'GBFKIKHL55YJRTB4PSWXWQJDPHG6IHOLESWSWPPPR6HQ2N7H76RBI5JIT4'
 
 describe('useAlgodErrorMessage', () => {
     const mockT = vi.fn((key: string) => key)
@@ -40,67 +29,48 @@ describe('useAlgodErrorMessage', () => {
         ;(useLanguage as Mock).mockReturnValue({ t: mockT })
     })
 
-    test('looks up the per-code i18n keys for an AlgodError', () => {
-        const err = new AlgodError('duplicate_txn', { txId: 'ABC' })
+    test('translates the keys the chain describes', () => {
+        ;(describeNodeError as Mock).mockReturnValueOnce({
+            titleKey: 'errors.algod.duplicate_txn.title',
+            bodyKey: 'errors.algod.duplicate_txn.body',
+            params: { txId: 'ABC' },
+        })
+        const err = new Error('dup')
         const { result } = renderHook(() => useAlgodErrorMessage())
 
         const message = result.current.getMessage(err)
 
-        expect(message.title).toBe('errors.algod.duplicate_txn.title')
-        expect(message.body).toBe('errors.algod.duplicate_txn.body')
+        expect(describeNodeError).toHaveBeenCalledWith(LEGACY_CHAIN_ID, err)
+        expect(message).toEqual({
+            title: 'errors.algod.duplicate_txn.title',
+            body: 'errors.algod.duplicate_txn.body',
+        })
         expect(mockT).toHaveBeenCalledWith('errors.algod.duplicate_txn.body', {
             txId: 'ABC',
         })
     })
 
-    // overspend can no longer carry balance/spent/missing —
-    // parseAlgodMessage.ts leaves them unset because the message's rendered
-    // balance is fee-adjusted, not the account's actual balance (see
-    // algodErrorCodes.ts). below_min_balance's params aren't affected by that
-    // and still exercise the same bigint-to-string interpolation path.
     test('converts bigint params to strings for i18n interpolation', () => {
-        const err = new AlgodError('below_min_balance', {
-            address: ADDR,
-            balance: 148_000n,
-            required: 200_000n,
-            assetCount: 1,
+        ;(describeNodeError as Mock).mockReturnValueOnce({
+            titleKey: 'errors.algod.below_min_balance.title',
+            bodyKey: 'errors.algod.below_min_balance.body',
+            params: { address: 'ADDR', balance: 148_000n, assetCount: 1 },
         })
         const { result } = renderHook(() => useAlgodErrorMessage())
 
-        result.current.getMessage(err)
+        result.current.getMessage(new Error('low'))
 
         expect(mockT).toHaveBeenCalledWith(
             'errors.algod.below_min_balance.body',
-            {
-                address: ADDR,
-                balance: '148000',
-                required: '200000',
-                assetCount: 1,
-            },
+            { address: 'ADDR', balance: '148000', assetCount: 1 },
         )
     })
 
-    test('translates raw Errors via toAlgodError before rendering', () => {
-        const raw = new Error(
-            `overspend (account ${ADDR}, data {AccountBaseData:{MicroAlgos:{Raw:100}}}, tried to spend {200})`,
-        )
+    test('returns undefined when the chain describes nothing', () => {
+        ;(describeNodeError as Mock).mockReturnValueOnce(undefined)
         const { result } = renderHook(() => useAlgodErrorMessage())
 
-        result.current.getMessage(raw)
-
-        expect(mockT).toHaveBeenCalledWith('errors.algod.overspend.title')
-    })
-
-    test('remaps network_unavailable to the shared offline copy', () => {
-        const err = new AlgodError('network_unavailable', {})
-        const { result } = renderHook(() => useAlgodErrorMessage())
-
-        const message = result.current.getMessage(err)
-
-        expect(message.title).toBe('errors.network.no_connection.title')
-        expect(message.body).toBe('errors.network.no_connection.body')
-        expect(mockT).not.toHaveBeenCalledWith(
-            'errors.algod.network_unavailable.title',
-        )
+        expect(result.current.getMessage(new Error('odd'))).toBeUndefined()
+        expect(mockT).not.toHaveBeenCalled()
     })
 })

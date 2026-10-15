@@ -84,10 +84,7 @@ vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useAlgodErrorMessage', () => ({
     useAlgodErrorMessage: () => ({
-        getMessage: () => ({
-            title: 'errors.algod.unknown_node_error.title',
-            body: 'errors.algod.unknown_node_error.body',
-        }),
+        getMessage: () => undefined,
     }),
 }))
 
@@ -131,7 +128,7 @@ describe('useArc60SigningScreen', () => {
         expect(result.current.errorMessage).toBe('errors.network.timeout.body')
     })
 
-    it('resolves localized copy for an untyped raw Error via the algod fallback', () => {
+    it('resolves localized copy for an untyped raw Error the chain does not describe', () => {
         mockPipeline.error = new Error('boom')
 
         const { result } = renderHook(() => useArc60SigningScreen())
