@@ -106,6 +106,7 @@ describe('reconcileEthereumSubmissions', () => {
             scope: SCOPE,
             txIds: [HASH],
             flow: 'pipeline',
+            historyEntries: [],
             sender: SENDER,
             nonce: 0,
             ...overrides,
@@ -260,6 +261,7 @@ describe('reconcileEthereumSubmissions', () => {
             scope: SCOPE,
             signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
             flow: 'pipeline',
+            historyEntries: [],
             db,
         })
         await expect(allocate()).resolves.toBe(1)

@@ -12,6 +12,7 @@
 
 import {
     and,
+    desc,
     eq,
     gt,
     inArray,
@@ -34,6 +35,7 @@ import {
     OPEN_SUBMISSION_STATUSES,
     type IntentKey,
     type SubmissionAttempt,
+    type SubmissionHistoryEntry,
     type SubmissionFlow,
     type SubmissionStatus,
 } from './types'
@@ -54,6 +56,7 @@ const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
     nonce: row.nonce,
     createdAt: row.createdAt,
     resolvedAt: row.resolvedAt,
+    historyEntry: row.historyEntry,
 })
 
 const serializeIntentKey = (intentKey: IntentKey): string =>
@@ -70,6 +73,7 @@ export type RecordSubmissionAttemptParams = {
     lastValid?: number
     /** The account sequence number the transaction consumes. */
     nonce?: number
+    historyEntry?: SubmissionHistoryEntry
 }
 
 /**
@@ -85,6 +89,7 @@ export const recordSubmissionAttempt = async ({
     sender,
     lastValid,
     nonce,
+    historyEntry,
 }: RecordSubmissionAttemptParams): Promise<string> => {
     const id = generateOrderedUniqueId()
     await db
@@ -101,6 +106,7 @@ export const recordSubmissionAttempt = async ({
             nonce: nonce ?? null,
             createdAt: Date.now(),
             resolvedAt: null,
+            historyEntry: historyEntry ?? null,
         })
         .run()
     return id
@@ -292,6 +298,37 @@ export const getSubmissionAttemptsByTxIds = async ({
                 )}))`,
             ),
         )
+        .all()
+
+    return rows.map(fromDb)
+}
+
+export type GetSubmissionAttemptsWithHistoryEntryParams = {
+    db?: Database
+    scope: ChainScope
+}
+
+/**
+ * Every attempt in the scope that carries a history entry, in any status,
+ * newest first. The sender is left to the caller, which compares addresses
+ * through the chain's codec.
+ */
+export const getSubmissionAttemptsWithHistoryEntry = async ({
+    db = getDatabase(),
+    scope,
+}: GetSubmissionAttemptsWithHistoryEntryParams): Promise<
+    SubmissionAttempt[]
+> => {
+    const rows = await db
+        .select()
+        .from(SubmissionAttemptsSchema)
+        .where(
+            and(
+                eq(SubmissionAttemptsSchema.network, toScopeKey(scope)),
+                isNotNull(SubmissionAttemptsSchema.historyEntry),
+            ),
+        )
+        .orderBy(desc(SubmissionAttemptsSchema.createdAt))
         .all()
 
     return rows.map(fromDb)

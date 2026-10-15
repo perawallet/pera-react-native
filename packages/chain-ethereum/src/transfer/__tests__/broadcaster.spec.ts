@@ -20,6 +20,7 @@ import {
     it,
 } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -29,6 +30,7 @@ import {
     TransportError,
     type SigningResult,
     type SourceMetadata,
+    type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
 import {
     initializeDatabase,
@@ -72,9 +74,19 @@ const signed = (data: SigningResult['signedData']): SigningResult => ({
     signedData: data,
     signers: [],
 })
+const HISTORY_ENTRY: SubmissionHistoryEntry = {
+    summary: {
+        kind: 'transfer',
+        title: { key: 'transactions.summary.sent' },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'evm' },
+}
 const signedTransactions = signed({
     type: 'signed-transactions',
     signed: [{ scope: SCOPE, id: HASH, bytes: BYTES }],
+    historyEntries: [HISTORY_ENTRY],
 })
 
 describe('Ethereum broadcaster adapter', () => {
@@ -115,6 +127,36 @@ describe('Ethereum broadcaster adapter', () => {
                     status: 'submitted',
                 },
             ])
+        })
+
+        it('records the history entry with the most the transaction can be charged', async () => {
+            useRpc()
+
+            await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, SOURCE)
+
+            const [attempt] = await getOpenSubmissionAttempts({ db })
+            expect(attempt!.historyEntry).toEqual({
+                ...HISTORY_ENTRY,
+                fee: new Decimal('420000000000000'),
+            })
+        })
+
+        it('records no history entry for a transaction the result lists none for', async () => {
+            useRpc()
+
+            await adapter.createSubmitTransport(SCOPE).send(
+                signed({
+                    type: 'signed-transactions',
+                    signed: [{ scope: SCOPE, id: HASH, bytes: BYTES }],
+                    historyEntries: [],
+                }),
+                SOURCE,
+            )
+
+            const [attempt] = await getOpenSubmissionAttempts({ db })
+            expect(attempt!.historyEntry).toBeNull()
         })
 
         it('resolves the row failed and rejects as rejected-by-node when the node refuses', async () => {

@@ -14,6 +14,7 @@ export {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
+    getSubmissionAttemptsWithHistoryEntry,
     markSubmissionUnknown,
     pruneResolvedSubmissionAttempts,
     recordSubmissionAttempt,
@@ -27,5 +28,6 @@ export {
     type IntentKey,
     type SubmissionAttempt,
     type SubmissionFlow,
+    type SubmissionHistoryEntry,
     type SubmissionStatus,
 } from './types'

@@ -278,6 +278,7 @@ export {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
+    getSubmissionAttemptsWithHistoryEntry,
     LANDABLE_SUBMISSION_STATUSES,
     markSubmissionUnknown,
     pruneResolvedSubmissionAttempts,
@@ -288,6 +289,7 @@ export {
     type IntentKey,
     type SubmissionAttempt,
     type SubmissionFlow,
+    type SubmissionHistoryEntry,
     type SubmissionStatus,
 } from './db'
 

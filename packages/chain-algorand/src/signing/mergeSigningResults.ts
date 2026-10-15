@@ -17,6 +17,8 @@ import type {
 import {
     SigningError,
     type SigningResult,
+    type SignedData,
+    type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
 
 /**
@@ -44,7 +46,17 @@ export const mergeSigningResults = (
         return {
             signedData: {
                 type: 'signed-transactions',
-                signed: reorder<SignedTransaction>(results, totalCount),
+                signed: reorder<SignedTransaction>(
+                    results,
+                    totalCount,
+                    data => data.signed,
+                ),
+                historyEntries: reorder<SubmissionHistoryEntry>(
+                    results,
+                    totalCount,
+                    data =>
+                        'historyEntries' in data ? data.historyEntries : [],
+                ),
             },
             signers,
         }
@@ -60,13 +72,21 @@ export const mergeSigningResults = (
     return {
         signedData: {
             type: 'transactions',
-            signed: reorder<PeraSignedTransaction>(results, totalCount),
+            signed: reorder<PeraSignedTransaction>(
+                results,
+                totalCount,
+                data => data.signed,
+            ),
         },
         signers,
     }
 }
 
-const reorder = <T>(results: SigningResult[], totalCount: number): T[] => {
+const reorder = <T>(
+    results: SigningResult[],
+    totalCount: number,
+    pick: (data: Extract<SignedData, { signed: unknown }>) => unknown,
+): T[] => {
     const reordered = new Array<T>(totalCount)
     for (const result of results) {
         const { signedData } = result
@@ -76,7 +96,7 @@ const reorder = <T>(results: SigningResult[], totalCount: number): T[] => {
         ) {
             continue
         }
-        const signed = signedData.signed as T[]
+        const signed = pick(signedData) as T[]
         result.originalIndices?.forEach((origIdx, i) => {
             reordered[origIdx] = signed[i]
         })
