@@ -156,7 +156,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 toRow: (contact: Contact) => ({
                     type: 'contact',
                     contact,
-                    key: `contact-${contact.addresses.algorand}`,
+                    key: `contact-${contact.id}`,
                 }),
             },
             {

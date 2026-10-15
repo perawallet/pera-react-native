@@ -17,8 +17,8 @@ import { contactsFingerprint } from '../contactsFingerprint'
 describe('contactsFingerprint', () => {
     it('is order-independent', () => {
         const contacts = [
-            { addresses: { algorand: 'A' }, name: 'Alice' },
-            { addresses: { algorand: 'B' }, name: 'Bob' },
+            { id: 'A', addresses: { algorand: 'A' }, name: 'Alice' },
+            { id: 'B', addresses: { algorand: 'B' }, name: 'Bob' },
         ]
 
         expect(contactsFingerprint(contacts)).toBe(
@@ -29,11 +29,11 @@ describe('contactsFingerprint', () => {
     it('changes on a rename', () => {
         expect(
             contactsFingerprint([
-                { addresses: { algorand: 'A' }, name: 'Alice' },
+                { id: 'A', addresses: { algorand: 'A' }, name: 'Alice' },
             ]),
         ).not.toBe(
             contactsFingerprint([
-                { addresses: { algorand: 'A' }, name: 'Alicia' },
+                { id: 'A', addresses: { algorand: 'A' }, name: 'Alicia' },
             ]),
         )
     })
@@ -42,6 +42,7 @@ describe('contactsFingerprint', () => {
         expect(
             contactsFingerprint([
                 {
+                    id: 'A',
                     addresses: { algorand: 'A' },
                     name: 'Alice',
                     image: 'file:///tmp/a.png',
@@ -50,7 +51,7 @@ describe('contactsFingerprint', () => {
             ]),
         ).toBe(
             contactsFingerprint([
-                { addresses: { algorand: 'A' }, name: 'Alice' },
+                { id: 'A', addresses: { algorand: 'A' }, name: 'Alice' },
             ]),
         )
     })
@@ -58,20 +59,28 @@ describe('contactsFingerprint', () => {
     it('pins the fingerprint of a contact set', () => {
         expect(
             contactsFingerprint([
-                { addresses: { algorand: 'B' }, name: 'Bob' },
-                { addresses: { algorand: 'A', evm: '0xA' }, name: 'Alice' },
+                { id: 'B', addresses: { algorand: 'B' }, name: 'Bob' },
+                {
+                    id: 'A',
+                    addresses: { algorand: 'A', evm: '0xA' },
+                    name: 'Alice',
+                },
             ]),
-        ).toBe('algorand:A evm:0xA Alicealgorand:B Bob')
+        ).toBe('A algorand:A evm:0xA AliceB algorand:B Bob')
     })
 
     it('changes when an address is added in another family', () => {
         expect(
             contactsFingerprint([
-                { addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' },
+                {
+                    id: 'A',
+                    addresses: { algorand: 'A', evm: '0xB' },
+                    name: 'Alice',
+                },
             ]),
         ).not.toBe(
             contactsFingerprint([
-                { addresses: { algorand: 'A' }, name: 'Alice' },
+                { id: 'A', addresses: { algorand: 'A' }, name: 'Alice' },
             ]),
         )
     })
@@ -79,18 +88,28 @@ describe('contactsFingerprint', () => {
     it('does not depend on the order the families were inserted in', () => {
         expect(
             contactsFingerprint([
-                { addresses: { evm: '0xB', algorand: 'A' }, name: 'Alice' },
+                {
+                    id: 'A',
+                    addresses: { evm: '0xB', algorand: 'A' },
+                    name: 'Alice',
+                },
             ]),
         ).toBe(
             contactsFingerprint([
-                { addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' },
+                {
+                    id: 'A',
+                    addresses: { algorand: 'A', evm: '0xB' },
+                    name: 'Alice',
+                },
             ]),
         )
     })
 
     it('covers a contact holding only a non-legacy family', () => {
         expect(
-            contactsFingerprint([{ addresses: { evm: '0xB' }, name: 'Bob' }]),
+            contactsFingerprint([
+                { id: 'B', addresses: { evm: '0xB' }, name: 'Bob' },
+            ]),
         ).not.toBe(contactsFingerprint([]))
     })
 })

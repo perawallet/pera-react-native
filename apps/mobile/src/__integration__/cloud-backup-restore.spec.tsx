@@ -370,7 +370,11 @@ describe('Flow: Cloud backup → Restore', () => {
         await waitFor(
             () => {
                 expect(useContactsStore.getState().contacts).toEqual([
-                    { addresses: { algorand: 'CONTACT_A' }, name: 'Alice' },
+                    {
+                        id: 'algorand:CONTACT_A',
+                        addresses: { algorand: 'CONTACT_A' },
+                        name: 'Alice',
+                    },
                 ])
             },
             { timeout: 10_000 },
@@ -400,9 +404,10 @@ describe('Flow: Cloud backup → Restore', () => {
                 items: [
                     ...algo25BackupItems(hashAddress),
                     {
-                        key: contactRecordItemKey(hashAddress('CONTACT_A')),
+                        key: contactRecordItemKey(hashAddress('id-A')),
                         plaintext: JSON.stringify({
                             formatVersion: 1,
+                            id: 'id-A',
                             name: 'Alice',
                             updatedAt: 1,
                             addresses: [
@@ -422,6 +427,7 @@ describe('Flow: Cloud backup → Restore', () => {
             () => {
                 expect(useContactsStore.getState().contacts).toEqual([
                     {
+                        id: 'id-A',
                         addresses: { algorand: 'CONTACT_A', evm: '0xA11CE' },
                         name: 'Alice',
                     },

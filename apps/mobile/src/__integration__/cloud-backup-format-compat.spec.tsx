@@ -526,14 +526,20 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
             updatedAt: 1,
         })
 
-    const contactRecord = (primary: string, record: Record<string, unknown>) =>
-        encrypt(keys, contactRecordItemKey(hashAddress(primary)), record)
+    const recordKey = (id: string) => contactRecordItemKey(hashAddress(id))
+
+    const contactRecord = (record: { id: string } & Record<string, unknown>) =>
+        encrypt(keys, recordKey(record.id), record)
+
+    // The id every device derives for a contact saved before contacts had ids.
+    const MIGRATED_ID = 'algorand:CONTACT_A'
 
     const record = (
+        id: string,
         name: string,
         addresses: { family: string; address: string }[],
         formatVersion = 1,
-    ) => ({ formatVersion, name, updatedAt: 2, addresses })
+    ) => ({ formatVersion, id, name, updatedAt: 2, addresses })
 
     const recordPlaintext = (key: string, payload: string) =>
         JSON.parse(
@@ -568,16 +574,22 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
 
         await restoreContacts()
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { algorand: 'CONTACT_A' }, name: 'Alice' },
-            { addresses: { algorand: 'CONTACT_B' }, name: 'Bob' },
+            {
+                id: 'algorand:CONTACT_A',
+                addresses: { algorand: 'CONTACT_A' },
+                name: 'Alice',
+            },
+            {
+                id: 'algorand:CONTACT_B',
+                addresses: { algorand: 'CONTACT_B' },
+                name: 'Bob',
+            },
         ])
 
         await startSync().syncNow()
 
         for (const address of ['CONTACT_A', 'CONTACT_B']) {
-            expect(
-                getItem(contactRecordItemKey(hashAddress(address))),
-            ).toBeDefined()
+            expect(getItem(recordKey(`algorand:${address}`))).toBeDefined()
             expect(getItem(contactItemKey(hashAddress(address)))?.ver).toBe(1)
         }
     })
@@ -588,8 +600,7 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
             initial: [
                 legacyContact('CONTACT_A', 'Legacy name'),
                 contactRecord(
-                    'CONTACT_A',
-                    record('Record name', [
+                    record(MIGRATED_ID, 'Record name', [
                         { family: 'algorand', address: 'CONTACT_A' },
                         { family: 'evm', address: '0xA11CE' },
                     ]),
@@ -602,6 +613,7 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
 
         expect(useContactsStore.getState().contacts).toEqual([
             {
+                id: MIGRATED_ID,
                 addresses: { algorand: 'CONTACT_A', evm: '0xA11CE' },
                 name: 'Record name',
             },
@@ -609,10 +621,10 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
     })
 
     it('Given a backup holding a record from a newer format, when it is restored and synced, then the contact is not imported and the record is never written over', async () => {
-        const key = contactRecordItemKey(hashAddress('CONTACT_A'))
+        const key = recordKey(MIGRATED_ID)
         const newer = contactRecord(
-            'CONTACT_A',
             record(
+                MIGRATED_ID,
                 'Future name',
                 [{ family: 'algorand', address: 'CONTACT_A' }],
                 2,
@@ -627,8 +639,9 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
         await restoreContacts()
         expect(useContactsStore.getState().contacts).toEqual([])
 
-        // A contact with the same address added here must not push over it.
+        // The same contact, migrated here, must not push over it.
         useContactsStore.getState().addContact({
+            id: MIGRATED_ID,
             addresses: { algorand: 'CONTACT_A' },
             name: 'Local name',
         })
@@ -638,12 +651,12 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
     })
 
     it('Given a record holding a family this app does not know, when the contact is renamed here and synced, then the family is still in the record', async () => {
-        const key = contactRecordItemKey(hashAddress('CONTACT_A'))
+        const key = recordKey(MIGRATED_ID)
         const { handlers, getItem } = buildSyncHandlers({
             backupId: keys.backupId,
             initial: [
-                contactRecord('CONTACT_A', {
-                    ...record('Alice', [
+                contactRecord({
+                    ...record(MIGRATED_ID, 'Alice', [
                         { family: 'algorand', address: 'CONTACT_A' },
                         { family: 'solana', address: 'SOL_A' },
                     ]),
@@ -655,17 +668,19 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
 
         await restoreContacts()
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { algorand: 'CONTACT_A' }, name: 'Alice' },
+            {
+                id: MIGRATED_ID,
+                addresses: { algorand: 'CONTACT_A' },
+                name: 'Alice',
+            },
         ])
         const manager = startSync()
         await manager.syncNow()
 
-        useContactsStore
-            .getState()
-            .editContact(
-                { family: 'algorand', address: 'CONTACT_A' },
-                { addresses: { algorand: 'CONTACT_A' }, name: 'Alicia' },
-            )
+        useContactsStore.getState().editContact(MIGRATED_ID, {
+            addresses: { algorand: 'CONTACT_A' },
+            name: 'Alicia',
+        })
         await manager.syncNow()
 
         const written = recordPlaintext(key, getItem(key)!.payload)
@@ -691,6 +706,7 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
         const { handlers } = buildSyncHandlers({ backupId: keys.backupId })
         server.use(...handlers)
         await startSync().syncNow()
+        const ids = useContactsStore.getState().contacts.map(c => c.id)
 
         // A fresh device: nothing local, no backup configured.
         useContactsStore.getState().resetState()
@@ -702,10 +718,11 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
 
         expect(useContactsStore.getState().contacts).toEqual([
             {
+                id: ids[0],
                 addresses: { algorand: 'CONTACT_A', evm: '0xA11CE' },
                 name: 'Alice',
             },
-            { addresses: { evm: '0xB0B' }, name: 'Bob' },
+            { id: ids[1], addresses: { evm: '0xB0B' }, name: 'Bob' },
         ])
     })
 })

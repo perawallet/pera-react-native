@@ -24,9 +24,8 @@ import type { LocalItem } from './types'
 /** Kept separate from `buildLocalItems` so the account builder's `skipped`
  *  count stays account-only: a contact has no key material and can never fail
  *  to serialize. `updatedAt` is epoch millis; `pushDirty` overwrites it with
- *  the tracked `localUpdatedAt` before encrypting. The record is keyed on the
- *  hash of the contact's first address, which every device derives the same
- *  way; a contact with no address is not backed up. */
+ *  the tracked `localUpdatedAt` before encrypting. A contact with no address
+ *  is not backed up. */
 export const buildLocalContactItems = (
     contacts: readonly Contact[],
     updatedAt: number,
@@ -34,14 +33,14 @@ export const buildLocalContactItems = (
 ): LocalItem[] =>
     contacts.flatMap(contact => {
         const addresses = contactAddressEntries(contact.addresses)
-        const [primary] = addresses
-        if (!primary) return []
+        if (addresses.length === 0) return []
         return [
             withContentHash({
-                key: contactRecordItemKey(hashAddress(primary.address)),
+                key: contactRecordItemKey(hashAddress(contact.id)),
                 type: BackupItemType.CONTACT,
                 payload: {
                     formatVersion: CONTACT_RECORD_FORMAT_VERSION,
+                    id: contact.id,
                     name: contact.name,
                     updatedAt,
                     addresses,

@@ -13,7 +13,6 @@
 import { useCallback } from 'react'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { logger } from '@perawallet/wallet-core-shared'
-import { contactAddressEntries } from '../models'
 import type { ContactImportFn, ContactImportSummary } from '../sync/types'
 
 export type UseCloudBackupContactImportResult = {
@@ -29,25 +28,18 @@ export const useCloudBackupContactImport =
                 // Read the live store each time: appends earlier in this loop
                 // must be visible to the match below.
                 const store = useContactsStore.getState()
-                const entries = contactAddressEntries(contact.addresses)
-                const matched = entries.find(({ family, address }) =>
-                    store.contacts.some(c => c.addresses[family] === address),
-                )
+                const existing = store.contacts.find(c => c.id === contact.id)
                 try {
-                    if (matched) {
+                    if (existing) {
                         // Last-write-wins already picked the incoming name, so
                         // it is authoritative. Neither shape carries `image` or
                         // `nfd`, and a legacy item carries a single address,
                         // so the existing contact's are carried over.
-                        const existing = store.contacts.find(
-                            c =>
-                                c.addresses[matched.family] === matched.address,
-                        )
-                        store.editContact(matched, {
+                        store.editContact(existing.id, {
                             ...existing,
                             name: contact.name,
                             addresses: {
-                                ...existing?.addresses,
+                                ...existing.addresses,
                                 ...contact.addresses,
                             },
                         })
@@ -57,7 +49,7 @@ export const useCloudBackupContactImport =
                 } catch (error) {
                     logger.warn('useCloudBackupContactImport: import failed')
                     summary.failed.push({
-                        address: entries[0]?.address ?? '',
+                        id: contact.id,
                         reason:
                             error instanceof Error
                                 ? error.message

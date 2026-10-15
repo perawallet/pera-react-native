@@ -20,7 +20,7 @@ type DeviceContactRowProps = {
     contact: BackupContact
     isBackedUp: boolean
     isBusy: boolean
-    onBackUp: (address: string) => void
+    onBackUp: (id: string) => void
 }
 
 const DeviceContactRowComponent = ({
@@ -32,13 +32,13 @@ const DeviceContactRowComponent = ({
     const { t } = useLanguage()
 
     const handleBackUp = useCallback(
-        () => onBackUp(contact.backupAddress),
-        [onBackUp, contact.backupAddress],
+        () => onBackUp(contact.id),
+        [onBackUp, contact.id],
     )
 
     return (
         <BackupContactRow
-            address={contact.backupAddress}
+            address={contact.address}
             name={contact.name}
             contact={contact}
             isBackedUp={isBackedUp}
@@ -54,7 +54,7 @@ const DeviceContactRowComponent = ({
                     />
                 )
             }
-            testID={`cloud_backup_contact_${contact.backupAddress}`}
+            testID={`cloud_backup_contact_${contact.address}`}
         />
     )
 }

@@ -70,8 +70,7 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const recordKey = (address: string) =>
     accountRecordItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
-const contactRecordKey = (address: string) =>
-    contactRecordItemKey(hashAddress(address))
+const contactRecordKey = (id: string) => contactRecordItemKey(hashAddress(id))
 const settingsKey = settingsItemKey(hashAddress(SETTINGS_ITEM_ID))
 
 /** Settings the server already holds, so they add no push of their own. */
@@ -512,7 +511,7 @@ describe('syncBackup', () => {
             {
                 ...deps(),
                 listContacts: () => [
-                    { addresses: { algorand: 'C1' }, name: 'Alice' },
+                    { id: 'C1', addresses: { algorand: 'C1' }, name: 'Alice' },
                 ],
             },
             createEmptySyncState('b'),
@@ -558,7 +557,7 @@ describe('syncBackup', () => {
             {
                 ...deps(),
                 listContacts: () => [
-                    { addresses: { algorand: 'C1' }, name: 'Alice' },
+                    { id: 'C1', addresses: { algorand: 'C1' }, name: 'Alice' },
                 ],
                 listPasskeys: async () => {
                     throw new Error('KMS session denied')
@@ -1063,7 +1062,7 @@ describe('syncBackup writing an account record', () => {
 describe('syncBackup writing a contact record', () => {
     const KEY = contactRecordKey('C1')
     const LEGACY_KEY = contactKey('C1')
-    const alice = { addresses: { algorand: 'C1' }, name: 'Alice' }
+    const alice = { id: 'C1', addresses: { algorand: 'C1' }, name: 'Alice' }
 
     // No local accounts, so only the contact items can move the sync.
     const contactDeps = (contacts: Contact[]) => ({
@@ -1114,6 +1113,7 @@ describe('syncBackup writing a contact record', () => {
 
     const remoteRecord = {
         formatVersion: 1,
+        id: 'C1',
         name: 'Old name',
         updatedAt: 1,
         addresses: [{ family: 'algorand', address: 'C1' }],
@@ -1187,6 +1187,7 @@ describe('syncBackup writing a contact record', () => {
         await syncBackup(
             contactDeps([
                 {
+                    id: 'C1',
                     addresses: { algorand: 'C1', evm: '0xC1' },
                     name: 'Old name',
                 },

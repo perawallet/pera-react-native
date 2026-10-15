@@ -19,13 +19,11 @@ import {
 } from '@react-navigation/native'
 import {
     contactFromFormValues,
-    DuplicateAddressError,
     useContacts,
-    type Contact,
     type ContactFormValues,
+    type NewContact,
 } from '@perawallet/wallet-core-contacts'
 
-import { useLanguage } from '@hooks/useLanguage'
 import { trackEvent, ContactsEvent } from '@analytics'
 import { useContactForm, type UseContactFormResult } from './useContactForm'
 
@@ -39,13 +37,12 @@ export type UseAddContactFormResult = UseContactFormResult & {
 export const useAddContactForm = (): UseAddContactFormResult => {
     const { addContact, setSelectedContact } = useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { t } = useLanguage()
     // Forwarded by ADD_CONTACT deeplinks and the AccountActions sheet so the
     // form opens with the address (and optional label → name) prefilled.
     const route = useRoute<RouteProp<ContactsStackParamsList, 'AddContact'>>()
     const prefillAddress = route.params?.address ?? ''
     const prefillName = route.params?.label ?? ''
-    const initialContact = useMemo<Contact | null>(() => {
+    const initialContact = useMemo<NewContact | null>(() => {
         if (!prefillAddress && !prefillName) return null
         return { addresses: { algorand: prefillAddress }, name: prefillName }
     }, [prefillAddress, prefillName])
@@ -55,25 +52,13 @@ export const useAddContactForm = (): UseAddContactFormResult => {
         (data: ContactFormValues) => {
             if (!form.isValid) return
 
-            try {
-                addContact(contactFromFormValues(data))
-                trackEvent(ContactsEvent.Add)
-            } catch (e) {
-                if (e instanceof DuplicateAddressError) {
-                    form.setError('address', {
-                        message: t(
-                            'contacts.add_contact.duplicate_address_error',
-                        ),
-                    })
-                    return
-                }
-                throw e
-            }
+            addContact(contactFromFormValues(data))
+            trackEvent(ContactsEvent.Add)
 
             setSelectedContact(null)
             navigation.goBack()
         },
-        [form, t, addContact, setSelectedContact, navigation],
+        [form, addContact, setSelectedContact, navigation],
     )
 
     return useMemo(() => ({ ...form, save }), [form, save])

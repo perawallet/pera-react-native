@@ -17,17 +17,13 @@ import { mockContacts } from '@perawallet/wallet-core-dev-fixtures'
 import type { ToolHandlers } from './index'
 
 export const useGalleryToolHandlers = (): ToolHandlers => {
-    const { addContact } = useContacts()
+    const { addContact, contacts } = useContacts()
 
     const onSeedContacts = useCallback(() => {
-        mockContacts.forEach(contact => {
-            try {
-                addContact(contact)
-            } catch {
-                // already seeded — ignore duplicate-address errors
-            }
-        })
-    }, [addContact])
+        mockContacts
+            .filter(mock => !contacts.some(c => c.id === mock.id))
+            .forEach(mock => addContact(mock))
+    }, [addContact, contacts])
 
     return useMemo(() => ({ onSeedContacts }), [onSeedContacts])
 }

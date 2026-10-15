@@ -16,7 +16,7 @@ import {
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { Contact } from '../models'
+import type { NewContact } from '../models'
 
 export const contactSchema = z.object({
     id: z.string().optional(),
@@ -49,7 +49,7 @@ export type ContactFormValues = z.infer<typeof contactSchema>
 export const contactToFormValues = ({
     addresses,
     ...rest
-}: Contact): ContactFormValues => ({
+}: NewContact): ContactFormValues => ({
     ...rest,
     address: addresses.algorand ?? '',
 })
@@ -58,8 +58,8 @@ export const contactToFormValues = ({
  *  addresses of families the form doesn't edit. */
 export const contactFromFormValues = (
     { address, ...rest }: ContactFormValues,
-    existing?: Nullable<Contact>,
-): Contact => ({
+    existing?: Nullable<NewContact>,
+): NewContact => ({
     ...rest,
     addresses: { ...existing?.addresses, algorand: address },
 })

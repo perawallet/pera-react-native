@@ -12,10 +12,6 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    type ContactFormValues,
-    DuplicateAddressError,
-} from '@perawallet/wallet-core-contacts'
 import { useAddContactForm } from '../useAddContactForm'
 
 const addContactMock = vi.fn()
@@ -129,51 +125,6 @@ describe('useAddContactForm', () => {
         expect(addContactMock).not.toHaveBeenCalled()
         expect(goBackMock).not.toHaveBeenCalled()
         expect(setErrorMock).not.toHaveBeenCalled()
-    })
-
-    it('surfaces a duplicate-address error when addContact throws DuplicateAddressError', () => {
-        addContactMock.mockImplementation(() => {
-            throw new DuplicateAddressError({
-                family: 'algorand',
-                address: 'ALICE123',
-            })
-        })
-        formState.isValid = true
-
-        const { result } = renderHook(() => useAddContactForm())
-        const newContact: ContactFormValues = {
-            name: 'Bob',
-            address: 'ALICE123',
-        }
-
-        act(() => {
-            result.current.save(newContact)
-        })
-
-        expect(goBackMock).not.toHaveBeenCalled()
-        expect(setErrorMock).toHaveBeenCalledWith(
-            'address',
-            expect.objectContaining({
-                message: 'contacts.add_contact.duplicate_address_error',
-            }),
-        )
-    })
-
-    it('rethrows non-DuplicateAddressError errors', () => {
-        addContactMock.mockImplementation(() => {
-            throw new Error('unexpected failure')
-        })
-        formState.isValid = true
-
-        const { result } = renderHook(() => useAddContactForm())
-        const newContact: ContactFormValues = { name: 'Bob', address: 'BOB999' }
-
-        expect(() => {
-            act(() => {
-                result.current.save(newContact)
-            })
-        }).toThrow('unexpected failure')
-        expect(goBackMock).not.toHaveBeenCalled()
     })
 
     it('saves the form address as the Algorand entry and navigates back', () => {

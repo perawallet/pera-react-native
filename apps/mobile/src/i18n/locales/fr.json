@@ -980,7 +980,7 @@
             "remove_cancel": "Le conserver"
         },
         "add_contact": {
-            "duplicate_address_error": "Un contact existe déjà pour cette adresse."
+            "duplicate_address_warning": "Un contact existe déjà pour cette adresse."
         },
         "view_contact": {
             "no_contact_title": "Aucun contact trouvé",

@@ -28,8 +28,16 @@ const OTHER_FAMILY = 'other' as ChainFamily
 describe('useContacts', () => {
     test('returns contacts and functions from store', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-31',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-32',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
         const mockAddContact = vi.fn()
         const mockEditContact = vi.fn()
@@ -53,8 +61,16 @@ describe('useContacts', () => {
 
     test('findContacts returns contacts matching address', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-56',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-57',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -72,8 +88,16 @@ describe('useContacts', () => {
 
     test('findContacts returns contacts matching name', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-75',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-76',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -92,11 +116,16 @@ describe('useContacts', () => {
     test('findContacts returns contacts matching NFD', () => {
         const mockContacts: Contact[] = [
             {
+                id: 'contact-94',
                 name: 'Alice',
                 addresses: { algorand: 'ALICE123' },
                 nfd: 'alice.algo',
             },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-99',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -114,8 +143,16 @@ describe('useContacts', () => {
 
     test('findContacts returns empty array when no match', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-117',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-118',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -133,8 +170,16 @@ describe('useContacts', () => {
 
     test('findContacts can disable address matching', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-136',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-137',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -155,8 +200,16 @@ describe('useContacts', () => {
 
     test('findContacts can disable name matching', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-158',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-159',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -179,11 +232,16 @@ describe('useContacts', () => {
     test('findContacts can disable NFD matching', () => {
         const mockContacts: Contact[] = [
             {
+                id: 'contact-181',
                 name: 'Alice',
                 addresses: { algorand: 'ALICE123' },
                 nfd: 'alice.algo',
             },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-186',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -204,8 +262,16 @@ describe('useContacts', () => {
 
     test('findContacts performs case-insensitive search', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-207',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-208',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -223,8 +289,16 @@ describe('useContacts', () => {
 
     test('findContacts searches partial matches', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-226',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-227',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -242,9 +316,21 @@ describe('useContacts', () => {
 
     test('findContacts returns all matches when multiple contacts match', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Alice Cooper', addresses: { algorand: 'COOPER456' } },
-            { name: 'Bob', addresses: { algorand: 'BOB456' } },
+            {
+                id: 'contact-245',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-246',
+                name: 'Alice Cooper',
+                addresses: { algorand: 'COOPER456' },
+            },
+            {
+                id: 'contact-247',
+                name: 'Bob',
+                addresses: { algorand: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -262,13 +348,22 @@ describe('useContacts', () => {
 
     test('findContacts returns multiple matches across different fields', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
             {
+                id: 'contact-265',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-266',
                 name: 'Bob',
                 addresses: { algorand: 'BOB456' },
                 nfd: 'alice.domain',
             },
-            { name: 'Charlie', addresses: { algorand: 'CHARLIE789' } },
+            {
+                id: 'contact-271',
+                name: 'Charlie',
+                addresses: { algorand: 'CHARLIE789' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({
@@ -286,8 +381,16 @@ describe('useContacts', () => {
 
     test('findContacts with a family returns only contacts holding an address in it', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Alicia', addresses: { [OTHER_FAMILY]: 'ALICIA456' } },
+            {
+                id: 'contact-289',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-290',
+                name: 'Alicia',
+                addresses: { [OTHER_FAMILY]: 'ALICIA456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({ contacts: mockContacts })
@@ -304,6 +407,7 @@ describe('useContacts', () => {
     test('findContacts with a family matches the address only within that family', () => {
         const mockContacts: Contact[] = [
             {
+                id: 'contact-306',
                 name: 'Alice',
                 addresses: {
                     algorand: 'ALICE123',
@@ -326,8 +430,16 @@ describe('useContacts', () => {
 
     test('findContacts without a family matches an address in any family', () => {
         const mockContacts: Contact[] = [
-            { name: 'Alice', addresses: { algorand: 'ALICE123' } },
-            { name: 'Bob', addresses: { [OTHER_FAMILY]: 'BOB456' } },
+            {
+                id: 'contact-329',
+                name: 'Alice',
+                addresses: { algorand: 'ALICE123' },
+            },
+            {
+                id: 'contact-330',
+                name: 'Bob',
+                addresses: { [OTHER_FAMILY]: 'BOB456' },
+            },
         ]
 
         mockUseAppStore.mockReturnValue({ contacts: mockContacts })
@@ -341,6 +453,7 @@ describe('useContacts', () => {
 
     test('returns selectedContact from store', () => {
         const mockContact: Contact = {
+            id: 'id-1',
             name: 'Alice',
             addresses: { algorand: 'ALICE123' },
         }

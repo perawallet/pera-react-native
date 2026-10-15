@@ -187,16 +187,17 @@ export type SyncImportFn = (
     onProgress?: ImportProgressFn,
 ) => Promise<ImportSummary>
 
-/** A contact import never reports duplicates: an address already held is
- *  updated in place, because last-write-wins settled the winner upstream. */
+/** A contact import never reports duplicates: a contact already held is
+ *  updated in place by id, because last-write-wins settled the winner
+ *  upstream. */
 export type ContactImportSummary = {
     imported: number
-    failed: { address: string; reason: string }[]
+    failed: { id: string; reason: string }[]
 }
 
 /** One contact as a restore or sync hands it to the importer: every family
  *  this build reads. */
-export type PulledContact = Pick<Contact, 'name' | 'addresses'>
+export type PulledContact = Pick<Contact, 'id' | 'name' | 'addresses'>
 
 export type ContactImportFn = (
     contacts: PulledContact[],

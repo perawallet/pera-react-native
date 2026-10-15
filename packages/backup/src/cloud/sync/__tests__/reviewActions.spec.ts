@@ -62,8 +62,8 @@ const secretsKey = (address: string): BackupItemKey =>
     secretsItemKey(hashAddress(address))
 const contactKey = (address: string): BackupItemKey =>
     contactItemKey(hashAddress(address))
-const contactRecordKey = (address: string): BackupItemKey =>
-    contactRecordItemKey(hashAddress(address))
+const contactRecordKey = (id: string): BackupItemKey =>
+    contactRecordItemKey(hashAddress(id))
 
 const tracked = (
     address: string,
@@ -599,7 +599,7 @@ describe('contact review actions', () => {
     it('markContactForBackup clears the hold on a legacy item the backup still has', () => {
         const next = markContactForBackup(
             contact({ pendingImport: true, pendingDelete: true }),
-            'A',
+            'algorand:A',
         )
 
         expect(next.items[contactKey('A')]).toMatchObject({
@@ -612,14 +612,14 @@ describe('contact review actions', () => {
         const state = contact({ status: BackupItemStatus.IGNORED })
 
         expect(
-            markContactForBackup(state, 'A').items[contactKey('A')],
+            markContactForBackup(state, 'algorand:A').items[contactKey('A')],
         ).toBeUndefined()
     })
 
     it('keepContactInBackup holds it for review with its name', () => {
         const next = keepContactInBackup(
             contact({ isDirty: true }),
-            'A',
+            'algorand:A',
             'Alice',
         )
 
@@ -634,7 +634,7 @@ describe('contact review actions', () => {
     it('keepContactInBackup leaves a contact the backup never held alone', () => {
         const state = contact({ status: BackupItemStatus.IGNORED })
 
-        expect(keepContactInBackup(state, 'A', 'Alice')).toEqual(state)
+        expect(keepContactInBackup(state, 'algorand:A', 'Alice')).toEqual(state)
     })
 
     it('importContactFromBackup re-reads the item and imports it', async () => {
@@ -642,12 +642,16 @@ describe('contact review actions', () => {
 
         const { state: next, summary } = await importContactFromBackup({
             state: contact({ pendingImport: true }),
-            address: 'A',
+            id: 'algorand:A',
             deps,
         })
 
         expect(deps.importContacts).toHaveBeenCalledWith([
-            { addresses: { algorand: 'A' }, name: 'Alice' },
+            {
+                id: 'algorand:A',
+                addresses: { algorand: 'A' },
+                name: 'Alice',
+            },
         ])
         expect(summary.imported).toBe(1)
         expect(next.items[contactKey('A')]).toMatchObject({
@@ -662,7 +666,7 @@ describe('contact review actions', () => {
 
         const { summary } = await importContactFromBackup({
             state: contact({ status: BackupItemStatus.IGNORED }),
-            address: 'A',
+            id: 'algorand:A',
             deps,
         })
 
@@ -676,7 +680,7 @@ describe('contact review actions', () => {
 
         const { state: next } = await deleteContactFromBackup({
             state: contact(),
-            address: 'A',
+            id: 'algorand:A',
             deps,
         })
 
@@ -698,7 +702,7 @@ describe('contact review actions', () => {
 
         await deleteContactFromBackup({
             state: contact({ status: BackupItemStatus.IGNORED }),
-            address: 'A',
+            id: 'algorand:A',
             deps,
         })
 
@@ -707,21 +711,22 @@ describe('contact review actions', () => {
 })
 
 describe('contact review actions on a record', () => {
-    const REC = contactRecordKey('A')
+    const REC = contactRecordKey('id-1')
     const record = {
         formatVersion: 1,
+        id: 'id-1',
         name: 'Alice',
         addresses: [
             { family: 'algorand', address: 'A' },
             { family: 'evm', address: '0xB' },
         ],
     }
-    // Reached through its EVM address, which the record caches.
     const held = (overrides: Partial<SyncItemState> = {}): SyncState => {
         const state = createEmptySyncState('b')
         state.items[REC] = tracked('A', {
             type: BackupItemType.CONTACT,
             addresses: ['A', '0xB'],
+            record,
             ...overrides,
         })
         return state
@@ -744,7 +749,7 @@ describe('contact review actions on a record', () => {
     it('mark clears the hold on a live record', () => {
         const next = markContactForBackup(
             held({ pendingImport: true, pendingDelete: true }),
-            '0xB',
+            'id-1',
         )
 
         expect(next.items[REC]).toMatchObject({
@@ -758,7 +763,7 @@ describe('contact review actions on a record', () => {
             status: BackupItemStatus.IGNORED,
         })
 
-        const next = markContactForBackup(state, '0xB')
+        const next = markContactForBackup(state, 'id-1')
 
         expect(next.items[REC]).toBeUndefined()
         expect(next.items[contactKey('A')]).toBeUndefined()
@@ -768,7 +773,7 @@ describe('contact review actions on a record', () => {
     it('keep holds the record and every live legacy item, naming each', () => {
         const state = withLegacy(held({ isDirty: true }))
 
-        const next = keepContactInBackup(state, '0xB', 'Alice')
+        const next = keepContactInBackup(state, 'id-1', 'Alice')
 
         for (const key of [REC, contactKey('A'), contactKey('0xB')]) {
             expect(next.items[key]).toMatchObject({
@@ -784,7 +789,7 @@ describe('contact review actions on a record', () => {
 
         const { state: next, keys } = await deleteContactFromBackup({
             state: withLegacy(held()),
-            address: '0xB',
+            id: 'id-1',
             deps,
         })
 
@@ -797,22 +802,22 @@ describe('contact review actions on a record', () => {
         })
     })
 
-    it('delete also removes an older record that shares an address, which a restore would merge back in', async () => {
+    it("delete leaves another contact's record that shares an address alone", async () => {
         const deps = baseDeps()
         const state = held()
-        // The record left behind when the contact's algorand address moved from A2 to A.
-        state.items[contactRecordKey('A2')] = tracked('A2', {
+        state.items[contactRecordKey('id-2')] = tracked('A', {
             type: BackupItemType.CONTACT,
-            addresses: ['A2', '0xB'],
+            addresses: ['A'],
+            record: { ...record, id: 'id-2' },
         })
 
         const { keys } = await deleteContactFromBackup({
             state,
-            address: 'A',
+            id: 'id-1',
             deps,
         })
 
-        expect(keys.sort()).toEqual([REC, contactRecordKey('A2')].sort())
+        expect(keys).toEqual([REC])
     })
 
     it('import reads only the record when one is live, and clears every live key', async () => {
@@ -827,7 +832,7 @@ describe('contact review actions on a record', () => {
             state: withLegacy(held({ pendingImport: true }), {
                 pendingImport: true,
             }),
-            address: '0xB',
+            id: 'id-1',
             deps,
         })
 
@@ -838,7 +843,11 @@ describe('contact review actions on a record', () => {
             [REC],
         )
         expect(deps.importContacts).toHaveBeenCalledWith([
-            { name: 'Alice', addresses: { algorand: 'A', evm: '0xB' } },
+            {
+                id: 'id-1',
+                name: 'Alice',
+                addresses: { algorand: 'A', evm: '0xB' },
+            },
         ])
         expect(summary.imported).toBe(1)
         for (const key of [REC, contactKey('A')]) {
@@ -859,13 +868,13 @@ describe('contact review actions on a record', () => {
 
         const { state: next, summary } = await importContactFromBackup({
             state,
-            address: 'A',
+            id: 'id-1',
             deps,
         })
 
         expect(deps.importContacts).not.toHaveBeenCalled()
         expect(summary.failed).toEqual([
-            { address: 'A', reason: 'Needs a newer version of Pera' },
+            { id: 'id-1', reason: 'Needs a newer version of Pera' },
         ])
         expect(next).toBe(state)
     })
@@ -882,7 +891,7 @@ describe('contact review actions on a record', () => {
 
         const { summary } = await importContactFromBackup({
             state: held({ pendingImport: true }),
-            address: 'A',
+            id: 'id-1',
             deps,
         })
 

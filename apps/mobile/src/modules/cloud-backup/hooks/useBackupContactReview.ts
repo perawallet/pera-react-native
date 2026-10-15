@@ -16,7 +16,7 @@ import {
     type Contact,
 } from '@perawallet/wallet-core-contacts'
 import {
-    contactBackupAddresses,
+    contactAddressEntries,
     deriveBackupContactReview,
     backupBusyItemKey,
     useBackupReviewActionMutation,
@@ -30,8 +30,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 
-/** `backupAddress` is the contact's first address, which names its record. */
-export type BackupContact = Contact & { backupAddress: string }
+/** `address` is the one the row shows: the first in `CHAIN_FAMILIES` order. */
+export type BackupContact = Contact & { address: string }
 
 export type UseBackupContactReviewResult = {
     contacts: BackupContact[]
@@ -39,13 +39,13 @@ export type UseBackupContactReviewResult = {
     notBackedUpContacts: BackupContact[]
     /** Contacts the backup holds that this device deleted, with their names. */
     availableFromBackup: BackupContactReview['availableFromBackup']
-    isBackedUp: (address: string) => boolean
+    isBackedUp: (id: string) => boolean
     /** True while a review action on this row is queued or running, even
      *  one started before the screen was last opened. */
-    isBusy: (address: string) => boolean
-    backUpContact: (address: string) => void
-    addFromBackup: (address: string) => void
-    deleteFromBackup: (address: string) => void
+    isBusy: (id: string) => boolean
+    backUpContact: (id: string) => void
+    addFromBackup: (id: string) => void
+    deleteFromBackup: (id: string) => void
 }
 
 const TOAST_KEY: Record<
@@ -75,10 +75,8 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     const contacts = useMemo(
         () =>
             storedContacts.flatMap(contact => {
-                const [backupAddress] = contactBackupAddresses(contact)
-                return backupAddress === undefined
-                    ? []
-                    : [{ ...contact, backupAddress }]
+                const [first] = contactAddressEntries(contact.addresses)
+                return first ? [{ ...contact, address: first.address }] : []
             }),
         [storedContacts],
     )
@@ -88,7 +86,7 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
         () =>
             deriveBackupContactReview(
                 syncState,
-                storedContacts.map(contactBackupAddresses),
+                storedContacts.map(contact => contact.id),
             ),
         [syncState, storedContacts],
     )
@@ -112,7 +110,7 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
         onError: (error, { action, id }) => {
             logger.warn('useBackupContactReview: review action failed', {
                 action,
-                address: id,
+                id,
                 error: error instanceof Error ? error.message : String(error),
             })
             if (error instanceof NoConnectionError) {
@@ -127,7 +125,7 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
         },
     })
 
-    const notBackedUpAddresses = useMemo(
+    const notBackedUpIds = useMemo(
         () => new Set(review.notBackedUp),
         [review.notBackedUp],
     )
@@ -135,34 +133,33 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
     return {
         contacts,
         backedUpContacts: useMemo(
-            () => contacts.filter(c => review.backedUp.has(c.backupAddress)),
+            () => contacts.filter(c => review.backedUp.has(c.id)),
             [contacts, review.backedUp],
         ),
         notBackedUpContacts: useMemo(
-            () =>
-                contacts.filter(c => notBackedUpAddresses.has(c.backupAddress)),
-            [contacts, notBackedUpAddresses],
+            () => contacts.filter(c => notBackedUpIds.has(c.id)),
+            [contacts, notBackedUpIds],
         ),
         availableFromBackup: review.availableFromBackup,
         isBackedUp: useCallback(
-            (address: string) => review.backedUp.has(address),
+            (id: string) => review.backedUp.has(id),
             [review.backedUp],
         ),
         isBusy: useCallback(
-            (address: string) =>
-                busyItems.includes(backupBusyItemKey('contact', address)),
+            (id: string) =>
+                busyItems.includes(backupBusyItemKey('contact', id)),
             [busyItems],
         ),
         backUpContact: useCallback(
-            (address: string) => mutate({ action: 'backUp', id: address }),
+            (id: string) => mutate({ action: 'backUp', id }),
             [mutate],
         ),
         addFromBackup: useCallback(
-            (address: string) => mutate({ action: 'add', id: address }),
+            (id: string) => mutate({ action: 'add', id }),
             [mutate],
         ),
         deleteFromBackup: useCallback(
-            (address: string) => mutate({ action: 'delete', id: address }),
+            (id: string) => mutate({ action: 'delete', id }),
             [mutate],
         ),
     }

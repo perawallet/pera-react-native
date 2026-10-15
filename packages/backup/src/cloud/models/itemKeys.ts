@@ -61,7 +61,8 @@ export const isContactItemKey = (key: BackupItemKey): boolean =>
  *  records have one, and still BackupItemType.CONTACT on the wire. */
 export const BACKUP_CONTACT_RECORDS_KEY_PREFIX = 'contact-records/'
 
-/** Hashes the contact's first address in `CHAIN_FAMILIES` order. */
+/** Hashes the contact's `id`, not an address, so the key holds still as
+ *  addresses come and go. */
 export const contactRecordItemKey = (hash: ItemKeyHash): BackupItemKey =>
     `${BACKUP_CONTACT_RECORDS_KEY_PREFIX}${hash}`
 

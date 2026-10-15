@@ -18,7 +18,6 @@ import {
     useBackupSyncStateStore,
     accountBackupAddresses,
     countNewerAccountRecords,
-    contactBackupAddresses,
     deriveBackupAccountReview,
     deriveBackupContactReview,
     deriveBackupPasskeyReview,
@@ -101,7 +100,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         () =>
             deriveBackupContactReview(
                 syncState,
-                contacts.map(contactBackupAddresses),
+                contacts.map(contact => contact.id),
             ),
         [syncState, contacts],
     )

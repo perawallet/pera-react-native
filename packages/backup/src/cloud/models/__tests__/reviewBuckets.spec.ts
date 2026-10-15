@@ -56,8 +56,7 @@ const recordKey = (identity: string) =>
     accountRecordItemKey(hashAddress(identity))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
-const contactRecordKey = (address: string) =>
-    contactRecordItemKey(hashAddress(address))
+const contactRecordKey = (id: string) => contactRecordItemKey(hashAddress(id))
 const passkeyKey = (credentialId: string) =>
     passkeyItemKey(hashAddress(credentialId))
 
@@ -355,36 +354,63 @@ describe('isAddressBackedUp', () => {
     })
 })
 
-describe('isContactBackedUp', () => {
-    const contact = (
-        address: string,
-        overrides: Partial<SyncItemState> = {},
-    ): SyncItemState =>
-        tracked(address, { type: BackupItemType.CONTACT, ...overrides })
+const legacyContact = (
+    address: string,
+    overrides: Partial<SyncItemState> = {},
+): SyncItemState =>
+    tracked(address, { type: BackupItemType.CONTACT, ...overrides })
 
+const contactRecord = (
+    id: string,
+    addresses: string[],
+    overrides: Partial<SyncItemState> = {},
+): SyncItemState =>
+    legacyContact(addresses[0] as string, {
+        addresses,
+        record: { id },
+        ...overrides,
+    })
+
+describe('isContactBackedUp', () => {
     it('agrees with the backedUp bucket for a contact the backup holds', () => {
         const state = createEmptySyncState('b')
-        state.items[contactKey('A')] = contact('A')
+        state.items[contactRecordKey('id-1')] = contactRecord('id-1', ['A'])
 
-        expect(isContactBackedUp(state, 'A')).toBe(true)
-        expect(isContactBackedUp(state, 'B')).toBe(false)
-        expect(isContactBackedUp(null, 'A')).toBe(false)
+        expect(isContactBackedUp(state, 'id-1')).toBe(true)
+        expect(isContactBackedUp(state, 'id-2')).toBe(false)
+        expect(isContactBackedUp(null, 'id-1')).toBe(false)
+    })
+
+    it('reads a legacy item by the id derived from its address', () => {
+        const state = createEmptySyncState('b')
+        state.items[contactKey('A')] = legacyContact('A')
+
+        expect(isContactBackedUp(state, 'algorand:A')).toBe(true)
+    })
+
+    it('does not count another contact that shares an address', () => {
+        const state = createEmptySyncState('b')
+        state.items[contactRecordKey('id-1')] = contactRecord('id-1', ['A'])
+
+        expect(isContactBackedUp(state, 'id-2')).toBe(false)
     })
 
     it('reads the contact key rather than the account one', () => {
         const state = createEmptySyncState('b')
         state.items[accountKey('A')] = tracked('A')
 
-        expect(isContactBackedUp(state, 'A')).toBe(false)
+        expect(isContactBackedUp(state, 'algorand:A')).toBe(false)
         expect(isAddressBackedUp(state, 'A')).toBe(true)
     })
 
     it('agrees with the backedUp bucket for a contact awaiting review', () => {
         const state = createEmptySyncState('b')
-        state.items[contactKey('A')] = contact('A', { pendingImport: true })
+        state.items[contactRecordKey('id-1')] = contactRecord('id-1', ['A'], {
+            pendingImport: true,
+        })
 
-        expect(isContactBackedUp(state, 'A')).toBe(false)
-        expect(deriveBackupContactReview(state, [['A']]).backedUp.size).toBe(0)
+        expect(isContactBackedUp(state, 'id-1')).toBe(false)
+        expect(deriveBackupContactReview(state, ['id-1']).backedUp.size).toBe(0)
     })
 })
 
@@ -541,12 +567,6 @@ describe('deriveBackupAccountReview over a real reconciled snapshot', () => {
 })
 
 describe('deriveBackupContactReview', () => {
-    const contact = (
-        address: string,
-        overrides: Partial<SyncItemState> = {},
-    ): SyncItemState =>
-        tracked(address, { type: BackupItemType.CONTACT, ...overrides })
-
     const stateWith = (items: Record<string, SyncItemState>): SyncState => ({
         ...createEmptySyncState('did:pera:x'),
         items,
@@ -555,90 +575,122 @@ describe('deriveBackupContactReview', () => {
     it('splits local contacts into backed up and not backed up', () => {
         const review = deriveBackupContactReview(
             stateWith({
-                [contactKey('A')]: contact('A'),
-                [accountKey('A')]: tracked('A'),
+                [contactRecordKey('id-1')]: contactRecord('id-1', ['A']),
+                [accountKey('B')]: tracked('B'),
             }),
-            [['A'], ['B']],
+            ['id-1', 'id-2'],
         )
 
-        expect([...review.backedUp]).toEqual(['A'])
-        expect(review.notBackedUp).toEqual(['B'])
+        expect([...review.backedUp]).toEqual(['id-1'])
+        expect(review.notBackedUp).toEqual(['id-2'])
+    })
+
+    it('keeps two contacts sharing an address apart', () => {
+        const review = deriveBackupContactReview(
+            stateWith({
+                [contactRecordKey('id-1')]: contactRecord('id-1', ['A']),
+            }),
+            ['id-1', 'id-2'],
+        )
+
+        expect([...review.backedUp]).toEqual(['id-1'])
+        expect(review.notBackedUp).toEqual(['id-2'])
     })
 
     it('offers a held contact from the backup, named from the cached label', () => {
         const review = deriveBackupContactReview(
             stateWith({
-                [contactKey('A')]: contact('A', {
-                    pendingImport: true,
-                    label: 'Alice',
-                }),
+                [contactRecordKey('id-1')]: contactRecord(
+                    'id-1',
+                    ['A', '0xB'],
+                    {
+                        pendingImport: true,
+                        label: 'Alice',
+                    },
+                ),
             }),
             [],
         )
 
         expect(review.availableFromBackup).toEqual([
-            { address: 'A', name: 'Alice' },
+            { id: 'id-1', address: 'A', name: 'Alice' },
         ])
     })
 
     it('falls back to an empty name when nothing cached one', () => {
         const review = deriveBackupContactReview(
             stateWith({
-                [contactKey('A')]: contact('A', { pendingImport: true }),
+                [contactRecordKey('id-1')]: contactRecord('id-1', ['A'], {
+                    pendingImport: true,
+                }),
             }),
             [],
         )
 
-        expect(review.availableFromBackup).toEqual([{ address: 'A', name: '' }])
+        expect(review.availableFromBackup).toEqual([
+            { id: 'id-1', address: 'A', name: '' },
+        ])
     })
 
     it('drops a held contact the device holds again', () => {
         const review = deriveBackupContactReview(
             stateWith({
-                [contactKey('A')]: contact('A', {
+                [contactRecordKey('id-1')]: contactRecord('id-1', ['A'], {
                     pendingImport: true,
-                    label: 'Alice',
                 }),
             }),
-            [['A']],
+            ['id-1'],
         )
 
         expect(review.availableFromBackup).toEqual([])
-        expect(review.notBackedUp).toEqual(['A'])
+        expect(review.notBackedUp).toEqual(['id-1'])
     })
 
-    describe('with contact records', () => {
-        const record = (
-            addresses: string[],
-            overrides: Partial<SyncItemState> = {},
-        ): SyncItemState =>
-            contact(addresses[0] as string, { addresses, ...overrides })
+    it('offers a held contact though the device holds another at its address', () => {
+        const review = deriveBackupContactReview(
+            stateWith({
+                [contactRecordKey('id-1')]: contactRecord('id-1', ['A'], {
+                    pendingImport: true,
+                }),
+            }),
+            ['id-2'],
+        )
 
-        it('backs up an EVM-only contact through its record', () => {
+        expect(review.availableFromBackup.map(row => row.id)).toEqual(['id-1'])
+    })
+
+    it('omits a record this device has never decrypted', () => {
+        const review = deriveBackupContactReview(
+            stateWith({
+                [contactRecordKey('id-1')]: legacyContact('A', {
+                    pendingImport: true,
+                }),
+            }),
+            [],
+        )
+
+        expect(review.availableFromBackup).toEqual([])
+    })
+
+    describe('with legacy items', () => {
+        it('backs up a migrated contact through its legacy item', () => {
             const review = deriveBackupContactReview(
-                stateWith({ [contactRecordKey('0xB')]: record(['0xB']) }),
-                [['0xB']],
+                stateWith({ [contactKey('A')]: legacyContact('A') }),
+                ['algorand:A'],
             )
 
-            expect([...review.backedUp]).toEqual(['0xB'])
-            expect(review.notBackedUp).toEqual([])
+            expect([...review.backedUp]).toEqual(['algorand:A'])
         })
 
-        it('finds a contact through any family its record holds', () => {
-            const state = stateWith({
-                [contactRecordKey('A')]: record(['A', '0xB']),
-            })
-
-            expect(isContactBackedUp(state, '0xB')).toBe(true)
-            expect([
-                ...deriveBackupContactReview(state, [['A', '0xB']]).backedUp,
-            ]).toEqual(['A'])
-        })
-
-        it('names a held record from its cached label', () => {
+        it('shows no second row for a held legacy item a live record covers by address', () => {
             const review = deriveBackupContactReview(
                 stateWith({
-                    [contactRecordKey('A')]: record(['A', '0xB'], {
+                    [contactRecordKey('id-1')]: contactRecord(
+                        'id-1',
+                        ['A', '0xB'],
+                        { pendingImport: true, label: 'Alice' },
+                    ),
+                    [contactKey('A')]: legacyContact('A', {
                         pendingImport: true,
                         label: 'Alice',
                     }),
@@ -646,39 +698,41 @@ describe('deriveBackupContactReview', () => {
                 [],
             )
 
-            expect(review.availableFromBackup).toEqual([
-                { address: 'A', name: 'Alice' },
+            expect(review.availableFromBackup.map(row => row.id)).toEqual([
+                'id-1',
             ])
         })
 
-        it('shows no second row for a held legacy item a live record covers', () => {
+        it('shows no second row for a held legacy item a live record covers by id', () => {
             const review = deriveBackupContactReview(
                 stateWith({
-                    [contactRecordKey('A')]: record(['A', '0xB'], {
+                    [contactRecordKey('algorand:A')]: contactRecord(
+                        'algorand:A',
+                        ['A2'],
+                        { pendingImport: true },
+                    ),
+                    [contactKey('A')]: legacyContact('A', {
                         pendingImport: true,
-                        label: 'Alice',
-                    }),
-                    [contactKey('A')]: contact('A', {
-                        pendingImport: true,
-                        label: 'Alice',
                     }),
                 }),
                 [],
             )
 
-            expect(review.availableFromBackup).toHaveLength(1)
+            expect(review.availableFromBackup.map(row => row.id)).toEqual([
+                'algorand:A',
+            ])
         })
 
-        it('counts a legacy item the record does not cover as its own contact', () => {
+        it('counts a legacy item no record covers as its own contact', () => {
             const review = deriveBackupContactReview(
                 stateWith({
-                    [contactRecordKey('A')]: record(['A']),
-                    [contactKey('C')]: contact('C'),
+                    [contactRecordKey('id-1')]: contactRecord('id-1', ['A']),
+                    [contactKey('C')]: legacyContact('C'),
                 }),
-                [['A'], ['C']],
+                ['id-1', 'algorand:C'],
             )
 
-            expect([...review.backedUp]).toEqual(['A', 'C'])
+            expect([...review.backedUp]).toEqual(['id-1', 'algorand:C'])
         })
     })
 })

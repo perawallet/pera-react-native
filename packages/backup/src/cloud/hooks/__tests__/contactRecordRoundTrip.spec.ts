@@ -27,12 +27,17 @@ import { useCloudBackupContactImport } from '../useCloudBackupContactImport'
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const both: Contact = {
+    id: 'id-alice',
     name: 'Alice',
     addresses: { algorand: 'ALGO', evm: '0xAlice' },
     image: 'file:///tmp/a.png',
     nfd: 'alice.algo',
 }
-const evmOnly: Contact = { name: 'Bob', addresses: { evm: '0xBob' } }
+const evmOnly: Contact = {
+    id: 'id-bob',
+    name: 'Bob',
+    addresses: { evm: '0xBob' },
+}
 
 /** What sync would push and a restore would pull back. */
 const throughTheWire = (contacts: Contact[]) => {
@@ -56,22 +61,27 @@ describe('a contact through backup and restore', () => {
 
         expect(summary).toEqual({ imported: 2, failed: [] })
         expect(useContactsStore.getState().contacts).toEqual([
-            { name: 'Alice', addresses: { algorand: 'ALGO', evm: '0xAlice' } },
-            { name: 'Bob', addresses: { evm: '0xBob' } },
+            {
+                id: 'id-alice',
+                name: 'Alice',
+                addresses: { algorand: 'ALGO', evm: '0xAlice' },
+            },
+            { id: 'id-bob', name: 'Bob', addresses: { evm: '0xBob' } },
         ])
     })
 
-    test('files each contact under the hash of its first address', () => {
+    test('files each contact under the hash of its id', () => {
         const { items } = throughTheWire([both, evmOnly])
 
         expect(items.map(item => item.key)).toEqual([
-            contactRecordItemKey(hashAddress('ALGO')),
-            contactRecordItemKey(hashAddress('0xBob')),
+            contactRecordItemKey(hashAddress('id-alice')),
+            contactRecordItemKey(hashAddress('id-bob')),
         ])
     })
 
     test('restores onto a device that already holds part of the contact, keeping what is local', async () => {
         useContactsStore.getState().addContact({
+            id: 'id-alice',
             name: 'Alice',
             addresses: { algorand: 'ALGO' },
             image: 'file:///tmp/a.png',
@@ -83,6 +93,7 @@ describe('a contact through backup and restore', () => {
 
         expect(useContactsStore.getState().contacts).toEqual([
             {
+                id: 'id-alice',
                 name: 'Alice',
                 addresses: { algorand: 'ALGO', evm: '0xAlice' },
                 image: 'file:///tmp/a.png',

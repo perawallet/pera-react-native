@@ -16,41 +16,26 @@ import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useCloudBackupContactImport } from '../useCloudBackupContactImport'
 
 type Contact = {
+    id: string
     addresses: Record<string, string>
     name: string
     image?: string
 }
-type ContactRef = { family: string; address: string }
 
 // A working store rather than the setup file's inert stub: this hook's whole
-// job is matching an incoming contact to a stored one and merging families,
-// which a stub cannot exercise.
+// job is matching an incoming contact to a stored one by id and merging
+// families, which a stub cannot exercise.
 vi.mock('@perawallet/wallet-core-contacts', () => {
-    class DuplicateAddressError extends Error {}
-
-    const holds = (contact: Contact, { family, address }: ContactRef) =>
-        contact.addresses[family] === address
-
-    const clashes = (contact: Contact, except?: Contact) =>
-        state.contacts.some(
-            c =>
-                c !== except &&
-                Object.entries(contact.addresses).some(([family, address]) =>
-                    holds(c, { family, address }),
-                ),
-        )
-
     const state = {
         contacts: [] as Contact[],
         addContact: (contact: Contact) => {
-            if (clashes(contact)) throw new DuplicateAddressError()
             state.contacts = [...state.contacts, contact]
         },
-        editContact: (previous: ContactRef, contact: Contact) => {
-            const target = state.contacts.find(c => holds(c, previous))
-            if (clashes(contact, target)) throw new DuplicateAddressError()
+        editContact: (id: string, contact: Omit<Contact, 'id'>) => {
+            if (!state.contacts.some(c => c.id === id))
+                throw new Error('not found')
             state.contacts = state.contacts.map(c =>
-                c === target ? contact : c,
+                c.id === id ? { ...contact, id } : c,
             )
         },
         resetState: () => {
@@ -59,7 +44,6 @@ vi.mock('@perawallet/wallet-core-contacts', () => {
     }
 
     return {
-        DuplicateAddressError,
         useContactsStore: Object.assign(vi.fn(), { getState: () => state }),
     }
 })
@@ -75,29 +59,26 @@ describe('useCloudBackupContactImport', () => {
         const { result } = renderImport()
 
         const summary = await result.current.importContacts([
-            { addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' },
+            {
+                id: 'id-1',
+                addresses: { algorand: 'A', evm: '0xB' },
+                name: 'Alice',
+            },
         ])
 
         expect(summary).toEqual({ imported: 1, failed: [] })
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' },
+            {
+                id: 'id-1',
+                addresses: { algorand: 'A', evm: '0xB' },
+                name: 'Alice',
+            },
         ])
     })
 
-    test('inserts a contact holding only an EVM address', async () => {
-        const { result } = renderImport()
-
-        await result.current.importContacts([
-            { addresses: { evm: '0xB' }, name: 'Bob' },
-        ])
-
-        expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { evm: '0xB' }, name: 'Bob' },
-        ])
-    })
-
-    test('renames an existing contact without dropping its local fields or families', async () => {
+    test('renames the contact with its id without dropping its local fields or families', async () => {
         useContactsStore.getState().addContact({
+            id: 'id-1',
             addresses: { algorand: 'A', evm: 'X' },
             name: 'Alice',
             image: 'file:///tmp/a.png',
@@ -106,11 +87,12 @@ describe('useCloudBackupContactImport', () => {
         const { result } = renderImport()
 
         await result.current.importContacts([
-            { addresses: { algorand: 'A' }, name: 'Alicia' },
+            { id: 'id-1', addresses: { algorand: 'A' }, name: 'Alicia' },
         ])
 
         expect(useContactsStore.getState().contacts).toEqual([
             {
+                id: 'id-1',
                 addresses: { algorand: 'A', evm: 'X' },
                 name: 'Alicia',
                 image: 'file:///tmp/a.png',
@@ -119,59 +101,121 @@ describe('useCloudBackupContactImport', () => {
         ])
     })
 
-    test('adds the families a record brings to a contact it matches through any one of them', async () => {
+    test('adds the families a record brings to the contact with its id', async () => {
         useContactsStore.getState().addContact({
+            id: 'id-1',
             addresses: { evm: '0xB' },
             name: 'Bob',
-            image: 'file:///tmp/b.png',
+        } as never)
+        const { result } = renderImport()
+
+        await result.current.importContacts([
+            {
+                id: 'id-1',
+                addresses: { algorand: 'A', evm: '0xB' },
+                name: 'Bob',
+            },
+        ])
+
+        expect(useContactsStore.getState().contacts).toEqual([
+            {
+                id: 'id-1',
+                addresses: { algorand: 'A', evm: '0xB' },
+                name: 'Bob',
+            },
+        ])
+    })
+
+    test('imports a record sharing addresses with two other contacts as its own contact', async () => {
+        const store = useContactsStore.getState()
+        store.addContact({
+            id: 'x',
+            addresses: { algorand: 'A' },
+            name: 'Alice',
+        } as never)
+        store.addContact({
+            id: 'y',
+            addresses: { evm: '0xE' },
+            name: 'Alice ETH',
         } as never)
         const { result } = renderImport()
 
         const summary = await result.current.importContacts([
-            { addresses: { algorand: 'A', evm: '0xB' }, name: 'Bob' },
+            {
+                id: 'z',
+                addresses: { algorand: 'A', evm: '0xE' },
+                name: 'Alice',
+            },
+        ])
+
+        expect(summary).toEqual({ imported: 1, failed: [] })
+        expect(
+            useContactsStore.getState().contacts.map(contact => contact.id),
+        ).toEqual(['x', 'y', 'z'])
+    })
+
+    test('updates only the contact with its id when another holds the same address', async () => {
+        const store = useContactsStore.getState()
+        store.addContact({
+            id: 'x',
+            addresses: { algorand: 'A' },
+            name: 'Alice',
+        } as never)
+        store.addContact({
+            id: 'y',
+            addresses: { evm: '0xE' },
+            name: 'Alice ETH',
+        } as never)
+        const { result } = renderImport()
+
+        const summary = await result.current.importContacts([
+            {
+                id: 'x',
+                addresses: { algorand: 'A', evm: '0xE' },
+                name: 'Alice',
+            },
         ])
 
         expect(summary).toEqual({ imported: 1, failed: [] })
         expect(useContactsStore.getState().contacts).toEqual([
             {
-                addresses: { algorand: 'A', evm: '0xB' },
-                name: 'Bob',
-                image: 'file:///tmp/b.png',
+                id: 'x',
+                addresses: { algorand: 'A', evm: '0xE' },
+                name: 'Alice',
             },
+            { id: 'y', addresses: { evm: '0xE' }, name: 'Alice ETH' },
         ])
     })
 
-    test('applies the last record when one batch names an address twice', async () => {
+    test('applies the last record when one batch names an id twice', async () => {
         const { result } = renderImport()
 
         const summary = await result.current.importContacts([
-            { addresses: { algorand: 'A' }, name: 'Alice' },
-            { addresses: { algorand: 'A' }, name: 'Alicia' },
+            { id: 'id-1', addresses: { algorand: 'A' }, name: 'Alice' },
+            { id: 'id-1', addresses: { algorand: 'A' }, name: 'Alicia' },
         ])
 
         expect(summary.imported).toBe(2)
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { algorand: 'A' }, name: 'Alicia' },
+            { id: 'id-1', addresses: { algorand: 'A' }, name: 'Alicia' },
         ])
     })
 
-    test('reports a merge that collides with a second contact as failed, without throwing', async () => {
-        const store = useContactsStore.getState()
-        store.addContact({
-            addresses: { algorand: 'A' },
-            name: 'Alice',
-        } as never)
-        store.addContact({ addresses: { evm: '0xB' }, name: 'Bob' } as never)
+    test('reports a store failure by id, without throwing', async () => {
+        vi.spyOn(useContactsStore.getState(), 'addContact').mockImplementation(
+            () => {
+                throw new Error('boom')
+            },
+        )
         const { result } = renderImport()
 
         const summary = await result.current.importContacts([
-            { addresses: { algorand: 'A', evm: '0xB' }, name: 'Both' },
+            { id: 'id-1', addresses: { algorand: 'A' }, name: 'Alice' },
         ])
 
-        expect(summary.imported).toBe(0)
-        expect(summary.failed).toEqual([
-            { address: 'A', reason: expect.any(String) },
-        ])
-        expect(useContactsStore.getState().contacts).toHaveLength(2)
+        expect(summary).toEqual({
+            imported: 0,
+            failed: [{ id: 'id-1', reason: 'boom' }],
+        })
     })
 })

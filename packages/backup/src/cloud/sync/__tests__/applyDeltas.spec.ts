@@ -514,7 +514,11 @@ describe('applyDeltas: contacts', () => {
         })
 
         expect(deps.importContacts).toHaveBeenCalledWith([
-            { addresses: { algorand: 'C1' }, name: 'Alice' },
+            {
+                id: 'algorand:C1',
+                addresses: { algorand: 'C1' },
+                name: 'Alice',
+            },
         ])
         expect(next.items['contacts/C1']).toMatchObject({
             label: 'Alice',
@@ -584,7 +588,11 @@ describe('applyDeltas: contacts', () => {
         await applyDeltas({ state, deltas: [contactDelta()], deps })
 
         expect(deps.importContacts).toHaveBeenCalledWith([
-            { addresses: { algorand: 'C1' }, name: 'Remote' },
+            {
+                id: 'algorand:C1',
+                addresses: { algorand: 'C1' },
+                name: 'Remote',
+            },
         ])
     })
 
@@ -592,6 +600,7 @@ describe('applyDeltas: contacts', () => {
         const KEY = 'contact-records/R1'
         const record = (over: Record<string, unknown> = {}) => ({
             formatVersion: 1,
+            id: 'id-1',
             name: 'Alice',
             updatedAt: 1000,
             addresses: [
@@ -620,6 +629,7 @@ describe('applyDeltas: contacts', () => {
 
             expect(deps.importContacts).toHaveBeenCalledWith([
                 {
+                    id: 'id-1',
                     name: 'Alice',
                     addresses: { algorand: 'C1', evm: '0xC1' },
                 },
@@ -659,6 +669,7 @@ describe('applyDeltas: contacts', () => {
 
             expect(deps.importContacts).toHaveBeenCalledWith([
                 {
+                    id: 'id-1',
                     name: 'Alice',
                     addresses: { algorand: 'C1', evm: '0xC1' },
                 },

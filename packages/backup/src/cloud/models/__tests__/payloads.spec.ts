@@ -101,6 +101,7 @@ describe('accountIdentityOf', () => {
 describe('contactRecordPayloadSchema', () => {
     const record = {
         formatVersion: 1,
+        id: 'id-1',
         name: 'Alice',
         updatedAt: 1,
         addresses: [{ family: 'algorand', address: 'A' }],
@@ -124,6 +125,14 @@ describe('contactRecordPayloadSchema', () => {
             contactRecordPayloadSchema.safeParse({ ...record, addresses: [] })
                 .success,
         ).toBe(false)
+    })
+
+    test('rejects a record without an id', () => {
+        const { id: _id, ...withoutId } = record
+
+        expect(contactRecordPayloadSchema.safeParse(withoutId).success).toBe(
+            false,
+        )
     })
 
     test('rejects an entry with an empty address', () => {

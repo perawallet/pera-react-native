@@ -19,7 +19,7 @@ import type { BackupContact } from '../../hooks/useBackupContactReview'
 type NotBackedUpContactRowProps = {
     contact: BackupContact
     isBusy: boolean
-    onBackUp: (address: string) => void
+    onBackUp: (id: string) => void
 }
 
 const NotBackedUpContactRowComponent = ({
@@ -30,13 +30,13 @@ const NotBackedUpContactRowComponent = ({
     const { t } = useLanguage()
 
     const handleBackUp = useCallback(
-        () => onBackUp(contact.backupAddress),
-        [onBackUp, contact.backupAddress],
+        () => onBackUp(contact.id),
+        [onBackUp, contact.id],
     )
 
     return (
         <BackupContactRow
-            address={contact.backupAddress}
+            address={contact.address}
             name={contact.name}
             contact={contact}
             isBackedUp={false}
@@ -50,7 +50,7 @@ const NotBackedUpContactRowComponent = ({
                     testID='backup_review_contact_back_up_button'
                 />
             }
-            testID={`backup_review_not_backed_up_contact_${contact.backupAddress}`}
+            testID={`backup_review_not_backed_up_contact_${contact.address}`}
         />
     )
 }

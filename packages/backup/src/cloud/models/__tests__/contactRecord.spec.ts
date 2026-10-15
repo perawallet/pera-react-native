@@ -13,23 +13,28 @@
 import { describe, expect, it } from 'vitest'
 import {
     contactAddressEntries,
-    contactBackupAddresses,
     contactRecordAddresses,
     contactRecordEntries,
     isNewerContactRecord,
     mergeContactRecord,
     orderContactRecordAddresses,
+    trackedContactId,
 } from '../contactRecord'
+import type { ItemKeyHash } from '../../crypto/itemKeyHash'
+import { contactItemKey, contactRecordItemKey } from '../itemKeys'
 import {
     CONTACT_RECORD_FORMAT_VERSION,
     type ContactRecordPayload,
 } from '../payloads'
+import type { SyncItemState } from '../syncState'
+import { BackupItemStatus, BackupItemType } from '../types'
 
 const recordOf = (
     addresses: ContactRecordPayload['addresses'],
     over: Partial<ContactRecordPayload> = {},
 ): ContactRecordPayload => ({
     formatVersion: CONTACT_RECORD_FORMAT_VERSION,
+    id: 'id-1',
     name: 'Alice',
     updatedAt: 1,
     addresses,
@@ -51,22 +56,6 @@ describe('contactAddressEntries', () => {
     it('leaves out an empty address', () => {
         expect(contactAddressEntries({ algorand: '', evm: '0xB' })).toEqual([
             { family: 'evm', address: '0xB' },
-        ])
-    })
-})
-
-describe('contactBackupAddresses', () => {
-    it('puts the algorand address first, so it names the record', () => {
-        expect(
-            contactBackupAddresses({
-                addresses: { evm: '0xB', algorand: 'A' },
-            }),
-        ).toEqual(['A', '0xB'])
-    })
-
-    it('names an EVM-only contact by its EVM address', () => {
-        expect(contactBackupAddresses({ addresses: { evm: '0xB' } })).toEqual([
-            '0xB',
         ])
     })
 })
@@ -216,5 +205,50 @@ describe('isNewerContactRecord', () => {
                 chains: [{ chain: 'x' }],
             }),
         ).toBe(false)
+    })
+})
+
+describe('trackedContactId', () => {
+    const item = (over: Partial<SyncItemState> = {}): SyncItemState => ({
+        type: BackupItemType.CONTACT,
+        knownVer: 1,
+        baseVer: 1,
+        isDirty: false,
+        status: BackupItemStatus.ACTIVE,
+        lastRemoteHash: null,
+        ...over,
+    })
+
+    it("reads a record's id from the content it last held", () => {
+        expect(
+            trackedContactId(
+                contactRecordItemKey('a'.repeat(64) as ItemKeyHash),
+                item({ record: recordOf([algorand]) }),
+            ),
+        ).toBe('id-1')
+    })
+
+    it("derives a legacy item's id from its address", () => {
+        expect(
+            trackedContactId(
+                contactItemKey('a'.repeat(64) as ItemKeyHash),
+                item({ address: 'A' }),
+            ),
+        ).toBe('algorand:A')
+    })
+
+    it('is null for an item never decrypted here', () => {
+        expect(
+            trackedContactId(
+                contactRecordItemKey('a'.repeat(64) as ItemKeyHash),
+                item(),
+            ),
+        ).toBeNull()
+        expect(
+            trackedContactId(
+                contactItemKey('a'.repeat(64) as ItemKeyHash),
+                item(),
+            ),
+        ).toBeNull()
     })
 })

@@ -18,7 +18,5 @@ import {
 /** One contact's backup state, for callers that need nothing else:
  *  `useBackupContactReview` also builds the mutation and the review buckets, so
  *  reading this through it re-renders on every contact and sync-state change. */
-export const useIsContactBackedUp = (address: string): boolean =>
-    useBackupSyncStateStore(state =>
-        isContactBackedUp(state.syncState, address),
-    )
+export const useIsContactBackedUp = (id: string): boolean =>
+    useBackupSyncStateStore(state => isContactBackedUp(state.syncState, id))

@@ -28,6 +28,7 @@ const {
 } = vi.hoisted(() => ({
     contactsMock: {
         current: [] as {
+            id: string
             addresses: { algorand?: string; evm?: string }
             name: string
         }[],
@@ -36,7 +37,11 @@ const {
         current: {
             backedUp: new Set<string>(),
             notBackedUp: [] as string[],
-            availableFromBackup: [] as { address: string; name: string }[],
+            availableFromBackup: [] as {
+                id: string
+                address: string
+                name: string
+            }[],
         },
     },
     busyItemsMock: { current: [] as string[] },
@@ -65,12 +70,12 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 vi.mock('@perawallet/wallet-core-backup', async () => {
     const { useMutation } = await import('@tanstack/react-query')
     return {
-        contactBackupAddresses: (contact: {
-            addresses: Record<string, string | undefined>
-        }) =>
+        contactAddressEntries: (
+            addresses: Record<string, string | undefined>,
+        ) =>
             ['algorand', 'evm'].flatMap(family => {
-                const address = contact.addresses[family]
-                return address ? [address] : []
+                const address = addresses[family]
+                return address ? [{ family, address }] : []
             }),
         deriveBackupContactReview: () => reviewMock.current,
         backupBusyItemKey: (itemKind: string, id: string) =>
@@ -126,13 +131,15 @@ beforeEach(() => {
     vi.clearAllMocks()
     busyItemsMock.current = []
     contactsMock.current = [
-        { addresses: { algorand: 'A' }, name: 'Alice' },
-        { addresses: { algorand: 'B' }, name: 'Bob' },
+        { id: 'id-A', addresses: { algorand: 'A' }, name: 'Alice' },
+        { id: 'id-B', addresses: { algorand: 'B' }, name: 'Bob' },
     ]
     reviewMock.current = {
-        backedUp: new Set(['A']),
-        notBackedUp: ['B'],
-        availableFromBackup: [{ address: 'GONE', name: 'Carol' }],
+        backedUp: new Set(['id-A']),
+        notBackedUp: ['id-B'],
+        availableFromBackup: [
+            { id: 'id-GONE', address: 'GONE', name: 'Carol' },
+        ],
     }
 })
 
@@ -141,22 +148,32 @@ describe('useBackupContactReview', () => {
         const { result } = renderReview()
 
         expect(result.current.backedUpContacts).toEqual([
-            { addresses: { algorand: 'A' }, name: 'Alice', backupAddress: 'A' },
+            {
+                id: 'id-A',
+                addresses: { algorand: 'A' },
+                name: 'Alice',
+                address: 'A',
+            },
         ])
         expect(result.current.notBackedUpContacts).toEqual([
-            { addresses: { algorand: 'B' }, name: 'Bob', backupAddress: 'B' },
+            {
+                id: 'id-B',
+                addresses: { algorand: 'B' },
+                name: 'Bob',
+                address: 'B',
+            },
         ])
         expect(result.current.availableFromBackup).toEqual([
-            { address: 'GONE', name: 'Carol' },
+            { id: 'id-GONE', address: 'GONE', name: 'Carol' },
         ])
-        expect(result.current.isBackedUp('A')).toBe(true)
-        expect(result.current.isBackedUp('B')).toBe(false)
+        expect(result.current.isBackedUp('id-A')).toBe(true)
+        expect(result.current.isBackedUp('id-B')).toBe(false)
     })
 
     test('leaves out a contact without any address', () => {
         contactsMock.current = [
             ...contactsMock.current,
-            { addresses: {}, name: 'Nowhere' },
+            { id: 'id-N', addresses: {}, name: 'Nowhere' },
         ]
 
         const { result } = renderReview()
@@ -167,17 +184,43 @@ describe('useBackupContactReview', () => {
         ])
     })
 
-    test('lists a contact holding only an EVM address under that address', () => {
+    test('shows a contact holding only an EVM address under that address', () => {
         contactsMock.current = [
             ...contactsMock.current,
-            { addresses: { evm: '0xC' }, name: 'Carol' },
+            { id: 'id-C', addresses: { evm: '0xC' }, name: 'Carol' },
         ]
-        reviewMock.current = { ...reviewMock.current, notBackedUp: ['0xC'] }
+        reviewMock.current = { ...reviewMock.current, notBackedUp: ['id-C'] }
 
         const { result } = renderReview()
 
         expect(result.current.notBackedUpContacts).toEqual([
-            { addresses: { evm: '0xC' }, name: 'Carol', backupAddress: '0xC' },
+            {
+                id: 'id-C',
+                addresses: { evm: '0xC' },
+                name: 'Carol',
+                address: '0xC',
+            },
+        ])
+    })
+
+    test('keeps two contacts that share an address apart', () => {
+        contactsMock.current = [
+            { id: 'id-A', addresses: { algorand: 'A' }, name: 'Alice' },
+            { id: 'id-A2', addresses: { algorand: 'A' }, name: 'Alice ALGO' },
+        ]
+        reviewMock.current = {
+            ...reviewMock.current,
+            backedUp: new Set(['id-A']),
+            notBackedUp: ['id-A2'],
+        }
+
+        const { result } = renderReview()
+
+        expect(result.current.backedUpContacts.map(c => c.name)).toEqual([
+            'Alice',
+        ])
+        expect(result.current.notBackedUpContacts.map(c => c.name)).toEqual([
+            'Alice ALGO',
         ])
     })
 
@@ -187,31 +230,31 @@ describe('useBackupContactReview', () => {
         const variables = () =>
             reviewActionMock.mock.calls.map(([passed]) => passed)
 
-        act(() => result.current.backUpContact('B'))
-        act(() => result.current.addFromBackup('GONE'))
-        act(() => result.current.deleteFromBackup('GONE'))
+        act(() => result.current.backUpContact('id-B'))
+        act(() => result.current.addFromBackup('id-GONE'))
+        act(() => result.current.deleteFromBackup('id-GONE'))
 
         await waitFor(() => expect(variables()).toHaveLength(3))
         expect(variables()).toEqual([
-            { action: 'backUp', id: 'B' },
-            { action: 'add', id: 'GONE' },
-            { action: 'delete', id: 'GONE' },
+            { action: 'backUp', id: 'id-B' },
+            { action: 'add', id: 'id-GONE' },
+            { action: 'delete', id: 'id-GONE' },
         ])
         expect(kindMock.current).toBe('contact')
     })
 
     test('reads a row as busy from the actions the manager published, so it survives a remount', () => {
-        busyItemsMock.current = ['contact:B', 'account:OTHER']
+        busyItemsMock.current = ['contact:id-B', 'account:OTHER']
         const { result } = renderReview()
 
-        expect(result.current.isBusy('B')).toBe(true)
+        expect(result.current.isBusy('id-B')).toBe(true)
         expect(result.current.isBusy('OTHER')).toBe(false)
     })
 
     test('reports a settled action as a success', async () => {
         const { result } = renderReview()
 
-        act(() => result.current.backUpContact('B'))
+        act(() => result.current.backUpContact('id-B'))
 
         await waitFor(() =>
             expect(showToastMock).toHaveBeenCalledWith(
@@ -224,7 +267,7 @@ describe('useBackupContactReview', () => {
         reviewActionMock.mockResolvedValueOnce('deferred')
         const { result } = renderReview()
 
-        act(() => result.current.backUpContact('B'))
+        act(() => result.current.backUpContact('id-B'))
 
         await waitFor(() =>
             expect(showToastMock).toHaveBeenCalledWith(
@@ -241,7 +284,7 @@ describe('useBackupContactReview', () => {
         reviewActionMock.mockRejectedValueOnce(new Error('unreadable'))
         const { result } = renderReview()
 
-        act(() => result.current.addFromBackup('GONE'))
+        act(() => result.current.addFromBackup('id-GONE'))
 
         await waitFor(() =>
             expect(showToastMock).toHaveBeenCalledWith(
@@ -254,7 +297,7 @@ describe('useBackupContactReview', () => {
         reviewActionMock.mockRejectedValueOnce(new NoConnectionError())
         const { result } = renderReview()
 
-        act(() => result.current.backUpContact('B'))
+        act(() => result.current.backUpContact('id-B'))
 
         await waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
         expect(showErrorMock.mock.calls[0][0]).toBeInstanceOf(NoConnectionError)

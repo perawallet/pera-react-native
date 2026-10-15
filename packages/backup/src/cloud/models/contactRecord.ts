@@ -13,12 +13,16 @@
 import {
     CHAIN_FAMILIES,
     isChainFamily,
+    LEGACY_CHAIN_FAMILY,
     type ChainFamily,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    Contact,
-    ContactAddresses,
+import {
+    derivedContactId,
+    type ContactAddresses,
 } from '@perawallet/wallet-core-contacts'
+import { isContactItemKey, isContactRecordKey } from './itemKeys'
+import type { SyncItemState } from './syncState'
+import type { BackupItemKey } from './types'
 import {
     CONTACT_RECORD_FORMAT_VERSION,
     contactRecordPayloadSchema,
@@ -36,11 +40,6 @@ export const contactAddressEntries = (
         const address = addresses[family]
         return address ? [{ family, address }] : []
     })
-
-/** The first one names the contact's record. */
-export const contactBackupAddresses = (
-    contact: Pick<Contact, 'addresses'>,
-): string[] => contactAddressEntries(contact.addresses).map(e => e.address)
 
 const familyRank = (family: string): number => {
     const index = (CHAIN_FAMILIES as readonly string[]).indexOf(family)
@@ -122,4 +121,18 @@ export const isNewerContactRecord = (
 ): boolean => {
     const parsed = contactRecordPayloadSchema.safeParse(record)
     return parsed.success && !isContactRecordReadable(parsed.data)
+}
+
+/** The id of the contact a tracked item backs up: a record's from the content
+ *  last seen, a legacy item's derived from its address the way every device
+ *  derives it. Null when this device has never decrypted the item. */
+export const trackedContactId = (
+    key: BackupItemKey,
+    item: SyncItemState,
+): string | null => {
+    if (isContactRecordKey(key))
+        return typeof item.record?.id === 'string' ? item.record.id : null
+    if (isContactItemKey(key) && item.address)
+        return derivedContactId({ [LEGACY_CHAIN_FAMILY]: item.address })
+    return null
 }

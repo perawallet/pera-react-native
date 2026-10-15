@@ -47,13 +47,6 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
         Object.entries(account.chains)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([, entry]) => entry.address),
-    contactBackupAddresses: (contact: {
-        addresses: Record<string, string | undefined>
-    }) =>
-        ['algorand', 'evm'].flatMap(family => {
-            const address = contact.addresses[family]
-            return address ? [address] : []
-        }),
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/itemKeys')
     >('../../../../../../../../packages/backup/src/cloud/models/itemKeys')),
@@ -70,7 +63,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ) => account.chains[chainId],
     useAccountsStore: vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-contacts', () => ({
+vi.mock('@perawallet/wallet-core-contacts', async () => ({
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/contacts/src/contactId')
+    >('../../../../../../../../packages/contacts/src/contactId')),
     useContactsStore: vi.fn(),
 }))
 // This replaces the module wholesale, so the item-key hasher's `bytesToHex`
@@ -240,12 +236,16 @@ const mockStores = (opts: {
     ;(useContactsStore as unknown as Mock).mockImplementation(
         (s: (st: { contacts: unknown[] }) => unknown) =>
             s({
-                contacts: opts.contacts.map(address => ({
-                    addresses:
-                        typeof address === 'string'
-                            ? { algorand: address }
-                            : address,
-                })),
+                // A legacy address's contact carries the id every device
+                // derives for it; an EVM-only one uses its address as the id.
+                contacts: opts.contacts.map(address =>
+                    typeof address === 'string'
+                        ? {
+                              id: `algorand:${address}`,
+                              addresses: { algorand: address },
+                          }
+                        : { id: address.evm, addresses: address },
+                ),
             }),
     )
 }
@@ -346,6 +346,7 @@ describe('useCloudBackupOverview', () => {
             [contactRecordItemKey(hashAddress('0xB'))]: uploaded('0xB', {
                 type: 'CONTACT',
                 addresses: ['0xB'],
+                record: { id: '0xB' },
             }),
         }
         mockStores({

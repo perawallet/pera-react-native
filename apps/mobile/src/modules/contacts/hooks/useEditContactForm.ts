@@ -20,16 +20,12 @@ import {
 import {
     contactFromFormValues,
     ContactNotFoundError,
-    DuplicateAddressError,
     useContacts,
-    type Contact,
     type ContactFormValues,
+    type NewContact,
 } from '@perawallet/wallet-core-contacts'
 
-import {
-    contactBackupAddresses,
-    getBackupSyncManager,
-} from '@perawallet/wallet-core-backup'
+import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -49,8 +45,9 @@ export type UseEditContactFormResult = UseContactFormResult & {
      * The contact being edited: the deeplink target when the screen was reached
      * via QR/deeplink, otherwise the in-app store selection. Deliberately not
      * named `selectedContact` — it is no longer always the store's selection.
+     * Without an `id` when the link names an address no contact holds.
      */
-    contact: Contact | null
+    contact: NewContact | null
     /** True when removing this contact needs the cloud-backup choice first. */
     needsBackupChoice: boolean
     save: (data: ContactFormValues) => void
@@ -79,7 +76,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const route = useRoute<RouteProp<ContactsStackParamsList, 'EditContact'>>()
     const routeAddress = route.params?.address
     const routeLabel = route.params?.label
-    const targetContact = useMemo<Contact | null>(() => {
+    const targetContact = useMemo<NewContact | null>(() => {
         if (!routeAddress) return selectedContact
         return (
             contacts.find(
@@ -92,36 +89,25 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     }, [routeAddress, routeLabel, contacts, selectedContact])
 
     const form = useContactForm(targetContact)
-    const targetAddress = targetContact?.addresses.algorand ?? ''
-    const backupAddress = targetContact
-        ? (contactBackupAddresses(targetContact)[0] ?? '')
-        : ''
+    const targetId = targetContact?.id ?? ''
 
     const { showToast } = useToast()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
-    const isBackedUp = useIsContactBackedUp(backupAddress)
+    const isBackedUp = useIsContactBackedUp(targetId)
     const needsBackupChoice = isCloudBackupAvailable && isBackedUp
 
     const save = useCallback(
         (data: ContactFormValues) => {
             if (!form.isValid || !targetContact) return
 
-            const contact = contactFromFormValues(data, targetContact)
+            const contact = {
+                ...contactFromFormValues(data, targetContact),
+                id: targetId,
+            }
             try {
-                editContact(
-                    { family: 'algorand', address: targetAddress },
-                    contact,
-                )
+                editContact(targetId, contact)
                 trackEvent(ContactsEvent.Edit)
             } catch (e) {
-                if (e instanceof DuplicateAddressError) {
-                    form.setError('address', {
-                        message: t(
-                            'contacts.add_contact.duplicate_address_error',
-                        ),
-                    })
-                    return
-                }
                 if (e instanceof ContactNotFoundError) {
                     // The contact was removed (e.g. on another device)
                     // between selection and save. Drop the stale
@@ -141,10 +127,9 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         },
         [
             form,
-            t,
             editContact,
             targetContact,
-            targetAddress,
+            targetId,
             setSelectedContact,
             navigation,
         ],
@@ -168,15 +153,15 @@ export const useEditContactForm = (): UseEditContactFormResult => {
                     isRecorded =
                         backupChoice === 'delete'
                             ? (await manager.deleteContactFromBackup(
-                                  backupAddress,
+                                  targetId,
                               )) !== 'refused'
                             : await manager.keepContactInBackup(
-                                  backupAddress,
+                                  targetId,
                                   targetContact.name,
                               )
                 } catch (error) {
                     logger.warn('useEditContactForm: backup choice failed', {
-                        address: backupAddress,
+                        id: targetId,
                         error:
                             error instanceof Error
                                 ? error.message
@@ -199,10 +184,10 @@ export const useEditContactForm = (): UseEditContactFormResult => {
 
             // `deleteContact` reports whether it matched. A deeplink can name an
             // address that was never saved, in which case the target is
-            // synthesized from the link and there is nothing to remove — don't
-            // report a Delete that didn't happen or clear a selection we never
-            // owned.
-            if (deleteContact(targetContact)) {
+            // synthesized from the link, has no id and there is nothing to
+            // remove — don't report a Delete that didn't happen or clear a
+            // selection we never owned.
+            if (deleteContact(targetId)) {
                 trackEvent(ContactsEvent.Delete)
                 setSelectedContact(null)
             }
@@ -210,7 +195,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         },
         [
             targetContact,
-            backupAddress,
+            targetId,
             deleteContact,
             setSelectedContact,
             navigation,

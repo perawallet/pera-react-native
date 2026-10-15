@@ -28,7 +28,9 @@ import {
     accountRecordSeedReference,
     cachedRecordSeedReference,
     contactRecordEntries,
+    isContactItemKey,
     isContactRecordKey,
+    trackedContactId,
     isAccountRecordReadable,
     isAccountItemKey,
     isAccountKey,
@@ -37,8 +39,6 @@ import {
     secretsItemKey,
     BACKUP_ACCOUNT_RECORDS_KEY_PREFIX,
     BACKUP_ACCOUNTS_KEY_PREFIX,
-    BACKUP_CONTACT_RECORDS_KEY_PREFIX,
-    BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
     BackupAccountType,
@@ -591,46 +591,41 @@ const legacyKeysToDelete = async (
     return secretKey === null ? [addressKey] : [addressKey, secretKey]
 }
 
-/** Every record linked to `address` through a shared address, and the legacy
- *  `contacts/` items of every address they hold. The importer merges records
- *  that share an address into one contact, and a restore would bring that
- *  contact back from any of them. */
-const contactKeysFor = (state: SyncState, address: string): BackupItemKey[] => {
-    const addresses = new Set([address])
-    const recordKeys = new Set<BackupItemKey>()
-    // A Set visits entries added mid-loop, so this walks to every linked record.
-    for (const each of addresses) {
-        for (const key of trackedKeysUnder(
-            state,
-            each,
-            BACKUP_CONTACT_RECORDS_KEY_PREFIX,
-        )) {
-            recordKeys.add(key)
-            for (const held of state.items[key]?.addresses ?? []) {
-                addresses.add(held)
-            }
-        }
-    }
-    return [
-        ...recordKeys,
-        ...new Set(
-            [...addresses].flatMap(each =>
-                trackedKeysUnder(state, each, BACKUP_CONTACTS_KEY_PREFIX),
-            ),
-        ),
-    ]
+/** The record of contact `id`, and the legacy `contacts/` items it was
+ *  derived from or holds an address of. A restore would bring the contact back
+ *  from any of them. */
+const contactKeysFor = (state: SyncState, id: string): BackupItemKey[] => {
+    const entries = Object.entries(state.items)
+    const addresses = new Set(
+        entries
+            .filter(
+                ([key, item]) =>
+                    isContactRecordKey(key) &&
+                    trackedContactId(key, item) === id,
+            )
+            .flatMap(([, item]) => item.addresses ?? []),
+    )
+    return entries
+        .filter(
+            ([key, item]) =>
+                trackedContactId(key, item) === id ||
+                (isContactItemKey(key) &&
+                    item.address != null &&
+                    addresses.has(item.address)),
+        )
+        .map(([key]) => key)
 }
 
 export const deleteContactFromBackup = async ({
     state,
-    address,
+    id,
     deps,
 }: {
     state: SyncState
-    address: string
+    id: string
     deps: ReviewActionDeps
 }): Promise<BackupDeleteResult> => {
-    const keys = contactKeysFor(state, address).filter(isLiveIn(state))
+    const keys = contactKeysFor(state, id).filter(isLiveIn(state))
 
     return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
 }
@@ -642,10 +637,10 @@ export const deleteContactFromBackup = async ({
  *  deleted. */
 export const markContactForBackup = (
     state: SyncState,
-    address: string,
+    id: string,
 ): SyncState => {
     const items = { ...state.items }
-    for (const key of contactKeysFor(state, address)) {
+    for (const key of contactKeysFor(state, id)) {
         const item = items[key] as SyncItemState
         if (item.status === BackupItemStatus.ACTIVE && item.knownVer > 0) {
             items[key] = { ...item, pendingDelete: false, pendingImport: false }
@@ -661,11 +656,11 @@ export const markContactForBackup = (
  *  item it pushed, and the review row has nothing else to render. */
 export const keepContactInBackup = (
     state: SyncState,
-    address: string,
+    id: string,
     name: string,
 ): SyncState => {
     const items = { ...state.items }
-    for (const key of contactKeysFor(state, address).filter(isLiveIn(state))) {
+    for (const key of contactKeysFor(state, id).filter(isLiveIn(state))) {
         items[key] = {
             ...(items[key] as SyncItemState),
             pendingImport: true,
@@ -679,11 +674,11 @@ export const keepContactInBackup = (
 
 const contactImportFailure = (
     state: SyncState,
-    address: string,
+    id: string,
     reason: string,
 ): { state: SyncState; summary: ContactImportSummary } => ({
     state,
-    summary: { imported: 0, failed: [{ address, reason }] },
+    summary: { imported: 0, failed: [{ id, reason }] },
 })
 
 /** Re-reads the items rather than trusting the cached `label`, so `label` stays
@@ -691,20 +686,20 @@ const contactImportFailure = (
  *  whole contact, so a legacy item is read only when no record is live. */
 export const importContactFromBackup = async ({
     state,
-    address,
+    id,
     deps,
 }: {
     state: SyncState
-    address: string
+    id: string
     deps: ReviewActionDeps
 }): Promise<{ state: SyncState; summary: ContactImportSummary }> => {
-    const liveKeys = contactKeysFor(state, address).filter(isLiveIn(state))
+    const liveKeys = contactKeysFor(state, id).filter(isLiveIn(state))
     const hasRecord = liveKeys.some(isContactRecordKey)
     const readKeys = liveKeys.filter(
         key => !hasRecord || isContactRecordKey(key),
     )
     if (readKeys.length === 0)
-        return contactImportFailure(state, address, 'Not present in the backup')
+        return contactImportFailure(state, id, 'Not present in the backup')
 
     const fetched = await deps.readItems(
         deps.network,
@@ -713,7 +708,7 @@ export const importContactFromBackup = async ({
         readKeys,
     )
     if (fetched.length === 0)
-        return contactImportFailure(state, address, 'Not present in the backup')
+        return contactImportFailure(state, id, 'Not present in the backup')
 
     const records: ContactRecordPayload[] = []
     const legacy: ContactBackupPayload[] = []
@@ -727,17 +722,13 @@ export const importContactFromBackup = async ({
             logger.warn('reviewActions: unreadable contact', { key: item.key })
             return contactImportFailure(
                 state,
-                address,
+                id,
                 error instanceof Error ? error.message : String(error),
             )
         }
     }
     if (records.some(record => contactRecordEntries(record).length === 0))
-        return contactImportFailure(
-            state,
-            address,
-            'Needs a newer version of Pera',
-        )
+        return contactImportFailure(state, id, 'Needs a newer version of Pera')
 
     const contacts = buildPulledContacts({ records, legacy })
     const summary = await deps.importContacts(contacts)

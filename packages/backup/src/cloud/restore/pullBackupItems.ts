@@ -14,7 +14,10 @@ import {
     LEGACY_CHAIN_FAMILY,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { ContactAddresses } from '@perawallet/wallet-core-contacts'
+import {
+    derivedContactId,
+    type ContactAddresses,
+} from '@perawallet/wallet-core-contacts'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { fetchManifest, readItems } from '../api'
@@ -389,11 +392,12 @@ export const contactRecordIdentifiers = (
 
 /**
  * One contact per record, with the families this build reads, plus each legacy
- * item no record covers. A legacy item a record covers is the same contact
- * written before records existed, so the record wins. A record this build
- * can't read any family of yields no contact, and stays as it is. Records come
- * oldest first: two that share an address merge into one contact, and the
- * importer lets the later one win.
+ * item no record covers. A legacy item a record covers, by address or by the
+ * id derived from it, is the same contact written before records existed, so
+ * the record wins: the id still matches after the contact's address was
+ * edited. A record this build can't read any family of yields no contact, and
+ * stays as it is. A legacy item's contact takes the id every device derives
+ * for it, so it lands on the contact that device already migrated.
  */
 export const buildPulledContacts = ({
     records,
@@ -402,32 +406,33 @@ export const buildPulledContacts = ({
     records: readonly ContactRecordPayload[]
     legacy: readonly ContactBackupPayload[]
 }): PulledContact[] => {
-    const covered = new Set(records.flatMap(contactRecordAddresses))
+    const coveredAddresses = new Set(records.flatMap(contactRecordAddresses))
+    const coveredIds = new Set(records.map(record => record.id))
     return [
-        ...[...records]
-            .sort((a, b) => (a.updatedAt ?? 0) - (b.updatedAt ?? 0))
-            .flatMap(record => {
-                const entries = contactRecordEntries(record)
-                return entries.length === 0
-                    ? []
-                    : [
-                          {
-                              name: record.name,
-                              addresses: Object.fromEntries(
-                                  entries.map(({ family, address }) => [
-                                      family,
-                                      address,
-                                  ]),
-                              ) as ContactAddresses,
-                          },
-                      ]
-            }),
-        ...legacy
-            .filter(({ address }) => !covered.has(address))
-            .map(({ name, address }) => ({
-                name,
-                addresses: { [LEGACY_CHAIN_FAMILY]: address },
-            })),
+        ...records.flatMap(record => {
+            const entries = contactRecordEntries(record)
+            return entries.length === 0
+                ? []
+                : [
+                      {
+                          id: record.id,
+                          name: record.name,
+                          addresses: Object.fromEntries(
+                              entries.map(({ family, address }) => [
+                                  family,
+                                  address,
+                              ]),
+                          ) as ContactAddresses,
+                      },
+                  ]
+        }),
+        ...legacy.flatMap(({ name, address }) => {
+            const addresses = { [LEGACY_CHAIN_FAMILY]: address }
+            const id = derivedContactId(addresses)
+            return id && !coveredAddresses.has(address) && !coveredIds.has(id)
+                ? [{ id, name, addresses }]
+                : []
+        }),
     ]
 }
 

@@ -69,7 +69,7 @@ const addTestContact = (name: string, address: string) => {
 const resetTestContacts = () => {
     const { result } = renderHook(() => useContacts())
     for (const c of result.current.contacts) {
-        result.current.deleteContact(c)
+        result.current.deleteContact(c.id)
     }
 }
 

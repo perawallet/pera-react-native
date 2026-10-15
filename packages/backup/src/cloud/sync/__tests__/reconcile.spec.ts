@@ -218,6 +218,7 @@ describe('reconcile', () => {
         const KEY = 'contact-records/R'
         const record = (formatVersion: number) => ({
             formatVersion,
+            id: 'id-1',
             name: 'Alice',
             addresses: [{ family: 'algorand', address: 'ADDR' }],
         })

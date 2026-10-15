@@ -21,11 +21,11 @@ import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupContactsResult = {
     contacts: BackupContact[]
-    isBackedUp: (address: string) => boolean
+    isBackedUp: (id: string) => boolean
     notBackedUpCount: number
     availableFromBackupCount: number
-    isBusy: (address: string) => boolean
-    onBackUp: (address: string) => void
+    isBusy: (id: string) => boolean
+    onBackUp: (id: string) => void
     onReview: () => void
 }
 

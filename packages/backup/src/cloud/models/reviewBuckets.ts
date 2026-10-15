@@ -13,20 +13,21 @@
 import {
     isAccountKey,
     isAccountRecordKey,
-    isContactKey,
     isContactRecordKey,
     isPasskeyItemKey,
 } from './itemKeys'
 import { isNewerAccountRecord } from './accountRecord'
+import { trackedContactId } from './contactRecord'
 import type { BackupItemKind } from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus, type BackupItemKey } from './types'
 
+/** Accounts are named by address, contacts by id, passkeys by credential id. */
 type ReviewBuckets<TAvailable> = {
     backedUp: Set<string>
     notBackedUp: string[]
-    /** Addresses live in the backup that this device deliberately deleted;
-     *  each awaits an Add or a delete-from-cloud. */
+    /** Items live in the backup that this device deliberately deleted; each
+     *  awaits an Add or a delete-from-cloud. */
     availableFromBackup: TAvailable[]
 }
 
@@ -38,6 +39,7 @@ export type BackupAccountReview = ReviewBuckets<{
 }>
 
 export type BackupContactReview = ReviewBuckets<{
+    id: string
     address: string
     name: string
 }>
@@ -56,34 +58,35 @@ export const isLiveInBackup = (item: SyncItemState): boolean =>
     item.knownVer > 0 &&
     item.pendingDelete !== true
 
+/** `idOf` names an item of this kind, and returns null for any other. */
 const deriveReview = <TAvailable>(
     syncState: SyncState | null,
-    localAddresses: readonly string[],
-    isOwnKey: (key: BackupItemKey) => boolean,
-    toAvailable: (address: string, item: SyncItemState) => TAvailable,
+    localIds: readonly string[],
+    idOf: (key: BackupItemKey, item: SyncItemState) => string | null,
+    toAvailable: (id: string, item: SyncItemState) => TAvailable,
 ): ReviewBuckets<TAvailable> => {
     const backedUp = new Set<string>()
     const held: [string, SyncItemState][] = []
 
     for (const [key, item] of Object.entries(syncState?.items ?? {})) {
-        // Skipped rather than guessed: a wrong address puts a stranger's row
-        // in a list the user acts on.
-        const address = item.address
-        if (!isOwnKey(key) || address == null || !isLiveInBackup(item)) continue
+        // Skipped rather than guessed: a wrong id puts a stranger's row in a
+        // list the user acts on.
+        const id = idOf(key, item)
+        if (id == null || !isLiveInBackup(item)) continue
 
-        if (item.pendingImport === true) held.push([address, item])
-        else backedUp.add(address)
+        if (item.pendingImport === true) held.push([id, item])
+        else backedUp.add(id)
     }
 
-    const local = new Set(localAddresses)
+    const local = new Set(localIds)
     return {
-        // An address held both locally and in the backup is not awaiting
-        // review, whatever the sync state still says.
-        backedUp: new Set([...backedUp].filter(address => local.has(address))),
-        notBackedUp: localAddresses.filter(address => !backedUp.has(address)),
+        // An item held both locally and in the backup is not awaiting review,
+        // whatever the sync state still says.
+        backedUp: new Set([...backedUp].filter(id => local.has(id))),
+        notBackedUp: localIds.filter(id => !backedUp.has(id)),
         availableFromBackup: held
-            .filter(([address]) => !local.has(address))
-            .map(([address, item]) => toAvailable(address, item)),
+            .filter(([id]) => !local.has(id))
+            .map(([id, item]) => toAvailable(id, item)),
     }
 }
 
@@ -173,20 +176,44 @@ export const countNewerAccountRecords = (syncState: SyncState | null): number =>
             isNewerAccountRecord(item.record),
     ).length
 
-/** `name` comes from the cached label rather than the payload: a contact only
- *  the backup holds would otherwise render as a bare address, and the name is
- *  the whole record. */
+/**
+ * Contacts are named by id: two may share an address. A legacy item a live
+ * record covers, by address or by id, is that contact as written before
+ * records, so the record speaks for it. `name` comes from the cached label
+ * rather than the payload: a contact only the backup holds would otherwise
+ * render as a bare address, and the name is the whole record.
+ */
 export const deriveBackupContactReview = (
     syncState: SyncState | null,
-    localContacts: readonly (readonly string[])[],
-): BackupContactReview =>
-    deriveRecordReview(
-        syncState,
-        localContacts,
-        isContactKey,
-        isContactRecordKey,
-        item => ({ address: item.address as string, name: item.label ?? '' }),
+    localContactIds: readonly string[],
+): BackupContactReview => {
+    const records = Object.entries(syncState?.items ?? {}).filter(
+        ([key, item]) => isContactRecordKey(key) && isLiveInBackup(item),
     )
+    const recordAddresses = new Set(
+        records.flatMap(([, item]) => addressesOfItem(item)),
+    )
+    const recordIds = new Set(
+        records.map(([key, item]) => trackedContactId(key, item)),
+    )
+    return deriveReview(
+        syncState,
+        localContactIds,
+        (key, item) => {
+            const id = trackedContactId(key, item)
+            const isCoveredLegacy =
+                !isContactRecordKey(key) &&
+                (recordAddresses.has(item.address as string) ||
+                    recordIds.has(id))
+            return isCoveredLegacy ? null : id
+        },
+        (id, item) => ({
+            id,
+            address: item.address as string,
+            name: item.label ?? '',
+        }),
+    )
+}
 
 /** `label` comes from the cached display name for the same reason a contact's
  *  does: a credential only the backup holds would otherwise render as a bare
@@ -198,7 +225,7 @@ export const deriveBackupPasskeyReview = (
     deriveReview(
         syncState,
         localCredentialIds,
-        isPasskeyItemKey,
+        (key, item) => (isPasskeyItemKey(key) ? (item.address ?? null) : null),
         (credentialId, item) => ({ credentialId, label: item.label ?? '' }),
     )
 
@@ -225,8 +252,14 @@ export const isAddressBackedUp = (
 
 export const isContactBackedUp = (
     syncState: SyncState | null,
-    address: string,
-): boolean => isAddressLiveUnder(syncState, address, isContactKey)
+    id: string,
+): boolean =>
+    Object.entries(syncState?.items ?? {}).some(
+        ([key, item]) =>
+            trackedContactId(key, item) === id &&
+            isLiveInBackup(item) &&
+            item.pendingImport !== true,
+    )
 
 /** The credential id rides in `item.address`, the same local-only field an
  *  account's address uses: the key itself is a hash and cannot be read back. */

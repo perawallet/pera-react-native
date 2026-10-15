@@ -134,9 +134,8 @@ const setupSyncedBackup = async ({
             accountRecordItemKey(hashAddress(identity)),
         secretsKey: (address: string) => secretsItemKey(hashAddress(address)),
         // What this client writes for a contact: one record, keyed by the
-        // hash of its first address.
-        contactKey: (address: string) =>
-            contactRecordItemKey(hashAddress(address)),
+        // hash of its id.
+        contactKey: (id: string) => contactRecordItemKey(hashAddress(id)),
         legacyContactKey: (address: string) =>
             contactItemKey(hashAddress(address)),
     }
@@ -347,10 +346,12 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         vi.clearAllMocks()
     })
 
+    const ID_A = 'id-A'
+
     const seedContact = (address: string, name: string) =>
         useContactsStore
             .getState()
-            .addContact({ addresses: { algorand: address }, name })
+            .addContact({ id: ID_A, addresses: { algorand: address }, name })
 
     it('pushes a local contact: address + name land on the backend encrypted', async () => {
         seedContact('CONTACT_A', 'Alice')
@@ -359,7 +360,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
             await setupSyncedBackup()
         await manager.syncNow()
 
-        const key = contactKey('CONTACT_A')
+        const key = contactKey(ID_A)
         const item = getItem(key)
         expect(item).toBeDefined()
         expect(
@@ -381,9 +382,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         const { manager } = await setupSyncedBackup()
         await manager.syncNow()
 
-        expect(await manager.keepContactInBackup('CONTACT_A', 'Alice')).toBe(
-            true,
-        )
+        expect(await manager.keepContactInBackup(ID_A, 'Alice')).toBe(true)
         useContactsStore.getState().resetState()
         await manager.syncNow()
 
@@ -392,7 +391,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
             [],
         )
         expect(review.availableFromBackup).toEqual([
-            { address: 'CONTACT_A', name: 'Alice' },
+            { id: ID_A, address: 'CONTACT_A', name: 'Alice' },
         ])
         expect(useContactsStore.getState().contacts).toEqual([])
     })
@@ -401,14 +400,14 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         seedContact('CONTACT_A', 'Alice')
         const { manager } = await setupSyncedBackup()
         await manager.syncNow()
-        await manager.keepContactInBackup('CONTACT_A', 'Alice')
+        await manager.keepContactInBackup(ID_A, 'Alice')
         useContactsStore.getState().resetState()
 
-        const summary = await manager.addContactFromBackup('CONTACT_A')
+        const summary = await manager.addContactFromBackup(ID_A)
 
         expect(summary).toMatchObject({ imported: 1, failed: [] })
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { algorand: 'CONTACT_A' }, name: 'Alice' },
+            { id: ID_A, addresses: { algorand: 'CONTACT_A' }, name: 'Alice' },
         ])
     })
 
@@ -416,15 +415,13 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         seedContact('CONTACT_A', 'Alice')
         const { manager, getItem, contactKey } = await setupSyncedBackup()
         await manager.syncNow()
-        expect(getItem(contactKey('CONTACT_A'))).toBeDefined()
+        expect(getItem(contactKey(ID_A))).toBeDefined()
 
-        expect(await manager.deleteContactFromBackup('CONTACT_A')).toBe(
-            'settled',
-        )
+        expect(await manager.deleteContactFromBackup(ID_A)).toBe('settled')
         useContactsStore.getState().resetState()
         await manager.syncNow()
 
-        expect(getItem(contactKey('CONTACT_A'))).toBeUndefined()
+        expect(getItem(contactKey(ID_A))).toBeUndefined()
     })
 
     it('keeps the server copy when a contact leaves the device without a choice', async () => {
@@ -436,7 +433,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         useContactsStore.getState().resetState()
         await manager.syncNow()
 
-        expect(getItem(contactKey('CONTACT_A'))).toBeDefined()
+        expect(getItem(contactKey(ID_A))).toBeDefined()
     })
 
     it('pulls a contact an older app backed up as a legacy item', async () => {
@@ -460,7 +457,11 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         await manager.syncNow()
 
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { algorand: 'CONTACT_B' }, name: 'Bob' },
+            {
+                id: 'algorand:CONTACT_B',
+                addresses: { algorand: 'CONTACT_B' },
+                name: 'Bob',
+            },
         ])
     })
 
@@ -474,12 +475,13 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
         } = await setupSyncedBackup()
         await manager.syncNow()
 
-        const key = contactKey('CONTACT_B')
+        const key = contactKey('id-B')
         pushFromOtherDevice(
             key,
             encryptItemPayload(
                 JSON.stringify({
                     formatVersion: 1,
+                    id: 'id-B',
                     name: 'Bob',
                     updatedAt: 1,
                     addresses: [
@@ -494,6 +496,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
 
         expect(useContactsStore.getState().contacts).toEqual([
             {
+                id: 'id-B',
                 addresses: { algorand: 'CONTACT_B', evm: '0xB0B' },
                 name: 'Bob',
             },
@@ -501,20 +504,22 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
     })
 
     it('backs up a contact holding only an EVM address, and adds it back after Keep', async () => {
-        useContactsStore
-            .getState()
-            .addContact({ addresses: { evm: '0xB0B' }, name: 'Bob' })
+        useContactsStore.getState().addContact({
+            id: 'id-B',
+            addresses: { evm: '0xB0B' },
+            name: 'Bob',
+        })
         const { manager, getItem, contactKey } = await setupSyncedBackup()
         await manager.syncNow()
-        expect(getItem(contactKey('0xB0B'))).toBeDefined()
+        expect(getItem(contactKey('id-B'))).toBeDefined()
 
-        await manager.keepContactInBackup('0xB0B', 'Bob')
+        await manager.keepContactInBackup('id-B', 'Bob')
         useContactsStore.getState().resetState()
-        const summary = await manager.addContactFromBackup('0xB0B')
+        const summary = await manager.addContactFromBackup('id-B')
 
         expect(summary).toMatchObject({ imported: 1, failed: [] })
         expect(useContactsStore.getState().contacts).toEqual([
-            { addresses: { evm: '0xB0B' }, name: 'Bob' },
+            { id: 'id-B', addresses: { evm: '0xB0B' }, name: 'Bob' },
         ])
     })
 })

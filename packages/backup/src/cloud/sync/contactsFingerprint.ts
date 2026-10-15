@@ -13,16 +13,16 @@
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import { contactAddressEntries } from '../models'
 
-/** Every family's address and the name are the only fields the record
- *  carries. `image` and `nfd` are deliberately absent: reacting to a
+/** The id, every family's address and the name are the only fields the
+ *  record carries. `image` and `nfd` are deliberately absent: reacting to a
  *  re-resolved NFD would sync on a timer the user never touched. */
 export const contactsFingerprint = (contacts: readonly Contact[]): string =>
     contacts
-        .flatMap(({ addresses, name }) => {
+        .flatMap(({ id, addresses, name }) => {
             const entries = contactAddressEntries(addresses)
             return entries.length > 0
                 ? [
-                      `${entries.map(e => `${e.family}:${e.address}`).join(' ')} ${name}`,
+                      `${id} ${entries.map(e => `${e.family}:${e.address}`).join(' ')} ${name}`,
                   ]
                 : []
         })

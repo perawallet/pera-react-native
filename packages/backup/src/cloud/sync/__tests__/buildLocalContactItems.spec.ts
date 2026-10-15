@@ -22,26 +22,28 @@ import { buildLocalContactItems } from '../buildLocalContactItems'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
-const contact = (address: string, name: string) => ({
+const contact = (id: string, address: string, name: string) => ({
+    id,
     addresses: { algorand: address },
     name,
 })
 
 describe('buildLocalContactItems', () => {
-    it('emits one CONTACT record per contact, keyed by the hashed address', () => {
+    it('emits one CONTACT record per contact, keyed by the hashed id', () => {
         const items = buildLocalContactItems(
-            [contact('A', 'Alice'), contact('B', 'Bob')],
+            [contact('id-1', 'A', 'Alice'), contact('id-2', 'B', 'Bob')],
             1000,
             hashAddress,
         )
 
         expect(items.map(item => item.key)).toEqual([
-            contactRecordItemKey(hashAddress('A')),
-            contactRecordItemKey(hashAddress('B')),
+            contactRecordItemKey(hashAddress('id-1')),
+            contactRecordItemKey(hashAddress('id-2')),
         ])
         expect(items[0].type).toBe(BackupItemType.CONTACT)
         expect(items[0].payload).toEqual({
             formatVersion: CONTACT_RECORD_FORMAT_VERSION,
+            id: 'id-1',
             name: 'Alice',
             updatedAt: 1000,
             addresses: [{ family: 'algorand', address: 'A' }],
@@ -53,14 +55,19 @@ describe('buildLocalContactItems', () => {
         })
     })
 
-    it('holds every family in one record, keyed by the first', () => {
+    it('holds every family in one record', () => {
         const [item] = buildLocalContactItems(
-            [{ addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' }],
+            [
+                {
+                    id: 'id-1',
+                    addresses: { algorand: 'A', evm: '0xB' },
+                    name: 'Alice',
+                },
+            ],
             1000,
             hashAddress,
         )
 
-        expect(item.key).toBe(contactRecordItemKey(hashAddress('A')))
         expect(item.payload).toMatchObject({
             addresses: [
                 { family: 'algorand', address: 'A' },
@@ -70,27 +77,57 @@ describe('buildLocalContactItems', () => {
         expect(item.addresses).toEqual(['A', '0xB'])
     })
 
-    it('backs up a contact holding only a non-legacy family, keyed by its address', () => {
-        const items = buildLocalContactItems(
-            [{ addresses: { evm: '0xB' }, name: 'Bob' }],
+    it('keeps the key when the addresses change', () => {
+        const [before] = buildLocalContactItems(
+            [{ id: 'id-1', addresses: { evm: '0xB' }, name: 'Bob' }],
+            1000,
+            hashAddress,
+        )
+        const [after] = buildLocalContactItems(
+            [
+                {
+                    id: 'id-1',
+                    addresses: { algorand: 'A', evm: '0xB' },
+                    name: 'Bob',
+                },
+            ],
             1000,
             hashAddress,
         )
 
-        expect(items.map(item => item.key)).toEqual([
-            contactRecordItemKey(hashAddress('0xB')),
-        ])
-        expect(items[0].address).toBe('0xB')
+        expect(after.key).toBe(before.key)
+    })
+
+    it('gives two contacts sharing an address a record each', () => {
+        const items = buildLocalContactItems(
+            [contact('id-1', 'A', 'Alice'), contact('id-2', 'A', 'Alice ALGO')],
+            1000,
+            hashAddress,
+        )
+
+        expect(new Set(items.map(item => item.key)).size).toBe(2)
     })
 
     it('gives two devices the same key and content for one contact', () => {
         const [first] = buildLocalContactItems(
-            [{ addresses: { algorand: 'A', evm: '0xB' }, name: 'Alice' }],
+            [
+                {
+                    id: 'id-1',
+                    addresses: { algorand: 'A', evm: '0xB' },
+                    name: 'Alice',
+                },
+            ],
             1000,
             hashAddress,
         )
         const [second] = buildLocalContactItems(
-            [{ addresses: { evm: '0xB', algorand: 'A' }, name: 'Alice' }],
+            [
+                {
+                    id: 'id-1',
+                    addresses: { evm: '0xB', algorand: 'A' },
+                    name: 'Alice',
+                },
+            ],
             2000,
             hashAddress,
         )
@@ -99,24 +136,14 @@ describe('buildLocalContactItems', () => {
         expect(second.contentHash).toBe(first.contentHash)
     })
 
-    it('keys a contact restored from a legacy item by its algorand address', () => {
-        const [item] = buildLocalContactItems(
-            [{ addresses: { algorand: 'A' }, name: 'Alice' }],
-            1000,
-            hashAddress,
-        )
-
-        expect(item.key).toBe(contactRecordItemKey(hashAddress('A')))
-    })
-
     it('hashes content without updatedAt, so a timestamp bump is not a change', () => {
         const [early] = buildLocalContactItems(
-            [contact('A', 'Alice')],
+            [contact('id-1', 'A', 'Alice')],
             1000,
             hashAddress,
         )
         const [late] = buildLocalContactItems(
-            [contact('A', 'Alice')],
+            [contact('id-1', 'A', 'Alice')],
             2000,
             hashAddress,
         )
@@ -128,6 +155,7 @@ describe('buildLocalContactItems', () => {
         const [item] = buildLocalContactItems(
             [
                 {
+                    id: 'id-1',
                     addresses: { algorand: 'A' },
                     name: 'Alice',
                     image: 'file:///tmp/a.png',
@@ -141,6 +169,7 @@ describe('buildLocalContactItems', () => {
         expect(Object.keys(item.payload).sort()).toEqual([
             'addresses',
             'formatVersion',
+            'id',
             'name',
             'updatedAt',
         ])
@@ -148,12 +177,12 @@ describe('buildLocalContactItems', () => {
 
     it('renaming a contact changes its hash', () => {
         const [before] = buildLocalContactItems(
-            [contact('A', 'Alice')],
+            [contact('id-1', 'A', 'Alice')],
             1000,
             hashAddress,
         )
         const [after] = buildLocalContactItems(
-            [contact('A', 'Alicia')],
+            [contact('id-1', 'A', 'Alicia')],
             1000,
             hashAddress,
         )
@@ -163,13 +192,16 @@ describe('buildLocalContactItems', () => {
 
     it('skips a contact without any address', () => {
         const items = buildLocalContactItems(
-            [contact('A', 'Alice'), { addresses: {}, name: 'Nobody' }],
+            [
+                contact('id-1', 'A', 'Alice'),
+                { id: 'id-2', addresses: {}, name: 'Nobody' },
+            ],
             1000,
             hashAddress,
         )
 
         expect(items.map(item => item.key)).toEqual([
-            contactRecordItemKey(hashAddress('A')),
+            contactRecordItemKey(hashAddress('id-1')),
         ])
     })
 })

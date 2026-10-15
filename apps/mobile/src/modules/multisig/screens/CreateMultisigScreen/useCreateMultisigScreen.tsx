@@ -15,10 +15,7 @@ import {
     useAllAccounts,
     findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
-import {
-    DuplicateAddressError,
-    useContacts,
-} from '@perawallet/wallet-core-contacts'
+import { useContacts } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, MultisigEvent } from '@analytics'
@@ -93,19 +90,13 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
             )
             if (isWalletAccount || isExistingContact) return
 
-            try {
-                // Prefer the NFD name as the nickname; only an address
-                // typed/pasted without an NFD falls back to a truncation.
-                addContact({
-                    addresses: { algorand: address },
-                    name: nfdName ?? truncateAlgorandAddress(address),
-                    ...(nfdName ? { nfd: nfdName } : {}),
-                })
-            } catch (e) {
-                // Defensive: ignore a concurrent duplicate; rethrow anything
-                // else since that would be a real bug.
-                if (!(e instanceof DuplicateAddressError)) throw e
-            }
+            // Prefer the NFD name as the nickname; only an address
+            // typed/pasted without an NFD falls back to a truncation.
+            addContact({
+                addresses: { algorand: address },
+                name: nfdName ?? truncateAlgorandAddress(address),
+                ...(nfdName ? { nfd: nfdName } : {}),
+            })
         },
         [accounts, contacts, addContact, addParticipant, participants],
     )

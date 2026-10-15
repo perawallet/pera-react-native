@@ -339,10 +339,12 @@ export const contactRecordAddressSchema = z.looseObject({
 export type ContactRecordAddress = z.infer<typeof contactRecordAddressSchema>
 
 /** One contact, every chain family's address, in `CHAIN_FAMILIES` order so two
- *  devices holding it write the same bytes. `image` and `nfd` stay out for the
- *  reasons above. */
+ *  devices holding it write the same bytes. `id` is the contact's own, which
+ *  the importer matches on: two records may share an address. `image` and
+ *  `nfd` stay out for the reasons above. */
 export const contactRecordPayloadSchema = z.looseObject({
     formatVersion: nonNegativeInt,
+    id: z.string().min(1),
     name: z.string(),
     updatedAt,
     addresses: z.array(contactRecordAddressSchema).min(1),
