@@ -60,7 +60,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => deviceIdMock.current,
+    useScopedDeviceID: () => deviceIdMock.current,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

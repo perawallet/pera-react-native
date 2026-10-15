@@ -53,7 +53,7 @@ type UseToggleAssetFavoriteMutationResult = {
     isError: boolean
     error: Nullable<Error>
     isSuccess: boolean
-    /** True when the active network has no Pera backend — this can never succeed here. */
+    /** True when the scope's chain lacks `assetFavorites`, so this can never succeed. */
     isUnavailableOnNetwork: boolean
 }
 

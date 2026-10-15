@@ -36,10 +36,10 @@ import {
     signChallenge,
     type SessionIntegrityToken,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
 import { createSessionBackoff } from './session-backoff'
 import { withNamedLock } from './named-lock'
-import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { readActiveDeployment } from './network'
 
 export const INTEGRITY_RENEW_ALARM = 'pera-integrity-renew'

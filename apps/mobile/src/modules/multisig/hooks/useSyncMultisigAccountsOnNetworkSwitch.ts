@@ -23,7 +23,7 @@ import {
     useOnNetworkSwitch,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { createMultisigAccount } from '@perawallet/wallet-core-multisig'
 import {
     logger,
@@ -42,7 +42,7 @@ import {
 export const useSyncMultisigAccountsOnNetworkSwitch = (): void => {
     const { network } = useNetwork()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const deviceId = useDeviceID(network)
+    const deviceId = useScopedDeviceID(scope)
     const accounts = useAllAccounts()
 
     // The accounts array gets a fresh reference on every store write (incl.
