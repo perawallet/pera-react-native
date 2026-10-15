@@ -55,6 +55,8 @@ Dismiss Dev Client Intro
     Close Sheet
 
 Restart Pera
+    # The trace file restarts with the app; collect what this run wrote before it is overwritten.
+    Drain Nav Log
     Terminate Application    ${IOS_BUNDLE_ID}
     IF    $IOS_DEV_CLIENT_URL
         Open Deeplink    ${IOS_DEV_CLIENT_URL}
@@ -114,6 +116,7 @@ Open Deeplink Cold
     [Arguments]    ${url}
     Skip If    $IOS_DEV_CLIENT_URL
     ...    A dev client cold-started by a link opens its launcher, not the bundle; cold links need a release build.
+    Drain Nav Log
     Terminate Application    ${IOS_BUNDLE_ID}
     Open Deeplink    ${url}
 
