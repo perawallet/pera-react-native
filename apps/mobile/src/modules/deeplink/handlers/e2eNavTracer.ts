@@ -164,6 +164,8 @@ export const startNavTracer = (): void => {
     if (started) return
     started = true
     const attach = (): void => {
+        // Test harnesses render this hook with a stand-in navigationRef.
+        if (typeof navigationRef.addListener !== 'function') return
         if (!navigationRef.isReady()) {
             setTimeout(attach, 200)
             return
@@ -172,7 +174,7 @@ export const startNavTracer = (): void => {
         onStateChange()
     }
     attach()
-    AppState.addEventListener('change', appState =>
+    AppState.addEventListener?.('change', appState =>
         emit('app', { state: appState }),
     )
 }
