@@ -122,8 +122,6 @@ Opt Out Of Testnet USDC
     Wait Until Page Does Not Contain Element    ${USDC_TESTNET_ROW}    timeout=60s
 
 Holds Testnet USDC
-    ${held}=    Run Keyword And Return Status
-    ...    Wait Until Page Contains Element    ${ALGO_ROW}    timeout=30s
-    Should Be True    ${held}    The funded account overview did not load.
+    Wait Until Page Contains Element    ${ALGO_ROW}    timeout=30s
     ${usdc}=    Run Keyword And Return Status    Page Should Contain Element    ${USDC_TESTNET_ROW}
     RETURN    ${usdc}

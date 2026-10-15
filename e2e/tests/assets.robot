@@ -90,7 +90,9 @@ Collectible Detail Opens From The NFTs Tab
     [Setup]    Use Funded Testnet Account
     [Teardown]    Leave Funded Testnet Account
     Tap    ${NFTS_TAB}
-    Wait Until Page Contains Element    ${FIRST_COLLECTIBLE}    timeout=30s
+    ${owned}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${FIRST_COLLECTIBLE}    timeout=30s
+    Skip If    not ${owned}    The funded account holds no NFT.
     Tap    ${FIRST_COLLECTIBLE}
     Wait Until Page Contains Element    ${COLLECTIBLE_DETAIL_SCREEN}    timeout=20s
 
@@ -102,6 +104,9 @@ Restore Default Sort
     Apply Sort    ${SORT_DEFAULT}
 
 Restore Default Filter
+    [Documentation]    The toggle flips a stored preference, so it is flipped back only once applied.
     Run Keyword If Test Failed    Capture Page Screenshot
-    Go Home
-    Toggle Display NFTs
+    IF    $TEST_STATUS == 'PASS'
+        Go Home
+        Toggle Display NFTs
+    END

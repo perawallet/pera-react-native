@@ -13,6 +13,7 @@ ${ANDROID_UDID}         ${EMPTY}
 # Off UiAutomator2's default 8200, which another session's forward can hold and crash instrumentation.
 # Give each device its own port when several run in parallel.
 ${ANDROID_SYSTEM_PORT}  8201
+${WEBVIEW}             xpath=//android.webkit.WebView
 ${MENU_TAB}             accessibility_id=Menu
 
 

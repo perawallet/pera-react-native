@@ -121,7 +121,7 @@ Open Create Shared Account
 
 Open Participant Search
     # A long participant list pushes the button below the fold, where an Android tap misses it.
-    ${shown}=    Run Keyword And Return Status    Element Should Be Visible    ${ADD_PARTICIPANT_BUTTON}    loglevel=NONE
+    ${shown}=    Run Keyword And Return Status    Expect Element    ${ADD_PARTICIPANT_BUTTON}    visible    timeout=0s    loglevel=NONE
     IF    not ${shown}    Swipe By Percent    50    75    50    30
     Tap    ${ADD_PARTICIPANT_BUTTON}
     Wait Until Page Contains Element    ${ADDRESS_SEARCH_INPUT}    timeout=15s
@@ -165,15 +165,13 @@ Open Set Threshold
 Threshold Should Be
     [Arguments]    ${expected}
     ${value}=    Test Id    threshold_value
-    ${text}=    Get Text    ${value}
-    Should Be Equal As Integers    ${text}    ${expected}
+    Wait Until Keyword Succeeds    5s    0.2s    Element Text Should Be    ${value}    ${expected}
 
 Participant Count Should Be
     [Documentation]    On Set Threshold.
     [Arguments]    ${expected}
     ${count}=    Test Id    participant_count_value
-    ${text}=    Get Text    ${count}
-    Should Be Equal As Integers    ${text}    ${expected}
+    Wait Until Keyword Succeeds    5s    0.2s    Element Text Should Be    ${count}    ${expected}
 
 Open Before You Create
     Tap    ${SET_THRESHOLD_CONTINUE_BUTTON}
@@ -224,7 +222,7 @@ Open Account Options
 Tap Account Option
     [Arguments]    ${option}
     # The options sheet scrolls; rows below the fold are off screen on Android.
-    ${shown}=    Run Keyword And Return Status    Element Should Be Visible    ${option}    loglevel=NONE
+    ${shown}=    Run Keyword And Return Status    Expect Element    ${option}    visible    timeout=0s    loglevel=NONE
     IF    not ${shown}    Swipe By Percent    50    80    50    40
     Wait Until Settled    ${option}
     Tap    ${option}
@@ -237,8 +235,7 @@ Open Shared Account Detail
 Shared Account Detail Count Should Be
     [Arguments]    ${expected}
     ${count}=    Test Id    shared_account_participant_count
-    ${text}=    Get Text    ${count}
-    Should Be Equal As Integers    ${text}    ${expected}
+    Wait Until Keyword Succeeds    5s    0.2s    Element Text Should Be    ${count}    ${expected}
 
 Remove Selected Account
     Open Account Options
@@ -291,7 +288,8 @@ Ensure Watch Account
     Wait Until Page Contains Element    ${WATCH_ADDRESS_INPUT}    timeout=15s
     Input Text    ${WATCH_ADDRESS_INPUT}    ${WATCH_ADDRESS}
     Dismiss Keyboard
-    ${new}=    Run Keyword And Return Status    Element Should Be Enabled    ${WATCH_SUBMIT_BUTTON}
+    ${new}=    Run Keyword And Return Status
+    ...    Expect Element    ${WATCH_SUBMIT_BUTTON}    enabled    timeout=2s    loglevel=NONE
     IF    not ${new}    RETURN
     Tap    ${WATCH_SUBMIT_BUTTON}
     Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=15s
@@ -315,6 +313,7 @@ Start With Known Shared Account Imported
     [Arguments]    ${name}
     Go Home
     Open Import Link    ${KNOWN_SHARED_ADDRESS}
-    ${new}=    Run Keyword And Return Status    Element Should Be Enabled    ${IMPORT_ADD_BUTTON}
+    ${new}=    Run Keyword And Return Status
+    ...    Expect Element    ${IMPORT_ADD_BUTTON}    enabled    timeout=2s    loglevel=NONE
     IF    ${new}    Add Imported Account    ${name}
     Go Home

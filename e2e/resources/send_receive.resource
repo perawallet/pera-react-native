@@ -101,10 +101,9 @@ Import Funded Account
     Wait Until Page Contains Element    ${IMPORT_INFO_RECOVER_BUTTON}    timeout=15s
     Tap    ${IMPORT_INFO_RECOVER_BUTTON}
     Wait Until Page Contains Element    ${IMPORT_FIRST_WORD_INPUT}    timeout=15s
-    # The first input spreads a pasted phrase across all word inputs. Logging is off so the
-    # phrase never lands in the run log.
+    # Logging is off so the phrase never lands in the run log.
     ${level}=    Set Log Level    NONE
-    Input Text    ${IMPORT_FIRST_WORD_INPUT}    ${FUNDED_MNEMONIC.strip()}
+    Enter Recovery Phrase    ${FUNDED_MNEMONIC.strip()}
     Set Log Level    ${level}
     Dismiss Keyboard
     Tap    ${IMPORT_SUBMIT_BUTTON}

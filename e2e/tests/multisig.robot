@@ -94,7 +94,7 @@ Custom Name Is Kept After A Restart
     [Tags]    id:multisig.name.custom    p1
     [Setup]    Remove Account If Present    ${NAME_CUSTOM}
     Create Shared Account    ${NAME_CUSTOM}    ${PARTICIPANT_3}    ${PARTICIPANT_4}
-    Restart Pera
+    Relaunch Pera
     Account Menu Should List    ${NAME_CUSTOM}
     [Teardown]    Clean Up Account    ${NAME_CUSTOM}
 
@@ -152,9 +152,9 @@ Continue Needs Two Participants
     [Tags]    id:multisig.create.continue-needs-two    p1
     Open Create Shared Account
     Add Participant    ${PARTICIPANT_1}
-    Element Should Be Disabled    ${CREATE_MULTISIG_CONTINUE_BUTTON}
+    Expect Element    ${CREATE_MULTISIG_CONTINUE_BUTTON}    disabled
     Add Participant    ${PARTICIPANT_2}
-    Element Should Be Enabled    ${CREATE_MULTISIG_CONTINUE_BUTTON}
+    Expect Element    ${CREATE_MULTISIG_CONTINUE_BUTTON}    enabled
 
 Same Address Can Fill Two Slots
     [Tags]    id:multisig.participant.duplicate    p1
@@ -162,7 +162,7 @@ Same Address Can Fill Two Slots
     Add Participants    ${PARTICIPANT_1}    ${PARTICIPANT_1}
     Participant Should Be Listed    0    ${PARTICIPANT_1}
     Participant Should Be Listed    1    ${PARTICIPANT_1}
-    Element Should Be Enabled    ${CREATE_MULTISIG_CONTINUE_BUTTON}
+    Expect Element    ${CREATE_MULTISIG_CONTINUE_BUTTON}    enabled
 
 At Most Sixteen Participants Can Be Added
     [Tags]    id:multisig.participant.max-sixteen    p1
@@ -189,7 +189,7 @@ Threshold Cannot Exceed The Participant Count
     Open Set Threshold
     Tap    ${THRESHOLD_INCREMENT_BUTTON}
     Threshold Should Be    3
-    Element Should Be Disabled    ${THRESHOLD_INCREMENT_BUTTON}
+    Expect Element    ${THRESHOLD_INCREMENT_BUTTON}    disabled
 
 Threshold Cannot Go Below One
     [Tags]    id:multisig.threshold.decrement-min    p1
@@ -198,7 +198,7 @@ Threshold Cannot Go Below One
     Open Set Threshold
     Tap    ${THRESHOLD_DECREMENT_BUTTON}
     Threshold Should Be    1
-    Element Should Be Disabled    ${THRESHOLD_DECREMENT_BUTTON}
+    Expect Element    ${THRESHOLD_DECREMENT_BUTTON}    disabled
 
 One Of Eight Shared Account Is Created
     [Tags]    id:multisig.create.one-of-eight    p1
@@ -297,7 +297,7 @@ Import Link Offers A Shared Account The Wallet Is Not Part Of
     [Tags]    id:multisig.import.screen    p0    rc
     [Setup]    Remove Account If Present    ${NAME_IMPORTED}
     Open Import Link    ${KNOWN_SHARED_ADDRESS}
-    Element Should Be Enabled    ${IMPORT_ADD_BUTTON}
+    Expect Element    ${IMPORT_ADD_BUTTON}    enabled
 
 Import Screen Lists The Participants
     [Tags]    id:multisig.import.participants    p2
@@ -315,7 +315,7 @@ Ignoring An Import Adds Nothing
     Tap    ${IMPORT_IGNORE_BUTTON}
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=15s
     Open Import Link    ${KNOWN_SHARED_ADDRESS}
-    Element Should Be Enabled    ${IMPORT_ADD_BUTTON}
+    Expect Element    ${IMPORT_ADD_BUTTON}    enabled
 
 Importing Adds The Shared Account
     [Tags]    id:multisig.import.add    p1
@@ -329,5 +329,5 @@ Importing An Account Already In The Wallet Is Blocked
     [Tags]    id:multisig.import.duplicate    p1
     [Setup]    Start With Known Shared Account Imported    ${NAME_IMPORTED}
     Open Import Link    ${KNOWN_SHARED_ADDRESS}
-    Element Should Be Disabled    ${IMPORT_ADD_BUTTON}
+    Expect Element    ${IMPORT_ADD_BUTTON}    disabled
     [Teardown]    Clean Up Account    ${NAME_IMPORTED}

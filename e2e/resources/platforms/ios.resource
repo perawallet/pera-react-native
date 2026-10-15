@@ -15,6 +15,7 @@ ${IOS_WDA_PORT}         8100
 # A dev client's own link to its Metro server, e.g. exp+pera-dev://expo-development-client/?url=...
 # Set it for dev-client runs: a plain relaunch can land on the launcher instead of the app.
 ${IOS_DEV_CLIENT_URL}   ${EMPTY}
+${WEBVIEW}             xpath=//XCUIElementTypeWebView
 ${MENU_TAB}             accessibility_id=tab_menu_button
 
 
