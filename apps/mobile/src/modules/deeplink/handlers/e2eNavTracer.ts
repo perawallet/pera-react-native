@@ -11,6 +11,7 @@
  */
 
 import { AppState } from 'react-native'
+import { File, Paths } from 'expo-file-system'
 
 import { navigationRef } from '@routes/navigationRef'
 
@@ -39,11 +40,30 @@ export type NavTraceEvent =
     | 'app'
     | 'snapshot'
 
+// Release builds on iOS keep console.log out of the system log, so the trace is
+// also mirrored to a file the harness pulls from the app's Documents folder.
+const TRACE_FILE_LINES = 400
+const traceLines: string[] = []
+let seq = 0
+
+const mirrorToFile = (line: string): void => {
+    traceLines.push(line)
+    if (traceLines.length > TRACE_FILE_LINES) traceLines.shift()
+    try {
+        const file = new File(Paths.document, 'e2e-nav.log')
+        file.create({ overwrite: true })
+        file.write(traceLines.join('\n'))
+    } catch {
+        // The device log still carries the line; a missing file only loses the mirror.
+    }
+}
+
 const emit = (event: NavTraceEvent, data: Record<string, unknown>): void => {
+    seq += 1
+    const line = `${NAV_TRACE_TAG} ${JSON.stringify({ event, seq, t: Date.now(), ...data })}`
     // eslint-disable-next-line no-console -- the device log is the channel the harness reads
-    console.log(
-        `${NAV_TRACE_TAG} ${JSON.stringify({ event, t: Date.now(), ...data })}`,
-    )
+    console.log(line)
+    mirrorToFile(line)
 }
 
 export const flattenRoutes = (

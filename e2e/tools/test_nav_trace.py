@@ -41,3 +41,27 @@ def test_leak_check_allows_each_fixtures_own_landing():
     deeper = dict(landing, screens=["TabBar", "Contacts", "Contacts/ViewContact"])
     assert red_flags([landing]) == []
     assert red_flags([deeper])
+
+
+def test_ios_file_reader_returns_only_new_lines_and_survives_restart():
+    import base64
+
+    from NavTrace import NavTrace
+
+    def lines(seqs):
+        return "\n".join("[E2E-NAV] " + json.dumps({"event": "focus", "screen": "A", "t": s, "seq": s}) for s in seqs)
+
+    class Driver:
+        capabilities = {"platformName": "iOS", "bundleId": "b"}
+        data = lines([1, 2, 3])
+
+        def pull_file(self, _path):
+            return base64.b64encode(self.data.encode())
+
+    trace, driver = NavTrace(), Driver()
+    assert len(trace._read_ios_file(driver)) == 3
+    assert trace._read_ios_file(driver) == []
+    driver.data = lines([1, 2, 3, 4])
+    assert len(trace._read_ios_file(driver)) == 1
+    driver.data = lines([1])
+    assert len(trace._read_ios_file(driver)) == 1

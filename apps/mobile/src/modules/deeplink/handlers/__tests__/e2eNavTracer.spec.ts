@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('expo-file-system', () => ({ File: vi.fn(), Paths: {} }))
 
 import { doubleOpens, flattenRoutes, focusedPath } from '../e2eNavTracer'
 

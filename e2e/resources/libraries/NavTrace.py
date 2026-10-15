@@ -10,6 +10,7 @@ reports:
 Flows are written to <outputdir>/nav-flows.json for tools/flow_diff.py.
 """
 
+import base64
 import json
 import os
 import time
@@ -76,6 +77,7 @@ class NavTrace:
         self.outdir = None
         self.pending = []
         self.tracer_seen = None
+        self.last_seq = 0
 
     def _driver(self):
         try:
@@ -89,11 +91,33 @@ class NavTrace:
         if driver is None:
             return []
         platform = str(driver.capabilities.get("platformName", "")).lower()
-        log_type = "logcat" if platform == "android" else "syslog"
+        if platform == "android":
+            try:
+                return [entry.get("message", "") for entry in driver.get_log("logcat")]
+            except Exception:
+                return []
+        return self._read_ios_file(driver)
+
+    def _read_ios_file(self, driver):
+        """iOS release builds keep console.log out of the system log, so the app mirrors the
+        trace to Documents/e2e-nav.log; return only lines newer than the last one seen."""
+        bundle = driver.capabilities.get("bundleId") or driver.capabilities.get("appium:bundleId")
         try:
-            return [entry.get("message", "") for entry in driver.get_log(log_type)]
+            raw = base64.b64decode(driver.pull_file(f"@{bundle}:documents/e2e-nav.log")).decode()
         except Exception:
             return []
+        fresh = []
+        for line in raw.splitlines():
+            events = parse([line])
+            seq = events[0].get("seq", 0) if events else 0
+            if seq > self.last_seq:
+                fresh.append(line)
+                self.last_seq = seq
+        if not fresh and raw and parse(raw.splitlines()[-1:]) and parse(raw.splitlines()[-1:])[0].get("seq", 0) < self.last_seq:
+            # The app restarted and its counter began again: resynchronise on the new run.
+            self.last_seq = 0
+            return self._read_ios_file(driver)
+        return fresh
 
     def drain_nav_log(self):
         """Keeps everything logged so far for the test's flow, so a later wait sees only new lines."""
