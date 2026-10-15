@@ -13,10 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { BlockchainError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { AlgodError } from '../AlgodError'
-import {
-    ALGOD_ERROR_I18N_KEYS,
-    describeAlgodError,
-} from '../describeAlgodError'
+import { describeAlgodError } from '../describeAlgodError'
 
 const ADDR = 'GBFKIKHL55YJRTB4PSWXWQJDPHG6IHOLESWSWPPPR6HQ2N7H76RBI5JIT4'
 const OVERSPEND_MESSAGE =
@@ -77,13 +74,5 @@ describe('describeAlgodError', () => {
 
     it('ignores a non-Error value', () => {
         expect(describeAlgodError('overspend')).toBeUndefined()
-    })
-
-    it('lists every key it can return', () => {
-        const keys = new Set(ALGOD_ERROR_I18N_KEYS)
-
-        expect(keys.has('errors.algod.overspend.title')).toBe(true)
-        expect(keys.has('errors.network.no_connection.body')).toBe(true)
-        expect(keys.has('errors.algod.network_unavailable.title')).toBe(false)
     })
 })

@@ -211,7 +211,7 @@ describe('resolveErrorCopy', () => {
         // branch, the generic blockchain copy would win over the specific one.
         const error = new AppError('duplicate', {
             category: ErrorCategory.BLOCKCHAIN,
-            messageKey: 'errors.blockchain.generic',
+            messageKey: i18nKey('errors.blockchain.generic'),
         })
         describing(error)
 
@@ -242,7 +242,7 @@ describe('resolveErrorCopy', () => {
     it('keeps an AppError the chain does not describe on its own copy', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.webview.unsupported_url',
+            messageKey: i18nKey('errors.webview.unsupported_url'),
         })
 
         const result = resolveErrorCopy(

@@ -15,6 +15,7 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import type { ErrorMessageKeys } from '../errors/base'
 import type { RequestConfiguration } from '../models/queries'
 
 /** The `queryClient` backends a chain's own nodes serve. */
@@ -26,10 +27,8 @@ export type NodeBackendName = Exclude<
 /** A node's base URL and the header its API token rides in; an empty token sends no header. */
 export type NodeBackend = { url: string; tokenHeader: string; token: string }
 
-/** Copy for an error a chain's node raised: en.json keys, with `params` that may hold bigint. */
-export type NodeErrorCopy = {
-    titleKey: string
-    bodyKey: string
+/** Copy for an error a chain's node raised, with `params` that may hold bigint. */
+export type NodeErrorCopy = ErrorMessageKeys & {
     params: Readonly<Record<string, unknown>>
 }
 
