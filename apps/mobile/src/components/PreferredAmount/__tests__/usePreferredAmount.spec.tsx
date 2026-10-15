@@ -27,7 +27,8 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 const NATIVE_ASSET = vi.hoisted(() => ({ unitName: 'ALGO' }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
+    useIsNativeAssetId: (scope: { chainId: string }) => (id: unknown) =>
+        String(id) === (scope.chainId === 'ethereum' ? 'native' : '0'),
     isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetPricesQuery: mockUseAssetPricesQuery,
     useNativeAsset: () => NATIVE_ASSET,
@@ -257,6 +258,34 @@ describe('usePreferredAmount', () => {
             [],
             false,
         )
+    })
+
+    it("keeps ALGO as the display currency for another chain's native asset", () => {
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        mockUseCurrency.mockReturnValue({
+            preferredCurrency: 'ALGO',
+            fallbackCurrency: 'USD',
+            usdToPreferred: (v: Decimal) => v.div(new Decimal('0.15')),
+        })
+        mockUseAssetPricesQuery.mockReturnValue({
+            data: new Map([
+                ['native', { assetId: 'native', usdPrice: new Decimal('3') }],
+            ]),
+            isPending: false,
+        })
+
+        const { result } = renderHook(() =>
+            usePreferredAmount(
+                new Decimal(1),
+                'native',
+                false,
+                undefined,
+                scope,
+            ),
+        )
+
+        expect(result.current.displayCurrency).toBe('ALGO')
+        expect(result.current.convertedValue).toEqual(new Decimal(20))
     })
 
     it('prices the asset on the scope it is given', () => {

@@ -48,9 +48,12 @@ export const usePreferredAmount = (
     const assetScope = scope ?? currencyScope
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency(currencyScope)
-    const isNativeAssetId = useIsNativeAssetId(assetScope)
+    const isAlgoAssetId = useIsNativeAssetId(currencyScope)
     const isPreferredAlgo = isAlgoAssetName(preferredCurrency)
-    const isSourceAlgo = isNativeAssetId(sourceAssetId)
+    // Every chain's native asset shares an id shape, so ETH's 'native' would pass the id check alone.
+    const isSourceAlgo =
+        assetScope.chainId === currencyScope.chainId &&
+        isAlgoAssetId(sourceAssetId)
 
     const needsFallback = forceFallback || (isPreferredAlgo && isSourceAlgo)
 
