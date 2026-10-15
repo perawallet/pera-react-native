@@ -14,6 +14,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import {
     historyChainAdapters,
+    TRANSACTION_STATUS_NOTICE_KEYS,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -111,6 +112,7 @@ describe('ethereumModule', () => {
             expect.arrayContaining([
                 ...ETHEREUM_TRANSFER_TITLE_KEYS,
                 ...ETHEREUM_HISTORY_SUMMARY_KEYS,
+                ...TRANSACTION_STATUS_NOTICE_KEYS,
             ]),
         )
         const keys = ethereumModule.i18nKeys()

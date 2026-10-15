@@ -38,6 +38,9 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.warningText,
             marginTop: theme.spacing.xxs,
         },
+        notice: {
+            marginTop: theme.spacing.xs,
+        },
         amount,
         amountPositive: {
             color: theme.colors.positive,

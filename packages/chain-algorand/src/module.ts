@@ -11,6 +11,7 @@
  */
 
 import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
+import { TRANSACTION_STATUS_NOTICE_KEYS } from '@perawallet/wallet-core-transactions'
 import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
@@ -40,6 +41,7 @@ export const chainModule: ChainModule = {
             ...ALGORAND_SPEND_NOTICE_KEYS,
             ...ALGORAND_MESSAGE_TITLE_KEYS,
             ...ALGORAND_HISTORY_SUMMARY_KEYS,
+            ...TRANSACTION_STATUS_NOTICE_KEYS,
         ]),
     ],
     remoteConfigDefaults: algorandRemoteConfigDefaults,

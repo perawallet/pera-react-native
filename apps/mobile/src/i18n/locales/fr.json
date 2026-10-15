@@ -3136,6 +3136,11 @@
             "pending_verifying": "En attente — vérification",
             "raw_transaction": "Transaction brute"
         },
+        "notice": {
+            "pending": "En attente depuis {{since}}",
+            "failed": "Échouée",
+            "replaced": "Remplacée par une autre transaction"
+        },
         "list_item": {
             "send": "Envoi",
             "receive": "Réception",

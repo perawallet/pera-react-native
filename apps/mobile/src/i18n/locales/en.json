@@ -3136,6 +3136,11 @@
             "pending_verifying": "Pending — verifying",
             "raw_transaction": "Raw Transaction"
         },
+        "notice": {
+            "pending": "Pending since {{since}}",
+            "failed": "Failed",
+            "replaced": "Replaced by another transaction"
+        },
         "list_item": {
             "send": "Send",
             "receive": "Receive",

@@ -3136,6 +3136,11 @@
             "pending_verifying": "Pendiente — verificando",
             "raw_transaction": "Transacción en bruto"
         },
+        "notice": {
+            "pending": "Pendiente desde {{since}}",
+            "failed": "Fallida",
+            "replaced": "Reemplazada por otra transacción"
+        },
         "list_item": {
             "send": "Enviar",
             "receive": "Recibir",

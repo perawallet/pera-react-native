@@ -224,6 +224,13 @@ describe('useTransactionListItem against the history summary goldens', () => {
             expect(row.amountsOverflowCount).toBe(
                 Math.max(0, expected.length - 2),
             )
+
+            expect(row.notice?.kind).toBe(summary.notice?.kind)
+            if (row.notice) {
+                const copy = t(row.notice.titleKey, row.notice.params)
+                expect(copy).not.toBe(row.notice.titleKey)
+                expect(copy).not.toMatch(/\{\{/)
+            }
         },
     )
 })

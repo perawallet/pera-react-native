@@ -26,6 +26,7 @@ import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
+    TRANSACTION_STATUS_NOTICE_KEYS,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
@@ -176,6 +177,7 @@ describe('chainModule', () => {
                 ...ALGORAND_SPEND_NOTICE_KEYS,
                 ...ALGORAND_MESSAGE_TITLE_KEYS,
                 ...ALGORAND_HISTORY_SUMMARY_KEYS,
+                ...TRANSACTION_STATUS_NOTICE_KEYS,
             ]),
         )
     })

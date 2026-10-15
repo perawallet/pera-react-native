@@ -3128,6 +3128,11 @@
             "pending_verifying": "Ausstehend — wird überprüft",
             "raw_transaction": "Rohtransaktion"
         },
+        "notice": {
+            "pending": "Ausstehend seit {{since}}",
+            "failed": "Fehlgeschlagen",
+            "replaced": "Durch eine andere Transaktion ersetzt"
+        },
         "list_item": {
             "send": "Senden",
             "receive": "Empfangen",

@@ -3136,6 +3136,11 @@
             "pending_verifying": "Beklemede — doğrulanıyor",
             "raw_transaction": "Ham işlem"
         },
+        "notice": {
+            "pending": "Beklemede, başlangıç zamanı: {{since}}",
+            "failed": "Başarısız",
+            "replaced": "Başka bir işlemle değiştirildi"
+        },
         "list_item": {
             "send": "Gönder",
             "receive": "Al",
