@@ -67,7 +67,7 @@ export const useAccountDisplay = ({
                 : 'No Account',
         [account, scope.chainId],
     )
-    // The codec getAccountDisplayName truncates with, so `displayName !== address` holds for an unnamed account.
+    // Truncate with the codec getAccountDisplayName uses, so an unnamed account's displayName equals `address`.
     const address = useMemo(() => {
         if (!account) return undefined
         const { chainId } = scope

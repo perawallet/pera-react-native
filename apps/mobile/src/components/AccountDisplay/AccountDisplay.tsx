@@ -134,7 +134,7 @@ export const AccountDisplay = ({
         >
             {!!account && (
                 <PWView>
-                    {/* The icon stays on the legacy chain: only Algorand registers an account presentation adapter. */}
+                    {/* AccountIcon reads the legacy chain's account presentation adapter. */}
                     <AccountIcon
                         account={account}
                         size='xl'
