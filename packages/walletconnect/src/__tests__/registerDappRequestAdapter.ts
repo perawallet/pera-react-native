@@ -79,6 +79,12 @@ const { dappRequestChainAdapters } =
     await import('@perawallet/wallet-core-connections/dappRequest')
 const { algorandDappRequestAdapter } =
     await import('@perawallet/wallet-core-chain-algorand/connect')
+const { addressCodecs } = await import('@perawallet/wallet-core-chain-contract')
+// Relative, as for arc60-wire above: the codec's subpath is not exported. The
+// v2 handler offers an address to a chain only when that chain's codec
+// validates it.
+const { algorandAddressCodec } =
+    await import('../../../chain-algorand/src/accounts/address-codec')
 
 // A vitest setup file, run before every spec in this package: registers the
 // real Algorand adapter so every v1/v2 handler spec resolves live
@@ -87,3 +93,4 @@ const { algorandDappRequestAdapter } =
 // `pera/no-chain-package-imports` — this is the one place walletconnect may
 // name a chain package, and only for tests.
 dappRequestChainAdapters.register(algorandDappRequestAdapter)
+addressCodecs.register(algorandAddressCodec)

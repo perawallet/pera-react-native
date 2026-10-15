@@ -68,7 +68,8 @@ const makeHandler = (): ConnectionHandler => {
         return walletKit
     }
     return createWalletConnectV2Handler({
-        getNetwork: () => Networks.mainnet,
+        getNetworkId: () => Networks.mainnet,
+        isDappConnectEnabled: () => true,
         projectId: 'test-project-id',
         keyValueStorage: new MemoryKeyValueStorage(),
         createWalletKit,
