@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -20,7 +20,6 @@ import {
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
