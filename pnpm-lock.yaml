@@ -1431,6 +1431,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../../packages/chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -2357,6 +2360,9 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
+      '@perawallet/wallet-core-deeplinks':
+        specifier: workspace:*
+        version: link:../deeplinks
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device
@@ -2515,6 +2521,9 @@ importers:
       '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
         version: link:../chain-shared
+      '@perawallet/wallet-core-connections':
+        specifier: workspace:*
+        version: link:../connections
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
@@ -3114,6 +3123,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.3.0
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

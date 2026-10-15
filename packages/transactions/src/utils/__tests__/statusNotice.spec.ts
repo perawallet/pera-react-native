@@ -11,10 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-    TRANSACTION_STATUS_NOTICE_KEYS,
-    transactionStatusNotice,
-} from '../statusNotice'
+import { transactionStatusNotice } from '../statusNotice'
 
 const SINCE = 1752576000000
 
@@ -51,11 +48,4 @@ describe('transactionStatusNotice', () => {
             expect(transactionStatusNotice(status, SINCE)).toBeUndefined()
         },
     )
-
-    it('lists every key it emits', () => {
-        const emitted = (['pending', 'failed', 'replaced'] as const).map(
-            status => transactionStatusNotice(status)?.title.key,
-        )
-        expect(emitted).toEqual([...TRANSACTION_STATUS_NOTICE_KEYS])
-    })
 })

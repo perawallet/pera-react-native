@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 const t = (key: string) => key
-const getAlgodMessage = () => ({ title: 'algod', body: 'algod' })
+const getNodeErrorMessage = () => undefined
 
 describe('backup credentials file errors', () => {
     test('iCloud being off names the situation and says what to do', () => {
@@ -44,7 +44,7 @@ describe('backup credentials file errors', () => {
                 new ICloudUnavailableError(),
                 t,
                 'fallback',
-                getAlgodMessage,
+                getNodeErrorMessage,
             ),
         ).toEqual({
             title: 'cloud_backup.icloud.unavailable_title',
@@ -58,7 +58,7 @@ describe('backup credentials file errors', () => {
                 new GoogleDriveNotConfiguredError(),
                 t,
                 'fallback',
-                getAlgodMessage,
+                getNodeErrorMessage,
             ),
         ).toEqual({
             title: 'fallback',
@@ -115,7 +115,7 @@ describe('backup credentials file errors', () => {
         'a credentials-file problem keeps the caller title, names the problem and files no crash report',
         (error, body) => {
             expect(
-                resolveErrorCopy(error, t, 'fallback', getAlgodMessage),
+                resolveErrorCopy(error, t, 'fallback', getNodeErrorMessage),
             ).toEqual({ title: 'fallback', body })
             expect(isExpectedError(error)).toBe(true)
         },

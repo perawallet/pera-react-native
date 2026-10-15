@@ -1,1 +1,1 @@
-export const helper = { messageKey: 'scope.fixture.missing' }
+export const helper = i18nKey('scope.fixture.missing')

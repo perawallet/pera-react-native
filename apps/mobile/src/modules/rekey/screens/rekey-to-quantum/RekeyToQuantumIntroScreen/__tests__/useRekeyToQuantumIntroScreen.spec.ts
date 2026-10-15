@@ -17,30 +17,27 @@ import { useRekeyToQuantumIntroScreen } from '../useRekeyToQuantumIntroScreen'
 import en from '@i18n/locales/en.json'
 
 describe('useRekeyToQuantumIntroScreen', () => {
-    // Neither half of this pairing is visible to the i18n lint rules — the
-    // keys are built dynamically and their namespace claim covers anything
-    // under them — so a mismatch renders the raw key string on screen with
-    // every check green.
-    it('keeps expectationCount in sync with the expect_N keys in en.json', () => {
+    // Order only: an extra expect_N in en.json fails no-unused-translation-keys.
+    it('lists every expect_N line in en.json, in order', () => {
         const { result } = renderHook(() => useRekeyToQuantumIntroScreen())
 
         const copy: Record<string, string> = en.rekey.to_quantum.intro
-        const { expectationCount } = result.current
+        const expectKeys = Object.keys(copy).filter(key =>
+            /^expect_\d+$/.test(key),
+        )
 
-        for (let n = 1; n <= expectationCount; n++) {
-            expect(copy[`expect_${n}`]).toBeTruthy()
-        }
-        expect(copy[`expect_${expectationCount + 1}`]).toBeUndefined()
+        expect(result.current.copy.expectationKeys).toEqual(
+            expectKeys.map(key => `rekey.to_quantum.intro.${key}`),
+        )
     })
 
-    // A missing key renders as the raw key string on the screen, which no
-    // integration test asserting testIDs would catch.
-    it('resolves the title to a real en.json string', () => {
+    it('points the screen copy at the quantum intro namespace', () => {
         const { result } = renderHook(() => useRekeyToQuantumIntroScreen())
 
-        const copy: Record<string, string> = en.rekey.to_quantum.intro
-
-        expect(result.current.i18nBaseKey).toBe('rekey.to_quantum.intro')
-        expect(copy.title).toBeTruthy()
+        expect(result.current.copy).toMatchObject({
+            titleKey: 'rekey.to_quantum.intro.title',
+            bodyKey: 'rekey.to_quantum.intro.body',
+            ctaKey: 'rekey.to_quantum.intro.cta',
+        })
     })
 })

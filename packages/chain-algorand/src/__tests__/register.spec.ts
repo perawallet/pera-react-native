@@ -22,11 +22,13 @@ import {
     keyDerivations,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import { migrationChainAdapters } from '@perawallet/wallet-core-migrate'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID, registerChain } from '..'
 import { algorandDappRequestAdapter } from '../connect'
+import { algorandDeeplinkAdapter } from '../deeplinks/adapter'
 import {
     historyChainAdapters,
     sendFlowChainAdapters,
@@ -100,6 +102,15 @@ describe('registerChain', () => {
         migrationChainAdapters.reset()
         nodeBackendAdapters.reset()
         deviceChainAdapters.reset()
+        deeplinkAdapters.reset()
+    })
+
+    it('registers the Algorand deeplink adapter', () => {
+        registerChain()
+
+        expect(deeplinkAdapters.get(ALGORAND_CHAIN_ID)).toBe(
+            algorandDeeplinkAdapter,
+        )
     })
 
     it('registers the Algorand device adapter', () => {

@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -62,8 +63,8 @@ export const useCardWithdrawStatusScreen =
             isCancelling,
         } = useCardWithdraw()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.withdraw.error_title',
-            bodyKey: 'peraCard.withdraw.error_body',
+            titleKey: i18nKey('peraCard.withdraw.error_title'),
+            bodyKey: i18nKey('peraCard.withdraw.error_body'),
             shouldUseBackendMessage: false,
         })
 

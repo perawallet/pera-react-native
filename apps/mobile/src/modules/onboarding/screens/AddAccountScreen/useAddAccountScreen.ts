@@ -21,6 +21,13 @@ import {
     type LocalKeySeed,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    isPostQuantumScheme,
+    LEGACY_CHAIN_ID,
+    i18nKey,
+    type ChainId,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
@@ -32,11 +39,6 @@ import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
-import {
-    isPostQuantumScheme,
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { IconName } from '@components/core'
@@ -49,7 +51,9 @@ import type {
 import { trackChainOnboardingEvent } from '../../utils'
 
 // A key kind's create option can override it for its own keygen.
-const DEFAULT_CREATING_TITLE_KEY = 'onboarding.create_account.processing'
+const DEFAULT_CREATING_TITLE_KEY = i18nKey(
+    'onboarding.create_account.processing',
+)
 
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
@@ -122,7 +126,7 @@ export const useAddAccountScreen = () => {
     const runCreateAccount = useCallback(
         (
             create: () => Promise<Nullable<WalletAccount>>,
-            titleKey: string = DEFAULT_CREATING_TITLE_KEY,
+            titleKey: I18nKey = DEFAULT_CREATING_TITLE_KEY,
             chainId?: ChainId,
         ) => {
             setCreatingTitleKey(titleKey)
@@ -277,10 +281,12 @@ export const useAddAccountScreen = () => {
         if (derivableWallets.length > 0) {
             main.push({
                 testID: 'add_account_derive_from_wallet_button',
-                titleKey:
+                titleKey: i18nKey(
                     'onboarding.add_account.derive_from_wallet_option_title',
-                descriptionKey:
+                ),
+                descriptionKey: i18nKey(
                     'onboarding.add_account.derive_from_wallet_option_description',
+                ),
                 leftIcon: 'wallet-add',
                 onPress: handleDeriveFromWallet,
                 isDisabled: isCreatingAccount,
@@ -289,10 +295,12 @@ export const useAddAccountScreen = () => {
         if (canImportPrivateKey) {
             main.push({
                 testID: 'add_account_import_private_key_button',
-                titleKey:
+                titleKey: i18nKey(
                     'onboarding.add_account.import_private_key_option_title',
-                descriptionKey:
+                ),
+                descriptionKey: i18nKey(
                     'onboarding.add_account.import_private_key_option_description',
+                ),
                 leftIcon: 'key',
                 onPress: handleImportPrivateKey,
             })
@@ -300,9 +308,12 @@ export const useAddAccountScreen = () => {
         if (canWatchOnChain) {
             other.push({
                 testID: 'add_account_watch_button',
-                titleKey: 'onboarding.add_account.watch_address_option_title',
-                descriptionKey:
+                titleKey: i18nKey(
+                    'onboarding.add_account.watch_address_option_title',
+                ),
+                descriptionKey: i18nKey(
                     'onboarding.add_account.watch_address_option_description',
+                ),
                 leftIcon: 'eye',
                 onPress: handleWatchAddress,
             })
@@ -363,56 +374,69 @@ export const useAddAccountScreen = () => {
 
     const legacyMainOptions: AccountOption[] = useMemo(
         () =>
-            [
-                hasHDWallet && {
-                    testID: 'add_account_add_button',
-                    titleKey: 'onboarding.add_account.add_account_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.add_account_option_description',
-                    leftIcon: 'wallet-add' as IconName,
-                    onPress: handleAddAccount,
-                    isDisabled: isCreatingAccount,
-                },
-                !hasHDWallet && {
-                    testID: 'add_account_create_universal_wallet_button',
-                    titleKey:
-                        'onboarding.add_account.create_universal_wallet_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.create_universal_wallet_option_description',
-                    leftIcon: 'wallet-with-algo' as IconName,
-                    onPress: handleCreateUniversalWallet,
-                    isDisabled: isCreatingAccount,
-                },
-                ...createOptions.featured,
-                canUseMultisig && {
-                    testID: 'add_account_create_multisig_button',
-                    titleKey:
-                        'onboarding.add_account.create_multisig_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.create_multisig_option_description',
-                    leftIcon: 'people' as IconName,
-                    onPress: openMultisigIntroduction,
-                },
-                isPeraCardEnabled &&
-                    !hasCardSession && {
-                        testID: 'add_account_pera_card_button',
-                        titleKey:
-                            'onboarding.add_account.pera_card_option_title',
-                        descriptionKey:
-                            'onboarding.add_account.pera_card_option_description',
-                        leftIcon: 'card' as IconName,
-                        onPress: handleAddPeraCard,
+            (
+                [
+                    hasHDWallet && {
+                        testID: 'add_account_add_button',
+                        titleKey: i18nKey(
+                            'onboarding.add_account.add_account_option_title',
+                        ),
+                        descriptionKey: i18nKey(
+                            'onboarding.add_account.add_account_option_description',
+                        ),
+                        leftIcon: 'wallet-add' as IconName,
+                        onPress: handleAddAccount,
+                        isDisabled: isCreatingAccount,
                     },
-                {
-                    testID: 'add_account_import_button',
-                    titleKey:
-                        'onboarding.add_account.import_account_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.import_account_option_description',
-                    leftIcon: 'wallet-import' as IconName,
-                    onPress: handleOpenImportAccountOptions,
-                },
-            ].filter(Boolean) as AccountOption[],
+                    !hasHDWallet && {
+                        testID: 'add_account_create_universal_wallet_button',
+                        titleKey: i18nKey(
+                            'onboarding.add_account.create_universal_wallet_option_title',
+                        ),
+                        descriptionKey: i18nKey(
+                            'onboarding.add_account.create_universal_wallet_option_description',
+                        ),
+                        leftIcon: 'wallet-with-algo' as IconName,
+                        onPress: handleCreateUniversalWallet,
+                        isDisabled: isCreatingAccount,
+                    },
+                    ...createOptions.featured,
+                    canUseMultisig && {
+                        testID: 'add_account_create_multisig_button',
+                        titleKey: i18nKey(
+                            'onboarding.add_account.create_multisig_option_title',
+                        ),
+                        descriptionKey: i18nKey(
+                            'onboarding.add_account.create_multisig_option_description',
+                        ),
+                        leftIcon: 'people' as IconName,
+                        onPress: openMultisigIntroduction,
+                    },
+                    isPeraCardEnabled &&
+                        !hasCardSession && {
+                            testID: 'add_account_pera_card_button',
+                            titleKey: i18nKey(
+                                'onboarding.add_account.pera_card_option_title',
+                            ),
+                            descriptionKey: i18nKey(
+                                'onboarding.add_account.pera_card_option_description',
+                            ),
+                            leftIcon: 'card' as IconName,
+                            onPress: handleAddPeraCard,
+                        },
+                    {
+                        testID: 'add_account_import_button',
+                        titleKey: i18nKey(
+                            'onboarding.add_account.import_account_option_title',
+                        ),
+                        descriptionKey: i18nKey(
+                            'onboarding.add_account.import_account_option_description',
+                        ),
+                        leftIcon: 'wallet-import' as IconName,
+                        onPress: handleOpenImportAccountOptions,
+                    },
+                ] satisfies (AccountOption | false | null | undefined)[]
+            ).filter((option): option is AccountOption => !!option),
         [
             hasHDWallet,
             handleAddAccount,
@@ -430,28 +454,34 @@ export const useAddAccountScreen = () => {
 
     const legacyOtherOptions: AccountOption[] = useMemo(
         () =>
-            [
-                canAddWatchAccount && {
-                    testID: 'add_account_watch_button',
-                    titleKey:
-                        'onboarding.add_account.watch_address_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.watch_address_option_description',
-                    leftIcon: 'eye' as IconName,
-                    onPress: handleWatchAddress,
-                },
-                hasHDWallet && {
-                    testID: 'add_account_create_universal_wallet_button',
-                    titleKey:
-                        'onboarding.add_account.create_universal_wallet_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.create_universal_wallet_option_description',
-                    leftIcon: 'wallet-with-algo' as IconName,
-                    onPress: handleCreateUniversalWallet,
-                    isDisabled: isCreatingAccount,
-                },
-                ...createOptions.other,
-            ].filter(Boolean) as AccountOption[],
+            (
+                [
+                    canAddWatchAccount && {
+                        testID: 'add_account_watch_button',
+                        titleKey: i18nKey(
+                            'onboarding.add_account.watch_address_option_title',
+                        ),
+                        descriptionKey: i18nKey(
+                            'onboarding.add_account.watch_address_option_description',
+                        ),
+                        leftIcon: 'eye' as IconName,
+                        onPress: handleWatchAddress,
+                    },
+                    hasHDWallet && {
+                        testID: 'add_account_create_universal_wallet_button',
+                        titleKey: i18nKey(
+                            'onboarding.add_account.create_universal_wallet_option_title',
+                        ),
+                        descriptionKey: i18nKey(
+                            'onboarding.add_account.create_universal_wallet_option_description',
+                        ),
+                        leftIcon: 'wallet-with-algo' as IconName,
+                        onPress: handleCreateUniversalWallet,
+                        isDisabled: isCreatingAccount,
+                    },
+                    ...createOptions.other,
+                ] satisfies (AccountOption | false | null | undefined)[]
+            ).filter((option): option is AccountOption => !!option),
         [
             hasHDWallet,
             canAddWatchAccount,

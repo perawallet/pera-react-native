@@ -16,6 +16,7 @@ import {
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     CannotSignError,
     FeeAdjustmentDeliveryError,
@@ -95,7 +96,7 @@ describe('FeeAdjustmentDeliveryError', () => {
 describe('signing errors carry user-facing keys', () => {
     it('SigningError forwards a declared messageKey with the signing title', () => {
         const error = new SigningError('x', undefined, {
-            messageKey: 'errors.kms.key_not_found',
+            messageKey: i18nKey('errors.kms.key_not_found'),
             params: { keyId: 'k' },
         })
 

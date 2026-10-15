@@ -14,13 +14,16 @@ import { describe, expect, it } from 'vitest'
 import { WALLET_OPERATION_TYPES, matchesScope } from '../models'
 
 describe('wallet operation vocabulary', () => {
-    it('is closed to the two ARC-defined operations', () => {
-        // The union is deliberately closed: handlers reject what they cannot
-        // map rather than emitting an `unknown` variant every consumer must
-        // then handle forever.
+    it('is a closed list', () => {
+        // Handlers reject what they cannot map rather than emitting an
+        // `unknown` variant every consumer must then handle forever.
         expect(WALLET_OPERATION_TYPES).toEqual([
             'sign-transactions',
             'sign-data',
+            'send-transaction',
+            'sign-message',
+            'sign-typed-data',
+            'switch-network',
         ])
     })
 })

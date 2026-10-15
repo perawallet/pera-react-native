@@ -16,6 +16,7 @@ import {
     type ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /**
  * Base kms error
@@ -32,7 +33,7 @@ export class KeyManagementError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.KMS,
                 retryable: false,
-                messageKey: 'errors.kms.generic',
+                messageKey: i18nKey('errors.kms.generic'),
                 ...metadata,
             },
             originalError,
@@ -46,7 +47,7 @@ export class KeyManagementError extends AppError {
 export class KeyAccessError extends KeyManagementError {
     constructor(originalError?: Error) {
         super('Failed to access the signing key', originalError, {
-            messageKey: 'errors.kms.key_access_error',
+            messageKey: i18nKey('errors.kms.key_access_error'),
         })
     }
 }
@@ -58,7 +59,7 @@ export class KeyNotFoundError extends KeyManagementError {
     constructor(keyId: string) {
         super('The specified key was not found.', undefined, {
             severity: ErrorSeverity.CRITICAL,
-            messageKey: 'errors.kms.key_not_found',
+            messageKey: i18nKey('errors.kms.key_not_found'),
             params: { keyId },
         })
     }
@@ -71,7 +72,7 @@ export class InvalidKeyError extends KeyManagementError {
     constructor(keyId: string) {
         super('The specified key is invalid.', undefined, {
             severity: ErrorSeverity.CRITICAL,
-            messageKey: 'errors.kms.invalid_key',
+            messageKey: i18nKey('errors.kms.invalid_key'),
             params: { keyId },
         })
     }

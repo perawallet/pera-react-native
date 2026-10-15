@@ -19,6 +19,7 @@ import {
 import { CHAIN_CAPABILITIES } from '../models/capabilities'
 import type { ChainCapabilities } from '../models/capabilities'
 import type { UnsignedTransaction } from '../models/domain'
+import { i18nKey } from '../models/i18n'
 import type { NetworkId } from '../models/identity'
 
 const SIGNER = `fx${'ab'.repeat(20)}`
@@ -36,7 +37,7 @@ const fixtureTransaction = (
     payload,
     summary: {
         kind: 'transfer',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'out',
         icon: 'send',
     },

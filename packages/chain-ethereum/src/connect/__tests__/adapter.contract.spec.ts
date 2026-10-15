@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-export * from './querykeys'
-export * from './useArc59SendSummaryQuery'
-export * from './useArc59AssetRequestsQuery'
-export * from './useArc59Invalidator'
+import { dappRequestContractTests } from '@perawallet/wallet-core-connections/testing'
+import { ethereumDappRequestAdapter } from '../dappRequestAdapter'
+
+dappRequestContractTests(() => ethereumDappRequestAdapter, {
+    disclosed: {
+        scope: { chainId: 'ethereum', networkId: 'sepolia' },
+        reportedAs: 'sepolia',
+    },
+    undisclosed: { scope: { chainId: 'ethereum', networkId: 'custom' } },
+    walletConnect: { networkWithCaip2: 'mainnet' },
+})

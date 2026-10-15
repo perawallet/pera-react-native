@@ -57,7 +57,7 @@ const PROPOSAL_EVENT: ConnectionsEvent = {
         proposalId: 'p1',
         pairingId: 'pair-1',
         peer: { name: 'dApp' },
-        requested: { networks: ['mainnet'], methods: [] },
+        requested: { networks: ['mainnet'], chains: ['algorand'], methods: [] },
         expiresAt: 1,
     },
 }

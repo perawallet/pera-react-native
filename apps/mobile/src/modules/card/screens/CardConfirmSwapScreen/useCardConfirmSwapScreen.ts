@@ -31,6 +31,7 @@ import {
     getCardSettlementAssetId,
     useCardUsdcCreditQuery,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
     logger,
@@ -128,8 +129,8 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const { deposit } = useCardManualDeposit()
     const { readUsdcBalance, waitForUsdcCredit } = useCardUsdcCreditQuery(scope)
     const showDepositError = useCardErrorToast({
-        titleKey: 'peraCard.add_funds.swap_deposit_failed_title',
-        bodyKey: 'peraCard.add_funds.swap_deposit_failed_body',
+        titleKey: i18nKey('peraCard.add_funds.swap_deposit_failed_title'),
+        bodyKey: i18nKey('peraCard.add_funds.swap_deposit_failed_body'),
         shouldUseBackendMessage: false,
     })
     const [step, setStep] = useState<CardConfirmSwapStep>('idle')

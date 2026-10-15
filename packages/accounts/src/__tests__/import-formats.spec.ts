@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     detectImportKind,
     importFormatsFor,
@@ -35,10 +36,10 @@ import {
 const HD_OPTIONS: LocalKeyKindOptions = {
     recover: {
         id: 'fake_hd',
-        titleKey: 'fake.recover.title',
-        chipKey: 'fake.recover.chip',
-        descriptionKey: 'fake.recover.description',
-        mnemonicInfoKey: 'fake.recover.info',
+        titleKey: i18nKey('fake.recover.title'),
+        chipKey: i18nKey('fake.recover.chip'),
+        descriptionKey: i18nKey('fake.recover.description'),
+        mnemonicInfoKey: i18nKey('fake.recover.info'),
         isSuggested: true,
         analyticsEvent: 'fake_recover',
     },
@@ -47,8 +48,8 @@ const HD_OPTIONS: LocalKeyKindOptions = {
 const EXPLICIT_OPTIONS: LocalKeyKindOptions = {
     import: {
         id: 'fake_explicit',
-        titleKey: 'fake.import.title',
-        descriptionKey: 'fake.import.description',
+        titleKey: i18nKey('fake.import.title'),
+        descriptionKey: i18nKey('fake.import.description'),
         icon: 'wallet',
     },
 }

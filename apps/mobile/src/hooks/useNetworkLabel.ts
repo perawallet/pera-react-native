@@ -10,16 +10,20 @@
  limitations under the License
  */
 import { useCallback } from 'react'
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import {
+    type NetworkId,
+    i18nKey,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
 // Static keys: the i18n lint rules cannot verify an interpolated key.
-const NETWORK_LABEL_KEYS: ReadonlyMap<NetworkId, string> = new Map([
-    [Networks.mainnet, 'common.network_label.mainnet'],
-    [Networks.testnet, 'common.network_label.testnet'],
-    [Networks.betanet, 'common.network_label.betanet'],
-    [Networks.custom, 'common.network_label.custom'],
+const NETWORK_LABEL_KEYS: ReadonlyMap<NetworkId, I18nKey> = new Map([
+    [Networks.mainnet, i18nKey('common.network_label.mainnet')],
+    [Networks.testnet, i18nKey('common.network_label.testnet')],
+    [Networks.betanet, i18nKey('common.network_label.betanet')],
+    [Networks.custom, i18nKey('common.network_label.custom')],
 ])
 
 /** An unknown network renders as its raw id: visible, never blank. */

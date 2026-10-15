@@ -21,6 +21,7 @@ import {
     useConfirmPasswordResetMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -55,8 +56,8 @@ export const useCardForgotPasswordNewPasswordScreen =
         const { email, token } = route.params
         const confirmReset = useConfirmPasswordResetMutation(scope)
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.forgot_password.error_title',
-            bodyKey: 'peraCard.forgot_password.error_body',
+            titleKey: i18nKey('peraCard.forgot_password.error_title'),
+            bodyKey: i18nKey('peraCard.forgot_password.error_body'),
         })
 
         const {

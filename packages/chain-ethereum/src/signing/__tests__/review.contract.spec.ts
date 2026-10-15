@@ -17,6 +17,7 @@ import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
     type UnsignedTransaction,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumReviewerAdapter } from '../review'
 import { SENDER, TRANSFER } from './fixtures'
@@ -49,7 +50,7 @@ const unsigned = (
     payload: { from, transaction },
     summary: {
         kind: 'contract-call',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'none',
         icon: 'contract-call',
     },

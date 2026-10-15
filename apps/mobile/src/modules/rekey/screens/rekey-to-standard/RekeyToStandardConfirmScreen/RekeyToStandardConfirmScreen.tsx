@@ -10,9 +10,25 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyConfirmView } from '../../../components/RekeyConfirmView'
+import {
+    RekeyConfirmView,
+    type RekeyConfirmCopy,
+} from '../../../components/RekeyConfirmView'
 import { useRekeyToStandardConfirmScreen } from './useRekeyToStandardConfirmScreen'
+
+const CONFIRM_COPY: RekeyConfirmCopy = {
+    titleKey: i18nKey('rekey.to_standard.confirm.title'),
+    bodyKey: i18nKey('rekey.to_standard.confirm.body'),
+    learnMoreKey: i18nKey('rekey.to_standard.confirm.learn_more'),
+    currentAuthLabelKey: i18nKey(
+        'rekey.to_standard.confirm.current_auth_label',
+    ),
+    feeLabelKey: i18nKey('rekey.to_standard.confirm.fee_label'),
+    summaryLabelKey: i18nKey('rekey.to_standard.confirm.summary_label'),
+    ctaKey: i18nKey('rekey.to_standard.confirm.cta'),
+}
 
 export const RekeyToStandardConfirmScreen = () => {
     const { handleConfirmPress, ...rest } = useRekeyToStandardConfirmScreen()
@@ -20,7 +36,7 @@ export const RekeyToStandardConfirmScreen = () => {
     return (
         <RekeyConfirmView
             {...rest}
-            i18nPrefix='rekey.to_standard.confirm'
+            copy={CONFIRM_COPY}
             testIDPrefix='rekey-to-standard'
             supportUrl={config.rekeyToStandardSupportUrl}
             onConfirmPress={handleConfirmPress}

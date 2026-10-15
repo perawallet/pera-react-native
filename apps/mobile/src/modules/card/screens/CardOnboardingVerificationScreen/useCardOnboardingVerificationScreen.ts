@@ -19,6 +19,7 @@ import {
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
@@ -47,8 +48,8 @@ export const useCardOnboardingVerificationScreen =
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.verification.error_title',
-            bodyKey: 'peraCard.verification.error_body',
+            titleKey: i18nKey('peraCard.verification.error_title'),
+            bodyKey: i18nKey('peraCard.verification.error_body'),
         })
         const { handleLogout } = useCardOnboardingLogout()
         const onboardingId = useCardStore(state => state.onboardingId)

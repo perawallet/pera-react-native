@@ -10,16 +10,17 @@
  limitations under the License
  */
 
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type TabLabelProps = {
-    i18nKey: string
+    labelKey: I18nKey
     active: boolean
 }
 
-export const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
+export const TabLabel = ({ labelKey, active }: TabLabelProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
@@ -30,7 +31,7 @@ export const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
                 truncate
                 style={[styles.label, active ? styles.active : styles.inactive]}
             >
-                {t(i18nKey)}
+                {t(labelKey)}
             </PWText>
         </PWView>
     )

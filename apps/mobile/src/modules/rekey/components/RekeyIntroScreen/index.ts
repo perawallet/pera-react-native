@@ -11,7 +11,7 @@
  */
 
 export { RekeyIntroScreen } from './RekeyIntroScreen'
-export type { RekeyIntroScreenProps } from './RekeyIntroScreen'
+export type { RekeyIntroCopy, RekeyIntroScreenProps } from './RekeyIntroScreen'
 export { useRekeyIntroScreen } from './useRekeyIntroScreen'
 export type {
     RekeyIntroNavConfig,

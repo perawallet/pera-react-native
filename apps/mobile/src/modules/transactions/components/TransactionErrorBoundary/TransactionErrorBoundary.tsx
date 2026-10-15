@@ -35,7 +35,11 @@ const TransactionErrorFallback = ({
     return (
         <EmptyView
             title={t('errors.transaction.title')}
-            body={appError ? t(appError.message) : t('errors.transaction.body')}
+            body={
+                appError?.metadata.messageKey
+                    ? t(appError.metadata.messageKey, appError.metadata.params)
+                    : t('errors.transaction.body')
+            }
             button={
                 <PWButton
                     title={t('common.go_back.label')}

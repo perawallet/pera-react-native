@@ -17,11 +17,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { BackupAccountType } from '@perawallet/wallet-core-backup'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     AlgorandBackupKinds,
     algorandBackupKindIdOf,
 } from '../../backup/serialize-account'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
     standaloneAccount,
@@ -32,10 +32,7 @@ import {
     watchAccount,
 } from '../../__tests__/algorandAccounts'
 import { algorandAccountsAdapter } from '../adapter'
-import {
-    accountPresentationI18nKeys,
-    algorandAccountPresentation,
-} from '../presentation'
+import { algorandAccountPresentation } from '../presentation'
 
 beforeAll(() => {
     accountsChainAdapters.reset()
@@ -269,38 +266,6 @@ describe('algorandAccountPresentation.transitionLabel', () => {
         expect(transitionLabel(standard, quantum).supportUrl).toBe(
             config.quantumAccountSupportUrl,
         )
-    })
-})
-
-describe('accountPresentationI18nKeys', () => {
-    it('lists every key the presentation emits', () => {
-        const keys = new Set(accountPresentationI18nKeys())
-        const accounts = [
-            standaloneAccount('A'),
-            hdAccount('H'),
-            hardwareAccount('L'),
-            signableMultisig,
-            watchAccount('W'),
-            quantumAccount('F'),
-        ]
-
-        for (const account of accounts) {
-            for (const held of [[account, participant], [account]]) {
-                const { labelKey, infoTitleKey, infoBodyKey } = describeAccount(
-                    account,
-                    held,
-                )
-                expect(keys).toContain(labelKey)
-                expect(keys).toContain(infoTitleKey)
-                expect(keys).toContain(infoBodyKey)
-            }
-            for (const to of accounts) {
-                const label = transitionLabel(account, to)
-                expect(keys).toContain(label.labelKey)
-                expect(keys).toContain(label.signerKey)
-                expect(keys).toContain(label.descriptionKey)
-            }
-        }
     })
 })
 

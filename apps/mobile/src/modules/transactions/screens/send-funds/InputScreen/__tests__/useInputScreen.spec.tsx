@@ -20,6 +20,7 @@ import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
     useSpendableBalanceQuery,
@@ -148,15 +149,23 @@ vi.mock('@modules/transactions/hooks', () => ({
 }))
 
 const RESERVE_NOTICE: ChainNotice = {
-    title: { key: 'reserve.title' },
+    title: { key: i18nKey('send_funds.input.min_balance_title') },
     body: [
-        { key: 'reserve.amount', params: { minBalance: '0.1' } },
-        { key: 'reserve.body' },
+        {
+            key: i18nKey('send_funds.input.min_balance_amount'),
+            params: { minBalance: '0.1' },
+        },
+        { key: i18nKey('send_funds.input.min_balance_body') },
     ],
 }
 const CLOSE_NOTICE: ChainNotice = {
-    title: { key: 'close.title' },
-    body: [{ key: 'close.body', params: { minBalance: '0.1' } }],
+    title: { key: i18nKey('send_funds.close_account.title') },
+    body: [
+        {
+            key: i18nKey('send_funds.close_account.body'),
+            params: { minBalance: '0.1' },
+        },
+    ],
 }
 
 // Amounts are base units, as the chain's adapter returns them.
@@ -395,7 +404,7 @@ describe('useInputScreen', () => {
         })
 
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
-        expect(sheetProps().title).toBe('reserve.title')
+        expect(sheetProps().title).toBe('send_funds.input.min_balance_title')
         expect(mockShowToast).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
@@ -588,7 +597,7 @@ describe('useInputScreen', () => {
             await result.current.handleNext()
         })
 
-        expect(sheetProps().title).toBe('reserve.title')
+        expect(sheetProps().title).toBe('send_funds.input.min_balance_title')
         expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
         expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
     })
@@ -708,8 +717,8 @@ describe('useInputScreen', () => {
             })
 
             expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
-            expect(sheetProps().title).toBe('close.title')
-            expect(sheetProps().message).toBe('close.body')
+            expect(sheetProps().title).toBe('send_funds.close_account.title')
+            expect(sheetProps().message).toBe('send_funds.close_account.body')
             expect(mockNavigate).not.toHaveBeenCalled()
         })
 

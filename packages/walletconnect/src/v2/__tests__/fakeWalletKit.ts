@@ -37,8 +37,10 @@ export const TOPIC = 'a'.repeat(64)
 export const OTHER_TOPIC = 'b'.repeat(64)
 export const PAIRING_TOPIC = 'c'.repeat(64)
 export const SYM_KEY = 'd'.repeat(64)
-export const ADDRESS = 'A'.repeat(58)
-export const OTHER_ADDRESS = 'B'.repeat(58)
+export const ADDRESS =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+export const OTHER_ADDRESS =
+    'AEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEA5RCDXMI'
 // The real registered adapter's own ids (registerDappRequestAdapter.ts, run
 // as this package's vitest setup), so a genesis-hash or CAIP-2 typo on either
 // side of the adapter boundary fails a real test rather than passing against

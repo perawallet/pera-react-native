@@ -13,13 +13,16 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { useSigningAccounts } from '../useSigningAccounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useSigningAccounts, useSigningAccountsOn } from '../useSigningAccounts'
+import { accountsChainAdapters } from '../../chain-adapter'
 import { useAccountsStore } from '../../store'
 import { testAccount } from '../../__tests__/accountFactory'
 import {
     FAKE_CHAIN_ID,
     MAINNET_SCOPE,
     fakeAccountsChain,
+    registerFakeAccountsChain,
 } from '../../__tests__/fakeAccountsChain'
 
 describe('useSigningAccounts', () => {
@@ -70,6 +73,68 @@ describe('useSigningAccounts', () => {
 
     it('is empty with no accounts', () => {
         const { result } = renderHook(() => useSigningAccounts(FAKE_CHAIN_ID))
+
+        expect(result.current).toEqual([])
+    })
+})
+
+describe('useSigningAccountsOn', () => {
+    const OTHER_CHAIN = 'other' as ChainId
+
+    const onOtherChain = (address: string) =>
+        testAccount('local', address, {
+            id: address,
+            chains: { [OTHER_CHAIN]: { address, keyPairId: `${address}-key` } },
+        })
+
+    beforeEach(() => {
+        useAccountsStore.getState().resetState()
+        useNetworkStore.getState().setNetwork('mainnet')
+        registerFakeAccountsChain()
+        accountsChainAdapters.register({
+            ...fakeAccountsChain().adapter,
+            chainId: OTHER_CHAIN,
+        })
+    })
+
+    it('keeps an account signable on any listed chain and hides the rest', () => {
+        const onFake = testAccount('local', 'A')
+        const onOther = onOtherChain('0xB')
+        useAccountsStore.getState().setAccounts([onFake, onOther])
+
+        const { result } = renderHook(() => useSigningAccountsOn([OTHER_CHAIN]))
+
+        expect(result.current).toEqual([onOther])
+    })
+
+    it('lists both accounts when both chains are asked for', () => {
+        const onFake = testAccount('local', 'A')
+        const onOther = onOtherChain('0xB')
+        useAccountsStore.getState().setAccounts([onFake, onOther])
+
+        const { result } = renderHook(() =>
+            useSigningAccountsOn([FAKE_CHAIN_ID, OTHER_CHAIN]),
+        )
+
+        expect(result.current).toEqual([onFake, onOther])
+    })
+
+    it('is empty when no listed chain has a signable account', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([testAccount('watch', 'A'), onOtherChain('0xB')])
+
+        const { result } = renderHook(() =>
+            useSigningAccountsOn([FAKE_CHAIN_ID]),
+        )
+
+        expect(result.current).toEqual([])
+    })
+
+    it('is empty for no chains', () => {
+        useAccountsStore.getState().setAccounts([testAccount('local', 'A')])
+
+        const { result } = renderHook(() => useSigningAccountsOn([]))
 
         expect(result.current).toEqual([])
     })

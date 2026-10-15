@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -40,8 +41,10 @@ const getWarningConfig = (type: AddressWarning['type'], isGroup: boolean) => {
             return {
                 icon: 'trash' as const,
                 messageKey: isGroup
-                    ? 'transactions.warning.close_account_group_warning'
-                    : 'transactions.warning.close_account_warning',
+                    ? i18nKey(
+                          'transactions.warning.close_account_group_warning',
+                      )
+                    : i18nKey('transactions.warning.close_account_warning'),
                 boldKey: null,
             }
         }
@@ -49,8 +52,8 @@ const getWarningConfig = (type: AddressWarning['type'], isGroup: boolean) => {
             return {
                 icon: 'unlink' as const,
                 messageKey: isGroup
-                    ? 'transactions.warning.close_asset_group_warning'
-                    : 'transactions.warning.close_asset_warning',
+                    ? i18nKey('transactions.warning.close_asset_group_warning')
+                    : i18nKey('transactions.warning.close_asset_warning'),
                 boldKey: null,
             }
         }
@@ -58,18 +61,20 @@ const getWarningConfig = (type: AddressWarning['type'], isGroup: boolean) => {
             return {
                 icon: 'rekey' as const,
                 messageKey: isGroup
-                    ? 'transactions.warning.rekey_group_warning'
-                    : 'transactions.warning.rekey_warning',
-                boldKey: 'transactions.warning.rekey_warning_bold',
+                    ? i18nKey('transactions.warning.rekey_group_warning')
+                    : i18nKey('transactions.warning.rekey_warning'),
+                boldKey: i18nKey('transactions.warning.rekey_warning_bold'),
             }
         }
         case 'asset-freeze': {
             return {
                 icon: 'snowflake' as const,
                 messageKey: isGroup
-                    ? 'transactions.warning.asset_freeze_group_warning'
-                    : 'transactions.warning.asset_freeze_warning',
-                boldKey: 'transactions.warning.asset_freeze_warning_bold',
+                    ? i18nKey('transactions.warning.asset_freeze_group_warning')
+                    : i18nKey('transactions.warning.asset_freeze_warning'),
+                boldKey: i18nKey(
+                    'transactions.warning.asset_freeze_warning_bold',
+                ),
             }
         }
     }

@@ -17,7 +17,9 @@ import {
     type ChainDescriptor,
     type ChainId,
     type ChainNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import {
     algorandCapabilityDefaults,
@@ -101,4 +103,23 @@ export const restoreAlgorandOnlyChains = (): void => {
         algorandCapabilityDefaults,
         algorandCapabilityRestrictions,
     )
+}
+
+const ALGORAND_ADDRESS_SHAPE = /^[0-9a-zA-Z]{58}$/
+
+/**
+ * Stands in for the Algorand address codec, which the unit registry lacks.
+ * Defaults to the address shape; pass `isValid` to decide per test. Call
+ * `addressCodecs.reset()` afterwards.
+ */
+export const registerLegacyAddressCodec = (
+    isValid: (address: string) => boolean = address =>
+        ALGORAND_ADDRESS_SHAPE.test(address),
+): void => {
+    addressCodecs.reset()
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: LEGACY_CHAIN_ID,
+        isValid,
+    })
 }

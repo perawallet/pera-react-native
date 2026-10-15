@@ -27,13 +27,15 @@ import { useTransactionDetailsScreen } from '../useTransactionDetailsScreen'
 const mockPush = vi.fn()
 const routeParams: { current: Record<string, unknown> } = { current: {} }
 
-vi.mock('@react-navigation/native', () => ({
+// Partial: importing `@modules/algorand` loads components that read other
+// navigation exports at module scope.
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/native')>()),
     useNavigation: () => ({ push: mockPush }),
     useRoute: () => ({ params: routeParams.current }),
 }))
 
 const mockUseTransactionDetailQuery = vi.fn()
-const mockUseGroupTransactionsQuery = vi.fn()
 
 vi.mock(
     '@perawallet/wallet-core-chain-algorand/blockchain',
@@ -47,9 +49,6 @@ vi.mock(
             useTransactionDetailQuery: (
                 ...args: Parameters<typeof actual.useTransactionDetailQuery>
             ) => mockUseTransactionDetailQuery(...args),
-            useGroupTransactionsQuery: (
-                ...args: Parameters<typeof actual.useGroupTransactionsQuery>
-            ) => mockUseGroupTransactionsQuery(...args),
         }
     },
 )
@@ -90,9 +89,6 @@ const queryResult = (overrides: Record<string, unknown>) => ({
 describe('useTransactionDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseGroupTransactionsQuery.mockReturnValue({
-            groupTransactions: [],
-        })
         mockUseTransactionDetailQuery.mockReturnValue(queryResult({}))
         routeParams.current = {}
         useNetworkStatusStore.getState().setHasInternet(true)
@@ -271,7 +267,7 @@ describe('useTransactionDetailsScreen', () => {
         expect(mockRefetch).not.toHaveBeenCalled()
     })
 
-    it('pushes a new details screen for a group transaction', () => {
+    it('returns the route group id for the group panel to read', () => {
         routeParams.current = {
             transactionId: 'TX123',
             historyTransaction: historyItem,
@@ -279,15 +275,8 @@ describe('useTransactionDetailsScreen', () => {
         }
 
         const { result } = renderHook(() => useTransactionDetailsScreen())
-        const inner = { id: 'INNER' } as unknown as PeraDisplayableTransaction
-        act(() => {
-            result.current.handleTransactionPress(inner)
-        })
 
-        expect(mockPush).toHaveBeenCalledWith('TransactionDetails', {
-            transaction: { family: 'algorand', transaction: inner },
-            groupId: 'GROUP1',
-        })
+        expect(result.current.groupId).toBe('GROUP1')
     })
 
     it('pushes the related transaction as tagged', () => {

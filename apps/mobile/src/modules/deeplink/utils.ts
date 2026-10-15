@@ -11,11 +11,19 @@
  */
 
 import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     PERAWALLET_SCHEME,
     PERAWALLET_UNIVERSAL_LINK_HOST,
     PERAWALLET_WC_SCHEME,
 } from './constants'
 import type { KeyregParticipationFields, KeyregType } from './types'
+
+// The parsers pass optional params straight through, so an absent one is simply not an address.
+export const isLegacyChainAddress = (address: string | undefined): boolean =>
+    !!address && addressCodecs.get(LEGACY_CHAIN_ID).isValid(address)
 
 // A percent sign that isn't a valid escape (`?label=100%`) makes
 // `decodeURIComponent` throw, and the fallback below is inside the catch, so it

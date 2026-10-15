@@ -16,6 +16,7 @@ import {
     type ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type MultisigValidationCode =
     | 'participant_is_multisig'
@@ -48,8 +49,9 @@ export class ParticipantIsMultisigError extends MultisigValidationError {
             'participant_is_multisig',
             'Cannot add a shared account as a participant.',
             {
-                messageKey:
+                messageKey: i18nKey(
                     'multisig.add_participant.cannot_add_multisig_error_body',
+                ),
             },
         )
     }
@@ -61,8 +63,9 @@ export class ParticipantIsWatchError extends MultisigValidationError {
             'participant_is_watch',
             'Cannot add a watch account as a participant.',
             {
-                messageKey:
+                messageKey: i18nKey(
                     'multisig.add_participant.cannot_add_watch_error_body',
+                ),
             },
         )
     }
@@ -74,8 +77,9 @@ export class ParticipantSchemeUnsupportedError extends MultisigValidationError {
             'participant_is_quantum',
             "Cannot add a participant whose signature scheme the multisig can't carry.",
             {
-                messageKey:
+                messageKey: i18nKey(
                     'multisig.add_participant.cannot_add_quantum_error_body',
+                ),
             },
         )
     }
@@ -87,7 +91,7 @@ export class ThresholdExceedsParticipantsError extends MultisigValidationError {
             'threshold_exceeds_participants',
             `Threshold (${threshold}) cannot exceed participant count (${participantCount}).`,
             {
-                messageKey: 'multisig.threshold.exceeds_participants',
+                messageKey: i18nKey('multisig.threshold.exceeds_participants'),
                 params: { threshold, participantCount },
             },
         )

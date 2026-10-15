@@ -10,12 +10,22 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Linking } from 'react-native'
 import { useWebViewNavigationGuard } from '../useWebViewNavigationGuard'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 
 const handleDeepLink = vi.fn()
+
+beforeEach(() => {
+    registerLegacyAddressCodec()
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({ handleDeepLink }),

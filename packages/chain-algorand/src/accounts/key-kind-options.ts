@@ -14,16 +14,19 @@ import type {
     LocalKeyKindOptions,
     LocalKeySeed,
 } from '@perawallet/wallet-core-accounts'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 
 const HD_OPTIONS: LocalKeyKindOptions = {
     recover: {
         id: 'hd_wallet',
-        titleKey: 'onboarding.import_options.hd_wallet.title',
-        chipKey: 'onboarding.import_options.hd_wallet.chip',
-        descriptionKey: 'onboarding.import_options.hd_wallet.description',
-        mnemonicInfoKey: 'onboarding.import_options.mnemonic_info',
+        titleKey: i18nKey('onboarding.import_options.hd_wallet.title'),
+        chipKey: i18nKey('onboarding.import_options.hd_wallet.chip'),
+        descriptionKey: i18nKey(
+            'onboarding.import_options.hd_wallet.description',
+        ),
+        mnemonicInfoKey: i18nKey('onboarding.import_options.mnemonic_info'),
         isSuggested: true,
         analyticsEvent: 'onb_createacc_recover_24',
     },
@@ -32,18 +35,21 @@ const HD_OPTIONS: LocalKeyKindOptions = {
 const STANDALONE_OPTIONS: LocalKeyKindOptions = {
     recover: {
         id: 'algo25',
-        titleKey: 'onboarding.import_options.algo25.title',
-        chipKey: 'onboarding.import_options.algo25.chip',
-        descriptionKey: 'onboarding.import_options.algo25.description',
-        mnemonicInfoKey: 'onboarding.import_options.algo25.mnemonic_info',
+        titleKey: i18nKey('onboarding.import_options.algo25.title'),
+        chipKey: i18nKey('onboarding.import_options.algo25.chip'),
+        descriptionKey: i18nKey('onboarding.import_options.algo25.description'),
+        mnemonicInfoKey: i18nKey(
+            'onboarding.import_options.algo25.mnemonic_info',
+        ),
         isSuggested: false,
         analyticsEvent: 'onb_createacc_recover_25',
     },
     create: {
         id: 'algo25',
-        titleKey: 'onboarding.add_account.create_algo25_option_title',
-        descriptionKey:
+        titleKey: i18nKey('onboarding.add_account.create_algo25_option_title'),
+        descriptionKey: i18nKey(
             'onboarding.add_account.create_algo25_option_description',
+        ),
         icon: 'wallet',
         isFeatured: false,
     },
@@ -52,30 +58,39 @@ const STANDALONE_OPTIONS: LocalKeyKindOptions = {
 const QUANTUM_OPTIONS: LocalKeyKindOptions = {
     create: {
         id: 'quantum',
-        titleKey: 'onboarding.add_account.quantum_account_option_title',
-        descriptionKey:
+        titleKey: i18nKey(
+            'onboarding.add_account.quantum_account_option_title',
+        ),
+        descriptionKey: i18nKey(
             'onboarding.add_account.quantum_account_option_description',
+        ),
         icon: 'quantum',
         isFeatured: true,
         // Falcon keygen is heavier than Ed25519.
-        progressTitleKey: 'onboarding.add_account.quantum_creating_title',
-        badgeKey: 'onboarding.add_account.quantum_account_option_badge',
+        progressTitleKey: i18nKey(
+            'onboarding.add_account.quantum_creating_title',
+        ),
+        badgeKey: i18nKey(
+            'onboarding.add_account.quantum_account_option_badge',
+        ),
         learnMore: {
-            labelKey:
+            labelKey: i18nKey(
                 'onboarding.add_account.quantum_account_option_learn_more',
+            ),
             url: config.quantumAccountSupportUrl,
         },
         analyticsEvent: 'createacc_quantumAccount_press',
     },
     import: {
         id: 'quantum',
-        titleKey: 'onboarding.import_account_options.quantum_title',
-        descriptionKey: 'onboarding.import_account_options.quantum_description',
+        titleKey: i18nKey('onboarding.import_account_options.quantum_title'),
+        descriptionKey: i18nKey(
+            'onboarding.import_account_options.quantum_description',
+        ),
         icon: 'quantum',
     },
 }
 
-// Ordered as `algorandLocalKeyKinds`, so the i18n key list reads the same way.
 const OPTIONS_BY_SEED: readonly [LocalKeySeed, LocalKeyKindOptions][] = [
     [SeedScheme.Bip39, HD_OPTIONS],
     [null, STANDALONE_OPTIONS],
@@ -86,26 +101,3 @@ export const algorandKeyKindOptions = (
     seed: LocalKeySeed,
 ): LocalKeyKindOptions | undefined =>
     OPTIONS_BY_SEED.find(([candidate]) => candidate === seed)?.[1]
-
-/** Every i18n key the key-kind options name, for the literal-`t()` lint. */
-export const keyKindOptionI18nKeys = (): readonly string[] =>
-    OPTIONS_BY_SEED.flatMap(([, { recover, create, import: entry }]) => [
-        ...(recover
-            ? [
-                  recover.titleKey,
-                  recover.chipKey,
-                  recover.descriptionKey,
-                  recover.mnemonicInfoKey,
-              ]
-            : []),
-        ...(create
-            ? [
-                  create.titleKey,
-                  create.descriptionKey,
-                  ...(create.progressTitleKey ? [create.progressTitleKey] : []),
-                  ...(create.badgeKey ? [create.badgeKey] : []),
-                  ...(create.learnMore ? [create.learnMore.labelKey] : []),
-              ]
-            : []),
-        ...(entry ? [entry.titleKey, entry.descriptionKey] : []),
-    ])

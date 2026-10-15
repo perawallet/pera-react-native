@@ -17,6 +17,7 @@ import {
     type FixturePayload,
 } from './fixture-chain'
 import type { UnsignedTransaction } from '../models/domain'
+import { i18nKey } from '../models/i18n'
 
 const SIGNER = `fx${'ab'.repeat(20)}`
 
@@ -25,7 +26,7 @@ const fixtureTransaction = (payload: unknown): UnsignedTransaction => ({
     payload,
     summary: {
         kind: 'transfer',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'out',
         icon: 'send',
     },

@@ -31,22 +31,20 @@ import {
     type TransactionReviewer,
     type TransactionSummary,
     type UnsignedTransaction,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { toBigInt } from '@perawallet/wallet-core-shared'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
-import { SEND_TITLE_KEY, sendSummary } from '../transfer/summary'
+import { sendSummary } from '../transfer/summary'
 import { readEthereumTransaction } from './adapter'
 import {
     toEthereumNative,
     type EthereumTransactionView,
 } from './transaction-view'
 
-export const ETHEREUM_REVIEW_TITLE_KEYS = {
-    send: SEND_TITLE_KEY,
-    contractCall: 'transactions.list_item.contract_call',
-} as const
+const CONTRACT_CALL_TITLE_KEY = i18nKey('transactions.list_item.contract_call')
 
 /** Explains a contract call from its calldata; undefined when it can't. */
 export type CallRecogniser = (call: {
@@ -170,7 +168,7 @@ const nativeAmount = (value: bigint) => ({
 
 const contractCallSummary = (call: Call): TransactionSummary => ({
     kind: 'contract-call',
-    title: { key: ETHEREUM_REVIEW_TITLE_KEYS.contractCall },
+    title: { key: CONTRACT_CALL_TITLE_KEY },
     direction: call.value > 0n ? 'out' : 'none',
     ...(call.to && { counterparty: call.to }),
     ...(call.value > 0n && { amount: nativeAmount(call.value) }),

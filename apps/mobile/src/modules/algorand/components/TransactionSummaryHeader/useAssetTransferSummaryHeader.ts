@@ -16,7 +16,10 @@ import {
     getAssetTransferType,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 
@@ -31,16 +34,16 @@ export const useAssetTransferSummaryHeader = (
     const label = useMemo(() => {
         switch (transferType) {
             case 'opt-in': {
-                return 'transactions.summary.opt_in'
+                return i18nKey('transactions.summary.opt_in')
             }
             case 'opt-out': {
-                return 'transactions.summary.opt_out'
+                return i18nKey('transactions.summary.opt_out')
             }
             case 'clawback': {
-                return 'transactions.summary.clawback'
+                return i18nKey('transactions.summary.clawback')
             }
             default: {
-                return 'transactions.summary.transfer'
+                return i18nKey('transactions.summary.transfer')
             }
         }
     }, [transferType])

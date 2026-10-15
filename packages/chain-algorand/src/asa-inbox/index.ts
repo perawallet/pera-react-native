@@ -13,4 +13,3 @@
 export * from './adapter'
 export * from './api'
 export * from './getArc59SignedFundingAmount'
-export * from './hooks'

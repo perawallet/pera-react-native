@@ -10,20 +10,19 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     extractAddressFromScannedUrl,
     useScannedAddress,
 } from '../useScannedAddress'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { parseDeeplink } from '@modules/deeplink/parser'
 
 const mockShowToast = vi.fn()
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: vi.fn(),
-}))
+const mockIsValidAddress = vi.fn<(address: string) => boolean>()
 
 vi.mock('@modules/deeplink/parser', () => ({
     parseDeeplink: vi.fn(),
@@ -33,17 +32,25 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
+beforeEach(() => {
+    registerLegacyAddressCodec(address => mockIsValidAddress(address))
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
+
 describe('extractAddressFromScannedUrl', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+        mockIsValidAddress.mockReturnValue(false)
         vi.mocked(parseDeeplink).mockReturnValue(null)
     })
 
     it('returns raw address when it is a valid Algorand address', () => {
         const rawAddress =
             'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
 
         expect(extractAddressFromScannedUrl(rawAddress)).toBe(rawAddress)
         expect(parseDeeplink).not.toHaveBeenCalled()
@@ -108,7 +115,7 @@ describe('extractAddressFromScannedUrl', () => {
 describe('useScannedAddress', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+        mockIsValidAddress.mockReturnValue(false)
         vi.mocked(parseDeeplink).mockReturnValue(null)
     })
 
@@ -134,7 +141,7 @@ describe('useScannedAddress', () => {
 
     it('returns the address and stays quiet when one is found', () => {
         const address = 'A'.repeat(58)
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+        mockIsValidAddress.mockReturnValue(true)
         const { result } = renderHook(() => useScannedAddress())
 
         expect(result.current(address)).toBe(address)

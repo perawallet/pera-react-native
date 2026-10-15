@@ -18,6 +18,7 @@ import {
     transactionReviewers,
     type ChainScope,
     type UnsignedTransaction,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 import {
@@ -59,7 +60,7 @@ const transfer: UnsignedTransaction = {
     } satisfies EthereumTransactionPayload,
     summary: {
         kind: 'transfer',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'out',
         icon: 'send',
     },

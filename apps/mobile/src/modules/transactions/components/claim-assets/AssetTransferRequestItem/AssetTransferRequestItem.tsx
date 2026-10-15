@@ -12,7 +12,7 @@
 
 import { PWBadge, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useStyles } from './styles'
 import { AssetAmount } from '@components/AssetAmount'
@@ -28,7 +28,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useMemo } from 'react'
 
 export type AssetTransferRequestItemProps = {
-    item: Arc59AssetRequest
+    item: AssetInboxRequest
     onPress: () => void
 }
 

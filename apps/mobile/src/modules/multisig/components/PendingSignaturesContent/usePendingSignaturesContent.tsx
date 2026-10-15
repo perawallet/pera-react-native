@@ -15,9 +15,12 @@ import {
     useNetwork,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useTransactionEncoder } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -59,13 +62,13 @@ export type UsePendingSignaturesContentResult = {
      * Keyed on {@link bannerVariant}, so the header can never disagree with the
      * banner rendered beneath it.
      */
-    titleKey: string
+    titleKey: I18nKey
     bannerVariant: StatusBannerVariant
     /**
      * Fallback when the backend supplies no `failReasonDisplay`. Status-specific
      * so an expired request reads "canceled" rather than "failed".
      */
-    failureBannerKey: string
+    failureBannerKey: I18nKey
     signedCount: number
     threshold: number
     timeRemaining: string | null
@@ -106,18 +109,19 @@ export type UsePendingSignaturesContentResult = {
  */
 export const FAILED_RECOVERY_WINDOW_MS = 30_000
 
-const FAILURE_BANNER_KEY_BY_STATUS: Partial<Record<SignRequestStatus, string>> =
-    {
-        expired: 'multisig.pending_signatures.canceled',
-        declined: 'multisig.pending_signatures.declined',
-        failed: 'multisig.pending_signatures.failed_default',
-    }
+const FAILURE_BANNER_KEY_BY_STATUS: Partial<
+    Record<SignRequestStatus, I18nKey>
+> = {
+    expired: i18nKey('multisig.pending_signatures.canceled'),
+    declined: i18nKey('multisig.pending_signatures.declined'),
+    failed: i18nKey('multisig.pending_signatures.failed_default'),
+}
 
-const TITLE_KEY_BY_VARIANT: Record<StatusBannerVariant, string> = {
-    waiting: 'multisig.pending_signatures.title',
-    submitting: 'multisig.pending_signatures.title_submitting',
-    success: 'multisig.pending_signatures.title_success',
-    failure: 'multisig.pending_signatures.title_failure',
+const TITLE_KEY_BY_VARIANT: Record<StatusBannerVariant, I18nKey> = {
+    waiting: i18nKey('multisig.pending_signatures.title'),
+    submitting: i18nKey('multisig.pending_signatures.title_submitting'),
+    success: i18nKey('multisig.pending_signatures.title_success'),
+    failure: i18nKey('multisig.pending_signatures.title_failure'),
 }
 
 export const usePendingSignaturesContent =
@@ -128,7 +132,6 @@ export const usePendingSignaturesContent =
         const { network } = useNetwork()
         const deviceId = useDeviceID(network) ?? ''
         const accounts = useAllAccounts()
-        const { decodeTransaction } = useTransactionEncoder()
         const { addSignRequest, pendingSignRequests } = useSigningRequest()
         const signRequestId = usePendingSignaturesSheetStore(
             state => state.signRequestId,
@@ -276,9 +279,9 @@ export const usePendingSignaturesContent =
         // terminal status keeps its own message even if a marker lingers.
         const failureBannerKey =
             isUndeliverable && (status === 'ready' || status === 'submitting')
-                ? 'multisig.pending_signatures.delivery_failed'
+                ? i18nKey('multisig.pending_signatures.delivery_failed')
                 : ((status && FAILURE_BANNER_KEY_BY_STATUS[status]) ??
-                  'multisig.pending_signatures.failed_default')
+                  i18nKey('multisig.pending_signatures.failed_default'))
 
         const handleClose = useCallback(() => {
             trackEvent(MultisigEvent.CloseForNow)
@@ -296,7 +299,6 @@ export const usePendingSignaturesContent =
                         signRequest,
                         signerAddress: address,
                         scope,
-                        decodeTransaction,
                         localAccounts: accounts,
                     })
                     addSignRequest(cosignRequest)
@@ -312,15 +314,7 @@ export const usePendingSignaturesContent =
                     )
                 }
             },
-            [
-                signRequest,
-                decodeTransaction,
-                addSignRequest,
-                accounts,
-                errorToast,
-                t,
-                scope,
-            ],
+            [signRequest, addSignRequest, accounts, errorToast, t, scope],
         )
 
         const handleSign = useCallback(() => {

@@ -13,10 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { config } from '@perawallet/wallet-core-config'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
-import {
-    algorandKeyKindOptions,
-    keyKindOptionI18nKeys,
-} from '../key-kind-options'
+import { algorandKeyKindOptions } from '../key-kind-options'
 import { algorandLocalKeyKinds } from '../local-key-kinds'
 import { algorandAccountPresentation } from '../presentation'
 
@@ -98,29 +95,5 @@ describe('algorandKeyKindOptions', () => {
         expect(algorandAccountPresentation.keyKindOptions).toBe(
             algorandKeyKindOptions,
         )
-    })
-})
-
-describe('keyKindOptionI18nKeys', () => {
-    it("lists every key the kinds' recover, create and import options name", () => {
-        expect(keyKindOptionI18nKeys()).toEqual([
-            'onboarding.import_options.hd_wallet.title',
-            'onboarding.import_options.hd_wallet.chip',
-            'onboarding.import_options.hd_wallet.description',
-            'onboarding.import_options.mnemonic_info',
-            'onboarding.import_options.algo25.title',
-            'onboarding.import_options.algo25.chip',
-            'onboarding.import_options.algo25.description',
-            'onboarding.import_options.algo25.mnemonic_info',
-            'onboarding.add_account.create_algo25_option_title',
-            'onboarding.add_account.create_algo25_option_description',
-            'onboarding.add_account.quantum_account_option_title',
-            'onboarding.add_account.quantum_account_option_description',
-            'onboarding.add_account.quantum_creating_title',
-            'onboarding.add_account.quantum_account_option_badge',
-            'onboarding.add_account.quantum_account_option_learn_more',
-            'onboarding.import_account_options.quantum_title',
-            'onboarding.import_account_options.quantum_description',
-        ])
     })
 })

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
@@ -24,10 +25,20 @@ import type { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // Shared presentation for the rekey-to-{ledger,shared,standard} confirm screens.
-// They share an identical layout and differ only in their i18n namespace,
-// testID prefix, and support URL.
+// They share an identical layout and differ only in their copy, testID prefix,
+// and support URL.
+export type RekeyConfirmCopy = {
+    titleKey: I18nKey
+    bodyKey: I18nKey
+    learnMoreKey: I18nKey
+    currentAuthLabelKey: I18nKey
+    feeLabelKey: I18nKey
+    summaryLabelKey: I18nKey
+    ctaKey: I18nKey
+}
+
 type RekeyConfirmViewProps = {
-    i18nPrefix: string
+    copy: RekeyConfirmCopy
     testIDPrefix: string
     supportUrl: string
     source: WalletAccount | null
@@ -42,7 +53,7 @@ type RekeyConfirmViewProps = {
 }
 
 export const RekeyConfirmView = ({
-    i18nPrefix,
+    copy,
     testIDPrefix,
     supportUrl,
     source,
@@ -76,7 +87,7 @@ export const RekeyConfirmView = ({
                                 variant='bodyLarge'
                                 style={styles.rowLabel}
                             >
-                                {t(`${i18nPrefix}.current_auth_label`)}
+                                {t(copy.currentAuthLabelKey)}
                             </PWText>
                             <RekeySummaryRow account={currentAuth} />
                         </PWView>
@@ -86,7 +97,7 @@ export const RekeyConfirmView = ({
                             variant='bodyLarge'
                             style={styles.rowLabel}
                         >
-                            {t(`${i18nPrefix}.fee_label`)}
+                            {t(copy.feeLabelKey)}
                         </PWText>
                         <AssetAmount
                             asset={nativeAsset}
@@ -109,7 +120,7 @@ export const RekeyConfirmView = ({
 
                     <PWButton
                         variant='primary'
-                        title={t(`${i18nPrefix}.cta`)}
+                        title={t(copy.ctaKey)}
                         onPress={onConfirmPress}
                         isLoading={isSubmitting}
                         isDisabled={
@@ -123,16 +134,16 @@ export const RekeyConfirmView = ({
         >
             <PWView style={styles.scrollContent}>
                 <ScreenHeader
-                    title={t(`${i18nPrefix}.title`)}
+                    title={t(copy.titleKey)}
                     description={
                         <>
-                            {t(`${i18nPrefix}.body`)}{' '}
+                            {t(copy.bodyKey)}{' '}
                             <PWText
                                 variant='bodyLarge'
                                 style={styles.learnMore}
                                 onPress={handleLearnMore}
                             >
-                                {t(`${i18nPrefix}.learn_more`)}
+                                {t(copy.learnMoreKey)}
                             </PWText>
                         </>
                     }
@@ -142,7 +153,7 @@ export const RekeyConfirmView = ({
                         variant='bodyLarge'
                         style={styles.summaryLabel}
                     >
-                        {t(`${i18nPrefix}.summary_label`)}
+                        {t(copy.summaryLabelKey)}
                     </PWText>
 
                     <PWView style={styles.summaryCard}>

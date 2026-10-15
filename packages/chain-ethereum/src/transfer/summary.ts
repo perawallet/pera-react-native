@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import type { TransactionSummary } from '@perawallet/wallet-core-chain-contract'
+import {
+    type TransactionSummary,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 
-export const SEND_TITLE_KEY = 'transactions.list_item.send'
+const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
 
 // The builder and the reviewer both describe a send through this, so a
 // transfer the wallet builds reads the same once review rebuilds it from the bytes.

@@ -10,26 +10,9 @@
  limitations under the License
  */
 
-import { useQueryClient } from '@tanstack/react-query'
-import { invalidateAllPredicate } from './querykeys'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { runKeystoreMaintenance } from '@perawallet/wallet-extension-provider'
 
-export const useArc59Invalidator = () => {
-    const queryClient = useQueryClient()
-
-    const invalidate = () => {
-        void queryClient.invalidateQueries({
-            predicate: invalidateAllPredicate,
-        })
-    }
-
-    const remove = () => {
-        queryClient.removeQueries({
-            predicate: invalidateAllPredicate,
-        })
-    }
-
-    return {
-        invalidate,
-        remove,
-    }
-}
+export const keystoreMaintenanceDependencies: Parameters<
+    typeof runKeystoreMaintenance
+>[0] = { deriveKeygenSeed: derivePQKeygenSeed }

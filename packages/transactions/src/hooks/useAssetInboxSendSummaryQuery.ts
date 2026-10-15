@@ -11,43 +11,44 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
-import { fetchArc59SendSummary } from '../api'
-import type { Arc59SendSummaryResponse } from '../api'
-import { getArc59SendSummaryQueryKey } from './querykeys'
+import {
+    sendFlowFeatureFor,
+    type AssetInboxSendSummary,
+} from '../chain-adapter'
+import { getAssetInboxSendSummaryQueryKey } from './querykeys'
 
-export type UseArc59SendSummaryQueryResult = {
-    data: Maybe<Arc59SendSummaryResponse>
+export type UseAssetInboxSendSummaryQueryResult = {
+    data: Maybe<AssetInboxSendSummary>
     isLoading: boolean
     isError: boolean
     error: Nullable<Error>
-    /** True when the active network has no Pera backend — this can never succeed here. */
+    /** True when the chain's active network has no inbox backend: this can never succeed here. */
     isUnavailableOnNetwork: boolean
 }
 
-export const useArc59SendSummaryQuery = (
-    receiverAddress: string,
+export const useAssetInboxSendSummaryQuery = (
+    receiver: string,
     assetId: string,
-): UseArc59SendSummaryQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-    const isUnavailableOnNetwork = !useChainCapability(
-        scope.chainId,
-        'assetInbox',
-    )
+    chainId: ChainId,
+): UseAssetInboxSendSummaryQueryResult => {
+    const scope = useSelectedScope(chainId)
+    const isUnavailableOnNetwork = !useChainCapability(chainId, 'assetInbox')
 
     const query = useQuery({
-        queryKey: getArc59SendSummaryQueryKey(receiverAddress, assetId, scope),
-        queryFn: () => fetchArc59SendSummary(network, receiverAddress, assetId),
-        enabled: !!receiverAddress && !!assetId && !isUnavailableOnNetwork,
+        queryKey: getAssetInboxSendSummaryQueryKey(receiver, assetId, scope),
+        queryFn: () =>
+            sendFlowFeatureFor(scope, 'assetInbox').fetchSendSummary({
+                scope,
+                receiver,
+                assetId,
+            }),
+        enabled: !!receiver && !!assetId && !isUnavailableOnNetwork,
     })
 
     return {

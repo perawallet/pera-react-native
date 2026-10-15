@@ -18,6 +18,7 @@ import {
     useRequestPasswordResetMutation,
     useVerifyPasswordResetMutation,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -63,8 +64,8 @@ export const useCardForgotPasswordVerifyScreen =
         const requestReset = useRequestPasswordResetMutation(scope)
         const verifyReset = useVerifyPasswordResetMutation(scope)
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.forgot_password.error_title',
-            bodyKey: 'peraCard.forgot_password.error_body',
+            titleKey: i18nKey('peraCard.forgot_password.error_title'),
+            bodyKey: i18nKey('peraCard.forgot_password.error_body'),
         })
 
         const [code, setCode] = useState('')

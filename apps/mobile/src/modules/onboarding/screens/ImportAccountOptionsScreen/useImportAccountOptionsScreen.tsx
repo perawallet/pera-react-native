@@ -23,6 +23,7 @@ import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import {
     isPostQuantumScheme,
     LEGACY_CHAIN_ID,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -254,20 +255,24 @@ export const useImportAccountOptionsScreen =
             const allOptions: AccountOption[] = [
                 {
                     testID: 'import_account_options_recover_wallet_button',
-                    titleKey:
+                    titleKey: i18nKey(
                         'onboarding.import_account_options.recover_wallet_title',
-                    descriptionKey:
+                    ),
+                    descriptionKey: i18nKey(
                         'onboarding.import_account_options.recover_wallet_description',
+                    ),
                     leftIcon: 'fund' as IconName,
                     onPress: () => void handleOpenImportOptions(),
                 },
                 ...kindImportOptions,
                 {
                     testID: 'import_account_options_recover_qr_button',
-                    titleKey:
+                    titleKey: i18nKey(
                         'onboarding.import_account_options.recover_qr_title',
-                    descriptionKey:
+                    ),
+                    descriptionKey: i18nKey(
                         'onboarding.import_account_options.recover_qr_description',
+                    ),
                     leftIcon: 'qr' as IconName,
                     onPress: handleOpenQRScanner,
                 },
@@ -276,11 +281,16 @@ export const useImportAccountOptionsScreen =
             if (canUseLedger) {
                 allOptions.push({
                     testID: 'import_account_options_pair_ledger_button',
-                    titleKey:
+                    titleKey: i18nKey(
                         'onboarding.import_account_options.pair_ledger_title',
+                    ),
                     descriptionKey: isLedgerBleAvailable
-                        ? 'onboarding.import_account_options.pair_ledger_description'
-                        : 'onboarding.import_account_options.pair_ledger_unsupported_description',
+                        ? i18nKey(
+                              'onboarding.import_account_options.pair_ledger_description',
+                          )
+                        : i18nKey(
+                              'onboarding.import_account_options.pair_ledger_unsupported_description',
+                          ),
                     leftIcon: 'wallet' as IconName,
                     onPress: handlePairLedgerBle,
                     isDisabled: !isLedgerBleAvailable,
@@ -290,11 +300,16 @@ export const useImportAccountOptionsScreen =
             if (canUseLedgerUsb) {
                 allOptions.push({
                     testID: 'import_account_options_pair_ledger_usb_button',
-                    titleKey:
+                    titleKey: i18nKey(
                         'onboarding.import_account_options.pair_ledger_usb_title',
+                    ),
                     descriptionKey: isLedgerUsbAvailable
-                        ? 'onboarding.import_account_options.pair_ledger_usb_description'
-                        : 'onboarding.import_account_options.pair_ledger_unsupported_description',
+                        ? i18nKey(
+                              'onboarding.import_account_options.pair_ledger_usb_description',
+                          )
+                        : i18nKey(
+                              'onboarding.import_account_options.pair_ledger_unsupported_description',
+                          ),
                     leftIcon: 'wallet' as IconName,
                     onPress: handlePairLedgerUsb,
                     isDisabled: !isLedgerUsbAvailable,
@@ -306,10 +321,12 @@ export const useImportAccountOptionsScreen =
                     ? [
                           {
                               testID: 'import_account_options_pera_web_button',
-                              titleKey:
+                              titleKey: i18nKey(
                                   'onboarding.import_account_options.pera_web_title',
-                              descriptionKey:
+                              ),
+                              descriptionKey: i18nKey(
                                   'onboarding.import_account_options.pera_web_description',
+                              ),
                               leftIcon: 'globe' as IconName,
                               onPress: handleImportPeraWeb,
                           },
@@ -319,10 +336,12 @@ export const useImportAccountOptionsScreen =
                     ? [
                           {
                               testID: 'import_account_options_cloud_backup_button',
-                              titleKey:
+                              titleKey: i18nKey(
                                   'onboarding.import_account_options.cloud_backup_title',
-                              descriptionKey:
+                              ),
+                              descriptionKey: i18nKey(
                                   'onboarding.import_account_options.cloud_backup_description',
+                              ),
                               leftIcon: 'cloud-download' as IconName,
                               onPress: () => void handleImportCloudBackup(),
                           },
@@ -333,10 +352,15 @@ export const useImportAccountOptionsScreen =
                           {
                               testID: 'import_account_options_asb_button',
                               titleKey: isCloudBackupAvailable
-                                  ? 'onboarding.import_account_options.asb_legacy_title'
-                                  : 'onboarding.import_account_options.asb_title',
-                              descriptionKey:
+                                  ? i18nKey(
+                                        'onboarding.import_account_options.asb_legacy_title',
+                                    )
+                                  : i18nKey(
+                                        'onboarding.import_account_options.asb_title',
+                                    ),
+                              descriptionKey: i18nKey(
                                   'onboarding.import_account_options.asb_description',
+                              ),
                               leftIcon: 'shield-check' as IconName,
                               onPress: handleImportAsb,
                           },

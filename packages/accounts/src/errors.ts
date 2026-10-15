@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { type ChainId, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
@@ -34,7 +34,7 @@ export class AccountError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.ACCOUNTS,
                 retryable: false,
-                messageKey: 'errors.account.generic',
+                messageKey: i18nKey('errors.account.generic'),
                 ...metadata,
             },
             originalError,
@@ -48,7 +48,7 @@ export class AccountError extends AppError {
 export class NoHdSeedError extends AccountError {
     constructor(walletKeyId: string) {
         super('No Universal Wallet could be found', undefined, {
-            messageKey: 'errors.account.no_hd_wallet',
+            messageKey: i18nKey('errors.account.no_hd_wallet'),
             params: { walletKeyId },
         })
     }

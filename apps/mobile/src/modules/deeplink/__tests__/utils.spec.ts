@@ -12,7 +12,10 @@
 
 // @vitest-environment node
 
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import {
+    isLegacyChainAddress,
     parseQueryParams,
     decodeBase64Param,
     normalizeUrl,
@@ -23,6 +26,26 @@ import {
 } from '../utils'
 
 describe('Deeplink Parser - Helper Functions', () => {
+    describe('isLegacyChainAddress', () => {
+        beforeEach(() => {
+            registerLegacyAddressCodec(address => address === 'VALID')
+        })
+
+        afterEach(() => {
+            addressCodecs.reset()
+        })
+
+        it('accepts what the legacy chain codec accepts', () => {
+            expect(isLegacyChainAddress('VALID')).toBe(true)
+            expect(isLegacyChainAddress('INVALID')).toBe(false)
+        })
+
+        it('treats a missing or empty param as not an address', () => {
+            expect(isLegacyChainAddress(undefined)).toBe(false)
+            expect(isLegacyChainAddress('')).toBe(false)
+        })
+    })
+
     describe('parseQueryParams', () => {
         it('parses basic query parameters', () => {
             const params = parseQueryParams(

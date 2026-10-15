@@ -16,7 +16,11 @@ import {
     useAuthorityTargetCategories,
     type AuthorityTargetCategory,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
 import { useCapability } from '@hooks/useCapability'
@@ -33,8 +37,8 @@ export type RekeyTargetType = Exclude<
 export type RekeyOptionRow = {
     target: RekeyTargetType
     testID: string
-    titleKey: string
-    descriptionKey: string
+    titleKey: I18nKey
+    descriptionKey: I18nKey
     icon: IconName
 }
 
@@ -43,22 +47,28 @@ const ROWS: readonly RekeyOptionRow[] = [
     {
         target: AuthorityTargetCategories.hardware,
         testID: 'rekey_option_ledger',
-        titleKey: 'account_options.rekey_option_ledger_title',
-        descriptionKey: 'account_options.rekey_option_ledger_description',
+        titleKey: i18nKey('account_options.rekey_option_ledger_title'),
+        descriptionKey: i18nKey(
+            'account_options.rekey_option_ledger_description',
+        ),
         icon: 'ledger',
     },
     {
         target: AuthorityTargetCategories.standard,
         testID: 'rekey_option_standard',
-        titleKey: 'account_options.rekey_option_standard_title',
-        descriptionKey: 'account_options.rekey_option_standard_description',
+        titleKey: i18nKey('account_options.rekey_option_standard_title'),
+        descriptionKey: i18nKey(
+            'account_options.rekey_option_standard_description',
+        ),
         icon: 'wallet',
     },
     {
         target: AuthorityTargetCategories.postQuantum,
         testID: 'rekey_option_quantum',
-        titleKey: 'account_options.rekey_option_quantum_title',
-        descriptionKey: 'account_options.rekey_option_quantum_description',
+        titleKey: i18nKey('account_options.rekey_option_quantum_title'),
+        descriptionKey: i18nKey(
+            'account_options.rekey_option_quantum_description',
+        ),
         icon: 'quantum',
     },
 ]

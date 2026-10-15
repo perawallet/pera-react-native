@@ -11,6 +11,9 @@
  */
 
 export { RekeySuccessScreen } from './RekeySuccessScreen'
-export type { RekeySuccessScreenProps } from './RekeySuccessScreen'
+export type {
+    RekeySuccessCopy,
+    RekeySuccessScreenProps,
+} from './RekeySuccessScreen'
 export { useRekeySuccessScreen } from './useRekeySuccessScreen'
 export type { UseRekeySuccessScreenResult } from './useRekeySuccessScreen'

@@ -28,6 +28,7 @@
     "@babel/runtime": "catalog:",
     "@joe-p/react-native-falcon": "catalog:",
     "@noble/hashes": "catalog:",
+    "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@scure/bip39": "catalog:",

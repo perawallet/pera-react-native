@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
 import {
     findAccountByAddressOn,
     useAllAccounts,
@@ -39,7 +39,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 type UseAssetClaimDetailScreenResult = {
-    request: Nullable<Arc59AssetRequest>
+    request: Nullable<AssetInboxRequest>
     receiverAccount: Nullable<WalletAccount>
     amount: Decimal
     isClaimBlocked: boolean

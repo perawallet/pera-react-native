@@ -11,6 +11,7 @@
  */
 
 import {
+    i18nKey,
     scopeForLegacyNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -51,7 +52,7 @@ export class PeraServiceUnavailableError extends AppError {
                 category: ErrorCategory.NETWORK,
                 retryable: false,
                 recoverable: false,
-                messageKey: 'errors.pera_service.unavailable',
+                messageKey: i18nKey('errors.pera_service.unavailable'),
                 // Log context only — the copy deliberately says "this network"
                 // rather than naming it, since the scope is an internal concept.
                 params: { scope: scopeKey, service },
