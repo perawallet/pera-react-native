@@ -13,7 +13,7 @@
 import {
     legacyNetworkOf,
     type ChainScope,
-    type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
@@ -25,22 +25,25 @@ import {
     multisigAdapterFor,
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
-import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type { UnsignedTransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
     scope: ChainScope
-    decodeTransaction: (bytes: Uint8Array) => PeraTransaction
+    decodeTransaction: (
+        bytes: Uint8Array,
+        scope: ChainScope,
+    ) => UnsignedTransaction
     /** Used to recognise senders the joint account authorizes via a rekey. */
     localAccounts: WalletAccount[]
 }
 
 /**
- * Builds a `TransactionSignRequest` for cosigning an existing multisig sign
- * request. Decodes the first transaction list's raw base64 transactions into
- * `PeraTransaction[]` and stamps `sourceType: 'multisig-cosign'` plus
- * `signRequestId` so the queue routes through the cosign transport.
+ * Builds a sign request for cosigning an existing multisig sign request.
+ * Decodes the first transaction list's raw base64 transactions and stamps
+ * `sourceType: 'multisig-cosign'` plus `signRequestId` so the queue routes
+ * through the cosign transport.
  */
 export const buildMultisigCosignRequest = ({
     signRequest,
@@ -48,7 +51,7 @@ export const buildMultisigCosignRequest = ({
     scope,
     decodeTransaction,
     localAccounts,
-}: BuildMultisigCosignRequestParams): TransactionSignRequest => {
+}: BuildMultisigCosignRequestParams): UnsignedTransactionSignRequest => {
     const transactionList = signRequest.transactionLists[0]
     if (!transactionList) {
         throw new Error(
@@ -58,7 +61,7 @@ export const buildMultisigCosignRequest = ({
 
     const rawTransactionsBase64 = transactionList.rawTransactions
     const txs = rawTransactionsBase64.map(base64 =>
-        decodeTransaction(decodeFromBase64(base64)),
+        decodeTransaction(decodeFromBase64(base64), scope),
     )
 
     // The backend is a relay, not a trust anchor, for what we sign.
@@ -106,7 +109,6 @@ export const buildMultisigCosignRequest = ({
         // inline-error guards in SignRequestView keep cosigns apart as before.
         id: `${signRequest.id}:${signerAddress}`,
         type: 'transactions',
-        chainId: scope.chainId,
         transport: 'callback',
         // `sourceType: 'multisig-cosign'` is in `INTERACTIVE_SOURCES`, so
         // the standard review flow shows the review sheet automatically
@@ -115,9 +117,13 @@ export const buildMultisigCosignRequest = ({
         sourceType: 'multisig-cosign',
         signRequestId: signRequest.id,
         txs,
-        rawTransactionsBase64,
-        signerOverrides: new Map(
-            txs.map((_, index) => [index, signerAddress] as const),
-        ),
+        chainData: {
+            algorand: {
+                rawTransactionsBase64,
+                signerOverrides: new Map(
+                    txs.map((_, index) => [index, signerAddress] as const),
+                ),
+            },
+        },
     }
 }

@@ -14,7 +14,6 @@ import { useCallback } from 'react'
 import {
     getExpectedGenesisHash,
     isValidAlgorandAddress,
-    useTransactionEncoder,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useNetwork,
@@ -134,7 +133,6 @@ const namesActiveNetwork = (
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network, networkConfig } = useNetwork()
-    const { encodeTransaction, decodeTransaction } = useTransactionEncoder()
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
@@ -251,17 +249,11 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     )
                 }
 
-                // Encode-then-decode to normalize: algokit returns a sender as
-                // an `Address` instance, but the pipeline is built around
-                // `decodeTransaction(bytes)`'s shape (plain string sender,
-                // Uint8Array byte fields) and otherwise crashes with
-                // `Buffer.from(...) received type object`.
-                const normalizedTx = decodeTransaction(encodeTransaction(tx))
                 // Adds a quantum sender's PQ surcharge (mirrors the WC/webview
                 // enqueue path); a non-quantum sender is a free no-op — same
                 // reference, no network traffic.
                 const { transactions, adjustments } = await assignFeeToGroup({
-                    transactions: [normalizedTx],
+                    transactions: [tx],
                 })
                 // MUST be 'deeplink', not 'local': only an interactive source
                 // gets the review sheet. 'local' is headless and would silently
@@ -269,18 +261,22 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'deeplink',
                     txs: transactions,
-                    // An explicit dApp fee we raised is surfaced as an
-                    // adjustment (original → new, matching the WC path); a
-                    // fee we filled in ourselves when the deeplink omitted
-                    // one is Pera-set, not an override — no delta to show.
-                    feeAdjustments:
-                        dAppFee !== undefined && adjustments.length > 0
-                            ? adjustments
-                            : undefined,
+                    chainData: {
+                        algorand: {
+                            // An explicit dApp fee we raised is surfaced as an
+                            // adjustment (original → new, matching the WC
+                            // path); a fee we filled in ourselves when the
+                            // deeplink omitted one is Pera-set, not an
+                            // override — no delta to show.
+                            feeAdjustments:
+                                dAppFee !== undefined && adjustments.length > 0
+                                    ? adjustments
+                                    : undefined,
+                        },
+                    },
                 })
             } catch (error) {
                 logger.error('[deeplink/keyreg] failed', { error })
@@ -295,8 +291,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             addSignRequest,
             allAccounts,
             assignFeeToGroup,
-            decodeTransaction,
-            encodeTransaction,
             network,
             networkConfig,
             showError,

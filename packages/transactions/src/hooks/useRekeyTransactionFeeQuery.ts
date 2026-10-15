@@ -12,14 +12,14 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
+import { microAlgosToAlgos, toBigInt } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     resolveMinFeeForSender,
     useFeeConfig,
     useSuggestedMinFeeQuery,
 } from '@perawallet/wallet-core-signing'
-import { sendFlowFeatureFor } from '../chain-adapter'
+import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 
 import type { Decimal } from 'decimal.js'
 
@@ -100,7 +100,11 @@ export const useRekeyTransactionFeeQuery = (
                 rekeyToAddress,
                 minFee: resolvedMinFee,
             })
-            return microAlgosToAlgos(txn.fee ?? resolvedMinFee)
+            return microAlgosToAlgos(
+                toBigInt(
+                    sendFlowChainAdapters.get(scope.chainId).transactionFee(txn),
+                ),
+            )
         },
         enabled:
             !!sourceAddress && !!rekeyToAddress && suggestedMinFee !== null,

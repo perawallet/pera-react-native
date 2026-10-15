@@ -36,18 +36,27 @@ import { algorandDescriptor } from '../descriptor'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 
-const SEND = 'transactions.list_item.send'
+export const SEND_TITLE_KEY = 'transactions.list_item.send'
+const SEND = SEND_TITLE_KEY
 const RECEIVE = 'transactions.list_item.receive'
 const SWAP = 'transactions.list_item.swap'
-const OPT_IN = 'transactions.list_item.opt_in'
-const OPT_OUT = 'transactions.list_item.opt_out'
-const ASSET_CONFIG = 'transactions.list_item.asset_config'
-const ASSET_FREEZE = 'transactions.list_item.asset_freeze'
-const APP_CALL = 'transactions.list_item.app_call'
-const KEY_REGISTRATION = 'transactions.list_item.key_registration'
+export const OPT_IN_TITLE_KEY = 'transactions.list_item.opt_in'
+const OPT_IN = OPT_IN_TITLE_KEY
+export const OPT_OUT_TITLE_KEY = 'transactions.list_item.opt_out'
+const OPT_OUT = OPT_OUT_TITLE_KEY
+export const ASSET_CONFIG_TITLE_KEY = 'transactions.list_item.asset_config'
+const ASSET_CONFIG = ASSET_CONFIG_TITLE_KEY
+export const ASSET_FREEZE_TITLE_KEY = 'transactions.list_item.asset_freeze'
+const ASSET_FREEZE = ASSET_FREEZE_TITLE_KEY
+export const APP_CALL_TITLE_KEY = 'transactions.list_item.app_call'
+const APP_CALL = APP_CALL_TITLE_KEY
+export const KEY_REGISTRATION_TITLE_KEY =
+    'transactions.list_item.key_registration'
+const KEY_REGISTRATION = KEY_REGISTRATION_TITLE_KEY
 const HEARTBEAT = 'transactions.list_item.heartbeat'
 const STATE_PROOF = 'transactions.list_item.state_proof'
-const DEFAULT = 'transactions.list_item.default'
+export const DEFAULT_TITLE_KEY = 'transactions.list_item.default'
+const DEFAULT = DEFAULT_TITLE_KEY
 const INTERPRETED_TITLE = 'transactions.list_item.interpreted_title'
 const SWAP_SUBTITLE = 'transactions.list_item.swap_subtitle'
 const INNER_TRANSACTION_COUNT = 'transactions.list_item.inner_transaction_count'
@@ -116,7 +125,7 @@ const netTransferAmount = (
 const text = (key: string, params?: Record<string, string>): LocalizedText =>
     params ? { key, params } : { key }
 
-const assetRefOf = (assetId: string): AssetRef => ({
+export const assetRefOf = (assetId: string): AssetRef => ({
     chainId: ALGORAND_CHAIN_ID,
     assetId,
 })

@@ -41,10 +41,8 @@ export type PQSignature = {
  * Drops the `null` padding slots a signing result may carry (the ARC-0001
  * slot-order contract pads unsignable positions with `null`).
  */
-export const compactSignedResults = (
-    signed: Nullable<PeraSignedTransaction>[],
-): PeraSignedTransaction[] =>
-    signed.filter((tx): tx is PeraSignedTransaction => tx !== null)
+export const compactSignedResults = <T>(signed: Nullable<T>[]): T[] =>
+    signed.filter((tx): tx is T => tx !== null)
 
 export type PeraTransactionSigner = (
     txnGroup: PeraTransactionGroup,

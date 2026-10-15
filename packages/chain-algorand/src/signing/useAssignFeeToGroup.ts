@@ -15,8 +15,10 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useFetchSuggestedMinFee, useMinimumFeeConfig } from '../blockchain'
 import type { AssignFeeToGroup } from '@perawallet/wallet-core-signing'
+import { algorandTransactionsOf } from './algorandRequest'
 import { assignFeeToGroup } from './assignMinimumFeesToGroup'
 import { findFundedIndices } from './feeCoverage'
+import { withAlgorandTransaction } from './unsignedTransaction'
 
 // The suggested-params fetch goes through `useFetchSuggestedMinFee`, the
 // shared query cache, and never blocks the flow: on failure it falls back to
@@ -26,8 +28,11 @@ export const useAssignFeeToGroup = (): AssignFeeToGroup => {
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     return useCallback<AssignFeeToGroup>(
-        params =>
-            assignFeeToGroup(params, {
+        async params => {
+            const transactions = algorandTransactionsOf(params.transactions)
+            const assigned = await assignFeeToGroup(
+                { ...params, transactions },
+                {
                 // Read live store state at call time, not a value captured at
                 // render: WalletConnect can invoke this after the owning
                 // component has unmounted, holding a frozen closure over a
@@ -37,13 +42,30 @@ export const useAssignFeeToGroup = (): AssignFeeToGroup => {
                     fetchSuggestedMinFee({ fallback: 0n }),
                 configMinTxnFee: minTxnFee,
                 pqMultiplier,
-                findFundedIndices: coverage =>
-                    findFundedIndices({
-                        ...coverage,
-                        accounts: useAccountsStore.getState().accounts,
-                        network: useNetworkStore.getState().network,
-                    }),
-            }),
+                    findFundedIndices: coverage =>
+                        findFundedIndices({
+                            ...coverage,
+                            accounts: useAccountsStore.getState().accounts,
+                            network: useNetworkStore.getState().network,
+                        }),
+                },
+            )
+            if (assigned.transactions === transactions) {
+                return {
+                    transactions: params.transactions,
+                    adjustments: assigned.adjustments,
+                }
+            }
+            return {
+                transactions: assigned.transactions.map((transaction, index) =>
+                    withAlgorandTransaction(
+                        params.transactions[index],
+                        transaction,
+                    ),
+                ),
+                adjustments: assigned.adjustments,
+            }
+        },
         [fetchSuggestedMinFee, minTxnFee, pqMultiplier],
     )
 }

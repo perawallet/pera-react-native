@@ -20,6 +20,7 @@ import {
     type Arc0001SignTxnsRequest,
     type PeraSignedTransaction,
     type PeraTransaction,
+    type SignedTransaction,
     type TransactionNative,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
@@ -218,7 +219,7 @@ export type ResolveMinFeeForSenderParams = {
 
 export type AssignFeeToGroupParams = {
     /** Full atomic payload (groupContext space), NOT just the signable subset */
-    transactions: PeraTransaction[]
+    transactions: UnsignedTransaction[]
     /** Indices into `transactions` the wallet will sign; defaults to all */
     signableIndices?: number[]
     /** Subset-position → authorizer address (ARC-0001 `signers`) */
@@ -228,8 +229,8 @@ export type AssignFeeToGroupParams = {
 }
 
 export type AssignMinimumFeesToGroupResult = {
-    /** Same array reference as input when nothing was adjusted */
-    transactions: PeraTransaction[]
+    /** Same array reference as input when nothing was adjusted; an unchanged entry keeps its reference */
+    transactions: UnsignedTransaction[]
     /** Empty when nothing was adjusted */
     adjustments: FeeAdjustment[]
 }
@@ -243,26 +244,6 @@ export type MinFeeForSenderResult = {
 export type AssignFeeToGroup = (
     params: AssignFeeToGroupParams,
 ) => Promise<AssignMinimumFeesToGroupResult>
-
-/** What the planner cannot read itself because it lives in React or a store. */
-export type AssignFeeToGroupDeps = {
-    /** Read at call time: a WalletConnect call can outlive the component that started it. */
-    accounts: WalletAccount[]
-    /** Network-suggested minimum fee in native base units; must resolve rather than throw. */
-    fetchSuggestedMinFee: () => Promise<bigint>
-    /** Remote-config base minimum txn fee in native base units */
-    configMinTxnFee: bigint
-    pqMultiplier: bigint
-    /**
-     * Indices whose partition already pays what its signers cost on chain,
-     * asked only for externally priced groups; resolves to none when unsure.
-     */
-    findFundedIndices?: (params: {
-        transactions: PeraTransaction[]
-        signableIndices: number[]
-        signerOverrides?: Map<number, string>
-    }) => Promise<ReadonlySet<number>>
-}
 
 export type EnqueueDappRequestDeps = {
     assignFeeToGroup: AssignFeeToGroup
@@ -805,6 +786,15 @@ export interface PlannerChainAdapter {
         request: UnsignedTransactionSignRequest,
     ): string[] | undefined
     mergeSigningResults(results: SigningResult[]): SigningResult
+    /**
+     * A transaction result as the chain's wire-encoded signed transactions,
+     * in request order. A slot nothing signed is `null`.
+     * @throws TransportError when the result carries no transactions.
+     */
+    signedTransactionsOf(
+        result: SigningResult,
+        scope: ChainScope,
+    ): Nullable<SignedTransaction>[]
 
     /**
      * The signed-transaction envelope for `txn`. Unsigned when `signature` is

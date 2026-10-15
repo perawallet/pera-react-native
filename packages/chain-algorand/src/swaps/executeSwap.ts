@@ -19,6 +19,7 @@ import type {
     PeraDisplayableTransaction,
     PeraSignedTransaction,
     PeraTransaction,
+    SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getHoldingRestriction,
@@ -32,6 +33,7 @@ import {
 import { algorandMultisigOf } from '../accounts/multisig-participants'
 import { algorandAddressOf } from '../accounts/vocabulary'
 import { isAlgorandNativeAssetId } from '../descriptor'
+import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import {
     encodeToBase64,
     logger,
@@ -316,8 +318,8 @@ export const executeAlgorandSwap = async (
                 addSignRequest,
                 signer,
                 signingSource,
-                unsignedTxs,
-                groupContext,
+                toUnsignedAlgorandTransactions(unsignedTxs, scope),
+                toUnsignedAlgorandTransactions(groupContext, scope),
                 ({ signRequestId, rawTransactionsBase64 }) => {
                     registerHandoff({
                         swapIdStr,
@@ -351,7 +353,7 @@ export const executeAlgorandSwap = async (
     // quantum guard inside `requestSwapSignatures` therefore doesn't run in
     // that shape either, which is correct: there is nothing left for the
     // account to sign, so no fee to raise and no signature to invalidate.
-    let flatSigned: PeraSignedTransaction[]
+    let flatSigned: SignedTransaction[]
     try {
         onProgress('signing')
         flatSigned =
@@ -360,8 +362,8 @@ export const executeAlgorandSwap = async (
                       addSignRequest,
                       signer,
                       signingSource,
-                      unsignedTxs,
-                      groupContext,
+                      toUnsignedAlgorandTransactions(unsignedTxs, scope),
+                      toUnsignedAlgorandTransactions(groupContext, scope),
                       { isQuantumSwapEnabled },
                   )
                 : []
@@ -374,7 +376,7 @@ export const executeAlgorandSwap = async (
         return signingFailure(e)
     }
 
-    const allSignedGroups = scatterSigned(plans, flatSigned)
+    const allSignedGroups = scatterSigned(plans, flatSigned, scope)
     const txIds: string[] = []
     try {
         onProgress('submitting')

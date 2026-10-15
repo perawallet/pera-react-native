@@ -11,7 +11,10 @@
  */
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    PeraSignedTransaction,
+    SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
@@ -34,6 +37,10 @@ import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
 import { toRound } from '../submission-ledger'
 import { algorandAddressOf } from '../../accounts/vocabulary'
+import {
+    decodeSignedTransaction,
+    encodeSignedTransaction,
+} from '../../blockchain/utils/transact'
 import {
     CONFIRMATION_ROUNDS_TO_WAIT,
     LANDING_CHECK_ROUNDS_TO_WAIT,
@@ -347,4 +354,35 @@ export const submitAndAutoRefresh = async (
     })
 
     return txIds
+}
+
+/**
+ * {@link submitAndAutoRefresh} for wire-encoded signed transactions. They are
+ * decoded only for the ledger and the refresh; the node gets the bytes as
+ * given, since re-encoding a signature another encoder made can change them.
+ */
+export const submitSignedAndAutoRefresh = (
+    network: Network,
+    algokit: AlgokitClientInterface,
+    signed: SignedTransaction[],
+    options?: SubmitAndAutoRefreshOptions,
+): Promise<string[]> => {
+    const decoded: PeraSignedTransaction[] = signed.map(({ bytes }) =>
+        decodeSignedTransaction(bytes),
+    )
+    const bytesOf = new Map(
+        decoded.map((transaction, index) => [transaction, signed[index].bytes]),
+    )
+    return submitAndAutoRefresh(
+        network,
+        algokit,
+        transactions =>
+            transactions.map(
+                transaction =>
+                    bytesOf.get(transaction) ??
+                    encodeSignedTransaction(transaction),
+            ),
+        decoded,
+        options,
+    )
 }

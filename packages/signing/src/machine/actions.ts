@@ -29,7 +29,6 @@ import {
     type SignableGroup,
     type SigningResult,
     type SourceCallbacks,
-    type SubmissionReceipt,
     type SourceMetadata,
 } from '../pipeline/types'
 import {
@@ -48,7 +47,11 @@ import type {
     SigningMachineDeps,
     SigningMachineInput,
 } from './context'
-import type { SignRequest, UnsignedTransactionSignRequest } from '../models'
+import type {
+    SignRequest,
+    TransactionSignRequest,
+    UnsignedTransactionSignRequest,
+} from '../models'
 import {
     isTransactionRequest,
     isArbitraryDataRequest,
@@ -110,7 +113,58 @@ export const buildGroupSignerMap = (
  * the request's `approve` unchanged. Whether the dApp's node accepts a Falcon
  * signature is network-gated, not a wallet concern.
  */
-const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
+const transactionApproveOf = (
+    request: TransactionSignRequest,
+    scope: ChainScope,
+): SourceCallbacks['approve'] => {
+    if (isUnsignedTransactionRequest(request)) {
+        const approve = request.approve
+        return (
+            approve &&
+            (async (result, submission) => {
+                await approve(
+                    plannerAdapterForScope(scope).signedTransactionsOf(
+                        result,
+                        scope,
+                    ),
+                    submission,
+                )
+            })
+        )
+    }
+    const approve = request.approve
+    return (
+        approve &&
+        (async (result, submission) => {
+            if (result.signedData.type === 'transactions') {
+                await approve(result.signedData.signed, submission)
+            }
+        })
+    )
+}
+
+// WalletConnect-only: a serializable delivery context so the multisig
+// sync-flow handoff can answer the dApp after an app kill. Gated on
+// `payloadId`, which only the WalletConnect handler sets.
+const handoffDeliveryOf = (
+    request: TransactionSignRequest,
+): SourceMetadata['handoffDelivery'] => {
+    const facts = isUnsignedTransactionRequest(request)
+        ? request.chainData?.algorand
+        : request
+    if (facts?.payloadId === undefined) return undefined
+    return {
+        clientId: request.transportId ?? '',
+        payloadId: facts.payloadId,
+        indicesToSign: facts.signableIndices ?? [],
+        totalLength: facts.totalLength ?? 0,
+    }
+}
+
+const buildSourceMetadata = (
+    request: SignRequest,
+    scope: ChainScope,
+): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
     const isLocalAlgod =
         sourceType === 'local' && request.transport !== 'callback'
@@ -136,16 +190,8 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     // Wrap the typed request callback into the generic SourceCallbacks shape.
     let approveCallback: SourceCallbacks['approve']
 
-    if (isTransactionRequest(request) && request.approve) {
-        const txApprove = request.approve
-        approveCallback = async (
-            result: SigningResult,
-            submission?: SubmissionReceipt,
-        ) => {
-            if (result.signedData.type === 'transactions') {
-                await txApprove(result.signedData.signed, submission)
-            }
-        }
+    if (isTransactionRequest(request)) {
+        approveCallback = transactionApproveOf(request, scope)
     } else if (
         (isArbitraryDataRequest(request) || isAuthDataRequest(request)) &&
         request.approve
@@ -202,18 +248,9 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                 ? request.onProposed
                 : undefined,
         },
-        // WalletConnect-only: a serializable delivery context so the multisig
-        // sync-flow handoff can answer the dApp after an app kill. Gated on
-        // `payloadId`, which only the WalletConnect handler sets.
-        handoffDelivery:
-            isTransactionRequest(request) && request.payloadId !== undefined
-                ? {
-                      clientId: request.transportId ?? '',
-                      payloadId: request.payloadId,
-                      indicesToSign: request.signableIndices ?? [],
-                      totalLength: request.totalLength ?? 0,
-                  }
-                : undefined,
+        handoffDelivery: isTransactionRequest(request)
+            ? handoffDeliveryOf(request)
+            : undefined,
     }
 }
 
@@ -357,7 +394,7 @@ const buildSignableGroups = (
     allAccounts: WalletAccount[],
     scope: SigningMachineInput['scope'],
 ): SignableGroup[] => {
-    const source = buildSourceMetadata(request)
+    const source = buildSourceMetadata(request, scope)
 
     if (
         isTransactionRequest(request) &&

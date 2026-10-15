@@ -19,10 +19,10 @@ import {
 } from '../useSignAndSubmitGroup'
 import type {
     ChainScope,
-    PeraSignedTransaction,
-    PeraTransaction,
+    SignedTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionSignRequest } from '../../models'
+import type { UnsignedTransactionSignRequest } from '../../models'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 
 const mockAddSignRequest = vi.fn()
@@ -36,9 +36,23 @@ vi.mock('../useSigningRequest', () => ({
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
-const fakeTxn = {
-    sender: { toString: () => 'A' },
-} as unknown as PeraTransaction
+const fakeTxn: UnsignedTransaction = {
+    scope: SCOPE,
+    payload: {},
+    summary: {
+        kind: 'transfer',
+        title: { key: 'send' },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'algorand' },
+}
+
+const signedTxn = (byte: number): SignedTransaction => ({
+    scope: SCOPE,
+    id: `tx${byte}`,
+    bytes: new Uint8Array([byte]),
+})
 
 describe('useSignAndSubmitGroup', () => {
     beforeEach(() => {
@@ -50,8 +64,8 @@ describe('useSignAndSubmitGroup', () => {
 
     it('resolves with the algod txIds after the pipeline approves', async () => {
         mockSubmitAndAutoRefresh.mockResolvedValue(['tx1', 'tx2'])
-        let captured: Optional<TransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
             captured = r
         })
 
@@ -66,10 +80,7 @@ describe('useSignAndSubmitGroup', () => {
         )
 
         // Drive the request: pretend the pipeline signed both txns.
-        const signed = [
-            { txn: fakeTxn, sig: new Uint8Array([1]) },
-            { txn: fakeTxn, sig: new Uint8Array([2]) },
-        ] as PeraSignedTransaction[]
+        const signed = [signedTxn(1), signedTxn(2)]
         await captured?.approve?.(signed)
 
         await expect(promise).resolves.toEqual({ txIds: ['tx1', 'tx2'] })
@@ -80,7 +91,7 @@ describe('useSignAndSubmitGroup', () => {
         expect(captured?.transport).toBe('callback')
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])
-        expect(captured).toMatchObject({ chainId: 'algorand' })
+        expect(captured).not.toHaveProperty('chainId')
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledWith(SCOPE, signed, {
             flow: 'sign-and-submit',
         })
@@ -88,8 +99,8 @@ describe('useSignAndSubmitGroup', () => {
 
     it('submits only the signed slots when the pipeline pads with null', async () => {
         mockSubmitAndAutoRefresh.mockResolvedValue(['tx1'])
-        let captured: Optional<TransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
             captured = r
         })
 
@@ -102,11 +113,8 @@ describe('useSignAndSubmitGroup', () => {
                 source: { name: 'opt-in', description: 'test' },
             }),
         )
-        const signed = { txn: fakeTxn, sig: new Uint8Array([1]) }
-        await captured?.approve?.([
-            signed,
-            null,
-        ] as unknown as PeraSignedTransaction[])
+        const signed = signedTxn(1)
+        await captured?.approve?.([signed, null])
 
         await promise
         expect(mockSubmitAndAutoRefresh.mock.calls[0][1]).toEqual([signed])
@@ -117,8 +125,8 @@ describe('useSignAndSubmitGroup', () => {
         // machine reaches `completed` — publishing success events for a
         // failed submission.
         mockSubmitAndAutoRefresh.mockRejectedValueOnce(new Error('overspend'))
-        let captured: Optional<TransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
             captured = r
         })
 
@@ -136,17 +144,15 @@ describe('useSignAndSubmitGroup', () => {
         // (act() returns a thenable without .catch.)
         void promise.then(undefined, () => {})
 
-        const signed = [
-            { txn: fakeTxn, sig: new Uint8Array([1]) },
-        ] as PeraSignedTransaction[]
+        const signed = [signedTxn(1)]
 
         await expect(captured?.approve?.(signed)).rejects.toThrow('overspend')
         await expect(promise).rejects.toThrow('overspend')
     })
 
     it('rejects with UserRejectedSigningError when reject() fires', async () => {
-        let captured: Optional<TransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
             captured = r
         })
 
@@ -167,8 +173,8 @@ describe('useSignAndSubmitGroup', () => {
     })
 
     it('rejects with the original error when error() fires', async () => {
-        let captured: Optional<TransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
             captured = r
         })
         const upstream = new Error('LedgerDisconnected')
@@ -194,8 +200,8 @@ describe('useSignAndSubmitGroup', () => {
         // path — promises can reject with primitives, and the hook normalises
         // those into Error so downstream consumers can rely on Error.message.
         mockSubmitAndAutoRefresh.mockRejectedValue('plain-string-failure')
-        let captured: Optional<TransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+        let captured: Optional<UnsignedTransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
             captured = r
         })
 
@@ -210,9 +216,7 @@ describe('useSignAndSubmitGroup', () => {
         )
 
         await expect(
-            captured?.approve?.([
-                { txn: fakeTxn, sig: new Uint8Array([1]) },
-            ] as PeraSignedTransaction[]),
+            captured?.approve?.([signedTxn(1)]),
         ).rejects.toBeInstanceOf(Error)
 
         await expect(promise).rejects.toBeInstanceOf(Error)
