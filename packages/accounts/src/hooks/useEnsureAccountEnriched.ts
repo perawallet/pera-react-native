@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -73,7 +70,7 @@ export const useEnsureAccountEnriched = (
 
                 await Promise.allSettled([
                     fetchAndPersistAssets(ids, scope),
-                    fetchAndPersistPrices(ids, legacyNetworkOf(scope)),
+                    fetchAndPersistPrices(ids, scope),
                 ])
                 invalidate()
             } catch (error) {

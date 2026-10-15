@@ -13,7 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AccountSyncResult } from '@perawallet/wallet-core-accounts'
 import {
-    legacyNetworkFor,
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
@@ -238,7 +237,7 @@ describe('sync phases', () => {
             expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
             expect(mocks.fetchAndPersistPrices).toHaveBeenCalledWith(
                 ['1', '2'],
-                'mainnet',
+                MAINNET,
             )
             expect(result.succeededKinds).toEqual(['prices'])
         })
@@ -261,8 +260,9 @@ describe('sync phases', () => {
             )
         })
 
-        it('rejects, rather than throws, the price kind on a scope without a legacy network', async () => {
+        it('prices a non-Algorand scope under that scope', async () => {
             mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
+            mocks.fetchAndPersistPrices.mockResolvedValue(undefined)
 
             const result = await syncAssetsPhase(
                 ETHEREUM,
@@ -274,9 +274,12 @@ describe('sync phases', () => {
                 ['1', '2'],
                 ETHEREUM,
             )
-            expect(mocks.fetchAndPersistPrices).not.toHaveBeenCalled()
-            expect(result.succeededKinds).toEqual(['assets'])
-            expect(result.hasFailure).toBe(true)
+            expect(mocks.fetchAndPersistPrices).toHaveBeenCalledWith(
+                ['1', '2'],
+                ETHEREUM,
+            )
+            expect(result.succeededKinds).toEqual(['assets', 'prices'])
+            expect(result.hasFailure).toBe(false)
         })
 
         it('lets a failed held-id read throw so the caller decides', async () => {
@@ -288,16 +291,6 @@ describe('sync phases', () => {
                 syncAssetsPhase(MAINNET, ['assets'], 'asset'),
             ).rejects.toThrow('db locked')
             expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
-        })
-    })
-
-    describe('legacyNetworkFor', () => {
-        it('is the network of a legacy scope', () => {
-            expect(legacyNetworkFor(TESTNET)).toBe('testnet')
-        })
-
-        it('is undefined for a scope with no legacy network', () => {
-            expect(legacyNetworkFor(ETHEREUM)).toBeUndefined()
         })
     })
 

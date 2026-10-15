@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     toScopeKey,
-    legacyNetworkOf,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
@@ -130,7 +129,7 @@ export async function syncAndEnrichNewAccount(
         // assets, so overlap with the background sync stays cheap.
         await Promise.allSettled([
             fetchAndPersistAssets(assetIds, scope),
-            fetchAndPersistPrices(assetIds, legacyNetworkOf(scope)),
+            fetchAndPersistPrices(assetIds, scope),
         ])
         invalidateAccountQueriesForAddresses(queryClient, [address])
     } catch (error) {

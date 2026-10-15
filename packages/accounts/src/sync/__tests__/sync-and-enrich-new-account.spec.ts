@@ -96,7 +96,7 @@ describe('syncAndEnrichNewAccount', () => {
         })
         expect(mockFetchAndPersistPrices).toHaveBeenCalledWith(
             ['0', '100'],
-            'mainnet',
+            MAINNET_SCOPE,
         )
         // Once after the account fetch, once after enrichment.
         expect(invalidateSpy).toHaveBeenCalledTimes(2)
