@@ -11,13 +11,18 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { accountsChainAdapters } from '../chain-adapter'
 import {
     getAuthAccount,
     getDelegatedAccount,
     resolveAuthAccount,
     resolveSignerForAccount,
+    signingAddressesOn,
 } from '../signer-resolution'
 import { DelegationTargetNotFoundError } from '../errors'
 import type { WalletAccount } from '../models'
@@ -121,5 +126,56 @@ describe('signer resolution', () => {
         expect(() =>
             resolveSignerForAccount(a, [a], 'nowhere' as typeof FAKE_CHAIN_ID),
         ).toThrow(ChainAdapterNotRegisteredError)
+    })
+})
+
+describe('signingAddressesOn', () => {
+    const OTHER_CHAIN = 'other' as ChainId
+
+    const spanning = (): WalletAccount =>
+        account('A', {
+            chains: {
+                [FAKE_CHAIN_ID]: { address: 'A', keyPairId: 'a-key' },
+                [OTHER_CHAIN]: { address: '0xA', keyPairId: 'other-key' },
+            },
+        })
+
+    const registerOtherChain = (canSign: boolean): void => {
+        accountsChainAdapters.register({
+            ...fakeAccountsChain().adapter,
+            chainId: OTHER_CHAIN,
+            resolveSigner: vi.fn((held: WalletAccount) =>
+                canSign
+                    ? { kind: 'ok' as const, signer: held }
+                    : { kind: 'watch' as const, account: held },
+            ),
+        })
+    }
+
+    it('lists the address on each chain it can sign on, in the order asked', () => {
+        const a = spanning()
+        registerOtherChain(true)
+
+        expect(
+            signingAddressesOn(a, [a], [OTHER_CHAIN, FAKE_CHAIN_ID]),
+        ).toEqual(['0xA', 'A'])
+    })
+
+    it('skips a chain the account has no entry on', () => {
+        const a = account('A')
+        registerOtherChain(true)
+
+        expect(
+            signingAddressesOn(a, [a], [OTHER_CHAIN, FAKE_CHAIN_ID]),
+        ).toEqual(['A'])
+    })
+
+    it('skips a chain nothing held can sign on', () => {
+        const a = spanning()
+        registerOtherChain(false)
+
+        expect(
+            signingAddressesOn(a, [a], [FAKE_CHAIN_ID, OTHER_CHAIN]),
+        ).toEqual(['A'])
     })
 })
