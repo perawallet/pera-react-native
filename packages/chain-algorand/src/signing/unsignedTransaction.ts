@@ -84,7 +84,7 @@ export const summarizeAlgorandTransaction = (
 ): TransactionSummary => {
     const { payment, assetTransfer } = transaction
     switch (transaction.type) {
-        case 'pay':
+        case 'pay': {
             return payment
                 ? transferSummary(
                       transaction,
@@ -93,9 +93,11 @@ export const summarizeAlgorandTransaction = (
                       payment.amount,
                   )
                 : chainSpecific(DEFAULT_TITLE_KEY, 'unknown')
+        }
         case 'axfer': {
-            if (!assetTransfer)
+            if (!assetTransfer) {
                 return chainSpecific(DEFAULT_TITLE_KEY, 'unknown')
+            }
             const receiver = assetTransfer.receiver.toString()
             if (assetTransfer.closeRemainderTo) {
                 return chainSpecific(OPT_OUT_TITLE_KEY, 'opt-out')
@@ -113,21 +115,26 @@ export const summarizeAlgorandTransaction = (
                 assetTransfer.amount,
             )
         }
-        case 'appl':
+        case 'appl': {
             return {
                 kind: 'contract-call',
                 title: { key: APP_CALL_TITLE_KEY },
                 direction: 'none',
                 icon: 'contract-call',
             }
-        case 'keyreg':
+        }
+        case 'keyreg': {
             return chainSpecific(KEY_REGISTRATION_TITLE_KEY, 'consensus')
-        case 'acfg':
+        }
+        case 'acfg': {
             return chainSpecific(ASSET_CONFIG_TITLE_KEY, 'asset-config')
-        case 'afrz':
+        }
+        case 'afrz': {
             return chainSpecific(ASSET_FREEZE_TITLE_KEY, 'asset-freeze')
-        default:
+        }
+        default: {
             return chainSpecific(DEFAULT_TITLE_KEY, 'unknown')
+        }
     }
 }
 
