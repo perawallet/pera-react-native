@@ -30,9 +30,17 @@ import type {
 // have no reason to depend on the signing package for the type alone.
 export type { SourceType }
 
+/**
+ * The last four are routed by a chain's WalletConnect support and refused by
+ * the registry until each gains a `WalletOperation` variant and a validator.
+ */
 export const WALLET_OPERATION_TYPES = [
     'sign-transactions',
     'sign-data',
+    'send-transaction',
+    'sign-message',
+    'sign-typed-data',
+    'switch-network',
 ] as const
 
 export type WalletOperationType = (typeof WALLET_OPERATION_TYPES)[number]
@@ -183,6 +191,11 @@ export interface ConnectionProposal {
     requested: {
         /** Handler-resolved: v1's 4160 wildcard already expanded. */
         networks: NetworkId[]
+        /**
+         * The chains the session would include, each with a requested network
+         * the wallet serves; the approval sheet lists only accounts on these.
+         */
+        chains: ChainId[]
         methods: string[]
     }
     expiresAt: number

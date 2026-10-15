@@ -169,6 +169,7 @@ describe('DappConnectionHandler', () => {
             // Empty signatures are served unprompted, never granted.
             expect(proposal.requested).toEqual({
                 networks: ['mainnet'],
+                chains: ['algorand'],
                 methods: DAPP_METHODS.filter(
                     method => method !== 'getEmptySignatures',
                 ),

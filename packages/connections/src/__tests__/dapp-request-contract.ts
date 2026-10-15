@@ -19,8 +19,11 @@ import type { DappRequestChainAdapter } from '../dappRequest'
 import { WALLET_OPERATION_TYPES } from '../models'
 
 export interface DappRequestContractFixtures {
-    /** `sign-transactions` params past the chain's size caps. */
-    overCapTransactionParams: Record<string, unknown>
+    /**
+     * `sign-transactions` params past the chain's size caps. Omitted by a
+     * chain that signs no transaction groups.
+     */
+    overCapTransactionParams?: Record<string, unknown>
     /** A wallet scope the chain reports to a page as `reportedAs`. */
     disclosed: {
         scope: ChainScope
@@ -62,14 +65,17 @@ export const dappRequestContractTests = (
             },
         )
 
-        it('reports a transaction request past its caps as out of bounds', () => {
-            expect(
-                makeAdapter().parseSigningParams(
-                    'sign-transactions',
-                    fixtures.overCapTransactionParams,
-                ),
-            ).toMatchObject({ ok: false, reason: 'out-of-bounds' })
-        })
+        if (fixtures.overCapTransactionParams) {
+            const overCap = fixtures.overCapTransactionParams
+            it('reports a transaction request past its caps as out of bounds', () => {
+                expect(
+                    makeAdapter().parseSigningParams(
+                        'sign-transactions',
+                        overCap,
+                    ),
+                ).toMatchObject({ ok: false, reason: 'out-of-bounds' })
+            })
+        }
 
         it('reports a disclosable network as the chain names it', () => {
             const { scope, customGenesisHash, reportedAs } = fixtures.disclosed

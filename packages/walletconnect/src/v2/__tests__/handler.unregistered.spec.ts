@@ -72,7 +72,8 @@ const makeContext = (store = memoryStore()) => ({
 const makeHandler = (walletKit: FakeWalletKit = createFakeWalletKit()) => {
     const createWalletKit = vi.fn<WalletKitFactory>(async () => walletKit)
     const handler = createWalletConnectV2Handler({
-        getNetwork: () => Networks.mainnet,
+        getNetworkId: () => Networks.mainnet,
+        isDappConnectEnabled: () => true,
         projectId: 'a-reown-project-id',
         keyValueStorage: new MemoryKeyValueStorage(),
         createWalletKit,

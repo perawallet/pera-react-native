@@ -12,7 +12,7 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { authorityOf } from './credentials'
+import { authorityOf, chainAccountOf } from './credentials'
 import type { MultiSigAccount, WalletAccount } from './models'
 import {
     findAccountByAddressOn,
@@ -81,6 +81,22 @@ export const canSignWith = (
     accounts: WalletAccount[],
     chainId: ChainId,
 ): boolean => resolveSignerForAccount(account, accounts, chainId).kind === 'ok'
+
+/**
+ * The account's address on each listed chain where it has an entry and
+ * something held can sign for it, in `chainIds` order.
+ */
+export const signingAddressesOn = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+    chainIds: readonly ChainId[],
+): string[] =>
+    chainIds.flatMap(chainId => {
+        const address = chainAccountOf(account, chainId)?.address
+        return address && canSignWith(account, accounts, chainId)
+            ? [address]
+            : []
+    })
 
 /**
  * The authority account (itself when not delegated) with no signability

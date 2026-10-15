@@ -345,6 +345,7 @@ export const createDappConnectionHandler = (
             requesterOrigin: ctx.origin,
             requested: {
                 networks: [network],
+                chains: [deps.chainId],
                 methods: [...PERMISSION_METHODS],
             },
             expiresAt,

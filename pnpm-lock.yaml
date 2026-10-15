@@ -2518,6 +2518,9 @@ importers:
       '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
         version: link:../chain-shared
+      '@perawallet/wallet-core-connections':
+        specifier: workspace:*
+        version: link:../connections
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
