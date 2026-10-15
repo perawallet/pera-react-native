@@ -11,7 +11,13 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import {
+    algorandCapabilityDefaults,
+    algorandCapabilityRestrictions,
+} from '@packages/chain-algorand/src/capability-defaults'
 import { useAddAccountScreen } from '../useAddAccountScreen'
 import {
     accountPresentationChainAdapters,
@@ -21,6 +27,10 @@ import {
 import { OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    ETHEREUM_CHAIN_ID,
+    registerEthereumChain,
+} from '@test-utils/chain-fixtures'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
@@ -155,6 +165,19 @@ vi.mock('@perawallet/wallet-core-card', () => ({
 const mockPeraCardFlag = vi.hoisted(() => ({ enabled: true }))
 vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: () => mockPeraCardFlag.enabled,
+}))
+
+const mockDerivableWallets = vi.hoisted(() => ({ seedKeyIds: [] as string[] }))
+const mockDeriveChainAccount = vi.fn()
+vi.mock('@modules/onboarding/hooks/useDeriveChainAccount', () => ({
+    useDeriveChainAccount: () => ({
+        derivableWallets: mockDerivableWallets.seedKeyIds.map(seedKeyId => ({
+            seedKeyId,
+            accounts: [],
+            accountCount: 0,
+        })),
+        deriveChainAccount: mockDeriveChainAccount,
+    }),
 }))
 
 vi.mock('@hooks/useCapability', async () =>
@@ -1049,5 +1072,221 @@ describe('useAddAccountScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
+    })
+
+    describe('with a second chain registered', () => {
+        const ETHEREUM_ACCOUNT: WalletAccount = {
+            id: 'hd-1',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: {
+                algorand: { address: 'HD_ADDRESS', keyPairId: 'wallet-1' },
+                ethereum: { address: '0xabc', keyPairId: 'eth-key' },
+            },
+        }
+
+        const selectChain = (
+            result: { current: ReturnType<typeof useAddAccountScreen> },
+            chainId: string,
+        ) =>
+            act(() => {
+                result.current.chainOptions
+                    .find(option => option.chainId === chainId)!
+                    .onPress()
+            })
+
+        const testIDs = (options: { testID: string }[]) =>
+            options.map(option => option.testID)
+
+        beforeEach(() => {
+            registerEthereumChain()
+            mockDerivableWallets.seedKeyIds = ['seed-a']
+        })
+
+        afterEach(() => {
+            const { chains } = getProvider()
+            chains.reset()
+            chains.register(
+                algorandDescriptor,
+                algorandCapabilityDefaults,
+                algorandCapabilityRestrictions,
+            )
+        })
+
+        it('opens on a chain step listing every registered chain in registry order', () => {
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            expect(result.current.isChainStepVisible).toBe(true)
+            expect(testIDs(result.current.chainOptions)).toEqual([
+                'add_account_chain_algorand_button',
+                `add_account_chain_${ETHEREUM_CHAIN_ID}_button`,
+            ])
+            expect(result.current.chainOptions[1]?.displayName).toBe('Ethereum')
+        })
+
+        it('offers the existing entries once the legacy chain is picked', () => {
+            mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            selectChain(result, 'algorand')
+
+            expect(result.current.isChainStepVisible).toBe(false)
+            expect(testIDs(result.current.mainOptions)).toContain(
+                'add_account_add_button',
+            )
+            expect(testIDs(result.current.mainOptions)).toContain(
+                'add_account_import_button',
+            )
+            expect(result.current.hasOtherOptions).toBe(true)
+        })
+
+        it('offers derive and import as main entries and watch as another option on the second chain', () => {
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            expect(testIDs(result.current.mainOptions)).toEqual([
+                'add_account_derive_from_wallet_button',
+                'add_account_import_private_key_button',
+            ])
+            expect(testIDs(result.current.otherOptions)).toEqual([
+                'add_account_watch_button',
+            ])
+            expect(result.current.hasOtherOptions).toBe(true)
+        })
+
+        it('leaves out the derive entry when no wallet can derive on the chain', () => {
+            mockDerivableWallets.seedKeyIds = []
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            expect(testIDs(result.current.mainOptions)).toEqual([
+                'add_account_import_private_key_button',
+            ])
+        })
+
+        it('leaves out the import entry when private keys are off', () => {
+            capabilityState.turnOff('privateKeys')
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            expect(testIDs(result.current.mainOptions)).toEqual([
+                'add_account_derive_from_wallet_button',
+            ])
+        })
+
+        it('has no other options when watch accounts are off', () => {
+            capabilityState.turnOff('watchAccounts')
+            const { result } = renderHook(() => useAddAccountScreen())
+
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            expect(result.current.otherOptions).toEqual([])
+            expect(result.current.hasOtherOptions).toBe(false)
+        })
+
+        it('derives from the only wallet and names the account on the chain', async () => {
+            mockDeriveChainAccount.mockResolvedValue(ETHEREUM_ACCOUNT)
+            const { result } = renderHook(() => useAddAccountScreen())
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            await act(async () => {
+                result.current.mainOptions[0]!.onPress()
+            })
+
+            expect(mockDeriveChainAccount).toHaveBeenCalledWith('seed-a')
+            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                account: ETHEREUM_ACCOUNT,
+                chainId: ETHEREUM_CHAIN_ID,
+            })
+        })
+
+        it('shows the error toast when deriving fails', async () => {
+            const error = new Error('duplicate')
+            mockDeriveChainAccount.mockRejectedValue(error)
+            const { result } = renderHook(() => useAddAccountScreen())
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            await act(async () => {
+                result.current.mainOptions[0]!.onPress()
+            })
+
+            expect(mockShowError).toHaveBeenCalledWith(
+                error,
+                'onboarding.create_account.error_title',
+            )
+            expect(mockPush).not.toHaveBeenCalled()
+            expect(result.current.isCreatingAccount).toBe(false)
+        })
+
+        it('picks the wallet first when several can derive', () => {
+            mockDerivableWallets.seedKeyIds = ['seed-a', 'seed-b']
+            const { result } = renderHook(() => useAddAccountScreen())
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            act(() => {
+                result.current.mainOptions[0]!.onPress()
+            })
+
+            expect(mockDeriveChainAccount).not.toHaveBeenCalled()
+            expect(mockPush).toHaveBeenCalledWith('SelectHDWallet', {
+                chainId: ETHEREUM_CHAIN_ID,
+            })
+        })
+
+        it('opens the private-key import for the chain', () => {
+            const { result } = renderHook(() => useAddAccountScreen())
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            act(() => {
+                result.current.mainOptions[1]!.onPress()
+            })
+
+            expect(mockPush).toHaveBeenCalledWith('ImportPrivateKey', {
+                chainId: ETHEREUM_CHAIN_ID,
+            })
+        })
+
+        it('opens the watch flow from the chain entries', () => {
+            const { result } = renderHook(() => useAddAccountScreen())
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            act(() => {
+                result.current.otherOptions[0]!.onPress()
+            })
+
+            expect(mockPush).toHaveBeenCalledWith('WatchInfo')
+        })
+
+        it('returns to the chain step on close, and leaves the flow from there', () => {
+            const { result } = renderHook(() => useAddAccountScreen())
+            selectChain(result, ETHEREUM_CHAIN_ID)
+
+            act(() => {
+                result.current.handleClose()
+            })
+
+            expect(result.current.isChainStepVisible).toBe(true)
+            expect(mockGoBack).not.toHaveBeenCalled()
+
+            act(() => {
+                result.current.handleClose()
+            })
+
+            expect(mockGoBack).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    it('shows no chain step with one chain registered', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(result.current.isChainStepVisible).toBe(false)
+        expect(result.current.chainOptions).toEqual([])
+        expect(result.current.hasOtherOptions).toBe(true)
     })
 })

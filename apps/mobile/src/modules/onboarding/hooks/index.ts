@@ -28,6 +28,8 @@ export {
     REKEY_SCAN_UNAVAILABLE,
 } from './useDelegationScanNoticeResult'
 export type { UseDelegationScanNoticeResultResult } from './useDelegationScanNoticeResult'
+export { useDeriveChainAccount } from './useDeriveChainAccount'
+export type { UseDeriveChainAccountResult } from './useDeriveChainAccount'
 // NOTE: `useTermsAcceptance` is intentionally NOT re-exported here — it pulls in
 // the settings store (and thus `registerStore` from shared), and importing this
 // barrel must stay lightweight. Consumers import it directly from its module.
