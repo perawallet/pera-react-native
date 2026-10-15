@@ -16,8 +16,8 @@ import type {
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    getOpenSubmissionSpends,
-    type OpenSubmissionSpend,
+    getUnsyncedSubmissionSpends,
+    type UnsyncedSubmissionSpend,
 } from '@perawallet/wallet-core-signing'
 import type { InFlightSpend } from './transfer-adapter'
 
@@ -43,7 +43,7 @@ const toInFlightSpend = ({
     nonce,
     maxFee,
     historyEntry,
-}: OpenSubmissionSpend): InFlightSpend => ({
+}: UnsyncedSubmissionSpend): InFlightSpend => ({
     ...(nonce !== null && { nonce }),
     ...(maxFee !== null && { maxFee }),
     outflows: historyEntry ? outflowsOf(historyEntry.summary) : [],
@@ -54,12 +54,12 @@ export type GetInFlightSpendsParams = {
     scope: ChainScope
 }
 
-/** The open attempts `address` sent in `scope`. Reads SQLite only, so it answers offline. */
+/** The attempts `address` sent in `scope` that its synced balance may not reflect. Reads SQLite only, so it answers offline. */
 export const getInFlightSpends = async ({
     address,
     scope,
 }: GetInFlightSpendsParams): Promise<InFlightSpend[]> => {
-    const attempts = await getOpenSubmissionSpends({ scope })
+    const attempts = await getUnsyncedSubmissionSpends({ scope })
     return attempts
         .filter(
             ({ sender }) =>

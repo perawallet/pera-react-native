@@ -134,7 +134,6 @@ describe('readEthereumSpendableBalance', () => {
             const inFlight: InFlightSpend[] = [
                 {
                     nonce: 0,
-                    // Lowercased, as a decoded dApp request may spell it.
                     outflows: [
                         {
                             assetRef: { ...TOKEN, assetId: USDC.toLowerCase() },
@@ -154,6 +153,35 @@ describe('readEthereumSpendableBalance', () => {
                 reserved: new Decimal(40),
             })
             expect(ether.max).toEqual(new Decimal(949))
+        })
+
+        it('matches the holding and the open send to the token whatever their casing', async () => {
+            givenNativeBalance(1000)
+            mocks.getAccountHoldings.mockResolvedValue([
+                {
+                    assetId: USDC.toLowerCase(),
+                    amount: new Decimal(250),
+                    native: null,
+                },
+            ])
+
+            const result = await read(TOKEN, [
+                {
+                    nonce: 0,
+                    outflows: [
+                        {
+                            assetRef: { ...TOKEN, assetId: USDC.toUpperCase() },
+                            value: new Decimal(40),
+                        },
+                    ],
+                },
+            ])
+
+            expect(result).toEqual({
+                balance: new Decimal(250),
+                max: new Decimal(210),
+                reserved: new Decimal(40),
+            })
         })
 
         it('does not hold back a send mined in the block the balance was read at', async () => {

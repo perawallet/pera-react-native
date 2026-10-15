@@ -27,7 +27,7 @@ import {
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
     getSubmissionAttemptsWithHistoryEntry,
-    getOpenSubmissionSpends,
+    getUnsyncedSubmissionSpends,
     pruneResolvedSubmissionAttempts,
     subscribeToSubmissionLedger,
     LANDABLE_SUBMISSION_STATUSES,
@@ -516,7 +516,7 @@ describe('submission ledger repository', () => {
         })
     })
 
-    describe('open spends', () => {
+    describe('unsynced spends', () => {
         const record = (
             overrides: Partial<
                 Parameters<typeof recordSubmissionAttempt>[0]
@@ -537,7 +537,7 @@ describe('submission ledger repository', () => {
         it('reads back the nonce, max fee and entry of an open attempt', async () => {
             await record()
 
-            const [spend] = await getOpenSubmissionSpends({
+            const [spend] = await getUnsyncedSubmissionSpends({
                 db,
                 scope: ETHEREUM,
             })
@@ -559,7 +559,7 @@ describe('submission ledger repository', () => {
                 .where(eq(SubmissionAttemptsSchema.id, unreadable))
                 .run()
 
-            const spends = await getOpenSubmissionSpends({
+            const spends = await getUnsyncedSubmissionSpends({
                 db,
                 scope: ETHEREUM,
             })
@@ -571,25 +571,36 @@ describe('submission ledger repository', () => {
             }
         })
 
-        it('returns only open attempts of the scope', async () => {
+        it('returns the open attempts of the scope and the confirmed ones with a nonce', async () => {
             const submitted = await record({ txIds: ['0x1'] })
             const unknown = await record({ txIds: ['0x2'] })
             await markSubmissionUnknown({ db, id: unknown })
+            const settled: Record<string, string> = {}
             for (const status of ['confirmed', 'failed', 'replaced'] as const) {
                 const id = await record({ txIds: [`0x${status}`] })
                 await resolveSubmissionAttempt({ db, id, status })
+                settled[status] = id
             }
+            const withoutNonce = await record({
+                txIds: ['0xno-nonce'],
+                nonce: undefined,
+            })
+            await resolveSubmissionAttempt({
+                db,
+                id: withoutNonce,
+                status: 'confirmed',
+            })
             await record({
                 scope: { chainId: 'ethereum', networkId: 'sepolia' },
             })
 
-            const spends = await getOpenSubmissionSpends({
+            const spends = await getUnsyncedSubmissionSpends({
                 db,
                 scope: ETHEREUM,
             })
 
             expect(spends.map(spend => spend.id).sort()).toEqual(
-                [submitted, unknown].sort(),
+                [submitted, unknown, settled.confirmed].sort(),
             )
         })
 
@@ -603,7 +614,8 @@ describe('submission ledger repository', () => {
             unsubscribe()
             await record({ txIds: ['0xafter'] })
 
-            expect(listener).toHaveBeenCalledTimes(3)
+            // Unknown stays open, so it changes nothing a reader holds back.
+            expect(listener).toHaveBeenCalledTimes(2)
         })
 
         it('still records when a subscriber throws', async () => {

@@ -10,16 +10,9 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
-import {
-    keepPreviousData,
-    skipToken,
-    useQuery,
-    useQueryClient,
-} from '@tanstack/react-query'
+import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query'
 import { addressOn } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { subscribeToSubmissionLedger } from '@perawallet/wallet-core-signing'
 import { getInFlightSpends } from '../in-flight'
 import {
     transferChainAdapters,
@@ -38,21 +31,8 @@ export type UseSpendableBalanceQueryResult = {
 export const useSpendableBalanceQuery = (
     input: Optional<SpendableBalanceInput>,
 ): UseSpendableBalanceQueryResult => {
-    const queryClient = useQueryClient()
     const address = input ? addressOn(input.account, input.scope) : undefined
     const isEnabled = !!input && !!address
-
-    // The open attempts are read inside the query, so a broadcast, or a
-    // settle, must re-run it for MAX to drop and come back.
-    useEffect(
-        () =>
-            subscribeToSubmissionLedger(() => {
-                void queryClient.invalidateQueries({
-                    queryKey: [MODULE_PREFIX, 'spendable-balance'],
-                })
-            }),
-        [queryClient],
-    )
 
     const query = useQuery({
         queryKey:

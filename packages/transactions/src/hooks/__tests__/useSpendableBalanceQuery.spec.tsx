@@ -27,22 +27,15 @@ import {
     type SpendableBalanceInput,
     type TransferChainAdapter,
 } from '../../transfer-adapter'
+import { invalidateSpendableBalanceQueries } from '../querykeys'
 import { useSpendableBalanceQuery } from '../useSpendableBalanceQuery'
 
 const mocks = vi.hoisted(() => ({
     getInFlightSpends: vi.fn(),
-    ledgerListeners: new Set<() => void>(),
 }))
 
 vi.mock('../../in-flight', () => ({
     getInFlightSpends: mocks.getInFlightSpends,
-}))
-
-vi.mock('@perawallet/wallet-core-signing', () => ({
-    subscribeToSubmissionLedger: (listener: () => void) => {
-        mocks.ledgerListeners.add(listener)
-        return () => mocks.ledgerListeners.delete(listener)
-    },
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -102,7 +95,6 @@ describe('useSpendableBalanceQuery', () => {
         })
         spendableBalance.mockResolvedValue(SPENDABLE)
         mocks.getInFlightSpends.mockResolvedValue([])
-        mocks.ledgerListeners.clear()
     })
 
     it('waits, without reporting pending, until it has an input', () => {
@@ -219,7 +211,7 @@ describe('useSpendableBalanceQuery', () => {
         })
     })
 
-    it('re-reads when the submission ledger records or settles an attempt', async () => {
+    it('re-reads the ledger when the spendable balance is invalidated', async () => {
         const { result } = renderHook(
             () => useSpendableBalanceQuery(inputWith(1_000)),
             { wrapper: wrapper(queryClient) },
@@ -228,7 +220,7 @@ describe('useSpendableBalanceQuery', () => {
         const held = { ...SPENDABLE, max: new Decimal(3_899_000) }
         spendableBalance.mockResolvedValue(held)
 
-        for (const listener of mocks.ledgerListeners) listener()
+        invalidateSpendableBalanceQueries(queryClient)
 
         await waitFor(() => expect(result.current.data).toEqual(held))
         expect(mocks.getInFlightSpends).toHaveBeenCalledTimes(2)

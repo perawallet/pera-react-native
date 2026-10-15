@@ -43,7 +43,7 @@ export type EmptyAccountOffer = {
     notice: ChainNotice
 }
 
-/** A broadcast the chain may not have mined yet, as the submission ledger records it. */
+/** A broadcast the synced balance may not reflect yet, as the submission ledger records it. */
 export type InFlightSpend = {
     /** Absent on chains with no account sequence number. */
     nonce?: number
@@ -60,8 +60,10 @@ export type SpendableBalanceInput = {
     /** Base units of the native asset. */
     fee: Decimal
     /**
-     * The account's open submission attempts in `scope`. A chain whose
-     * attempts settle before its synced balance can lag behind them ignores it.
+     * The account's attempts in `scope` the synced balance may not reflect:
+     * open ones, and confirmed ones a chain with a nonce drops once the synced
+     * nonce passes them. A chain whose attempts settle before its synced
+     * balance can lag behind them ignores it.
      */
     inFlight?: readonly InFlightSpend[]
 }

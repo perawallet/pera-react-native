@@ -27,6 +27,7 @@ import {
     type SpendableBalance,
     type SpendableBalanceInput,
 } from '@perawallet/wallet-core-transactions'
+import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 
@@ -35,10 +36,10 @@ const ZERO = new Decimal(0)
 const sumOf = (values: Decimal[]): Decimal =>
     values.reduce((total, value) => total.add(value), ZERO)
 
-// The sync reads the balance at the latest block, so a send mined in it is
-// already off the balance; its attempt stays open until the reconciler's next
-// tick, and counting it again would hold its value back twice.
-const unmined = (
+// The synced nonce, read at the same block as the balance, is what says a
+// send is already off it, not the attempt's status: an attempt can still be
+// open after its block is synced, and confirmed before it is.
+const unsynced = (
     inFlight: readonly InFlightSpend[],
     latestNonce: Optional<number>,
 ): readonly InFlightSpend[] =>
@@ -48,11 +49,9 @@ const unmined = (
               spend => spend.nonce === undefined || spend.nonce >= latestNonce,
           )
 
-// A token id decoded from a dApp request may be checksummed differently from
-// the holding's.
 const isSameAsset = (a: AssetRef, b: AssetRef): boolean =>
     a.chainId === b.chainId &&
-    a.assetId.toLowerCase() === b.assetId.toLowerCase()
+    ethereumAddressCodec.areEqual(a.assetId, b.assetId)
 
 const outflowOf = (inFlight: readonly InFlightSpend[], asset: AssetRef) =>
     sumOf(
@@ -64,7 +63,7 @@ const outflowOf = (inFlight: readonly InFlightSpend[], asset: AssetRef) =>
     )
 
 // Ethereum has no reserve and no close-out. What stands between the balance
-// and MAX is the gas, paid in ether, and what open sends already spend: the
+// and MAX is the gas, paid in ether, and what earlier sends already spend: the
 // node queues the next send behind them and prices it against the same balance.
 export const readEthereumSpendableBalance = async ({
     account,
@@ -91,7 +90,7 @@ export const readEthereumSpendableBalance = async ({
     })
     const latestNonce =
         row?.chainData.family === 'evm' ? row.chainData.nonce.latest : undefined
-    const open = unmined(inFlight, latestNonce)
+    const pending = unsynced(inFlight, latestNonce)
 
     if (!isNativeAsset(asset, ethereumDescriptor)) {
         const holdings = await getAccountHoldings({
@@ -99,9 +98,10 @@ export const readEthereumSpendableBalance = async ({
             scope,
         })
         const balance =
-            holdings.find(holding => holding.assetId === asset.assetId)
-                ?.amount ?? ZERO
-        const reserved = outflowOf(open, asset)
+            holdings.find(holding =>
+                ethereumAddressCodec.areEqual(holding.assetId, asset.assetId),
+            )?.amount ?? ZERO
+        const reserved = outflowOf(pending, asset)
         return {
             balance,
             max: Decimal.max(balance.sub(reserved), ZERO),
@@ -110,8 +110,8 @@ export const readEthereumSpendableBalance = async ({
     }
 
     const balance = row?.nativeBalance ?? ZERO
-    const reserved = outflowOf(open, asset).add(
-        sumOf(open.map(spend => spend.maxFee ?? ZERO)),
+    const reserved = outflowOf(pending, asset).add(
+        sumOf(pending.map(spend => spend.maxFee ?? ZERO)),
     )
     return {
         balance,

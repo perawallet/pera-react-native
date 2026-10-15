@@ -42,7 +42,7 @@ import {
     OPEN_SUBMISSION_STATUSES,
     SUBMISSION_HISTORY_ENTRY_VERSION,
     type IntentKey,
-    type OpenSubmissionSpend,
+    type UnsyncedSubmissionSpend,
     type SubmissionAttempt,
     type SubmissionAttemptWithHistoryEntry,
     type SubmissionHistoryEntry,
@@ -181,7 +181,6 @@ export const markSubmissionUnknown = async ({
         .set({ status: 'unknown' })
         .where(eq(SubmissionAttemptsSchema.id, id))
         .run()
-    notifySubmissionLedgerChanged()
 }
 
 export type GetOpenSubmissionAttemptsParams = {
@@ -373,30 +372,39 @@ export const getSubmissionAttemptsWithHistoryEntry = async ({
     })
 }
 
-export type GetOpenSubmissionSpendsParams = {
+export type GetUnsyncedSubmissionSpendsParams = {
     db?: Database
     scope: ChainScope
 }
 
 /**
- * Every open attempt in the scope with what it spends, oldest first. An
- * unreadable history entry reads as null rather than dropping the row, so
- * its fee still counts. The sender is left to the caller, as in
+ * The attempts in the scope a synced balance may not reflect yet, with what
+ * they spend, oldest first: every open one, and every confirmed one with a
+ * nonce, since the reconciler settles a send before the tick's sync re-reads
+ * the balance. The caller drops those the synced nonce has passed. An
+ * unreadable history entry reads as null rather than dropping the row, so its
+ * fee still counts. The sender is left to the caller, as in
  * {@link getSubmissionAttemptsWithHistoryEntry}.
  */
-export const getOpenSubmissionSpends = async ({
+export const getUnsyncedSubmissionSpends = async ({
     db = getDatabase(),
     scope,
-}: GetOpenSubmissionSpendsParams): Promise<OpenSubmissionSpend[]> => {
+}: GetUnsyncedSubmissionSpendsParams): Promise<UnsyncedSubmissionSpend[]> => {
     const rows = await db
         .select()
         .from(SubmissionAttemptsSchema)
         .where(
             and(
                 eq(SubmissionAttemptsSchema.network, toScopeKey(scope)),
-                inArray(SubmissionAttemptsSchema.status, [
-                    ...OPEN_SUBMISSION_STATUSES,
-                ]),
+                or(
+                    inArray(SubmissionAttemptsSchema.status, [
+                        ...OPEN_SUBMISSION_STATUSES,
+                    ]),
+                    and(
+                        eq(SubmissionAttemptsSchema.status, 'confirmed'),
+                        isNotNull(SubmissionAttemptsSchema.nonce),
+                    ),
+                ),
             ),
         )
         .orderBy(SubmissionAttemptsSchema.createdAt)

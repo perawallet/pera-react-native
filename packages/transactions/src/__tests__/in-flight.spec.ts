@@ -17,12 +17,12 @@ import type {
     ChainScope,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
-import type { OpenSubmissionSpend } from '@perawallet/wallet-core-signing'
+import type { UnsyncedSubmissionSpend } from '@perawallet/wallet-core-signing'
 
-const mocks = vi.hoisted(() => ({ getOpenSubmissionSpends: vi.fn() }))
+const mocks = vi.hoisted(() => ({ getUnsyncedSubmissionSpends: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    getOpenSubmissionSpends: mocks.getOpenSubmissionSpends,
+    getUnsyncedSubmissionSpends: mocks.getUnsyncedSubmissionSpends,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -52,8 +52,8 @@ const summary = (
 })
 
 const attempt = (
-    overrides: Partial<OpenSubmissionSpend> = {},
-): OpenSubmissionSpend => ({
+    overrides: Partial<UnsyncedSubmissionSpend> = {},
+): UnsyncedSubmissionSpend => ({
     id: 'a',
     network: 'ethereum/mainnet',
     txIds: ['0x1'],
@@ -79,7 +79,7 @@ describe('getInFlightSpends', () => {
     })
 
     it("maps the account's open attempts, matching the sender through the chain's codec", async () => {
-        mocks.getOpenSubmissionSpends.mockResolvedValue([
+        mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
             attempt(),
             attempt({
                 id: 'other',
@@ -95,13 +95,13 @@ describe('getInFlightSpends', () => {
                 outflows: [{ assetRef: ETH, value: new Decimal(100) }],
             },
         ])
-        expect(mocks.getOpenSubmissionSpends).toHaveBeenCalledWith({
+        expect(mocks.getUnsyncedSubmissionSpends).toHaveBeenCalledWith({
             scope: SCOPE,
         })
     })
 
     it('counts a self-send but not an incoming or neutral amount', async () => {
-        mocks.getOpenSubmissionSpends.mockResolvedValue([
+        mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
             attempt({
                 historyEntry: {
                     summary: summary({ direction: 'self' }),
@@ -132,7 +132,7 @@ describe('getInFlightSpends', () => {
     })
 
     it('takes only what leaves the account from balance changes', async () => {
-        mocks.getOpenSubmissionSpends.mockResolvedValue([
+        mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
             attempt({
                 historyEntry: {
                     summary: summary({
@@ -155,7 +155,7 @@ describe('getInFlightSpends', () => {
     })
 
     it('keeps only the fee of an attempt with no entry, and leaves out what is unknown', async () => {
-        mocks.getOpenSubmissionSpends.mockResolvedValue([
+        mocks.getUnsyncedSubmissionSpends.mockResolvedValue([
             attempt({ historyEntry: null }),
             attempt({ historyEntry: null, maxFee: null, nonce: null }),
         ])

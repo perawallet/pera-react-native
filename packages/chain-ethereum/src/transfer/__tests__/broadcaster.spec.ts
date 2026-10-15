@@ -26,7 +26,7 @@ import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
-    getOpenSubmissionSpends,
+    getUnsyncedSubmissionSpends,
     getSubmissionAttemptsWithHistoryEntry,
     SubmissionAttemptsSchema,
     TransportError,
@@ -167,7 +167,7 @@ describe('Ethereum broadcaster adapter', () => {
                 }),
             ).toEqual([])
             expect(
-                await getOpenSubmissionSpends({ db, scope: SCOPE }),
+                await getUnsyncedSubmissionSpends({ db, scope: SCOPE }),
             ).toMatchObject([
                 {
                     historyEntry: null,

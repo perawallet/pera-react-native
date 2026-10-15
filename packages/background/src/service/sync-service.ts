@@ -21,6 +21,7 @@ import {
     invalidateAssetQueries,
 } from '@perawallet/wallet-core-assets'
 import {
+    invalidateSpendableBalanceQueries,
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
 } from '@perawallet/wallet-core-transactions'
@@ -40,6 +41,7 @@ import {
 import {
     broadcasterChainAdapters,
     reconcileOpenSubmissions,
+    subscribeToSubmissionLedger,
 } from '@perawallet/wallet-core-signing'
 import type { AssetSyncKind } from '../polling'
 import type { SyncServiceDeps } from '../models'
@@ -133,6 +135,7 @@ export class SyncService {
     // while running so an offline→online transition can trigger an immediate
     // tick. Cleared on stop() so the subscription lifecycle tracks running.
     private onlineUnsubscribe: Nullable<() => void> = null
+    private ledgerUnsubscribe: Nullable<() => void> = null
     private readonly baseInterval: number
 
     constructor(private readonly deps: SyncServiceDeps) {
@@ -165,6 +168,14 @@ export class SyncService {
         this.onlineUnsubscribe ??= onlineManager.subscribe(isOnline => {
             if (isOnline) this.handleReconnect()
         })
+        // The spendable balance reads the ledger's open attempts, so a
+        // broadcast must drop MAX and a settle bring it back. Debounced, since
+        // a reconcile pass settles its rows in parallel.
+        this.ledgerUnsubscribe ??= subscribeToSubmissionLedger(() =>
+            this.debouncedInvalidate('spendable-balance', () =>
+                invalidateSpendableBalanceQueries(this.deps.queryClient),
+            ),
+        )
         this.authRefusedScopes.clear()
         void this.tick()
     }
@@ -174,6 +185,10 @@ export class SyncService {
         if (this.onlineUnsubscribe !== null) {
             this.onlineUnsubscribe()
             this.onlineUnsubscribe = null
+        }
+        if (this.ledgerUnsubscribe !== null) {
+            this.ledgerUnsubscribe()
+            this.ledgerUnsubscribe = null
         }
         if (this.timer !== null) {
             clearTimeout(this.timer)

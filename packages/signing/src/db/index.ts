@@ -13,7 +13,7 @@
 export {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
-    getOpenSubmissionSpends,
+    getUnsyncedSubmissionSpends,
     getSubmissionAttemptsByTxIds,
     getSubmissionAttemptsWithHistoryEntry,
     markSubmissionUnknown,
@@ -28,7 +28,7 @@ export {
     OPEN_SUBMISSION_STATUSES,
     STALE_OPEN_ATTEMPT_MS,
     type IntentKey,
-    type OpenSubmissionSpend,
+    type UnsyncedSubmissionSpend,
     type SubmissionAttempt,
     type SubmissionAttemptWithHistoryEntry,
     type SubmissionFlow,

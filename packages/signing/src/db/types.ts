@@ -127,7 +127,7 @@ export type SubmissionAttemptWithHistoryEntry = SubmissionAttempt & {
     historyEntry: SubmissionHistoryEntry
 }
 
-export type OpenSubmissionSpend = SubmissionAttempt & {
+export type UnsyncedSubmissionSpend = SubmissionAttempt & {
     /** Base units of the native asset: the most the transaction can be charged; null when unknown. */
     maxFee: Decimal | null
     /** Null when the attempt recorded none, or it can't be read. */
