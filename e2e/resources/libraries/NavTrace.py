@@ -103,7 +103,7 @@ class NavTrace:
         trace to Documents/e2e-nav.log; return only lines newer than the last one seen."""
         bundle = driver.capabilities.get("bundleId") or driver.capabilities.get("appium:bundleId")
         try:
-            raw = base64.b64decode(driver.pull_file(f"@{bundle}:documents/e2e-nav.log")).decode()
+            raw = base64.b64decode(driver.pull_file(f"@{bundle}:data/Documents/e2e-nav.log")).decode()
         except Exception:
             return []
         fresh = []
