@@ -24,6 +24,8 @@ import { navigationRef } from '@routes/navigationRef'
 import type { DevE2eFixtureDeeplink, E2eFixtureName } from '../types'
 import { snapshotOnNextState, startNavTracer } from './e2eNavTracer'
 
+const READY_TIMEOUT_MS = 3000
+
 export type E2eFixtureDeeplinkHandler = (
     deeplink: Pick<DevE2eFixtureDeeplink, 'fixture'>,
 ) => void
@@ -66,30 +68,41 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
             // Sheets live above navigation, so a reset alone leaves the last
             // test's sheet up to swallow the next tap.
             useBottomSheetStore.getState().dismissAll()
-            if (!navigationRef.isReady()) return
-            // A fresh key remounts the tab shell, which also closes the account
-            // drawer: its open state is local to the shell, not in navigation.
-            const tabBar = { name: 'TabBar', key: `TabBar-e2e-${Date.now()}` }
-            snapshotOnNextState(`fixture:${fixture}`)
-            if (fixture === 'home') {
-                navigationRef.reset({ index: 0, routes: [tabBar] })
-                return
-            }
-            useContactsStore.setState({
-                contacts: FIXTURE_CONTACTS[fixture],
-                selectedContact: null,
-            })
-            navigationRef.reset({
-                index: 1,
-                routes: [
-                    tabBar,
-                    {
-                        name: 'Contacts',
-                        state: { routes: [{ name: 'ContactsList' }] },
-                    },
-                ],
-            })
+            resetWhenReady(fixture)
         },
         [hasAccounts],
     )
+}
+
+// Navigation can be briefly unready (a theme switch remounts the container);
+// dropping the fixture then would leave the test on the previous screen.
+const resetWhenReady = (fixture: E2eFixtureName, waitedMs = 0): void => {
+    if (!navigationRef.isReady()) {
+        if (waitedMs < READY_TIMEOUT_MS) {
+            setTimeout(() => resetWhenReady(fixture, waitedMs + 100), 100)
+        }
+        return
+    }
+    // A fresh key remounts the tab shell, which also closes the account
+    // drawer: its open state is local to the shell, not in navigation.
+    const tabBar = { name: 'TabBar', key: `TabBar-e2e-${Date.now()}` }
+    snapshotOnNextState(`fixture:${fixture}`)
+    if (fixture === 'home') {
+        navigationRef.reset({ index: 0, routes: [tabBar] })
+        return
+    }
+    useContactsStore.setState({
+        contacts: FIXTURE_CONTACTS[fixture],
+        selectedContact: null,
+    })
+    navigationRef.reset({
+        index: 1,
+        routes: [
+            tabBar,
+            {
+                name: 'Contacts',
+                state: { routes: [{ name: 'ContactsList' }] },
+            },
+        ],
+    })
 }

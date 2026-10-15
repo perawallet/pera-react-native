@@ -128,6 +128,21 @@ describe('useE2eFixtureDeeplink', () => {
         })
     })
 
+    it('applies the fixture once navigation becomes ready', () => {
+        vi.useFakeTimers()
+        mockIsReady.mockReturnValue(false)
+        const { result } = renderHook(() => useE2eFixtureDeeplink())
+
+        result.current({ fixture: 'contacts-empty' })
+        expect(mockReset).not.toHaveBeenCalled()
+
+        mockIsReady.mockReturnValue(true)
+        vi.advanceTimersByTime(100)
+
+        expect(mockReset).toHaveBeenCalled()
+        vi.useRealTimers()
+    })
+
     it('changes nothing while navigation is not mounted yet', () => {
         mockIsReady.mockReturnValue(false)
         const { result } = renderHook(() => useE2eFixtureDeeplink())
