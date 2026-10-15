@@ -44,12 +44,18 @@ const MIN_BALANCE_TITLE_KEY = i18nKey('send_funds.input.min_balance_title')
 const MIN_BALANCE_AMOUNT_KEY = i18nKey('send_funds.input.min_balance_amount')
 const MIN_BALANCE_BODY_KEY = i18nKey('send_funds.input.min_balance_body')
 const REKEYED_TITLE_KEY = i18nKey('send_funds.input.rekeyed_min_balance_title')
-const REKEYED_AMOUNT_KEY = i18nKey('send_funds.input.rekeyed_min_balance_amount')
+const REKEYED_AMOUNT_KEY = i18nKey(
+    'send_funds.input.rekeyed_min_balance_amount',
+)
 const REKEYED_BODY_KEY = i18nKey('send_funds.input.rekeyed_min_balance_body')
 const CLOSE_ACCOUNT_TITLE_KEY = i18nKey('send_funds.close_account.title')
 const CLOSE_ACCOUNT_BODY_KEY = i18nKey('send_funds.close_account.body')
-const RECIPIENT_TITLE_KEY = i18nKey('send_funds.confirmation.recipient_below_mbr.title')
-const RECIPIENT_BODY_KEY = i18nKey('send_funds.confirmation.recipient_below_mbr.body')
+const RECIPIENT_TITLE_KEY = i18nKey(
+    'send_funds.confirmation.recipient_below_mbr.title',
+)
+const RECIPIENT_BODY_KEY = i18nKey(
+    'send_funds.confirmation.recipient_below_mbr.body',
+)
 
 const ZERO = new Decimal(0)
 

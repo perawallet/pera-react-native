@@ -458,7 +458,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 ...sentHalfAlgo,
                 notice: {
                     kind: 'warning',
-                    title: { key: 'transactions.notice.pending' },
+                    title: { key: i18nKey('transactions.notice.pending') },
                     since: 1_700_000_000_000,
                 },
             },
@@ -471,7 +471,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 ...sentHalfAlgo,
                 notice: {
                     kind: 'error',
-                    title: { key: 'transactions.notice.failed' },
+                    title: { key: i18nKey('transactions.notice.failed') },
                 },
             },
         },
@@ -483,7 +483,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 ...sentHalfAlgo,
                 notice: {
                     kind: 'warning',
-                    title: { key: 'transactions.notice.replaced' },
+                    title: { key: i18nKey('transactions.notice.replaced') },
                 },
             },
         },

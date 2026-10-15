@@ -11,6 +11,4 @@
  */
 
 export { getDebitedAddress, isOutgoingFor } from './direction'
-export {
-    transactionStatusNotice,
-} from './statusNotice'
+export { transactionStatusNotice } from './statusNotice'
