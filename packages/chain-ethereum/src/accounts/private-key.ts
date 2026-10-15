@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { bytesToHex } from 'viem'
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import {
     AppError,
@@ -51,6 +52,10 @@ export const parseEthereumPrivateKey = (input: string): Uint8Array => {
     }
     return bytes
 }
+
+/** Lowercase `0x` and 64 hex characters, the form other wallets import. */
+export const formatEthereumPrivateKey = (privateKey: Uint8Array): string =>
+    bytesToHex(privateKey)
 
 export const revealEthereumPrivateKey: NonNullable<
     AccountsChainAdapter['revealPrivateKey']

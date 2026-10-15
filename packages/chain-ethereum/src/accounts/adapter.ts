@@ -20,7 +20,11 @@ import {
 } from './chain-state'
 import { ethereumHdKeyId } from './hd-derivation'
 import { ethereumKindIdOf, ethereumLocalKeyKinds } from './local-key-kinds'
-import { revealEthereumPrivateKey } from './private-key'
+import {
+    formatEthereumPrivateKey,
+    parseEthereumPrivateKey,
+    revealEthereumPrivateKey,
+} from './private-key'
 import {
     getEthereumAuthAccount,
     resolveEthereumSigner,
@@ -40,6 +44,8 @@ export const createEthereumAccountsAdapter = (
     localKeyKinds: ethereumLocalKeyKinds,
     kindIdOf: ethereumKindIdOf,
     revealPrivateKey: revealEthereumPrivateKey,
+    parsePrivateKey: parseEthereumPrivateKey,
+    formatPrivateKey: formatEthereumPrivateKey,
     resolveSigner: resolveEthereumSigner,
     getAuthAccount: getEthereumAuthAccount,
 })
