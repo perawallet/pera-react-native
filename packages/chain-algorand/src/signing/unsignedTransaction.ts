@@ -15,28 +15,14 @@ import type {
     ChainScope,
     ChainTransactionData,
     I18nKey,
-    PeraSignedTransaction,
     PeraTransaction,
-    SignedTransaction,
     TransactionSummary,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { authorityOf, useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    encodeToBase64,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
-import {
-    TransportError,
-    type SigningResult,
-} from '@perawallet/wallet-core-signing'
+import { encodeToBase64, type Optional } from '@perawallet/wallet-core-shared'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
-import {
-    decodeSignedTransaction,
-    decodeTransaction,
-    encodeSignedTransaction,
-} from '../blockchain/utils/transact'
+import { decodeTransaction } from '../blockchain/utils/transact'
 import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 import {
@@ -49,7 +35,7 @@ import {
     OPT_OUT_TITLE_KEY,
     SEND_TITLE_KEY,
     assetRefOf,
-} from '../transactions/summarize'
+} from '../transactions/summaryKeys'
 import { generateMultisigAddress } from '../multisig/address'
 import type { AlgorandTransactionPayload } from './planner'
 
@@ -262,41 +248,3 @@ export const withAlgorandAuthorizer = (
     ...unsigned,
     payload: { ...payloadOf(unsigned), authorizer },
 })
-
-export const toSignedAlgorandTransaction = (
-    signed: PeraSignedTransaction,
-    scope: ChainScope,
-): SignedTransaction => ({
-    scope,
-    id: signed.txn.txID(),
-    bytes: encodeSignedTransaction(signed),
-})
-
-// The bytes are kept as given: a signature another party made must reach the
-// node exactly as they encoded it.
-export const signedAlgorandTransactionFromBytes = (
-    bytes: Uint8Array,
-    scope: ChainScope,
-): SignedTransaction => ({
-    scope,
-    id: decodeSignedTransaction(bytes).txn.txID(),
-    bytes,
-})
-
-export const algorandSignedTransactionsOf = (
-    result: SigningResult,
-    scope: ChainScope,
-): Nullable<SignedTransaction>[] => {
-    const { signedData } = result
-    if (signedData.type === 'signed-transactions') {
-        return Array.from(signedData.signed, signed => signed ?? null)
-    }
-    if (signedData.type === 'transactions') {
-        return Array.from(signedData.signed, signed =>
-            signed ? toSignedAlgorandTransaction(signed, scope) : null,
-        )
-    }
-    throw new TransportError(
-        `A ${signedData.type} result carries no signed transactions`,
-    )
-}

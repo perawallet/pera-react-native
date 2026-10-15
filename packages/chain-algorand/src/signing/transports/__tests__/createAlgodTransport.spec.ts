@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { generateAccount } from 'algosdk'
 import { createAlgodTransport } from '../createAlgodTransport'
-import { signedAlgorandTransactionFromBytes } from '../../unsignedTransaction'
+import { signedAlgorandTransactionFromBytes } from '../../signedTransactions'
 import {
     makeTestAddress,
     makeTestPaymentTx,

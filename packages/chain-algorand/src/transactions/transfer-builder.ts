@@ -27,7 +27,7 @@ import { assignFeeToGroup } from '../signing/assignMinimumFeesToGroup'
 import { toUnsignedAlgorandTransaction } from '../signing/unsignedTransaction'
 import { buildOptInTxs, buildTransferTxs } from './builders'
 import { fetchSuggestedMinFee, resolveAlgorandSenderFee } from './transfer-fees'
-import { OPT_IN_TITLE_KEY, SEND_TITLE_KEY } from './summarize'
+import { OPT_IN_TITLE_KEY, SEND_TITLE_KEY } from './summaryKeys'
 import { assertBuildableIntent } from './transfer-validation'
 
 const transferSummary = (intent: TransferIntent): TransactionSummary => {

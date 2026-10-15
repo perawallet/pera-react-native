@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 import { algorandBroadcasterAdapter } from '../broadcaster'
-import { signedAlgorandTransactionFromBytes } from '../unsignedTransaction'
+import { signedAlgorandTransactionFromBytes } from '../signedTransactions'
 
 describe('algorandBroadcasterAdapter.submitTimeoutError', () => {
     test('is a retryable network_unavailable error naming the timeout', () => {

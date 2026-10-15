@@ -33,29 +33,25 @@ import {
     type TransactionSwapGroupDetail,
 } from '@perawallet/wallet-core-transactions'
 import { classifyDisplayableTransaction } from '../blockchain/utils/transactions'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
+import {
+    APP_CALL_TITLE_KEY,
+    ASSET_CONFIG_TITLE_KEY,
+    ASSET_FREEZE_TITLE_KEY,
+    DEFAULT_TITLE_KEY,
+    KEY_REGISTRATION_TITLE_KEY,
+    OPT_IN_TITLE_KEY,
+    OPT_OUT_TITLE_KEY,
+    SEND_TITLE_KEY,
+    assetRefOf,
+} from './summaryKeys'
 
-export const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
 const RECEIVE = i18nKey('transactions.list_item.receive')
 const SWAP = i18nKey('transactions.list_item.swap')
-export const OPT_IN_TITLE_KEY = i18nKey('transactions.list_item.opt_in')
-export const OPT_OUT_TITLE_KEY = i18nKey('transactions.list_item.opt_out')
-export const ASSET_CONFIG_TITLE_KEY = i18nKey(
-    'transactions.list_item.asset_config',
-)
-export const ASSET_FREEZE_TITLE_KEY = i18nKey(
-    'transactions.list_item.asset_freeze',
-)
-export const APP_CALL_TITLE_KEY = i18nKey('transactions.list_item.app_call')
-export const KEY_REGISTRATION_TITLE_KEY = i18nKey(
-    'transactions.list_item.key_registration',
-)
 const HEARTBEAT = i18nKey('transactions.list_item.heartbeat')
 const STATE_PROOF = i18nKey('transactions.list_item.state_proof')
-export const DEFAULT_TITLE_KEY = i18nKey('transactions.list_item.default')
 const INTERPRETED_TITLE = i18nKey('transactions.list_item.interpreted_title')
 const SWAP_SUBTITLE = i18nKey('transactions.list_item.swap_subtitle')
 const INNER_TRANSACTION_COUNT = i18nKey(
@@ -106,11 +102,6 @@ const netTransferAmount = (
 
 const text = (key: I18nKey, params?: Record<string, string>): LocalizedText =>
     params ? { key, params } : { key }
-
-export const assetRefOf = (assetId: string): AssetRef => ({
-    chainId: ALGORAND_CHAIN_ID,
-    assetId,
-})
 
 const displayOf = (
     assetId: string,

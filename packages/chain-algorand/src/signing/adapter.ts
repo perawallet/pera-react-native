@@ -54,7 +54,7 @@ import {
 } from './getRekeyedUnsignableReason'
 import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
-import { algorandSignedTransactionsOf } from './unsignedTransaction'
+import { algorandSignedTransactionsOf } from './signedTransactions'
 import { validateArc60AuthRequest } from './message/arc60'
 import { isArc60WirePayload, parseArc60WireRequest } from './message/arc60-wire'
 import { parseArc60ForDisplay } from './message/parseArc60ForDisplay'

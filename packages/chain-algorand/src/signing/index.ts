@@ -20,10 +20,12 @@ export {
 export { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
 export {
     algorandSignedTransactionsOf,
-    decodeUnsignedAlgorandTransaction,
     signedAlgorandTransactionFromBytes,
-    summarizeAlgorandTransaction,
     toSignedAlgorandTransaction,
+} from './signedTransactions'
+export {
+    decodeUnsignedAlgorandTransaction,
+    summarizeAlgorandTransaction,
     toUnsignedAlgorandTransaction,
     toUnsignedAlgorandTransactions,
     withAlgorandAuthorizer,

@@ -24,7 +24,7 @@ import {
     submitAndAutoRefreshCore,
     submitSignedAndAutoRefresh,
 } from '../submitAndAutoRefresh'
-import { signedAlgorandTransactionFromBytes } from '../../unsignedTransaction'
+import { signedAlgorandTransactionFromBytes } from '../../signedTransactions'
 import {
     makeTestAddress,
     makeTestPaymentTx,

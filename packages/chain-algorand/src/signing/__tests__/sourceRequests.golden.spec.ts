@@ -42,8 +42,8 @@ import { createLocalKeyStrategy } from '../local-key/createLocalKeyStrategy'
 import { signTransactionsWithLocalKey } from '../local-key/signTransactionsWithLocalKey'
 import { buildDeferredProposeSigningResult } from '../multisig/multisigParticipants'
 import { algorandTransactionPlanner } from '../planner'
+import { algorandSignedTransactionsOf } from '../signedTransactions'
 import {
-    algorandSignedTransactionsOf,
     decodeUnsignedAlgorandTransaction,
     toUnsignedAlgorandTransactions,
 } from '../unsignedTransaction'
