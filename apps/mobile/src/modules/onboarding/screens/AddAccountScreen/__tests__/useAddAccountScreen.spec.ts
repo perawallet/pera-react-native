@@ -12,12 +12,6 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import {
-    algorandCapabilityDefaults,
-    algorandCapabilityRestrictions,
-} from '@packages/chain-algorand/src/capability-defaults'
 import { useAddAccountScreen } from '../useAddAccountScreen'
 import {
     accountPresentationChainAdapters,
@@ -30,6 +24,7 @@ import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAda
 import {
     ETHEREUM_CHAIN_ID,
     registerEthereumChain,
+    restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 
 const mockGoBack = vi.fn()
@@ -1106,15 +1101,7 @@ describe('useAddAccountScreen', () => {
             mockDerivableWallets.seedKeyIds = ['seed-a']
         })
 
-        afterEach(() => {
-            const { chains } = getProvider()
-            chains.reset()
-            chains.register(
-                algorandDescriptor,
-                algorandCapabilityDefaults,
-                algorandCapabilityRestrictions,
-            )
-        })
+        afterEach(restoreAlgorandOnlyChains)
 
         it('opens on a chain step listing every registered chain in registry order', () => {
             const { result } = renderHook(() => useAddAccountScreen())
