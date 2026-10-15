@@ -49,6 +49,28 @@ const parseBaseUnits = (raw: string): Decimal | undefined => {
         : undefined
 }
 
+// Hand-written: React Native's URLSearchParams throws on a malformed escape and
+// cuts a value at its second `=`, where Node keeps it. Only the keys the
+// grammar uses are decoded; gas, gasLimit and the rest are never read.
+const readQuery = (query: string): Map<string, string> | undefined => {
+    const params = new Map<string, string>()
+    for (const segment of query.split('&')) {
+        const eq = segment.indexOf('=')
+        const key = eq < 0 ? segment : segment.slice(0, eq)
+        if (!SINGLE_PARAMS.includes(key)) continue
+        if (params.has(key)) return undefined
+        try {
+            params.set(
+                key,
+                eq < 0 ? '' : decodeURIComponent(segment.slice(eq + 1)),
+            )
+        } catch {
+            return undefined
+        }
+    }
+    return params
+}
+
 const fail = (reason: DeeplinkParseFailure): DeeplinkParseResult => ({
     ok: false,
     reason,
@@ -94,16 +116,14 @@ const parse = (input: string): DeeplinkParseResult => {
         return fail('unsupported-action')
     }
 
-    const params = new URLSearchParams(query)
-    if (SINGLE_PARAMS.some(key => params.getAll(key).length > 1)) {
-        return fail('malformed')
-    }
+    const params = readQuery(query)
+    if (!params) return fail('malformed')
 
     const linkTarget: ChainLinkTarget = {
         chainId: ETHEREUM_CHAIN_ID,
         ...(networkId && { networkId }),
     }
-    const value = params.get('value')
+    const value = params.get('value') ?? null
 
     if (functionName === undefined) {
         const amount = value === null ? undefined : parseBaseUnits(value)
@@ -120,13 +140,13 @@ const parse = (input: string): DeeplinkParseResult => {
         }
     }
 
-    // Ether sent with the call would be silently dropped by a token transfer.
+    // A token transfer cannot carry ether.
     if (value !== null) return fail('unsupported-action')
-    const recipient = params.get('address')
+    const recipient = params.get('address') ?? null
     if (recipient === null) return fail('malformed')
     const recipientFailure = checkAddress(recipient)
     if (recipientFailure) return fail(recipientFailure)
-    const rawAmount = params.get('uint256')
+    const rawAmount = params.get('uint256') ?? null
     const amount = rawAmount === null ? undefined : parseBaseUnits(rawAmount)
     if (rawAmount !== null && !amount) return fail('malformed')
     return {

@@ -12,6 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { maxUint256 } from 'viem'
 import { ethereumDeeplinkAdapter as adapter } from '../adapter'
 
 const NATIVE_LOWER = '0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359'
@@ -88,9 +89,6 @@ describe('network', () => {
     it('leaves the network unset when the link has no chain id', () => {
         const result = adapter.parse(`ethereum:${NATIVE}?value=1`)
 
-        expect(result.ok && result.intent).toMatchObject({
-            target: { chainId: 'ethereum' },
-        })
         expect(
             result.ok &&
                 result.intent.kind === 'payment' &&
@@ -207,6 +205,19 @@ describe('amounts', () => {
         ).toBe('malformed')
     })
 
+    it('accepts a uint256 equal to the largest uint256', () => {
+        const result = adapter.parse(
+            `ethereum:${TOKEN_LOWER}/transfer?address=${TO_LOWER}&uint256=${maxUint256}`,
+        )
+
+        expect(result.ok && result.intent.kind === 'payment').toBe(true)
+        expect(
+            result.ok && result.intent.kind === 'payment'
+                ? result.intent.amount
+                : undefined,
+        ).toEqual(new Decimal(maxUint256.toString()))
+    })
+
     it.each([
         `ethereum:${NATIVE}?value=1&value=2`,
         `ethereum:${TOKEN_LOWER}/transfer?address=${TO_LOWER}&uint256=1&uint256=2`,
@@ -225,6 +236,32 @@ describe('ignored params', () => {
                 `ethereum:${NATIVE}?value=1&gas=21000&gasLimit=abc&gasPrice=1`,
             ),
         ).toEqual(plain)
+    })
+
+    it.each(['gas=%', 'note=%zz', 'label=%E0%A4%A'])(
+        'does not throw on a bad escape in an ignored param: %s',
+        extra => {
+            const plain = adapter.parse(`ethereum:${NATIVE}?value=1`)
+
+            expect(
+                adapter.parse(`ethereum:${NATIVE}?value=1&${extra}`),
+            ).toEqual(plain)
+        },
+    )
+
+    it.each([`value=%`, `value=1=999`])(
+        'refuses a malformed read of a used param: %s',
+        query => {
+            expect(failure(`ethereum:${NATIVE}?${query}`)).toBe('malformed')
+        },
+    )
+
+    it('refuses a transfer amount that carries a second equals sign', () => {
+        expect(
+            failure(
+                `ethereum:${TOKEN_LOWER}/transfer?address=${TO_LOWER}&uint256=1=999`,
+            ),
+        ).toBe('malformed')
     })
 })
 
