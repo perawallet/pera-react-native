@@ -83,7 +83,7 @@ describe('useEnsureAccountEnriched', () => {
         })
         expect(mockFetchAndPersistPrices).toHaveBeenCalledWith(
             ['0', '100'],
-            'mainnet',
+            SCOPE,
         )
         await waitFor(() => expect(invalidateSpy).toHaveBeenCalled())
     })
