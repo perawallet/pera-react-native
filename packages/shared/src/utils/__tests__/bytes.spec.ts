@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { decodeBytesToText, toBytes } from '../bytes'
+import { decodeBytesToText, decodePrintableUtf8, toBytes } from '../bytes'
 
 describe('toBytes', () => {
     it('returns undefined for a string', () => {
@@ -99,5 +99,28 @@ describe('decodeBytesToText', () => {
 
     it('returns undefined for an empty string', () => {
         expect(decodeBytesToText('')).toBeUndefined()
+    })
+})
+
+describe('decodePrintableUtf8', () => {
+    const encode = (text: string) => new TextEncoder().encode(text)
+
+    it('returns printable UTF-8 text', () => {
+        expect(decodePrintableUtf8(encode('héllo wörld'))).toBe('héllo wörld')
+    })
+
+    it('keeps tab, line feed and carriage return', () => {
+        expect(decodePrintableUtf8(encode('a\tb\nc\r\n'))).toBe('a\tb\nc\r\n')
+    })
+
+    it.each([
+        ['empty bytes', new Uint8Array()],
+        ['invalid UTF-8', Uint8Array.of(0xff, 0x00)],
+        ['a right-to-left override', encode('pay \u202Eevil')],
+        ['a zero-width space', encode('a\u200Bb')],
+        ['a C0 control', encode('a\u0007b')],
+        ['DEL', encode('a\u007Fb')],
+    ])('returns undefined for %s', (_label, bytes) => {
+        expect(decodePrintableUtf8(bytes)).toBeUndefined()
     })
 })
