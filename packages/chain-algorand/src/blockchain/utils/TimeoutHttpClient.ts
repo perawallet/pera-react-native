@@ -106,7 +106,9 @@ export class TimeoutHttpClient implements BaseHTTPClient {
         const address = new URL(fixedRelativePath, this.baseURL)
         if (query) {
             for (const [key, value] of Object.entries(query)) {
-                address.searchParams.set(key, String(value))
+                if (value !== undefined) {
+                    address.searchParams.set(key, String(value))
+                }
             }
         }
         return address.toString()

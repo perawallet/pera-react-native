@@ -325,6 +325,21 @@ describe('TimeoutHttpClient', () => {
             expect(headers['X-Algo-API-Token']).toBe('test-token')
             expect(headers['X-Custom']).toBe('value')
         })
+        it('leaves an undefined query value out of the URL', async () => {
+            const { fetch, calls } = createResolvingFetch(
+                new Response(new Uint8Array(), { status: 200 }),
+            )
+            vi.stubGlobal('fetch', fetch)
+
+            await buildClient().get('/v2/accounts/ADDR', {
+                format: 'json',
+                next: undefined,
+            })
+
+            expect(calls[0].url).toBe(
+                'https://algod.example.com/v2/accounts/ADDR?format=json',
+            )
+        })
     })
 
     describe('body reading path', () => {

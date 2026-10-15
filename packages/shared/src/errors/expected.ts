@@ -30,9 +30,26 @@ const RAW_NETWORK_ERROR_FRAGMENTS = [
     'unknownhostexception',
 ]
 
+// A browser's fetch rejects with a `TypeError` that ky only recognises when it
+// made the request itself. Matched exactly: "Load failed" is too generic for a
+// substring match.
+const BROWSER_FETCH_ERROR_MESSAGES = new Set([
+    'Failed to fetch', // Chrome
+    'NetworkError when attempting to fetch resource.', // Firefox
+    'Load failed', // Safari 17+
+    'The Internet connection appears to be offline.', // Safari 16
+])
+
 export const isRawPlatformNetworkError = (error: unknown): boolean => {
     if (!(error instanceof Error) || typeof error.message !== 'string') {
         return false
+    }
+    if (
+        error instanceof TypeError &&
+        // Chrome appends the host: "Failed to fetch (example.com)".
+        BROWSER_FETCH_ERROR_MESSAGES.has(error.message.replace(/ \(.*\)$/, ''))
+    ) {
+        return true
     }
     const message = error.message.toLowerCase()
     return RAW_NETWORK_ERROR_FRAGMENTS.some(fragment =>

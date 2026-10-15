@@ -11,7 +11,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { PeraNetworkError, logger } from '@perawallet/wallet-core-shared'
 import { Networks } from '@perawallet/wallet-core-config'
 import { setAlgorandChainContext } from '../../../chain-context'
 import { testChainContext } from '../../../__tests__/context'
@@ -166,14 +166,36 @@ describe('fetchNodeJson', () => {
         ).rejects.toMatchObject({ kind: 'timeout' })
     })
 
-    it('maps a network failure to an offline PeraNetworkError', async () => {
-        respondWith(() =>
-            Promise.reject(new TypeError('Network request failed')),
-        )
+    it.each(['Network request failed', 'Failed to fetch'])(
+        'maps a network failure (%s) to an offline PeraNetworkError',
+        async message => {
+            respondWith(() => Promise.reject(new TypeError(message)))
 
-        await expect(
-            fetchNodeJson(MAINNET, 'algod', '/v2/x'),
-        ).rejects.toMatchObject({ kind: 'offline' })
+            await expect(
+                fetchNodeJson(MAINNET, 'algod', '/v2/x'),
+            ).rejects.toMatchObject({ kind: 'offline' })
+        },
+    )
+
+    it('warns on a retryable failure, which the query error handler leaves unlogged', async () => {
+        const warn = vi.spyOn(logger, 'warn')
+        respondWith(jsonResponse('{"message":"nope"}', 503))
+
+        await fetchNodeJson(MAINNET, 'indexer', '/v2/x').catch(() => {})
+
+        expect(warn).toHaveBeenCalledWith(
+            'Node request did not complete',
+            expect.objectContaining({ kind: 'server', status: 503 }),
+        )
+    })
+
+    it('does not warn on a 4xx, which the query error handler reports itself', async () => {
+        const warn = vi.spyOn(logger, 'warn')
+        respondWith(jsonResponse('{"message":"nope"}', 404))
+
+        await fetchNodeJson(MAINNET, 'indexer', '/v2/x').catch(() => {})
+
+        expect(warn).not.toHaveBeenCalled()
     })
 
     it("rethrows a caller's abort as an AbortError, not a PeraNetworkError", async () => {

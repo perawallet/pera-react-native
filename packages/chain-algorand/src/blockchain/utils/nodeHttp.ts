@@ -21,6 +21,8 @@ import {
 } from '@perawallet/wallet-core-config'
 import {
     PeraNetworkError,
+    isPeraNetworkError,
+    logger,
     parsePrecisionSafeJson,
 } from '@perawallet/wallet-core-shared'
 import { getAlgorandChainContext } from '../../chain-context'
@@ -106,6 +108,20 @@ export const fetchNodeJson = async (
         const text = new TextDecoder().decode(body)
         return text.trim() ? parsePrecisionSafeJson(text) : undefined
     } catch (error) {
-        throw toNetworkError(error)
+        const networkError = toNetworkError(error)
+        // The app's query error handler skips retryable errors on the
+        // understanding that the request layer already logged them.
+        if (
+            isPeraNetworkError(networkError) &&
+            networkError.metadata.retryable
+        ) {
+            logger.warn('Node request did not complete', {
+                backend,
+                path,
+                kind: networkError.kind,
+                status: networkError.status,
+            })
+        }
+        throw networkError
     }
 }
