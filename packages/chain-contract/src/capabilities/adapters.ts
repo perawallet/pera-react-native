@@ -56,6 +56,7 @@ export const CAPABILITY_ADAPTERS = {
     mnemonicBackup: ['backup'],
     secureBackup: ['backup'],
     privateKeys: ['accounts'],
+    customNetworks: ['custom node'],
 } as const satisfies Partial<Record<ChainCapability, readonly string[]>>
 
 export type CapabilityAdapterName =
