@@ -3314,6 +3314,8 @@
             "error_sheet_body": "Deine WalletConnect-Anfrage ist mit folgendem Fehler fehlgeschlagen:",
             "error_sheet_retry": "Bitte versuche es erneut, indem du zur dApp zurückkehrst, bei der du die Anfrage gestellt hast.",
             "quantum_fee_delivery_failed": "Die Anfrage konnte nicht abgeschlossen werden. Diese App unterstützt möglicherweise nicht die höheren Netzwerkgebühren, die für Quantum-Konten erforderlich sind.",
+            "origin_scam": "Diese App wurde als Sicherheitsrisiko eingestuft. Verbinde dich nur, wenn du ihr vertraust.",
+            "origin_unverified": "Pera konnte die Website dieser App nicht verifizieren.",
             "networks_betanet": "Betanet",
             "error_network_mismatch": "Diese App wollte sich mit einem anderen Netzwerk verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
             "error_delivery_failed": "Pera konnte die App nicht erreichen, um deine Antwort zu übermitteln — sie wartet möglicherweise noch. Versuche es erneut über die App."

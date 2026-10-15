@@ -74,6 +74,7 @@ import {
 } from './connection'
 import { loadWalletConnectSdk, type WalletConnectSdk } from './sdk'
 import { createWalletConnectV2Storage } from './storage'
+import { toPeerVerification } from './verification'
 
 /**
  * JSON-RPC's server-error code, which is what v1's connector sends for a
@@ -534,8 +535,12 @@ export const createWalletConnectV2Handler = (
             sourceType: 'walletconnect',
             authorizedAccounts: record.accounts,
             // The approval-time snapshot, not the live session metadata a
-            // dApp can update; it is the anti-spoofing `sourceMetadata`.
-            peer: record.peer,
+            // dApp can update; it is the anti-spoofing `sourceMetadata`. The
+            // origin verdict is this request's own, never a stored one.
+            peer: {
+                ...record.peer,
+                verification: toPeerVerification(event.verifyContext),
+            },
             verifiedOrigin: record.origin?.requesterOrigin,
             rawOperation: { type: route.type, params: route.params },
             respond: async result =>
@@ -873,7 +878,10 @@ export const createWalletConnectV2Handler = (
             ...requestedMethods(support, params.requiredNamespaces),
             ...requestedMethods(support, params.optionalNamespaces),
         ]).filter(method => v2.signingMethods.includes(method))
-        const peer: ConnectionPeer = toPeer(params.proposer.metadata)
+        const peer: ConnectionPeer = {
+            ...toPeer(params.proposer.metadata),
+            verification: toPeerVerification(event.verifyContext),
+        }
 
         // Before the proposal is tracked: a torn-down handler has nobody to
         // answer it, and a tracked one would then never be released.

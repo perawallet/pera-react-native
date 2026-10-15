@@ -11,7 +11,7 @@
  */
 
 // Not a reuse of ConnectionApprovalViewHeader: that one carries network badges
-// and no requester-origin row. Fidelity comes from importing its stylesheet
+// and warns from the transport's origin verdict, not the requesting tab. Fidelity comes from importing its stylesheet
 // (see __tests__/visualFidelity.spec.ts).
 import React from 'react'
 import {
@@ -123,7 +123,7 @@ export const WcConnectHeader = ({
                     the real (browser-stamped) origin and the claimed one. */}
                 {!!requesterOriginLabel && isRequesterOriginDistinct ? (
                     <PWView
-                        style={requesterStyles.mismatchWarning}
+                        style={styles.originWarning}
                         testID='wc-connect-requester-mismatch'
                     >
                         <PWRoundIcon
@@ -133,7 +133,7 @@ export const WcConnectHeader = ({
                         />
                         <PWText
                             variant='body'
-                            style={requesterStyles.mismatchWarningText}
+                            style={styles.originWarningText}
                         >
                             {peerUrlLabel
                                 ? t('dapp.approval.requester_mismatch', {

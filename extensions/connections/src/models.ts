@@ -17,11 +17,31 @@ export type ConnectionKind =
     | 'walletconnect-v2'
     | (string & {})
 
+export type ConnectionPeerVerificationStatus =
+    | 'valid'
+    | 'mismatch'
+    | 'unknown'
+    | 'scam'
+
+export interface ConnectionPeerVerification {
+    status: ConnectionPeerVerificationStatus
+    /**
+     * Origin the transport attested (`https://dapp.example`). Absent when
+     * `status` is `'unknown'`: nothing attested one.
+     */
+    verifiedOrigin?: string
+}
+
 export interface ConnectionPeer {
     name: string
     url?: string
     description?: string
     icons?: string[]
+    /**
+     * The transport's own check of where the peer really runs; every other
+     * field is peer-asserted. Absent when the transport cannot attest an origin.
+     */
+    verification?: ConnectionPeerVerification
 }
 
 export type ConnectionOriginSource = 'external-browser' | 'in-app' | 'qr'

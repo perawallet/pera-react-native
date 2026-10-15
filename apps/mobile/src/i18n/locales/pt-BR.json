@@ -3347,7 +3347,9 @@
             "error_sheet_retry": "Tente novamente voltando ao dApp onde você iniciou a solicitação.",
             "error_network_mismatch": "Este app pediu para conectar em outra rede, mas a sua wallet está em {{active}}. Mude de rede nas configurações e tente novamente.",
             "error_delivery_failed": "A Pera não conseguiu contatar o aplicativo para entregar sua resposta, então ele pode continuar aguardando. Tente novamente pelo aplicativo.",
-            "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum."
+            "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum.",
+            "origin_scam": "Este app foi sinalizado como um risco de segurança. Não se conecte, a menos que você confie nele.",
+            "origin_unverified": "A Pera não conseguiu verificar o site deste app."
         },
         "connection": {
             "approve_delivery_failed": "Não foi possível contatar o dApp para confirmar a conexão. Verifique sua conexão com a internet e tente novamente."

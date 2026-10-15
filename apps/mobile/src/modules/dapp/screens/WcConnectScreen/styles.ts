@@ -16,21 +16,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    // The requesting tab is not the site the peer claims: a warning box,
-    // shaped like the ARC-60 sign-in origin warning, in place of the url link.
-    mismatchWarning: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.sm,
-        backgroundColor: theme.colors.negativeLighter,
-        borderRadius: theme.borderRadius.md,
-        padding: theme.spacing.md,
-        marginTop: theme.spacing.sm,
-    },
-    mismatchWarningText: {
-        flex: 1,
-        color: theme.colors.negative,
-    },
     verifiedBadge: {
         flexDirection: 'row',
         alignItems: 'center',

@@ -749,6 +749,26 @@ describe('session requests', () => {
         expect(context.onError).not.toHaveBeenCalled()
     })
 
+    it("carries the request's own origin verdict on the peer, not the record's", async () => {
+        const { request, requireRequest, store } = await openSession()
+
+        await request({
+            verified: {
+                validation: 'INVALID',
+                origin: 'https://evil.example',
+            },
+        })
+
+        expect(requireRequest().peer).toEqual({
+            name: 'Stored dApp',
+            verification: {
+                status: 'mismatch',
+                verifiedOrigin: 'https://evil.example',
+            },
+        })
+        expect((await store.get(TOPIC))?.peer.verification).toBeUndefined()
+    })
+
     it('maps the data method to a sign-data operation, params and all', async () => {
         const { request, requireRequest } = await openSession()
 
@@ -1246,6 +1266,42 @@ describe('session proposals', () => {
         await registry.teardown()
     })
 
+    it('carries an attested origin on the peer', async () => {
+        const { requireProposal, registry } = await openProposal({
+            proposal: makeProposal({}, { validation: 'VALID' }),
+        })
+
+        expect(requireProposal().peer.verification).toEqual({
+            status: 'valid',
+            verifiedOrigin: 'https://dapp.example',
+        })
+        await registry.teardown()
+    })
+
+    it('carries an attested origin that differs from the claimed url as a mismatch', async () => {
+        const { requireProposal, registry } = await openProposal({
+            proposal: makeProposal(
+                {},
+                { validation: 'INVALID', origin: 'https://evil.example' },
+            ),
+        })
+
+        expect(requireProposal().peer.verification).toEqual({
+            status: 'mismatch',
+            verifiedOrigin: 'https://evil.example',
+        })
+        await registry.teardown()
+    })
+
+    it('carries an unattested proposal as unknown, without the echoed origin', async () => {
+        const { requireProposal, registry } = await openProposal()
+
+        expect(requireProposal().peer.verification).toEqual({
+            status: 'unknown',
+        })
+        await registry.teardown()
+    })
+
     it('maps the optional namespaces back to networks alongside the required ones', async () => {
         const { requireProposal, registry } = await openProposal({
             proposal: makeProposal({
@@ -1496,6 +1552,17 @@ describe('approving a proposal', () => {
                 },
             },
         })
+        await registry.teardown()
+    })
+
+    it('persists the peer without the per-message origin verdict', async () => {
+        const { store, requireProposal, registry } = await openProposal({
+            proposal: makeProposal({}, { validation: 'VALID' }),
+        })
+
+        await requireProposal().approve([ADDRESS])
+
+        expect((await store.get(TOPIC))?.peer.verification).toBeUndefined()
         await registry.teardown()
     })
 

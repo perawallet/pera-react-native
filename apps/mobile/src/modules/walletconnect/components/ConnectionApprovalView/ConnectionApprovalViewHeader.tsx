@@ -15,6 +15,7 @@ import {
     PWButton,
     PWIcon,
     PWImage,
+    PWRoundIcon,
     PWText,
     PWView,
 } from '@components/core'
@@ -30,6 +31,10 @@ import {
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
+import {
+    toOriginWarningMessage,
+    type ConnectionOriginWarning,
+} from './useConnectionApprovalView'
 
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer
@@ -49,6 +54,9 @@ export type ConnectionApprovalViewHeaderProps = {
     peerUrlLabel?: string
     canOpenPeerUrl: boolean
     onPressUrl: () => void
+    originWarning?: ConnectionOriginWarning
+    /** Host of the transport-attested origin; `peerUrlLabel` is forgeable. */
+    verifiedOriginLabel?: string
 }
 
 const permissionTitleKey: Record<string, string> = {
@@ -65,6 +73,8 @@ export const ConnectionApprovalViewHeader = ({
     peerUrlLabel,
     canOpenPeerUrl,
     onPressUrl,
+    originWarning,
+    verifiedOriginLabel,
 }: ConnectionApprovalViewHeaderProps) => {
     const styles = useStyles()
     const permissionItemStyles = usePermissionItemStyles()
@@ -85,6 +95,15 @@ export const ConnectionApprovalViewHeader = ({
     )
 
     const preferredIcon = getPreferredDappIcon(peer.icons)
+
+    const originWarningMessage =
+        originWarning === 'scam' || originWarning === 'mismatch'
+            ? toOriginWarningMessage(
+                  originWarning,
+                  verifiedOriginLabel,
+                  peerUrlLabel,
+              )
+            : undefined
 
     return (
         <PWView style={styles.headerContainer}>
@@ -137,22 +156,57 @@ export const ConnectionApprovalViewHeader = ({
                         />
                     )}
                 </PWView>
-                {!!peerUrlLabel &&
-                    (canOpenPeerUrl ? (
-                        <PWButton
-                            variant='link'
-                            onPress={onPressUrl}
-                            title={peerUrlLabel}
+                {/* A peer whose real origin is not the url it claims must not
+                    get that url as a link: the warning names both instead. */}
+                {originWarningMessage ? (
+                    <PWView
+                        style={styles.originWarning}
+                        testID='wc_origin_warning'
+                    >
+                        <PWRoundIcon
+                            icon='warning'
+                            size='sm'
+                            variant='error'
                         />
-                    ) : (
                         <PWText
-                            variant='caption'
-                            style={styles.peerUrlText}
-                            numberOfLines={1}
+                            variant='body'
+                            style={styles.originWarningText}
                         >
-                            {peerUrlLabel}
+                            {t(
+                                originWarningMessage.key,
+                                originWarningMessage.params,
+                            )}
                         </PWText>
-                    ))}
+                    </PWView>
+                ) : (
+                    <>
+                        {!!peerUrlLabel &&
+                            (canOpenPeerUrl ? (
+                                <PWButton
+                                    variant='link'
+                                    onPress={onPressUrl}
+                                    title={peerUrlLabel}
+                                />
+                            ) : (
+                                <PWText
+                                    variant='caption'
+                                    style={styles.peerUrlText}
+                                    numberOfLines={1}
+                                >
+                                    {peerUrlLabel}
+                                </PWText>
+                            ))}
+                        {originWarning === 'unverified' && (
+                            <PWText
+                                variant='caption'
+                                style={styles.originUnverifiedText}
+                                testID='wc_origin_unverified'
+                            >
+                                {t('walletconnect.request.origin_unverified')}
+                            </PWText>
+                        )}
+                    </>
+                )}
             </PWView>
 
             <TitledExpandablePanel
