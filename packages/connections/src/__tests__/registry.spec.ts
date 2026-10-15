@@ -129,7 +129,11 @@ const makeProposal = (
     kind: 'alpha',
     proposalId: 'p1',
     peer: { name: 'Peer' },
-    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+    requested: {
+        networks: ['mainnet'],
+        chains: ['algorand'],
+        methods: ['algo_signTxn'],
+    },
     expiresAt: Date.now() + 60_000,
     approve: vi.fn(async () => makeConnection()),
     reject: vi.fn(async () => {}),

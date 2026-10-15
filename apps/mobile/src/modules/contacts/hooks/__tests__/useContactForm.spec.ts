@@ -16,6 +16,12 @@ import type { Contact } from '@perawallet/wallet-core-contacts'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useContactForm } from '../useContactForm'
 
+const ALICE: Contact = {
+    id: 'alice-id',
+    name: 'Alice',
+    addresses: { algorand: 'ALICE123' },
+}
+
 // Override the global vitest-setup mock so contactSchema (used by the hook's
 // zod resolver) is available from the real module.
 vi.mock('@perawallet/wallet-core-contacts', async () => {
@@ -25,7 +31,7 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
     return {
         ...actual,
         useContacts: vi.fn(() => ({
-            contacts: [],
+            contacts: [ALICE],
             findContacts: vi.fn(() => []),
             addContact: vi.fn(),
             editContact: vi.fn(),
@@ -68,11 +74,23 @@ describe('useContactForm', () => {
     })
 
     it('seeds initial values from the provided contact', () => {
-        const contact: Contact = {
-            name: 'Alice',
-            addresses: { algorand: 'ALICE123' },
-        }
-        const { result } = renderHook(() => useContactForm(contact))
+        const { result } = renderHook(() => useContactForm(ALICE))
         expect(result.current.rawAddressInput).toBe('ALICE123')
+    })
+
+    it('flags an address another contact holds', () => {
+        const { result } = renderHook(() => useContactForm(null))
+
+        act(() => {
+            result.current.onAddressInputChange('ALICE123')
+        })
+
+        expect(result.current.isDuplicateAddress).toBe(true)
+    })
+
+    it('does not flag the address of the contact being edited', () => {
+        const { result } = renderHook(() => useContactForm(ALICE))
+
+        expect(result.current.isDuplicateAddress).toBe(false)
     })
 })

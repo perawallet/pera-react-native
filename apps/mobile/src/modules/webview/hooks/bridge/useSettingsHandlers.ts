@@ -12,11 +12,15 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useSelectedScope,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { sendMessageToWebview } from '../handlers'
@@ -31,11 +35,12 @@ type UseSettingsHandlersResult = {
 export const useSettingsHandlers = (
     webview: Nullable<WebView>,
 ): UseSettingsHandlersResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const theme = useIsDarkMode() ? 'dark' : 'light'
     const { deviceInfo } = usePeraProvider()
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency(scope)
     const { currentLanguage } = useLanguage()
 
     const getSettings = useCallback<BridgeHandler>(

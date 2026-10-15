@@ -15,6 +15,7 @@ import {
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 // Raised by the cloud file stores, re-exported under the names the backup
 // domain's call sites import them by.
@@ -37,7 +38,9 @@ export class NoBackupCredentialsError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.store_credentials.no_credentials',
+            messageKey: i18nKey(
+                'cloud_backup.store_credentials.no_credentials',
+            ),
         })
     }
 }
@@ -50,7 +53,7 @@ export class BackupDraftMissingError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.enable.error',
+            messageKey: i18nKey('cloud_backup.enable.error'),
         })
     }
 }
@@ -62,7 +65,7 @@ export class BackupDeviceIdUnavailableError extends AppError {
         super(message, {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
-            messageKey: 'cloud_backup.enable.error',
+            messageKey: i18nKey('cloud_backup.enable.error'),
         })
     }
 }
@@ -73,7 +76,7 @@ export class InvalidCredentialsFileError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.restore.import_invalid_file',
+            messageKey: i18nKey('cloud_backup.restore.import_invalid_file'),
         })
     }
 }
@@ -84,7 +87,9 @@ export class UnsupportedCredentialsFileError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            messageKey: 'cloud_backup.restore.import_unsupported_version',
+            messageKey: i18nKey(
+                'cloud_backup.restore.import_unsupported_version',
+            ),
         })
     }
 }

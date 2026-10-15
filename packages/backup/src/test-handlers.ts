@@ -39,6 +39,7 @@ export {
     accountItemKey,
     accountRecordItemKey,
     contactItemKey,
+    contactRecordItemKey,
     passkeyItemKey,
     passkeySecretsItemKey,
     secretsItemKey,

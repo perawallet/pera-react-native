@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { FundingType } from '@perawallet/wallet-core-card'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -19,8 +20,8 @@ import { useCardCreateSigningScreen } from './useCardCreateSigningScreen'
 import { useStyles } from './styles'
 
 const STEP_LABEL_KEYS = {
-    signCreate: 'peraCard.signing.step_sign_create_label',
-    autoFunding: 'peraCard.signing.step_auto_funding_label',
+    signCreate: i18nKey('peraCard.signing.step_sign_create_label'),
+    autoFunding: i18nKey('peraCard.signing.step_auto_funding_label'),
 } as const
 
 export const CardCreateSigningScreen = () => {
@@ -46,8 +47,8 @@ export const CardCreateSigningScreen = () => {
                 >
                     {t(
                         isAutoFunding
-                            ? 'peraCard.signing.body_auto'
-                            : 'peraCard.signing.body_manual',
+                            ? i18nKey('peraCard.signing.body_auto')
+                            : i18nKey('peraCard.signing.body_manual'),
                     )}
                 </PWText>
 

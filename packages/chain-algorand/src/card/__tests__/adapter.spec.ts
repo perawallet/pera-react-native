@@ -11,7 +11,11 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { encodeUnsignedTransaction, type Algodv2 } from 'algosdk'
+import {
+    encodeUnsignedTransaction,
+    type Algodv2,
+    type Transaction,
+} from 'algosdk'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -48,6 +52,7 @@ import { CardEscrowNotConfiguredError } from '@perawallet/wallet-core-card'
 import { AlgodError } from '../../blockchain'
 import { algorandCardAdapter as adapter } from '../adapter'
 import { autoDrawDelegationRequest } from '../delegation'
+import { payloadTransactionOf } from '../../signing/__tests__/transactions'
 
 const TESTNET: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 const MAINNET: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -197,9 +202,13 @@ describe('algorandCardAdapter.buildManualDeposit', () => {
             TESTNET,
         )
 
-        expect(group.map(txn => encodeUnsignedTransaction(txn))).toEqual(
-            await buildInPlace(400_000n),
-        )
+        expect(
+            group.map(txn =>
+                encodeUnsignedTransaction(
+                    payloadTransactionOf(txn) as Transaction,
+                ),
+            ),
+        ).toEqual(await buildInPlace(400_000n))
     })
 
     it('refuses a network with no settlement asset', async () => {

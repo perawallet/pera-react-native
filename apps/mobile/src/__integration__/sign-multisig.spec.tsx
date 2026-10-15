@@ -49,6 +49,11 @@ import {
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { encodeTransactionRaw } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { buildMultisigCosignRequest } from '@modules/multisig/utils/buildMultisigCosignRequest'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 // The multisig account's address is the transaction sender; the seeded Algo25
@@ -175,8 +180,102 @@ describe('Flow: multisig signing review (propose)', () => {
         expect(reject).not.toHaveBeenCalled()
     })
 
-    // Cosign (multisig-cosign source → addSignatures) and deferred propose
-    // (hardware-only proposer → local draft) are driven in production by the
-    // multisig inbox with participant-specific wiring this generic harness
-    // doesn't reproduce; tracked as remaining in the test plan.
+    // Deferred propose (hardware-only proposer → local draft) is driven in
+    // production by the multisig inbox with participant-specific wiring this
+    // generic harness doesn't reproduce.
+
+    it('adds the participant signature to the backend when the user confirms a cosign', async () => {
+        const joint = generateMultisigAddress(1, 1, [REVIEW_SIGNER_ADDRESS])
+        useAccountsStore.getState().setAccounts([
+            ...useAccountsStore.getState().accounts,
+            {
+                ...multisigAccount,
+                id: 'msig-joint',
+                chains: {
+                    algorand: {
+                        ...multisigAccount.chains.algorand!,
+                        address: joint,
+                    },
+                },
+            },
+        ])
+        server.use(
+            mockAlgodAccountInformation({
+                address: joint,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+        )
+        const responsesSpy = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    ...proposeResponse,
+                    joint_account: {
+                        ...proposeResponse.joint_account,
+                        address: joint,
+                    },
+                },
+                { status: 200 },
+            ),
+        )
+        server.use(
+            http.post(
+                '*/v1/joint-accounts/sign-requests/sign-request-1/responses/',
+                responsesSpy,
+            ),
+        )
+        const raw = encodeToBase64(
+            encodeTransactionRaw(buildPaymentTransaction({ sender: joint })),
+        )
+        const request = buildMultisigCosignRequest({
+            signRequest: {
+                id: 'sign-request-1',
+                status: 'pending',
+                type: 'async',
+                createdAt: new Date('2026-01-01T00:00:00Z'),
+                expectedExpireDatetime: new Date('2026-01-02T00:00:00Z'),
+                failReasonDisplay: null,
+                proposerAddress: null,
+                multisigAccount: {
+                    customId: 'msig-custom-1',
+                    createdAt: new Date('2026-01-01T00:00:00Z'),
+                    address: joint,
+                    version: 1,
+                    threshold: 1,
+                    participantAddresses: [REVIEW_SIGNER_ADDRESS],
+                },
+                transactionLists: [
+                    {
+                        id: 'tx-list-1',
+                        rawTransactions: [raw],
+                        firstValidBlock: 1000,
+                        lastValidBlock: 2000,
+                        expectedExpireDatetime: new Date(
+                            '2026-01-02T00:00:00Z',
+                        ),
+                        responses: [],
+                    },
+                ],
+            },
+            signerAddress: REVIEW_SIGNER_ADDRESS,
+            scope: scopeForLegacyNetwork('mainnet'),
+            localAccounts: useAccountsStore.getState().accounts,
+        })
+
+        const { confirm } = renderSignReview(request)
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        confirm()
+
+        await waitFor(
+            () => {
+                expect(responsesSpy).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+    })
 })

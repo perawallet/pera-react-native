@@ -16,6 +16,7 @@ import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import type { ConnectionHandlerContext } from '@perawallet/wallet-core-connections'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import { Networks } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import type { WalletKitFactory } from '../client'
 import { createWalletConnectV2Handler } from '../handler'
@@ -42,7 +43,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-const registeredAdapter = dappRequestAdapterFor(Networks.mainnet)
+const registeredAdapter = dappRequestAdapterFor(
+    scopeForLegacyNetwork(Networks.mainnet),
+)
 if (!registeredAdapter) {
     throw new Error('the package setup file registers the Algorand adapter')
 }
@@ -75,7 +78,8 @@ const makeContext = (store = memoryStore()) => ({
 
 const makeHandler = (walletKit = createFakeWalletKit()) =>
     createWalletConnectV2Handler({
-        getNetwork: () => Networks.mainnet,
+        getNetworkId: () => Networks.mainnet,
+        isDappConnectEnabled: () => true,
         projectId: 'a-reown-project-id',
         keyValueStorage: new MemoryKeyValueStorage(),
         createWalletKit: vi.fn<WalletKitFactory>(async () => walletKit),

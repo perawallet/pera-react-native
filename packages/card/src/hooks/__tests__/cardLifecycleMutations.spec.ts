@@ -55,22 +55,25 @@ describe('card lifecycle mutation hooks', () => {
         onlineManager.setOnline(true)
     })
 
-    it('useFreezeCardMutation freezes and invalidates card status', async () => {
-        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
-            wrapper,
-        })
+    it.each([SCOPE, { chainId: 'ethereum', networkId: 'sepolia' } as const])(
+        'useFreezeCardMutation freezes and invalidates card status ($chainId)',
+        async scope => {
+            const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+            const { result } = renderHook(() => useFreezeCardMutation(scope), {
+                wrapper,
+            })
 
-        result.current.mutate()
+            result.current.mutate()
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(api.freezeCard).toHaveBeenCalledWith({ network: 'mainnet' })
-        expect(invalidate).toHaveBeenCalledWith(
-            expect.objectContaining({
-                queryKey: expect.arrayContaining(['card', 'status']),
-            }),
-        )
-    })
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            expect(api.freezeCard).toHaveBeenCalledWith({ scope })
+            expect(invalidate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    queryKey: expect.arrayContaining(['card', 'status']),
+                }),
+            )
+        },
+    )
 
     it('useUnfreezeCardMutation unfreezes and invalidates card status', async () => {
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -81,7 +84,7 @@ describe('card lifecycle mutation hooks', () => {
         result.current.mutate()
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(api.unfreezeCard).toHaveBeenCalledWith({ network: 'mainnet' })
+        expect(api.unfreezeCard).toHaveBeenCalledWith({ scope: SCOPE })
         expect(invalidate).toHaveBeenCalledWith(
             expect.objectContaining({
                 queryKey: expect.arrayContaining(['card', 'status']),

@@ -12,6 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { AppError } from '@perawallet/wallet-core-shared'
 import {
@@ -57,11 +58,47 @@ vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView }),
 }))
 
+const ACCOUNTS = [
+    { id: 'acct-algo', chains: { algorand: { address: 'AAAA' } } },
+    {
+        id: 'acct-both',
+        chains: {
+            algorand: { address: 'BBBB' },
+            ethereum: { address: '0xBBBB' },
+        },
+    },
+    { id: 'acct-eth-only', chains: { ethereum: { address: '0xCCCC' } } },
+]
+
+// The real `signingAddressesOn` resolves signers through chain adapters this
+// spec has no reason to register; the hook's own job is the selection and the
+// fan-out across `requested.chains`.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useAllAccounts: () => ACCOUNTS,
+    signingAddressesOn: (
+        account: (typeof ACCOUNTS)[number],
+        _accounts: unknown,
+        chainIds: readonly string[],
+    ) =>
+        chainIds.flatMap(
+            chainId =>
+                (account.chains as Record<string, { address: string }>)[chainId]
+                    ?.address ?? [],
+        ),
+}))
+
 const makeProposal = (overrides = {}) => ({
     kind: 'walletconnect-v1',
     proposalId: 'p1',
     peer: { name: 'Tinyman', url: 'https://tinyman.org' },
-    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+    requested: {
+        networks: ['mainnet'],
+        chains: ['algorand'],
+        methods: ['algo_signTxn'],
+    },
     expiresAt: Date.now() + 60_000,
     approve: vi.fn(async () => ({ id: 'c1' })),
     reject: vi.fn(async () => {}),
@@ -86,7 +123,7 @@ describe('useConnectionApprovalView', () => {
             useConnectionApprovalView(proposal as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
         expect(proposal.approve).toHaveBeenCalledWith(['AAAA'])
@@ -103,13 +140,76 @@ describe('useConnectionApprovalView', () => {
         expect(proposal.reject).toHaveBeenCalled()
     })
 
+    it('approves every selected account on each requested chain it has an entry on', async () => {
+        const proposal = makeProposal({
+            requested: {
+                networks: ['mainnet'],
+                chains: ['algorand', 'ethereum'],
+                methods: [],
+            },
+        })
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        act(() => result.current.handleAccountPress('acct-both'))
+        act(() => result.current.handleAccountPress('acct-algo'))
+        await act(() => result.current.handleConnect())
+
+        expect(proposal.approve).toHaveBeenCalledWith([
+            'BBBB',
+            '0xBBBB',
+            'AAAA',
+        ])
+        expect(confirmQuantumDappUsage).toHaveBeenCalledWith([
+            'BBBB',
+            '0xBBBB',
+            'AAAA',
+        ])
+    })
+
+    it('gives an account no address on a chain the proposal did not request', async () => {
+        const proposal = makeProposal()
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        act(() => result.current.handleAccountPress('acct-both'))
+        await act(() => result.current.handleConnect())
+
+        expect(proposal.approve).toHaveBeenCalledWith(['BBBB'])
+    })
+
+    it('counts selected accounts, not addresses, in the approval event', async () => {
+        const proposal = makeProposal({
+            requested: {
+                networks: ['mainnet'],
+                chains: ['algorand', 'ethereum'],
+                methods: [],
+            },
+        })
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(proposal as never),
+        )
+
+        act(() => result.current.handleAccountPress('acct-both'))
+        await act(() => result.current.handleConnect())
+
+        expect(trackEvent).toHaveBeenCalledWith(
+            WalletConnectEvent.SessionApproved,
+            expect.objectContaining({
+                [AnalyticsMetadataKey.TotalAccount]: 1,
+            }),
+        )
+    })
+
     it('toggles account selection', () => {
         const { result } = renderHook(() =>
             useConnectionApprovalView(makeProposal() as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
+        act(() => result.current.handleAccountPress('acct-algo'))
 
         expect(result.current.selectedAccounts).toEqual([])
     })
@@ -118,7 +218,9 @@ describe('useConnectionApprovalView', () => {
     // check here only lets the two answers drift.
     it('surfaces the expired error the handler throws, and settles the proposal', async () => {
         const expired = new AppError('This connection request has expired', {
-            messageKey: 'errors.walletconnect.session_request_expired_body',
+            messageKey: i18nKey(
+                'errors.walletconnect.session_request_expired_body',
+            ),
             retryable: false,
         })
         const proposal = makeProposal({
@@ -130,7 +232,7 @@ describe('useConnectionApprovalView', () => {
             useConnectionApprovalView(proposal as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
         // main toasted this; the local pre-check that replaced it closed the
@@ -142,7 +244,7 @@ describe('useConnectionApprovalView', () => {
 
     it('keeps the sheet open for a retryable delivery failure', async () => {
         const timeout = new AppError("Couldn't reach WalletConnect", {
-            messageKey: 'errors.walletconnect.connection_timeout_body',
+            messageKey: i18nKey('errors.walletconnect.connection_timeout_body'),
             retryable: true,
         })
         const proposal = makeProposal({
@@ -154,7 +256,7 @@ describe('useConnectionApprovalView', () => {
             useConnectionApprovalView(proposal as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
         expect(errorToast).toHaveBeenCalled()
@@ -167,7 +269,7 @@ describe('useConnectionApprovalView', () => {
             useConnectionApprovalView(proposal as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
         expect(confirmQuantumDappUsage).toHaveBeenCalledWith(['AAAA'])
@@ -181,7 +283,7 @@ describe('useConnectionApprovalView', () => {
             useConnectionApprovalView(proposal as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
         expect(proposal.approve).not.toHaveBeenCalled()
@@ -194,7 +296,7 @@ describe('useConnectionApprovalView', () => {
             useConnectionApprovalView(proposal as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
         expect(trackEvent).toHaveBeenCalledWith(
@@ -235,7 +337,7 @@ describe('useConnectionApprovalView', () => {
             useConnectionApprovalView(proposal as never),
         )
 
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
         expect(errorToast).toHaveBeenCalled()
@@ -291,7 +393,7 @@ describe('useConnectionApprovalView', () => {
         const { result } = renderHook(() =>
             useConnectionApprovalView(proposal as never),
         )
-        act(() => result.current.handleAccountPress('AAAA'))
+        act(() => result.current.handleAccountPress('acct-algo'))
 
         let firstCall!: Promise<void>
         let secondCall!: Promise<void>

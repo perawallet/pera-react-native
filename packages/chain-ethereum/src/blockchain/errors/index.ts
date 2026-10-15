@@ -11,5 +11,5 @@
  */
 
 export { EvmError, isEvmError, type EvmErrorParams } from './EvmError'
-export { EVM_ERROR_I18N_KEYS, EvmErrorCode } from './evmErrorCodes'
+export { EvmErrorCode } from './evmErrorCodes'
 export { toEvmError } from './toEvmError'

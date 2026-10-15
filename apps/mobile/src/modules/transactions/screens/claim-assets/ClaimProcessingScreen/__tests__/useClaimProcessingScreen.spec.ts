@@ -47,6 +47,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionSendFlow: () => ({
         execute: mockExecute,
     }),
+    useAssetInboxInvalidator: () => ({ remove: vi.fn() }),
 }))
 
 const { mockShowError } = vi.hoisted(() => ({
@@ -93,10 +94,6 @@ vi.mock('@modules/transactions/hooks', () => ({
 
 vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
-}))
-
-vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
-    useArc59Invalidator: () => ({ remove: vi.fn() }),
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({

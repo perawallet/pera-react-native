@@ -10,18 +10,15 @@
  limitations under the License
  */
 
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import {
-    isConnectivityError,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { isConnectivityError, logger } from '@perawallet/wallet-core-shared'
 import { requestChallenge, attestDevice } from '../api/integrity'
 import { useAppIntegrityStore } from '../store'
 import type { AppIntegrityStatus, AttestPayload } from '../models'
 
 export type RegisterAppIntegrityParams = {
-    network: Network
+    deployment: WalletMode
     signal?: AbortSignal
 }
 
@@ -31,7 +28,7 @@ export type RegisterAppIntegrityResult = {
 }
 
 export const registerAppIntegrity = async ({
-    network,
+    deployment,
     signal,
 }: RegisterAppIntegrityParams): Promise<RegisterAppIntegrityResult> => {
     const store = useAppIntegrityStore.getState()
@@ -64,7 +61,7 @@ export const registerAppIntegrity = async ({
         const challenge = await requestChallenge({
             deviceInstallationId,
             platform,
-            network,
+            deployment,
             signal,
         })
 
@@ -87,7 +84,7 @@ export const registerAppIntegrity = async ({
 
         const { integrityToken, expiresAt } = await attestDevice({
             payload,
-            network,
+            deployment,
             signal,
         })
 

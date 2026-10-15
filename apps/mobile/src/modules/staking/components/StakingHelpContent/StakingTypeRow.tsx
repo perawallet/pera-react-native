@@ -12,6 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
@@ -19,10 +20,10 @@ import type { StakingType } from '../../models'
 import { StakingTypeBadge } from '../StakingTypeBadge'
 import { useStyles } from './styles'
 
-const STAKING_TYPE_DESCRIPTION_KEYS: Record<StakingType, string> = {
-    liquid: 'staking.help.liquid_description',
-    pools: 'staking.help.pools_description',
-    delegated: 'staking.help.delegated_description',
+const STAKING_TYPE_DESCRIPTION_KEYS: Record<StakingType, I18nKey> = {
+    liquid: i18nKey('staking.help.liquid_description'),
+    pools: i18nKey('staking.help.pools_description'),
+    delegated: i18nKey('staking.help.delegated_description'),
 }
 
 type StakingTypeRowProps = {

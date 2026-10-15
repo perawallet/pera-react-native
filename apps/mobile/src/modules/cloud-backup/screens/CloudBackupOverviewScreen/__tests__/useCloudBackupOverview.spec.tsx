@@ -19,6 +19,7 @@ import {
 import {
     accountItemKey,
     contactItemKey,
+    contactRecordItemKey,
     createItemKeyHasher,
     passkeyItemKey,
     secretsItemKey,
@@ -62,7 +63,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ) => account.chains[chainId],
     useAccountsStore: vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-contacts', () => ({
+vi.mock('@perawallet/wallet-core-contacts', async () => ({
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/contacts/src/contactId')
+    >('../../../../../../../../packages/contacts/src/contactId')),
     useContactsStore: vi.fn(),
 }))
 // This replaces the module wholesale, so the item-key hasher's `bytesToHex`
@@ -209,7 +213,7 @@ const mockStores = (opts: {
     backupId: string | null
     syncState: SyncStateFixture | null
     accounts: (string | { chains: Record<string, { address: string }> })[]
-    contacts: string[]
+    contacts: (string | { evm: string })[]
 }) => {
     ;(useCloudBackupStore as unknown as Mock).mockImplementation(
         (s: (st: { backupId: string | null }) => unknown) =>
@@ -232,9 +236,16 @@ const mockStores = (opts: {
     ;(useContactsStore as unknown as Mock).mockImplementation(
         (s: (st: { contacts: unknown[] }) => unknown) =>
             s({
-                contacts: opts.contacts.map(address => ({
-                    addresses: { algorand: address },
-                })),
+                // A legacy address's contact carries the id every device
+                // derives for it; an EVM-only one uses its address as the id.
+                contacts: opts.contacts.map(address =>
+                    typeof address === 'string'
+                        ? {
+                              id: `algorand:${address}`,
+                              addresses: { algorand: address },
+                          }
+                        : { id: address.evm, addresses: address },
+                ),
             }),
     )
 }
@@ -327,6 +338,26 @@ describe('useCloudBackupOverview', () => {
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.contactsInSync).toBe(1)
         expect(result.current.contactsNotBackedUp).toBe(1)
+    })
+
+    test('counts a contact holding only an EVM address through its record', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            [contactRecordItemKey(hashAddress('0xB'))]: uploaded('0xB', {
+                type: 'CONTACT',
+                addresses: ['0xB'],
+                record: { id: '0xB' },
+            }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: [{ evm: '0xB' }],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.contactsInSync).toBe(1)
+        expect(result.current.contactsNotBackedUp).toBe(0)
     })
 
     test('a single backed-up account reads as one, not one per stored item', () => {

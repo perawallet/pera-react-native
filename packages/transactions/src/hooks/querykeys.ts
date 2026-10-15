@@ -14,7 +14,7 @@ import type {
     AssetRef,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { QueryClient, QueryKey } from '@tanstack/react-query'
+import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'transactions'
 
@@ -57,14 +57,6 @@ export const transactionQueryKeys = {
             'page',
             { accountAddress, scope, url },
         ] as const,
-
-    /**
-     * Txids with an open submission-ledger row — the "pending —
-     * verifying" badge set. Kept under the module prefix so
-     * `invalidateTransactionQueries` also refreshes it.
-     */
-    openSubmissionTxIds: (scope: ChainScope) =>
-        [MODULE_PREFIX, 'open-submission-txids', { scope }] as const,
 
     /** `fee` is the base-unit fee as a string, so the key stays serialisable. */
     spendableBalance: (
@@ -126,3 +118,21 @@ export function invalidateTransactionQueriesForAddresses(
             }),
     })
 }
+
+// Its own prefix, and deliberately not 'transactions': the app's query
+// persistence classifies this one (an inbox request list survives a restart).
+const ASSET_INBOX_MODULE_PREFIX = 'asa-inbox'
+
+export const getAssetInboxRequestsQueryKey = (
+    address: string,
+    scope: ChainScope,
+) => [ASSET_INBOX_MODULE_PREFIX, 'requests', { address, scope }]
+
+export const getAssetInboxSendSummaryQueryKey = (
+    receiver: string,
+    assetId: string,
+    scope: ChainScope,
+) => [ASSET_INBOX_MODULE_PREFIX, 'send-summary', { receiver, assetId, scope }]
+
+export const isAssetInboxQuery = (query: Query): boolean =>
+    query.queryKey.at(0) === ASSET_INBOX_MODULE_PREFIX

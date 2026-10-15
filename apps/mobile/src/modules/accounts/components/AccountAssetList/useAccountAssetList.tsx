@@ -35,7 +35,10 @@ import {
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useIsChainSwitchedOff } from '@perawallet/wallet-core-chain-shared'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -99,7 +102,7 @@ export const useAccountAssetList = ({
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
-    const scope = useAccountScope(account)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const nativeAssetId = useMemo(
         () => findNativeAsset(scope.chainId)?.assetId,
         [scope.chainId],

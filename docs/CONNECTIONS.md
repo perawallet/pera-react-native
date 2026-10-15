@@ -115,6 +115,12 @@ WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walle
 `apps/browser/dist` for it), so the handler ships from the walletconnect package's `./v2` subpath and
 neither web realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
 
+A v2 session spans every chain whose `dappConnect` capability is on when a proposal arrives and again
+when it settles. Each chain's `DappRequestChainAdapter` serves its own namespace, an approved address
+goes only under the namespace whose chain's address codec accepts it (no codec, no addresses), and a
+request routes by its CAIP-2 id to a chain's selected network only. Existing sessions and their
+requests never read the capability, so turning it off leaves them listed and revocable.
+
 ## The `dapp` handler
 
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is

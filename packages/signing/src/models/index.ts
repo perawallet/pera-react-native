@@ -14,6 +14,7 @@ import type {
     ChainId,
     PeraSignedTransaction,
     PeraTransaction,
+    SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
@@ -22,6 +23,7 @@ import type {
     RejectReason,
     SignableAnalysis,
     SignRequestTransportOptions,
+    SourceCallbacks,
     SourceType,
     SubmissionReceipt,
     TransportResult,
@@ -151,7 +153,13 @@ export type AlgorandRequestData = {
     rawTransactionsBase64?: string[]
     /** Indexed in `groupContext` space, as {@link FeeAdjustment.index}. */
     feeAdjustments?: FeeAdjustment[]
+    /** As {@link AlgorandRequestFields.payloadId}. */
+    payloadId?: number
+    /** As {@link AlgorandRequestFields.totalLength}. */
+    totalLength?: number
 }
+
+type DeliveryCallbacks = 'approve' | 'approveSignedBytes' | 'onProposed'
 
 /**
  * Each transaction names its scope, so the request's chain comes from them.
@@ -159,10 +167,25 @@ export type AlgorandRequestData = {
  * one the pipeline would ignore; Algorand's group facts ride in `chainData`.
  */
 export type UnsignedTransactionSignRequest = {
-    [Field in keyof (AlgorandRequestFields & ChainStamp)]?: never
+    [
+        Field in Exclude<
+            keyof (AlgorandRequestFields & ChainStamp),
+            DeliveryCallbacks
+        >
+    ]?: never
 } & TransactionRequestCallbacks & {
         txs: UnsignedTransaction[]
         chainData?: { algorand?: AlgorandRequestData }
+        /**
+         * Entries are `Nullable` for the same reason as
+         * {@link AlgorandRequestFields.approve}'s.
+         */
+        approve?: (
+            signed: Nullable<SignedTransaction>[],
+            submission?: SubmissionReceipt,
+        ) => Promise<void>
+        approveSignedBytes?: SourceCallbacks['approveSignedBytes']
+        onProposed?: SourceCallbacks['onProposed']
     }
 
 export type TransactionSignRequest =

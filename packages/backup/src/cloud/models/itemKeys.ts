@@ -52,8 +52,26 @@ export const isAccountKey = (key: BackupItemKey): boolean =>
 export const contactItemKey = (hash: ItemKeyHash): BackupItemKey =>
     `${BACKUP_CONTACTS_KEY_PREFIX}${hash}`
 
+/** The legacy single-address shape, which this build reads but never writes. */
 export const isContactItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)
+
+/** One contact across every chain family, replacing the per-address
+ *  `contacts/` items for writing. A prefix of its own for the reason account
+ *  records have one, and still BackupItemType.CONTACT on the wire. */
+export const BACKUP_CONTACT_RECORDS_KEY_PREFIX = 'contact-records/'
+
+/** Hashes the contact's `id`, not an address, so the key holds still as
+ *  addresses come and go. */
+export const contactRecordItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_CONTACT_RECORDS_KEY_PREFIX}${hash}`
+
+export const isContactRecordKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_CONTACT_RECORDS_KEY_PREFIX)
+
+/** Either shape of a contact's item. */
+export const isContactKey = (key: BackupItemKey): boolean =>
+    isContactItemKey(key) || isContactRecordKey(key)
 
 export const BACKUP_PASSKEYS_KEY_PREFIX = 'passkeys/'
 

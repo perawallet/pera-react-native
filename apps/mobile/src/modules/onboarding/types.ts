@@ -10,17 +10,18 @@
  limitations under the License
  */
 
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { IconName, PWBadgeProps } from '@components/core'
 
 export type AccountOption = {
     testID: string
-    titleKey: string
-    descriptionKey: string
+    titleKey: I18nKey
+    descriptionKey: I18nKey
     leftIcon: IconName
     onPress: () => void
     isDisabled?: boolean
     /** Optional badge (e.g. a "NEW" pill) shown next to the option title. */
-    badge?: { labelKey: string; variant?: PWBadgeProps['variant'] }
+    badge?: { labelKey: I18nKey; variant?: PWBadgeProps['variant'] }
     /** Optional "Learn more"-style link with its own press handler. */
-    learnMore?: { labelKey: string; onPress: () => void }
+    learnMore?: { labelKey: I18nKey; onPress: () => void }
 }

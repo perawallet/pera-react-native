@@ -24,7 +24,6 @@ export {
     resolveMinFeeForSender,
     type AddSignaturesFn,
     type AssignFeeToGroup,
-    type AssignFeeToGroupDeps,
     type AssignFeeToGroupParams,
     type AssignMinimumFeesToGroupResult,
     type BalanceImpact,
@@ -100,6 +99,7 @@ export {
     type TransactionWarning,
 } from './models'
 
+export { chainIdOfSignRequest } from './models/chain'
 export { SigningRequestScopeProvider } from './hooks/SigningRequestScope'
 export type {
     HardwareChildSnapshot,
@@ -277,6 +277,7 @@ export {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getSubmissionAttemptsByTxIds,
+    getSubmissionAttemptsWithHistoryEntry,
     LANDABLE_SUBMISSION_STATUSES,
     markSubmissionUnknown,
     pruneResolvedSubmissionAttempts,
@@ -286,7 +287,9 @@ export {
     SubmissionAttemptsSchema,
     type IntentKey,
     type SubmissionAttempt,
+    type SubmissionAttemptWithHistoryEntry,
     type SubmissionFlow,
+    type SubmissionHistoryEntry,
     type SubmissionStatus,
 } from './db'
 

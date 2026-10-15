@@ -12,9 +12,11 @@
 
 import { LEGACY_CHAIN_FAMILY } from '@perawallet/wallet-core-chain-contract'
 import {
+    derivedContactId,
     useContactsStore,
     type Contact,
 } from '@perawallet/wallet-core-contacts'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import type { LegacyContact } from '@perawallet/wallet-extension-platform'
 
 export type ContactMigrationResult = {
@@ -51,8 +53,13 @@ export const migrateContacts = (
     return result
 }
 
-const toContact = (legacy: LegacyContact): Contact => ({
-    name: legacy.name,
-    addresses: { [LEGACY_CHAIN_FAMILY]: legacy.address },
-    image: legacy.avatar ?? undefined,
-})
+// The derived id, so the same contact migrated on two devices backs up as one.
+const toContact = (legacy: LegacyContact): Contact => {
+    const addresses = { [LEGACY_CHAIN_FAMILY]: legacy.address }
+    return {
+        id: derivedContactId(addresses) ?? generateUniqueId(),
+        name: legacy.name,
+        addresses,
+        image: legacy.avatar ?? undefined,
+    }
+}

@@ -101,7 +101,11 @@ const makeProposal = (
     proposalId: 'proposal-1',
     pairingId: 'pairing-1',
     peer: { name: 'Dapp', url: 'https://dapp.example' },
-    requested: { networks: ['mainnet' as Network], methods: ['algo_signTxn'] },
+    requested: {
+        networks: ['mainnet' as Network],
+        chains: ['algorand'],
+        methods: ['algo_signTxn'],
+    },
     expiresAt: 1000,
     approve: vi.fn(async accounts => ({
         id: 'conn-1',

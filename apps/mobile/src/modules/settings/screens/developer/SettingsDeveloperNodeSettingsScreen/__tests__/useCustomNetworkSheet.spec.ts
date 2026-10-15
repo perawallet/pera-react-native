@@ -13,12 +13,18 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Networks } from '@perawallet/wallet-core-shared'
+import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
 import {
+    customNodeAdapters,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+// By source path: the bare subpath is mocked globally, and the barrel's
+// module-level `useNetworkStore.subscribe(...)` would reach into other mocks.
+import {
+    algorandCustomNode,
     getCustomNetworkConfig,
     setCustomNetwork,
-    type CustomNetworkConfig,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+} from '@packages/chain-algorand/src/blockchain/store/custom-network'
 import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
 
 const { switchNetwork, fetchGenesisFromNode, clearCustomNetworkCache } =
@@ -45,27 +51,15 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     clearCustomNetworkCache,
 }))
 
-// Real custom-network functions, imported by concrete module path: the barrel
-// re-exports utils/algorandClient, whose module-level
-// `useNetworkStore.subscribe(...)` side effect would otherwise run for this
-// suite and reach into other mocked modules. fetchGenesisFromNode stays mocked
-// because it hits the network.
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
-    const customNetwork = await vi.importActual<
-        typeof import('@packages/chain-algorand/src/blockchain/store/custom-network')
-    >('@packages/chain-algorand/src/blockchain/store/custom-network')
-
-    return {
-        getCustomNetworkConfig: customNetwork.getCustomNetworkConfig,
-        isCustomNetworkConfigured: customNetwork.isCustomNetworkConfigured,
-        setCustomNetwork: customNetwork.setCustomNetwork,
-        fetchGenesisFromNode,
-    }
-})
-
 describe('useCustomNetworkSheet', () => {
     beforeEach(() => {
         useNetworkStore.getState().resetState()
+        // The real read and save, with only the network fetch stubbed.
+        customNodeAdapters.reset()
+        customNodeAdapters.register({
+            ...algorandCustomNode,
+            fetchGenesis: fetchGenesisFromNode,
+        })
         // Reset, not just clear: the persist-before-switch test installs an
         // implementation that snapshots store state, which must not leak.
         switchNetwork.mockReset()
@@ -356,5 +350,41 @@ describe('useCustomNetworkSheet', () => {
         })
 
         expect(clearCustomNetworkCache).not.toHaveBeenCalled()
+    })
+
+    describe('when useCustomNode has no adapter to offer', () => {
+        beforeEach(() => {
+            customNodeAdapters.reset()
+        })
+
+        test('fetch reports an error and save stays open', async () => {
+            const { result } = renderHook(() => useCustomNetworkSheet())
+
+            act(() => {
+                result.current.handleFieldChange(
+                    'algodUrl',
+                    'http://10.0.0.5:4001',
+                )
+                result.current.handleFieldChange(
+                    'indexerUrl',
+                    'http://10.0.0.5:8980',
+                )
+                result.current.handleFieldChange('genesisHash', 'HASH=')
+                result.current.handleFieldChange('genesisId', 'dockernet-v1')
+            })
+            await act(async () => {
+                await result.current.handleFetchGenesis()
+            })
+            let saved: boolean | undefined
+            await act(async () => {
+                saved = await result.current.handleSave()
+            })
+
+            expect(result.current.errors.fetch).toBe(true)
+            expect(fetchGenesisFromNode).not.toHaveBeenCalled()
+            expect(saved).toBe(false)
+            expect(getCustomNetworkConfig()).toBeUndefined()
+            expect(switchNetwork).not.toHaveBeenCalled()
+        })
     })
 })

@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { addressOn, useAccountScope } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,7 +31,7 @@ export const useWatchAccountButtonPanel =
         const { copyToClipboard } = useClipboard()
         const { showToast } = useToast()
         const { t } = useLanguage()
-        const scope = useAccountScope(account)
+        const scope = useAccountScope(account, LEGACY_CHAIN_ID)
         const address = addressOn(account, scope)
 
         const handleCopyAddress = useCallback(() => {

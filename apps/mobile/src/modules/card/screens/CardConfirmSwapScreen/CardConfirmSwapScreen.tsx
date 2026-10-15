@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -20,8 +21,8 @@ import { useCardConfirmSwapScreen } from './useCardConfirmSwapScreen'
 import { useStyles } from './styles'
 
 const STEP_LABEL_KEYS = {
-    swap: 'peraCard.add_funds.confirm_step_swap',
-    deposit: 'peraCard.add_funds.confirm_step_deposit',
+    swap: i18nKey('peraCard.add_funds.confirm_step_swap'),
+    deposit: i18nKey('peraCard.add_funds.confirm_step_deposit'),
 } as const
 
 export const CardConfirmSwapScreen = () => {
@@ -48,12 +49,15 @@ export const CardConfirmSwapScreen = () => {
     } = useCardConfirmSwapScreen()
     const isDepositFailed = step === 'deposit-failed'
     const detailRows = [
-        ['peraCard.confirm_swap.price', priceDisplay],
-        ['peraCard.confirm_swap.slippage', slippageDisplay],
-        ['peraCard.confirm_swap.price_impact', priceImpactDisplay],
-        ['peraCard.confirm_swap.minimum_received', minimumReceivedDisplay],
-        ['peraCard.confirm_swap.exchange_fee', exchangeFeeDisplay],
-        ['peraCard.confirm_swap.pera_fee', peraFeeDisplay],
+        [i18nKey('peraCard.confirm_swap.price'), priceDisplay],
+        [i18nKey('peraCard.confirm_swap.slippage'), slippageDisplay],
+        [i18nKey('peraCard.confirm_swap.price_impact'), priceImpactDisplay],
+        [
+            i18nKey('peraCard.confirm_swap.minimum_received'),
+            minimumReceivedDisplay,
+        ],
+        [i18nKey('peraCard.confirm_swap.exchange_fee'), exchangeFeeDisplay],
+        [i18nKey('peraCard.confirm_swap.pera_fee'), peraFeeDisplay],
     ] as const
 
     if (isQuoteLoading) {
@@ -143,8 +147,10 @@ export const CardConfirmSwapScreen = () => {
                 >
                     {t(
                         isDepositFailed
-                            ? 'peraCard.add_funds.swap_deposit_failed_body'
-                            : 'peraCard.add_funds.confirm_note',
+                            ? i18nKey(
+                                  'peraCard.add_funds.swap_deposit_failed_body',
+                              )
+                            : i18nKey('peraCard.add_funds.confirm_note'),
                     )}
                 </PWText>
             </PWView>

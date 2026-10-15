@@ -83,8 +83,8 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
+vi.mock('@hooks/useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({
         getMessage: (_err: unknown) => ({ title: 'Error', body: 'error body' }),
     }),
 }))

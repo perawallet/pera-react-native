@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { acquireCardSessionTokens, loginRequest } from '../api/auth'
 import { fetchOnboardingDetails } from '../api/onboarding'
@@ -50,11 +47,9 @@ export type UseCardLoginMutationResult = CardMutationResult<
 export const useCardLoginMutation = (
     scope: ChainScope,
 ): UseCardLoginMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<CardLoginData, Error, CardLoginParams>({
         mutationFn: async params => {
-            const result = await loginRequest({ ...params, network })
+            const result = await loginRequest({ ...params, scope })
             // Credentials accepted: the returned access token is the ephemeral
             // 6h OAuth-completion token. Trade it for the durable pair (6h
             // access + 7-day refresh) so the session can be silently refreshed
@@ -65,7 +60,7 @@ export const useCardLoginMutation = (
             if (result.accessToken) {
                 const tokens = await acquireCardSessionTokens({
                     accessToken: result.accessToken,
-                    network,
+                    scope,
                 })
                 return { ...result, tokens }
             }
@@ -83,7 +78,7 @@ export const useCardLoginMutation = (
                 try {
                     const { verificationState } = await fetchOnboardingDetails({
                         onboardingId: result.userId,
-                        network,
+                        scope,
                     })
                     return { ...result, verificationState, tokens: null }
                 } catch (error) {

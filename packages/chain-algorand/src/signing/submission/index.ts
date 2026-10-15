@@ -16,6 +16,7 @@ export { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses
 export {
     submitAndAutoRefresh,
     submitAndAutoRefreshCore,
+    submitSignedAndAutoRefresh,
     type SubmitAndAutoRefreshCoreInput,
 } from './submitAndAutoRefresh'
 export type {

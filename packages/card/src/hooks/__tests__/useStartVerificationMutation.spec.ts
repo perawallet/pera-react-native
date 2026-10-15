@@ -20,12 +20,18 @@ const { startRegisterVerification } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/onboarding', () => ({ startRegisterVerification }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useStartVerificationMutation } from '../useStartVerificationMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useStartVerificationMutation', () => {
+describe.each(SCOPES)('useStartVerificationMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -61,7 +67,7 @@ describe('useStartVerificationMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(startRegisterVerification).toHaveBeenCalledWith({
             onboardingId: 'ob_1',
-            network: 'mainnet',
+            scope: SCOPE,
         })
         expect(result.current.data?.sessionUrl).toBe('https://veriff/session')
     })

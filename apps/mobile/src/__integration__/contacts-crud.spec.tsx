@@ -80,7 +80,7 @@ import {
     useBackupSyncStateStore,
 } from '@perawallet/wallet-core-backup'
 import {
-    contactItemKey,
+    contactRecordItemKey,
     createItemKeyHasher,
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { PWButton } from '@components/core'
@@ -89,7 +89,7 @@ import { AddContactScreen } from '@modules/contacts/screens/AddContactScreen/Add
 import { EditContactScreen } from '@modules/contacts/screens/EditContactScreen/EditContactScreen'
 import { useEditContactForm } from '@modules/contacts/hooks'
 
-import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
+import { isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // EditContactScreen navigates to a 'Contacts' route after a delete via
@@ -154,13 +154,14 @@ const seedContact = (name: string, address: string) => {
     })
 }
 
-const selectContact = (name: string, address: string) => {
+const selectContact = (address: string) => {
     const { result } = renderHook(() => useContacts())
     act(() => {
-        result.current.setSelectedContact({
-            name,
-            addresses: { algorand: address },
-        })
+        result.current.setSelectedContact(
+            result.current.contacts.find(
+                c => c.addresses.algorand === address,
+            ) ?? null,
+        )
     })
 }
 
@@ -168,7 +169,7 @@ const resetContacts = () => {
     const { result } = renderHook(() => useContacts())
     act(() => {
         for (const c of result.current.contacts) {
-            result.current.deleteContact(c)
+            result.current.deleteContact(c.id)
         }
         result.current.setSelectedContact(null)
     })
@@ -184,22 +185,26 @@ const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 /** Minimum sync state for `useIsContactBackedUp` to report true, which is what
  *  makes EditContactScreen ask about the backup before removing a contact.
- *  The key is a hash, so `address` is the only way back to the contact. */
-const markContactBackedUp = (address: string) => {
+ *  The key is a hash, so the cached record's `id` is the only way back to the
+ *  contact. Returns that id. */
+const markContactBackedUp = (): string => {
+    const [contact] = readContacts()
     useBackupSyncStateStore.getState().setSyncState({
         ...createEmptySyncState('did:pera:TESTBACKUP'),
         items: {
-            [contactItemKey(hashAddress(address))]: {
+            [contactRecordItemKey(hashAddress(contact.id))]: {
                 type: BackupItemType.CONTACT,
                 knownVer: 1,
                 baseVer: 1,
                 isDirty: false,
                 status: BackupItemStatus.ACTIVE,
                 lastRemoteHash: null,
-                address,
+                address: contact.addresses.algorand,
+                record: { id: contact.id },
             },
         },
     })
+    return contact.id
 }
 
 describe('Flow: Contacts CRUD', () => {
@@ -243,7 +248,7 @@ describe('Flow: Contacts CRUD', () => {
         expect(contact.addresses.algorand).toBe(HD_TEST_ADDRESS)
     })
 
-    it('Given a duplicate address is entered on AddContactScreen, when submit is tapped, then no second contact is added', async () => {
+    it('Given an address another contact holds is entered on AddContactScreen, when submit is tapped, then it warns and still adds a second contact', async () => {
         seedContact('Existing', HD_TEST_ADDRESS)
 
         renderWithNavigation(AddContactScreen, 'AddContact')
@@ -257,24 +262,27 @@ describe('Flow: Contacts CRUD', () => {
 
         await waitFor(() => {
             expect(
+                screen.getByTestId('contact_address_warning').textContent,
+            ).toBe('contacts.add_contact.duplicate_address_warning')
+        })
+        await waitFor(() => {
+            expect(
                 isElementDisabled(screen.getByTestId('add_contact_button')),
             ).toBe(false)
         })
         fireEvent.click(screen.getByTestId('add_contact_button'))
 
         await waitFor(() => {
-            expect(
-                getInputErrorMessage(
-                    screen.getByTestId('contact_address_input'),
-                ),
-            ).toBe('contacts.add_contact.duplicate_address_error')
+            expect(readContacts().map(c => c.name)).toEqual([
+                'Existing',
+                'Duplicate',
+            ])
         })
-        expect(readContacts()).toHaveLength(1)
     })
 
     it('Given a selected contact, when EditContactScreen mounts, then the form prefills with the contact name and address', () => {
         seedContact('Alice', HD_TEST_ADDRESS)
-        selectContact('Alice', HD_TEST_ADDRESS)
+        selectContact(HD_TEST_ADDRESS)
 
         renderWithNavigation(EditContactScreen, 'EditContact', {
             additionalScreens: [
@@ -294,7 +302,7 @@ describe('Flow: Contacts CRUD', () => {
 
     it('Given a selected contact, when the name is changed and the edit form is saved, then the store reflects the updated name', async () => {
         seedContact('Alice', HD_TEST_ADDRESS)
-        selectContact('Alice', HD_TEST_ADDRESS)
+        selectContact(HD_TEST_ADDRESS)
 
         renderWithNavigation(EditContactHost, 'EditContact')
 
@@ -320,7 +328,7 @@ describe('Flow: Contacts CRUD', () => {
 
     it('Given a selected contact, when delete is confirmed in the bottom sheet, then the contact is removed from the store', async () => {
         seedContact('Alice', HD_TEST_ADDRESS)
-        selectContact('Alice', HD_TEST_ADDRESS)
+        selectContact(HD_TEST_ADDRESS)
 
         renderWithNavigation(EditContactScreen, 'EditContact', {
             additionalScreens: [
@@ -341,8 +349,8 @@ describe('Flow: Contacts CRUD', () => {
     it('Given a backed-up contact, when the cloud-backup sheet is answered with "Keep it", then the contact leaves the device and stays in the backup', async () => {
         isCloudBackupEnabledMock.mockReturnValue(true)
         seedContact('Alice', HD_TEST_ADDRESS)
-        selectContact('Alice', HD_TEST_ADDRESS)
-        markContactBackedUp(HD_TEST_ADDRESS)
+        selectContact(HD_TEST_ADDRESS)
+        const id = markContactBackedUp()
 
         renderWithNavigation(EditContactScreen, 'EditContact', {
             additionalScreens: [
@@ -358,10 +366,7 @@ describe('Flow: Contacts CRUD', () => {
         fireEvent.click(screen.getByTestId('delete_from_backup_cancel'))
 
         await waitFor(() => {
-            expect(keepContactInBackupMock).toHaveBeenCalledWith(
-                HD_TEST_ADDRESS,
-                'Alice',
-            )
+            expect(keepContactInBackupMock).toHaveBeenCalledWith(id, 'Alice')
         })
         await waitFor(() => {
             expect(readContacts()).toHaveLength(0)
@@ -372,8 +377,8 @@ describe('Flow: Contacts CRUD', () => {
     it('Given a backed-up contact, when the cloud-backup sheet is confirmed, then the backup copy is deleted too', async () => {
         isCloudBackupEnabledMock.mockReturnValue(true)
         seedContact('Alice', HD_TEST_ADDRESS)
-        selectContact('Alice', HD_TEST_ADDRESS)
-        markContactBackedUp(HD_TEST_ADDRESS)
+        selectContact(HD_TEST_ADDRESS)
+        const id = markContactBackedUp()
 
         renderWithNavigation(EditContactScreen, 'EditContact', {
             additionalScreens: [
@@ -389,9 +394,7 @@ describe('Flow: Contacts CRUD', () => {
         fireEvent.click(screen.getByTestId('delete_from_backup_confirm'))
 
         await waitFor(() => {
-            expect(deleteContactFromBackupMock).toHaveBeenCalledWith(
-                HD_TEST_ADDRESS,
-            )
+            expect(deleteContactFromBackupMock).toHaveBeenCalledWith(id)
         })
         await waitFor(() => {
             expect(readContacts()).toHaveLength(0)

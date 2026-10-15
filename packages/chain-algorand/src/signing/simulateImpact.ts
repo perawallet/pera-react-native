@@ -21,7 +21,8 @@ import type {
     PeraDisplayableTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { algorandNetworkOf } from '../legacy-network'
 
 // Minimal structural view of algosdk's SimulateResponse — only the inner-txn
 // path we walk. Structural typing keeps us decoupled from the SDK's model
@@ -99,9 +100,11 @@ export const ungroupForSimulation = (tx: PeraTransaction): PeraTransaction => {
  */
 export const simulateInnerTransactions = async (
     groupTxs: PeraTransaction[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<PeraDisplayableTransaction[]> => {
-    const composer = createWalletAlgorandClient(network).newGroup()
+    const composer = createWalletAlgorandClient(
+        algorandNetworkOf(scope),
+    ).newGroup()
     for (const tx of groupTxs) {
         composer.addTransaction(
             asAlgosdkTransaction(tx.group ? ungroupForSimulation(tx) : tx),

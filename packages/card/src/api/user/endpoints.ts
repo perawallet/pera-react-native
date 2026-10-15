@@ -10,20 +10,17 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { HTTPError } from 'ky'
 import { ZodError } from 'zod'
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
 import type { CardUser, VeriffSession } from '../../models'
 import { userResponseSchema, verificationSessionResponseSchema } from './schema'
 import { transformUser } from './transformers'
 
 export type FetchUserParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -31,11 +28,11 @@ export type FetchUserParams = {
 export const fetchUser = async (
     params: FetchUserParams,
 ): Promise<Nullable<CardUser>> => {
-    const { network, signal } = params
+    const { scope, signal } = params
 
     try {
         const response = await getCardTransport().request({
-            network,
+            scope,
             method: 'GET',
             path: '/v1/user',
             authenticated: true,
@@ -57,7 +54,7 @@ export const fetchUser = async (
 }
 
 export type FetchVerificationSessionParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -70,7 +67,7 @@ export const fetchVerificationSession = async (
     params: FetchVerificationSessionParams,
 ): Promise<VeriffSession> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'GET',
         path: '/v1/user/verification',
         authenticated: true,

@@ -12,6 +12,7 @@
 
 import LottieView from 'lottie-react-native'
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
@@ -31,13 +32,13 @@ export const TransactionProcessingScreen = () => {
     // until either the device prompts (and the LedgerSigningContent sheet
     // takes over) or the connect times out.
     const titleKey = isHardwareSender
-        ? 'send_funds.processing.title_hardware'
-        : 'send_funds.processing.title'
+        ? i18nKey('send_funds.processing.title_hardware')
+        : i18nKey('send_funds.processing.title')
     const subtitleKey = isHardwareSender
         ? hardwareDeviceName
-            ? 'send_funds.processing.subtitle_hardware'
-            : 'send_funds.processing.subtitle_hardware_noDevice'
-        : 'send_funds.processing.subtitle'
+            ? i18nKey('send_funds.processing.subtitle_hardware')
+            : i18nKey('send_funds.processing.subtitle_hardware_noDevice')
+        : i18nKey('send_funds.processing.subtitle')
     const subtitleParams =
         isHardwareSender && hardwareDeviceName
             ? { deviceName: hardwareDeviceName }

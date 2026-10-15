@@ -16,6 +16,11 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useCreateMultisigAccountMutation } from '../useCreateMultisigAccountMutation'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     createMultisigAccount: vi.fn(),
 }))
@@ -61,7 +66,7 @@ describe('useCreateMultisigAccountMutation', () => {
         mocks.createMultisigAccount.mockResolvedValue(validAccountResponse)
 
         const { result } = renderHook(
-            () => useCreateMultisigAccountMutation({ network: 'mainnet' }),
+            () => useCreateMultisigAccountMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 
@@ -80,32 +85,35 @@ describe('useCreateMultisigAccountMutation', () => {
         expect(result.current.data?.custom_id).toBe('msig-new')
     })
 
-    test('calls endpoint with correct network and params', async () => {
-        mocks.createMultisigAccount.mockResolvedValue(validAccountResponse)
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'calls endpoint with correct network and params for $chainId',
+        async scope => {
+            mocks.createMultisigAccount.mockResolvedValue(validAccountResponse)
 
-        const { result } = renderHook(
-            () => useCreateMultisigAccountMutation({ network: 'testnet' }),
-            { wrapper },
-        )
+            const { result } = renderHook(
+                () => useCreateMultisigAccountMutation({ scope }),
+                { wrapper },
+            )
 
-        const params = {
-            version: 1,
-            threshold: 3,
-            participant_addresses: ['A', 'B', 'C', 'D'],
-            device_id: 'device-123',
-        }
+            const params = {
+                version: 1,
+                threshold: 3,
+                participant_addresses: ['A', 'B', 'C', 'D'],
+                device_id: 'device-123',
+            }
 
-        await act(async () => {
-            result.current.mutate(params)
-        })
+            await act(async () => {
+                result.current.mutate(params)
+            })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mocks.createMultisigAccount).toHaveBeenCalledWith(
-            'testnet',
-            params,
-        )
-    })
+            expect(mocks.createMultisigAccount).toHaveBeenCalledWith(
+                scope,
+                params,
+            )
+        },
+    )
 
     test('returns error state when request fails', async () => {
         mocks.createMultisigAccount.mockRejectedValue(
@@ -113,7 +121,7 @@ describe('useCreateMultisigAccountMutation', () => {
         )
 
         const { result } = renderHook(
-            () => useCreateMultisigAccountMutation({ network: 'mainnet' }),
+            () => useCreateMultisigAccountMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 
@@ -133,7 +141,7 @@ describe('useCreateMultisigAccountMutation', () => {
 
     test('is idle before mutation is called', () => {
         const { result } = renderHook(
-            () => useCreateMultisigAccountMutation({ network: 'mainnet' }),
+            () => useCreateMultisigAccountMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 
@@ -149,7 +157,7 @@ describe('useCreateMultisigAccountMutation', () => {
         mocks.createMultisigAccount.mockReturnValue(promise)
 
         const { result } = renderHook(
-            () => useCreateMultisigAccountMutation({ network: 'mainnet' }),
+            () => useCreateMultisigAccountMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 
@@ -175,7 +183,7 @@ describe('useCreateMultisigAccountMutation', () => {
         mocks.createMultisigAccount.mockResolvedValue(validAccountResponse)
 
         const { result } = renderHook(
-            () => useCreateMultisigAccountMutation({ network: 'mainnet' }),
+            () => useCreateMultisigAccountMutation({ scope: ALGORAND_MAINNET }),
             { wrapper },
         )
 

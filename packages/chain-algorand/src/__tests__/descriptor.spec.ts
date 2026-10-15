@@ -11,10 +11,10 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { nativeAssetDecimals } from '@perawallet/wallet-core-chain-contract'
 import { descriptorContractTests } from '@perawallet/wallet-core-chain-contract/testing'
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { chainModule } from '..'
+import { algorandApplicationExplorerUrl } from '../descriptor'
 
 const { descriptor, capabilityDefaults } = chainModule
 
@@ -74,13 +74,14 @@ describe('algorand descriptor', () => {
         )
     })
 
-    it('has no explorer link for a network outside the descriptor', () => {
-        expect(descriptor.explorer.accountUrl('custom', 'A')).toBeUndefined()
+    it('builds application explorer links, and none for a custom node', () => {
+        expect(algorandApplicationExplorerUrl('testnet', '7890')).toBe(
+            'https://testnet.explorer.perawallet.app/application/7890',
+        )
+        expect(algorandApplicationExplorerUrl('custom', '7890')).toBeUndefined()
     })
 
-    it('agrees with nativeAssetDecimals', () => {
-        expect(nativeAssetDecimals('algorand')).toBe(
-            descriptor.nativeAsset.decimals,
-        )
+    it('has no explorer link for a network outside the descriptor', () => {
+        expect(descriptor.explorer.accountUrl('custom', 'A')).toBeUndefined()
     })
 })

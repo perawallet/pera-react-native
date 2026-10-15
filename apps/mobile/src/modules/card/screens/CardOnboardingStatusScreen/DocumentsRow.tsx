@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, type IconName, type PWIconVariant } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { StatusChecklistRow } from './StatusChecklistRow'
@@ -23,38 +24,38 @@ const DOCUMENTS_ROW: Record<
     {
         icon: IconName
         variant: PWIconVariant
-        bodyKey: string
+        bodyKey: I18nKey
         showsPendingLabel: boolean
     }
 > = {
     unverified: {
         icon: 'pending',
         variant: 'primary',
-        bodyKey: 'peraCard.setup_status.documents_unverified_body',
+        bodyKey: i18nKey('peraCard.setup_status.documents_unverified_body'),
         showsPendingLabel: false,
     },
     pending: {
         icon: 'pending',
         variant: 'warning',
-        bodyKey: 'peraCard.setup_status.documents_pending_body',
+        bodyKey: i18nKey('peraCard.setup_status.documents_pending_body'),
         showsPendingLabel: true,
     },
     verified: {
         icon: 'check',
         variant: 'positive',
-        bodyKey: 'peraCard.setup_status.documents_verified_body',
+        bodyKey: i18nKey('peraCard.setup_status.documents_verified_body'),
         showsPendingLabel: false,
     },
     rejected: {
         icon: 'cross',
         variant: 'error',
-        bodyKey: 'peraCard.setup_status.documents_rejected_body',
+        bodyKey: i18nKey('peraCard.setup_status.documents_rejected_body'),
         showsPendingLabel: false,
     },
     error: {
         icon: 'info',
         variant: 'error',
-        bodyKey: 'peraCard.setup_status.documents_error_body',
+        bodyKey: i18nKey('peraCard.setup_status.documents_error_body'),
         showsPendingLabel: false,
     },
 }

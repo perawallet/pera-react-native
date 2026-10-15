@@ -53,7 +53,7 @@ export type UsePortfolioViewResult = {
 
 export const usePortfolioView = (): UsePortfolioViewResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency(scope)
     const basis = useAccountValueBasis(scope.chainId)
 
     // Each account counts when it can sign on its own chain, so an Ethereum

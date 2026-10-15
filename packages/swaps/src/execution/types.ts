@@ -14,6 +14,7 @@ import type { Decimal } from 'decimal.js'
 import type {
     ChainId,
     ChainScope,
+    I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
@@ -54,7 +55,7 @@ export type SwapExecutionFailure =
     | { phase: 'prepare'; reason: 'prepare-failed'; error: unknown }
     | { phase: 'prepare'; reason: 'no-transaction-groups' }
     | { phase: 'prepare'; reason: 'quote-mismatch' }
-    | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: string }
+    | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: I18nKey }
     | { phase: 'signing'; reason: 'signing-failed' }
     | { phase: 'submission'; reason: 'submission-failed'; error: unknown }
 

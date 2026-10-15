@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { acquireCardSessionTokens } from '../api/auth'
 import type { SubmitAddressResult } from '../api/onboarding'
 import { OnboardingStep } from '../models'
@@ -25,15 +25,15 @@ import { useCardStore } from '../store'
  */
 export const completeCardRegistration = async ({
     result,
-    network,
+    scope,
 }: {
     result: SubmitAddressResult
-    network: Network
+    scope: ChainScope
 }): Promise<void> => {
     if (result.accessToken !== null) {
         const tokens = await acquireCardSessionTokens({
             accessToken: result.accessToken,
-            network,
+            scope,
         })
         await setCardSession(tokens)
     }

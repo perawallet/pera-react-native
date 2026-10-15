@@ -36,6 +36,9 @@ vi.mock('../../history-adapter', () => ({
     fetchMoreTransactions: vi.fn(),
 }))
 
+// The real module reaches the accounts package, which needs a platform provider.
+vi.mock('../../pending-history', () => ({ MAX_PENDING_HISTORY_ROWS: 50 }))
+
 const mockGetTransactionHistory = vi.hoisted(() => vi.fn())
 const mockPersistTransactions = vi.hoisted(() => vi.fn())
 vi.mock('../../db', () => ({
@@ -819,6 +822,7 @@ describe('useTransactionHistoryQuery', () => {
                 id: 'PENDING-TX-1',
                 txType: 'pay',
                 confirmedRound: 0,
+                status: 'pending',
             })
         })
 

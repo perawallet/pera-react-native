@@ -11,10 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { submitPersonalDetails } from '../api/onboarding'
 import {
     getCardApiError,
@@ -32,13 +29,12 @@ export type UseSubmitPersonalDetailsMutationResult =
 export const useSubmitPersonalDetailsMutation = (
     scope: ChainScope,
 ): UseSubmitPersonalDetailsMutationResult => {
-    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<void, Error, PersonalDetailsInput>({
         mutationFn: async details => {
             try {
-                await submitPersonalDetails({ details, network })
+                await submitPersonalDetails({ details, scope })
             } catch (error) {
                 // Typed so the screen can show the "finish verifying"
                 // state instead of Baanx's raw refusal string.

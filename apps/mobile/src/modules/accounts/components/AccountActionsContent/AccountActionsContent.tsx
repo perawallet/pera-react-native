@@ -45,30 +45,34 @@ export const AccountActionsContent = ({
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
-        existingContact,
+        existingContacts,
         canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,
-        openContact,
+        addContact,
+        editContact,
     } = useAccountActions({ address, label, onClose: dismiss })
 
-    const contactAction: ActionRow = existingContact
-        ? {
-              id: 'edit-contact',
-              icon: 'contacts',
-              title: t('address_actions.edit_contact'),
-              subtitle: t('address_actions.edit_contact_subtitle', {
-                  name: existingContact.name,
-              }),
-              onPress: openContact,
-          }
-        : {
-              id: 'add-contact',
-              icon: 'contacts',
-              title: t('address_actions.add_contact'),
-              subtitle: t('address_actions.add_contact_subtitle'),
-              onPress: openContact,
-          }
+    const contactActions: ActionRow[] =
+        existingContacts.length > 0
+            ? existingContacts.map(contact => ({
+                  id: `edit-contact-${contact.id}`,
+                  icon: 'contacts',
+                  title: t('address_actions.edit_contact'),
+                  subtitle: t('address_actions.edit_contact_subtitle', {
+                      name: contact.name,
+                  }),
+                  onPress: () => editContact(contact),
+              }))
+            : [
+                  {
+                      id: 'add-contact',
+                      icon: 'contacts',
+                      title: t('address_actions.add_contact'),
+                      subtitle: t('address_actions.add_contact_subtitle'),
+                      onPress: addContact,
+                  },
+              ]
 
     const actions: ActionRow[] = [
         {
@@ -89,7 +93,7 @@ export const AccountActionsContent = ({
                   },
               ]
             : []),
-        contactAction,
+        ...contactActions,
     ]
 
     return (

@@ -20,7 +20,7 @@ import {
     type DappRequestChainAdapter,
 } from '../dappRequest'
 import { validateRawMessage } from '../validate'
-import type { RawInboundMessage } from '../models'
+import type { RawInboundMessage, WalletOperationType } from '../models'
 
 /**
  * A fixture chain adapter. `sign-transactions` validation itself is the
@@ -55,7 +55,7 @@ const fixtureAdapter: DappRequestChainAdapter = {
 }
 
 const request = (
-    type: 'sign-transactions' | 'sign-data',
+    type: WalletOperationType,
     params: unknown,
     chainId: ChainId = 'algorand',
 ): RawInboundMessage => ({
@@ -81,6 +81,22 @@ describe('validateRawMessage', () => {
     beforeEach(() => {
         dappRequestChainAdapters.reset()
         dappRequestChainAdapters.register(fixtureAdapter)
+    })
+
+    it.each([
+        'send-transaction',
+        'sign-message',
+        'sign-typed-data',
+        'switch-network',
+    ] as const)('refuses a %s request as unsupported', type => {
+        const result = validateRawMessage(request(type, ['0x']))
+
+        expect(result.ok).toBe(false)
+        if (!result.ok) {
+            expect(result.error).toMatchObject({
+                code: 'unsupported-operation',
+            })
+        }
     })
 
     it('refuses a message naming a chain with no registered adapter', () => {

@@ -33,9 +33,8 @@ let registered: Promise<ChainScope> | undefined
  * this is what lets a suite call them unmodified.
  *
  * Saved through the store, not `registerCustomNetworkSource`: the store is
- * that source, and its subscription in `blockchain` is what rebuilds
- * `queryClient`'s indexer client, which importing `blockchain` has already
- * built with the empty `custom` endpoints.
+ * that source, and chain-algorand builds every algod and indexer client from
+ * it per request, so nothing has to be rebuilt after the save.
  */
 export const localNetScope = (): Promise<ChainScope> => {
     registered ??= assertLocalNetReachable().then(

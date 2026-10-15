@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { OnrampStatus } from '@perawallet/wallet-core-onramp'
 import type { IconName, PWIconVariant } from '@components/core'
 
@@ -28,7 +29,7 @@ export type OnrampStatusDescriptor = {
     /** PWIcon variant resolving the inline status color. */
     iconVariant: PWIconVariant
     /** i18n key for the status word. */
-    labelKey: `onramp.status.${OnrampStatus}`
+    labelKey: I18nKey
 }
 
 export const ONRAMP_STATUS_DESCRIPTORS: Record<
@@ -39,31 +40,31 @@ export const ONRAMP_STATUS_DESCRIPTORS: Record<
         icon: 'pending',
         color: 'warning',
         iconVariant: 'warning',
-        labelKey: 'onramp.status.pending',
+        labelKey: i18nKey('onramp.status.pending'),
     },
     in_progress: {
         icon: 'progress',
         color: 'main',
         iconVariant: 'primary',
-        labelKey: 'onramp.status.in_progress',
+        labelKey: i18nKey('onramp.status.in_progress'),
     },
     completed: {
         icon: 'check',
         color: 'positive',
         iconVariant: 'positive',
-        labelKey: 'onramp.status.completed',
+        labelKey: i18nKey('onramp.status.completed'),
     },
     failed: {
         icon: 'error-circle',
         color: 'negative',
         iconVariant: 'error',
-        labelKey: 'onramp.status.failed',
+        labelKey: i18nKey('onramp.status.failed'),
     },
     cancelled: {
         icon: null,
         color: 'neutral',
         iconVariant: 'secondary',
-        labelKey: 'onramp.status.cancelled',
+        labelKey: i18nKey('onramp.status.cancelled'),
     },
 }
 

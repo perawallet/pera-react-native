@@ -110,6 +110,19 @@ export const validateRawMessage = (
 
     const { rawOperation } = raw
 
+    if (
+        rawOperation.type !== 'sign-transactions' &&
+        rawOperation.type !== 'sign-data'
+    ) {
+        return {
+            ok: false,
+            error: new ConnectionsError(
+                'unsupported-operation',
+                `${rawOperation.type} requests are not served`,
+            ),
+        }
+    }
+
     if (rawOperation.type === 'sign-transactions') {
         const result = dappRequestChainAdapters
             .get(raw.chainId)

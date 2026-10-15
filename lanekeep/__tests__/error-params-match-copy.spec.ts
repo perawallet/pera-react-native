@@ -9,7 +9,7 @@ const RULE = 'lanekeep/rules/error-params-match-copy.ts'
 const FIXTURES = 'lanekeep/__tests__/fixtures/error-params.*.ts'
 
 describe('pera/error-params-match-copy', () => {
-    it('reports a placeholder with no matching param, declared or absent', async () => {
+    it('reports a placeholder with no matching param, declared or absent, on a literal or an i18nKey() call', async () => {
         const found = await runRule(RULE, FIXTURES)
 
         const definitelyMissing = found.filter(v =>
@@ -18,6 +18,7 @@ describe('pera/error-params-match-copy', () => {
         expect(locations(definitelyMissing)).toEqual([
             'error-params.bad.ts:5',
             'error-params.bad.ts:10',
+            'error-params.bad.ts:31',
         ])
     })
 

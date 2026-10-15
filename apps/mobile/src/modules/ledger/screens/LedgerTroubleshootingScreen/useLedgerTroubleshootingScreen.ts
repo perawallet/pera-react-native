@@ -12,24 +12,25 @@
 
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 
-const PAIRING_STEP_KEYS = [
-    'ledger.troubleshooting.pairing_step_1',
-    'ledger.troubleshooting.pairing_step_2',
-    'ledger.troubleshooting.pairing_step_3',
-] as const
+const PAIRING_STEP_KEYS: readonly I18nKey[] = [
+    i18nKey('ledger.troubleshooting.pairing_step_1'),
+    i18nKey('ledger.troubleshooting.pairing_step_2'),
+    i18nKey('ledger.troubleshooting.pairing_step_3'),
+]
 
-const COMMON_ISSUE_KEYS = [
-    'ledger.troubleshooting.issue_unlocked',
-    'ledger.troubleshooting.issue_bluetooth',
-    'ledger.troubleshooting.issue_permissions',
-    'ledger.troubleshooting.issue_unsupported',
-] as const
+const COMMON_ISSUE_KEYS: readonly I18nKey[] = [
+    i18nKey('ledger.troubleshooting.issue_unlocked'),
+    i18nKey('ledger.troubleshooting.issue_bluetooth'),
+    i18nKey('ledger.troubleshooting.issue_permissions'),
+    i18nKey('ledger.troubleshooting.issue_unsupported'),
+]
 
 type UseLedgerTroubleshootingScreenResult = {
-    pairingStepKeys: readonly string[]
-    commonIssueKeys: readonly string[]
+    pairingStepKeys: readonly I18nKey[]
+    commonIssueKeys: readonly I18nKey[]
     handleDone: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }

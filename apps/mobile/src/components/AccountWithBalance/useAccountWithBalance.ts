@@ -51,7 +51,7 @@ export type UseAccountWithBalanceResult = {
 export const useAccountWithBalance = (
     account: WalletAccount,
 ): UseAccountWithBalanceResult => {
-    const scope = useAccountScope(account)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const { chainId } = scope
     const homeScope = useSelectedScope(LEGACY_CHAIN_ID)
     const basis = useAccountValueBasis(LEGACY_CHAIN_ID)

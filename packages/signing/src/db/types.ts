@@ -10,6 +10,31 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
+import type {
+    ChainTransactionData,
+    TransactionSummary,
+} from '@perawallet/wallet-core-chain-contract'
+
+/**
+ * What a history list shows for an attempt until its chain's history lists
+ * the transaction. `fee` is in base units of the native asset; where gas
+ * prices the fee, it is the most the transaction can be charged.
+ */
+export type SubmissionHistoryEntry = {
+    summary: TransactionSummary
+    chainData: ChainTransactionData
+    fee?: Decimal
+}
+
+/**
+ * Bump when SubmissionHistoryEntry, TransactionSummary or ChainTransactionData
+ * change shape. Rows written under another version drop out of pending
+ * history rather than render as the new shape; their transactions still show
+ * once the chain lists them.
+ */
+export const SUBMISSION_HISTORY_ENTRY_VERSION = 1
+
 /**
  * Lifecycle of a ledger row:
  * - `submitted` — the POST was issued (or is about to be); confirmation
@@ -96,4 +121,8 @@ export type SubmissionAttempt = {
     nonce: number | null
     createdAt: number
     resolvedAt: number | null
+}
+
+export type SubmissionAttemptWithHistoryEntry = SubmissionAttempt & {
+    historyEntry: SubmissionHistoryEntry
 }

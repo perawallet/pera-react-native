@@ -188,6 +188,14 @@ describe('algorandDappRequestAdapter', () => {
                 payload: data,
             })
         })
+
+        it('refuses a kind Algorand has no request for, rather than parsing it as ARC-60', () => {
+            expect(
+                adapter.parseSigningParams('sign-message', {
+                    data: [{ data: 'eA==', signer: 'A' }],
+                }),
+            ).toMatchObject({ ok: false, reason: 'missing' })
+        })
     })
 
     describe('resolveReportedNetwork', () => {

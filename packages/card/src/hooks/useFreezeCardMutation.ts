@@ -11,10 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { freezeCard } from '../api/card'
 import { CardStatus, type Card } from '../models/card'
 import { cardMutationKeys, cardQueryKeys } from './querykeys'
@@ -25,12 +22,11 @@ export type UseFreezeCardMutationResult = CardMutationResult<void>
 export const useFreezeCardMutation = (
     scope: ChainScope,
 ): UseFreezeCardMutationResult => {
-    const network = legacyNetworkOf(scope)
     const queryClient = useQueryClient()
 
     const mutation = useMutation<void, Error, void>({
         mutationKey: cardMutationKeys.freeze,
-        mutationFn: () => freezeCard({ network }),
+        mutationFn: () => freezeCard({ scope }),
         throwOnError: false,
         onSuccess: () => {
             // On success, reflect the frozen state in the cache so dependent UI

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import { z } from 'zod'
 
 export const toggleStatusResponseSchema = z.object({
@@ -23,16 +24,16 @@ export const toggleAssetFavorite = async ({
     assetID,
     deviceId,
     enabled,
-    network,
+    scope,
 }: {
     assetID: string
     deviceId: string
     enabled: boolean
-    network: Network
+    scope: ChainScope
 }): Promise<ToggleStatusResponse> => {
     const response = await queryClient<ToggleStatusResponse, unknown>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v2/assets/${assetID}/toggle-favorite/`,
         body: `{"device_id":${deviceId},"enabled":${enabled}}`,
@@ -45,16 +46,16 @@ export const toggleAssetPriceAlert = async ({
     assetID,
     deviceId,
     enabled,
-    network,
+    scope,
 }: {
     assetID: string
     deviceId: string
     enabled: boolean
-    network: Network
+    scope: ChainScope
 }): Promise<ToggleStatusResponse> => {
     const response = await queryClient<ToggleStatusResponse, unknown>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: `/v2/assets/${assetID}/toggle-price-alert/`,
         body: `{"device_id":${deviceId},"enabled":${enabled}}`,

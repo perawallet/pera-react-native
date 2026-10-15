@@ -17,10 +17,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ParticipantIsMultisigError,
     ParticipantSchemeUnsupportedError,
@@ -53,7 +50,6 @@ export type UseAddParticipantContentResult = {
 
 export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { t } = useLanguage()
-    const { network } = useNetwork()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast } = useToast()
     const accounts = useAllAccounts()
@@ -72,7 +68,7 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     )
 
     const multisigCheck = useIsMultisigAddressQuery({
-        network,
+        scope,
         address: selectedAddress,
         enabled: !!selectedAddress && !isLocalAccount,
     })

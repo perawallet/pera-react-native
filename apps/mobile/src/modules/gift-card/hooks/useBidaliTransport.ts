@@ -18,7 +18,6 @@ import {
     type AccountBalances,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useAlgorandClient } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getKnownAssetId,
     isNativeAssetId,
@@ -36,10 +35,8 @@ import {
     useSelectedChainMode,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    useSigningRequest,
-    type TransactionSignRequest,
-} from '@perawallet/wallet-core-signing'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import {
     generateOrderedUniqueId,
     logger,
@@ -198,9 +195,8 @@ export const useBidaliTransport = (
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { network } = useNetwork()
     const chainMode = useSelectedChainMode(scope.chainId)
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
-    const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
     const webviewRef = useRef<Nullable<WebView>>(null)
 
@@ -277,34 +273,23 @@ export const useBidaliTransport = (
             )
 
             try {
-                const composer = algokit.newGroup()
-
-                if (currencyInfo.assetId === nativeAsset.assetId) {
-                    composer.addPayment({
+                const txs = await sendFlowChainAdapters
+                    .get(scope.chainId)
+                    .buildTransferTxs({
+                        scope,
                         sender,
                         receiver: address,
-                        amount: baseAmount.microAlgo(),
-                        note,
-                    })
-                } else {
-                    composer.addAssetTransfer({
-                        sender,
-                        receiver: address,
-                        assetId: BigInt(currencyInfo.assetId),
+                        assetId: currencyInfo.assetId,
                         amount: baseAmount,
                         note,
                     })
-                }
-
-                const built = await composer.buildTransactions()
 
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'gift-card',
-                    txs: built.transactions,
+                    txs,
                     sourceMetadata: {
                         name: t('giftCard.signing.source_name'),
                         description: t('giftCard.signing.source_description'),
@@ -319,7 +304,7 @@ export const useBidaliTransport = (
                     error: async () => {
                         sendBidaliEvent(webviewRef, 'paymentCancelled')
                     },
-                } as TransactionSignRequest)
+                })
             } catch (e) {
                 logger.error('Bidali: failed to build transaction', {
                     error: e,
@@ -327,7 +312,7 @@ export const useBidaliTransport = (
                 sendBidaliEvent(webviewRef, 'paymentCancelled')
             }
         },
-        [account, network, nativeAsset, algokit, addSignRequest, t, scope],
+        [account, network, nativeAsset, addSignRequest, t, scope],
     )
 
     const handleOpenUrl = useCallback((params: Record<string, unknown>) => {

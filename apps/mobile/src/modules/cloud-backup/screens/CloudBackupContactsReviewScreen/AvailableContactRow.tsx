@@ -17,14 +17,16 @@ import { BackupContactRow } from '../../components/BackupContactRow'
 import { useStyles } from './styles'
 
 type AvailableContactRowProps = {
+    id: string
     address: string
     name: string
     isBusy: boolean
-    onAdd: (address: string) => void
-    onDelete: (address: string) => Promise<void>
+    onAdd: (id: string) => void
+    onDelete: (id: string) => Promise<void>
 }
 
 const AvailableContactRowComponent = ({
+    id,
     address,
     name,
     isBusy,
@@ -34,11 +36,8 @@ const AvailableContactRowComponent = ({
     const { t } = useLanguage()
     const styles = useStyles()
 
-    const handleAdd = useCallback(() => onAdd(address), [onAdd, address])
-    const handleDelete = useCallback(
-        () => void onDelete(address),
-        [onDelete, address],
-    )
+    const handleAdd = useCallback(() => onAdd(id), [onAdd, id])
+    const handleDelete = useCallback(() => void onDelete(id), [onDelete, id])
 
     return (
         <BackupContactRow

@@ -30,6 +30,7 @@ import {
     accountItemKey,
     accountRecordItemKey,
     contactItemKey,
+    contactRecordItemKey,
     secretsItemKey,
     settingsItemKey,
     SETTINGS_ITEM_ID,
@@ -49,6 +50,7 @@ const recordKey = (identity: string) =>
     accountRecordItemKey(hashAddress(identity))
 const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
 const contactKey = (address: string) => contactItemKey(hashAddress(address))
+const contactRecordKey = (id: string) => contactRecordItemKey(hashAddress(id))
 
 const encKey = new Uint8Array(32).fill(7)
 const backupId = 'did:pera:ADDR'
@@ -574,7 +576,11 @@ describe('pullBackupItems', () => {
             [contactKey('CADDR')],
         )
         expect(result.contacts).toEqual([
-            { address: 'CADDR', name: 'Alice', updatedAt: 7 },
+            {
+                id: 'algorand:CADDR',
+                addresses: { algorand: 'CADDR' },
+                name: 'Alice',
+            },
         ])
         expect(result.skipped).toHaveLength(0)
     })
@@ -848,7 +854,13 @@ describe('pullBackupItems with an item kind it does not know', () => {
                 secretsPayload: null,
             },
         ])
-        expect(result.contacts).toEqual([{ address: 'CADDR', name: 'Alice' }])
+        expect(result.contacts).toEqual([
+            {
+                id: 'algorand:CADDR',
+                addresses: { algorand: 'CADDR' },
+                name: 'Alice',
+            },
+        ])
         expect(result.skipped).toEqual([])
         expect(result.manifestItems).toHaveProperty([accountKey('FIXADDR')])
     })
@@ -981,5 +993,205 @@ describe('buildPulledAccounts', () => {
             group: 'F/0/0',
             secretsPayload: { type: 'hdSeed' },
         })
+    })
+})
+
+describe('pullBackupItems on a contact record', () => {
+    const record = {
+        formatVersion: 1,
+        id: 'id-1',
+        name: 'Alice',
+        updatedAt: 3,
+        addresses: [
+            { family: 'evm', address: '0xB' },
+            { family: 'algorand', address: 'A' },
+        ],
+    }
+
+    const serving = (entries: [string, unknown][]) => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: entries.length,
+            items: Object.fromEntries(
+                entries.map(([key], index) => [
+                    key,
+                    { ...active(1, `h${index}`, index + 1), type: 'CONTACT' },
+                ]),
+            ),
+        })
+        readItems.mockResolvedValue(
+            entries.map(([key, payload]) => item(key, payload)),
+        )
+    }
+
+    beforeEach(() => {
+        fetchManifest.mockReset()
+        readItems.mockReset()
+    })
+
+    it('reads a record and joins every family into one contact', async () => {
+        serving([[contactRecordKey('id-1'), record]])
+
+        const result = await pull()
+
+        expect(readItems).toHaveBeenCalledWith(
+            'mainnet',
+            backupId,
+            'device-1',
+            [contactRecordKey('id-1')],
+        )
+        expect(result.contacts).toEqual([
+            {
+                id: 'id-1',
+                name: 'Alice',
+                addresses: { algorand: 'A', evm: '0xB' },
+            },
+        ])
+        expect(result.skipped).toEqual([])
+    })
+
+    it('caches what the record is filed under, with its content and label', async () => {
+        serving([[contactRecordKey('id-1'), record]])
+
+        const result = await pull()
+
+        expect(result.trackedByKey).toEqual({
+            [contactRecordKey('id-1')]: {
+                address: 'A',
+                addresses: ['A', '0xB'],
+                accountType: null,
+                label: 'Alice',
+                record: expect.objectContaining({ name: 'Alice' }),
+            },
+        })
+    })
+
+    it('restores one contact from a record and a legacy item of it, the record winning', async () => {
+        serving([
+            [contactKey('A'), { address: 'A', name: 'Old name' }],
+            [contactRecordKey('id-1'), record],
+        ])
+
+        const result = await pull()
+
+        expect(result.contacts).toEqual([
+            {
+                id: 'id-1',
+                name: 'Alice',
+                addresses: { algorand: 'A', evm: '0xB' },
+            },
+        ])
+    })
+
+    it('restores only the record when its contact was migrated from a legacy item whose address it has since changed', async () => {
+        const migrated = {
+            ...record,
+            id: 'algorand:A',
+            addresses: [{ family: 'algorand', address: 'A2' }],
+        }
+        serving([
+            [contactKey('A'), { address: 'A', name: 'Old name' }],
+            [contactRecordKey('algorand:A'), migrated],
+        ])
+
+        const result = await pull()
+
+        expect(result.contacts).toEqual([
+            { id: 'algorand:A', name: 'Alice', addresses: { algorand: 'A2' } },
+        ])
+    })
+
+    it('gives each record its own contact, though they share an address', async () => {
+        const other = {
+            ...record,
+            id: 'id-2',
+            name: 'Alice B',
+            addresses: [{ family: 'evm', address: '0xB' }],
+        }
+        serving([
+            [contactRecordKey('id-2'), other],
+            [contactRecordKey('id-1'), record],
+        ])
+
+        const result = await pull()
+
+        expect(result.contacts).toEqual([
+            { id: 'id-2', name: 'Alice B', addresses: { evm: '0xB' } },
+            {
+                id: 'id-1',
+                name: 'Alice',
+                addresses: { algorand: 'A', evm: '0xB' },
+            },
+        ])
+    })
+
+    it('restores a legacy item no record covers as an algorand contact', async () => {
+        serving([
+            [contactKey('Z'), { address: 'Z', name: 'Zed' }],
+            [contactRecordKey('id-1'), record],
+        ])
+
+        const result = await pull()
+
+        expect(result.contacts).toHaveLength(2)
+        expect(result.contacts).toContainEqual({
+            id: 'algorand:Z',
+            name: 'Zed',
+            addresses: { algorand: 'Z' },
+        })
+    })
+
+    it('tracks a record from a newer format and skips it as newer', async () => {
+        serving([[contactRecordKey('id-1'), { ...record, formatVersion: 2 }]])
+
+        const result = await pull()
+
+        expect(result.contacts).toEqual([])
+        expect(result.skipped).toEqual([
+            { key: contactRecordKey('id-1'), reason: 'newer' },
+        ])
+        expect(result.trackedByKey[contactRecordKey('id-1')]).toMatchObject({
+            record: { formatVersion: 2 },
+        })
+    })
+
+    it('tracks a record of unknown families only without creating a contact', async () => {
+        serving([
+            [
+                contactRecordKey('id-1'),
+                { ...record, addresses: [{ family: 'solana', address: 'S' }] },
+            ],
+        ])
+
+        const result = await pull()
+
+        expect(result.contacts).toEqual([])
+        expect(result.trackedByKey[contactRecordKey('id-1')]).toMatchObject({
+            address: 'S',
+        })
+    })
+
+    it('keeps an unknown family out of the contact but in the cached record', async () => {
+        serving([
+            [
+                contactRecordKey('id-1'),
+                {
+                    ...record,
+                    addresses: [
+                        { family: 'algorand', address: 'A' },
+                        { family: 'solana', address: 'S' },
+                    ],
+                },
+            ],
+        ])
+
+        const result = await pull()
+
+        expect(result.contacts).toEqual([
+            { id: 'id-1', name: 'Alice', addresses: { algorand: 'A' } },
+        ])
+        expect(
+            result.trackedByKey[contactRecordKey('id-1')]?.addresses,
+        ).toEqual(['A', 'S'])
     })
 })

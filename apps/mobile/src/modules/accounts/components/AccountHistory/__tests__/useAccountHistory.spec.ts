@@ -105,8 +105,8 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: vi.fn(),
 }))
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({ getMessage: vi.fn() }),
+vi.mock('@hooks/useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({ getMessage: vi.fn() }),
 }))
 
 vi.mock('@hooks/useLanguage')

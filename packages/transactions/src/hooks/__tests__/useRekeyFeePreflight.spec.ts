@@ -28,9 +28,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 // The fixture chain prices its native asset in 6-decimal base units.
-vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
-    ...(await importOriginal<object>()),
-    nativeAssetDecimals: () => 6,
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: () => ({ nativeAsset: { decimals: 6 } }),
 }))
 
 const SCOPE: ChainScope = {

@@ -104,9 +104,8 @@ export const useOnrampPairSelectionContent = ({
                 .filter((assetId): assetId is string => assetId !== null),
         [tokens, assetIdOf],
     )
-    const { data: assets } = useAssetsQuery(assetIds, {
+    const { data: assets } = useAssetsQuery(scope, assetIds, {
         fetchMissing: true,
-        scope,
     })
 
     const items = useMemo(

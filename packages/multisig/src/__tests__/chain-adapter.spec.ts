@@ -18,23 +18,27 @@ import {
 import { multisigAdapterFor, multisigChainAdapters } from '../chain-adapter'
 import { fakeMultisigAdapter } from './fakeMultisigAdapter'
 
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('multisigChainAdapters', () => {
     beforeEach(() => {
         multisigChainAdapters.reset()
     })
 
-    it("resolves a legacy network to its chain's adapter", () => {
+    it("resolves a scope to its chain's adapter", () => {
         const adapter = fakeMultisigAdapter()
         multisigChainAdapters.register(adapter)
 
-        expect(multisigAdapterFor('testnet')).toBe(adapter)
+        expect(
+            multisigAdapterFor({ chainId: 'algorand', networkId: 'testnet' }),
+        ).toBe(adapter)
     })
 
     it('names the missing feature when no adapter is registered', () => {
-        expect(() => multisigAdapterFor('mainnet')).toThrow(
+        expect(() => multisigAdapterFor(MAINNET)).toThrow(
             ChainAdapterNotRegisteredError,
         )
-        expect(() => multisigAdapterFor('mainnet')).toThrow(
+        expect(() => multisigAdapterFor(MAINNET)).toThrow(
             'No multisig adapter is registered for chain "algorand"',
         )
     })

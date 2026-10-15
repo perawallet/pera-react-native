@@ -11,7 +11,14 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { CHAIN_IDS, isChainId, isNetworkId, isWalletMode } from '../identity'
+import {
+    CHAIN_FAMILIES,
+    CHAIN_IDS,
+    isChainFamily,
+    isChainId,
+    isNetworkId,
+    isWalletMode,
+} from '../identity'
 
 describe('isChainId', () => {
     it.each(CHAIN_IDS)('accepts %s', chainId => {
@@ -27,6 +34,20 @@ describe('isChainId', () => {
 
     it.each([undefined, null, 0, {}])('rejects the non-string %j', value => {
         expect(isChainId(value)).toBe(false)
+    })
+})
+
+describe('isChainFamily', () => {
+    it.each(CHAIN_FAMILIES)('accepts %s', family => {
+        expect(isChainFamily(family)).toBe(true)
+    })
+
+    it.each(['', 'Algorand', 'ethereum', 'solana'])('rejects %j', value => {
+        expect(isChainFamily(value)).toBe(false)
+    })
+
+    it.each([undefined, null, 0, {}])('rejects the non-string %j', value => {
+        expect(isChainFamily(value)).toBe(false)
     })
 })
 

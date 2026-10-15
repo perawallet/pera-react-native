@@ -39,6 +39,7 @@ import {
     decryptItem,
     isLocalNewer,
     keepLocalEdit,
+    seenOnly,
     type CollectPayloadsDeps,
 } from './collectPayloads'
 
@@ -57,20 +58,6 @@ const parseAccountPayload = (
         return { kind: 'address', payload: parseAddressPayload(plaintext) }
     return { kind: 'secrets', payload: parseSecretsPayload(plaintext) }
 }
-
-/** Records the remote version was seen and caches what names it, without
- *  adopting its content. */
-const seenOnly = (
-    tracked: SyncItemState | undefined,
-    item: FetchedItem,
-    identifiers: Partial<SyncItemState>,
-): SyncItemState => ({
-    ...(tracked as SyncItemState),
-    knownVer: item.ver,
-    baseVer: item.ver,
-    lastRemoteHash: item.hash,
-    ...identifiers,
-})
 
 /** `items` is mutated in place: each readable item's version/hash bookkeeping
  *  is written back under its own key. */

@@ -15,8 +15,13 @@ export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
 export type ChainId = (typeof CHAIN_IDS)[number]
 
-/** Grown the same way as `ChainId`. */
-export type ChainFamily = 'algorand' | 'evm'
+/**
+ * Append only: a contact's backup record is keyed on its first family in this
+ * order, so reordering would move every contact to a new key.
+ */
+export const CHAIN_FAMILIES = ['algorand', 'evm'] as const
+
+export type ChainFamily = (typeof CHAIN_FAMILIES)[number]
 
 export const NETWORK_TIERS = ['mainnet', 'testnet'] as const
 
@@ -105,6 +110,10 @@ const NETWORK_ID_PATTERN = /^[a-z0-9-]+$/
 export const isChainId = (value: unknown): value is ChainId =>
     typeof value === 'string' &&
     (CHAIN_IDS as readonly string[]).includes(value)
+
+export const isChainFamily = (value: unknown): value is ChainFamily =>
+    typeof value === 'string' &&
+    (CHAIN_FAMILIES as readonly string[]).includes(value)
 
 export const isNetworkId = (value: unknown): value is NetworkId =>
     typeof value === 'string' && NETWORK_ID_PATTERN.test(value)

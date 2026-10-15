@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import type {
-    MessageRequest,
-    MessageSummary,
-    Signature,
-    SignedMessage,
-    SigningRequest,
+import {
+    type MessageRequest,
+    type MessageSummary,
+    type Signature,
+    type SignedMessage,
+    type SigningRequest,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     CannotSignError,
@@ -31,16 +32,9 @@ import { arc60AuthPayloadFor } from './arc60AuthPayload'
 import { Arc60InvalidSignerError } from './arc60-errors'
 import { parseArc60ForDisplay } from './parseArc60ForDisplay'
 
-const ARBITRARY_DATA_KEY = 'signing.arbitrary_data_view.body'
-const AUTH_DATA_KEY = 'signing.arc60_view.title'
-const AUTH_DATA_INVALID_KEY = 'signing.arc60_view.siwa_invalid'
-
-/** Every i18n key a message summary can carry. */
-export const ALGORAND_MESSAGE_TITLE_KEYS = [
-    ARBITRARY_DATA_KEY,
-    AUTH_DATA_KEY,
-    AUTH_DATA_INVALID_KEY,
-] as const
+const ARBITRARY_DATA_KEY = i18nKey('signing.arbitrary_data_view.body')
+const AUTH_DATA_KEY = i18nKey('signing.arc60_view.title')
+const AUTH_DATA_INVALID_KEY = i18nKey('signing.arc60_view.siwa_invalid')
 
 // Both kinds arrive over the one dApp method `algo_signData`, so the pipeline's
 // kinds are the method names rather than the RPC name.

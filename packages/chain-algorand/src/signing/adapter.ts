@@ -54,6 +54,7 @@ import {
 } from './getRekeyedUnsignableReason'
 import { encodeDelegatedLsigAccount, programSigningPayload } from './lsig'
 import { mergeSigningResults } from './mergeSigningResults'
+import { algorandSignedTransactionsOf } from './signedTransactions'
 import { validateArc60AuthRequest } from './message/arc60'
 import { isArc60WirePayload, parseArc60WireRequest } from './message/arc60-wire'
 import { parseArc60ForDisplay } from './message/parseArc60ForDisplay'
@@ -156,6 +157,7 @@ export const algorandPlannerAdapter: PlannerChainAdapter = {
     readTransactionsData: algorandSignableDataOf,
     signedForAddresses: algorandSignedForAddresses,
     mergeSigningResults,
+    signedTransactionsOf: algorandSignedTransactionsOf,
     assembleSignedTransaction,
     createMultisigStrategy,
     signMultisigGroups,
@@ -177,10 +179,11 @@ export const algorandLocalKeySignerAdapter: LocalKeySignerChainAdapter = {
 
 export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    canSign: (account, kind) =>
-        kind === 'authData'
-            ? canSignArc60(account)
-            : canSignArbitraryData(account),
+    canSign: (account, kind) => {
+        if (kind === 'arbitraryData') return canSignArbitraryData(account)
+        if (kind === 'authData') return canSignArc60(account)
+        return false
+    },
     // ARC-60 and arbitrary-data signatures are Ed25519-only, so no dApp can
     // verify a quantum account's Falcon signature yet.
     signsVerifiably: account => !isQuantumAccount(account),
@@ -188,10 +191,12 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     describe: describeAlgorandMessage,
     plan: planAlgorandMessage,
     assemble: assembleAlgorandMessage,
-    validateAuthData: validateArc60AuthRequest,
-    parseAuthDataForDisplay: parseArc60ForDisplay,
-    isAuthDataWirePayload: isArc60WirePayload,
-    parseAuthDataWireRequest: parseArc60WireRequest,
-    buildSiwxAuthData,
-    signerPublicKey: address => Address.fromString(address).publicKey,
+    authData: {
+        validateAuthData: validateArc60AuthRequest,
+        parseAuthDataForDisplay: parseArc60ForDisplay,
+        isAuthDataWirePayload: isArc60WirePayload,
+        parseAuthDataWireRequest: parseArc60WireRequest,
+        buildSiwxAuthData,
+        signerPublicKey: address => Address.fromString(address).publicKey,
+    },
 }

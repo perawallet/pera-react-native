@@ -16,10 +16,11 @@
 
 import type { Decimal } from 'decimal.js'
 import type { ChainDescriptor } from './descriptor'
+import type { I18nKey } from './i18n'
 import type { ChainFamily, ChainId, ChainScope, NetworkId } from './identity'
 
 /** An i18n key plus its interpolation params, resolved by the UI. */
-export type LocalizedText = { key: string; params?: Record<string, string> }
+export type LocalizedText = { key: I18nKey; params?: Record<string, string> }
 
 export interface AssetRef {
     chainId: ChainId
@@ -194,10 +195,33 @@ export type ChainTransactionData =
     | { family: 'evm' }
 
 /** Payment-link fields only the parsing chain reads; each family adds a member discriminated by `family`. */
-export type ChainPaymentData = never
+export type ChainPaymentData = {
+    family: 'algorand'
+    /** The ARC-26 note the user cannot edit. */
+    xnote?: string
+}
 
-/** A link action only its own chain can build; each family adds a member discriminated by `family`. */
-export type ChainActionData = never
+/**
+ * A link action only its own chain can build; each family adds a member
+ * discriminated by `family`. Algorand keys are base64 or base64url, padded or
+ * not, as the link spells them; rounds and dilution are decimal digits; `fee`
+ * is microAlgos.
+ */
+export type ChainActionData = {
+    family: 'algorand'
+    action: 'keyreg'
+    sender: string
+    keyregType: 'online' | 'offline'
+    voteKey?: string
+    selectionKey?: string
+    stateProofKey?: string
+    voteFirst?: string
+    voteLast?: string
+    voteKeyDilution?: string
+    fee?: Decimal
+    note?: string
+    xnote?: string
+}
 
 export interface UnsignedTransaction {
     scope: ChainScope
@@ -240,7 +264,7 @@ export type TransferIntent = {
     note?: string
 }
 
-/** Only meaningful on a chain whose descriptor has `protocol.requiresAssetOptIn`. */
+/** Only built by a chain whose accounts must opt in before they can hold an asset. */
 export type AssetOptInIntent = {
     kind: 'asset-opt-in'
     account: string
@@ -335,10 +359,17 @@ export interface PaymentUriOpts {
     networkId?: NetworkId
 }
 
+/** Field names and values come from the requester and are never translated. */
+export type MessageTreeNode =
+    | { label: string; value: string }
+    | { label: string; children: MessageTreeNode[] }
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
     preview?: string
+    /** Set for kind `'typed-data'`: the signed fields, in schema order. */
+    tree?: MessageTreeNode[]
 }
 
 export interface MessageRequest {

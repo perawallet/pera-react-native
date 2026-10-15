@@ -1,0 +1,54 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
+import { ethereumKindIdOf } from '../accounts/local-key-kinds'
+import { ETHEREUM_CHAIN_ID } from '../chain-id'
+import { ethereumDescriptor } from '../descriptor'
+import { ethereumWalletConnectSupport } from './walletConnect'
+
+const NO_TRANSACTION_GROUP =
+    'eip155 signs no transaction group; use eth_sendTransaction'
+
+const refuseTransactionGroup = (): never => {
+    throw new Error(NO_TRANSACTION_GROUP)
+}
+
+export const ethereumDappRequestAdapter: DappRequestChainAdapter = {
+    chainId: ETHEREUM_CHAIN_ID,
+    relayableErrorNames: [],
+    // The kind id, not a wire name: no Ethereum bridge vocabulary exists to map to.
+    accountTypeOf: account => ethereumKindIdOf(account),
+
+    parseSigningParams: type => ({
+        ok: false,
+        reason: 'missing',
+        message: `No ${type} payload: Ethereum dApp requests arrive over WalletConnect v2`,
+    }),
+
+    resolveReportedNetwork: scope =>
+        scope.chainId === ETHEREUM_CHAIN_ID &&
+        ethereumDescriptor.networks.some(({ id }) => id === scope.networkId)
+            ? scope.networkId
+            : undefined,
+
+    emptySignaturesFor: () => ({}),
+
+    walletConnect: ethereumWalletConnectSupport,
+
+    validateTransactionPayload: () => ({
+        ok: false,
+        message: NO_TRANSACTION_GROUP,
+    }),
+
+    useEnqueueTransactionSigning: () => refuseTransactionGroup,
+}

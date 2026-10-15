@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
@@ -34,7 +35,7 @@ export class BlockchainError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: false,
-                messageKey: 'errors.blockchain.generic',
+                messageKey: i18nKey('errors.blockchain.generic'),
                 ...metadata,
             },
             originalError,

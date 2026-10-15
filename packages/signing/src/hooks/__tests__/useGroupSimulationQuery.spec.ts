@@ -86,23 +86,33 @@ describe('useGroupSimulationQuery', () => {
         expect(mockSimulate).not.toHaveBeenCalled()
     })
 
-    test('simulates the group on the current network and returns the inner transactions', async () => {
-        const { result } = renderHook(
-            () =>
-                useGroupSimulationQuery({
-                    scope: SCOPE,
-                    requestId: 'req-1',
-                    groupTxs,
-                    enabled: true,
-                }),
-            { wrapper },
-        )
+    test.each([
+        SCOPE,
+        { chainId: 'ethereum', networkId: 'sepolia' } as ChainScope,
+    ])(
+        'simulates the group on the given scope and returns the inner transactions ($chainId)',
+        async scope => {
+            registerFakePlannerAdapter({
+                chainId: scope.chainId,
+                simulateGroup: mockSimulate,
+            })
+            const { result } = renderHook(
+                () =>
+                    useGroupSimulationQuery({
+                        scope,
+                        requestId: 'req-1',
+                        groupTxs,
+                        enabled: true,
+                    }),
+                { wrapper },
+            )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mockSimulate).toHaveBeenCalledWith(groupTxs, 'mainnet')
-        expect(result.current.data).toBe(inner)
-    })
+            expect(mockSimulate).toHaveBeenCalledWith(groupTxs, scope)
+            expect(result.current.data).toBe(inner)
+        },
+    )
 
     test('surfaces simulation failure as an error result without retrying', async () => {
         mockSimulate.mockRejectedValue(new Error('simulate failed'))

@@ -28,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getCardSettlementAssetId } from '@perawallet/wallet-core-card'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -91,7 +92,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         () => [usdcAssetId, sourceAssetId].filter(id => id !== null),
         [usdcAssetId, sourceAssetId],
     )
-    const { data: assets } = useAssetsQuery(assetIds)
+    const { data: assets } = useAssetsQuery(scope, assetIds)
     const usdcAsset = useMemo(
         () => (usdcAssetId === null ? undefined : assets.get(usdcAssetId)),
         [assets, usdcAssetId],
@@ -175,8 +176,8 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
 
     const { deposit, isDepositing } = useCardManualDeposit()
     const showDepositError = useCardErrorToast({
-        titleKey: 'peraCard.add_funds.deposit_error_title',
-        bodyKey: 'peraCard.add_funds.deposit_error_body',
+        titleKey: i18nKey('peraCard.add_funds.deposit_error_title'),
+        bodyKey: i18nKey('peraCard.add_funds.deposit_error_body'),
         shouldUseBackendMessage: false,
     })
 

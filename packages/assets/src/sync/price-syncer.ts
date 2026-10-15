@@ -19,12 +19,13 @@ import {
 } from '../db'
 
 import {
-    scopeForLegacyNetwork,
+    toScopeKey,
     type AssetPrice,
     type AssetRef,
+    type ChainScope,
+    type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { partition, type Network } from '@perawallet/wallet-core-shared'
+import { partition } from '@perawallet/wallet-core-shared'
 import { assetsAdapterFor } from '../chain-adapter'
 
 const PRICE_FETCH_CONCURRENCY = 5
@@ -37,15 +38,15 @@ const toRows = (prices: AssetPrice[]): AssetPriceRow[] =>
 // (which have no gate of their own) dedupe against it. Gates the native-asset
 // fetch and the other batches alike.
 const PRICE_CACHE_TTL_MS = 30_000
-// Ids the bulk endpoint returned no price for never get a price row, so the
+// Ids the price source returned no price for never get a price row, so the
 // TTL gate alone would refetch them on every pass forever. Misses are
-// persisted per id+network (asset_price_misses) and retried on this slower
+// persisted per id+scope (asset_price_misses) and retried on this slower
 // cadence — durable across any portfolio size, unlike the capped in-memory
 // map this replaced, which thrashed on large accounts and let every
 // priceless id refetch every minute (PERA JS-thread saturation incident).
 const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 
-// Sharing one in-flight pass per network keeps a switch-triggered pileup of
+// Sharing one in-flight pass per scope keeps a switch-triggered pileup of
 // whole-wallet passes (the sync tick, refreshAccounts) from running the
 // (whole-wallet-sized) stale gate several times over. Size alone
 // doesn't prove a list is whole-wallet — the per-account enrichment callers
@@ -56,32 +57,33 @@ const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 // are targeted enrichments and stay independent.
 const WHOLE_WALLET_PASS_MIN_IDS = 256
 type InFlightPricePass = { ids: Set<string>; pass: Promise<void> }
-// Keyed by the network string, not a scope: a fresh scope object per call
+// Keyed by the scope key, not the scope: a fresh scope object per call
 // would never hit the map, so concurrent passes would stop sharing.
-const inFlightWholeWalletPasses = new Map<Network, InFlightPricePass>()
+const inFlightWholeWalletPasses = new Map<ChainScopeKey, InFlightPricePass>()
 
 export function fetchAndPersistPrices(
     assetIds: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> {
     if (assetIds.length < WHOLE_WALLET_PASS_MIN_IDS) {
-        return runPricePass(assetIds, network)
+        return runPricePass(assetIds, scope)
     }
 
-    const inFlight = inFlightWholeWalletPasses.get(network)
+    const key = toScopeKey(scope)
+    const inFlight = inFlightWholeWalletPasses.get(key)
     if (inFlight && assetIds.every(id => inFlight.ids.has(id))) {
         return inFlight.pass
     }
 
-    const pass = runPricePass(assetIds, network).finally(() => {
-        if (inFlightWholeWalletPasses.get(network)?.pass === pass) {
-            inFlightWholeWalletPasses.delete(network)
+    const pass = runPricePass(assetIds, scope).finally(() => {
+        if (inFlightWholeWalletPasses.get(key)?.pass === pass) {
+            inFlightWholeWalletPasses.delete(key)
         }
     })
     // First large pass in wins the shareable slot; a concurrent non-covered
     // pass runs unregistered rather than evicting it.
     if (!inFlight) {
-        inFlightWholeWalletPasses.set(network, {
+        inFlightWholeWalletPasses.set(key, {
             ids: new Set(assetIds),
             pass,
         })
@@ -91,20 +93,15 @@ export function fetchAndPersistPrices(
 
 async function runPricePass(
     assetIds: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> {
     if (assetIds.length === 0) return
-    // Resolved before the gate below so a missing adapter fails closed on
-    // every network, not only the Pera-backed ones.
-    const scope = scopeForLegacyNetwork(network)
     const adapter = assetsAdapterFor(scope)
     const nativeId = adapter.getNativeAsset().assetId
     const ref = (assetId: string): AssetRef => ({
         chainId: scope.chainId,
         assetId,
     })
-    // No Pera backend on this network — both price fetches below would only throw.
-    if (!isPeraBackedNetwork(network)) return
 
     const nonNativeIds = assetIds.filter(id => id !== nativeId)
     const staleIds = await getStaleOrMissingPriceAssetIds({

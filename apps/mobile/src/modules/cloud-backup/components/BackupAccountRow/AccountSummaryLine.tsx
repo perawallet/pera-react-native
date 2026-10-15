@@ -23,7 +23,7 @@ import { useSummaryStyles } from './styles'
  *  warms, so adding this line costs no extra query. */
 export const AccountSummaryLine = ({ address }: { address: string }) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
     const styles = useSummaryStyles()
     const { holdingsCount, portfolioNativeValue } = useAccountSummaryQuery(

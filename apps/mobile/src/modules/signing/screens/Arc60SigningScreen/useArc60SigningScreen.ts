@@ -34,7 +34,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
@@ -70,7 +70,7 @@ type UseArc60SigningScreenResult = {
 export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
-    const { getMessage } = useAlgodErrorMessage()
+    const { getMessage } = useNodeErrorMessage()
     const pipeline = useSigningPipeline()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const request =

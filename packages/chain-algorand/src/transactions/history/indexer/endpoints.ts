@@ -12,12 +12,13 @@
 
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { z } from 'zod'
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
     DEFAULT_ITEMS_PER_PAGE,
     type TransactionHistoryResult,
 } from '@perawallet/wallet-core-transactions'
+import { fetchNodeJson } from '../../../blockchain/utils/nodeHttp'
 import { transformTransactionHistoryResponse } from '../transformers'
 import {
     collectAssetIds,
@@ -97,21 +98,24 @@ export const fetchIndexerTransactionHistory = async (params: {
         signal,
     } = params
 
-    const response = await queryClient<unknown>({
-        backend: 'indexer',
+    const response = await fetchNodeJson(
         network,
-        method: 'GET',
-        url: `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
-        params: {
-            limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
-            ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
-            ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
-            ...(beforeTime !== undefined ? { 'before-time': beforeTime } : {}),
+        'indexer',
+        `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
+        {
+            params: {
+                limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
+                ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
+                ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
+                ...(beforeTime !== undefined
+                    ? { 'before-time': beforeTime }
+                    : {}),
+            },
+            signal,
         },
-        signal,
-    })
+    )
 
-    return toResult(response.data, accountAddress, network)
+    return toResult(response, accountAddress, network)
 }
 
 /**
@@ -148,22 +152,25 @@ export const fetchMoreIndexerTransactions = async (params: {
         signal,
     } = params
 
-    const response = await queryClient<unknown>({
-        backend: 'indexer',
+    const response = await fetchNodeJson(
         network,
-        method: 'GET',
-        url: `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
-        params: {
-            limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
-            next: nextToken,
-            ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
-            ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
-            ...(beforeTime !== undefined ? { 'before-time': beforeTime } : {}),
+        'indexer',
+        `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
+        {
+            params: {
+                limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
+                next: nextToken,
+                ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
+                ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
+                ...(beforeTime !== undefined
+                    ? { 'before-time': beforeTime }
+                    : {}),
+            },
+            signal,
         },
-        signal,
-    })
+    )
 
-    return toResult(response.data, accountAddress, network)
+    return toResult(response, accountAddress, network)
 }
 
 const closeAmountLegSchema = z
@@ -187,14 +194,13 @@ export const fetchIndexerCloseAmount = async (
     txId: string,
     network: Network,
 ): Promise<string | null> => {
-    const response = await queryClient<unknown>({
-        backend: 'indexer',
+    const response = await fetchNodeJson(
         network,
-        method: 'GET',
-        url: `/v2/transactions/${encodeURIComponent(txId)}`,
-    })
+        'indexer',
+        `/v2/transactions/${encodeURIComponent(txId)}`,
+    )
 
-    const { transaction } = closeAmountLookupSchema.parse(response.data)
+    const { transaction } = closeAmountLookupSchema.parse(response)
     const closeAmount =
         transaction['payment-transaction']?.['close-amount'] ??
         transaction['asset-transfer-transaction']?.['close-amount']

@@ -12,12 +12,13 @@
 
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    AssetRef,
-    BuildContext,
-    ChainId,
-    TransactionIntent,
-    UnsignedTransaction,
+import {
+    i18nKey,
+    type AssetRef,
+    type BuildContext,
+    type ChainId,
+    type TransactionIntent,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     InvalidSendParamsError,
@@ -77,7 +78,7 @@ const fixtureTransferAdapter: TransferChainAdapter = {
             payload: hex(`${intent.from}>${intent.to}:${intent.amount}`),
             summary: {
                 kind: isNative ? 'transfer' : 'token-transfer',
-                title: { key: 'fixture.transfer' },
+                title: { key: i18nKey('fixture.transfer') },
                 direction: 'out',
                 counterparty: intent.to,
                 amount: { assetRef: intent.assetRef, value: intent.amount },

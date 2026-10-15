@@ -32,8 +32,10 @@ import {
     DRAFT_SIGN_REQUEST_ID_PREFIX,
 } from '../useDraftSignRequestStore'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+
 const baseInput = () => ({
-    network: 'testnet' as const,
+    scope: ALGORAND_TESTNET,
     multisigAddress: 'MSIG_ADDRESS',
     multisigDetails: {
         threshold: 2,

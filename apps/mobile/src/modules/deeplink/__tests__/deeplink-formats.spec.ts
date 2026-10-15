@@ -25,6 +25,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { renderHook, act } from '@testing-library/react'
 import { useImportAccount } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
@@ -311,15 +313,6 @@ vi.mock('@modules/transactions', () => ({
             setPendingAmountBaseUnits: mockSetPendingAmountBaseUnits,
         }),
     },
-}))
-
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: (address: string) =>
-        !!address && /^[0-9a-zA-Z]{58}$/.test(address),
-    useTransactionEncoder: () => ({
-        encodeTransaction: (tx: unknown) => tx,
-        decodeTransaction: (tx: unknown) => tx,
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -973,6 +966,14 @@ const cases: Case[] = [
         },
     },
 ]
+
+beforeEach(() => {
+    registerLegacyAddressCodec()
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('deeplink format coverage', () => {
     beforeEach(() => {

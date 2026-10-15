@@ -15,7 +15,6 @@ import { fetchTransactionsCsv, CsvExportError } from '../endpoints'
 import {
     AppError,
     ErrorCategory,
-    Networks,
     isExpectedError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -69,7 +68,7 @@ describe('fetchTransactionsCsv', () => {
     it('fetches CSV successfully', async () => {
         const result = await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
         })
 
         expect(result.csvContent).toBe(MOCK_CSV_CONTENT)
@@ -81,7 +80,7 @@ describe('fetchTransactionsCsv', () => {
     it('calls ky with correct endpoint', async () => {
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
         })
 
         expect(lastQueryClientCall).not.toBeNull()
@@ -92,7 +91,7 @@ describe('fetchTransactionsCsv', () => {
     it('includes date range in search params', async () => {
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             dateRange: {
                 startDate: '2024-01-01',
                 endDate: '2024-12-31',
@@ -108,7 +107,7 @@ describe('fetchTransactionsCsv', () => {
     it('uses custom filename when provided', async () => {
         const result = await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             filename: 'my-export',
         })
 
@@ -119,7 +118,7 @@ describe('fetchTransactionsCsv', () => {
         await expect(
             fetchTransactionsCsv({
                 accountAddress: 'invalid',
-                network: Networks.mainnet,
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             }),
         ).rejects.toThrow(CsvExportError)
     })
@@ -130,7 +129,7 @@ describe('fetchTransactionsCsv', () => {
         await expect(
             fetchTransactionsCsv({
                 accountAddress: VALID_ADDRESS,
-                network: Networks.mainnet,
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             }),
         ).rejects.toThrow(CsvExportError)
     })
@@ -144,7 +143,7 @@ describe('fetchTransactionsCsv', () => {
         await expect(
             fetchTransactionsCsv({
                 accountAddress: VALID_ADDRESS,
-                network: Networks.mainnet,
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             }),
         ).rejects.toThrow(CsvExportError)
     })
@@ -154,7 +153,7 @@ describe('fetchTransactionsCsv', () => {
 
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             signal: controller.signal,
         })
 
@@ -164,7 +163,7 @@ describe('fetchTransactionsCsv', () => {
     it('includes asset_id in query params when provided', async () => {
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             assetId: 12345,
         })
 
@@ -176,7 +175,7 @@ describe('fetchTransactionsCsv', () => {
     it('omits asset_id when not provided', async () => {
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
         })
 
         expect(lastQueryClientCall?.params).toEqual({})
@@ -185,7 +184,7 @@ describe('fetchTransactionsCsv', () => {
     it('includes assetId in result metadata', async () => {
         const result = await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             assetId: 12345,
         })
 
@@ -195,7 +194,7 @@ describe('fetchTransactionsCsv', () => {
     it('combines date range and asset_id in params', async () => {
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             dateRange: {
                 startDate: '2024-01-01',
                 endDate: '2024-12-31',

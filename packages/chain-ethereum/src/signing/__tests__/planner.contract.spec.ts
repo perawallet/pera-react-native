@@ -11,7 +11,10 @@
  */
 
 import { transactionPlannerContractTests } from '@perawallet/wallet-core-chain-contract/testing'
-import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
 import { ethereumPlannerAdapter } from '../adapter'
 import { SENDER, TRANSFER, createVectorKeyStore } from './fixtures'
@@ -21,7 +24,7 @@ const transferFrom = (payload: unknown): UnsignedTransaction => ({
     payload,
     summary: {
         kind: 'transfer',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'out',
         icon: 'send',
     },

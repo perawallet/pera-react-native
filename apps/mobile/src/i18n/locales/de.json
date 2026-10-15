@@ -974,7 +974,7 @@
             "remove_cancel": "Behalten"
         },
         "add_contact": {
-            "duplicate_address_error": "Für diese Adresse existiert bereits ein Kontakt."
+            "duplicate_address_warning": "Für diese Adresse existiert bereits ein Kontakt."
         },
         "view_contact": {
             "no_contact_title": "Kein Kontakt gefunden",
@@ -3127,7 +3127,6 @@
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
             "pending": "Ausstehend",
-            "pending_verifying": "Ausstehend — wird überprüft",
             "raw_transaction": "Rohtransaktion"
         },
         "notice": {

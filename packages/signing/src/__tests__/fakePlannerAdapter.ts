@@ -141,6 +141,12 @@ export const fakePlannerAdapter = (
             : data,
     ),
     mergeSigningResults: vi.fn(results => results[0]),
+    signedTransactionsOf: vi.fn(({ signedData }) => {
+        if (signedData.type !== 'signed-transactions') {
+            throw new Error(`fake planner: ${signedData.type} is not stubbed`)
+        }
+        return signedData.signed
+    }),
     assembleSignedTransaction: vi.fn((txn, signature) => ({
         txn,
         sig: signature?.sig,

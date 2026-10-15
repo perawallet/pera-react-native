@@ -29,6 +29,8 @@ import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
 import { getPreferredDappIcon, PermissionItem } from '@modules/walletconnect'
@@ -62,11 +64,13 @@ export const WcConnectHeader = ({
     canOpenPeerUrl,
     onPressUrl,
 }: WcConnectHeaderProps): React.JSX.Element => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const requesterStyles = useRequesterStyles()
     const { t } = useLanguage()
 
     const { data: project } = useProjectByUrlQuery({
+        scope,
         url: peer.url ?? '',
         isEnabled: !!peer.url,
     })

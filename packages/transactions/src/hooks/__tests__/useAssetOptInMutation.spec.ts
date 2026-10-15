@@ -92,6 +92,8 @@ describe('useAssetOptInMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
+            transactionFee: tx =>
+                new Decimal(String((tx as unknown as { fee: bigint }).fee)),
             assetHolding: { buildOptInTxs: mockBuild, buildOptOutTxs: vi.fn() },
         })
         transferChainAdapters.reset()

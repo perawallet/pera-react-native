@@ -18,10 +18,10 @@ import { bytesToHex, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import { backupIdToAddress } from '../crypto/backupIdToAddress'
 import {
-    BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SETTINGS_KEY_PREFIX,
     BackupItemType,
+    isContactKey,
 } from '../models'
 import type { BackupId, BackupItemKey } from '../models'
 import { API_PREFIX, backupRoot } from './constants'
@@ -124,10 +124,9 @@ export type BuildRestoreHandlersParams = SignatureVerification & {
 }
 
 /** The wire type follows the key prefix, the way the real server records it —
- *  a `contacts/` item announced as an ACCOUNT would hide a routing bug. */
+ *  a contact item announced as an ACCOUNT would hide a routing bug. */
 export const itemTypeOf = (key: string): BackupItemType => {
-    if (key.startsWith(BACKUP_CONTACTS_KEY_PREFIX))
-        return BackupItemType.CONTACT
+    if (isContactKey(key)) return BackupItemType.CONTACT
     if (key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX))
         return BackupItemType.PASSKEY
     if (key.startsWith(BACKUP_SETTINGS_KEY_PREFIX))

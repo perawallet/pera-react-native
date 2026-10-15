@@ -982,7 +982,7 @@
             "remove_cancel": "Manter"
         },
         "add_contact": {
-            "duplicate_address_error": "Já existe um contato para este endereço."
+            "duplicate_address_warning": "Já existe um contato para este endereço."
         },
         "view_contact": {
             "no_contact_title": "Nenhum contato encontrado",
@@ -3152,7 +3152,6 @@
             "completed": "Concluída",
             "failed": "Falhou",
             "pending": "Pendente",
-            "pending_verifying": "Pendente — verificando",
             "raw_transaction": "Transação bruta"
         },
         "notice": {

@@ -42,7 +42,7 @@ export const useAccountBalancesHistoryQuery = (
     scope: ChainScope,
     enabled = true,
 ): UseAccountBalancesHistoryQueryResult => {
-    const { usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'balanceHistory',

@@ -84,12 +84,13 @@ export const CloudBackupContactsReviewScreen = () => {
                         <ExpandablePanel isExpanded={isExpanded}>
                             <PWView style={styles.cardRows}>
                                 {availableFromBackup.map((entry, index) => (
-                                    <Fragment key={entry.address}>
+                                    <Fragment key={entry.id}>
                                         {index > 0 && <ListItemDivider />}
                                         <AvailableContactRow
+                                            id={entry.id}
                                             address={entry.address}
                                             name={entry.name}
-                                            isBusy={isBusy(entry.address)}
+                                            isBusy={isBusy(entry.id)}
                                             onAdd={onAdd}
                                             onDelete={onDelete}
                                         />
@@ -113,13 +114,11 @@ export const CloudBackupContactsReviewScreen = () => {
                         />
                         <PWView>
                             {notBackedUpContacts.map((contact, index) => (
-                                <Fragment key={contact.addresses.algorand}>
+                                <Fragment key={contact.id}>
                                     {index > 0 && <ListItemDivider />}
                                     <NotBackedUpContactRow
                                         contact={contact}
-                                        isBusy={isBusy(
-                                            contact.addresses.algorand,
-                                        )}
+                                        isBusy={isBusy(contact.id)}
                                         onBackUp={onBackUp}
                                     />
                                 </Fragment>

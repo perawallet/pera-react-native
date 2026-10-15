@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -23,9 +24,9 @@ export type OnrampHeaderTabsProps = {
     badges?: Partial<Record<OnrampTab, boolean>>
 }
 
-const TABS: { key: OnrampTab; labelKey: string }[] = [
-    { key: 'fund', labelKey: 'onramp.tabs.fund' },
-    { key: 'history', labelKey: 'onramp.tabs.history' },
+const TABS: { key: OnrampTab; labelKey: I18nKey }[] = [
+    { key: 'fund', labelKey: i18nKey('onramp.tabs.fund') },
+    { key: 'history', labelKey: i18nKey('onramp.tabs.history') },
 ]
 
 export const OnrampHeaderTabs = ({

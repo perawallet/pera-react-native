@@ -15,15 +15,13 @@ import type {
     ChainId,
     SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     resolveSeedKeyFrom,
     seedSchemeOf,
     type SeedScheme,
 } from '@perawallet/wallet-core-kms'
-import {
-    getKeystoreStore,
-    getProvider,
-} from '@perawallet/wallet-extension-provider'
+import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { accountsChainAdapters } from '../chain-adapter'
 import { localKeyKindOf } from '../import-formats'
 import type { WalletAccount } from '../models'
@@ -102,7 +100,7 @@ export const usesNonPrimaryScheme = (
     chainId: ChainId,
     keys?: KeystoreSnapshot,
 ): boolean => {
-    const chain = getProvider().chains.get(chainId).descriptor
+    const chain = getChainDescriptor(chainId)
     const scheme = credentialScheme(account, chain, keys)
     return scheme !== null && scheme !== chain.signing.schemes[0]
 }

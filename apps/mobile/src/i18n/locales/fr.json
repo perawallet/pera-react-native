@@ -982,7 +982,7 @@
             "remove_cancel": "Le conserver"
         },
         "add_contact": {
-            "duplicate_address_error": "Un contact existe déjà pour cette adresse."
+            "duplicate_address_warning": "Un contact existe déjà pour cette adresse."
         },
         "view_contact": {
             "no_contact_title": "Aucun contact trouvé",
@@ -3135,7 +3135,6 @@
             "completed": "Terminée",
             "failed": "Échouée",
             "pending": "En attente",
-            "pending_verifying": "En attente — vérification",
             "raw_transaction": "Transaction brute"
         },
         "notice": {

@@ -117,6 +117,7 @@ describe('useEditParticipantScreen', () => {
     it('initializes with existing contact values as defaults', () => {
         mockFindContacts.mockReturnValue([
             {
+                id: 'alice-id',
                 addresses: { algorand: ADDR1 },
                 name: 'Alice',
                 image: 'file:///existing.jpg',
@@ -140,7 +141,7 @@ describe('useEditParticipantScreen', () => {
 
     it('isDoneDisabled is false once a valid contact is loaded', async () => {
         mockFindContacts.mockReturnValue([
-            { addresses: { algorand: ADDR1 }, name: 'Alice' },
+            { id: 'alice-id', addresses: { algorand: ADDR1 }, name: 'Alice' },
         ])
 
         const { result } = renderHook(() => useEditParticipantScreen())
@@ -152,7 +153,7 @@ describe('useEditParticipantScreen', () => {
 
     it('handleDone edits the existing contact, updates participant, and navigates back', async () => {
         mockFindContacts.mockReturnValue([
-            { addresses: { algorand: ADDR1 }, name: 'Alice' },
+            { id: 'alice-id', addresses: { algorand: ADDR1 }, name: 'Alice' },
         ])
 
         const { result } = renderHook(() => useEditParticipantScreen())
@@ -166,7 +167,7 @@ describe('useEditParticipantScreen', () => {
         })
 
         expect(mockEditContact).toHaveBeenCalledWith(
-            { family: 'algorand', address: ADDR1 },
+            'alice-id',
             expect.objectContaining({
                 name: 'Alice',
                 addresses: { algorand: ADDR1 },
@@ -184,6 +185,7 @@ describe('useEditParticipantScreen', () => {
     it('handleDone keeps the address the contact holds in another family', async () => {
         mockFindContacts.mockReturnValue([
             {
+                id: 'alice-id',
                 addresses: {
                     algorand: ADDR1,
                     other: 'OTHER',
@@ -203,7 +205,7 @@ describe('useEditParticipantScreen', () => {
         })
 
         expect(mockEditContact).toHaveBeenCalledWith(
-            { family: 'algorand', address: ADDR1 },
+            'alice-id',
             expect.objectContaining({
                 addresses: {
                     algorand: ADDR1,
@@ -215,7 +217,7 @@ describe('useEditParticipantScreen', () => {
 
     it('persists a picked avatar image when saving', async () => {
         mockFindContacts.mockReturnValue([
-            { addresses: { algorand: ADDR1 }, name: 'Alice' },
+            { id: 'alice-id', addresses: { algorand: ADDR1 }, name: 'Alice' },
         ])
         mockPickFromGallery.mockResolvedValue(PICKED_IMAGE_URI)
 
@@ -238,7 +240,7 @@ describe('useEditParticipantScreen', () => {
         })
 
         expect(mockEditContact).toHaveBeenCalledWith(
-            { family: 'algorand', address: ADDR1 },
+            'alice-id',
             expect.objectContaining({
                 name: 'Alice',
                 addresses: { algorand: ADDR1 },

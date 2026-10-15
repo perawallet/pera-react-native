@@ -14,6 +14,7 @@ import { describe, expect, test } from 'vitest'
 import {
     accountIdentityOf,
     chainBackupKind,
+    contactRecordPayloadSchema,
     hdPositionOf,
     type AccountEntryPayload,
 } from '../payloads'
@@ -94,5 +95,52 @@ describe('accountIdentityOf', () => {
 
     test.each(singleKinds)('names a $type entry by its address', payload => {
         expect(accountIdentityOf(payload)).toBe(payload.address)
+    })
+})
+
+describe('contactRecordPayloadSchema', () => {
+    const record = {
+        formatVersion: 1,
+        id: 'id-1',
+        name: 'Alice',
+        updatedAt: 1,
+        addresses: [{ family: 'algorand', address: 'A' }],
+    }
+
+    test('keeps a field and a family entry field it does not know', () => {
+        const parsed = contactRecordPayloadSchema.parse({
+            ...record,
+            nickname: 'Al',
+            addresses: [{ family: 'solana', address: 'S', memo: 'x' }],
+        })
+
+        expect(parsed).toMatchObject({
+            nickname: 'Al',
+            addresses: [{ family: 'solana', memo: 'x' }],
+        })
+    })
+
+    test('rejects a record with no address', () => {
+        expect(
+            contactRecordPayloadSchema.safeParse({ ...record, addresses: [] })
+                .success,
+        ).toBe(false)
+    })
+
+    test('rejects a record without an id', () => {
+        const { id: _id, ...withoutId } = record
+
+        expect(contactRecordPayloadSchema.safeParse(withoutId).success).toBe(
+            false,
+        )
+    })
+
+    test('rejects an entry with an empty address', () => {
+        expect(
+            contactRecordPayloadSchema.safeParse({
+                ...record,
+                addresses: [{ family: 'algorand', address: '' }],
+            }).success,
+        ).toBe(false)
     })
 })

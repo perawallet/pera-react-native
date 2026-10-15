@@ -31,6 +31,8 @@ import {
 } from '../endpoints'
 import { VerificationState } from '../../../models'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('buildOnboardingConsentBody', () => {
     const base = {
         onboardingId: 'ob_1',
@@ -108,7 +110,7 @@ describe('onboarding endpoints', () => {
 
         const result = await sendEmailVerification({
             email: 'e@x.com',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({ contactVerificationId: 'cv_1' })
@@ -132,7 +134,7 @@ describe('onboarding endpoints', () => {
             countryOfResidence: 'GB',
             allowMarketing: true,
             allowSms: false,
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({ onboardingId: 'ob_1', hasAccount: false })
@@ -172,7 +174,7 @@ describe('onboarding endpoints', () => {
             countryOfResidence: 'GB',
             allowMarketing: true,
             allowSms: false,
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({ onboardingId: null, hasAccount: true })
@@ -185,7 +187,7 @@ describe('onboarding endpoints', () => {
             phoneCountryCode: '+44',
             phoneNumber: '7400846282',
             contactVerificationId: 'cv_1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(request).toHaveBeenCalledWith(
@@ -209,7 +211,7 @@ describe('onboarding endpoints', () => {
             phoneNumber: '7400846282',
             contactVerificationId: 'cv_1',
             verificationCode: '654321',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         const body = request.mock.calls[0][0].data
@@ -228,7 +230,7 @@ describe('onboarding endpoints', () => {
 
         const result = await startRegisterVerification({
             onboardingId: 'ob_1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({ sessionUrl: 'https://veriff/session' })
@@ -248,7 +250,7 @@ describe('onboarding endpoints', () => {
 
         const result = await fetchOnboardingDetails({
             onboardingId: 'ob_1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         // Profile fields are null when the record has none yet.
@@ -283,7 +285,7 @@ describe('onboarding endpoints', () => {
 
         const result = await fetchOnboardingDetails({
             onboardingId: 'ob_1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({
@@ -303,7 +305,7 @@ describe('onboarding endpoints', () => {
 
         const result = await fetchOnboardingDetails({
             onboardingId: 'ob_1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         // Never coerce an unknown state to UNVERIFIED: consumers would treat a
@@ -318,7 +320,7 @@ describe('onboarding endpoints', () => {
 
         const result = await fetchOnboardingDetails({
             onboardingId: 'ob_1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result.verificationState).toBeNull()
@@ -341,7 +343,7 @@ describe('onboarding endpoints', () => {
                 zip: 'PE6 7PP',
                 isSameMailingAddress: true,
             },
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({
@@ -377,7 +379,7 @@ describe('onboarding endpoints', () => {
                 zip: '94105',
                 usState: 'CA',
             },
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(request).toHaveBeenCalledWith(
@@ -410,7 +412,7 @@ describe('onboarding endpoints', () => {
                 zip: 'Z1',
                 isSameMailingAddress: true,
             },
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result.userId).toBeNull()
@@ -424,7 +426,7 @@ describe('onboarding endpoints', () => {
             policyType: 'global',
             termsAccepted: true,
             allowMarketing: false,
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({ consentSetId: 'cs_1' })
@@ -445,7 +447,7 @@ describe('onboarding endpoints', () => {
             policyType: 'global',
             termsAccepted: true,
             allowMarketing: false,
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({ consentSetId: null })
@@ -472,7 +474,7 @@ describe('onboarding endpoints', () => {
                 policyType: 'global',
                 termsAccepted: true,
                 allowMarketing: false,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).resolves.toEqual({ consentSetId: null })
     })
@@ -487,7 +489,7 @@ describe('onboarding endpoints', () => {
                 policyType: 'global',
                 termsAccepted: true,
                 allowMarketing: false,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toBe(failure)
     })
@@ -498,7 +500,7 @@ describe('onboarding endpoints', () => {
         await linkOnboardingConsent({
             consentSetId: 'cs_1',
             userId: 'user_1',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(request).toHaveBeenCalledWith(
@@ -519,7 +521,7 @@ describe('onboarding endpoints', () => {
             linkOnboardingConsent({
                 consentSetId: 'cs_1',
                 userId: 'user_1',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).resolves.toBeUndefined()
     })
@@ -532,7 +534,7 @@ describe('onboarding endpoints', () => {
             linkOnboardingConsent({
                 consentSetId: 'cs_1',
                 userId: 'user_1',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toBe(failure)
     })
@@ -559,7 +561,9 @@ describe('onboarding endpoints', () => {
             },
         })
 
-        const settings = await fetchRegistrationSettings({ network: 'mainnet' })
+        const settings = await fetchRegistrationSettings({
+            scope: ALGORAND_MAINNET,
+        })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({

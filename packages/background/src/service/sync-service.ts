@@ -16,7 +16,10 @@ import {
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
-import { invalidateAssetQueries } from '@perawallet/wallet-core-assets'
+import {
+    assetsChainAdapters,
+    invalidateAssetQueries,
+} from '@perawallet/wallet-core-assets'
 import {
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
@@ -42,7 +45,6 @@ import type { AssetSyncKind } from '../polling'
 import type { SyncServiceDeps } from '../models'
 import { groupAddressesByScope, type ScopeAddresses } from './scope-groups'
 import {
-    legacyNetworkFor,
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
@@ -394,10 +396,9 @@ export class SyncService {
             settled += summary.confirmed + summary.failed
         }
         if (settled > 0) {
-            // A settled row changes the "pending — verifying" badge set and
-            // must drop the pending history entry (history queries are
-            // DB-cached with staleTime: Infinity, so a settle on a no-work
-            // tick would otherwise leave a resolved row showing).
+            // A settled row changes the pending history row's status, and
+            // history queries are DB-cached with staleTime: Infinity, so a
+            // settle on a no-work tick would otherwise leave a stale row.
             invalidateTransactionQueries(this.deps.queryClient)
         }
     }
@@ -596,7 +597,7 @@ export class SyncService {
         const kinds: AssetSyncKind[] = []
         if (isDue('assets', ASSET_RESYNC_INTERVAL_MS)) kinds.push('assets')
         if (
-            legacyNetworkFor(scope) !== undefined &&
+            assetsChainAdapters.has(scope.chainId) &&
             isDue('prices', PRICE_RESYNC_INTERVAL_MS)
         ) {
             kinds.push('prices')

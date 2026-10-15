@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    InvalidScopeKeyError,
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     accountsChainAdapters,
     getAllHeldAssetIdsForNetwork,
@@ -29,7 +25,6 @@ import { fetchAndPersistTransactions } from '@perawallet/wallet-core-transaction
 import {
     logger,
     mapWithConcurrency,
-    type Network,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -148,19 +143,6 @@ export const syncTransactionsPhase = async (
 }
 
 /**
- * The price syncer is still keyed by the legacy network, so a scope without
- * one has no price pass.
- */
-export const legacyNetworkFor = (scope: ChainScope): Optional<Network> => {
-    try {
-        return legacyNetworkOf(scope)
-    } catch (error) {
-        if (error instanceof InvalidScopeKeyError) return undefined
-        throw error
-    }
-}
-
-/**
  * Asset metadata and/or prices for every asset held on `scope`. The held-id
  * read is not isolated: if it throws, the phase throws, and the caller decides
  * whether that aborts the pass.
@@ -176,7 +158,7 @@ export const syncAssetsPhase = async (
         kinds.map(async kind =>
             kind === 'assets'
                 ? fetchAndPersistAssets(assetIds, scope)
-                : fetchAndPersistPrices(assetIds, legacyNetworkOf(scope)),
+                : fetchAndPersistPrices(assetIds, scope),
         ),
     )
     logPhaseFailures(phase, results, scope, i => kinds[i])

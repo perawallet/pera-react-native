@@ -26,7 +26,7 @@ import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../errors'
-import { sendFlowFeatureFor } from '../chain-adapter'
+import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 import { holdingReserveOf } from '../transfer-adapter'
 import { useAssetHoldingMutation } from './useAssetHoldingMutation'
 
@@ -94,8 +94,11 @@ export const useAssetOptInMutation = (
                 // Check against the fee actually being submitted: reading it
                 // back off the built group is what keeps a quantum sender's
                 // higher fee from passing a check that algod then fails.
+                const { transactionFee } = sendFlowChainAdapters.get(
+                    scope.chainId,
+                )
                 const feeTotal = unsignedTxs.reduce(
-                    (total, txn) => total + txn.fee,
+                    (total, txn) => total + toBigInt(transactionFee(txn)),
                     0n,
                 )
                 const balance = toBigInt(accountState.nativeBalanceBaseUnits)

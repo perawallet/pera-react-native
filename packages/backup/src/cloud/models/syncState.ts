@@ -64,11 +64,12 @@ export type SyncItemState = {
     /** Null means never decrypted — unknown, never "not ours". An account
      *  record's primary address. */
     address?: string | null
-    /** Account records only: every chain's address, so an action on any of
-     *  them finds the record. */
+    /** Account and contact records only: every chain's address, so an action
+     *  on any of them finds the record. */
     addresses?: string[] | null
-    /** Account records only: the content last seen or written. A write is laid
-     *  over it (`mergeAccountRecord`) so what this build can't read survives,
+    /** Account and contact records only: the content last seen or written. A
+     *  write is laid over it (`mergeAccountRecord`, `mergeContactRecord`) so
+     *  what this build can't read survives,
      *  and a record a newer client wrote is never overwritten. Holds no key
      *  material; that lives in `secrets/` items. */
     record?: Record<string, unknown> | null

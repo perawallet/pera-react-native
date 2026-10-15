@@ -472,9 +472,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 removeSignRequestFromStoreRef.current(req)
             })
 
-            actor.start()
+            // Registered before start: a request the machine refuses on start
+            // fails synchronously, and its cleanup must find the actor or it
+            // stays registered and holds up the queue.
             actorRefsMap.set(request.id, actor)
             notifyActorRegistry()
+            actor.start()
         },
         [allAccounts, buildDeps],
     )

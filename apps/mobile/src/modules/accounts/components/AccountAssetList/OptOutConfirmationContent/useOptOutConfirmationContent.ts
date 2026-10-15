@@ -11,9 +11,11 @@
  */
 
 import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useFeeConfig } from '@perawallet/wallet-core-signing'
 
 import type { Decimal } from 'decimal.js'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseOptOutConfirmationContentResult = {
     /** Minimum transaction fee shown to the user, in ALGO (whole units). */
@@ -22,7 +24,8 @@ type UseOptOutConfirmationContentResult = {
 
 export const useOptOutConfirmationContent =
     (): UseOptOutConfirmationContentResult => {
-        const nativeAsset = useNativeAsset()
-        const { minTxnFee } = useMinimumFeeConfig()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const nativeAsset = useNativeAsset(scope)
+        const { minTxnFee } = useFeeConfig(LEGACY_CHAIN_ID)
         return { fee: toWholeUnits(minTxnFee, nativeAsset) }
     }

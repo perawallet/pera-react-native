@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import { TabLabel } from '../TabLabel'
@@ -18,7 +19,7 @@ describe('TabLabel', () => {
     it('renders with translated text', () => {
         const { container } = render(
             <TabLabel
-                i18nKey='common.ok.label'
+                labelKey={i18nKey('common.ok.label')}
                 active={true}
             />,
         )

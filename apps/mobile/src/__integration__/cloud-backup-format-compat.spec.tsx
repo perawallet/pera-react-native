@@ -11,8 +11,9 @@
  */
 
 // The backup is read and written by app versions on both sides of the account
-// record (format 2): the released app writes per-address `accounts/` items and
-// ignores records, and a later app may write records this one cannot read.
+// and contact records: the released app writes per-address `accounts/` and
+// `contacts/` items and ignores records, and a later app may write records
+// this one cannot read.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
@@ -55,7 +56,9 @@ import {
     accountRecordItemKey,
     buildSyncHandlers,
     contactItemKey,
+    contactRecordItemKey,
     createItemKeyHasher,
+    decryptItemPayload,
     encryptItemPayload,
     secretsItemKey,
     type ItemKeyHasher,
@@ -491,5 +494,235 @@ describe('Flow: Cloud backup across format versions', () => {
             await screen.findByTestId('add_from_backup_needs_update'),
         ).toBeTruthy()
         expect(screen.queryByTestId('add_from_backup_button')).toBeNull()
+    })
+})
+
+describe('Flow: Cloud backup of contacts across format versions', () => {
+    let keys: Keys
+    let hashAddress: ItemKeyHasher
+
+    beforeEach(async () => {
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useContactsStore.getState().resetState()
+        useCloudBackupStore.getState().resetState()
+        useBackupSyncStateStore.getState().resetState()
+        useCloudBackupRestoreDraftStore.getState().resetState()
+        useDeviceStore
+            .getState()
+            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+        await deleteBackupKeys().catch(() => undefined)
+        keys = await deriveBackupKeys({
+            mnemonic: BACKUP_MNEMONIC,
+            salt: BACKUP_SALT,
+        })
+        hashAddress = createItemKeyHasher(keys.itemKey)
+    })
+
+    const legacyContact = (address: string, name: string) =>
+        encrypt(keys, contactItemKey(hashAddress(address)), {
+            address,
+            name,
+            updatedAt: 1,
+        })
+
+    const recordKey = (id: string) => contactRecordItemKey(hashAddress(id))
+
+    const contactRecord = (record: { id: string } & Record<string, unknown>) =>
+        encrypt(keys, recordKey(record.id), record)
+
+    // The id every device derives for a contact saved before contacts had ids.
+    const MIGRATED_ID = 'algorand:CONTACT_A'
+
+    const record = (
+        id: string,
+        name: string,
+        addresses: { family: string; address: string }[],
+        formatVersion = 1,
+    ) => ({ formatVersion, id, name, updatedAt: 2, addresses })
+
+    const recordPlaintext = (key: string, payload: string) =>
+        JSON.parse(
+            decryptItemPayload(payload, {
+                encryptionKey: keys.encryptionKey,
+                backupId: keys.backupId,
+                key,
+            }),
+        )
+
+    const restoreContacts = async () => {
+        renderCloudBackupFlow()
+        await runRestoreFlow()
+        await waitFor(
+            () =>
+                expect(useCloudBackupStore.getState().isConfigured()).toBe(
+                    true,
+                ),
+            { timeout: 10_000 },
+        )
+    }
+
+    it('Given a backup only the released app wrote, when it is restored and synced, then every contact comes back, is written as a record, and its legacy item stays as it was', async () => {
+        const { handlers, getItem } = buildSyncHandlers({
+            backupId: keys.backupId,
+            initial: [
+                legacyContact('CONTACT_A', 'Alice'),
+                legacyContact('CONTACT_B', 'Bob'),
+            ],
+        })
+        server.use(...handlers)
+
+        await restoreContacts()
+        expect(useContactsStore.getState().contacts).toEqual([
+            {
+                id: 'algorand:CONTACT_A',
+                addresses: { algorand: 'CONTACT_A' },
+                name: 'Alice',
+            },
+            {
+                id: 'algorand:CONTACT_B',
+                addresses: { algorand: 'CONTACT_B' },
+                name: 'Bob',
+            },
+        ])
+
+        await startSync().syncNow()
+
+        for (const address of ['CONTACT_A', 'CONTACT_B']) {
+            expect(getItem(recordKey(`algorand:${address}`))).toBeDefined()
+            expect(getItem(contactItemKey(hashAddress(address)))?.ver).toBe(1)
+        }
+    })
+
+    it('Given a backup holding both a record and a legacy item for one contact, when it is restored, then one contact comes back as the record describes it', async () => {
+        const { handlers } = buildSyncHandlers({
+            backupId: keys.backupId,
+            initial: [
+                legacyContact('CONTACT_A', 'Legacy name'),
+                contactRecord(
+                    record(MIGRATED_ID, 'Record name', [
+                        { family: 'algorand', address: 'CONTACT_A' },
+                        { family: 'evm', address: '0xA11CE' },
+                    ]),
+                ),
+            ],
+        })
+        server.use(...handlers)
+
+        await restoreContacts()
+
+        expect(useContactsStore.getState().contacts).toEqual([
+            {
+                id: MIGRATED_ID,
+                addresses: { algorand: 'CONTACT_A', evm: '0xA11CE' },
+                name: 'Record name',
+            },
+        ])
+    })
+
+    it('Given a backup holding a record from a newer format, when it is restored and synced, then the contact is not imported and the record is never written over', async () => {
+        const key = recordKey(MIGRATED_ID)
+        const newer = contactRecord(
+            record(
+                MIGRATED_ID,
+                'Future name',
+                [{ family: 'algorand', address: 'CONTACT_A' }],
+                2,
+            ),
+        )
+        const { handlers, getItem } = buildSyncHandlers({
+            backupId: keys.backupId,
+            initial: [newer],
+        })
+        server.use(...handlers)
+
+        await restoreContacts()
+        expect(useContactsStore.getState().contacts).toEqual([])
+
+        // The same contact, migrated here, must not push over it.
+        useContactsStore.getState().addContact({
+            id: MIGRATED_ID,
+            addresses: { algorand: 'CONTACT_A' },
+            name: 'Local name',
+        })
+        await startSync().syncNow()
+
+        expect(getItem(key)).toMatchObject({ ver: 1, payload: newer.payload })
+    })
+
+    it('Given a record holding a family this app does not know, when the contact is renamed here and synced, then the family is still in the record', async () => {
+        const key = recordKey(MIGRATED_ID)
+        const { handlers, getItem } = buildSyncHandlers({
+            backupId: keys.backupId,
+            initial: [
+                contactRecord({
+                    ...record(MIGRATED_ID, 'Alice', [
+                        { family: 'algorand', address: 'CONTACT_A' },
+                        { family: 'solana', address: 'SOL_A' },
+                    ]),
+                    futureField: 'kept',
+                }),
+            ],
+        })
+        server.use(...handlers)
+
+        await restoreContacts()
+        expect(useContactsStore.getState().contacts).toEqual([
+            {
+                id: MIGRATED_ID,
+                addresses: { algorand: 'CONTACT_A' },
+                name: 'Alice',
+            },
+        ])
+        const manager = startSync()
+        await manager.syncNow()
+
+        useContactsStore.getState().editContact(MIGRATED_ID, {
+            addresses: { algorand: 'CONTACT_A' },
+            name: 'Alicia',
+        })
+        await manager.syncNow()
+
+        const written = recordPlaintext(key, getItem(key)!.payload)
+        expect(written).toMatchObject({
+            name: 'Alicia',
+            futureField: 'kept',
+            addresses: [
+                { family: 'algorand', address: 'CONTACT_A' },
+                { family: 'solana', address: 'SOL_A' },
+            ],
+        })
+    })
+
+    it('Given contacts holding Algorand and Ethereum addresses and an Ethereum-only contact, when they are backed up and restored on a fresh device, then every address and name comes back', async () => {
+        useContactsStore.getState().addContact({
+            addresses: { algorand: 'CONTACT_A', evm: '0xA11CE' },
+            name: 'Alice',
+        })
+        useContactsStore
+            .getState()
+            .addContact({ addresses: { evm: '0xB0B' }, name: 'Bob' })
+        await configureBackup(keys)
+        const { handlers } = buildSyncHandlers({ backupId: keys.backupId })
+        server.use(...handlers)
+        await startSync().syncNow()
+        const ids = useContactsStore.getState().contacts.map(c => c.id)
+
+        // A fresh device: nothing local, no backup configured.
+        useContactsStore.getState().resetState()
+        useCloudBackupStore.getState().resetState()
+        useBackupSyncStateStore.getState().resetState()
+        await deleteBackupKeys().catch(() => undefined)
+
+        await restoreContacts()
+
+        expect(useContactsStore.getState().contacts).toEqual([
+            {
+                id: ids[0],
+                addresses: { algorand: 'CONTACT_A', evm: '0xA11CE' },
+                name: 'Alice',
+            },
+            { id: ids[1], addresses: { evm: '0xB0B' }, name: 'Bob' },
+        ])
     })
 })

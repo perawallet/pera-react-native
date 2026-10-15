@@ -11,10 +11,9 @@
  */
 
 import { useMemo } from 'react'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-    type ChainScope,
+import type {
+    ChainId,
+    ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainNetworkId,
@@ -34,7 +33,8 @@ import { useRegisteredChainIds } from './accountChainEntries'
 /**
  * The one chain an account lives on: the first registered chain, in registry
  * order, it has an address on. Every creation path writes a single chain, so
- * the fallbacks only cover a record whose chain isn't registered in this build.
+ * the fallback only covers a record whose chain isn't registered in this build;
+ * a stored record always holds at least one.
  */
 export const accountChainIdOf = (
     account: WalletAccount,
@@ -42,22 +42,26 @@ export const accountChainIdOf = (
 ): ChainId =>
     registeredChainIds.find(
         chainId => chainAccountOf(account, chainId) !== undefined,
-    ) ??
-    (Object.keys(account.chains)[0] as ChainId | undefined) ??
-    LEGACY_CHAIN_ID
+    ) ?? (Object.keys(account.chains)[0] as ChainId)
 
 export { useRegisteredChainIds }
 
-export const useAccountChainId = (account: Maybe<WalletAccount>): ChainId => {
+/** `fallbackChainId` stands in while there is no account; a package can't pick it. */
+export const useAccountChainId = (
+    account: Maybe<WalletAccount>,
+    fallbackChainId: ChainId,
+): ChainId => {
     const registeredChainIds = useRegisteredChainIds()
     return account
         ? accountChainIdOf(account, registeredChainIds)
-        : LEGACY_CHAIN_ID
+        : fallbackChainId
 }
 
 /** The account's own chain at that chain's selected network. */
-export const useAccountScope = (account: Maybe<WalletAccount>): ChainScope =>
-    useSelectedScope(useAccountChainId(account))
+export const useAccountScope = (
+    account: Maybe<WalletAccount>,
+    fallbackChainId: ChainId,
+): ChainScope => useSelectedScope(useAccountChainId(account, fallbackChainId))
 
 /** The account's totals on its own chain, looked up by its address there. */
 export const accountValueOf = <V>(

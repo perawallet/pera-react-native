@@ -34,6 +34,9 @@ import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     MODULE_PREFIX,
+    getAssetInboxRequestsQueryKey,
+    getAssetInboxSendSummaryQueryKey,
+    isAssetInboxQuery,
     transactionQueryKeys,
     invalidateTransactionQueriesForAddresses,
 } from '../querykeys'
@@ -165,16 +168,6 @@ describe('transactionQueryKeys', () => {
             expect(mainnetKey).not.toEqual(testnetKey)
         })
     })
-
-    describe('openSubmissionTxIds', () => {
-        test('carries the scope object', () => {
-            expect(transactionQueryKeys.openSubmissionTxIds(MAINNET)).toEqual([
-                'transactions',
-                'open-submission-txids',
-                { scope: { chainId: 'algorand', networkId: 'mainnet' } },
-            ])
-        })
-    })
 })
 
 describe('invalidateTransactionQueriesForAddresses', () => {
@@ -246,5 +239,40 @@ describe('NETWORK_PARTITIONED_QUERY_MODULES (chain-shared)', () => {
         // package, where the rename is happening, instead of silently going
         // stale on the chain-shared side.
         expect(NETWORK_PARTITIONED_QUERY_MODULES.has(MODULE_PREFIX)).toBe(true)
+    })
+})
+
+describe('asset inbox query keys', () => {
+    test('requests key carries the address and scope under the asa-inbox prefix', () => {
+        expect(getAssetInboxRequestsQueryKey('ADDR1', MAINNET)).toEqual([
+            'asa-inbox',
+            'requests',
+            { address: 'ADDR1', scope: MAINNET },
+        ])
+    })
+
+    test('send summary key carries the receiver, asset and scope', () => {
+        expect(getAssetInboxSendSummaryQueryKey('RCV', '123', TESTNET)).toEqual(
+            [
+                'asa-inbox',
+                'send-summary',
+                { receiver: 'RCV', assetId: '123', scope: TESTNET },
+            ],
+        )
+    })
+
+    test('keys differ per scope', () => {
+        expect(getAssetInboxRequestsQueryKey('ADDR1', MAINNET)).not.toEqual(
+            getAssetInboxRequestsQueryKey('ADDR1', TESTNET),
+        )
+    })
+
+    test('isAssetInboxQuery matches only the asa-inbox prefix', () => {
+        const query = (key: unknown[]) => ({ queryKey: key }) as never
+
+        expect(isAssetInboxQuery(query(['asa-inbox', 'requests']))).toBe(true)
+        expect(isAssetInboxQuery(query(['transactions', 'history']))).toBe(
+            false,
+        )
     })
 })

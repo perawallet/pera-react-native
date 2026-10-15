@@ -23,6 +23,7 @@ import {
     useCanSignWith,
     type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
@@ -67,7 +68,7 @@ type UseAccountNftsResult = {
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
-    const scope = useAccountScope(account)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const address = account ? addressOn(account, scope) : undefined
     const canSign = useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({

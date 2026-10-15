@@ -10,21 +10,28 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { ProposeSignRequestResponse } from '../api/schema'
 import { getSignRequestDetailQueryKey } from './querykeys'
 
 type UseDeclineSignRequestMutationParams = {
-    network: Network
+    scope: ChainScope
     signRequestId: string
 }
 
 type DeclineSignRequestInput = {
     address: string
     deviceId: string
+}
+
+// TanStack swaps a pending mutation's options on every render, so the scope
+// travels in the variables to post and invalidate on the same scope.
+type DeclineSignRequestVariables = DeclineSignRequestInput & {
+    scope: ChainScope
 }
 
 export type UseDeclineSignRequestMutationResult = {
@@ -41,29 +48,40 @@ export type UseDeclineSignRequestMutationResult = {
 }
 
 export const useDeclineSignRequestMutation = ({
-    network,
+    scope,
     signRequestId,
 }: UseDeclineSignRequestMutationParams): UseDeclineSignRequestMutationResult => {
     const rqClient = useQueryClient()
 
     const mutation = useMutation({
-        mutationFn: ({ address, deviceId }: DeclineSignRequestInput) =>
-            addSignature(scopeForLegacyNetwork(network), signRequestId, [
+        mutationFn: ({
+            address,
+            deviceId,
+            scope,
+        }: DeclineSignRequestVariables) =>
+            addSignature(scope, signRequestId, [
                 {
                     address,
                     response: 'declined',
                     device_id: deviceId,
                 },
             ]),
-        onSuccess: () => {
+        onSuccess: (_data, { scope }) => {
             void rqClient.invalidateQueries({
-                queryKey: getSignRequestDetailQueryKey(
-                    scopeForLegacyNetwork(network),
-                    signRequestId,
-                ),
+                queryKey: getSignRequestDetailQueryKey(scope, signRequestId),
             })
         },
     })
+
+    const { mutate, mutateAsync } = mutation
+    const mutateOnScope = useCallback(
+        (input: DeclineSignRequestInput) => mutate({ ...input, scope }),
+        [mutate, scope],
+    )
+    const mutateAsyncOnScope = useCallback(
+        (input: DeclineSignRequestInput) => mutateAsync({ ...input, scope }),
+        [mutateAsync, scope],
+    )
 
     return {
         data: mutation.data,
@@ -72,7 +90,7 @@ export const useDeclineSignRequestMutation = ({
         isIdle: mutation.isIdle,
         isPending: mutation.isPending,
         isSuccess: mutation.isSuccess,
-        mutate: mutation.mutate,
-        mutateAsync: mutation.mutateAsync,
+        mutate: mutateOnScope,
+        mutateAsync: mutateAsyncOnScope,
     }
 }

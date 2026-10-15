@@ -16,9 +16,8 @@ import type { Control } from 'react-hook-form'
 import {
     contactFromFormValues,
     ContactNotFoundError,
-    DuplicateAddressError,
     useContacts,
-    type Contact,
+    type NewContact,
     type ContactFormValues,
 } from '@perawallet/wallet-core-contacts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -62,12 +61,12 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
         return matches.find(c => c.addresses.algorand === address) ?? null
     }, [findContacts, address])
 
-    const initialContact: Contact = useMemo(
+    const initialContact: NewContact = useMemo(
         () => existingContact ?? { name: '', addresses: { algorand: address } },
         [existingContact, address],
     )
 
-    const { control, handleSubmit, setError, isValid, imageUri, onPickImage } =
+    const { control, handleSubmit, isValid, imageUri, onPickImage } =
         useContactForm(initialContact)
 
     const onDone = useCallback(
@@ -79,15 +78,11 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
 
             try {
                 if (existingContact) {
-                    editContact({ family: 'algorand', address }, contactData)
+                    editContact(existingContact.id, contactData)
                 } else {
                     addContact(contactData)
                 }
             } catch (e) {
-                if (e instanceof DuplicateAddressError) {
-                    setError('address', { message: e.message })
-                    return
-                }
                 if (e instanceof ContactNotFoundError) {
                     navigation.goBack()
                     return
@@ -104,7 +99,6 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
             addContact,
             editContact,
             updateParticipant,
-            setError,
             navigation,
         ],
     )

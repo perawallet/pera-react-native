@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 type Contact = {
+    id?: string
     name: string
     addresses: Record<string, string>
     image?: string
@@ -25,7 +26,12 @@ const { contactsStoreMock, setStateMock } = vi.hoisted(() => ({
     setStateMock: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-contacts', () => ({
+vi.mock('@perawallet/wallet-core-contacts', async () => ({
+    derivedContactId: (
+        await vi.importActual<
+            typeof import('@perawallet/wallet-core-contacts')
+        >('@perawallet/wallet-core-contacts')
+    ).derivedContactId,
     useContactsStore: {
         getState: () => contactsStoreMock,
         setState: setStateMock,
@@ -71,11 +77,13 @@ describe('migrateContacts', () => {
         expect(setStateMock).toHaveBeenCalledTimes(1)
         expect(writtenContacts()).toEqual([
             {
+                id: 'algorand:ADDR_A',
                 name: 'Alice',
                 addresses: { algorand: 'ADDR_A' },
                 image: undefined,
             },
             {
+                id: 'algorand:ADDR_B',
                 name: 'Bob',
                 addresses: { algorand: 'ADDR_B' },
                 image: undefined,

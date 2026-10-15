@@ -16,6 +16,7 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import {
     createEmptySyncState,
+    isAccountRecordKey,
     isLegacyItemKey,
     trackedItemsFromManifest,
 } from '../models'
@@ -23,7 +24,6 @@ import type {
     Argon2idConfig,
     BackupId,
     BackupItemKey,
-    ContactBackupPayload,
     DeviceId,
     SyncItemState,
     SyncState,
@@ -33,6 +33,7 @@ import type {
     ContactImportSummary,
     ImportSummary,
     PasskeyImportFn,
+    PulledContact,
     PulledPasskey,
     SettingsImportFn,
     SyncImportFn,
@@ -153,7 +154,7 @@ const cleanUpAfterRestoreFailure = async (): Promise<void> => {
  *  and leave the wallet with neither. */
 const importContactsSafely = async (
     importContacts: ContactImportFn,
-    contacts: ContactBackupPayload[],
+    contacts: PulledContact[],
 ): Promise<ContactImportSummary> => {
     try {
         return await importContacts(contacts)
@@ -355,7 +356,8 @@ export const restoreCloudBackup = async ({
             contactSummary,
             incompleteAccountCount: incompleteAccounts(pull.accounts, summary),
             newerAccountCount: pull.skipped.filter(
-                ({ reason }) => reason === 'newer',
+                ({ key, reason }) =>
+                    reason === 'newer' && isAccountRecordKey(key),
             ).length,
         }
     } catch (error) {

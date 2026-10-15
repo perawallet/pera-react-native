@@ -15,6 +15,7 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type {
     ChainDescriptor,
     ChainScope,
+    I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -34,8 +35,8 @@ export type AssetAboutParams = {
 
 /** Labels are i18n keys; a null `idLabelKey` hides the id row. */
 export type AssetAboutDisplay = {
-    idLabelKey: Nullable<string>
-    urlLabelKey: string
+    idLabelKey: Nullable<I18nKey>
+    urlLabelKey: I18nKey
     explorerLink: Nullable<AssetExplorerLink>
 }
 

@@ -27,7 +27,7 @@ import {
     isPeraNetworkError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
@@ -123,7 +123,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const [txIds, setTxIds] = useState<string[]>([])
 
     const { t } = useLanguage()
-    const { getMessage } = useAlgodErrorMessage()
+    const { getMessage } = useNodeErrorMessage()
     const { mutateAsync: executeSwap, reset: resetMutation } =
         useExecuteSwapMutation()
     const cancelRequestedRef = useRef(false)

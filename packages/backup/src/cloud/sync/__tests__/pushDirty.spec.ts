@@ -394,6 +394,52 @@ describe('pushDirty', () => {
         })
     })
 
+    it('injects the last-write-wins timestamp into a contact record payload', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({ results: [] })
+        const state = createEmptySyncState('b')
+        state.items['contact-records/R1'] = {
+            type: BackupItemType.CONTACT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 777,
+        }
+        const payload = {
+            formatVersion: 1,
+            name: 'Alice',
+            updatedAt: 1,
+            addresses: [{ family: 'algorand', address: 'C1' }],
+        }
+
+        await pushDirty({
+            state,
+            localItems: [
+                {
+                    key: 'contact-records/R1',
+                    type: BackupItemType.CONTACT,
+                    contentHash: 'h',
+                    address: 'C1',
+                    addresses: ['C1'],
+                    accountType: null,
+                    payload,
+                },
+            ],
+            deps,
+        })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const plaintext = decryptItemPayload(request.items[0].payload, {
+            encryptionKey,
+            backupId: 'b',
+            key: 'contact-records/R1',
+        })
+        expect(JSON.parse(plaintext)).toEqual({ ...payload, updatedAt: 777 })
+    })
+
     it('injects the last-write-wins timestamp into a passkey payload', async () => {
         const deps = baseDeps()
         deps.batchUpsertItems.mockResolvedValue({ results: [] })

@@ -24,6 +24,7 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type WealthChartProps = {
     account?: WalletAccount
@@ -51,7 +52,7 @@ export const WealthChart = memo(function WealthChart({
 
     const accounts = useAllAccounts()
     // An account's own chain; the whole-wallet view stays on the legacy chain.
-    const scope = useAccountScope(account)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const addresses = useMemo(
         () =>
             (account ? [account] : accounts).flatMap(

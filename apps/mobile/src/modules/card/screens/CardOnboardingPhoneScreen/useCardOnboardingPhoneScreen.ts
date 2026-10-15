@@ -23,6 +23,7 @@ import {
     type PhoneSendFormValues,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { useCardErrorToast } from '@modules/card/hooks'
@@ -50,8 +51,8 @@ export const useCardOnboardingPhoneScreen =
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.verify_phone.send_error_title',
-            bodyKey: 'peraCard.verify_phone.send_error_body',
+            titleKey: i18nKey('peraCard.verify_phone.send_error_title'),
+            bodyKey: i18nKey('peraCard.verify_phone.send_error_body'),
         })
         const { request } = useBottomSheet()
         const countryIso = useCardStore(state => state.countryIso)

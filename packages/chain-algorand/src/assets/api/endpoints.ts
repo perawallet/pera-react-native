@@ -15,6 +15,7 @@ import {
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { fetchNodeJson } from '../../blockchain/utils/nodeHttp'
 import {
     assetResponseSchema,
     assetsResponseSchema,
@@ -22,7 +23,6 @@ import {
     publicAssetResponseSchema,
     type AssetResponse,
     type AssetsResponse,
-    type IndexerAssetResponse,
     type PublicAssetResponse,
 } from './schema'
 
@@ -94,12 +94,11 @@ export const fetchIndexerAssetDetails = async (
     assetID: string,
     network: Network,
 ) => {
-    const response = await queryClient<IndexerAssetResponse, string>({
-        backend: 'indexer',
-        network: network,
-        method: 'GET',
-        url: `/v2/assets/${assetID}`,
-    })
+    const response = await fetchNodeJson(
+        network,
+        'indexer',
+        `/v2/assets/${assetID}`,
+    )
 
-    return indexerAssetResponseSchema.parse(response.data)
+    return indexerAssetResponseSchema.parse(response)
 }

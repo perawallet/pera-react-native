@@ -24,6 +24,7 @@ import {
     SecureBackupImportError,
     type SecureBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
+import { AsbErrorReason, AsbImportError } from '@perawallet/wallet-core-backup'
 import { decryptBackupPayload } from '../decrypt-backup-payload'
 
 const RECOVERY_MNEMONIC =

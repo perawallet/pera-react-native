@@ -21,9 +21,11 @@ import {
     useCanSignWith,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useChainCapability,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     useChainAvailability,
@@ -66,14 +68,15 @@ export type UseAccountOverviewHeaderResult = {
 export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
-    const scope = useAccountScope(account)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const availability = useChainAvailability(scope.chainId)
     const hasBalanceHistory = useChainCapability(
         scope.chainId,
         'balanceHistory',
     )
     const chainName = chainDisplayNameOf(scope.chainId)
-    const { usdToPreferred } = useCurrency()
+    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { usdToPreferred } = useCurrency(currencyScope)
     const canSign = useCanSignWith(account, scope.chainId)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
     const {

@@ -16,8 +16,11 @@ import { hashItemAddress } from '../../crypto/itemKeyHash'
 import {
     accountItemKey,
     contactItemKey,
+    contactRecordItemKey,
     isAccountItemKey,
     isContactItemKey,
+    isContactKey,
+    isContactRecordKey,
     isLegacyItemKey,
     isPasskeyItemKey,
     isPasskeySecretsItemKey,
@@ -131,5 +134,22 @@ describe('passkey item keys', () => {
         for (const segment of key.split('/')) {
             expect(segment).toMatch(/^[A-Za-z0-9_\-.]+$/)
         }
+    })
+
+    test('files a contact record under its own prefix, apart from a legacy item', () => {
+        expect(contactRecordItemKey(HASH)).toBe(`contact-records/${HASH}`)
+        expect(isContactRecordKey(contactRecordItemKey(HASH))).toBe(true)
+        expect(isContactItemKey(contactRecordItemKey(HASH))).toBe(false)
+        expect(isContactRecordKey(contactItemKey(HASH))).toBe(false)
+    })
+
+    test('reads either contact shape as a contact key', () => {
+        expect(isContactKey(contactRecordItemKey(HASH))).toBe(true)
+        expect(isContactKey(contactItemKey(HASH))).toBe(true)
+        expect(isContactKey(accountItemKey(HASH))).toBe(false)
+    })
+
+    test('does not read a hashed contact record key as legacy', () => {
+        expect(isLegacyItemKey(contactRecordItemKey(HASH))).toBe(false)
     })
 })

@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { useAccountChainId } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
 import { trackEvent, HomeEvent } from '@analytics'
@@ -33,7 +34,7 @@ export const useButtonPanel = (): UseButtonPanelResult => {
     const { account, openSendFunds, openReceiveFunds, openAccountOptions } =
         useAccountOverviewModal()
     const canSwap = useSwapScope(account) !== null
-    const chainId = useAccountChainId(account)
+    const chainId = useAccountChainId(account, LEGACY_CHAIN_ID)
     const canSend = useChainCapability(chainId, 'send')
     const canReceive = useChainCapability(chainId, 'receive')
 

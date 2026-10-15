@@ -260,6 +260,7 @@ describe('reconcileEthereumSubmissions', () => {
             scope: SCOPE,
             signedTransactions: [hexToBytes(VIEM_TRANSFER_NONCE_0)],
             flow: 'pipeline',
+            historyEntries: [],
             db,
         })
         await expect(allocate()).resolves.toBe(1)

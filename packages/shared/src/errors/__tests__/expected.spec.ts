@@ -52,6 +52,27 @@ describe('isExpectedError', () => {
         expect(isExpectedError(new Error(message))).toBe(true)
     })
 
+    test.each([
+        'Failed to fetch',
+        'Failed to fetch (example.com)',
+        'NetworkError when attempting to fetch resource.',
+        'Load failed',
+        'The Internet connection appears to be offline.',
+    ])('is true for the browser fetch TypeError %s', message => {
+        expect(isExpectedError(new TypeError(message))).toBe(true)
+    })
+
+    test.each(['Load failed to parse (x)', 'Load failed (x', 'Load failedx'])(
+        'is false for the near-miss browser message %s',
+        message => {
+            expect(isExpectedError(new TypeError(message))).toBe(false)
+        },
+    )
+
+    test('is false for a browser fetch message on a non-TypeError', () => {
+        expect(isExpectedError(new Error('Load failed'))).toBe(false)
+    })
+
     test.each([500, 502, 503, 429])(
         'is true for an error carrying response status %i',
         status => {

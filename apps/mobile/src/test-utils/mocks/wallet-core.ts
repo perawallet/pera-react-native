@@ -11,7 +11,10 @@
  */
 
 import { vi } from 'vitest'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-projects
 vi.mock('@perawallet/wallet-core-projects', () => ({
@@ -500,9 +503,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         getAccountDisplayName: vi.fn(a => a?.name || ''),
         useAccountPresentation: vi.fn(() => null),
         authorityTransitionLabel: vi.fn(() => ({
-            labelKey: 'account_info.type_rekeyed_signer',
-            signerKey: 'account_info.rekey_signer_standard',
-            descriptionKey: 'account_type_info.rekeyed_standard_description',
+            labelKey: i18nKey('account_info.type_rekeyed_signer'),
+            signerKey: i18nKey('account_info.rekey_signer_standard'),
+            descriptionKey: i18nKey(
+                'account_type_info.rekeyed_standard_description',
+            ),
         })),
         importFormatsFor: vi.fn(() => []),
         offeredLocalKeyKinds: vi.fn(() => []),
@@ -680,7 +685,6 @@ vi.mock('@perawallet/wallet-core-contacts', () => {
             findContacts: vi.fn(() => []),
         })),
         useContactsStore,
-        DuplicateAddressError: class DuplicateAddressError extends Error {},
         ContactNotFoundError: class ContactNotFoundError extends Error {},
     }
 })
@@ -764,8 +768,12 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const warnings = await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/warnings')
     >('@packages/chain-algorand/src/blockchain/utils/warnings')
+    const { ALGOD_ERROR_MESSAGE_KEYS } = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/errors/algodErrorCodes')
+    >('@packages/chain-algorand/src/blockchain/errors/algodErrorCodes')
 
     return {
+        ALGOD_ERROR_MESSAGE_KEYS,
         ...arc0001,
         ...transactionView,
         ...warnings,
@@ -791,7 +799,7 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
         // The Algorand planner adapter binds this member at module load.
         useFetchSuggestedMinFee: vi.fn(() => async () => 1000n),
         // Error-translation exports. Tests that need the real parser should use
-        // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
+        // `vi.importActual` in their own file (see the specs that mock this module).
         AlgodError: MockAlgodError,
         AlgodErrorCode: {
             OVERSPEND: 'overspend',

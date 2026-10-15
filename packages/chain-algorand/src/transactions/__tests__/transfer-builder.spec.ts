@@ -35,6 +35,7 @@ import {
     type AssetRef,
     type ChainId,
     type PeraTransaction,
+    type UnsignedTransaction,
     type TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
@@ -85,8 +86,10 @@ const send = (overrides: Partial<TransferIntent> = {}): TransferIntent => ({
     ...overrides,
 })
 
-const payloadOf = (built: { payload: unknown }) =>
-    built.payload as PeraTransaction
+// The msw node's genesis isn't testnet's, so the payload is read without
+// `readAlgorandTransaction`'s network check.
+const payloadOf = (built: UnsignedTransaction) =>
+    (built.payload as { transaction: PeraTransaction }).transaction
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))

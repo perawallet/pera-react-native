@@ -16,6 +16,9 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useIsMultisigAddressQuery } from '../useIsMultisigAddressQuery'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
 const mocks = vi.hoisted(() => ({
     checkIsMultisigAddress: vi.fn(),
 }))
@@ -47,7 +50,7 @@ describe('useIsMultisigAddressQuery', () => {
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'ADDR',
                 }),
             { wrapper },
@@ -56,13 +59,32 @@ describe('useIsMultisigAddressQuery', () => {
         await waitFor(() => expect(result.current.data?.isMultisig).toBe(true))
     })
 
+    test('checks the address against an Ethereum scope', async () => {
+        mocks.checkIsMultisigAddress.mockResolvedValue(true)
+
+        const { result } = renderHook(
+            () =>
+                useIsMultisigAddressQuery({
+                    scope: ETHEREUM,
+                    address: '0xADDR',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.data?.isMultisig).toBe(true))
+        expect(mocks.checkIsMultisigAddress).toHaveBeenCalledWith(
+            ETHEREUM,
+            '0xADDR',
+        )
+    })
+
     test('returns isMultisig=false when endpoint resolves false', async () => {
         mocks.checkIsMultisigAddress.mockResolvedValue(false)
 
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'ADDR',
                 }),
             { wrapper },
@@ -75,7 +97,7 @@ describe('useIsMultisigAddressQuery', () => {
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: '',
                 }),
             { wrapper },
@@ -89,7 +111,7 @@ describe('useIsMultisigAddressQuery', () => {
         const { result } = renderHook(
             () =>
                 useIsMultisigAddressQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     address: 'ADDR',
                     enabled: false,
                 }),

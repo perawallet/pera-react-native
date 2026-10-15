@@ -80,6 +80,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
         handleFocus,
         handleBlur,
     } = useSwapAmountSection({
+        scope,
         variant,
         assetId,
         amount,

@@ -20,6 +20,7 @@ import {
     type MailingAddressFormValues,
     type SupportedUsState,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
@@ -52,8 +53,8 @@ export const useCardOnboardingMailingAddressScreen =
         const { errorToast } = useToast()
         const { request } = useBottomSheet()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.address.error_title',
-            bodyKey: 'peraCard.address.error_body',
+            titleKey: i18nKey('peraCard.address.error_title'),
+            bodyKey: i18nKey('peraCard.address.error_body'),
         })
         const onboardingId = useCardStore(state => state.onboardingId)
         const submitMailingAddress = useSubmitMailingAddressMutation(scope)

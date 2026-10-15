@@ -51,9 +51,11 @@ describe('useNfdResolve', () => {
 
         expect(result.current.isDirectAddress).toBe(true)
         expect(result.current.resolvedAddress).toBe(ALGORAND_ADDRESS)
-        expect(useNfdSearchQuery).toHaveBeenLastCalledWith(ALGORAND_ADDRESS, {
-            enabled: false,
-        })
+        expect(useNfdSearchQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ chainId: 'algorand' }),
+            ALGORAND_ADDRESS,
+            { enabled: false },
+        )
     })
 
     it("returns an address another registered chain's codec accepts as typed", () => {
@@ -69,9 +71,11 @@ describe('useNfdResolve', () => {
 
         const { result } = renderHook(() => useNfdResolve('alice.algo'))
 
-        expect(useNfdSearchQuery).toHaveBeenLastCalledWith('alice.algo', {
-            enabled: true,
-        })
+        expect(useNfdSearchQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ chainId: 'algorand' }),
+            'alice.algo',
+            { enabled: true },
+        )
         expect(result.current.isDirectAddress).toBe(false)
         expect(result.current.isNfdResolved).toBe(true)
         expect(result.current.resolvedAddress).toBe(NFD_ADDRESS)

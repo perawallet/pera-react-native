@@ -13,7 +13,13 @@
 import { createWalletAlgorandClient } from '../blockchain'
 import type { AssetInboxSendFlow } from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../legacy-network'
-import { arc59SendSummaryResponseSchema } from './api'
+import {
+    fetchArc59AssetRequests,
+    fetchArc59SendSummary,
+    arc59SendSummaryResponseSchema,
+} from './api'
+import { getArc59SignedFundingAmount } from './getArc59SignedFundingAmount'
+import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import {
     buildArc59ClaimTxs,
     buildArc59RejectTxs,
@@ -23,9 +29,19 @@ import {
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
 // memo does.
 export const algorandAssetInbox: AssetInboxSendFlow = {
+    fetchRequests: ({ scope, address }) =>
+        fetchArc59AssetRequests(algorandNetworkOf(scope), address),
+    fetchSendSummary: async ({ scope, receiver, assetId }) => {
+        const quote = await fetchArc59SendSummary(
+            algorandNetworkOf(scope),
+            receiver,
+            assetId,
+        )
+        return { quote, fundingAmount: getArc59SignedFundingAmount(quote) }
+    },
     buildSendTxs: async ({ scope, summary, ...params }) => {
         const network = algorandNetworkOf(scope)
-        return buildArc59SendViaInboxTxs(
+        const transactions = await buildArc59SendViaInboxTxs(
             { algokit: createWalletAlgorandClient(network), network },
             {
                 ...params,
@@ -34,19 +50,22 @@ export const algorandAssetInbox: AssetInboxSendFlow = {
                 summary: arc59SendSummaryResponseSchema.parse(summary),
             },
         )
+        return toUnsignedAlgorandTransactions(transactions, scope)
     },
-    buildClaimTxs: ({ scope, ...params }) => {
+    buildClaimTxs: async ({ scope, ...params }) => {
         const network = algorandNetworkOf(scope)
-        return buildArc59ClaimTxs(
+        const transactions = await buildArc59ClaimTxs(
             { algokit: createWalletAlgorandClient(network), network },
             params,
         )
+        return toUnsignedAlgorandTransactions(transactions, scope)
     },
-    buildRejectTxs: ({ scope, ...params }) => {
+    buildRejectTxs: async ({ scope, ...params }) => {
         const network = algorandNetworkOf(scope)
-        return buildArc59RejectTxs(
+        const transactions = await buildArc59RejectTxs(
             { algokit: createWalletAlgorandClient(network), network },
             params,
         )
+        return toUnsignedAlgorandTransactions(transactions, scope)
     },
 }

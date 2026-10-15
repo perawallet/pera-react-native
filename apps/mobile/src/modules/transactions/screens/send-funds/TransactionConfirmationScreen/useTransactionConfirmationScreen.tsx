@@ -100,7 +100,7 @@ export const useTransactionConfirmationScreen =
             () => (selectedAssetId ? [selectedAssetId] : []),
             [selectedAssetId],
         )
-        const { data: assets } = useAssetsQuery(assetIDs)
+        const { data: assets } = useAssetsQuery(scope, assetIDs)
         const asset = useMemo(() => {
             if (!selectedAssetId) return null
             return assets.get(selectedAssetId)

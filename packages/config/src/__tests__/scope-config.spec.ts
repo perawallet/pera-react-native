@@ -24,9 +24,11 @@ import {
     configuredScopes,
     getChainConfig,
     getNetworkConfig,
+    getPeraDeploymentConfig,
     getPeraServicesConfig,
     hasPeraService,
     isPeraBackedNetwork,
+    peraDeploymentOf,
     peraServicesFor,
     registerCustomNetworkSource,
     type CustomNetworkEndpoints,
@@ -263,6 +265,33 @@ describe('getPeraServicesConfig', () => {
     })
 })
 
+describe('Pera deployments', () => {
+    test.each([
+        ['live', Networks.mainnet],
+        ['developer', Networks.testnet],
+    ] as const)(
+        "the %s deployment is the %s Algorand scope's Pera services",
+        (deployment, network) => {
+            expect(getPeraDeploymentConfig(deployment)).toStrictEqual(
+                getPeraServicesConfig(algorandScope(network)),
+            )
+        },
+    )
+
+    test.each([
+        [Networks.mainnet, 'live'],
+        [Networks.testnet, 'developer'],
+        [Networks.betanet, undefined],
+        [Networks.custom, undefined],
+    ] as const)('algorand/%s is served by %s', (network, deployment) => {
+        expect(peraDeploymentOf(algorandScope(network))).toBe(deployment)
+    })
+
+    test('an unconfigured fixture chain has no deployment', () => {
+        expect(peraDeploymentOf(FIXTURE_MAINNET)).toBeUndefined()
+    })
+})
+
 describe('peraServicesFor', () => {
     test('lists exactly the seven Pera services', () => {
         expect(PERA_SERVICES).toEqual([
@@ -474,13 +503,74 @@ describe('ethereum scopes', () => {
         },
     )
 
-    // The query client refuses every Pera request for a scope whose
-    // backendUrl is empty, so an empty list must empty it too.
+    test.each([
+        [ETHEREUM_MAINNET, 'live'],
+        [ETHEREUM_SEPOLIA, 'developer'],
+    ] as const)('%o is served by the %s deployment', async (scope, tier) => {
+        const { peraDeploymentOf: fresh } = await withEthereumConfig({
+            ethereumMainnetPeraServices: ['assets'],
+            ethereumSepoliaPeraServices: ['assets'],
+        })
+
+        expect(fresh(scope)).toBe(tier)
+    })
+
+    // The query client refuses every Pera request for a scope with no
+    // deployment, so an empty list must drop it too.
     test('an empty list leaves the scope with no Pera deployment', async () => {
-        const { getPeraServicesConfig: fresh, peraServicesFor: freshFor } =
-            await withEthereumConfig({ ethereumMainnetPeraServices: [] })
+        const {
+            getPeraServicesConfig: fresh,
+            peraDeploymentOf: freshDeployment,
+            peraServicesFor: freshFor,
+        } = await withEthereumConfig({ ethereumMainnetPeraServices: [] })
 
         expect(freshFor(ETHEREUM_MAINNET).size).toBe(0)
         expect(fresh(ETHEREUM_MAINNET)).toStrictEqual(NO_PERA_SERVICES)
+        expect(freshDeployment(ETHEREUM_MAINNET)).toBeUndefined()
+    })
+})
+
+describe('chainEndpointsFor', () => {
+    afterEach(() => {
+        vi.doUnmock('../main')
+        vi.resetModules()
+    })
+
+    test('keys Ethereum RPC URLs by network id', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+            ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+        })
+
+        expect(chainEndpointsFor('ethereum')).toStrictEqual({
+            mainnet: 'https://mainnet.rpc.example',
+            sepolia: 'https://sepolia.rpc.example',
+        })
+    })
+
+    test('leaves out a network without an RPC URL', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+            ethereumSepoliaRpcUrl: '',
+        })
+
+        expect(chainEndpointsFor('ethereum')).toStrictEqual({
+            mainnet: 'https://mainnet.rpc.example',
+        })
+    })
+
+    test('is empty for a build with no RPC URLs', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: '',
+            ethereumSepoliaRpcUrl: '',
+        })
+
+        expect(chainEndpointsFor('ethereum')).toStrictEqual({})
+    })
+
+    test('is empty for Algorand, whose node URLs come from getAlgorandChainConfig', async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({})
+
+        expect(chainEndpointsFor('algorand')).toStrictEqual({})
     })
 })

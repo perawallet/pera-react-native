@@ -16,7 +16,7 @@ import {
     BACKUP_SECRETS_KEY_PREFIX,
     BackupItemStatus,
     DeltaOperation,
-    isContactItemKey,
+    isContactKey,
     isPasskeyItemKey,
     isPasskeySecretsItemKey,
     isSettingsItemKey,
@@ -123,7 +123,7 @@ export const applyDeltas = async ({
         }
         const isKnownKey =
             isAccountFamilyKey(d.key) ||
-            isContactItemKey(d.key) ||
+            isContactKey(d.key) ||
             isPasskeyFamilyKey(d.key) ||
             isSettingsItemKey(d.key)
         // The user deleted this here and another device has since backed it up
@@ -187,7 +187,7 @@ export const applyDeltas = async ({
         deps,
     })
     const contacts = collectContactPayloads({
-        fetched: fetched.filter(item => isContactItemKey(item.key)),
+        fetched: fetched.filter(item => isContactKey(item.key)),
         items,
         deps,
     })

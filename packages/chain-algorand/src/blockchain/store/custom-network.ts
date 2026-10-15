@@ -25,7 +25,10 @@ import {
     selectCustomNetwork,
     useNetworkStore,
     type CustomNetwork,
+    type CustomNodeAdapter,
 } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { fetchGenesisFromNode } from '../utils/fetchGenesisFromNode'
 
 export type AlgorandCustomNetwork = CustomNetwork & CustomNetworkConfig
 
@@ -55,6 +58,13 @@ export const setCustomNetwork = (customConfig: CustomNetworkConfig): void =>
         ...customConfig,
         id: CUSTOM_NETWORK_ID,
     })
+
+export const algorandCustomNode: CustomNodeAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    read: getCustomNetworkConfig,
+    save: setCustomNetwork,
+    fetchGenesis: fetchGenesisFromNode,
+}
 
 export const clearCustomNetwork = (): void =>
     useNetworkStore

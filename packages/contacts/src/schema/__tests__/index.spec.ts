@@ -51,6 +51,7 @@ describe('contact form mapping', () => {
     test('contactToFormValues edits the Algorand entry', () => {
         expect(
             contactToFormValues({
+                id: 'id-1',
                 name: 'Alice',
                 nfd: 'alice.algo',
                 addresses: {
@@ -58,7 +59,12 @@ describe('contact form mapping', () => {
                     other: 'X',
                 } as ContactAddresses,
             }),
-        ).toEqual({ name: 'Alice', nfd: 'alice.algo', address: VALID_ADDRESS })
+        ).toEqual({
+            id: 'id-1',
+            name: 'Alice',
+            nfd: 'alice.algo',
+            address: VALID_ADDRESS,
+        })
     })
 
     test('contactFromFormValues writes the address into the Algorand entry', () => {
@@ -69,6 +75,7 @@ describe('contact form mapping', () => {
 
     test("contactFromFormValues keeps the existing contact's other-family addresses", () => {
         const existing = {
+            id: 'id-1',
             name: 'Alice',
             image: 'file://old.png',
             addresses: { algorand: 'OLD', other: 'X' } as ContactAddresses,

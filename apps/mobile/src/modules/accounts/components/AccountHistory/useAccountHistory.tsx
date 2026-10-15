@@ -18,6 +18,7 @@ import {
     useAccountScope,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
     useIsCapabilityRestricted,
@@ -111,7 +112,7 @@ export type UseAccountHistoryResult = {
  */
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
-    const scope = useAccountScope(account)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const accountAddress = account ? addressOn(account, scope) : undefined
     const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()

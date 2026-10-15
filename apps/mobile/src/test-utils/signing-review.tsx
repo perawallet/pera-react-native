@@ -44,8 +44,8 @@ import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataSignResult,
     type SignRequest,
-    type PeraTransactionSignRequest,
     type TransactionSignRequest,
+    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
     useKMS,
@@ -58,6 +58,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
+import { toUnsignedAlgorandTransactions } from '@perawallet/wallet-core-chain-algorand/signing'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     decodeFromBase64,
@@ -217,17 +219,20 @@ export const buildTransactionSignRequest = ({
 }: {
     txs?: Transaction[]
     sourceType?: TransactionSignRequest['sourceType']
-    overrides?: Partial<PeraTransactionSignRequest>
-} = {}): BuiltRequest<TransactionSignRequest> => {
+    overrides?: Partial<UnsignedTransactionSignRequest>
+} = {}): BuiltRequest<UnsignedTransactionSignRequest> => {
     const spies = makeCallbackSpies()
-    const request: PeraTransactionSignRequest = {
+    const request: UnsignedTransactionSignRequest = {
         id: `review-tx-${Math.round(Math.random() * 1e9)}`,
         type: 'transactions',
-        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
-        txs: txs ?? [buildPaymentTransaction()],
-        approve: spies.approve as unknown as TransactionSignRequest['approve'],
+        txs: toUnsignedAlgorandTransactions(
+            txs ?? [buildPaymentTransaction()],
+            getSelectedScope(LEGACY_CHAIN_ID),
+        ),
+        approve:
+            spies.approve as unknown as UnsignedTransactionSignRequest['approve'],
         reject: spies.reject as unknown as TransactionSignRequest['reject'],
         error: spies.error as unknown as TransactionSignRequest['error'],
         ...overrides,

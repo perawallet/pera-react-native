@@ -12,15 +12,14 @@
 
 import { useCallback } from 'react'
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { MultiSigAccount } from '../models'
 import { getMultisigAccountDetail } from '../api/endpoints'
 import { mapMultiSigAccount } from '../mappers'
 import { getMultisigAccountDetailQueryKey } from './querykeys'
 
 type UseMultisigAccountDetailQueryParams = {
-    network: Network
+    scope: ChainScope
     address: string
     enabled?: boolean
 }
@@ -34,16 +33,13 @@ export type UseMultisigAccountDetailQueryResult = {
 }
 
 export const useMultisigAccountDetailQuery = ({
-    network,
+    scope,
     address,
     enabled = true,
 }: UseMultisigAccountDetailQueryParams): UseMultisigAccountDetailQueryResult => {
     const query = useQuery({
-        queryKey: getMultisigAccountDetailQueryKey(
-            scopeForLegacyNetwork(network),
-            address,
-        ),
-        queryFn: () => getMultisigAccountDetail(network, address),
+        queryKey: getMultisigAccountDetailQueryKey(scope, address),
+        queryFn: () => getMultisigAccountDetail(scope, address),
         enabled: enabled && !!address,
         select: useCallback(mapMultiSigAccount, []),
     })

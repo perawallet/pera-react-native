@@ -54,7 +54,7 @@ export const useAccountDisplay = ({
     showAccountType,
     iconSize,
 }: UseAccountDisplayParams): UseAccountDisplayResult => {
-    const scope = useAccountScope(account)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const fullAddress = account ? addressOn(account, scope) : undefined
     const displayName = useMemo(
         () =>
@@ -71,7 +71,7 @@ export const useAccountDisplay = ({
             : fullAddress
     }, [account, fullAddress, scope])
 
-    const { data: nfdNames } = useNfdForAddressQuery(fullAddress ?? '', {
+    const { data: nfdNames } = useNfdForAddressQuery(scope, fullAddress ?? '', {
         enabled: !!fullAddress,
     })
 

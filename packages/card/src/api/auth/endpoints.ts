@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getCardTransport } from '../transport'
 import type {
     CardSessionTokens,
@@ -39,17 +39,17 @@ export type LoginRequestParams = {
     email: string
     password: string
     otpCode?: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const loginRequest = async (
     params: LoginRequestParams,
 ): Promise<LoginResult> => {
-    const { email, password, otpCode, network, signal } = params
+    const { email, password, otpCode, scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/login',
         data: { email, password, ...(otpCode ? { otpCode } : {}) },
@@ -61,7 +61,7 @@ export const loginRequest = async (
 
 export type SendLoginOtpRequestParams = {
     userId: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -75,10 +75,10 @@ export type SendLoginOtpRequestParams = {
 export const sendLoginOtpRequest = async (
     params: SendLoginOtpRequestParams,
 ): Promise<void> => {
-    const { userId, network, signal } = params
+    const { userId, scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/login/otp',
         data: { userId },
@@ -96,7 +96,7 @@ export type OauthInitiateRequestParams = {
     state: string
     /** BASE64URL(SHA256(code_verifier)), method S256. */
     codeChallenge: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -110,11 +110,11 @@ export type OauthInitiateRequestParams = {
 export const oauthInitiateRequest = async (
     params: OauthInitiateRequestParams,
 ): Promise<OauthInitiation> => {
-    const { state, codeChallenge, network, signal } = params
+    const { state, codeChallenge, scope, signal } = params
 
     const response = await getCardTransport().request({
         route: 'proxy',
-        network,
+        scope,
         method: 'GET',
         path: '/api/v3/baanx/oauth/initiate',
         params: { state, code_challenge: codeChallenge },
@@ -131,7 +131,7 @@ export type OauthAuthorizeRequestParams = {
     sessionToken: string
     /** Ephemeral access token from {@link loginRequest} (OAuth step 2). */
     accessToken: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -144,10 +144,10 @@ export type OauthAuthorizeRequestParams = {
 export const oauthAuthorizeRequest = async (
     params: OauthAuthorizeRequestParams,
 ): Promise<OauthAuthorization> => {
-    const { sessionToken, accessToken, network, signal } = params
+    const { sessionToken, accessToken, scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/oauth/authorize',
         data: { token: sessionToken },
@@ -165,7 +165,7 @@ export type OauthTokenRequestParams = {
     code: string
     /** The original PKCE verifier whose challenge was sent to initiate. */
     codeVerifier: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -178,11 +178,11 @@ export type OauthTokenRequestParams = {
 export const oauthTokenRequest = async (
     params: OauthTokenRequestParams,
 ): Promise<CardSessionTokens> => {
-    const { code, codeVerifier, network, signal } = params
+    const { code, codeVerifier, scope, signal } = params
 
     const response = await getCardTransport().request({
         route: 'proxy',
-        network,
+        scope,
         method: 'POST',
         path: '/api/v3/baanx/oauth/token',
         data: { code, code_verifier: codeVerifier },
@@ -194,7 +194,7 @@ export const oauthTokenRequest = async (
 
 export type RefreshTokenRequestParams = {
     refreshToken: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -209,10 +209,10 @@ export type RefreshTokenRequestParams = {
 export const refreshTokenRequest = async (
     params: RefreshTokenRequestParams,
 ): Promise<CardSessionTokens> => {
-    const { refreshToken, network, signal } = params
+    const { refreshToken, scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/oauth/token',
         data: { grant_type: 'refresh_token', refresh_token: refreshToken },
@@ -224,7 +224,7 @@ export const refreshTokenRequest = async (
 
 export type RequestPasswordResetParams = {
     email: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -238,10 +238,10 @@ export type RequestPasswordResetParams = {
 export const requestPasswordReset = async (
     params: RequestPasswordResetParams,
 ): Promise<void> => {
-    const { email, network, signal } = params
+    const { email, scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/password/reset/request',
         data: { email },
@@ -259,7 +259,7 @@ export type VerifyPasswordResetParams = {
     email: string
     /** Verification code from the reset email. */
     code: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -271,10 +271,10 @@ export type VerifyPasswordResetParams = {
 export const verifyPasswordReset = async (
     params: VerifyPasswordResetParams,
 ): Promise<string> => {
-    const { email, code, network, signal } = params
+    const { email, code, scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/password/reset/verify',
         data: { email, code },
@@ -290,7 +290,7 @@ export type ConfirmPasswordResetParams = {
     password: string
     /** Must equal `password`; Baanx validates the match server-side too. */
     confirmPassword: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -298,10 +298,10 @@ export type ConfirmPasswordResetParams = {
 export const confirmPasswordReset = async (
     params: ConfirmPasswordResetParams,
 ): Promise<void> => {
-    const { token, password, confirmPassword, network, signal } = params
+    const { token, password, confirmPassword, scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/auth/password/reset/confirm',
         data: { token, password, confirmPassword },

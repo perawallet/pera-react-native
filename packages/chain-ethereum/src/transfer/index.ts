@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export {
-    createEthereumTransferAdapter,
-    ETHEREUM_TRANSFER_TITLE_KEYS,
-} from './builder'
+export { createEthereumTransferAdapter } from './builder'
 export { createEthereumBroadcasterAdapter } from './broadcaster'

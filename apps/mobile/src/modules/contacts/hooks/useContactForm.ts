@@ -22,8 +22,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
     contactSchema,
     contactToFormValues,
-    type Contact,
+    useContacts,
     type ContactFormValues,
+    type NewContact,
 } from '@perawallet/wallet-core-contacts'
 
 import { useImagePicker } from '@hooks/useImagePicker'
@@ -44,6 +45,9 @@ export type UseContactFormResult = {
     setError: UseFormSetError<ContactFormValues>
     errors: FieldErrors<ContactFormValues>
     isValid: boolean
+    /** Another contact holds the address. Saving is still allowed: one person
+     *  kept as two contacts is the user's call. */
+    isDuplicateAddress: boolean
     rawAddressInput: string
     imageUri: Optional<string>
     nfd: NfdState
@@ -58,9 +62,10 @@ export type UseContactFormResult = {
  * behaviour on top of what this returns.
  */
 export const useContactForm = (
-    initialContact: Contact | null,
+    initialContact: NewContact | null,
 ): UseContactFormResult => {
     const { pickFromGallery } = useImagePicker()
+    const { contacts } = useContacts()
 
     const {
         control,
@@ -109,6 +114,17 @@ export const useContactForm = (
         }
     }, [pickFromGallery, setValue])
 
+    const isDuplicateAddress = useMemo(
+        () =>
+            !!addressFieldValue &&
+            contacts.some(
+                c =>
+                    c.id !== initialContact?.id &&
+                    c.addresses.algorand === addressFieldValue,
+            ),
+        [contacts, initialContact?.id, addressFieldValue],
+    )
+
     const nfd = useMemo<NfdState>(
         () => ({ resolvedAddress, isNfdResolved, isNfdResolving, nfdName }),
         [resolvedAddress, isNfdResolved, isNfdResolving, nfdName],
@@ -121,6 +137,7 @@ export const useContactForm = (
             setError,
             errors,
             isValid,
+            isDuplicateAddress,
             rawAddressInput,
             imageUri,
             nfd,
@@ -133,6 +150,7 @@ export const useContactForm = (
             setError,
             errors,
             isValid,
+            isDuplicateAddress,
             rawAddressInput,
             imageUri,
             nfd,

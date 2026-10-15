@@ -34,13 +34,14 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { assetsChainAdapters } from '../../chain-adapter'
 import {
+    FAKE_NATIVE_ASSET,
     fakeAssetsAdapter,
     registerFakeAssetsAdapter,
 } from '../../__tests__/fakeAssetsChain'
 import { fetchAndPersistPrices } from '../price-syncer'
 
-const mainnetScope = { chainId: 'algorand', networkId: 'mainnet' }
-const testnetScope = { chainId: 'algorand', networkId: 'testnet' }
+const mainnetScope: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const testnetScope: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const ref = (assetId: string): AssetRef => ({ chainId: 'algorand', assetId })
 
@@ -72,14 +73,14 @@ describe('fetchAndPersistPrices', () => {
     })
 
     test('no-ops on empty input', async () => {
-        await fetchAndPersistPrices([], 'mainnet')
+        await fetchAndPersistPrices([], mainnetScope)
         expect(getPricesMock).not.toHaveBeenCalled()
     })
 
     test('fetches and persists prices for non-ALGO ids and the ALGO price separately', async () => {
         answer([priced('0', '0.2')], [priced('123', '2.0')])
 
-        await fetchAndPersistPrices(['123', '0'], 'mainnet')
+        await fetchAndPersistPrices(['123', '0'], mainnetScope)
 
         expect(getPricesMock).toHaveBeenCalledWith([ref('123')], mainnetScope)
         expect(getPricesMock).toHaveBeenCalledWith([ref('0')], mainnetScope)
@@ -90,7 +91,7 @@ describe('fetchAndPersistPrices', () => {
     test('upserts exactly the rows the adapter priced', async () => {
         answer([priced('0', '0.2')], [priced('123', '2')])
 
-        await fetchAndPersistPrices(['123', '0'], 'mainnet')
+        await fetchAndPersistPrices(['123', '0'], mainnetScope)
 
         const rows = upsertAssetPricesMock.mock.calls.flatMap(c => c[0].prices)
         expect(rows).toHaveLength(2)
@@ -114,7 +115,7 @@ describe('fetchAndPersistPrices', () => {
         answer([], [priced('123', '2')])
 
         await expect(
-            fetchAndPersistPrices(['123', '0'], 'mainnet'),
+            fetchAndPersistPrices(['123', '0'], mainnetScope),
         ).resolves.toBeUndefined()
 
         const rows = upsertAssetPricesMock.mock.calls.flatMap(c => c[0].prices)
@@ -125,7 +126,7 @@ describe('fetchAndPersistPrices', () => {
         answer([priced('0', '0.2')], new Error('batch failed'))
 
         await expect(
-            fetchAndPersistPrices(['123', '0'], 'mainnet'),
+            fetchAndPersistPrices(['123', '0'], mainnetScope),
         ).resolves.toBeUndefined()
 
         expect(upsertAssetPricesMock).toHaveBeenCalledWith({
@@ -142,7 +143,7 @@ describe('fetchAndPersistPrices', () => {
         )
         getPricesMock.mockResolvedValue([priced('124', '2.0')])
 
-        await fetchAndPersistPrices(['124', '0'], 'mainnet')
+        await fetchAndPersistPrices(['124', '0'], mainnetScope)
 
         expect(getPricesMock).not.toHaveBeenCalledWith([ref('0')], mainnetScope)
         expect(getPricesMock).toHaveBeenCalledWith([ref('124')], mainnetScope)
@@ -152,7 +153,7 @@ describe('fetchAndPersistPrices', () => {
         getStaleOrMissingPriceAssetIdsMock.mockResolvedValue(['456'])
         answer([priced('0', '0.2')], [priced('456', '1.0')])
 
-        await fetchAndPersistPrices(['123', '456'], 'mainnet')
+        await fetchAndPersistPrices(['123', '456'], mainnetScope)
 
         expect(getPricesMock).toHaveBeenCalledWith([ref('456')], mainnetScope)
     })
@@ -160,7 +161,7 @@ describe('fetchAndPersistPrices', () => {
     test('gates batch ids on the persisted miss window', async () => {
         answer([priced('0', '0.2')], [priced('777', '1.0')])
 
-        await fetchAndPersistPrices(['777'], 'testnet')
+        await fetchAndPersistPrices(['777'], testnetScope)
 
         expect(getStaleOrMissingPriceAssetIdsMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -174,7 +175,7 @@ describe('fetchAndPersistPrices', () => {
     test('records a persisted miss for ids the price source left out', async () => {
         answer([priced('0', '0.2')], [priced('555', '1.0')])
 
-        await fetchAndPersistPrices(['555', '777'], 'testnet')
+        await fetchAndPersistPrices(['555', '777'], testnetScope)
 
         expect(recordPriceMissesMock).toHaveBeenCalledWith({
             assetIds: ['777'],
@@ -191,7 +192,7 @@ describe('fetchAndPersistPrices', () => {
     test('clears persisted misses for ids that returned a price', async () => {
         answer([priced('0', '0.2')], [priced('555', '1.0')])
 
-        await fetchAndPersistPrices(['555', '777'], 'testnet')
+        await fetchAndPersistPrices(['555', '777'], testnetScope)
 
         expect(clearPriceMissesMock).toHaveBeenCalledWith({
             assetIds: ['555'],
@@ -202,7 +203,7 @@ describe('fetchAndPersistPrices', () => {
     test('records nothing when every id returned a price', async () => {
         answer([priced('0', '0.2')], [priced('555', '1.0')])
 
-        await fetchAndPersistPrices(['555'], 'testnet')
+        await fetchAndPersistPrices(['555'], testnetScope)
 
         expect(recordPriceMissesMock).not.toHaveBeenCalled()
     })
@@ -210,9 +211,9 @@ describe('fetchAndPersistPrices', () => {
     test('throws when every batch settles as rejected', async () => {
         getPricesMock.mockRejectedValue(new Error('price source failed'))
 
-        await expect(fetchAndPersistPrices(['999'], 'mainnet')).rejects.toThrow(
-            'All price sync batches failed',
-        )
+        await expect(
+            fetchAndPersistPrices(['999'], mainnetScope),
+        ).rejects.toThrow('All price sync batches failed')
         expect(getPricesMock).toHaveBeenCalledWith([ref('999')], mainnetScope)
     })
 
@@ -220,7 +221,7 @@ describe('fetchAndPersistPrices', () => {
         answer([priced('0', '0.2')], [])
 
         const manyIds = Array.from({ length: 600 }, (_, i) => `${1000 + i}`)
-        await fetchAndPersistPrices(manyIds, 'mainnet')
+        await fetchAndPersistPrices(manyIds, mainnetScope)
 
         const recorded = recordPriceMissesMock.mock.calls.flatMap(
             call => call[0].assetIds as string[],
@@ -237,7 +238,7 @@ describe('fetchAndPersistPrices', () => {
         answer([], new Error('batch failed'))
 
         await expect(
-            fetchAndPersistPrices(['123', '0'], 'mainnet'),
+            fetchAndPersistPrices(['123', '0'], mainnetScope),
         ).rejects.toThrow('All price sync batches failed')
     })
 
@@ -251,7 +252,7 @@ describe('fetchAndPersistPrices', () => {
         )
         answer([priced('0', '0.2')], [])
 
-        await fetchAndPersistPrices(['11', '12', '13'], 'mainnet')
+        await fetchAndPersistPrices(['11', '12', '13'], mainnetScope)
 
         expect(getPricesMock).toHaveBeenCalledWith(
             [ref('11'), ref('12')],
@@ -275,7 +276,7 @@ describe('fetchAndPersistPrices', () => {
             refs[0].assetId === 'native' ? [priced('native', '0.2')] : [],
         )
 
-        await fetchAndPersistPrices(['native', '0'], 'mainnet')
+        await fetchAndPersistPrices(['native', '0'], mainnetScope)
 
         expect(getPricesMock).toHaveBeenCalledWith([ref('0')], mainnetScope)
         expect(upsertAssetPricesMock).toHaveBeenCalledWith(
@@ -285,30 +286,24 @@ describe('fetchAndPersistPrices', () => {
         )
     })
 
-    test.each(['mainnet', 'betanet'] as const)(
+    test.each(['mainnet', 'betanet'])(
         'rejects when no adapter is registered, even on %s',
-        async network => {
+        async networkId => {
             assetsChainAdapters.reset()
 
             await expect(
-                fetchAndPersistPrices(['123'], network),
+                fetchAndPersistPrices(['123'], {
+                    chainId: 'algorand',
+                    networkId,
+                }),
             ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
-        },
-    )
-
-    test.each(['betanet', 'custom'] as const)(
-        'no-ops without calling either Pera-backed endpoint on %s',
-        async network => {
-            await fetchAndPersistPrices(['123', '0'], network)
-
-            expect(getPricesMock).not.toHaveBeenCalled()
         },
     )
 
     describe('whole-wallet pass dedupe', () => {
         const manyIds = Array.from({ length: 1000 }, (_, i) => `${i + 1}`)
 
-        test('concurrent large passes for one network share a single pass', async () => {
+        test('concurrent large passes for one scope share a single pass', async () => {
             // The gate resolves on a macrotask so the second call is issued
             // while the first pass is still in flight.
             getStaleOrMissingPriceAssetIdsMock.mockImplementation(
@@ -320,8 +315,8 @@ describe('fetchAndPersistPrices', () => {
             getPricesMock.mockResolvedValue([])
 
             await Promise.all([
-                fetchAndPersistPrices(manyIds, 'mainnet'),
-                fetchAndPersistPrices(manyIds, 'mainnet'),
+                fetchAndPersistPrices(manyIds, mainnetScope),
+                fetchAndPersistPrices(manyIds, mainnetScope),
             ])
 
             // One gate call for the batch path plus one for the ALGO check —
@@ -329,15 +324,15 @@ describe('fetchAndPersistPrices', () => {
             expect(getStaleOrMissingPriceAssetIdsMock).toHaveBeenCalledTimes(2)
         })
 
-        test('large passes on different networks run independently', async () => {
+        test('large passes on different scopes run independently', async () => {
             getStaleOrMissingPriceAssetIdsMock.mockImplementation(
                 async ({ assetIds }: { assetIds: string[] }) => assetIds,
             )
             getPricesMock.mockResolvedValue([])
 
             await Promise.all([
-                fetchAndPersistPrices(manyIds, 'mainnet'),
-                fetchAndPersistPrices(manyIds, 'testnet'),
+                fetchAndPersistPrices(manyIds, mainnetScope),
+                fetchAndPersistPrices(manyIds, testnetScope),
             ])
 
             const networks = getStaleOrMissingPriceAssetIdsMock.mock.calls.map(
@@ -357,10 +352,10 @@ describe('fetchAndPersistPrices', () => {
             getPricesMock.mockResolvedValue([])
 
             await Promise.all([
-                fetchAndPersistPrices(manyIds, 'mainnet'),
+                fetchAndPersistPrices(manyIds, mainnetScope),
                 // A 300-asset account whose ids the whole-wallet pass already
                 // covers — waiting on that pass prices everything it needs.
-                fetchAndPersistPrices(manyIds.slice(0, 300), 'mainnet'),
+                fetchAndPersistPrices(manyIds.slice(0, 300), mainnetScope),
             ])
 
             // Batch gate + ALGO gate for the single shared pass.
@@ -383,8 +378,8 @@ describe('fetchAndPersistPrices', () => {
                 (_, i) => `fresh-${i}`,
             )
             await Promise.all([
-                fetchAndPersistPrices(manyIds, 'mainnet'),
-                fetchAndPersistPrices(freshImportIds, 'mainnet'),
+                fetchAndPersistPrices(manyIds, mainnetScope),
+                fetchAndPersistPrices(freshImportIds, mainnetScope),
             ])
 
             const gatedIds =
@@ -402,8 +397,8 @@ describe('fetchAndPersistPrices', () => {
             getPricesMock.mockResolvedValue([])
 
             await Promise.all([
-                fetchAndPersistPrices(['123'], 'mainnet'),
-                fetchAndPersistPrices(['456'], 'mainnet'),
+                fetchAndPersistPrices(['123'], mainnetScope),
+                fetchAndPersistPrices(['456'], mainnetScope),
             ])
 
             const batchGateIds =
@@ -412,6 +407,123 @@ describe('fetchAndPersistPrices', () => {
                 )
             expect(batchGateIds).toContain('123')
             expect(batchGateIds).toContain('456')
+        })
+    })
+
+    describe('with two chains registered', () => {
+        // ChainId is a closed union, so the second chain rides on Ethereum's id.
+        const fixtureScope: ChainScope = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        }
+        // One instance, as the adapter contract requires.
+        const FIXTURE_NATIVE = { ...FAKE_NATIVE_ASSET, assetId: 'native' }
+        const fixtureRef = (assetId: string): AssetRef => ({
+            chainId: 'ethereum',
+            assetId,
+        })
+        const fixtureGetPricesMock = vi.fn()
+
+        beforeEach(() => {
+            fixtureGetPricesMock.mockReset()
+            fixtureGetPricesMock.mockResolvedValue([])
+            getPricesMock.mockResolvedValue([])
+            assetsChainAdapters.reset()
+            assetsChainAdapters.register(
+                fakeAssetsAdapter({ getPrices: getPricesMock }),
+            )
+            assetsChainAdapters.register(
+                fakeAssetsAdapter({
+                    chainId: 'ethereum',
+                    getNativeAsset: () => FIXTURE_NATIVE,
+                    getPrices: fixtureGetPricesMock,
+                }),
+            )
+        })
+
+        test("prices a scope through its own chain's adapter and persists under that scope", async () => {
+            fixtureGetPricesMock.mockImplementation(async (refs: AssetRef[]) =>
+                refs[0].assetId === 'native'
+                    ? [{ assetRef: refs[0], usdPrice: new Decimal('2000') }]
+                    : [{ assetRef: refs[0], usdPrice: new Decimal('4') }],
+            )
+
+            await fetchAndPersistPrices(['native', 'tok', 'gone'], fixtureScope)
+
+            expect(getPricesMock).not.toHaveBeenCalled()
+            expect(fixtureGetPricesMock).toHaveBeenCalledWith(
+                [fixtureRef('native')],
+                fixtureScope,
+            )
+            expect(fixtureGetPricesMock).toHaveBeenCalledWith(
+                [fixtureRef('tok'), fixtureRef('gone')],
+                fixtureScope,
+            )
+            for (const mock of [
+                getStaleOrMissingPriceAssetIdsMock,
+                upsertAssetPricesMock,
+                recordPriceMissesMock,
+                clearPriceMissesMock,
+            ]) {
+                expect(mock).toHaveBeenCalled()
+                for (const [args] of mock.mock.calls) {
+                    expect(args.scope).toEqual(fixtureScope)
+                }
+            }
+            expect(recordPriceMissesMock).toHaveBeenCalledWith({
+                assetIds: ['gone'],
+                scope: fixtureScope,
+            })
+        })
+
+        test('an Algorand pass makes the same calls it makes with Algorand alone', async () => {
+            await fetchAndPersistPrices(['123', '0'], mainnetScope)
+
+            expect(fixtureGetPricesMock).not.toHaveBeenCalled()
+            expect(getPricesMock.mock.calls).toEqual([
+                [[ref('0')], mainnetScope],
+                [[ref('123')], mainnetScope],
+            ])
+        })
+
+        test('whole-wallet passes on two scopes run independently', async () => {
+            const manyIds = Array.from({ length: 1000 }, (_, i) => `${i + 1}`)
+            getStaleOrMissingPriceAssetIdsMock.mockImplementation(
+                ({ assetIds }: { assetIds: string[] }) =>
+                    new Promise(resolve =>
+                        setTimeout(() => resolve(assetIds), 10),
+                    ),
+            )
+
+            await Promise.all([
+                fetchAndPersistPrices(manyIds, mainnetScope),
+                fetchAndPersistPrices(manyIds, fixtureScope),
+            ])
+
+            expect(getPricesMock).toHaveBeenCalled()
+            expect(fixtureGetPricesMock).toHaveBeenCalled()
+        })
+
+        test('a scope whose chain has no adapter rejects while the other chain still prices', async () => {
+            assetsChainAdapters.reset()
+            assetsChainAdapters.register(
+                fakeAssetsAdapter({ getPrices: getPricesMock }),
+            )
+
+            const [fixture, algorand] = await Promise.allSettled([
+                fetchAndPersistPrices(['tok'], fixtureScope),
+                fetchAndPersistPrices(['123'], mainnetScope),
+            ])
+
+            expect(fixture.status).toBe('rejected')
+            expect(
+                fixture.status === 'rejected' && fixture.reason,
+            ).toBeInstanceOf(ChainAdapterNotRegisteredError)
+            expect(algorand.status).toBe('fulfilled')
+            expect(getPricesMock).toHaveBeenCalledWith(
+                [ref('123')],
+                mainnetScope,
+            )
         })
     })
 })

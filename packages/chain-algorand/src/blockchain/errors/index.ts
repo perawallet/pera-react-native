@@ -12,4 +12,5 @@
 
 export * from './AlgodError'
 export * from './algodErrorCodes'
+export * from './describeAlgodError'
 export * from './toAlgodError'

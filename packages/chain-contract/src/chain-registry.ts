@@ -219,6 +219,7 @@ export const registerChainSetup = (
 export const buildChainSetup = (
     chains: ChainSetupConfig,
     modules: Partial<Record<ChainId, ChainModule>>,
+    endpointsFor: (chainId: ChainId) => ChainEndpoints,
 ): ChainSetupEntry[] => {
     for (const chainId of chains.enabled) {
         if (!modules[chainId]) {
@@ -235,7 +236,7 @@ export const buildChainSetup = (
                 chainId,
                 enabled: chains.enabled.includes(chainId),
                 module,
-                endpoints: {},
+                endpoints: endpointsFor(chainId),
                 ...(listed && {
                     capabilities: Object.fromEntries(
                         CHAIN_CAPABILITIES.map(capability => [

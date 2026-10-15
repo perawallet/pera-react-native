@@ -13,15 +13,13 @@
 import { useCallback } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
-    chainAccountOf,
     useAccountBalancesQuery,
-    useSigningAccounts,
+    useSigningAccountsOn,
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWButton, PWFlatList, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -41,7 +39,7 @@ export const ConnectionApprovalView = ({
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
-    const signingAccounts = useSigningAccounts(scope.chainId)
+    const signingAccounts = useSigningAccountsOn(proposal.requested.chains)
     // Honor the user's account-overview sort order instead of raw store order.
     const { accountBalances } = useAccountBalancesQuery(
         signingAccounts,
@@ -71,13 +69,11 @@ export const ConnectionApprovalView = ({
         ({ item }: { item: WalletAccount }) => (
             <ConnectionApprovalAccountRow
                 account={item}
-                isSelected={selectedAccounts.includes(
-                    chainAccountOf(item, scope.chainId)?.address ?? '',
-                )}
+                isSelected={selectedAccounts.includes(item.id)}
                 onPress={handleAccountPress}
             />
         ),
-        [selectedAccounts, handleAccountPress, scope.chainId],
+        [selectedAccounts, handleAccountPress],
     )
 
     return (
@@ -92,10 +88,7 @@ export const ConnectionApprovalView = ({
                     <ConnectionApprovalViewHeader
                         peer={proposal.peer}
                         peerName={peerName}
-                        // Only Algorand reports networks today, so this is
-                        // still one of the legacy values the badge i18n keys
-                        // are named after.
-                        networks={proposal.requested.networks as Network[]}
+                        networks={proposal.requested.networks}
                         methods={proposal.requested.methods}
                         peerUrlLabel={peerUrlLabel}
                         canOpenPeerUrl={canOpenPeerUrl}

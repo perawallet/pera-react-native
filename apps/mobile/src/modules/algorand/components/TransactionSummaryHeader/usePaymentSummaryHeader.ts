@@ -14,11 +14,14 @@ import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algo
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export const usePaymentSummaryHeader = (
     transaction: AlgorandTransactionView,
 ) => {
-    const { decimals: nativeDecimals } = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { decimals: nativeDecimals } = useNativeAsset(scope)
     const amount = useMemo(
         () =>
             baseUnitsToDisplayUnits(

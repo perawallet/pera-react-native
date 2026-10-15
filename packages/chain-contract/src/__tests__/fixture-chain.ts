@@ -27,6 +27,7 @@ import type {
     TransactionSummary,
     UnsignedTransaction,
 } from '../models/domain'
+import { i18nKey } from '../models/i18n'
 import type { ChainId, NetworkId } from '../models/identity'
 
 // A second chain that exists only to pressure-test the contracts: base-16
@@ -201,13 +202,13 @@ const fixtureSummary = (body: string): TransactionSummary =>
     body.startsWith(CALL_PREFIX)
         ? {
               kind: 'contract-call',
-              title: { key: 'fixture.contract_call' },
+              title: { key: i18nKey('fixture.contract_call') },
               direction: 'none',
               icon: 'contract-call',
           }
         : {
               kind: 'transfer',
-              title: { key: 'fixture.transfer' },
+              title: { key: i18nKey('fixture.transfer') },
               direction: 'out',
               icon: 'send',
           }

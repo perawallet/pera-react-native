@@ -22,6 +22,7 @@ import {
     transactionPlanners,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import { migrationChainAdapters } from '@perawallet/wallet-core-migrate'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
@@ -41,8 +42,11 @@ import {
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
-import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
+import { customNodeAdapters } from '@perawallet/wallet-core-chain-shared'
+import { nodeErrorAdapters } from '@perawallet/wallet-core-shared'
+import { algorandNodeErrors } from './blockchain/errors/describeAlgodError'
 import { algorandDappRequestAdapter } from './connect/dappRequestAdapter'
+import { algorandDeeplinkAdapter } from './deeplinks/adapter'
 import {
     algorandHistoryAdapter,
     algorandSendFlowAdapter,
@@ -66,7 +70,6 @@ import { algorandTransactionPlanner } from './signing/planner'
 import { algorandRampAdapter } from './onramp'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { algorandDeviceAdapter } from './device'
-import { algorandNodeBackends } from './blockchain/node-backends'
 import {
     algorandAccountPresentation,
     algorandAccountsAdapter,
@@ -76,7 +79,7 @@ import {
 
 // These registrations must not depend on which barrel loads first.
 import './blockchain/store/store'
-import './blockchain/store/custom-network'
+import { algorandCustomNode } from './blockchain/store/custom-network'
 import './blockchain/utils/algorandClient'
 
 // Adapters must be module-level instances, not built in here: the registries
@@ -87,7 +90,8 @@ export const registerChain = (): void => {
     keyDerivations.register(algorandKeyDerivation)
     accountsChainAdapters.register(algorandAccountsAdapter)
     accountPresentationChainAdapters.register(algorandAccountPresentation)
-    nodeBackendAdapters.register(algorandNodeBackends)
+    nodeErrorAdapters.register(algorandNodeErrors)
+    customNodeAdapters.register(algorandCustomNode)
     assetsChainAdapters.register(algorandAssetsAdapter)
     ledgerAppDriverRegistry.register(algorandLedgerAppDriver)
     swapChainAdapters.register(algorandSwapAdapter)
@@ -108,4 +112,5 @@ export const registerChain = (): void => {
     migrationChainAdapters.register(algorandMigrationAdapter)
     messageSignerChainAdapters.register(algorandMessageSignerAdapter)
     deviceChainAdapters.register(algorandDeviceAdapter)
+    deeplinkAdapters.register(algorandDeeplinkAdapter)
 }

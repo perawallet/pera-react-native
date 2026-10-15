@@ -19,7 +19,6 @@ import {
     getAlgorandChainConfig,
     type Network,
 } from '@perawallet/wallet-core-config'
-import { resetNodeClients } from '@perawallet/wallet-core-shared'
 // Side-effect import: registers the saved-node reader getChainConfig uses for `custom`.
 import '../store/custom-network'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
@@ -41,10 +40,3 @@ export const getAlgorandClient = (target?: ChainScope | Network) => {
               scopeForLegacyNetwork(useNetworkStore.getState().network))
     return createTimeoutBoundedAlgorandClient(getAlgorandChainConfig(scope))
 }
-
-// Only a custom-network edit changes endpoints; a plain switch must not rebuild every client.
-useNetworkStore.subscribe((state, previous) => {
-    if (state.customNetworksByChain !== previous.customNetworksByChain) {
-        resetNodeClients()
-    }
-})

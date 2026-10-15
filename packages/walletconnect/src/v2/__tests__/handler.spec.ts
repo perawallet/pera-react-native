@@ -27,6 +27,7 @@ import type {
     ConnectionOrigin,
 } from '@perawallet/wallet-extension-connections'
 import { logger, Networks } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletKitEvent,
     WalletKitFactory,
@@ -134,7 +135,8 @@ const makeHandler = (
         vi.fn<WalletKitFactory>(async () => walletKit)
     const keyValueStorage = new MemoryKeyValueStorage()
     const handler = createWalletConnectV2Handler({
-        getNetwork: () => Networks.mainnet,
+        getNetworkId: () => Networks.mainnet,
+        isDappConnectEnabled: () => true,
         projectId: overrides.projectId ?? PROJECT_ID,
         keyValueStorage,
         createWalletKit,
@@ -930,7 +932,9 @@ describe('session requests', () => {
 
 describe('empty signatures', () => {
     const stubEmptySignatures = () => {
-        const adapter = dappRequestAdapterFor(Networks.mainnet)
+        const adapter = dappRequestAdapterFor(
+            scopeForLegacyNetwork(Networks.mainnet),
+        )
         if (!adapter) throw new Error('no Algorand adapter registered')
         return vi
             .spyOn(adapter, 'emptySignaturesFor')
@@ -1259,6 +1263,7 @@ describe('session proposals', () => {
         expect(proposal.pairingId).toBe(PAIRING_TOPIC)
         expect(proposal.pairingId).toBe(pairingId)
         expect(proposal.requested.networks).toEqual([Networks.mainnet])
+        expect(proposal.requested.chains).toEqual(['algorand'])
         expect(proposal.requested.methods).toEqual(['algo_signTxn'])
         expect(proposal.peer.name).toBe('Test dApp')
         // The proposal reports SECONDS; every other expiry here is ms.

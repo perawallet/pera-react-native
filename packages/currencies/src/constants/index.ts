@@ -14,8 +14,6 @@ import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 /**
  * Base currency all internal prices are denominated in before conversion.
- *
- * (ALGO as a selectable currency uses the shared `ALGO_ASSET_NAME`.)
  */
 export const USD_CURRENCY_ID = 'USD'
 

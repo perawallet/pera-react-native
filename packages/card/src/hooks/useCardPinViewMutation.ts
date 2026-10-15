@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchCardPinToken } from '../api/card-sensitive'
 import type { CardSecureView } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
@@ -31,10 +28,8 @@ export type UseCardPinViewMutationResult = CardMutationResult<
 export const useCardPinViewMutation = (
     scope: ChainScope,
 ): UseCardPinViewMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<CardSecureView, Error, void>({
-        mutationFn: () => fetchCardPinToken({ network }),
+        mutationFn: () => fetchCardPinToken({ scope }),
         throwOnError: false,
     })
 

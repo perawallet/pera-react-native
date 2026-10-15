@@ -171,6 +171,14 @@ describe('getEthereumTransactionHistory', () => {
         expect(items[1]?.fee).toBeUndefined()
     })
 
+    it('lowercases the hash so it matches the id the submission ledger records', async () => {
+        serve([[evmHistoryItem({ hash: `0x${'AB'.repeat(32)}` })]])
+
+        const { items } = await getEthereumTransactionHistory(ME, MAINNET)
+
+        expect(items[0]?.id).toBe(`0x${'ab'.repeat(32)}`)
+    })
+
     it('hands back the next cursor, and none on the last page', async () => {
         serve([[send], [evmHistoryItem({ hash: hash(2) })]])
 

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import {
     AppError,
@@ -30,7 +31,7 @@ export class InvalidPrivateKeyError extends AppError {
         super('Invalid private key', {
             severity: ErrorSeverity.LOW,
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.evm.invalid_private_key',
+            messageKey: i18nKey('errors.evm.invalid_private_key'),
         })
     }
 }

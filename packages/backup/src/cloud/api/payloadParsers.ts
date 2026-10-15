@@ -15,6 +15,7 @@ import {
     accountRecordPayloadSchema,
     addressBackupPayloadSchema,
     contactBackupPayloadSchema,
+    contactRecordPayloadSchema,
     passkeyBackupPayloadSchema,
     passkeySecretsBackupPayloadSchema,
     secretsBackupPayloadSchema,
@@ -22,6 +23,7 @@ import {
     type AccountRecordPayload,
     type AddressBackupPayload,
     type ContactBackupPayload,
+    type ContactRecordPayload,
     type PasskeyBackupPayload,
     type PasskeySecretsBackupPayload,
     type SecretsBackupPayload,
@@ -70,6 +72,9 @@ export const parseSecretsPayload = (raw: string): SecretsBackupPayload =>
 
 export const parseContactPayload = (raw: string): ContactBackupPayload =>
     parsePayload(contactBackupPayloadSchema, raw, 'contact')
+
+export const parseContactRecordPayload = (raw: string): ContactRecordPayload =>
+    parsePayload(contactRecordPayloadSchema, raw, 'contact record')
 
 export const parsePasskeyPayload = (raw: string): PasskeyBackupPayload =>
     parsePayload(passkeyBackupPayloadSchema, raw, 'passkey')

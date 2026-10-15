@@ -22,14 +22,14 @@ import ky, {
 } from 'ky'
 import {
     scopeForLegacyNetwork,
-    type ChainScope,
+    WALLET_MODES,
+    type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     config,
-    configuredScopes,
-    getPeraServicesConfig,
+    getPeraDeploymentConfig,
     hasPeraService,
-    type PeraService,
+    peraDeploymentOf,
 } from '@perawallet/wallet-core-config'
 import type {
     RequestConfiguration,
@@ -44,12 +44,6 @@ import {
 } from '../errors/network'
 import { PeraServiceUnavailableError } from '../errors/pera-service'
 import { readIntegrityToken } from './integrity-token-provider'
-import { nodeBackendAdapters, type NodeBackendName } from './node-backends'
-
-type BackendInstances = {
-    pera: KyInstance
-    backup: KyInstance
-}
 
 type DiagnosticContext = {
     startTime?: number
@@ -199,25 +193,16 @@ const createFetchClient = () => {
             throw new Error('URL is required')
         }
 
-        const scope = requestScope(requestConfig)
-
         ensureClientsBuilt()
 
-        // Refuse before ky is invoked, not in a `beforeRequest` hook: ky
-        // builds the `Request` in its constructor, so a prefix-less client hits
-        // `new Request('v1/assets/')` first and a spec-compliant fetch throws a
-        // bare `TypeError: Failed to parse URL`. That would normalize into a
-        // generic PeraNetworkError('unknown') — the exact outcome this typed
-        // error exists to avoid. Checked before the client lookup, so a scope
-        // with no clients at all gets the typed error too.
-        if (
-            requestConfig.backend === 'pera' &&
-            !isPeraRequestServed(scope, requestConfig.service)
-        ) {
-            throw new PeraServiceUnavailableError(scope, requestConfig.service)
-        }
-
-        const client = clientFor(scope, requestConfig.backend)
+        // clientFor refuses a target with no deployment before ky is invoked,
+        // not in a `beforeRequest` hook: ky builds the `Request` in its
+        // constructor, so a prefix-less client hits `new Request('v1/assets/')`
+        // first and a spec-compliant fetch throws a bare `TypeError: Failed to
+        // parse URL`. That would normalize into a generic
+        // PeraNetworkError('unknown'), the outcome this typed error exists to
+        // avoid.
+        const client = clientFor(requestConfig)
 
         try {
             const path = requestConfig.url.startsWith('/')
@@ -299,8 +284,9 @@ const createFetchClient = () => {
     }
 }
 
-// Keyed by scopeClientKey.
-const clients = new Map<string, BackendInstances>()
+// One per deployment, not per scope: every chain of a tier shares its host.
+const peraClients = new Map<WalletMode, KyInstance>()
+let backupClient: KyInstance | undefined
 
 const setStandardHeaders = ({ request }: BeforeRequestState) => {
     request.headers.set('Content-Type', 'application/json')
@@ -400,8 +386,7 @@ export const BACKUP_RETRY: RequestRetryOverrides = {
     shouldRetry: ({ error }) => isNetworkTransportError(error),
 }
 
-// Takes no network: the backup service is a single global endpoint, so every
-// network's BackendInstances holds an equivalent instance.
+// Takes no target: the backup service is a single global endpoint.
 const createBackupClient = (): KyInstance =>
     ky.create({
         hooks: {
@@ -413,138 +398,65 @@ const createBackupClient = (): KyInstance =>
         timeout: BACKUP_REQUEST_TIMEOUT_MS,
     })
 
-const createTokenHeaderClient = (
-    prefix: string,
-    headerName: string,
-    token: string,
-): KyInstance =>
-    ky.create({
-        hooks: {
-            ...standardHooks,
-            beforeRequest: [
-                ({ request }) => {
-                    request.headers.set('Content-Type', 'application/json')
-                    if (token.length) {
-                        request.headers.set(headerName, token)
-                    }
-                },
-                ...standardHooks.beforeRequest,
-            ],
-        },
-        prefix,
-        retry: peraRetryConfig,
-    })
-
-// An in-memory key, deliberately not toScopeKey: that validates the chain id
-// against the compiled-in union and throws for a test's fixture chain, and
-// nothing keyed by it is persisted.
-const scopeClientKey = (scope: ChainScope): string =>
-    `${scope.chainId}/${scope.networkId}`
-
-const requestScope = (
-    requestConfig: RequestConfiguration<unknown>,
-): ChainScope =>
-    requestConfig.scope !== undefined
-        ? requestConfig.scope
-        : scopeForLegacyNetwork(requestConfig.network)
-
 /**
- * Scopes with a non-empty Pera `backendUrl` — i.e. a Pera deployment exists
- * for them. Recorded by the same pass that builds the clients, from the same
- * `getPeraServicesConfig` read `createPeraClient` is given, so the request-path
- * guard in `createFetchClient` can never disagree with what the client was
- * actually built against. An allow-list, so a scope that was never built
- * counts as having no deployment.
+ * Deployments with a non-empty Pera `backendUrl`. Recorded by the same pass
+ * that builds the clients, from the same read `createPeraClient` is given, so
+ * the request-path guard can never disagree with what a client was built
+ * against.
  */
-const scopesWithPeraBackend = new Set<string>()
+const deploymentsWithPeraBackend = new Set<WalletMode>()
 
-// A request that names no service only needs a deployment; one that names a
-// service also needs the scope's configuration to list it.
-const isPeraRequestServed = (
-    scope: ChainScope,
-    service: PeraService | undefined,
-): boolean =>
-    scopesWithPeraBackend.has(scopeClientKey(scope)) &&
-    (service === undefined || hasPeraService(scope, service))
-
-const buildClientsFor = (scope: ChainScope): BackendInstances => {
-    const { backendUrl } = getPeraServicesConfig(scope)
-    if (backendUrl !== '') {
-        scopesWithPeraBackend.add(scopeClientKey(scope))
-    }
-
-    return {
-        pera: createPeraClient(backendUrl),
-        backup: createBackupClient(),
-    }
-}
-
-let clientsInitialized = false
-
-// On first use, NEVER at import time: importing this module must not call
-// config's getters, since consuming packages' tests mock them as bare
-// `vi.fn()`s and an eager build crashes their collection.
-//
-// Builds EVERY configured scope, not just the one needed. Do not replace with
-// a per-scope build-on-miss: updateBackendHeaders can run before any request
-// has, and would then silently skip the scopes nothing had requested yet.
 const ensureClientsBuilt = (): void => {
-    if (clientsInitialized) return
-    clientsInitialized = true
-
-    for (const scope of configuredScopes()) {
-        clients.set(scopeClientKey(scope), buildClientsFor(scope))
+    // On first use, NEVER at import time: importing this module must not call
+    // config's getters, since consuming packages' tests mock them as bare
+    // `vi.fn()`s and an eager build crashes their collection. Builds every
+    // deployment so updateBackendHeaders, which can run before any request,
+    // never skips one.
+    if (backupClient) return
+    backupClient = createBackupClient()
+    for (const deployment of WALLET_MODES) {
+        const { backendUrl } = getPeraDeploymentConfig(deployment)
+        if (backendUrl !== '') deploymentsWithPeraBackend.add(deployment)
+        peraClients.set(deployment, createPeraClient(backendUrl))
     }
 }
 
-// Keyed by scopeClientKey and backend. Built from the chain's registered
-// backends on first use, so a chain registering after the Pera clients were
-// built is still reached; updateBackendHeaders never touches these, so a Pera
-// credential can't reach a chain node.
-const nodeClients = new Map<string, KyInstance>()
-
-const nodeClientFor = (
-    scope: ChainScope,
-    backend: NodeBackendName,
-): KyInstance => {
-    const key = `${scopeClientKey(scope)}/${backend}`
-    const cached = nodeClients.get(key)
-    if (cached) return cached
-    const node = nodeBackendAdapters.get(scope.chainId).backendsFor(scope)[
-        backend
-    ]
-    if (!node) {
-        throw new Error(`${scopeClientKey(scope)} has no ${backend} node`)
-    }
-    const client = createTokenHeaderClient(
-        node.url,
-        node.tokenHeader,
-        node.token,
-    )
-    nodeClients.set(key, client)
-    return client
-}
-
-/**
- * Drops every node client, so the next request re-reads the chain's backends.
- * A chain calls it when its endpoints change, e.g. a custom node is saved.
- */
-export const resetNodeClients = (): void => {
-    nodeClients.clear()
-}
+const servedPeraClient = (
+    deployment: WalletMode | undefined,
+): KyInstance | undefined =>
+    deployment !== undefined && deploymentsWithPeraBackend.has(deployment)
+        ? peraClients.get(deployment)
+        : undefined
 
 const clientFor = (
-    scope: ChainScope,
-    backend: RequestConfiguration['backend'],
+    requestConfig: RequestConfiguration<unknown>,
 ): KyInstance => {
-    if (backend !== 'pera' && backend !== 'backup') {
-        return nodeClientFor(scope, backend)
+    if (requestConfig.backend === 'backup') return backupClient as KyInstance
+
+    if (requestConfig.deployment !== undefined) {
+        const client = servedPeraClient(requestConfig.deployment)
+        if (!client) {
+            throw new PeraServiceUnavailableError(
+                { deployment: requestConfig.deployment },
+                requestConfig.service,
+            )
+        }
+        return client
     }
-    const backends = clients.get(scopeClientKey(scope))
-    if (!backends) {
-        throw new Error('Could not get backends for ' + scopeClientKey(scope))
-    }
-    return backends[backend]
+
+    const scope =
+        requestConfig.scope !== undefined
+            ? requestConfig.scope
+            : scopeForLegacyNetwork(requestConfig.network)
+    // A scope reaches the deployment holding its chain's data, and must list
+    // any service it names.
+    const { service } = requestConfig
+    const client =
+        service === undefined || hasPeraService(scope, service)
+            ? servedPeraClient(peraDeploymentOf(scope))
+            : undefined
+    if (!client) throw new PeraServiceUnavailableError(scope, service)
+    return client
 }
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
@@ -569,12 +481,10 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
             },
         })
 
-    clients.forEach((client, key) => {
-        clients.set(key, {
-            pera: applyHeaders(client.pera),
-            backup: applyHeaders(client.backup),
-        })
+    peraClients.forEach((client, deployment) => {
+        peraClients.set(deployment, applyHeaders(client))
     })
+    backupClient = applyHeaders(backupClient as KyInstance)
 }
 
 export const queryClient = createFetchClient()

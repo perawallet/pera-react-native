@@ -982,7 +982,7 @@
             "remove_cancel": "Hayır, kalsın"
         },
         "add_contact": {
-            "duplicate_address_error": "Bu adres için bir kişi zaten var."
+            "duplicate_address_warning": "Bu adres için bir kişi zaten var."
         },
         "view_contact": {
             "no_contact_title": "Kişi bulunamadı",
@@ -3135,7 +3135,6 @@
             "completed": "Tamamlandı",
             "failed": "Başarısız",
             "pending": "Beklemede",
-            "pending_verifying": "Beklemede — doğrulanıyor",
             "raw_transaction": "Ham işlem"
         },
         "notice": {

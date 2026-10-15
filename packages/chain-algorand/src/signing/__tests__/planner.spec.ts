@@ -14,10 +14,11 @@ import { describe, it, expect } from 'vitest'
 import { Address, assignGroupID, type Transaction } from 'algosdk'
 import nacl from 'tweetnacl'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    Signature,
-    SigningRequest,
-    UnsignedTransaction,
+import {
+    i18nKey,
+    type Signature,
+    type SigningRequest,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { transactionPlannerContractTests } from '@perawallet/wallet-core-chain-contract/testing'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
@@ -64,7 +65,7 @@ const unsigned = (payload: unknown): UnsignedTransaction => ({
     payload,
     summary: {
         kind: 'transfer',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'out',
         icon: 'send',
     },

@@ -11,11 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWCheckbox, PWTouchableOpacity } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from '@components/ConnectionApproval/styles'
@@ -23,7 +19,7 @@ import { useStyles } from '@components/ConnectionApproval/styles'
 export type ConnectionApprovalAccountRowProps = {
     account: WalletAccount
     isSelected: boolean
-    onPress: (address: string) => void
+    onPress: (accountId: string) => void
 }
 
 export const ConnectionApprovalAccountRow = ({
@@ -32,14 +28,16 @@ export const ConnectionApprovalAccountRow = ({
     onPress,
 }: ConnectionApprovalAccountRowProps) => {
     const styles = useStyles()
-    const address = chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''
-    const handlePress = useCallback(() => onPress(address), [onPress, address])
+    const handlePress = useCallback(
+        () => onPress(account.id),
+        [onPress, account.id],
+    )
 
     return (
         <PWTouchableOpacity
             style={styles.accountItem}
             onPress={handlePress}
-            testID={`wc_account_row_${address}`}
+            testID={`wc_account_row_${account.id}`}
         >
             <AccountDisplay
                 account={account}

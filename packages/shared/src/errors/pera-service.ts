@@ -11,8 +11,10 @@
  */
 
 import {
+    i18nKey,
     scopeForLegacyNetwork,
     type ChainScope,
+    type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraService } from '@perawallet/wallet-core-config'
 import type { Network } from '../models/base-types'
@@ -20,8 +22,8 @@ import { AppError, ErrorCategory, ErrorSeverity } from './base'
 
 /**
  * Thrown when a `backend: 'pera'` request targets a scope with no Pera
- * deployment (betanet, a custom node), or names a Pera service the scope's
- * configuration does not list.
+ * deployment (betanet, a custom node), names a Pera service the scope's
+ * configuration does not list, or names a deployment the build has no host for.
  *
  * Deliberately NOT retryable: unlike a `PeraNetworkError` outage, retrying can
  * never succeed, so React Query must fail fast rather than burn its budget.
@@ -34,30 +36,44 @@ import { AppError, ErrorCategory, ErrorSeverity } from './base'
  * relative URL with a bare `TypeError` first.
  */
 export class PeraServiceUnavailableError extends AppError {
-    public readonly scope: ChainScope
+    /** Absent when the request named a deployment rather than a scope. */
+    public readonly scope: ChainScope | undefined
+    /** `chainId/networkId`, or `deployment/<mode>`. */
+    public readonly targetKey: string
     public readonly service: PeraService | undefined
 
     /** A `Network` target is a legacy Algorand network. */
-    constructor(target: ChainScope | Network, service?: PeraService) {
+    constructor(
+        target: ChainScope | Network | { deployment: WalletMode },
+        service?: PeraService,
+    ) {
         const scope =
-            typeof target === 'string' ? scopeForLegacyNetwork(target) : target
+            typeof target === 'string'
+                ? scopeForLegacyNetwork(target)
+                : 'deployment' in target
+                  ? undefined
+                  : target
         // Plain interpolation, not toScopeKey: building this error must never throw.
-        const scopeKey = `${scope.chainId}/${scope.networkId}`
+        const targetKey =
+            scope === undefined
+                ? `deployment/${(target as { deployment: WalletMode }).deployment}`
+                : `${scope.chainId}/${scope.networkId}`
         super(
-            `Pera services are not deployed for ${scopeKey}` +
+            `Pera services are not deployed for ${targetKey}` +
                 (service === undefined ? '' : ` (service: ${service})`),
             {
                 severity: ErrorSeverity.LOW,
                 category: ErrorCategory.NETWORK,
                 retryable: false,
                 recoverable: false,
-                messageKey: 'errors.pera_service.unavailable',
+                messageKey: i18nKey('errors.pera_service.unavailable'),
                 // Log context only — the copy deliberately says "this network"
                 // rather than naming it, since the scope is an internal concept.
-                params: { scope: scopeKey, service },
+                params: { scope: targetKey, service },
             },
         )
         this.scope = scope
+        this.targetKey = targetKey
         this.service = service
     }
 }

@@ -41,7 +41,7 @@ export const useOwnedAssets = (
     options?: UseOwnedAssetsOptions,
 ): UseOwnedAssetsResult => {
     const enabled = options?.enabled ?? true
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
 
     const { data: ownedAssetIds = [], isLoading: isIdsLoading } = useQuery({
         queryKey: getOwnedAssetIdsQueryKey(scope),
@@ -54,10 +54,10 @@ export const useOwnedAssets = (
     // holdings rows: an account still syncing has none yet, and the id is what
     // picks up the DB-backed peraMetadata (e.g. isFavorited). The adapter's
     // record is only a pre-seed fallback.
-    const { data: assetsMap, isPending: isAssetsPending } = useAssetsQuery([
-        nativeAsset.assetId,
-        ...ownedAssetIds,
-    ])
+    const { data: assetsMap, isPending: isAssetsPending } = useAssetsQuery(
+        scope,
+        [nativeAsset.assetId, ...ownedAssetIds],
+    )
 
     const assets = useMemo<PeraAsset[]>(() => {
         const list: PeraAsset[] = [

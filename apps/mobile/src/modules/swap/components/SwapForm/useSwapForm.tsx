@@ -133,7 +133,7 @@ export const useSwapForm = (
     const { successToast, errorToast, infoToast } = useToast()
     const { t } = useLanguage()
 
-    const { data: payAssets } = useAssetsQuery([fromAsset])
+    const { data: payAssets } = useAssetsQuery(scope, [fromAsset])
     const payAsset = payAssets?.get(fromAsset)
 
     const {

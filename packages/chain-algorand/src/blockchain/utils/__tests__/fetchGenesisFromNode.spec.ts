@@ -11,6 +11,8 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import { setAlgorandChainContext } from '../../../chain-context'
+import { testChainContext } from '../../../__tests__/context'
 import { fetchGenesisFromNode } from '../fetchGenesisFromNode'
 
 describe('fetchGenesisFromNode', () => {
@@ -51,6 +53,46 @@ describe('fetchGenesisFromNode', () => {
             'http://10.0.0.5:4001/v2/transactions/params',
             expect.anything(),
         )
+    })
+
+    test("bounds the probe by the registered context's read ceiling", async () => {
+        setAlgorandChainContext({
+            ...testChainContext(),
+            timeouts: { readMs: 4_321, submitMs: 1 },
+        })
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+            new Response(
+                JSON.stringify({ 'genesis-hash': 'H', 'genesis-id': 'g' }),
+                { status: 200 },
+            ),
+        )
+        const timeout = vi.spyOn(AbortSignal, 'timeout')
+
+        await fetchGenesisFromNode('http://10.0.0.5:4001')
+
+        expect(timeout).toHaveBeenCalledWith(4_321)
+    })
+
+    test('sends the API token only when one is given', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+            Promise.resolve(
+                new Response(
+                    JSON.stringify({
+                        'genesis-hash': 'H',
+                        'genesis-id': 'g',
+                    }),
+                    { status: 200 },
+                ),
+            ),
+        )
+
+        await fetchGenesisFromNode('http://10.0.0.5:4001', 'secret')
+        await fetchGenesisFromNode('http://10.0.0.5:4001')
+
+        expect(fetchSpy.mock.calls[0]?.[1]?.headers).toEqual({
+            'X-Algo-API-Token': 'secret',
+        })
+        expect(fetchSpy.mock.calls[1]?.[1]?.headers).toEqual({})
     })
 
     test('rejects when the node responds non-OK', async () => {

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AssetAboutParams, AssetAboutDisplay } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
@@ -25,10 +26,12 @@ export const resolveAlgorandAssetAbout = ({
 }: AssetAboutParams): AssetAboutDisplay => {
     const explorerUrl = asset.peraMetadata?.explorerUrl
     return {
-        idLabelKey: isNativeAsset ? null : 'asset_details.about.asa_id',
+        idLabelKey: isNativeAsset
+            ? null
+            : i18nKey('asset_details.about.asa_id'),
         urlLabelKey: isNativeAsset
-            ? 'asset_details.about.url'
-            : 'asset_details.about.asa_url',
+            ? i18nKey('asset_details.about.url')
+            : i18nKey('asset_details.about.asa_url'),
         explorerLink: explorerUrl?.length
             ? {
                   url: explorerUrl,
