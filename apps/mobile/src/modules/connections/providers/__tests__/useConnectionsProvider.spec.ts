@@ -21,6 +21,7 @@ import {
 } from 'vitest'
 import { cleanup, renderHook, waitFor } from '@testing-library/react'
 import { config } from '@perawallet/wallet-core-config'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { FeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
@@ -101,7 +102,9 @@ const scoped = (pairingId: string): ErrorScope => ({ pairingId })
 
 /** What the composition root injects, per handler kind. */
 type V1Options = { getNetwork: () => string }
-type V2Options = V1Options & {
+type V2Options = {
+    getNetworkId: (chainId: string) => string
+    isDappConnectEnabled: (chainId: string) => boolean
     projectId: string
     keyValueStorage: object
     startWhen: () => Promise<void>
@@ -205,10 +208,21 @@ let keystoreReady: Promise<void> = Promise.resolve()
 /** Stable identity, so the registration test can assert what was injected. */
 const keyValueStorage = {}
 
+/** Which chains the provider stub reports as registered, and the `dappConnect` it reports for them. */
+const chainStub = {
+    registered: new Set<string>(),
+    dappConnect: new Set<string>(),
+}
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         // Before bootstrap registers a chain, the scope reads the tier name.
-        chains: { has: () => false },
+        chains: {
+            has: (chainId: string) => chainStub.registered.has(chainId),
+            capabilities: (chainId: string) => ({
+                dappConnect: chainStub.dappConnect.has(chainId),
+            }),
+        },
         // Just enough store for the real mirror hydration to subscribe to.
         connections: {
             store: { list: async () => [], subscribe: () => () => {} },
@@ -362,9 +376,51 @@ describe('useConnectionsProvider', () => {
         const v2 = mockCreateV2.mock.calls[0][0]
         expect(v2.projectId).toBe(config.reownProjectId)
         expect(v2.keyValueStorage).toBe(keyValueStorage)
-        // One injection point shared by both, so neither reaches for a store
-        // default and pulls the Algorand runtime into a consumer's graph.
-        expect(v2.getNetwork).toBe(mockCreateV1.mock.calls[0][0].getNetwork)
+        // Injected rather than defaulted, so neither handler pulls the
+        // Algorand runtime into a consumer's graph.
+        expect(mockCreateV1.mock.calls[0][0].getNetwork).toBeTypeOf('function')
+        expect(v2.getNetworkId).toBeTypeOf('function')
+        expect(v2.isDappConnectEnabled).toBeTypeOf('function')
+    })
+
+    it("reads each chain's selected network for v2", () => {
+        renderHook(() => useConnectionsProvider())
+        const { getNetworkId } = mockCreateV2.mock.calls[0][0]
+
+        useNetworkStore.getState().setNetwork('testnet')
+
+        expect(getNetworkId('algorand')).toBe('testnet')
+    })
+
+    describe('v2 dappConnect', () => {
+        beforeEach(() => {
+            chainStub.registered.clear()
+            chainStub.dappConnect.clear()
+        })
+
+        const enabledFor = (chainId: string): boolean => {
+            renderHook(() => useConnectionsProvider())
+            return mockCreateV2.mock.calls[0][0].isDappConnectEnabled(chainId)
+        }
+
+        it('is off for a registered chain whose capability is off', () => {
+            chainStub.registered.add('ethereum')
+
+            expect(enabledFor('ethereum')).toBe(false)
+        })
+
+        it('is on once the chain turns the capability on', () => {
+            chainStub.registered.add('ethereum')
+            chainStub.dappConnect.add('ethereum')
+
+            expect(enabledFor('ethereum')).toBe(true)
+        })
+
+        it('is off for an unregistered chain', () => {
+            chainStub.dappConnect.add('ethereum')
+
+            expect(enabledFor('ethereum')).toBe(false)
+        })
     })
 
     it('holds the v2 start until the lock screen is gone', async () => {

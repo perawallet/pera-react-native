@@ -21,7 +21,7 @@ import {
 } from '@components/core'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as usePermissionItemStyles } from '../PermissionItem/styles'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -41,11 +41,12 @@ export type ConnectionApprovalViewHeaderProps = {
     /** `peer.name` cleaned and clamped for display. */
     peerName: string
     /**
-     * Handler-resolved list (v1's 4160 wildcard already expanded), not a wire chain
-     * id. `'custom'` is filtered from the badge row: it names a runtime-configurable
-     * node slot with no translated label.
+     * Handler-resolved list (v1's 4160 wildcard already expanded), not a wire
+     * chain id. Only ids with a translated label get a badge: two chains can
+     * both report `mainnet`, `sepolia` has no label, and `custom` names a
+     * runtime-configurable node slot.
      */
-    networks: Network[]
+    networks: NetworkId[]
     /**
      * Wire method strings (e.g. `algo_signTxn`); unrecognised ones fall back to
      * the raw string since another handler's methods need not match v1's.
@@ -58,6 +59,8 @@ export type ConnectionApprovalViewHeaderProps = {
     /** Host of the transport-attested origin; `peerUrlLabel` is forgeable. */
     verifiedOriginLabel?: string
 }
+
+const LABELED_NETWORKS: readonly NetworkId[] = ['mainnet', 'testnet', 'betanet']
 
 const permissionTitleKey: Record<string, string> = {
     algo_signTxn: 'walletconnect.request.permissions_sign_transaction',
@@ -110,8 +113,8 @@ export const ConnectionApprovalViewHeader = ({
             <PWView style={styles.networksContainer}>
                 {/* `networks` is already the resolved set a v1 wildcard is valid on,
                     so betanet is a real granted network here, not a badge to special-case away. */}
-                {networks
-                    .filter(network => network !== 'custom')
+                {[...new Set(networks)]
+                    .filter(network => LABELED_NETWORKS.includes(network))
                     .map(network => (
                         <PWBadge
                             key={network}

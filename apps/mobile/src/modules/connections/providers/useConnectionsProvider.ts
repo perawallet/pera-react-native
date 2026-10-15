@@ -11,7 +11,10 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    getSelectedScope,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -51,13 +54,21 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         // Injected, on both handlers: a store default would drag the
         // blockchain package into every importer's graph, `apps/browser`
         // included.
-        const getNetwork = () => useNetworkStore.getState().network
-        const v1Handler = createWalletConnectV1Handler({ getNetwork })
+        const v1Handler = createWalletConnectV1Handler({
+            getNetwork: () => useNetworkStore.getState().network,
+        })
         registry.register(v1Handler)
         v1HandlerRef.current = v1Handler
         registry.register(
             createWalletConnectV2Handler({
-                getNetwork,
+                getNetworkId: chainId => getSelectedScope(chainId).networkId,
+                isDappConnectEnabled: chainId => {
+                    const { chains } = getProvider()
+                    return (
+                        chains.has(chainId) &&
+                        chains.capabilities(chainId).dappConnect
+                    )
+                },
                 // Empty when no Reown project is provisioned for the build;
                 // the handler then logs and refuses v2 pairings rather than
                 // failing the boot.
