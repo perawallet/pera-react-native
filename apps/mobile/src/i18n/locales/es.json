@@ -967,7 +967,9 @@
         "save": "Guardar",
         "apply": "Aplicar",
         "copy": "Copiar",
-        "send": "Enviar"
+        "send": "Enviar",
+        "show_more": "Mostrar más",
+        "show_less": "Mostrar menos"
     },
     "contacts": {
         "edit_contact": {
@@ -3161,6 +3163,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} transacciones internas"
+        },
+        "contract_call": {
+            "warning": "Pera no puede saber qué hace esta llamada a contrato.",
+            "function_selector": "Selector de función",
+            "call_data": "Datos de la llamada"
         },
         "type": {
             "pay": "Transacción de pago",

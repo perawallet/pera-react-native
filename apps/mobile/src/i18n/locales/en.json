@@ -967,7 +967,9 @@
         "save": "Save",
         "apply": "Apply",
         "copy": "Copy",
-        "send": "Send"
+        "send": "Send",
+        "show_more": "Show more",
+        "show_less": "Show less"
     },
     "contacts": {
         "edit_contact": {
@@ -3161,6 +3163,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} inner txns"
+        },
+        "contract_call": {
+            "warning": "Pera can't tell what this contract call does.",
+            "function_selector": "Function Selector",
+            "call_data": "Call Data"
         },
         "type": {
             "pay": "Payment Transaction",

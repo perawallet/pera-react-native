@@ -28,7 +28,7 @@ describe('ExpandableText', () => {
         )
 
         expect(screen.getByText('This is a ...')).toBeTruthy()
-        expect(screen.getByText('Show more')).toBeTruthy()
+        expect(screen.getByText('common.show_more')).toBeTruthy()
     })
 
     it('expands text when clicking show more', () => {
@@ -41,8 +41,8 @@ describe('ExpandableText', () => {
             />,
         )
 
-        fireEvent.click(screen.getByText('Show more'))
+        fireEvent.click(screen.getByText('common.show_more'))
         expect(screen.getByText(text)).toBeTruthy()
-        expect(screen.getByText('Show less')).toBeTruthy()
+        expect(screen.getByText('common.show_less')).toBeTruthy()
     })
 })

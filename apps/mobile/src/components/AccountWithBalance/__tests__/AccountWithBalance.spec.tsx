@@ -25,13 +25,17 @@ const mockHookResult = {
     isMultiChain: false,
     isTestTier: false,
 }
+const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
+const mockAccountDisplay = vi.fn((_props: unknown) => null)
+const mockPreferredAmount = vi.fn((_props: unknown) => null)
 
 vi.mock('../useAccountWithBalance', () => ({
-    useAccountWithBalance: () => mockHookResult,
+    useAccountWithBalance: (...args: unknown[]) =>
+        (mockUseAccountWithBalance as (...a: unknown[]) => unknown)(...args),
 }))
 
 vi.mock('@components/AccountDisplay', () => ({
-    AccountDisplay: () => null,
+    AccountDisplay: (props: unknown) => mockAccountDisplay(props),
 }))
 
 vi.mock('@components/AssetAmount', () => ({
@@ -39,7 +43,7 @@ vi.mock('@components/AssetAmount', () => ({
 }))
 
 vi.mock('@components/PreferredAmount', () => ({
-    PreferredAmount: () => null,
+    PreferredAmount: (props: unknown) => mockPreferredAmount(props),
 }))
 
 const ACCOUNT: WalletAccount = {
@@ -92,5 +96,28 @@ describe('AccountWithBalance', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(screen.getByTestId('account_chain_unavailable')).toBeTruthy()
+    })
+
+    it('hands its chain to the hook and the account display, and the hook scope to the fiat amount', () => {
+        render(
+            <AccountWithBalance
+                account={ACCOUNT}
+                chainId='ethereum'
+            />,
+        )
+
+        expect(mockUseAccountWithBalance).toHaveBeenCalledWith(
+            ACCOUNT,
+            'ethereum',
+        )
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+        expect(mockPreferredAmount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: mockHookResult.scope,
+                sourceAssetId: '0',
+            }),
+        )
     })
 })

@@ -967,7 +967,9 @@
         "save": "Kaydet",
         "apply": "Uygula",
         "copy": "Kopyala",
-        "send": "Gönder"
+        "send": "Gönder",
+        "show_more": "Daha fazla göster",
+        "show_less": "Daha az göster"
     },
     "contacts": {
         "edit_contact": {
@@ -3161,6 +3163,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} karşılığında {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} iç işlem"
+        },
+        "contract_call": {
+            "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
+            "function_selector": "Fonksiyon seçici",
+            "call_data": "Çağrı verisi"
         },
         "type": {
             "pay": "Ödeme işlemi",

@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
     accountValueOf,
-    useAccountScope,
+    useAccountChainId,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
     type WalletAccount,
@@ -36,7 +36,7 @@ import {
 } from '@hooks/useChainAvailability'
 
 export type UseAccountWithBalanceResult = {
-    /** The account's own chain, where its native asset is priced. */
+    /** `chainId`, else the account's own chain, at its selected network; where its native asset is priced. */
     scope: ChainScope
     /** Undefined for a chain this build doesn't register. */
     chainName: Optional<string>
@@ -50,8 +50,10 @@ export type UseAccountWithBalanceResult = {
 
 export const useAccountWithBalance = (
     account: WalletAccount,
+    chainOverride?: ChainId,
 ): UseAccountWithBalanceResult => {
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainOverride ?? accountChainId)
     const { chainId } = scope
     const homeScope = useSelectedScope(LEGACY_CHAIN_ID)
     const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
