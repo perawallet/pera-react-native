@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -27,6 +28,10 @@ type AddSignatureMutationInput = {
     responses: AddSignatureRequest[]
 }
 
+// TanStack swaps a pending mutation's options on every render, so the scope
+// travels in the variables to post and invalidate on the same scope.
+type AddSignatureVariables = AddSignatureMutationInput & { scope: ChainScope }
+
 export type UseAddSignatureMutationResult = {
     data: ProposeSignRequestResponse | undefined
     error: Nullable<Error>
@@ -43,14 +48,20 @@ export const useAddSignatureMutation = ({
     const rqClient = useQueryClient()
 
     const mutation = useMutation({
-        mutationFn: ({ responses }: AddSignatureMutationInput) =>
+        mutationFn: ({ responses, scope }: AddSignatureVariables) =>
             addSignature(scope, signRequestId, responses),
-        onSuccess: () => {
+        onSuccess: (_data, { scope }) => {
             void rqClient.invalidateQueries({
                 queryKey: getSignRequestDetailQueryKey(scope, signRequestId),
             })
         },
     })
+
+    const { mutate } = mutation
+    const mutateOnScope = useCallback(
+        (input: AddSignatureMutationInput) => mutate({ ...input, scope }),
+        [mutate, scope],
+    )
 
     return {
         data: mutation.data,
@@ -58,6 +69,6 @@ export const useAddSignatureMutation = ({
         isError: mutation.isError,
         isIdle: mutation.isIdle,
         isSuccess: mutation.isSuccess,
-        mutate: mutation.mutate,
+        mutate: mutateOnScope,
     }
 }

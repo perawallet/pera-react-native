@@ -165,6 +165,48 @@ describe('useDeclineSignRequestMutation', () => {
         expect(queryClient.getQueryState(queryKey)?.isInvalidated).toBe(true)
     })
 
+    test('invalidates the scope the request was sent on when the scope changes mid-flight', async () => {
+        let resolve: (
+            value: typeof declinedSignRequestResponse,
+        ) => void = () => {}
+        mocks.addSignature.mockReturnValue(
+            new Promise(r => {
+                resolve = r
+            }),
+        )
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+        const { result, rerender } = renderHook(
+            ({ scope }) =>
+                useDeclineSignRequestMutation({
+                    scope,
+                    signRequestId: 'sr-123',
+                }),
+            { wrapper, initialProps: { scope: ALGORAND_MAINNET } },
+        )
+
+        act(() => {
+            result.current.mutate({ address: 'ADDR2', deviceId: 'device-1' })
+        })
+        rerender({ scope: ALGORAND_TESTNET })
+        await act(async () => {
+            resolve(declinedSignRequestResponse)
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(mocks.addSignature).toHaveBeenCalledWith(
+            ALGORAND_MAINNET,
+            'sr-123',
+            expect.anything(),
+        )
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            queryKey: getSignRequestDetailQueryKey(ALGORAND_MAINNET, 'sr-123'),
+        })
+        expect(invalidateSpy).not.toHaveBeenCalledWith({
+            queryKey: getSignRequestDetailQueryKey(ALGORAND_TESTNET, 'sr-123'),
+        })
+    })
+
     test('invalidates sign request detail query on success', async () => {
         mocks.addSignature.mockResolvedValue(declinedSignRequestResponse)
 

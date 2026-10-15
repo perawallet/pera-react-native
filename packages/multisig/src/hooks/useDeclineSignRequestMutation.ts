@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -25,6 +26,12 @@ type UseDeclineSignRequestMutationParams = {
 type DeclineSignRequestInput = {
     address: string
     deviceId: string
+}
+
+// TanStack swaps a pending mutation's options on every render, so the scope
+// travels in the variables to post and invalidate on the same scope.
+type DeclineSignRequestVariables = DeclineSignRequestInput & {
+    scope: ChainScope
 }
 
 export type UseDeclineSignRequestMutationResult = {
@@ -47,7 +54,11 @@ export const useDeclineSignRequestMutation = ({
     const rqClient = useQueryClient()
 
     const mutation = useMutation({
-        mutationFn: ({ address, deviceId }: DeclineSignRequestInput) =>
+        mutationFn: ({
+            address,
+            deviceId,
+            scope,
+        }: DeclineSignRequestVariables) =>
             addSignature(scope, signRequestId, [
                 {
                     address,
@@ -55,12 +66,22 @@ export const useDeclineSignRequestMutation = ({
                     device_id: deviceId,
                 },
             ]),
-        onSuccess: () => {
+        onSuccess: (_data, { scope }) => {
             void rqClient.invalidateQueries({
                 queryKey: getSignRequestDetailQueryKey(scope, signRequestId),
             })
         },
     })
+
+    const { mutate, mutateAsync } = mutation
+    const mutateOnScope = useCallback(
+        (input: DeclineSignRequestInput) => mutate({ ...input, scope }),
+        [mutate, scope],
+    )
+    const mutateAsyncOnScope = useCallback(
+        (input: DeclineSignRequestInput) => mutateAsync({ ...input, scope }),
+        [mutateAsync, scope],
+    )
 
     return {
         data: mutation.data,
@@ -69,7 +90,7 @@ export const useDeclineSignRequestMutation = ({
         isIdle: mutation.isIdle,
         isPending: mutation.isPending,
         isSuccess: mutation.isSuccess,
-        mutate: mutation.mutate,
-        mutateAsync: mutation.mutateAsync,
+        mutate: mutateOnScope,
+        mutateAsync: mutateAsyncOnScope,
     }
 }
