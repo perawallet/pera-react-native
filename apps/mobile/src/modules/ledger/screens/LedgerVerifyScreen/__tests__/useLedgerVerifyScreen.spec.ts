@@ -18,7 +18,11 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
+} from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -29,7 +33,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 import { useLedgerVerifyScreen } from '../useLedgerVerifyScreen'
-import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerAlgorandAccountsAdapter,
+    registerAlgorandAddressCodec,
+} from '@test-utils/algorandAccountsAdapter'
 
 const {
     mockVerify,
@@ -128,11 +135,6 @@ const routeParams = vi.hoisted(() => ({
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
 }))
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: (address?: string) =>
-        typeof address === 'string' && !address.startsWith('!!'),
-}))
-
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
@@ -166,9 +168,18 @@ const expectedAddressFor = (accountIndex: number): string => {
     return 'UNKNOWN'
 }
 
+afterEach(() => {
+    vi.restoreAllMocks()
+})
+
 beforeEach(() => {
     registerAlgorandAccountsAdapter()
     vi.clearAllMocks()
+    registerAlgorandAddressCodec()
+    // A `!!` prefix marks the fixtures' invalid addresses.
+    vi.spyOn(addressCodecs.get(LEGACY_CHAIN_ID), 'isValid').mockImplementation(
+        address => !address.startsWith('!!'),
+    )
     mockConnect.mockResolvedValue({
         getAddress: vi.fn(),
         signTransaction: vi.fn(),

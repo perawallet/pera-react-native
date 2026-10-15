@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 import {
     type Optional,
@@ -19,9 +19,9 @@ import {
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseNfdResolveResult = {
-    /** Direct address if input is a valid Algorand address, otherwise the NFD-resolved address (or empty string). */
+    /** The input when a registered chain's codec accepts it, otherwise the NFD-resolved address (or empty string). */
     resolvedAddress: string
-    /** Whether the input is itself a valid Algorand address. */
+    /** Whether a registered chain's codec accepts the input as an address. */
     isDirectAddress: boolean
     /** Whether the input was successfully resolved via an NFD lookup. */
     isNfdResolved: boolean
@@ -37,7 +37,9 @@ export const useNfdResolve = (
 ): UseNfdResolveResult => {
     const enabled = options?.enabled ?? true
     const debouncedInput = useDebouncedValue(input, SEARCH_DEBOUNCE_TIME)
-    const isDirectAddress = isValidAlgorandAddress(input)
+    const isDirectAddress = addressCodecs
+        .list()
+        .some(codec => codec.isValid(input))
     const shouldSearchNfd =
         enabled && debouncedInput.includes('.') && !isDirectAddress
 

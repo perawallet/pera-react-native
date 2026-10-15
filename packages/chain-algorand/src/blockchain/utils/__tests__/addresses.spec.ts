@@ -50,6 +50,18 @@ describe('addresses utils', () => {
             expect(isValidAlgorandAddress(invalidAddress)).toBe(false)
         })
 
+        it('should return false for a lowercased valid address', () => {
+            const validAddress =
+                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+            expect(isValidAlgorandAddress(validAddress.toLowerCase())).toBe(
+                false,
+            )
+        })
+
+        it('should return false for 58 alphanumeric characters that are not an address', () => {
+            expect(isValidAlgorandAddress('a'.repeat(58))).toBe(false)
+        })
+
         it('should return false for empty or undefined', () => {
             expect(isValidAlgorandAddress('')).toBe(false)
             expect(isValidAlgorandAddress(undefined)).toBe(false)

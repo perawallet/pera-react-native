@@ -21,7 +21,12 @@
 // wipes the page's paymentSent/paymentCancelled callbacks. See
 // useBidaliWebViewScreen.ts for the fix (balances frozen at mount).
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
+import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import type {
@@ -77,7 +82,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: (addr: string) => /^[A-Z2-7]{58}$/.test(addr ?? ''),
     useAlgorandClient: () => ({ newGroup: () => ({}) }),
 }))
 
@@ -173,6 +177,19 @@ const balancesWith = (algo: string, usdc: string): AccountBalances =>
             },
         ],
     ])
+
+// Stands in for the Algorand codec; this spec mocks the Algorand blockchain module.
+beforeEach(() => {
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: LEGACY_CHAIN_ID,
+        isValid: address => /^[A-Z2-7]{58}$/.test(address),
+    })
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('useBidaliWebViewScreen (web)', () => {
     beforeEach(() => {

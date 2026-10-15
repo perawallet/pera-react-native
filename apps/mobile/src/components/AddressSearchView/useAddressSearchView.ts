@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    addressCodecs,
     LEGACY_CHAIN_ID,
     type ChainFamily,
 } from '@perawallet/wallet-core-chain-contract'
@@ -25,7 +26,6 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     useNfdSearchQuery,
     type NfdSearchResult,
@@ -98,7 +98,10 @@ export const useAddressSearchView = ({
         scope.chainId,
     )
 
-    const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
+    const addressIsValid = useMemo(
+        () => addressCodecs.get(scope.chainId).isValid(value),
+        [scope.chainId, value],
+    )
 
     // Re-read on focus rather than once on mount: the user leaves to copy an
     // address and comes back, which is the whole point of the affordance. Mirrors
@@ -109,12 +112,16 @@ export const useAddressSearchView = ({
             let isActive = true
             void readText().then(text => {
                 if (!isActive) return
-                setClipboardAddress(isValidAlgorandAddress(text) ? text : null)
+                setClipboardAddress(
+                    addressCodecs.get(scope.chainId).isValid(text)
+                        ? text
+                        : null,
+                )
             })
             return () => {
                 isActive = false
             }
-        }, [showClipboardPaste, readText]),
+        }, [showClipboardPaste, readText, scope.chainId]),
     )
 
     const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)

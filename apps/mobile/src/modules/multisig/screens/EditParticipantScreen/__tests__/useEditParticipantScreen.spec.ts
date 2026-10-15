@@ -17,6 +17,7 @@ import type {
     ContactAddresses,
 } from '@perawallet/wallet-core-contacts'
 import { useEditParticipantScreen } from '../useEditParticipantScreen'
+import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
 
 // Checksum-valid addresses — contactSchema rejects mere 58-char shapes, and
@@ -88,6 +89,7 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
 describe('useEditParticipantScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerAlgorandAddressCodec()
         mockFindContacts.mockReturnValue([])
         mockPickFromGallery.mockResolvedValue(null)
         mockRouteParams.index = 0
