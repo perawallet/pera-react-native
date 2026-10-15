@@ -304,7 +304,7 @@ export const useAddAccountScreen = () => {
                 descriptionKey:
                     'onboarding.add_account.watch_address_option_description',
                 leftIcon: 'eye',
-                onPress: () => navigation.push('WatchInfo'),
+                onPress: handleWatchAddress,
             })
         }
         return { main, other }
@@ -316,7 +316,7 @@ export const useAddAccountScreen = () => {
         isCreatingAccount,
         handleDeriveFromWallet,
         handleImportPrivateKey,
-        navigation,
+        handleWatchAddress,
     ])
 
     const createOptions = useMemo(() => {

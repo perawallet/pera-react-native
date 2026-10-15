@@ -68,6 +68,9 @@ export const useImportPrivateKeyScreen =
         const [hasInput, setHasInput] = useState(false)
         const [isValidInput, setIsValidInput] = useState(false)
         const [isImporting, setIsImporting] = useState(false)
+        // State lags a second tap landing before the re-render, so the guard
+        // reads a ref; that tap would otherwise parse the cleared input.
+        const isImportingRef = useRef(false)
 
         useEffect(
             () => () => {
@@ -86,7 +89,8 @@ export const useImportPrivateKeyScreen =
         )
 
         const handleImport = useCallback(() => {
-            if (isImporting || !isValidInput) return
+            if (isImportingRef.current || !isValidInput) return
+            isImportingRef.current = true
             setIsImporting(true)
             void (async () => {
                 let privateKey: Uint8Array | undefined
@@ -113,18 +117,11 @@ export const useImportPrivateKeyScreen =
                     // The store zeroes the bytes it was handed; this covers a
                     // throw before they reached it.
                     zeroBytes(privateKey)
+                    isImportingRef.current = false
                     if (isMounted()) setIsImporting(false)
                 }
             })()
-        }, [
-            chainId,
-            isImporting,
-            isValidInput,
-            isMounted,
-            navigation,
-            showError,
-            t,
-        ])
+        }, [chainId, isValidInput, isMounted, navigation, showError, t])
 
         return {
             chainName,

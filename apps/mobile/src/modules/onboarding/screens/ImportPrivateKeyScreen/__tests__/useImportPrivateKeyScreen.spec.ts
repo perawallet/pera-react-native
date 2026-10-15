@@ -148,6 +148,20 @@ describe('useImportPrivateKeyScreen', () => {
         expect(result.current.isImporting).toBe(false)
     })
 
+    it('imports once when Import is tapped twice before a re-render', async () => {
+        const { result } = render()
+        enter(result, VALID_KEY)
+
+        await act(async () => {
+            result.current.handleImport()
+            result.current.handleImport()
+        })
+
+        expect(mocks.importAccountFromPrivateKey).toHaveBeenCalledTimes(1)
+        expect(mocks.showError).not.toHaveBeenCalled()
+        expect(mocks.push).toHaveBeenCalledTimes(1)
+    })
+
     it('does nothing while the input is invalid', async () => {
         const { result } = render()
         enter(result, 'nope')
