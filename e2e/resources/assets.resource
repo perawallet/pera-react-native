@@ -42,7 +42,7 @@ ${COLLECTIBLE_DETAIL_SCREEN}    xpath=//*[@resource-id='collectible_detail_scree
 *** Keywords ***
 Search Assets For USDC
     [Arguments]    ${result}
-    Wait Until Page Contains Element    ${ADD_ASSET_BUTTON}    timeout=30s
+    Wait Until Settled    ${ADD_ASSET_BUTTON}
     Tap    ${ADD_ASSET_BUTTON}
     Wait Until Page Contains Element    ${ASSET_SEARCH_INPUT}    timeout=15s
     Input Text    ${ASSET_SEARCH_INPUT}    USDC
@@ -64,7 +64,8 @@ Open Opt In Sheet
     Wait Until Settled    ${OPT_IN_CONFIRM}
 
 Open Manage Sheet
-    Wait Until Page Contains Element    ${MANAGE_ASSETS_BUTTON}    timeout=30s
+    # Home is still laying out after the reset, and a tap at a moving button misses it.
+    Wait Until Settled    ${MANAGE_ASSETS_BUTTON}
     Tap    ${MANAGE_ASSETS_BUTTON}
     Wait Until Settled    ${MANAGE_SORT}
 

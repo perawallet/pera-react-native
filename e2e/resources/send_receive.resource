@@ -178,7 +178,8 @@ Slide To Confirm
     Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms
 
 Open Receive
-    Wait Until Page Contains Element    ${RECEIVE_BUTTON}    timeout=30s
+    # Home is still laying out after the reset, and a tap at a moving button misses it.
+    Wait Until Settled    ${RECEIVE_BUTTON}
     Tap    ${RECEIVE_BUTTON}
     Wait Until Page Contains Element    ${RECEIVE_COPY_ADDRESS}    timeout=20s
 

@@ -5,7 +5,7 @@ Documentation       PIN, duress PIN and lockout on Android and iOS from one suit
 ...                 lands on an ordinary empty Home, so a wipe is proved by the PIN being gone.
 Resource            ../resources/security.resource
 
-Suite Setup         Start Pera With Wallet
+Suite Setup         Run Keywords    Start Pera With Wallet    AND    Turn Pin Off
 Suite Teardown      Run Keywords    Turn Pin Off    AND    Close Pera
 Test Setup          Start On Security
 Test Teardown       Capture Failure Screenshot

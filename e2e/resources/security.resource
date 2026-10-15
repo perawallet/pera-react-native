@@ -269,9 +269,11 @@ Wallet Should Have Been Wiped
     Should Not Be True    ${pin_set}    The regular PIN survived the duress PIN, so the wipe did not run.
 
 Turn Pin Off
-    [Documentation]    Suite teardown: a PIN left on locks every later suite on its cold start.
-    ...                Removing the PIN record removes the duress PIN with it.
-    Unlock If Locked
+    [Documentation]    Suite setup and teardown: a PIN left on locks every later suite on its cold
+    ...                start, and a run that died mid-change can leave ${NEW_REGULAR_PIN} behind, so
+    ...                this tries every PIN a suite sets. Removing the PIN record removes the duress
+    ...                PIN with it.
+    Unlock With Known Pins
     Go Home
     Open Security Settings
     ${pin_set}=    Run Keyword And Return Status
@@ -279,5 +281,11 @@ Turn Pin Off
     IF    not ${pin_set}    RETURN
     Tap    ${PIN_TOGGLE}
     Wait Until Page Contains Element    ${PIN_VERIFY_TITLE}    timeout=15s
-    Enter Pin    ${REGULAR_PIN}
-    Wait Until Page Does Not Contain Element    ${CHANGE_PIN_BUTTON}    timeout=15s
+    FOR    ${pin}    IN    @{E2E_PINS}
+        Clear Pin Pad
+        Enter Pin    ${pin}
+        ${off}=    Run Keyword And Return Status
+        ...    Wait Until Page Does Not Contain Element    ${CHANGE_PIN_BUTTON}    timeout=5s
+        IF    ${off}    RETURN
+    END
+    Fail    None of the known PINs turned the PIN off.

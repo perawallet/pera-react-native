@@ -83,5 +83,4 @@ Send Executes On Testnet
 Leave Share Sheet
     [Documentation]    The OS share sheet is outside the app; a relaunch is the one way out on both platforms.
     Capture Failure Screenshot
-    Restart Pera
-    Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
+    Relaunch Pera

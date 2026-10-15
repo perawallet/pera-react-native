@@ -25,7 +25,7 @@ Account Tabs Switch Between Overview And History
 
 NFTs Tab Shows The Empty State On A New Account
     [Tags]    id:transactions.nfts.empty    p1
-    Wait Until Page Contains Element    ${NFTS_TAB}    timeout=30s
+    Wait Until Settled    ${NFTS_TAB}
     Tap    ${NFTS_TAB}
     Wait Until Page Contains    ${NFTS_EMPTY_TEXT}    timeout=45s
 

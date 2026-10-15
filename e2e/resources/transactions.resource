@@ -24,11 +24,11 @@ ${TX_DETAIL_EXPLORER}       accessibility_id=transaction_detail_explorer
 
 *** Keywords ***
 Open History
-    Wait Until Page Contains Element    ${HISTORY_TAB}    timeout=30s
+    Wait Until Settled    ${HISTORY_TAB}
     Tap    ${HISTORY_TAB}
 
 Open Notifications Center
-    Wait Until Page Contains Element    ${NOTIFICATIONS_ICON}    timeout=30s
+    Wait Until Settled    ${NOTIFICATIONS_ICON}
     Tap    ${NOTIFICATIONS_ICON}
     Wait Until Page Contains Element    ${INBOX_TAB}    timeout=20s
     Page Should Contain Element    ${NOTIFICATIONS_TAB}
