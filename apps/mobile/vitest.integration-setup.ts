@@ -57,11 +57,18 @@ afterEach(() => {
 // No flow may hand the pipeline a sign request in the Algorand-transaction
 // shape: every source builds chain-neutral transactions. Loaded lazily, like
 // the chain adapters above, so the signing package loads after any vi.unmock.
+// Loading it pulls in the signing package, which a file that never signs
+// hasn't loaded yet, so it gets its own timeout rather than a test hook's.
+let watchSignRequests:
+    | (typeof import('./src/test-utils/peraTransactionSignRequestGuard'))['watchPeraTransactionSignRequests']
+    | undefined
 let stopWatchingSignRequests: (() => string[]) | undefined
-beforeEach(async () => {
-    const { watchPeraTransactionSignRequests } =
-        await import('./src/test-utils/peraTransactionSignRequestGuard')
-    stopWatchingSignRequests = watchPeraTransactionSignRequests().stop
+beforeAll(async () => {
+    ;({ watchPeraTransactionSignRequests: watchSignRequests } =
+        await import('./src/test-utils/peraTransactionSignRequestGuard'))
+}, 60_000)
+beforeEach(() => {
+    stopWatchingSignRequests = watchSignRequests?.().stop
 })
 afterEach(() => {
     const offenders = stopWatchingSignRequests?.() ?? []

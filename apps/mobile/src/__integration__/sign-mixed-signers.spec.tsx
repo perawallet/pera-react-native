@@ -76,7 +76,7 @@ describe('Flow: one group signed by a standard and a quantum account', () => {
     it('Given a dApp group with a slot for each account, when the user confirms, then every slot comes back signed by its own account', async () => {
         await seedAlgo25Signer()
         await seedQuantumSigner()
-        const group = groupTransactions([
+        const group = [
             buildPaymentTransaction({
                 sender: REVIEW_SIGNER_ADDRESS,
                 receiver: REVIEW_RECEIVER_ADDRESS,
@@ -86,7 +86,9 @@ describe('Flow: one group signed by a standard and a quantum account', () => {
                 receiver: REVIEW_RECEIVER_ADDRESS,
                 fee: 3000n,
             }),
-        ])
+        ]
+        // Assigns the group id in place.
+        groupTransactions(group)
         const { request, approve, error } = buildTransactionSignRequest({
             txs: group,
         })
