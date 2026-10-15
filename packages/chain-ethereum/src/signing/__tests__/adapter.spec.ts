@@ -13,9 +13,10 @@
 import { describe, expect, it } from 'vitest'
 import { bytesToHex, keccak256 } from 'viem'
 import type { Hex, TransactionSerializableEIP1559 } from 'viem'
-import type {
-    Signature,
-    UnsignedTransaction,
+import {
+    i18nKey,
+    type Signature,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
 import { transactionDigest } from '../digests'
@@ -38,7 +39,7 @@ const unsigned = (
     payload: { from: SENDER, transaction },
     summary: {
         kind: 'transfer',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'out',
         icon: 'send',
     },

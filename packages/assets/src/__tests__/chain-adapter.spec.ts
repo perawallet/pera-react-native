@@ -205,7 +205,7 @@ describe('with no adapter registered', () => {
             searchAssets({ query: 'a' }, scopeForLegacyNetwork('mainnet')),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
-            fetchAndPersistPrices(['1'], 'mainnet'),
+            fetchAndPersistPrices(['1'], scopeForLegacyNetwork('mainnet')),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
     })
 })

@@ -59,6 +59,7 @@ const registries = (registered: boolean): CapabilityAdapterRegistries => ({
     ramp: fakeRegistry(registered),
     'dapp-request': fakeRegistry(registered),
     'ledger app driver': fakeRegistry(registered),
+    'custom node': fakeRegistry(registered),
 })
 
 describe('capabilityAdapterContractViolations', () => {

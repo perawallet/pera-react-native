@@ -16,7 +16,10 @@ import {
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
-import { invalidateAssetQueries } from '@perawallet/wallet-core-assets'
+import {
+    assetsChainAdapters,
+    invalidateAssetQueries,
+} from '@perawallet/wallet-core-assets'
 import {
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
@@ -42,7 +45,6 @@ import type { AssetSyncKind } from '../polling'
 import type { SyncServiceDeps } from '../models'
 import { groupAddressesByScope, type ScopeAddresses } from './scope-groups'
 import {
-    legacyNetworkFor,
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
@@ -596,7 +598,7 @@ export class SyncService {
         const kinds: AssetSyncKind[] = []
         if (isDue('assets', ASSET_RESYNC_INTERVAL_MS)) kinds.push('assets')
         if (
-            legacyNetworkFor(scope) !== undefined &&
+            assetsChainAdapters.has(scope.chainId) &&
             isDue('prices', PRICE_RESYNC_INTERVAL_MS)
         ) {
             kinds.push('prices')

@@ -25,7 +25,10 @@ import {
     type EmailSendFormValues,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
-import { legacyNetworkOf } from '@perawallet/wallet-core-chain-contract'
+import {
+    legacyNetworkOf,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -60,8 +63,8 @@ export const useCardOnboardingEmailScreen =
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.create_account.error_title',
-            bodyKey: 'peraCard.create_account.error_body',
+            titleKey: i18nKey('peraCard.create_account.error_title'),
+            bodyKey: i18nKey('peraCard.create_account.error_body'),
         })
         const { request } = useBottomSheet()
         const network = legacyNetworkOf(scope)

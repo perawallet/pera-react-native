@@ -18,6 +18,7 @@ import {
     useCardTransactionsQuery,
     useExportCardStatementMutation,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { shareFile } from '@utils/shareFile'
 import { useCardScope } from '../../hooks/useCardScope'
@@ -65,8 +66,8 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
     const { mutateAsync: exportStatement, isPending: isExporting } =
         useExportCardStatementMutation(scope)
     const showExportError = useCardErrorToast({
-        titleKey: 'peraCard.transactions.export_error_title',
-        bodyKey: 'peraCard.transactions.export_error_body',
+        titleKey: i18nKey('peraCard.transactions.export_error_title'),
+        bodyKey: i18nKey('peraCard.transactions.export_error_body'),
         shouldUseBackendMessage: false,
     })
 

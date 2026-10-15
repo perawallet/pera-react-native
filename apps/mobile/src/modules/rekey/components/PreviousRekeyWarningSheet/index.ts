@@ -11,4 +11,7 @@
  */
 
 export { PreviousRekeyWarningSheet } from './PreviousRekeyWarningSheet'
-export type { PreviousRekeyWarningSheetProps } from './PreviousRekeyWarningSheet'
+export type {
+    PreviousRekeyWarningSheetProps,
+    RekeyWarningCopy,
+} from './PreviousRekeyWarningSheet'

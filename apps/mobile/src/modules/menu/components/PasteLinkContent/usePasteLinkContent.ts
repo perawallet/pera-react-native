@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useDeepLink } from '@modules/deeplink'
 
@@ -24,10 +25,7 @@ export type UsePasteLinkContentResult = {
     // 'failed': isValidDeepLink accepted it but the dispatcher couldn't open
     // it (onError/onConnectionError) — a distinct case that needs distinct
     // copy, since the real reason is a toast the web bottom sheet swallows.
-    errorMessageKey:
-        | 'paste_link.error_invalid'
-        | 'paste_link.error_failed'
-        | null
+    errorMessageKey: I18nKey | null
     setValue: (next: string) => void
     handleSubmit: () => void
 }
@@ -127,9 +125,9 @@ export const usePasteLinkContent = (
     const hasError = errorKind !== 'none'
     const errorMessageKey =
         errorKind === 'invalid'
-            ? 'paste_link.error_invalid'
+            ? i18nKey('paste_link.error_invalid')
             : errorKind === 'failed'
-              ? 'paste_link.error_failed'
+              ? i18nKey('paste_link.error_failed')
               : null
 
     return {

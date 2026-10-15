@@ -15,12 +15,13 @@ import {
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
-    messageKeysFor,
+    type ErrorMessageKeys,
     toError,
 } from '@perawallet/wallet-core-shared'
-import type {
-    ChainId,
-    TransactionIntent,
+import {
+    i18nKey,
+    type ChainId,
+    type TransactionIntent,
 } from '@perawallet/wallet-core-chain-contract'
 
 /**
@@ -65,9 +66,10 @@ export class UnsupportedTransactionIntentError extends TransactionError {
     }
 }
 
-const ALREADY_OPTED_IN_KEYS = messageKeysFor(
-    'errors.transaction.already_opted_in',
-)
+const ALREADY_OPTED_IN_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.transaction.already_opted_in.title'),
+    bodyKey: i18nKey('errors.transaction.already_opted_in.body'),
+}
 
 export class AlreadyOptedInError extends TransactionError {
     constructor() {
@@ -78,9 +80,12 @@ export class AlreadyOptedInError extends TransactionError {
     }
 }
 
-const INSUFFICIENT_BALANCE_FOR_OPT_IN_KEYS = messageKeysFor(
-    'errors.transaction.insufficient_balance_for_opt_in',
-)
+const INSUFFICIENT_BALANCE_FOR_OPT_IN_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey(
+        'errors.transaction.insufficient_balance_for_opt_in.title',
+    ),
+    bodyKey: i18nKey('errors.transaction.insufficient_balance_for_opt_in.body'),
+}
 
 export class InsufficientBalanceForOptInError extends TransactionError {
     /**
@@ -100,9 +105,10 @@ export class InsufficientBalanceForOptInError extends TransactionError {
     }
 }
 
-const NON_ZERO_BALANCE_KEYS = messageKeysFor(
-    'errors.transaction.non_zero_balance_opt_out',
-)
+const NON_ZERO_BALANCE_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.transaction.non_zero_balance_opt_out.title'),
+    bodyKey: i18nKey('errors.transaction.non_zero_balance_opt_out.body'),
+}
 
 export class NonZeroBalanceError extends TransactionError {
     constructor() {
@@ -117,9 +123,10 @@ export class NonZeroBalanceError extends TransactionError {
     }
 }
 
-const CREATOR_CANNOT_OPT_OUT_KEYS = messageKeysFor(
-    'errors.transaction.creator_cannot_opt_out',
-)
+const CREATOR_CANNOT_OPT_OUT_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.transaction.creator_cannot_opt_out.title'),
+    bodyKey: i18nKey('errors.transaction.creator_cannot_opt_out.body'),
+}
 
 export class CreatorCannotOptOutError extends TransactionError {
     constructor() {
@@ -130,7 +137,10 @@ export class CreatorCannotOptOutError extends TransactionError {
     }
 }
 
-const ASSET_FROZEN_KEYS = messageKeysFor('errors.algod.asset_frozen')
+const ASSET_FROZEN_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.algod.asset_frozen.title'),
+    bodyKey: i18nKey('errors.algod.asset_frozen.body'),
+}
 
 export class AssetFrozenError extends TransactionError {
     constructor(assetId: string) {

@@ -20,7 +20,11 @@ import {
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
 import { parseDevLocaleTourUri } from './dev-locale-tour-parser'
-import { getUniversalLinkPath, normalizeUrl } from './utils'
+import {
+    getUniversalLinkPath,
+    isLegacyChainAddress,
+    normalizeUrl,
+} from './utils'
 import { parseAlgorandUri } from './algorand-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
 import {
@@ -31,7 +35,6 @@ import {
     PERAWALLET_SCHEME,
     PERAWALLET_WC_SCHEME,
 } from './constants'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     parsePeraWebQrPayload,
     PeraWebImportError,
@@ -50,7 +53,7 @@ const hasOnlyValidAddresses = (parsed: AnyParsedDeeplink): boolean => {
         Record<'address' | 'receiverAddress' | 'senderAddress', string>
     >
     return [address, receiverAddress, senderAddress].every(
-        value => !value || isValidAlgorandAddress(value),
+        value => !value || isLegacyChainAddress(value),
     )
 }
 
@@ -169,7 +172,7 @@ const parseLegacyMnemonicJson = (
 const parseUncheckedDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (!url || typeof url !== 'string') return null
 
-    if (isValidAlgorandAddress(url)) {
+    if (isLegacyChainAddress(url)) {
         return {
             type: DeeplinkType.ADDRESS_ACTIONS,
             sourceUrl: url,

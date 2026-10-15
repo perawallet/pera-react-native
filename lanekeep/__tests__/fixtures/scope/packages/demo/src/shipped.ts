@@ -1,1 +1,1 @@
-export const shipped = { messageKey: 'scope.fixture.missing' }
+export const shipped = i18nKey('scope.fixture.missing')

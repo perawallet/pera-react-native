@@ -14,9 +14,19 @@
 
 import { parseCoinbaseFormat } from '../coinbase-parser'
 import { DeeplinkType } from '../types'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+
+beforeEach(() => {
+    registerLegacyAddressCodec()
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('Coinbase Parser', () => {
     it('returns null for invalid scheme', () => {

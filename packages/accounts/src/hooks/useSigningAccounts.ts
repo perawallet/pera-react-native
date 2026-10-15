@@ -12,8 +12,13 @@
 
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useAccountsStore } from '../store'
-import { canSignWith } from '../signer-resolution'
+import {
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
+import type { WalletAccount } from '../models'
+import { useAccountChainStateStore, useAccountsStore } from '../store'
+import { canSignWith, signingAddressesOn } from '../signer-resolution'
 import { useSelectedChainStates } from './useSelectedChainStates'
 
 /** Held accounts something held can sign for on `chainId`. */
@@ -24,5 +29,28 @@ export const useSigningAccounts = (chainId: ChainId) => {
         () =>
             accounts.filter(account => canSignWith(account, accounts, chainId)),
         [accounts, chainId, chainStates],
+    )
+}
+
+/**
+ * Held accounts something held can sign for on at least one of `chainIds`;
+ * an account with no signing entry on any of them is hidden, not disabled.
+ */
+export const useSigningAccountsOn = (
+    chainIds: readonly ChainId[],
+): WalletAccount[] => {
+    const accounts = useAccountsStore(state => state.accounts)
+    const chainStates = useAccountChainStateStore(state => state.states)
+    const networkKey = useNetworkStore(state =>
+        chainIds.map(chainId => selectChainNetworkId(state, chainId)).join(),
+    )
+    const chainKey = chainIds.join()
+    return useMemo(
+        () =>
+            accounts.filter(
+                account =>
+                    signingAddressesOn(account, accounts, chainIds).length > 0,
+            ),
+        [accounts, chainKey, chainStates, networkKey],
     )
 }

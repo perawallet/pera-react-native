@@ -11,14 +11,23 @@
  */
 
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import type { RekeyWarningCopy } from '../../../components/PreviousRekeyWarningSheet'
 import {
     useRekeyConfirmScreen,
     type UseRekeyConfirmScreenResult,
 } from '../../../hooks/useRekeyConfirmScreen'
 
 import type { RekeyToSharedStackParamList } from '../../../routes/rekey-to-shared/types'
+
+const WARNING_COPY: RekeyWarningCopy = {
+    titleKey: i18nKey('rekey.to_shared.confirm.replace_warning.title'),
+    bodyKey: i18nKey('rekey.to_shared.confirm.replace_warning.body'),
+    confirmKey: i18nKey('rekey.to_shared.confirm.replace_warning.confirm'),
+    cancelKey: i18nKey('rekey.to_shared.confirm.replace_warning.cancel'),
+}
 
 export const useRekeyToSharedConfirmScreen =
     (): UseRekeyConfirmScreenResult => {
@@ -33,7 +42,7 @@ export const useRekeyToSharedConfirmScreen =
             sourceAddress,
             targetAddress,
             supportUrl: config.rekeyToSharedSupportUrl,
-            warningI18nPrefix: 'rekey.to_shared.confirm.replace_warning',
+            warningCopy: WARNING_COPY,
             warningTestID: 'rekey-to-shared-previous-rekey-warning-sheet',
             onSubmitSuccess: sourceAddr =>
                 navigation.navigate('RekeyToShared', {

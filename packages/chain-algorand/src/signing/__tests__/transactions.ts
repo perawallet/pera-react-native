@@ -11,9 +11,10 @@
  */
 
 import { Address, Transaction, TransactionType } from 'algosdk'
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
+import {
+    i18nKey,
+    type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { AlgorandTransactionPayload } from '../planner'
@@ -83,7 +84,7 @@ export const makeUnsignedAlgorandTransaction = (): UnsignedTransaction => ({
     payload: {},
     summary: {
         kind: 'transfer',
-        title: { key: 'transfer' },
+        title: { key: i18nKey('transfer') },
         direction: 'out',
         icon: 'send',
     },

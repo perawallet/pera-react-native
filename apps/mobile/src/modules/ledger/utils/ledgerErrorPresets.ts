@@ -15,6 +15,7 @@ import {
     classifyLedgerErrorKind,
     type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type { LedgerErrorPresetKind }
@@ -63,23 +64,23 @@ const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
  * would be a dead end.
  */
 const ACTION_BY_KIND: Partial<
-    Record<LedgerErrorPresetKind, { kind: LedgerErrorActionKind; key: string }>
+    Record<LedgerErrorPresetKind, { kind: LedgerErrorActionKind; key: I18nKey }>
 > = {
     bluetooth_disabled: {
         kind: 'bluetooth',
-        key: 'ledger.errors.action_enable_bluetooth',
+        key: i18nKey('ledger.errors.action_enable_bluetooth'),
     },
     bluetooth_permission: {
         kind: 'app_settings',
-        key: 'ledger.errors.action_open_settings',
+        key: i18nKey('ledger.errors.action_open_settings'),
     },
     location_services_disabled: {
         kind: 'location',
-        key: 'ledger.errors.action_open_location_settings',
+        key: i18nKey('ledger.errors.action_open_location_settings'),
     },
     device_picker_unavailable: {
         kind: 'open_in_tab',
-        key: 'ledger.errors.action_open_in_tab',
+        key: i18nKey('ledger.errors.action_open_in_tab'),
     },
 }
 

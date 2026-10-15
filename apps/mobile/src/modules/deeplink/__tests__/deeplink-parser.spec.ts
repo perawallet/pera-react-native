@@ -14,7 +14,7 @@
 // `apps/mobile/vitest.setup.ts`) is intentionally minimal and omits
 // `decodeFromBase64`/`encodeToBase64`. The Pera Web QR parser depends on
 // the real base64 decoder; layer those onto the global mock here.
-import { vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const original = await vi.importActual<
@@ -33,9 +33,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 // By source path: the bare subpath is mocked, and this is the real validator.
 import { isValidAlgorandAddress as isChecksummedAlgorandAddress } from '@packages/chain-algorand/src/blockchain/utils/addresses'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { parseDeeplink } from '../parser'
 import { parseDevLocaleTourUri } from '../dev-locale-tour-parser'
 
@@ -46,9 +47,11 @@ const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 beforeEach(() => {
-    vi.mocked(isValidAlgorandAddress).mockImplementation(
-        isChecksummedAlgorandAddress,
-    )
+    registerLegacyAddressCodec(isChecksummedAlgorandAddress)
+})
+
+afterEach(() => {
+    addressCodecs.reset()
 })
 
 describe('Deeplink Parser - Main Parser', () => {

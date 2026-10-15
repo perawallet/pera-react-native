@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { PanelButtonProps } from '@components/PanelButton'
 import type { OptionListOption } from '@components/OptionList'
 import { trackEvent, CloudBackupEvent } from '@analytics'
@@ -41,12 +42,12 @@ const ROW_ICONS: Record<
     manual: { leftIcon: 'key' },
 }
 
-const TITLE_KEYS: Record<RestoreBackupSheetResult, string> = {
-    scan: 'cloud_backup.restore.sheet_scan',
-    device: 'cloud_backup.restore.sheet_device',
-    icloud: 'cloud_backup.restore.sheet_icloud',
-    googleDrive: 'cloud_backup.restore.sheet_google_drive',
-    manual: 'cloud_backup.restore.sheet_manual',
+const TITLE_KEYS: Record<RestoreBackupSheetResult, I18nKey> = {
+    scan: i18nKey('cloud_backup.restore.sheet_scan'),
+    device: i18nKey('cloud_backup.restore.sheet_device'),
+    icloud: i18nKey('cloud_backup.restore.sheet_icloud'),
+    googleDrive: i18nKey('cloud_backup.restore.sheet_google_drive'),
+    manual: i18nKey('cloud_backup.restore.sheet_manual'),
 }
 
 const TEST_IDS: Record<RestoreBackupSheetResult, string> = {
@@ -84,8 +85,8 @@ export const useRestoreBackupSheet = (): UseRestoreBackupSheetResult => {
         options,
         description: t(
             fileSources.length > 0
-                ? 'cloud_backup.restore.sheet_description_with_import'
-                : 'cloud_backup.restore.sheet_description',
+                ? i18nKey('cloud_backup.restore.sheet_description_with_import')
+                : i18nKey('cloud_backup.restore.sheet_description'),
         ),
     }
 }

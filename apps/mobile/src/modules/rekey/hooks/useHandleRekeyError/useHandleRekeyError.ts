@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -23,12 +24,12 @@ type UseHandleRekeyErrorResult = (error: unknown) => void
 
 const FALLBACK_TITLE_KEYS: Record<
     Exclude<RekeyErrorReason, 'user_rejected'>,
-    string
+    I18nKey
 > = {
-    build_failed: 'rekey.errors.build_failed.title',
-    signing_failed: 'rekey.errors.signing_failed.title',
-    submission_failed: 'rekey.errors.submission_failed.title',
-    submission_pending: 'rekey.errors.submission_pending.title',
+    build_failed: i18nKey('rekey.errors.build_failed.title'),
+    signing_failed: i18nKey('rekey.errors.signing_failed.title'),
+    submission_failed: i18nKey('rekey.errors.submission_failed.title'),
+    submission_pending: i18nKey('rekey.errors.submission_pending.title'),
 }
 
 /**

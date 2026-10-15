@@ -12,16 +12,17 @@
 
 import { useCallback, useEffect } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    useArc59AssetRequestsQuery,
-    type Arc59AssetRequest,
-} from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+    useAssetInboxRequestsQuery,
+    type AssetInboxRequest,
+} from '@perawallet/wallet-core-transactions'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
 
 type UseAssetTransferRequestsScreenResult = {
-    assetRequests: Arc59AssetRequest[]
+    assetRequests: AssetInboxRequest[]
     isPending: boolean
     isUnavailableOnNetwork: boolean
     handleItemPress: (index: number) => void
@@ -44,7 +45,7 @@ export const useAssetTransferRequestsScreen =
             data: assetRequests,
             isPending,
             isUnavailableOnNetwork,
-        } = useArc59AssetRequestsQuery(accountAddress)
+        } = useAssetInboxRequestsQuery(accountAddress, LEGACY_CHAIN_ID)
 
         const handleItemPress = useCallback(
             (index: number) => {

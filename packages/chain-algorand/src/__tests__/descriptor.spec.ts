@@ -15,6 +15,7 @@ import { nativeAssetDecimals } from '@perawallet/wallet-core-chain-contract'
 import { descriptorContractTests } from '@perawallet/wallet-core-chain-contract/testing'
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { chainModule } from '..'
+import { algorandApplicationExplorerUrl } from '../descriptor'
 
 const { descriptor, capabilityDefaults } = chainModule
 
@@ -72,6 +73,13 @@ describe('algorand descriptor', () => {
         expect(descriptor.explorer.assetUrl('mainnet', '31566704')).toBe(
             'https://explorer.perawallet.app/asset/31566704',
         )
+    })
+
+    it('builds application explorer links, and none for a custom node', () => {
+        expect(algorandApplicationExplorerUrl('testnet', '7890')).toBe(
+            'https://testnet.explorer.perawallet.app/application/7890',
+        )
+        expect(algorandApplicationExplorerUrl('custom', '7890')).toBeUndefined()
     })
 
     it('has no explorer link for a network outside the descriptor', () => {

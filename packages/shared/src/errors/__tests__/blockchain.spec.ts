@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { BlockchainError } from '../blockchain'
 
 describe('blockchain error copy', () => {
@@ -24,7 +25,7 @@ describe('blockchain error copy', () => {
         // Subclasses resolve their own copy; this guards the override path
         // the base class exists to provide.
         const error = new BlockchainError('internal detail', undefined, {
-            messageKey: 'errors.general.body',
+            messageKey: i18nKey('errors.general.body'),
         })
 
         expect(error.metadata.messageKey).toBe('errors.general.body')

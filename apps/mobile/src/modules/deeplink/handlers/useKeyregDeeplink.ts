@@ -12,15 +12,12 @@
 
 import { useCallback } from 'react'
 import {
-    getExpectedGenesisHash,
-    isValidAlgorandAddress,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
-import {
     useNetwork,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
+    scopeForLegacyNetwork,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -39,10 +36,11 @@ import {
     generateOrderedUniqueId,
     logger,
 } from '@perawallet/wallet-core-shared'
-import type { Network } from '@perawallet/wallet-core-config'
+import { getChainConfig, type Network } from '@perawallet/wallet-core-config'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import { withTimeout } from './timeout'
 import type { KeyregDeeplink } from '../types'
+import { isLegacyChainAddress } from '../utils'
 
 export type KeyregDeeplinkHandler = (data: KeyregDeeplink) => Promise<void>
 
@@ -118,8 +116,8 @@ const checkSigningEligibility = (
  * hash, so accept either spelling — plus the bare network name, which is what
  * the assetquery/appquery branches already compare against.
  *
- * Resolved through `getExpectedGenesisHash` rather than the static config so a
- * Custom network matches on its stored hash instead of config's empty string.
+ * `getChainConfig` folds in a saved custom node, so a Custom network matches
+ * its stored hash instead of an empty one.
  */
 const namesActiveNetwork = (
     target: string,
@@ -128,7 +126,7 @@ const namesActiveNetwork = (
 ): boolean =>
     target === network ||
     (!!genesisId && target === genesisId) ||
-    target === getExpectedGenesisHash(network)
+    target === getChainConfig(scopeForLegacyNetwork(network)).genesisHash
 
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
@@ -140,7 +138,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
 
     return useCallback(
         async (data: KeyregDeeplink) => {
-            if (!isValidAlgorandAddress(data.senderAddress)) {
+            if (!isLegacyChainAddress(data.senderAddress)) {
                 showError({
                     variant: 'keyreg',
                     parsedType: 'KEYREG',

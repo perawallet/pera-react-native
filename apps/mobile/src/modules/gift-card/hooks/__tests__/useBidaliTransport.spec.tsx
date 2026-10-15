@@ -28,9 +28,7 @@ const mockAddSignRequest = vi.fn()
 // from mainnet without a new vi.mock factory.
 let mockNetwork = 'mainnet'
 let mockChainMode = 'live'
-const { mockBuildTransferTxs } = vi.hoisted(() => ({
-    mockBuildTransferTxs: vi.fn(),
-}))
+const mockBuildTransferTxs = vi.fn()
 
 vi.mock('react-native', () => ({
     Linking: { openURL: vi.fn() },
@@ -105,17 +103,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
 vi.mock('@hooks/useLanguage')
 
-// BigInt.microAlgo() is a runtime extension added by algokit-utils.
-// Patch it for the test environment.
-const originalBigInt = globalThis.BigInt
-const patchedBigInt = (value: Parameters<typeof originalBigInt>[0]) => {
-    const v = originalBigInt(value)
-    return Object.assign(v, { microAlgo: () => v })
-}
-Object.assign(patchedBigInt, originalBigInt)
-// eslint-disable-next-line no-global-assign
-globalThis.BigInt = patchedBigInt as unknown as typeof BigInt
-
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
@@ -137,7 +124,7 @@ const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
     id: 'bidali-1234',
 })
 
-// Stands in for the Algorand codec; this spec mocks the Algorand blockchain module.
+// Stands in for the Algorand codec, which the unit registry lacks.
 beforeEach(() => {
     addressCodecs.register({
         ...fixtureCodec,
@@ -434,14 +421,12 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            // AlgoKit patches BigInt's prototype, so amounts compare as strings.
-            const [params] = mockBuildTransferTxs.mock.calls[0]
-            expect({ ...params, amount: String(params.amount) }).toEqual({
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith({
+                scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
                 sender: VALID_ADDRESS,
                 receiver: VALID_ADDRESS,
                 assetId: '0',
-                amount: '1500000',
+                amount: 1_500_000n,
                 note: undefined,
             })
             expect(mockAddSignRequest).not.toHaveBeenCalledWith(
@@ -474,13 +459,14 @@ describe('useBidaliTransport', () => {
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledTimes(1)
-            const [params] = mockBuildTransferTxs.mock.calls[0]
-            expect(params).toMatchObject({
-                sender: VALID_ADDRESS,
-                receiver: VALID_ADDRESS,
-                assetId: '31566704',
-            })
-            expect(String(params.amount)).toBe('10000000')
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sender: VALID_ADDRESS,
+                    receiver: VALID_ADDRESS,
+                    assetId: '31566704',
+                    amount: 10_000_000n,
+                }),
+            )
             expect(mockAddSignRequest).toHaveBeenCalled()
         })
 
@@ -526,9 +512,7 @@ describe('useBidaliTransport', () => {
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    note: 'bidali-charge-123',
-                }),
+                expect.objectContaining({ note: 'bidali-charge-123' }),
             )
         })
 
@@ -547,9 +531,7 @@ describe('useBidaliTransport', () => {
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    note: undefined,
-                }),
+                expect.objectContaining({ note: undefined }),
             )
         })
 

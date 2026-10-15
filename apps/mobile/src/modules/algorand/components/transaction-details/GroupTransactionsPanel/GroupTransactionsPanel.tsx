@@ -11,44 +11,37 @@
  */
 
 import { PWView } from '@components/core'
-import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { TransactionPreview } from '../TransactionPreview'
+import {
+    useGroupTransactionsPanel,
+    type GroupTransactionsPanelProps,
+} from './useGroupTransactionsPanel'
 
-export type GroupTransactionsPanelProps = {
-    groupTransactions: AlgorandTransactionView[]
-    currentTransactionId: string
-    onGroupTransactionPress?: (tx: AlgorandTransactionView) => void
-}
+export type { GroupTransactionsPanelProps }
 
-export const GroupTransactionsPanel = ({
-    groupTransactions,
-    currentTransactionId,
-    onGroupTransactionPress,
-}: GroupTransactionsPanelProps) => {
+export const GroupTransactionsPanel = (props: GroupTransactionsPanelProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { otherTransactions, groupSize, handlePress } =
+        useGroupTransactionsPanel(props)
 
-    const otherTransactions = groupTransactions.filter(
-        tx => tx.id !== currentTransactionId,
-    )
-
-    if (otherTransactions.length === 0) {
+    if (groupSize <= 1 || otherTransactions.length === 0) {
         return null
     }
 
     return (
         <TitledExpandablePanel
             title={t('transactions.group_transactions', {
-                count: groupTransactions.length,
+                count: groupSize,
             })}
         >
             <PWView style={styles.container}>
                 {otherTransactions.map((tx, index) => (
                     <TransactionPreview
-                        onPress={onGroupTransactionPress}
+                        onPress={handlePress}
                         key={tx.id ?? index}
                         transaction={tx}
                     />

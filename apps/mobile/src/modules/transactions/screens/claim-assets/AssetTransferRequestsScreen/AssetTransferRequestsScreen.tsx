@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
 import { PWDivider, PWFlatList, PWScreen, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
@@ -45,7 +45,7 @@ export const AssetTransferRequestsScreen = () => {
     })
 
     const renderItem = useCallback(
-        ({ item, index }: { item: Arc59AssetRequest; index: number }) => (
+        ({ item, index }: { item: AssetInboxRequest; index: number }) => (
             <AssetTransferRequestItem
                 item={item}
                 onPress={() => handleItemPress(index)}
@@ -60,7 +60,7 @@ export const AssetTransferRequestsScreen = () => {
     )
 
     const keyExtractor = useCallback(
-        (item: Arc59AssetRequest, index: number) =>
+        (item: AssetInboxRequest, index: number) =>
             String(item.id ?? '' + index),
         [],
     )

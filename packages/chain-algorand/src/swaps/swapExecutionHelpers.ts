@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { compactSignedResults } from '../blockchain'
-import type {
-    SignedTransaction,
-    UnsignedTransaction,
+import {
+    type I18nKey,
+    type SignedTransaction,
+    type UnsignedTransaction,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { compactSignedResults } from '../blockchain'
 import {
     usesNonPrimaryScheme,
     type WalletAccount,
@@ -46,8 +48,9 @@ import { SwapUserRejectedError } from './swapGroupPlan'
  * and turning it off restores the hard block — the
  * flag is the kill switch if that pricing regresses.
  */
-export const QUANTUM_SWAP_FEE_BLOCKED_KEY =
-    'swap.execution.quantum_fee_unsupported'
+export const QUANTUM_SWAP_FEE_BLOCKED_KEY = i18nKey(
+    'swap.execution.quantum_fee_unsupported',
+)
 
 /**
  * Quantum accounts don't participate in multisig at all (established
@@ -57,8 +60,9 @@ export const QUANTUM_SWAP_FEE_BLOCKED_KEY =
  * to `null` for every slot, and the proposer would POST an empty signature
  * to the backend instead of failing loudly.
  */
-export const QUANTUM_SWAP_PROPOSE_BLOCKED_KEY =
-    'swap.execution.quantum_multisig_unsupported'
+export const QUANTUM_SWAP_PROPOSE_BLOCKED_KEY = i18nKey(
+    'swap.execution.quantum_multisig_unsupported',
+)
 
 /**
  * A quantum signer was blocked before signing. Carries the i18n key rather
@@ -76,9 +80,9 @@ export class QuantumSwapBlockedError extends Error {
     override readonly name = 'QuantumSwapBlockedError'
 
     /** Key to render with `t()` at the display site. */
-    readonly translationKey: string
+    readonly translationKey: I18nKey
 
-    constructor(translationKey: string) {
+    constructor(translationKey: I18nKey) {
         super(`Quantum accounts are not supported here (${translationKey})`)
         this.translationKey = translationKey
     }
@@ -96,7 +100,7 @@ export class QuantumSwapBlockedError extends Error {
  */
 const rejectIfQuantumAccount = (
     signer: Nullable<WalletAccount>,
-    translationKey: string,
+    translationKey: I18nKey,
 ): Optional<Promise<never>> => {
     if (signer && usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)) {
         return Promise.reject(new QuantumSwapBlockedError(translationKey))

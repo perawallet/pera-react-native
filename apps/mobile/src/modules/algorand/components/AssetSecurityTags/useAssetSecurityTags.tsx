@@ -12,7 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import { useAssetAuthoritiesQuery } from '@perawallet/wallet-core-assets'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    i18nKey,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -40,22 +44,22 @@ type UseAssetSecurityTagsResult = {
 type AuthorityPreset = {
     iconName: IconName
     testID: string
-    activeLabelKey: string
-    inactiveLabelKey: string
+    activeLabelKey: I18nKey
+    inactiveLabelKey: I18nKey
 }
 
 const AUTHORITY_PRESETS: Record<AssetSecurityAuthority, AuthorityPreset> = {
     freeze: {
         iconName: 'snowflake',
         testID: 'asset-freeze-tag',
-        activeLabelKey: 'asset_details.markets.freeze',
-        inactiveLabelKey: 'asset_details.markets.no_freeze',
+        activeLabelKey: i18nKey('asset_details.markets.freeze'),
+        inactiveLabelKey: i18nKey('asset_details.markets.no_freeze'),
     },
     clawback: {
         iconName: 'undo',
         testID: 'asset-clawback-tag',
-        activeLabelKey: 'asset_details.markets.clawback',
-        inactiveLabelKey: 'asset_details.markets.no_clawback',
+        activeLabelKey: i18nKey('asset_details.markets.clawback'),
+        inactiveLabelKey: i18nKey('asset_details.markets.no_clawback'),
     },
 }
 

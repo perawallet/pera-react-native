@@ -17,16 +17,21 @@ import {
     ErrorSeverity,
     isRetryableError,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /**
  * Bodies live under `errors.signing` next to the existing title so the app
  * layer resolves both from one key family.
  */
-export const SIGNING_ERROR_KEYS = {
-    title: 'errors.signing.title',
-    localKeyFailed: 'errors.signing.local_key_failed',
-    cannotSign: 'errors.signing.cannot_sign',
-} as const
+export const SIGNING_ERROR_KEYS: {
+    title: I18nKey
+    localKeyFailed: I18nKey
+    cannotSign: I18nKey
+} = {
+    title: i18nKey('errors.signing.title'),
+    localKeyFailed: i18nKey('errors.signing.local_key_failed'),
+    cannotSign: i18nKey('errors.signing.cannot_sign'),
+}
 
 export type SigningErrorOptions = {
     retryable?: boolean
@@ -35,7 +40,7 @@ export type SigningErrorOptions = {
      * error) or its own fallback; left unset by the hardware/multisig
      * paths, which keep the generic banner.
      */
-    messageKey?: string
+    messageKey?: I18nKey
     params?: Record<string, unknown>
 }
 

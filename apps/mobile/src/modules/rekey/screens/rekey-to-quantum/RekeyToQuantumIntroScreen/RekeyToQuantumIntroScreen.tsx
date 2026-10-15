@@ -15,13 +15,12 @@ import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
 import { useRekeyToQuantumIntroScreen } from './useRekeyToQuantumIntroScreen'
 
 export const RekeyToQuantumIntroScreen = () => {
-    const { i18nBaseKey, expectationCount } = useRekeyToQuantumIntroScreen()
+    const { copy } = useRekeyToQuantumIntroScreen()
 
     return (
         <RekeyIntroScreen
-            i18nBaseKey={i18nBaseKey}
+            copy={copy}
             testIdPrefix='rekey-to-quantum'
-            expectationCount={expectationCount}
             navConfig={{
                 parentRoute: 'RekeyToQuantum',
                 selectTargetScreen: 'RekeyToQuantumSelectTarget',

@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -36,7 +37,7 @@ type UseMultisigSignInboxItemResult = {
     isWaiting: boolean
     isSuccess: boolean
     isFailure: boolean
-    statusKey: string
+    statusKey: I18nKey
     signedCount: number
     threshold: number
     timeRemaining: string | null
@@ -54,21 +55,14 @@ type UseMultisigSignInboxItemResult = {
  */
 const FAILED_RECOVERY_WINDOW_MS = 30_000
 
-const STATUS_KEY_BY_STATUS: Record<
-    string,
-    | 'messages.inbox.multisig_sign.status_pending'
-    | 'messages.inbox.multisig_sign.status_failed'
-    | 'messages.inbox.multisig_sign.status_expired'
-    | 'messages.inbox.multisig_sign.status_declined'
-    | 'messages.inbox.multisig_sign.status_confirmed'
-> = {
-    pending: 'messages.inbox.multisig_sign.status_pending',
-    ready: 'messages.inbox.multisig_sign.status_pending',
-    submitting: 'messages.inbox.multisig_sign.status_pending',
-    failed: 'messages.inbox.multisig_sign.status_failed',
-    expired: 'messages.inbox.multisig_sign.status_expired',
-    declined: 'messages.inbox.multisig_sign.status_declined',
-    confirmed: 'messages.inbox.multisig_sign.status_confirmed',
+const STATUS_KEY_BY_STATUS: Record<string, I18nKey> = {
+    pending: i18nKey('messages.inbox.multisig_sign.status_pending'),
+    ready: i18nKey('messages.inbox.multisig_sign.status_pending'),
+    submitting: i18nKey('messages.inbox.multisig_sign.status_pending'),
+    failed: i18nKey('messages.inbox.multisig_sign.status_failed'),
+    expired: i18nKey('messages.inbox.multisig_sign.status_expired'),
+    declined: i18nKey('messages.inbox.multisig_sign.status_declined'),
+    confirmed: i18nKey('messages.inbox.multisig_sign.status_confirmed'),
 }
 
 export const useMultisigSignInboxItem = (
@@ -137,7 +131,7 @@ export const useMultisigSignInboxItem = (
         statusKey: isWithinFailureRecovery
             ? STATUS_KEY_BY_STATUS.submitting
             : (STATUS_KEY_BY_STATUS[status] ??
-              'messages.inbox.multisig_sign.status_pending'),
+              i18nKey('messages.inbox.multisig_sign.status_pending')),
         signedCount: getSignedResponseCount(source),
         threshold: source.multisigAccount.threshold,
         timeRemaining: isWaiting

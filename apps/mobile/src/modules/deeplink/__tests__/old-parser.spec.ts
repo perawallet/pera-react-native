@@ -15,10 +15,20 @@
 import { parseDeeplink } from '../parser'
 import { parsePerawalletUri } from '../old-parser'
 import { DeeplinkType } from '../types'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 
 // Test addresses from CSV
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+
+beforeEach(() => {
+    registerLegacyAddressCodec()
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('Deeplink Parser - Old Format', () => {
     describe('Address-only deeplinks', () => {

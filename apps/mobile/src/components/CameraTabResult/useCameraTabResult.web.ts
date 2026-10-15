@@ -15,28 +15,29 @@ import {
     closeCurrentTab,
     getConsumedExpandedFlow,
 } from '@perawallet/wallet-core-browser-runtime'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useCameraTabResultStore,
     type CameraTabResult,
 } from './useCameraTabResultStore'
 
-const COPY_KEYS: Record<CameraTabResult, { title: string; body: string }> = {
+const COPY_KEYS: Record<CameraTabResult, { title: I18nKey; body: I18nKey }> = {
     'account-imported': {
-        title: 'camera_tab.account_imported_title',
-        body: 'camera_tab.body',
+        title: i18nKey('camera_tab.account_imported_title'),
+        body: i18nKey('camera_tab.body'),
     },
     'backup-restored': {
-        title: 'camera_tab.backup_restored_title',
-        body: 'camera_tab.body',
+        title: i18nKey('camera_tab.backup_restored_title'),
+        body: i18nKey('camera_tab.body'),
     },
     'backup-enabled': {
-        title: 'cloud_backup.enable.success',
-        body: 'camera_tab.body',
+        title: i18nKey('cloud_backup.enable.success'),
+        body: i18nKey('camera_tab.body'),
     },
     'import-failed': {
-        title: 'onboarding.import_account.failed_title',
-        body: 'onboarding.import_account.failed_body',
+        title: i18nKey('onboarding.import_account.failed_title'),
+        body: i18nKey('onboarding.import_account.failed_body'),
     },
 }
 

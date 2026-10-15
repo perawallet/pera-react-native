@@ -17,8 +17,6 @@ import type {
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
 
-export const MAX_TX_NOTE_BYTES = 1024
-
 export type BlockchainStore = BaseStoreState
 
 export { Address } from 'algosdk'

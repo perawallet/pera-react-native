@@ -13,7 +13,10 @@
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 
 import { PWButton, PWText } from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
@@ -280,7 +283,7 @@ registerPreview({
                     label: 'active',
                     node: (
                         <TabLabel
-                            i18nKey='common.assets'
+                            labelKey={i18nKey('tabbar.home')}
                             active={true}
                         />
                     ),
@@ -289,7 +292,7 @@ registerPreview({
                     label: 'inactive',
                     node: (
                         <TabLabel
-                            i18nKey='common.activity'
+                            labelKey={i18nKey('tabbar.discover')}
                             active={false}
                         />
                     ),

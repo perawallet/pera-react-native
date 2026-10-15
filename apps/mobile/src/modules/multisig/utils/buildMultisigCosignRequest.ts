@@ -13,7 +13,6 @@
 import {
     legacyNetworkOf,
     type ChainScope,
-    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
@@ -23,7 +22,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     multisigAdapterFor,
-    type MultisigParameters,
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import type { UnsignedTransactionSignRequest } from '@perawallet/wallet-core-signing'
@@ -32,12 +30,6 @@ type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
     scope: ChainScope
-    /** `multisig` is the joint account the transaction is signed for. */
-    decodeTransaction: (
-        bytes: Uint8Array,
-        scope: ChainScope,
-        multisig: MultisigParameters,
-    ) => UnsignedTransaction
     /** Used to recognise senders the joint account authorizes via a rekey. */
     localAccounts: WalletAccount[]
 }
@@ -52,7 +44,6 @@ export const buildMultisigCosignRequest = ({
     signRequest,
     signerAddress,
     scope,
-    decodeTransaction,
     localAccounts,
 }: BuildMultisigCosignRequestParams): UnsignedTransactionSignRequest => {
     const transactionList = signRequest.transactionLists[0]
@@ -62,12 +53,13 @@ export const buildMultisigCosignRequest = ({
         )
     }
 
+    const adapter = multisigAdapterFor(legacyNetworkOf(scope))
     const rawTransactionsBase64 = transactionList.rawTransactions
     const { version, threshold, participantAddresses } =
         signRequest.multisigAccount
     const multisig = { version, threshold, addresses: participantAddresses }
     const txs = rawTransactionsBase64.map(base64 =>
-        decodeTransaction(decodeFromBase64(base64), scope, multisig),
+        adapter.decodeTransaction(decodeFromBase64(base64), scope, multisig),
     )
 
     // The backend is a relay, not a trust anchor, for what we sign.
@@ -81,9 +73,10 @@ export const buildMultisigCosignRequest = ({
                     chainAccountOf(account, scope.chainId)?.address ?? [],
             ),
     ])
-    const validation = multisigAdapterFor(
-        legacyNetworkOf(scope),
-    ).validateSignRequest(signRequest, jointAuthorizedSenders)
+    const validation = adapter.validateSignRequest(
+        signRequest,
+        jointAuthorizedSenders,
+    )
     switch (validation.kind) {
         case 'valid': {
             break

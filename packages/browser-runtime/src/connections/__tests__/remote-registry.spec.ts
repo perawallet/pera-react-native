@@ -27,6 +27,7 @@ import {
     createChromeFake,
     type ChromeFake,
 } from '@perawallet/wallet-extension-platform-chrome/test-utils'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     broadcastConnectionsEvent,
     onConnectionsControlMessage,
@@ -56,7 +57,11 @@ const proposalEvent = (pairingId: string): ConnectionsEvent => ({
         proposalId: `proposal-${pairingId}`,
         pairingId,
         peer: { name: 'dApp' },
-        requested: { networks: [NETWORKS[0]], methods: ['algo_signTxn'] },
+        requested: {
+            networks: [NETWORKS[0]],
+            chains: ['algorand'],
+            methods: ['algo_signTxn'],
+        },
         expiresAt: 1,
     },
 })
@@ -278,7 +283,7 @@ describe('createRemoteConnectionRegistry', () => {
                 kind: 'error',
                 name: 'ConnectionsError',
                 message: 'No connection handler accepts this URI',
-                messageKey: 'errors.connections.no_handler',
+                messageKey: i18nKey('errors.connections.no_handler'),
                 scope: { pairingId: 'pair-1' },
             })
 

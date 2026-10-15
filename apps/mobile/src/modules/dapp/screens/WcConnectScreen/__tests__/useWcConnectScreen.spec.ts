@@ -70,7 +70,11 @@ const proposalApproval = (
     connectionKind: 'walletconnect-v1',
     origin: 'https://dapp.example',
     peer: PEER,
-    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+    requested: {
+        networks: ['mainnet'],
+        chains: ['algorand'],
+        methods: ['algo_signTxn'],
+    },
     expiresAt: Date.now() + 60_000,
     ...overrides,
 })

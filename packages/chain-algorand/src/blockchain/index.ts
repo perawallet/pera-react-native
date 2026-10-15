@@ -15,7 +15,6 @@ export * from './hooks'
 export * from './fees'
 export * from './errors'
 export * from './utils'
-export * from './schema'
 export * from './constants'
 export * from './arc0001'
 export * from './pq'
@@ -29,5 +28,3 @@ export {
     clearCustomNetwork,
 } from './store/custom-network'
 export type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
-// The decoder app code reaches for a raw transaction it must hand to signing.
-export { decodeUnsignedAlgorandTransaction } from '../signing/unsignedTransaction'

@@ -11,6 +11,10 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import {
+    signingAddressesOn,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import type { ConnectionPeerVerificationStatus } from '@perawallet/wallet-extension-connections'
 import {
@@ -34,9 +38,10 @@ import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 export type ConnectionOriginWarning = 'scam' | 'mismatch' | 'unverified'
 
 export type UseConnectionApprovalViewResult = {
+    /** Account ids; an account may connect on more than one chain. */
     selectedAccounts: string[]
     isConnecting: boolean
-    handleAccountPress: (address: string) => void
+    handleAccountPress: (accountId: string) => void
     handleConnect: () => Promise<void>
     handleCancel: () => Promise<void>
     /** The dApp-asserted name, cleaned and clamped for display. */
@@ -102,6 +107,7 @@ export const useConnectionApprovalView = (
     const { showError } = useErrorToast()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const { pushWebView } = useWebView()
+    const accounts = useAllAccounts()
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
     // Guards both handlers against a double-tap reaching `proposal` twice:
@@ -109,11 +115,11 @@ export const useConnectionApprovalView = (
     // await) and Cancel has no state-driven disabling at all.
     const isHandlingRef = useRef(false)
 
-    const handleAccountPress = useCallback((address: string) => {
+    const handleAccountPress = useCallback((accountId: string) => {
         setSelectedAccounts(prev =>
-            prev.includes(address)
-                ? prev.filter(existing => existing !== address)
-                : [...prev, address],
+            prev.includes(accountId)
+                ? prev.filter(existing => existing !== accountId)
+                : [...prev, accountId],
         )
     }, [])
 
@@ -156,7 +162,17 @@ export const useConnectionApprovalView = (
             //
             // Before approve, so a 'cancel' can't leave a half-approved connection;
             // this await is the async gap `isHandlingRef` covers.
-            const decision = await confirmQuantumDappUsage(selectedAccounts)
+            const addresses = selectedAccounts.flatMap(accountId => {
+                const account = accounts.find(({ id }) => id === accountId)
+                return account
+                    ? signingAddressesOn(
+                          account,
+                          accounts,
+                          proposal.requested.chains,
+                      )
+                    : []
+            })
+            const decision = await confirmQuantumDappUsage(addresses)
             if (decision === 'cancel') {
                 await rejectProposal()
                 return
@@ -164,11 +180,11 @@ export const useConnectionApprovalView = (
 
             setIsConnecting(true)
             try {
-                await proposal.approve(selectedAccounts)
+                await proposal.approve(addresses)
                 trackEvent(WalletConnectEvent.SessionApproved, {
                     [AnalyticsMetadataKey.DappName]: proposal.peer.name,
                     [AnalyticsMetadataKey.DappUrl]: proposal.peer.url ?? '',
-                    [AnalyticsMetadataKey.AccountAddress]: selectedAccounts[0],
+                    [AnalyticsMetadataKey.AccountAddress]: addresses[0],
                     [AnalyticsMetadataKey.TotalAccount]:
                         selectedAccounts.length,
                 })
@@ -200,6 +216,7 @@ export const useConnectionApprovalView = (
         }
     }, [
         proposal,
+        accounts,
         selectedAccounts,
         confirmQuantumDappUsage,
         rejectProposal,

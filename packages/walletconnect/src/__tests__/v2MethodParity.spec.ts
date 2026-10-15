@@ -11,14 +11,14 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { walletConnectV2SupportFor } from '../shared/chainSupport'
+import { walletConnectSupportFor } from '../shared/chainSupport'
 import { GET_EMPTY_SIGNATURES_METHOD } from '../shared/emptySignatures'
 import { AlgorandPermission } from '../models'
 
 // chain-algorand keeps its own copy of the v2 method names (it cannot import
 // this package), so this pins them to the names v1 serves under.
 describe('v2 method parity with the registered adapter', () => {
-    const v2 = walletConnectV2SupportFor('mainnet')
+    const v2 = walletConnectSupportFor('mainnet')?.v2
     if (!v2) {
         throw new Error(
             'no v2 support registered — registerDappRequestAdapter.ts should have run',

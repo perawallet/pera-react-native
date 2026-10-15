@@ -11,7 +11,6 @@
  */
 
 import { create } from 'zustand'
-import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import type { Decimal } from 'decimal.js'
 import type { FeePreset } from '@perawallet/wallet-core-chain-contract'
 import { registerStore } from '@perawallet/wallet-core-shared'
@@ -34,7 +33,7 @@ type SendFundsState = {
     destination?: string
     onFinished?: () => void
     sendMode: SendMode
-    arc59Summary?: Arc59SendSummaryResponse
+    arc59Summary?: unknown
     isCloseAccount: boolean
     /**
      * Set when a browser tab reopens a send the extension popup couldn't sign.
@@ -54,7 +53,7 @@ type SendFundsActions = {
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
-    setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
+    setArc59Summary: (summary?: unknown) => void
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void
@@ -116,7 +115,7 @@ type UseSendFundsResult = {
     destination?: string
     onFinished?: () => void
     sendMode: SendMode
-    arc59Summary?: Arc59SendSummaryResponse
+    arc59Summary?: unknown
     isCloseAccount: boolean
     shouldContinueToConfirm: boolean
     feePreset: FeePreset
@@ -128,7 +127,7 @@ type UseSendFundsResult = {
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
-    setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
+    setArc59Summary: (summary?: unknown) => void
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void

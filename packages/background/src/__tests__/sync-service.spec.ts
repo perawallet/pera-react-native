@@ -105,6 +105,8 @@ const algorandAdapter: FixtureAdapter = {
 }
 
 let mockAdapters: Record<string, FixtureAdapter> = {}
+// Chains with an assets adapter; read separately from the accounts adapters.
+const mockAssetsChains = new Set<string>()
 let mockSwitchedOff = new Set<string>()
 const mockIsSwitchedOff = vi.fn((chainId: string) =>
     mockSwitchedOff.has(chainId),
@@ -202,6 +204,9 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     transformAssetResponse: vi.fn(x => x),
     upsertAssets: vi.fn(() => Promise.resolve()),
     upsertAssetPrices: vi.fn(() => Promise.resolve()),
+    assetsChainAdapters: {
+        has: (chainId: string) => mockAssetsChains.has(chainId),
+    },
     invalidateAssetQueries: vi.fn(),
     fetchAndPersistAssets: vi.fn(() => Promise.resolve()),
     fetchAndPersistPrices: vi.fn(() => Promise.resolve()),
@@ -266,6 +271,8 @@ describe('SyncService', () => {
         mockChainList = [{ id: 'algorand' }]
         mockBroadcasters.clear()
         mockBroadcasters.add('algorand')
+        mockAssetsChains.clear()
+        mockAssetsChains.add('algorand')
         mockConcurrencyLimits = []
         mockAccounts.splice(2)
         queryClient = new QueryClient()
@@ -1217,10 +1224,10 @@ describe('SyncService', () => {
                 chainId: 'algorand',
                 networkId: 'mainnet',
             })
-            expect(fetchAndPersistPrices).toHaveBeenCalledWith(
-                ['123', '456'],
-                'mainnet',
-            )
+            expect(fetchAndPersistPrices).toHaveBeenCalledWith(['123', '456'], {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            })
             expect(invalidateAssetQueries).toHaveBeenCalledWith(queryClient)
         })
 
@@ -1906,7 +1913,7 @@ describe('SyncService', () => {
             // testnet has its own, empty cursor, so it prices straight away.
             expect(fetchAndPersistPrices).toHaveBeenLastCalledWith(
                 ['123', '456'],
-                'testnet',
+                { chainId: 'algorand', networkId: 'testnet' },
             )
             vi.mocked(fetchAndPersistPrices).mockClear()
 
@@ -2075,6 +2082,37 @@ describe('SyncService', () => {
                 '0xabc',
                 '0xabc',
             ])
+        })
+
+        it('prices each scope whose chain registers an assets adapter', async () => {
+            const { fetchAndPersistPrices } =
+                await import('@perawallet/wallet-core-assets')
+            mockAssetsChains.add('ethereum')
+            addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+
+            service.start()
+            await vi.advanceTimersByTimeAsync(50)
+            service.stop()
+
+            const pricedScopes = vi
+                .mocked(fetchAndPersistPrices)
+                .mock.calls.map(([, scope]) => scope)
+            expect(pricedScopes).toEqual([MAINNET, ETHEREUM])
+        })
+
+        it('skips pricing a scope whose chain has no assets adapter, leaving Algorand priced', async () => {
+            const { fetchAndPersistPrices } =
+                await import('@perawallet/wallet-core-assets')
+            addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+
+            service.start()
+            await vi.advanceTimersByTimeAsync(50)
+            service.stop()
+
+            const pricedScopes = vi
+                .mocked(fetchAndPersistPrices)
+                .mock.calls.map(([, scope]) => scope)
+            expect(pricedScopes).toEqual([MAINNET])
         })
 
         describe('cursor', () => {

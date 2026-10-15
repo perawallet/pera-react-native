@@ -30,7 +30,6 @@ import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
@@ -42,7 +41,7 @@ import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
-import { isPeraOwnedDeeplink } from '../utils'
+import { isLegacyChainAddress, isPeraOwnedDeeplink } from '../utils'
 import { buildDeeplink, type BuildDeeplinkInput } from '../builders'
 import {
     useAssetOptInDeeplink,
@@ -78,7 +77,7 @@ type UseDeepLinkResult = {
 // Hoisted for a stable identity: `useDeeplinkListener`'s effects depend on it,
 // and a per-render arrow re-registers the `Linking` subscription every render.
 const isValidDeepLink = (url: string): boolean => {
-    if (isValidAlgorandAddress(url)) return true
+    if (isLegacyChainAddress(url)) return true
     return parseDeeplink(url) !== null
 }
 

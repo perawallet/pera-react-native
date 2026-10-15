@@ -18,6 +18,7 @@ import {
     useSendPhoneVerificationMutation,
     useVerifyPhoneMutation,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
@@ -55,8 +56,8 @@ export const useCardOnboardingPhoneVerifyScreen =
         const { t } = useLanguage()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.verify_phone.verify_error_title',
-            bodyKey: 'peraCard.verify_phone.verify_error_body',
+            titleKey: i18nKey('peraCard.verify_phone.verify_error_title'),
+            bodyKey: i18nKey('peraCard.verify_phone.verify_error_body'),
         })
         const navigation = useAppNavigation()
         const phoneCountryCode = useCardStore(state => state.phoneCountryCode)

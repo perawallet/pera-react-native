@@ -49,10 +49,7 @@ import {
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import {
-    decodeUnsignedAlgorandTransaction,
-    encodeTransactionRaw,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { encodeTransactionRaw } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -261,7 +258,6 @@ describe('Flow: multisig signing review (propose)', () => {
             },
             signerAddress: REVIEW_SIGNER_ADDRESS,
             scope: scopeForLegacyNetwork('mainnet'),
-            decodeTransaction: decodeUnsignedAlgorandTransaction,
             localAccounts: useAccountsStore.getState().accounts,
         })
 

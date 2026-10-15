@@ -19,6 +19,9 @@ import {
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
+/** UTF-8 bytes an Algorand transaction note may hold. */
+export const MAX_TX_NOTE_BYTES = 1024
+
 // `custom` is left out: a custom node is user data with no genesis until probed.
 // CAIP-2 references are the URL-safe first 32 characters of the genesis hash.
 const networks: readonly ChainNetwork[] = [
@@ -76,6 +79,8 @@ const explorerLink =
         return explorerUrl ? `${explorerUrl}/${path}/${id}` : undefined
     }
 
+export const algorandApplicationExplorerUrl = explorerLink('application')
+
 export const algorandDescriptor: ChainDescriptor = {
     id: ALGORAND_CHAIN_ID,
     family: 'algorand',
@@ -107,6 +112,7 @@ export const algorandDescriptor: ChainDescriptor = {
         supportsRekey: true,
         hasTokenApproval: false,
         multipleAddressesPerAccount: false,
+        maxNoteBytes: MAX_TX_NOTE_BYTES,
     },
     explorer: {
         accountUrl: explorerLink('address'),

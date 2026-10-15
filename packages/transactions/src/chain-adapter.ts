@@ -10,13 +10,14 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Decimal } from 'decimal.js'
 
 import {
     PeraServiceUnavailableError,
@@ -58,10 +59,57 @@ export type InboxRejectTxsParams = InboxClaimTxsParams & {
 }
 
 /**
+ * An asset waiting for the receiver in the chain's inbox. The `microAlgo` and
+ * `Algo` field names are the native asset's, kept so existing fixtures keep
+ * compiling.
+ */
+export interface AssetInboxRequest {
+    id?: string
+    /** The receiver's inbox account address, or null if none exists yet. */
+    inboxAddress: Nullable<string>
+    /** Total amount across all senders, in base units */
+    totalAmount: Decimal
+    asset: PeraAsset
+    usdValue: Nullable<Decimal>
+    /** Native asset gain on claim, in base units */
+    microAlgoGainOnClaim: Decimal
+    /** Native asset gain on reject, in base units */
+    microAlgoGainOnReject: Decimal
+    senders: {
+        count: number
+        results: Array<{
+            sender: { address: string; name: Nullable<string> }
+            /** Sender's amount, in base units */
+            amount: Decimal
+        }>
+    }
+    insufficientAlgoForClaiming: boolean
+    insufficientAlgoForRejecting: boolean
+    shouldUseFundsBeforeClaiming: boolean
+    shouldUseFundsBeforeRejecting: boolean
+}
+
+export type AssetInboxSendSummary = {
+    /** Goes back unchanged as {@link InboxSendTxsParams.summary}. */
+    quote: unknown
+    /** What the signed funding payment carries, in native base units. */
+    fundingAmount: bigint
+}
+
+/**
  * Holds assets for a receiver who cannot accept them yet, until they claim or
  * reject them (ARC-59 on Algorand).
  */
 export interface AssetInboxSendFlow {
+    fetchRequests(params: {
+        scope: ChainScope
+        address: string
+    }): Promise<AssetInboxRequest[]>
+    fetchSendSummary(params: {
+        scope: ChainScope
+        receiver: string
+        assetId: string
+    }): Promise<AssetInboxSendSummary>
     buildSendTxs(params: InboxSendTxsParams): Promise<UnsignedTransaction[]>
     buildClaimTxs(params: InboxClaimTxsParams): Promise<UnsignedTransaction[]>
     buildRejectTxs(params: InboxRejectTxsParams): Promise<UnsignedTransaction[]>

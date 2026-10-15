@@ -22,6 +22,7 @@ import { bottomSheetNotifier } from '@components/core'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import {
     type SendClaimParams,
+    useAssetInboxInvalidator,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -33,7 +34,6 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useArc59Invalidator } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import { useErrorToast } from '@hooks/useErrorToast'
 
@@ -49,7 +49,7 @@ export const useClaimProcessingScreen = () => {
     const account = useFindAccountByAddress(accountAddress ?? '', scope)
     const { showError } = useErrorToast()
 
-    const { remove: removeArc59Queries } = useArc59Invalidator()
+    const { remove: removeAssetInboxQueries } = useAssetInboxInvalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
@@ -90,7 +90,7 @@ export const useClaimProcessingScreen = () => {
         })
             .then(txId => {
                 setOnFinished(() => {
-                    removeArc59Queries()
+                    removeAssetInboxQueries()
                     invalidateInboxQueries()
                     invalidateAccountBalances()
                     appNavigation.replace('TabBar', {

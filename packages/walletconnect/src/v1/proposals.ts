@@ -11,6 +11,7 @@
  */
 
 import type WalletConnect from '@perawallet/walletconnect'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     type Network,
@@ -289,6 +290,7 @@ export const createV1ProposalHandlers = (deps: {
             peer,
             requested: {
                 networks: v1NetworksFor(chainId),
+                chains: [scopeForLegacyNetwork(network).chainId],
                 methods,
             },
             expiresAt,

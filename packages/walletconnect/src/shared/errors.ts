@@ -17,6 +17,7 @@ import {
     ErrorSeverity,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export class WalletConnectError extends AppError {
     constructor(
@@ -30,7 +31,7 @@ export class WalletConnectError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.WALLETCONNECT,
                 retryable: false,
-                messageKey: 'errors.walletconnect.body',
+                messageKey: i18nKey('errors.walletconnect.body'),
                 ...metadata,
             },
             originalError,
@@ -41,7 +42,7 @@ export class WalletConnectError extends AppError {
 export class WalletConnectInvalidSessionError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
         super(message ?? 'The session was missing or invalid.', originalError, {
-            messageKey: 'errors.walletconnect.invalid_session_body',
+            messageKey: i18nKey('errors.walletconnect.invalid_session_body'),
         })
     }
 }
@@ -52,7 +53,11 @@ export class WalletConnectRequestExpiredError extends WalletConnectError {
         super(
             'The signing request expired before it was answered',
             originalError,
-            { messageKey: 'errors.walletconnect.request_expired_body' },
+            {
+                messageKey: i18nKey(
+                    'errors.walletconnect.request_expired_body',
+                ),
+            },
         )
     }
 }
@@ -62,7 +67,7 @@ export class WalletConnectSignRequestError extends WalletConnectError {
         super(
             message ?? 'An error has occurred during the signing process.',
             originalError,
-            { messageKey: 'errors.walletconnect.sign_request_body' },
+            { messageKey: i18nKey('errors.walletconnect.sign_request_body') },
         )
     }
 }
@@ -70,7 +75,7 @@ export class WalletConnectSignRequestError extends WalletConnectError {
 export class WalletConnectPermissionError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
         super(message ?? 'Permission denied', originalError, {
-            messageKey: 'errors.walletconnect.permission_body',
+            messageKey: i18nKey('errors.walletconnect.permission_body'),
         })
     }
 }
@@ -81,7 +86,11 @@ export class WalletConnectInvalidNetworkError extends WalletConnectError {
             message ??
                 "The network doesn't match with the network your app is currently connected to.",
             originalError,
-            { messageKey: 'errors.walletconnect.invalid_network_body' },
+            {
+                messageKey: i18nKey(
+                    'errors.walletconnect.invalid_network_body',
+                ),
+            },
         )
     }
 }
@@ -100,7 +109,9 @@ export class WalletConnectConnectionTimeoutError extends WalletConnectError {
             {
                 retryable: true,
                 expected: true,
-                messageKey: 'errors.walletconnect.connection_timeout_body',
+                messageKey: i18nKey(
+                    'errors.walletconnect.connection_timeout_body',
+                ),
             },
         )
     }
@@ -120,7 +131,9 @@ export class WalletConnectBridgeConnectionError extends WalletConnectError {
             {
                 retryable: true,
                 expected: true,
-                messageKey: 'errors.walletconnect.bridge_connection_body',
+                messageKey: i18nKey(
+                    'errors.walletconnect.bridge_connection_body',
+                ),
             },
         )
     }
@@ -134,7 +147,9 @@ export class WalletConnectSessionRequestExpiredError extends WalletConnectError 
                 'This connection request has expired. Start a new connection from the dApp and try again.',
             originalError,
             {
-                messageKey: 'errors.walletconnect.session_request_expired_body',
+                messageKey: i18nKey(
+                    'errors.walletconnect.session_request_expired_body',
+                ),
             },
         )
     }

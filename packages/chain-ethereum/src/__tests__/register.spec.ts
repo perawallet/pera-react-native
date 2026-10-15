@@ -24,6 +24,7 @@ import {
     transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
+import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import {
     historyChainAdapters,
     transferChainAdapters,
@@ -31,6 +32,7 @@ import {
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
 import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
+import { ethereumDappRequestAdapter } from '../connect/dappRequestAdapter'
 import { ethereumHistoryAdapter } from '../history'
 import { registerChain } from '../register'
 import { ethereumPlannerAdapter } from '../signing/adapter'
@@ -50,9 +52,10 @@ describe('registerChain', () => {
         transferChainAdapters.reset()
         historyChainAdapters.reset()
         broadcasterChainAdapters.reset()
+        dappRequestChainAdapters.reset()
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster and history adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster, history and dApp request adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
@@ -71,6 +74,9 @@ describe('registerChain', () => {
         )
         expect(historyChainAdapters.get('ethereum')).toBe(
             ethereumHistoryAdapter,
+        )
+        expect(dappRequestChainAdapters.get('ethereum')).toBe(
+            ethereumDappRequestAdapter,
         )
     })
 

@@ -21,10 +21,17 @@ const mocks = vi.hoisted(() => ({
     buildArc59SendViaInboxTxs: vi.fn(),
     buildArc59ClaimTxs: vi.fn(),
     buildArc59RejectTxs: vi.fn(),
+    fetchArc59AssetRequests: vi.fn(),
+    fetchArc59SendSummary: vi.fn(),
 }))
 
 vi.mock('../../blockchain', () => ({
     createWalletAlgorandClient: mocks.createWalletAlgorandClient,
+}))
+vi.mock('../api', async importOriginal => ({
+    ...(await importOriginal<typeof import('../api')>()),
+    fetchArc59AssetRequests: mocks.fetchArc59AssetRequests,
+    fetchArc59SendSummary: mocks.fetchArc59SendSummary,
 }))
 vi.mock('../builders', () => ({
     buildArc59SendViaInboxTxs: mocks.buildArc59SendViaInboxTxs,
@@ -54,6 +61,44 @@ describe('algorandAssetInbox', () => {
         mocks.buildArc59SendViaInboxTxs.mockResolvedValue(TXNS)
         mocks.buildArc59ClaimTxs.mockResolvedValue(TXNS)
         mocks.buildArc59RejectTxs.mockResolvedValue(TXNS)
+    })
+
+    it("fetches the scope's network requests through the Pera backend reader", async () => {
+        const requests = [{ id: '1' }]
+        mocks.fetchArc59AssetRequests.mockResolvedValue(requests)
+
+        const result = await inbox.fetchRequests({
+            scope: scopeForLegacyNetwork('testnet'),
+            address: 'RECEIVER',
+        })
+
+        expect(result).toBe(requests)
+        expect(mocks.fetchArc59AssetRequests).toHaveBeenCalledWith(
+            'testnet',
+            'RECEIVER',
+        )
+    })
+
+    it('quotes a send with the signed funding amount as algo_fund_amount plus minimum_balance_requirement', async () => {
+        mocks.fetchArc59SendSummary.mockResolvedValue({
+            ...summary,
+            algo_fund_amount: 200_000,
+            minimum_balance_requirement: 100_000,
+        })
+
+        const result = await inbox.fetchSendSummary({
+            scope: scopeForLegacyNetwork('mainnet'),
+            receiver: 'RECEIVER',
+            assetId: '7',
+        })
+
+        expect(mocks.fetchArc59SendSummary).toHaveBeenCalledWith(
+            'mainnet',
+            'RECEIVER',
+            '7',
+        )
+        expect(result.fundingAmount).toBe(300_000n)
+        expect(result.quote).toMatchObject({ algo_fund_amount: 200_000 })
     })
 
     it("builds an inbox send with the scope's wallet client", async () => {

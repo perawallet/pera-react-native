@@ -99,6 +99,7 @@ export {
     type TransactionWarning,
 } from './models'
 
+export { chainIdOfSignRequest } from './models/chain'
 export { SigningRequestScopeProvider } from './hooks/SigningRequestScope'
 export type {
     HardwareChildSnapshot,

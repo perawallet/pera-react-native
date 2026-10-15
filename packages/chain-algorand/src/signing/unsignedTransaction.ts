@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import type {
     ChainScope,
     ChainTransactionData,
+    I18nKey,
     PeraSignedTransaction,
     PeraTransaction,
     SignedTransaction,
@@ -53,7 +54,7 @@ import { generateMultisigAddress } from '../multisig/address'
 import type { AlgorandTransactionPayload } from './planner'
 
 const chainSpecific = (
-    titleKey: string,
+    titleKey: I18nKey,
     icon: TransactionSummary['icon'],
 ): TransactionSummary => ({
     kind: 'chain-specific',

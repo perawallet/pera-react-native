@@ -370,7 +370,11 @@ describe('isConnectionsEventMessage', () => {
                         kind: 'walletconnect-v1',
                         proposalId: 'p1',
                         peer: PEER,
-                        requested: { networks: ['testnet'], methods: [] },
+                        requested: {
+                            networks: ['testnet'],
+                            chains: ['algorand'],
+                            methods: [],
+                        },
                         expiresAt: 1,
                     },
                 },

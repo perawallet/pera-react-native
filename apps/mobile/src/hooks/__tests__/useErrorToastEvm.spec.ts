@@ -31,8 +31,8 @@ vi.mock('../useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('../useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({ getMessage: vi.fn() }),
+vi.mock('../useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({ getMessage: vi.fn() }),
 }))
 
 // Resolves against the REAL en.json rather than echoing keys back, so a

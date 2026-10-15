@@ -35,6 +35,10 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
         reason: 'build-gated Ethereum module for the mobile composition root; metro.config.js stubs it out of builds whose CHAINS omits ethereum',
     },
     {
+        glob: '**/apps/mobile/src/bootstrap/keystore-maintenance.ts',
+        reason: "mobile composition root: hands Algorand's post-quantum keygen seed derivation to keystore maintenance",
+    },
+    {
         glob: '**/apps/browser/src/offscreen/runOffscreenApp.ts',
         reason: "extension offscreen composition root: passes the Algorand chain id and the custom node's genesis hash to the dApp handler",
     },
@@ -70,8 +74,8 @@ export const TEST_PATHS: ExemptPath[] = [
     },
 ]
 
-// Only whole-move shims and the app files that still reach their subpaths live
-// here. A package split behind an adapter has no shim and gets no entry.
+// Only whole-move shims live here. A package split behind an adapter has no
+// shim and gets no entry.
 export const TRANSITIONAL_ALLOWLIST: TransitionalEntry[] = [
     {
         path: 'packages/asa-inbox/src/index.ts',
@@ -82,14 +86,5 @@ export const TRANSITIONAL_ALLOWLIST: TransitionalEntry[] = [
         path: 'packages/fee-delegation/src/index.ts',
         specifiers: [`${ALGORAND}/fee-delegation`],
         reason: 'one-line re-export shim for the fee-delegation whole move (PERA-5233) until its importers switch',
-    },
-    {
-        path: 'apps/mobile/src/',
-        specifiers: [
-            `${ALGORAND}/asa-inbox`,
-            `${ALGORAND}/blockchain`,
-            `${ALGORAND}/fee-delegation`,
-        ],
-        reason: 'mobile screens still call the whole-moved asa-inbox and fee-delegation APIs, and the moved Algorand runtime, until their UI gates on a chain capability or reaches it through generic APIs',
     },
 ]

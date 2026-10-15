@@ -109,4 +109,25 @@ describe('fetchPeraUsdPrices', () => {
         expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
         expect(fetchAssetPricesMock).not.toHaveBeenCalled()
     })
+
+    test.each(['betanet', 'custom'] as const)(
+        'resolves no prices without a request on %s, which has no Pera backend',
+        async network => {
+            await expect(
+                fetchPeraUsdPrices([ref('0'), ref('555')], network),
+            ).resolves.toEqual([])
+
+            expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
+            expect(fetchAssetPricesMock).not.toHaveBeenCalled()
+        },
+    )
+
+    test('still rejects a ref on another chain on a network with no Pera backend', async () => {
+        await expect(
+            fetchPeraUsdPrices(
+                [{ chainId: 'ethereum', assetId: '0xabc' }],
+                'betanet',
+            ),
+        ).rejects.toThrow('Not an Algorand asset: ethereum/0xabc')
+    })
 })

@@ -21,6 +21,10 @@ import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '@perawallet/wallet-core-connections/dappRequest'
+import {
+    addressCodecs,
+    type AddressCodec,
+} from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import type { WalletKitFactory } from '../client'
@@ -68,7 +72,17 @@ if (!algorandAdapter) {
     throw new Error('the package setup file registers the Algorand adapter')
 }
 
+const algorandCodec = addressCodecs.get('algorand')
+
 const FIXTURE_CHAIN_ID = 'fx:1'
+const FIXTURE_ADDRESS = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+
+const fixtureCodec: AddressCodec = {
+    ...algorandCodec,
+    chainId: 'ethereum',
+    isValid: address => /^0x[0-9a-fA-F]{40}$/.test(address),
+    normalize: address => address,
+}
 
 const fixtureAdapter = (
     v2: DappRequestChainAdapter['walletConnect']['v2'],
@@ -104,14 +118,18 @@ const FIXTURE_V2 = {
 afterEach(() => {
     dappRequestChainAdapters.reset()
     dappRequestChainAdapters.register(algorandAdapter)
+    addressCodecs.reset()
+    addressCodecs.register(algorandCodec)
 })
 
 const approveProposal = async (
     overrides: Parameters<typeof makeProposal>[0] = {},
+    addresses: string[] = [ADDRESS],
 ): Promise<Record<string, unknown>> => {
     const walletKit = createFakeWalletKit()
     const handler = createWalletConnectV2Handler({
-        getNetwork: () => Networks.mainnet,
+        getNetworkId: () => Networks.mainnet,
+        isDappConnectEnabled: () => true,
         projectId: 'a-reown-project-id',
         keyValueStorage: new MemoryKeyValueStorage(),
         createWalletKit: vi.fn<WalletKitFactory>(async () => walletKit),
@@ -131,7 +149,7 @@ const approveProposal = async (
     await flush()
     if (!proposal) throw new Error('no proposal surfaced')
 
-    await proposal.approve([ADDRESS])
+    await proposal.approve(addresses)
     await handler.teardown()
 
     const [[{ supportedNamespaces }]] = sdk.buildApprovedNamespaces.mock
@@ -164,19 +182,45 @@ describe('the namespaces a v2 session is offered', () => {
         })
     })
 
-    it("offers every registered chain's namespace the dApp asked for", async () => {
+    it("offers every registered chain's namespace the dApp asked for, each with only its own addresses", async () => {
         dappRequestChainAdapters.register(fixtureAdapter(FIXTURE_V2))
+        addressCodecs.register(fixtureCodec)
 
-        const supported = await approveProposal(WITH_FIXTURE_CHAIN)
+        const supported = await approveProposal(WITH_FIXTURE_CHAIN, [
+            ADDRESS,
+            FIXTURE_ADDRESS,
+        ])
 
         expect(Object.keys(supported).sort()).toEqual(['algorand', 'fx'])
-        // Only the namespace's shape: which addresses a second chain's
-        // namespace carries is that chain's to decide once one serves v2.
-        expect(supported.fx).toMatchObject({
+        expect(supported.fx).toEqual({
             chains: [FIXTURE_CHAIN_ID],
             methods: ['fx_sign'],
             events: ['accountsChanged', 'chainChanged'],
+            accounts: [`${FIXTURE_CHAIN_ID}:${FIXTURE_ADDRESS}`],
         })
+        expect(supported.algorand).toMatchObject({
+            accounts: [`${MAINNET_CHAIN_ID}:${ADDRESS}`],
+        })
+    })
+
+    it('offers no namespace to a chain whose codec accepts none of the approved addresses', async () => {
+        dappRequestChainAdapters.register(fixtureAdapter(FIXTURE_V2))
+        addressCodecs.register(fixtureCodec)
+
+        const supported = await approveProposal(WITH_FIXTURE_CHAIN)
+
+        expect(Object.keys(supported)).toEqual(['algorand'])
+    })
+
+    it('offers a chain with no registered codec no addresses at all', async () => {
+        dappRequestChainAdapters.register(fixtureAdapter(FIXTURE_V2))
+
+        const supported = await approveProposal(WITH_FIXTURE_CHAIN, [
+            ADDRESS,
+            FIXTURE_ADDRESS,
+        ])
+
+        expect(Object.keys(supported)).toEqual(['algorand'])
     })
 
     it('offers nothing for a chain that serves no v2', async () => {

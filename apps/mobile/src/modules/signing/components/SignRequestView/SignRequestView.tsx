@@ -62,7 +62,11 @@ const SignRequestErrorFallback = ({
     return (
         <EmptyView
             title={t('errors.general.title')}
-            body={appError ? t(appError.message) : t('errors.general.body')}
+            body={
+                appError?.metadata.messageKey
+                    ? t(appError.metadata.messageKey, appError.metadata.params)
+                    : t('errors.general.body')
+            }
             button={
                 <PWButton
                     title={t('common.go_back.label')}

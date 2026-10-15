@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { decodeUnsignedAlgorandTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     ACTIONABLE_SIGN_REQUEST_STATUSES,
@@ -88,8 +87,6 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                                     signRequest,
                                     signerAddress: address,
                                     scope,
-                                    decodeTransaction:
-                                        decodeUnsignedAlgorandTransaction,
                                     localAccounts: accounts,
                                 }),
                             )

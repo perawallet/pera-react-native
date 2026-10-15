@@ -12,3 +12,4 @@
 
 export { FeeDisplay } from './components/FeeDisplay'
 export { GroupTransactionsPanel } from './components/transaction-details'
+export { useAlgorandTransactionDetail } from './hooks/useAlgorandTransactionDetail'

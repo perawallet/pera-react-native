@@ -16,15 +16,18 @@ import {
     type RestoreCloudBackupResult,
     type RestoreErrorCategory,
 } from '@perawallet/wallet-core-backup'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 
-const ERROR_KEYS: Record<RestoreErrorCategory, string> = {
-    NOT_FOUND: 'cloud_backup.restore.error_not_found',
-    INVALID_CREDENTIALS: 'cloud_backup.restore.error_invalid_credentials',
-    UNKNOWN: 'cloud_backup.restore.error_unknown',
+const ERROR_KEYS: Record<RestoreErrorCategory, I18nKey> = {
+    NOT_FOUND: i18nKey('cloud_backup.restore.error_not_found'),
+    INVALID_CREDENTIALS: i18nKey(
+        'cloud_backup.restore.error_invalid_credentials',
+    ),
+    UNKNOWN: i18nKey('cloud_backup.restore.error_unknown'),
 }
 
 const outcomeToast = (

@@ -14,6 +14,7 @@ import {
     PASSWORD_RULES,
     type PasswordRuleId,
 } from '@perawallet/wallet-core-card'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -25,12 +26,12 @@ type PasswordRequirementsProps = {
 
 // Explicit literal keys (rather than `rule_${id}`) so the i18n lint's
 // static usage scan can see them.
-const RULE_LABEL_KEYS: Record<PasswordRuleId, string> = {
-    length: 'peraCard.create_password.rule_length',
-    uppercase: 'peraCard.create_password.rule_uppercase',
-    lowercase: 'peraCard.create_password.rule_lowercase',
-    number: 'peraCard.create_password.rule_number',
-    special: 'peraCard.create_password.rule_special',
+const RULE_LABEL_KEYS: Record<PasswordRuleId, I18nKey> = {
+    length: i18nKey('peraCard.create_password.rule_length'),
+    uppercase: i18nKey('peraCard.create_password.rule_uppercase'),
+    lowercase: i18nKey('peraCard.create_password.rule_lowercase'),
+    number: i18nKey('peraCard.create_password.rule_number'),
+    special: i18nKey('peraCard.create_password.rule_special'),
 }
 
 /**

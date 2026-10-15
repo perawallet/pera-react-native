@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AssetDetailsDisplay } from '../../types/asset-details-display'
 import { extractDomain } from '../../utils/extractDomain'
 
@@ -20,8 +21,8 @@ export const neutralAssetDetailsDisplay: AssetDetailsDisplay = {
         return {
             idLabelKey: isNativeAsset
                 ? null
-                : 'asset_details.collectible.asset_id',
-            urlLabelKey: 'asset_details.about.url',
+                : i18nKey('asset_details.collectible.asset_id'),
+            urlLabelKey: i18nKey('asset_details.about.url'),
             explorerLink: url ? { url, label: extractDomain(url) } : null,
         }
     },

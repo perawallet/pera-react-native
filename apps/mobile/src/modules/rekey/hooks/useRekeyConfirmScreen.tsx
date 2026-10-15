@@ -34,19 +34,22 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from './useHandleRekeyError'
 import { useRekeyProposeHandoff } from './useRekeyProposeHandoff'
-import { PreviousRekeyWarningSheet } from '../components/PreviousRekeyWarningSheet'
+import {
+    PreviousRekeyWarningSheet,
+    type RekeyWarningCopy,
+} from '../components/PreviousRekeyWarningSheet'
 import { QuantumDowngradeWarningSheet } from '../components/QuantumDowngradeWarningSheet'
 
 import type { Decimal } from 'decimal.js'
 
 // Shared by the rekey-to-{ledger,shared,standard} confirm screens, which differ
 // only in the target stack they navigate to, the support URL, and the warning
-// sheet's i18n prefix / testID.
+// sheet's copy / testID.
 export type RekeyConfirmConfig = {
     sourceAddress: string
     targetAddress: string
     supportUrl: string
-    warningI18nPrefix: string
+    warningCopy: RekeyWarningCopy
     warningTestID: string
     /** Navigate to the variant's success screen after a confirmed rekey. */
     onSubmitSuccess: (sourceAddress: string) => void
@@ -77,7 +80,7 @@ export const useRekeyConfirmScreen = ({
     sourceAddress,
     targetAddress,
     supportUrl,
-    warningI18nPrefix,
+    warningCopy,
     warningTestID,
     onSubmitSuccess,
     onProposed,
@@ -201,7 +204,7 @@ export const useRekeyConfirmScreen = ({
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <PreviousRekeyWarningSheet
-                        i18nPrefix={warningI18nPrefix}
+                        copy={warningCopy}
                         testID={warningTestID}
                         currentAuthName={currentAuthName}
                         sourceName={sourceName}
@@ -250,7 +253,7 @@ export const useRekeyConfirmScreen = ({
         requestBottomSheet,
         handleLearnMore,
         submit,
-        warningI18nPrefix,
+        warningCopy,
         warningTestID,
         scope.chainId,
     ])

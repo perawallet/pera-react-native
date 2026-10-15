@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
 import {
     registerAlgorandAccountsAdapter,
@@ -117,7 +118,14 @@ const config = {
     sourceAddress: 'SRC',
     targetAddress: 'TGT',
     supportUrl: 'https://support.example',
-    warningI18nPrefix: 'rekey.to_standard.confirm.replace_warning',
+    warningCopy: {
+        titleKey: i18nKey('rekey.to_standard.confirm.replace_warning.title'),
+        bodyKey: i18nKey('rekey.to_standard.confirm.replace_warning.body'),
+        confirmKey: i18nKey(
+            'rekey.to_standard.confirm.replace_warning.confirm',
+        ),
+        cancelKey: i18nKey('rekey.to_standard.confirm.replace_warning.cancel'),
+    },
     warningTestID: 'rekey-to-standard-previous-rekey-warning-sheet',
     onSubmitSuccess: vi.fn(),
 }

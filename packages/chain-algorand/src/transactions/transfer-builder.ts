@@ -11,14 +11,14 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import type {
-    AssetOptInIntent,
-    BuildContext,
-    PeraTransaction,
-    TransactionIntent,
-    TransactionSummary,
-    TransferIntent,
-    UnsignedTransaction,
+import {
+    type AssetOptInIntent,
+    type BuildContext,
+    type PeraTransaction,
+    type TransactionIntent,
+    type TransactionSummary,
+    type TransferIntent,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { toBigInt } from '@perawallet/wallet-core-shared'
 import { getMinimumFeeConfig } from '../blockchain'
@@ -29,12 +29,6 @@ import { buildOptInTxs, buildTransferTxs } from './builders'
 import { fetchSuggestedMinFee, resolveAlgorandSenderFee } from './transfer-fees'
 import { OPT_IN_TITLE_KEY, SEND_TITLE_KEY } from './summarize'
 import { assertBuildableIntent } from './transfer-validation'
-
-/** Every i18n key a built transaction's summary can carry. */
-export const ALGORAND_TRANSFER_TITLE_KEYS = [
-    SEND_TITLE_KEY,
-    OPT_IN_TITLE_KEY,
-] as const
 
 const transferSummary = (intent: TransferIntent): TransactionSummary => {
     const isSelf = intent.from === intent.to

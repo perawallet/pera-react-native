@@ -11,8 +11,10 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { getCustomNetworkConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    customNodeAdapters,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,
@@ -58,7 +60,10 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                     chainId: LEGACY_CHAIN_ID,
                     getNetwork: () => useNetworkStore.getState().network,
                     getCustomNetworkGenesisHash: () =>
-                        getCustomNetworkConfig()?.genesisHash,
+                        customNodeAdapters.has(LEGACY_CHAIN_ID)
+                            ? customNodeAdapters.get(LEGACY_CHAIN_ID).read()
+                                  ?.genesisHash
+                            : undefined,
                     // Descriptor-only in UI realms; the offscreen host owns the live handler.
                     getAccounts: () => [],
                 }),

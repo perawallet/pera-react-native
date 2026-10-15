@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorSeverity,
@@ -257,7 +258,7 @@ describe('AppError messageKey', () => {
     test('preserves messageKey and params on the instance', () => {
         const error = new AppError('log-only text', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.webview.unsupported_url',
+            messageKey: i18nKey('errors.webview.unsupported_url'),
             params: { url: 'ABC' },
         })
 
@@ -273,7 +274,7 @@ describe('AppError messageKey', () => {
 
     test('includes messageKey in the serialized form', () => {
         const error = new AppError('log-only text', {
-            messageKey: 'errors.webview.invalid_method',
+            messageKey: i18nKey('errors.webview.invalid_method'),
         })
 
         expect(error.toJSON().metadata.messageKey).toBe(
