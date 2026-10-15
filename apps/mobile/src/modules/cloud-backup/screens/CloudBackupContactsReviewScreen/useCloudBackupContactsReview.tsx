@@ -24,11 +24,11 @@ type UseCloudBackupContactsReviewResult = {
     availableFromBackup: BackupContactReview['availableFromBackup']
     notBackedUpContacts: BackupContact[]
     isExpanded: boolean
-    isBusy: (address: string) => boolean
+    isBusy: (id: string) => boolean
     onToggleExpanded: () => void
-    onAdd: (address: string) => void
-    onDelete: (address: string) => Promise<void>
-    onBackUp: (address: string) => void
+    onAdd: (id: string) => void
+    onDelete: (id: string) => Promise<void>
+    onBackUp: (id: string) => void
 }
 
 export const useCloudBackupContactsReview =
@@ -51,7 +51,7 @@ export const useCloudBackupContactsReview =
         )
 
         const onDelete = useCallback(
-            async (address: string) => {
+            async (id: string) => {
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
                         <DeleteFromBackupSheet
@@ -65,7 +65,7 @@ export const useCloudBackupContactsReview =
                     ),
                     options: { size: 'auto', enablePanDownToClose: true },
                 })
-                if (confirmed === true) deleteFromBackup(address)
+                if (confirmed === true) deleteFromBackup(id)
             },
             [requestBottomSheet, deleteFromBackup, t],
         )

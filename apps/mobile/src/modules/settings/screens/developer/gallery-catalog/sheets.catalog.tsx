@@ -981,6 +981,7 @@ export const getSheetSections = (): GallerySection[] => [
                             <GallerySheetBoundary>
                                 <ContactQRContent
                                     contact={{
+                                        id: 'mock-contact',
                                         name: 'Mock Contact',
                                         addresses: { algorand: A },
                                     }}

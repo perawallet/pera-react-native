@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Contact } from '@perawallet/wallet-core-contacts'
+import type { NewContact } from '@perawallet/wallet-core-contacts'
 import { PWIcon, type PWIconSize, PWImage, PWView } from '@components/core'
 import { useStyles, type ContactAvatarVariant } from './styles'
 
@@ -26,7 +26,7 @@ const placeholderIconSize = {
 
 export type ContactAvatarProps = {
     size: PWIconSize
-    contact?: Contact
+    contact?: NewContact
     variant?: ContactAvatarVariant
 }
 

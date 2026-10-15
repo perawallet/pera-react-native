@@ -10,39 +10,17 @@
  limitations under the License
  */
 
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
-import type { ContactRef } from './models'
-
 /**
- * Thrown by `addContact` when the address is already in use in its family,
- * or by `editContact` when renaming into an address another contact holds in
- * that family. UI layers catch this and surface it as a form-level error.
- */
-export class DuplicateAddressError extends Error {
-    readonly family: ChainFamily
-    readonly address: string
-
-    constructor({ family, address }: ContactRef) {
-        super(`A contact with address ${address} already exists`)
-        this.name = 'DuplicateAddressError'
-        this.family = family
-        this.address = address
-    }
-}
-
-/**
- * Thrown by `editContact` when no contact matches the ref.
+ * Thrown by `editContact` when no contact has the id.
  * Surfaces the case where the caller's `selectedContact` is stale (e.g.
  * deleted on another device) so the UI doesn't silently report success.
  */
 export class ContactNotFoundError extends Error {
-    readonly family: ChainFamily
-    readonly address: string
+    readonly id: string
 
-    constructor({ family, address }: ContactRef) {
-        super(`No contact found at address ${address}`)
+    constructor(id: string) {
+        super(`No contact found with id ${id}`)
         this.name = 'ContactNotFoundError'
-        this.family = family
-        this.address = address
+        this.id = id
     }
 }

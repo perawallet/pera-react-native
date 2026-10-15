@@ -108,3 +108,17 @@ export const adoptRemote = (
     localContentHash: remoteContentHash(item.key, plaintext),
     localUpdatedAt: null,
 })
+
+/** Records that the remote version was seen and caches what names it, without
+ *  adopting its content. */
+export const seenOnly = (
+    tracked: SyncItemState | undefined,
+    item: FetchedItem,
+    identifiers: Partial<SyncItemState>,
+): SyncItemState => ({
+    ...(tracked as SyncItemState),
+    knownVer: item.ver,
+    baseVer: item.ver,
+    lastRemoteHash: item.hash,
+    ...identifiers,
+})

@@ -434,30 +434,28 @@ export class BackupSyncManager {
         )
     }
 
-    backUpContact(address: string): Promise<BackupBackUpOutcome> {
-        return this.trackAction('contact', address, 'backUp', async () => {
+    backUpContact(id: string): Promise<BackupBackUpOutcome> {
+        return this.trackAction('contact', id, 'backUp', async () => {
             const epoch = this.stopEpoch
             const staged = await this.withExclusiveState(async state =>
-                markContactForBackup(state, address),
+                markContactForBackup(state, id),
             )
             if (!staged) return 'refused'
             await this.syncWhenIdle()
-            if (isContactBackedUp(this.state.getSyncState(), address)) {
+            if (isContactBackedUp(this.state.getSyncState(), id)) {
                 return 'settled'
             }
             return this.wasInterrupted(epoch) ? 'deferred' : 'failed'
         })
     }
 
-    addContactFromBackup(
-        address: string,
-    ): Promise<ContactImportSummary | null> {
-        return this.trackAction('contact', address, 'add', async () => {
+    addContactFromBackup(id: string): Promise<ContactImportSummary | null> {
+        return this.trackAction('contact', id, 'add', async () => {
             let summary: ContactImportSummary | null = null
             const done = await this.withExclusiveState(async (state, deps) => {
                 const result = await importContactFromBackup({
                     state,
-                    address,
+                    id,
                     deps: reviewActionDeps(deps),
                 })
                 summary = result.summary
@@ -467,12 +465,12 @@ export class BackupSyncManager {
         })
     }
 
-    deleteContactFromBackup(address: string): Promise<BackupActionOutcome> {
-        return this.trackAction('contact', address, 'delete', () =>
+    deleteContactFromBackup(id: string): Promise<BackupActionOutcome> {
+        return this.trackAction('contact', id, 'delete', () =>
             this.runDelete((state, deps) =>
                 deleteContactFromBackup({
                     state,
-                    address,
+                    id,
                     deps: reviewActionDeps(deps),
                 }),
             ),
@@ -481,9 +479,9 @@ export class BackupSyncManager {
 
     /** Leaves the backup's copy in place, so the contact returns to the review
      *  screen under "available from backup". */
-    async keepContactInBackup(address: string, name: string): Promise<boolean> {
+    async keepContactInBackup(id: string, name: string): Promise<boolean> {
         return this.applyLocalEdit(state =>
-            keepContactInBackup(state, address, name),
+            keepContactInBackup(state, id, name),
         )
     }
 

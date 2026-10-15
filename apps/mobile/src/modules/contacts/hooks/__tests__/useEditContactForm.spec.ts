@@ -12,10 +12,10 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    type Contact,
-    type ContactAddresses,
-    DuplicateAddressError,
+import type {
+    Contact,
+    ContactAddresses,
+    NewContact,
 } from '@perawallet/wallet-core-contacts'
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -31,7 +31,7 @@ const replaceMock = vi.fn()
 // selected in the app, no route params); deeplink tests override the return.
 const useContactsMock = vi.fn()
 const showToastMock = vi.fn()
-const isContactBackedUpMock = vi.fn(() => false)
+const isContactBackedUpMock = vi.fn((_id: string) => false)
 const isCloudBackupEnabledMock = vi.fn(() => false)
 const deleteContactFromBackupMock = vi.fn(
     async (): Promise<BackupActionOutcome> => 'settled',
@@ -42,7 +42,9 @@ const keepContactInBackupMock = vi.fn(async () => true)
 const useRouteMock = vi.fn()
 
 const ALICE = 'ALICE123'
+const ALICE_ID = 'alice-id'
 const selectedContact: Contact = {
+    id: ALICE_ID,
     name: 'Alice',
     addresses: { algorand: ALICE },
 }
@@ -66,7 +68,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@modules/cloud-backup', () => ({
-    useIsContactBackedUp: () => isContactBackedUpMock(),
+    useIsContactBackedUp: (id: string) => isContactBackedUpMock(id),
     DeleteFromBackupSheet: () => null,
 }))
 
@@ -161,7 +163,11 @@ describe('useEditContactForm', () => {
 
     describe('deeplink / QR (route params)', () => {
         const BOB = 'BOB999'
-        const bob: Contact = { name: 'Bob', addresses: { algorand: BOB } }
+        const bob: Contact = {
+            id: 'bob-id',
+            name: 'Bob',
+            addresses: { algorand: BOB },
+        }
 
         it('targets the contact named by the deeplink address, not the stale in-app selection', () => {
             // Alice is selected in-app, but the link is for Bob's address.
@@ -184,10 +190,10 @@ describe('useEditContactForm', () => {
             act(() => {
                 result.current.removeContact()
             })
-            expect(deleteContactMock).toHaveBeenCalledWith(bob)
+            expect(deleteContactMock).toHaveBeenCalledWith('bob-id')
         })
 
-        it('saves against the deeplink address', () => {
+        it('saves the contact the deeplink address names, by its id', () => {
             useContactsMock.mockReturnValue({
                 editContact: editContactMock,
                 deleteContact: deleteContactMock,
@@ -205,13 +211,11 @@ describe('useEditContactForm', () => {
             })
 
             const updated: Contact = {
+                id: 'bob-id',
                 name: 'Bobby',
                 addresses: { algorand: BOB },
             }
-            expect(editContactMock).toHaveBeenCalledWith(
-                { family: 'algorand', address: BOB },
-                updated,
-            )
+            expect(editContactMock).toHaveBeenCalledWith('bob-id', updated)
             expect(setSelectedContactMock).toHaveBeenCalledWith(updated)
             expect(goBackMock).toHaveBeenCalled()
         })
@@ -231,7 +235,7 @@ describe('useEditContactForm', () => {
 
             const { result } = renderHook(() => useEditContactForm())
 
-            const expected: Contact = {
+            const expected: NewContact = {
                 addresses: { algorand: 'CAROL789' },
                 name: 'Carol',
             }
@@ -247,7 +251,7 @@ describe('useEditContactForm', () => {
             result.current.removeContact()
         })
 
-        expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
+        expect(deleteContactMock).toHaveBeenCalledWith(ALICE_ID)
         expect(setSelectedContactMock).toHaveBeenCalledWith(null)
         expect(replaceMock).toHaveBeenCalledWith('Contacts')
     })
@@ -263,80 +267,48 @@ describe('useEditContactForm', () => {
         expect(goBackMock).not.toHaveBeenCalled()
     })
 
-    describe('duplicate-address guard', () => {
-        it('forwards the Algorand ref so the store can identify the row being updated', () => {
-            formState.isValid = true
+    it('saves the selected contact by its id', () => {
+        formState.isValid = true
 
-            const { result } = renderHook(() => useEditContactForm())
+        const { result } = renderHook(() => useEditContactForm())
 
-            act(() => {
-                result.current.save({ name: 'Alice', address: ALICE })
-            })
-
-            expect(setErrorMock).not.toHaveBeenCalled()
-            expect(editContactMock).toHaveBeenCalledWith(
-                { family: 'algorand', address: ALICE },
-                selectedContact,
-            )
-            expect(goBackMock).toHaveBeenCalled()
+        act(() => {
+            result.current.save({ name: 'Alice', address: ALICE })
         })
 
-        it('keeps the address the contact holds in another family', () => {
-            useContactsMock.mockReturnValue({
-                editContact: editContactMock,
-                deleteContact: deleteContactMock,
-                selectedContact: {
-                    ...selectedContact,
-                    addresses: {
-                        algorand: ALICE,
-                        other: 'X',
-                    } as ContactAddresses,
-                },
-                setSelectedContact: setSelectedContactMock,
-                contacts: [],
-            })
-            formState.isValid = true
+        expect(editContactMock).toHaveBeenCalledWith(ALICE_ID, selectedContact)
+        expect(goBackMock).toHaveBeenCalled()
+    })
 
-            const { result } = renderHook(() => useEditContactForm())
+    it('keeps the address the contact holds in another family', () => {
+        useContactsMock.mockReturnValue({
+            editContact: editContactMock,
+            deleteContact: deleteContactMock,
+            selectedContact: {
+                ...selectedContact,
+                addresses: {
+                    algorand: ALICE,
+                    other: 'X',
+                } as ContactAddresses,
+            },
+            setSelectedContact: setSelectedContactMock,
+            contacts: [],
+        })
+        formState.isValid = true
 
-            act(() => {
-                result.current.save({ name: 'Alice', address: 'ALICE_NEW' })
-            })
+        const { result } = renderHook(() => useEditContactForm())
 
-            expect(editContactMock).toHaveBeenCalledWith(
-                { family: 'algorand', address: ALICE },
-                {
-                    name: 'Alice',
-                    addresses: {
-                        algorand: 'ALICE_NEW',
-                        other: 'X',
-                    } as ContactAddresses,
-                },
-            )
+        act(() => {
+            result.current.save({ name: 'Alice', address: 'ALICE_NEW' })
         })
 
-        it('blocks save and surfaces a form error when editContact throws DuplicateAddressError', () => {
-            editContactMock.mockImplementation(() => {
-                throw new DuplicateAddressError({
-                    family: 'algorand',
-                    address: 'BOB999',
-                })
-            })
-            formState.isValid = true
-
-            const { result } = renderHook(() => useEditContactForm())
-
-            act(() => {
-                result.current.save({ name: 'Alice', address: 'BOB999' })
-            })
-
-            expect(setErrorMock).toHaveBeenCalledWith(
-                'address',
-                expect.objectContaining({
-                    message: expect.any(String),
-                }),
-            )
-            expect(goBackMock).not.toHaveBeenCalled()
+        expect(editContactMock).toHaveBeenCalledWith(ALICE_ID, {
+            id: ALICE_ID,
+            name: 'Alice',
+            addresses: {
+                algorand: 'ALICE_NEW',
+                other: 'X',
+            } as ContactAddresses,
         })
     })
 
@@ -389,8 +361,14 @@ describe('useEditContactForm', () => {
 
             await act(() => result.current.removeContact('delete'))
 
-            expect(deleteContactFromBackupMock).toHaveBeenCalledWith(ALICE)
-            expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
+            expect(deleteContactFromBackupMock).toHaveBeenCalledWith(ALICE_ID)
+            expect(deleteContactMock).toHaveBeenCalledWith(ALICE_ID)
+        })
+
+        it('asks the backup about the contact by its id', () => {
+            renderHook(() => useEditContactForm())
+
+            expect(isContactBackedUpMock).toHaveBeenCalledWith(ALICE_ID)
         })
 
         it('ignores a second removal while the first is still recording its choice', async () => {
@@ -426,10 +404,10 @@ describe('useEditContactForm', () => {
             await act(() => result.current.removeContact('keep'))
 
             expect(keepContactInBackupMock).toHaveBeenCalledWith(
-                ALICE,
+                ALICE_ID,
                 selectedContact.name,
             )
-            expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
+            expect(deleteContactMock).toHaveBeenCalledWith(ALICE_ID)
         })
 
         it('leaves the contact on the device when the backup refused the choice', async () => {
@@ -451,7 +429,7 @@ describe('useEditContactForm', () => {
 
             await act(() => result.current.removeContact('delete'))
 
-            expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
+            expect(deleteContactMock).toHaveBeenCalledWith(ALICE_ID)
             expect(showToastMock).not.toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'error' }),
             )

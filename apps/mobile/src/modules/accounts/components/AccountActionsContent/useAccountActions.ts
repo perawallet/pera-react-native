@@ -25,15 +25,16 @@ type UseAccountActionsParams = {
 
 type UseAccountActionsResult = {
     /**
-     * The contact already saved at this address, if any. The sheet uses
-     * this to flip the third action between "Add New Contact" and "Edit
-     * Contact" — and `openContact` routes to the right screen.
+     * Every contact saved at this address; more than one when the same person
+     * is kept as two contacts. The sheet offers "Edit Contact" for each, or
+     * "Add New Contact" when there are none.
      */
-    existingContact: Contact | null
+    existingContacts: Contact[]
     canAddWatchAccount: boolean
     openSendTransaction: () => void
     openWatchAddress: () => void
-    openContact: () => void
+    addContact: () => void
+    editContact: (contact: Contact) => void
 }
 
 export const useAccountActions = ({
@@ -46,8 +47,8 @@ export const useAccountActions = ({
     const { contacts, setSelectedContact } = useContacts()
     const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
 
-    const existingContact = useMemo(
-        () => contacts.find(c => c.addresses.algorand === address) ?? null,
+    const existingContacts = useMemo(
+        () => contacts.filter(c => c.addresses.algorand === address),
         [contacts, address],
     )
 
@@ -80,34 +81,32 @@ export const useAccountActions = ({
         })
     }, [address, navigation, onClose])
 
-    const openContact = useCallback(() => {
+    const addContact = useCallback(() => {
         onClose()
-        if (existingContact) {
-            // EditContactScreen reads the contact via the contacts store
-            // (selectedContact), not route params — set it before navigating
-            // so the form opens populated.
-            setSelectedContact(existingContact)
-            navigation.navigate('Contacts', { screen: 'EditContact' })
-            return
-        }
         navigation.navigate('Contacts', {
             screen: 'AddContact',
             params: { address, label },
         })
-    }, [
-        address,
-        label,
-        existingContact,
-        navigation,
-        onClose,
-        setSelectedContact,
-    ])
+    }, [address, label, navigation, onClose])
+
+    const editContact = useCallback(
+        (contact: Contact) => {
+            onClose()
+            // EditContactScreen reads the contact via the contacts store
+            // (selectedContact), not route params — set it before navigating
+            // so the form opens populated.
+            setSelectedContact(contact)
+            navigation.navigate('Contacts', { screen: 'EditContact' })
+        },
+        [navigation, onClose, setSelectedContact],
+    )
 
     return {
-        existingContact,
+        existingContacts,
         canAddWatchAccount,
         openSendTransaction,
         openWatchAddress,
-        openContact,
+        addContact,
+        editContact,
     }
 }

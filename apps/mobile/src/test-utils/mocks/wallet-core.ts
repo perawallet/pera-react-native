@@ -628,7 +628,6 @@ vi.mock('@perawallet/wallet-core-contacts', () => {
             findContacts: vi.fn(() => []),
         })),
         useContactsStore,
-        DuplicateAddressError: class DuplicateAddressError extends Error {},
         ContactNotFoundError: class ContactNotFoundError extends Error {},
     }
 })

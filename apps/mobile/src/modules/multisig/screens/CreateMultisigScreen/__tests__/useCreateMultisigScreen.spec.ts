@@ -12,7 +12,6 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { DuplicateAddressError } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useCreateMultisigScreen } from '../useCreateMultisigScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -376,24 +375,6 @@ describe('useCreateMultisigScreen', () => {
 
             expect(result.current.participants).toHaveLength(2)
             expect(mockAddContact).toHaveBeenCalledTimes(1)
-        })
-
-        it('swallows a duplicate-contact error', async () => {
-            mockAddContact.mockImplementationOnce(() => {
-                throw new DuplicateAddressError({
-                    family: 'algorand',
-                    address: ADDR,
-                })
-            })
-            mockRequestBottomSheet.mockResolvedValueOnce({ address: ADDR })
-            const { result } = renderHook(() => useCreateMultisigScreen())
-
-            await act(async () => {
-                await result.current.handleOpenAddParticipant()
-            })
-
-            expect(mockAddContact).toHaveBeenCalledTimes(1)
-            expect(result.current.participants).toHaveLength(1)
         })
     })
 

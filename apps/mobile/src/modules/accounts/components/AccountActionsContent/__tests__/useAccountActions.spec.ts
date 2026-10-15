@@ -78,27 +78,29 @@ describe('useAccountActions', () => {
         expect(result.current.canAddWatchAccount).toBe(false)
     })
 
-    it('reports no existing contact when the address is unknown', () => {
+    it('reports no existing contacts when the address is unknown', () => {
         const { result } = renderHook(() =>
             useAccountActions({ address: ADDRESS, onClose }),
         )
-        expect(result.current.existingContact).toBeNull()
+        expect(result.current.existingContacts).toEqual([])
     })
 
-    it('reports the existing contact when the address matches', () => {
-        const existing: Contact = {
+    it('reports every contact saved at the address', () => {
+        const alice: Contact = {
+            id: 'alice-id',
             name: 'Alice',
             addresses: { algorand: ADDRESS },
         }
-        contactsRef.contacts = [existing]
+        const aliceAlgo: Contact = { ...alice, id: 'alice-algo-id' }
+        contactsRef.contacts = [alice, aliceAlgo]
 
         const { result } = renderHook(() =>
             useAccountActions({ address: ADDRESS, onClose }),
         )
-        expect(result.current.existingContact).toEqual(existing)
+        expect(result.current.existingContacts).toEqual([alice, aliceAlgo])
     })
 
-    it('openContact navigates to AddContact when no existing contact', () => {
+    it('addContact navigates to AddContact with the address prefilled', () => {
         const { result } = renderHook(() =>
             useAccountActions({
                 address: ADDRESS,
@@ -107,7 +109,7 @@ describe('useAccountActions', () => {
             }),
         )
 
-        act(() => result.current.openContact())
+        act(() => result.current.addContact())
 
         expect(mockSetSelectedContact).not.toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
@@ -116,8 +118,9 @@ describe('useAccountActions', () => {
         })
     })
 
-    it('openContact navigates to EditContact when contact already exists', () => {
+    it('editContact selects the given contact and navigates to EditContact', () => {
         const existing: Contact = {
+            id: 'alice-id',
             name: 'Alice',
             addresses: { algorand: ADDRESS },
         }
@@ -127,11 +130,10 @@ describe('useAccountActions', () => {
             useAccountActions({ address: ADDRESS, onClose }),
         )
 
-        act(() => result.current.openContact())
+        act(() => result.current.editContact(existing))
 
         // EditContactScreen reads from the contacts store via
-        // selectedContact, so the existing contact must be set before
-        // navigation.
+        // selectedContact, so the contact must be set before navigation.
         expect(mockSetSelectedContact).toHaveBeenCalledWith(existing)
         expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
             screen: 'EditContact',

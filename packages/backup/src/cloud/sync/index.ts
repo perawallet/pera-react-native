@@ -84,6 +84,7 @@ export type {
     ImportSummary,
     ContactImportFn,
     ContactImportSummary,
+    PulledContact,
     BackupPasskey,
     LocalPasskey,
     PulledPasskey,

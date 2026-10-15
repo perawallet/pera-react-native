@@ -91,14 +91,12 @@ export const CloudBackupContactsScreen = () => {
                     />
                     <PWView>
                         {contacts.map((contact, index) => (
-                            <Fragment key={contact.addresses.algorand}>
+                            <Fragment key={contact.id}>
                                 {index > 0 && <ListItemDivider />}
                                 <DeviceContactRow
                                     contact={contact}
-                                    isBackedUp={isBackedUp(
-                                        contact.addresses.algorand,
-                                    )}
-                                    isBusy={isBusy(contact.addresses.algorand)}
+                                    isBackedUp={isBackedUp(contact.id)}
+                                    isBusy={isBusy(contact.id)}
                                     onBackUp={onBackUp}
                                 />
                             </Fragment>

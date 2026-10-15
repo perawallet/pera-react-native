@@ -96,16 +96,13 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         markIntroductionSeen()
     }, [isIntroductionSeen, markIntroductionSeen])
 
-    const contactAddresses = useMemo(
-        () =>
-            contacts.flatMap(({ addresses }) =>
-                addresses.algorand ? [addresses.algorand] : [],
-            ),
-        [contacts],
-    )
     const contactReview = useMemo(
-        () => deriveBackupContactReview(syncState, contactAddresses),
-        [syncState, contactAddresses],
+        () =>
+            deriveBackupContactReview(
+                syncState,
+                contacts.map(contact => contact.id),
+            ),
+        [syncState, contacts],
     )
 
     const credentialIds = useMemo(

@@ -41,6 +41,8 @@ type ContactFormProps<T extends FieldValues> = {
     addressLabel: string
     nameError?: string
     addressError?: string
+    /** Shown under the address without blocking save. */
+    addressWarning?: string
     nfdName?: string
     isResolvingNfd?: boolean
     onAddressInputChange?: (text: string) => void
@@ -57,6 +59,7 @@ export const ContactForm = <T extends FieldValues>({
     addressLabel,
     nameError,
     addressError,
+    addressWarning,
     nfdName,
     isResolvingNfd,
     onAddressInputChange,
@@ -175,6 +178,15 @@ export const ContactForm = <T extends FieldValues>({
                         />
                     )}
                 />
+                {!!addressWarning && (
+                    <PWText
+                        variant='caption'
+                        style={styles.addressWarning}
+                        testID='contact_address_warning'
+                    >
+                        {addressWarning}
+                    </PWText>
+                )}
                 {isResolvingNfd && (
                     <PWView style={styles.nfdStatus}>
                         <PWLoadingIndicator size='sm' />

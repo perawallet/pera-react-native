@@ -25,6 +25,7 @@ export const AddContactScreen = () => {
         handleSubmit,
         errors,
         isValid,
+        isDuplicateAddress,
         rawAddressInput,
         imageUri,
         nfd,
@@ -53,6 +54,11 @@ export const AddContactScreen = () => {
                 addressLabel={t('contacts.edit_contact.address_label')}
                 nameError={errors.name?.message}
                 addressError={errors.address?.message}
+                addressWarning={
+                    isDuplicateAddress
+                        ? t('contacts.add_contact.duplicate_address_warning')
+                        : undefined
+                }
                 nfdName={nfd.isNfdResolved ? nfd.nfdName : undefined}
                 isResolvingNfd={nfd.isNfdResolving}
                 onAddressInputChange={onAddressInputChange}
