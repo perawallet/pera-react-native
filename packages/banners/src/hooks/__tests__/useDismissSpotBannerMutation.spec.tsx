@@ -101,6 +101,44 @@ describe('useDismissSpotBannerMutation', () => {
         expect(qc.getQueryData<unknown[]>(key)).toHaveLength(2)
     })
 
+    it('rolls back on the deployment it started on when the mode flips mid-dismiss', async () => {
+        const qc = new QueryClient({
+            defaultOptions: { mutations: { retry: false } },
+        })
+        const liveKey = getSpotBannersQueryKey('live', 'dev-1')
+        qc.setQueryData(liveKey, [
+            { id: '1', text: 'a', image: 'x', url: 'y' },
+            { id: '2', text: 'b', image: 'x', url: 'y' },
+        ])
+        let rejectClose: (error: Error) => void = () => undefined
+        vi.mocked(closeSpotBanner).mockReturnValue(
+            new Promise((_resolve, reject) => {
+                rejectClose = reject
+            }),
+        )
+
+        const { result, rerender } = renderHook(
+            () => useDismissSpotBannerMutation(),
+            { wrapper: buildWrapper(qc) },
+        )
+        act(() => result.current.mutate('1'))
+        await waitFor(() =>
+            expect(qc.getQueryData<unknown[]>(liveKey)).toHaveLength(1),
+        )
+
+        network.mode = 'developer'
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('dev-2')
+        rerender()
+        await act(async () => rejectClose(new Error('nope')))
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(closeSpotBanner).toHaveBeenCalledWith('live', 'dev-1', '1')
+        expect(qc.getQueryData<unknown[]>(liveKey)).toHaveLength(2)
+        expect(
+            qc.getQueryData(getSpotBannersQueryKey('developer', 'dev-2')),
+        ).toBeUndefined()
+    })
+
     it('runs without crashing when the cache is empty (no optimistic update)', async () => {
         const qc = new QueryClient({
             defaultOptions: { mutations: { retry: false } },

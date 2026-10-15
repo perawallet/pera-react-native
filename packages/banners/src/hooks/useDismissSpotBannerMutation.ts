@@ -10,45 +10,85 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { closeSpotBanner } from '../api/spot-banners'
 import type { SpotBannerListResponse } from '../api/spot-banners'
 import { getSpotBannersQueryKey } from './querykeys'
 
-export const useDismissSpotBannerMutation = () => {
-    const deployment = useWalletDeployment()
-    const deviceID = useDeploymentDeviceID(deployment)
-    const queryClient = useQueryClient()
-
-    return useMutation({
-        throwOnError: false,
-        mutationFn: (spotBannerID: string) =>
-            closeSpotBanner(deployment, deviceID ?? '', spotBannerID),
-        onMutate: async spotBannerID => {
-            const key = getSpotBannersQueryKey(deployment, deviceID ?? '')
-            await queryClient.cancelQueries({ queryKey: key })
-            const previous =
-                queryClient.getQueryData<SpotBannerListResponse>(key)
-            if (previous) {
-                queryClient.setQueryData<SpotBannerListResponse>(
-                    key,
-                    previous.filter(b => b.id !== spotBannerID),
-                )
-            }
-            return { previous }
-        },
-        onError: (_err, _spotBannerID, context) => {
-            const key = getSpotBannersQueryKey(deployment, deviceID ?? '')
-            if (context?.previous) {
-                queryClient.setQueryData(key, context.previous)
-            }
-        },
-        onSettled: () => {
-            void queryClient.invalidateQueries({
-                queryKey: getSpotBannersQueryKey(deployment, deviceID ?? ''),
-            })
-        },
-    })
+// TanStack swaps a pending mutation's options on every render, so the
+// deployment and device travel in the variables to restore the key they filtered.
+type DismissSpotBannerVariables = {
+    spotBannerID: string
+    deployment: WalletMode
+    deviceID: string
 }
+
+export type UseDismissSpotBannerMutationResult = {
+    mutate: (spotBannerID: string) => void
+    isPending: boolean
+}
+
+export const useDismissSpotBannerMutation =
+    (): UseDismissSpotBannerMutationResult => {
+        const deployment = useWalletDeployment()
+        const deviceID = useDeploymentDeviceID(deployment) ?? ''
+        const queryClient = useQueryClient()
+
+        const mutation = useMutation({
+            throwOnError: false,
+            mutationFn: (variables: DismissSpotBannerVariables) =>
+                closeSpotBanner(
+                    variables.deployment,
+                    variables.deviceID,
+                    variables.spotBannerID,
+                ),
+            onMutate: async variables => {
+                const key = getSpotBannersQueryKey(
+                    variables.deployment,
+                    variables.deviceID,
+                )
+                await queryClient.cancelQueries({ queryKey: key })
+                const previous =
+                    queryClient.getQueryData<SpotBannerListResponse>(key)
+                if (previous) {
+                    queryClient.setQueryData<SpotBannerListResponse>(
+                        key,
+                        previous.filter(b => b.id !== variables.spotBannerID),
+                    )
+                }
+                return { previous }
+            },
+            onError: (_err, variables, context) => {
+                if (context?.previous) {
+                    queryClient.setQueryData(
+                        getSpotBannersQueryKey(
+                            variables.deployment,
+                            variables.deviceID,
+                        ),
+                        context.previous,
+                    )
+                }
+            },
+            onSettled: (_data, _err, variables) => {
+                void queryClient.invalidateQueries({
+                    queryKey: getSpotBannersQueryKey(
+                        variables.deployment,
+                        variables.deviceID,
+                    ),
+                })
+            },
+        })
+
+        const { mutate } = mutation
+        const dismiss = useCallback(
+            (spotBannerID: string) =>
+                mutate({ spotBannerID, deployment, deviceID }),
+            [mutate, deployment, deviceID],
+        )
+
+        return { mutate: dismiss, isPending: mutation.isPending }
+    }
