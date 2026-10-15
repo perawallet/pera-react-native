@@ -20,6 +20,7 @@ const isQuote = (summary: unknown): boolean =>
 const adapter: SendFlowChainAdapter = {
     chainId: 'algorand',
     buildTransferTxs: async () => [],
+    transactionFee: vi.fn(),
     assetInbox: {
         buildSendTxs: async ({ summary }) => {
             if (!isQuote(summary)) throw new Error('malformed quote')

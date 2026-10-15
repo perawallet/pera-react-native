@@ -82,6 +82,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 const fakeSendFlowAdapter: SendFlowChainAdapter = {
     chainId: 'algorand',
     buildTransferTxs: mockBuildTransfer,
+    transactionFee: vi.fn(),
     express: { buildTxs: mockBuildExpress },
     assetInbox: {
         buildSendTxs: mockBuildSendViaInbox,
@@ -751,6 +752,7 @@ describe('useTransactionSendFlow', () => {
             sendFlowChainAdapters.register({
                 chainId: 'algorand',
                 buildTransferTxs: mockBuildTransfer,
+                transactionFee: vi.fn(),
             })
             const { result } = renderHook(() =>
                 useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),

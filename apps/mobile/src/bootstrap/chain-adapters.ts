@@ -19,7 +19,6 @@ import {
     registerChainSetup,
     type ChainCapabilityOverrides,
     type ChainContext,
-    type ChainEndpoints,
     type ChainId,
     type ChainMode,
     type ChainSetup,
@@ -31,11 +30,10 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import {
+    chainEndpointsFor,
     config,
-    getChainConfig,
     getPeraServicesConfig,
     peraServicesFor,
-    UnconfiguredScopeError,
 } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { rehydrateSigningStore } from '@perawallet/wallet-core-signing'
@@ -48,24 +46,6 @@ import { pinnedHostRegistry } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ethereumChainModule } from './ethereum-chain-module'
 
-// Keyed by network id rather than resolved for the selected network: an EVM
-// client is built for an explicit scope. A network without an RPC URL is left out.
-const ethereumRpcEndpoints = (entry: ChainSetupEntry): ChainEndpoints =>
-    Object.fromEntries(
-        entry.module.descriptor.networks.flatMap(({ id }) => {
-            try {
-                const { rpcUrl } = getChainConfig({
-                    chainId: 'ethereum',
-                    networkId: id,
-                })
-                return [[id, rpcUrl]]
-            } catch (error) {
-                if (error instanceof UnconfiguredScopeError) return []
-                throw error
-            }
-        }),
-    )
-
 const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     getScope: () => ({
         chainId: entry.chainId,
@@ -74,18 +54,12 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
             entry.chainId,
         ),
     }),
-    getEndpoints: () =>
-        entry.chainId === 'ethereum'
-            ? ethereumRpcEndpoints(entry)
-            : entry.endpoints,
+    getEndpoints: () => entry.endpoints,
     getPeraBackend: scope => ({
         baseUrl: getPeraServicesConfig(scope).backendUrl,
         services: peraServicesFor(scope),
     }),
-    timeouts: {
-        readMs: config.algodReadTimeout,
-        submitMs: config.algodSubmitTimeout,
-    },
+    timeouts: config.chainRequestTimeouts[entry.chainId],
     kms: kmsCore,
 })
 
@@ -124,10 +98,14 @@ export const declareChainPlatformInputs = (setup: ChainSetup): void => {
 export const registerChainAdapters = (): void => {
     const { chains } = getProvider()
     chains.setCapabilityOverrides(readCapabilityLayers)
-    const setup = buildChainSetup(config.chains, {
-        algorand: algorandChainModule,
-        ethereum: ethereumChainModule,
-    })
+    const setup = buildChainSetup(
+        config.chains,
+        {
+            algorand: algorandChainModule,
+            ethereum: ethereumChainModule,
+        },
+        chainEndpointsFor,
+    )
     registerChainSetup(setup, chains, chainContextFor)
     declareChainPlatformInputs(setup)
     // Its migration decodes persisted accounts through the adapters just registered.

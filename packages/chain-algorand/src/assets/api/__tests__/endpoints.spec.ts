@@ -13,6 +13,11 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 const queryClientMock = vi.hoisted(() => vi.fn())
+const fetchNodeJsonMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../blockchain/utils/nodeHttp', () => ({
+    fetchNodeJson: fetchNodeJsonMock,
+}))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
@@ -136,30 +141,27 @@ describe('assets endpoints', () => {
     })
 
     test('fetchIndexerAssetDetails hits the indexer backend', async () => {
-        queryClientMock.mockResolvedValue({
-            data: {
-                asset: {
-                    index: 123,
-                    params: {
-                        creator: 'CREATOR',
-                        decimals: 6,
-                        'default-frozen': false,
-                        name: 'Test',
-                        'unit-name': 'TST',
-                        total: 1000,
-                    },
+        fetchNodeJsonMock.mockResolvedValue({
+            asset: {
+                index: 123,
+                params: {
+                    creator: 'CREATOR',
+                    decimals: 6,
+                    'default-frozen': false,
+                    name: 'Test',
+                    'unit-name': 'TST',
+                    total: 1000,
                 },
-                'current-round': 42,
             },
+            'current-round': 42,
         })
 
         await fetchIndexerAssetDetails('123', 'mainnet')
 
-        expect(queryClientMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                backend: 'indexer',
-                url: '/v2/assets/123',
-            }),
+        expect(fetchNodeJsonMock).toHaveBeenCalledWith(
+            'mainnet',
+            'indexer',
+            '/v2/assets/123',
         )
     })
 

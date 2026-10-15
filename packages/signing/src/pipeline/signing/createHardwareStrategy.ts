@@ -47,10 +47,7 @@ import {
     plannerChainAdapters,
     type PlannerChainAdapter,
 } from '../../chain-adapter'
-import {
-    messageSignerFor,
-    type MessageSignerChainAdapter,
-} from '../../message-signer'
+import { authDataSignerFor, type AuthDataSigner } from '../../message-signer'
 import {
     ledgerTimeoutReason,
     throwIfAborted,
@@ -195,7 +192,7 @@ type SignTransactionsOnHardwareWalletOptions = LedgerSessionOptions & {
 }
 
 type SignAuthDataOnHardwareWalletOptions = LedgerSessionOptions & {
-    messageSigner: MessageSignerChainAdapter
+    authDataSigner: AuthDataSigner
     getAllAccounts: () => WalletAccount[]
 }
 
@@ -235,7 +232,7 @@ const signAuthDataOnHardwareWallet = (
     metadata: AuthDataMetadata,
     options: SignAuthDataOnHardwareWalletOptions,
 ): Promise<Uint8Array> => {
-    const { messageSigner, getAllAccounts, callbacks } = options
+    const { authDataSigner, getAllAccounts, callbacks } = options
     const { accountIndex } = signer.account.custody
 
     return withLedgerSession(
@@ -251,7 +248,11 @@ const signAuthDataOnHardwareWallet = (
                 ledgerTimeoutReason('Read Ledger app version'),
             )
 
-            messageSigner.validateAuthData(authData, metadata, getAllAccounts())
+            authDataSigner.validateAuthData(
+                authData,
+                metadata,
+                getAllAccounts(),
+            )
 
             callbacks?.onSigningStart?.()
             callbacks?.onProgress?.(1, 1)
@@ -261,7 +262,7 @@ const signAuthDataOnHardwareWallet = (
                     transport.signData({
                         accountIndex,
                         data: authData.data,
-                        signerPublicKey: messageSigner.signerPublicKey(
+                        signerPublicKey: authDataSigner.signerPublicKey(
                             signer.address,
                         ),
                         domain: authData.domain,
@@ -310,15 +311,18 @@ export const createHardwareStrategy = (
 
             if (group.data.type === 'auth-data') {
                 // Resolved before any Ledger session so a chain with no
-                // message signer is refused without a device prompt.
-                const messageSigner = messageSignerFor(chainId, signer.address)
+                // auth-data signer is refused without a device prompt.
+                const authDataSigner = authDataSignerFor(
+                    chainId,
+                    signer.address,
+                )
                 const signature = await signAuthDataOnHardwareWallet(
                     signer,
                     group.data.authData,
                     group.data.metadata,
                     {
                         registry: hardwareWalletRegistry,
-                        messageSigner,
+                        authDataSigner,
                         getAllAccounts,
                         callbacks,
                     },

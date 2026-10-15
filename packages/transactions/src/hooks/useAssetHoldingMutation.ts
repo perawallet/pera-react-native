@@ -13,7 +13,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type {
     ChainScope,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     useMinimumFeeCalculator,
@@ -30,8 +30,10 @@ import {
 export type AssetHoldingMutationContext = {
     scope: ChainScope
     /** Returns the built group with the sender's minimum fee applied. */
-    assignFees: (unsignedTxs: PeraTransaction[]) => Promise<PeraTransaction[]>
-    submit: (unsignedTxs: PeraTransaction[]) => Promise<{ txIds: string[] }>
+    assignFees: (
+        unsignedTxs: UnsignedTransaction[],
+    ) => Promise<UnsignedTransaction[]>
+    submit: (unsignedTxs: UnsignedTransaction[]) => Promise<{ txIds: string[] }>
 }
 
 export type AssetHoldingMutationOutcome = {

@@ -11,12 +11,44 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { InboxSendTxsParams, SendFlowChainAdapter } from '../chain-adapter'
+import { Decimal } from 'decimal.js'
+import type {
+    ChainScope,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import type {
+    AssetOptInTxsParams,
+    AssetOptOutTxsParams,
+    ExpressTransferTxsParams,
+    InboxClaimTxsParams,
+    InboxRejectTxsParams,
+    InboxSendTxsParams,
+    KeyRegistrationTxParams,
+    RekeyTxParams,
+    SendFlowChainAdapter,
+    TransferTxsParams,
+} from '../chain-adapter'
 
 export interface SendFlowContractFixtures {
     /** Required when the adapter has an asset inbox. */
     inboxSend?: InboxSendTxsParams
+    /** A summary the inbox accepts, for `inboxSend`'s build. */
+    inboxSendQuote?: unknown
+    inboxClaim?: InboxClaimTxsParams
+    inboxReject?: InboxRejectTxsParams
+    transfer?: TransferTxsParams
+    express?: ExpressTransferTxsParams
+    optIn?: AssetOptInTxsParams
+    optOut?: AssetOptOutTxsParams
+    rekey?: RekeyTxParams
+    keyRegistration?: KeyRegistrationTxParams
 }
+
+type Build = (adapter: SendFlowChainAdapter) => Promise<UnsignedTransaction[]>
+
+const one = async (
+    built: Promise<UnsignedTransaction>,
+): Promise<UnsignedTransaction[]> => [await built]
 
 /** Every chain package runs this against its own send-flow adapter. */
 export const sendFlowContractTests = (
@@ -24,6 +56,78 @@ export const sendFlowContractTests = (
     fixtures: SendFlowContractFixtures,
 ): void => {
     const adapter = makeAdapter()
+
+    // Each builder hands back chain-neutral transactions for the scope it
+    // was asked about, whose fee the adapter itself can read.
+    const builders: [string, ChainScope | undefined, Build | undefined][] = [
+        [
+            'a transfer',
+            fixtures.transfer?.scope,
+            fixtures.transfer && (a => a.buildTransferTxs(fixtures.transfer!)),
+        ],
+        [
+            'an express transfer',
+            fixtures.express?.scope,
+            fixtures.express &&
+                adapter.express &&
+                (a => a.express!.buildTxs(fixtures.express!)),
+        ],
+        [
+            'an asset opt-in',
+            fixtures.optIn?.scope,
+            fixtures.optIn &&
+                adapter.assetHolding &&
+                (a => a.assetHolding!.buildOptInTxs(fixtures.optIn!)),
+        ],
+        [
+            'an asset opt-out',
+            fixtures.optOut?.scope,
+            fixtures.optOut &&
+                adapter.assetHolding &&
+                (a => a.assetHolding!.buildOptOutTxs(fixtures.optOut!)),
+        ],
+        [
+            'a rekey',
+            fixtures.rekey?.scope,
+            fixtures.rekey &&
+                adapter.rekey &&
+                (a => one(a.rekey!.buildTx(fixtures.rekey!))),
+        ],
+        [
+            'a key registration',
+            fixtures.keyRegistration?.scope,
+            fixtures.keyRegistration &&
+                adapter.keyRegistration &&
+                (a =>
+                    one(a.keyRegistration!.buildTx(fixtures.keyRegistration!))),
+        ],
+        [
+            'an inbox send',
+            fixtures.inboxSend?.scope,
+            fixtures.inboxSend &&
+                fixtures.inboxSendQuote !== undefined &&
+                adapter.assetInbox &&
+                (a =>
+                    a.assetInbox!.buildSendTxs({
+                        ...fixtures.inboxSend!,
+                        summary: fixtures.inboxSendQuote,
+                    })),
+        ],
+        [
+            'an inbox claim',
+            fixtures.inboxClaim?.scope,
+            fixtures.inboxClaim &&
+                adapter.assetInbox &&
+                (a => a.assetInbox!.buildClaimTxs(fixtures.inboxClaim!)),
+        ],
+        [
+            'an inbox reject',
+            fixtures.inboxReject?.scope,
+            fixtures.inboxReject &&
+                adapter.assetInbox &&
+                (a => a.assetInbox!.buildRejectTxs(fixtures.inboxReject!)),
+        ],
+    ]
 
     describe(`SendFlowChainAdapter contract: ${adapter.chainId}`, () => {
         it('serves a chain', () => {
@@ -33,6 +137,34 @@ export const sendFlowContractTests = (
         it('builds transfers', () => {
             expect(adapter.buildTransferTxs).toBeTypeOf('function')
         })
+
+        for (const [name, scope, build] of builders) {
+            if (!build) continue
+            it(`builds ${name} as chain-neutral transactions on the asked scope`, async () => {
+                const adapter = makeAdapter()
+
+                const built = await build(adapter)
+
+                expect(built.length).toBeGreaterThan(0)
+                for (const transaction of built) {
+                    expect(transaction).toEqual(
+                        expect.objectContaining({
+                            scope,
+                            payload: expect.anything(),
+                            summary: expect.objectContaining({
+                                kind: expect.any(String),
+                            }),
+                            chainData: expect.objectContaining({
+                                family: expect.any(String),
+                            }),
+                        }),
+                    )
+                    expect(
+                        Decimal.isDecimal(adapter.transactionFee(transaction)),
+                    ).toBe(true)
+                }
+            })
+        }
 
         if (!adapter.assetInbox) return
 

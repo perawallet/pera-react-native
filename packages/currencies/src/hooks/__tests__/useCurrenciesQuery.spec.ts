@@ -24,17 +24,9 @@ const DESCRIPTORS = {
     ethereum: { displayName: 'Ethereum', nativeAsset: { symbol: 'ETH' } },
 } as const
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        chains: {
-            get: (chainId: keyof typeof DESCRIPTORS) => ({
-                descriptor: DESCRIPTORS[chainId],
-            }),
-        },
-    }),
-}))
-
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: (chainId: keyof typeof DESCRIPTORS) =>
+        DESCRIPTORS[chainId],
     useWalletDeployment: () => 'live',
 }))
 

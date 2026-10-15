@@ -13,10 +13,8 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import {
-    nativeAssetDecimals,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     RemoteConfigKeys,
     useRemoteConfig,
@@ -88,7 +86,8 @@ export const useStakingProjectsQuery = (
     scope: ChainScope,
     locale?: string,
 ): UseStakingProjectsQueryResult => {
-    const nativeDecimals = nativeAssetDecimals(scope.chainId)
+    const nativeDecimals = getChainDescriptor(scope.chainId).nativeAsset
+        .decimals
     const remoteConfigService = useRemoteConfig()
 
     const remoteProjectsI18nConfig = remoteConfigService.getStringValue(

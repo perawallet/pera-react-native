@@ -50,7 +50,7 @@ const registerFakeMessageSigner = (chainId: ChainScope['chainId']) => {
     messageSignerChainAdapters.reset()
     messageSignerChainAdapters.register({
         chainId,
-        buildSiwxAuthData,
+        authData: { buildSiwxAuthData },
     } as unknown as MessageSignerChainAdapter)
 }
 

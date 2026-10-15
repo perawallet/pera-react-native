@@ -14,7 +14,7 @@ import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
-    type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -93,15 +93,17 @@ export type CardAutoDrawOperations = {
 
 /** Withdrawal from the escrow card: timelocked, request then release. */
 export interface CardEscrowWithdrawals {
-    buildRequest(params: EscrowWithdrawalParams): Promise<PeraTransaction[]>
+    buildRequest(params: EscrowWithdrawalParams): Promise<UnsignedTransaction[]>
     /**
      * Builds by simulating, so calling it before the wait has elapsed throws
      * the contract's timestamp assert rather than returning a usable group.
      */
-    buildWithdraw(params: EscrowWithdrawalParams): Promise<PeraTransaction[]>
+    buildWithdraw(
+        params: EscrowWithdrawalParams,
+    ): Promise<UnsignedTransaction[]>
     buildCancel(
         params: Omit<EscrowWithdrawalParams, 'amount'>,
-    ): Promise<PeraTransaction[]>
+    ): Promise<UnsignedTransaction[]>
     /** The owner's open request, or null when there is none. */
     getPending(
         scope: ChainScope,
@@ -134,7 +136,7 @@ export interface CardChainAdapter {
     buildManualDeposit(
         params: CardManualDepositBuildParams,
         scope: ChainScope,
-    ): Promise<PeraTransaction[]>
+    ): Promise<UnsignedTransaction[]>
     fundingSourceEligibility(
         account: WalletAccount,
         scope: ChainScope,

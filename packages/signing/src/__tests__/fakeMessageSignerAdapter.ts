@@ -14,6 +14,7 @@ import { vi } from 'vitest'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     messageSignerChainAdapters,
+    type AuthDataSigner,
     type MessageSignerChainAdapter,
 } from '../message-signer'
 
@@ -21,16 +22,14 @@ const notStubbed = (member: string) => () => {
     throw new Error(`fake message signer: ${member} is not stubbed`)
 }
 
-export const fakeMessageSignerAdapter = (
-    overrides: Partial<MessageSignerChainAdapter> = {},
-): MessageSignerChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
-    canSign: vi.fn(() => true),
-    signsVerifiably: vi.fn(() => true),
-    supports: vi.fn(() => true),
-    describe: vi.fn(notStubbed('describe')),
-    plan: vi.fn(notStubbed('plan')),
-    assemble: vi.fn(notStubbed('assemble')),
+/** `authData: null` registers a signer with no auth-data leg; a partial one merges over the fakes. */
+export type FakeMessageSignerOverrides = Partial<
+    Omit<MessageSignerChainAdapter, 'authData'>
+> & { authData?: Partial<AuthDataSigner> | null }
+
+const fakeAuthDataSigner = (
+    overrides: Partial<AuthDataSigner> = {},
+): AuthDataSigner => ({
     validateAuthData: vi.fn(() => ({ decodedData: new Uint8Array() })),
     parseAuthDataForDisplay: vi.fn(() => ({
         type: 'error' as const,
@@ -43,8 +42,23 @@ export const fakeMessageSignerAdapter = (
     ...overrides,
 })
 
+export const fakeMessageSignerAdapter = ({
+    authData,
+    ...overrides
+}: FakeMessageSignerOverrides = {}): MessageSignerChainAdapter => ({
+    chainId: LEGACY_CHAIN_ID,
+    canSign: vi.fn(() => true),
+    signsVerifiably: vi.fn(() => true),
+    supports: vi.fn(() => true),
+    describe: vi.fn(notStubbed('describe')),
+    plan: vi.fn(notStubbed('plan')),
+    assemble: vi.fn(notStubbed('assemble')),
+    ...(authData === null ? {} : { authData: fakeAuthDataSigner(authData) }),
+    ...overrides,
+})
+
 export const registerFakeMessageSignerAdapter = (
-    overrides: Partial<MessageSignerChainAdapter> = {},
+    overrides: FakeMessageSignerOverrides = {},
 ): MessageSignerChainAdapter => {
     const adapter = fakeMessageSignerAdapter(overrides)
     messageSignerChainAdapters.reset()

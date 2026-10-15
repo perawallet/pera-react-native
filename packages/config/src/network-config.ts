@@ -12,6 +12,7 @@
 
 import {
     scopeForLegacyNetwork,
+    type ChainEndpoints,
     type ChainId,
     type ChainScope,
     type NetworkId,
@@ -316,6 +317,21 @@ const ETHEREUM_SCOPE_CONFIGS: readonly ScopeConfigOf<'ethereum'>[] = [
         config.ethereumSepoliaPeraServices,
     ),
 ]
+
+// Algorand's node URLs come from getAlgorandChainConfig, which overlays a saved
+// custom node per request, so its record stays empty.
+const CHAIN_ENDPOINTS: Record<ChainId, ChainEndpoints> = {
+    algorand: {},
+    // A network without an RPC URL is left out.
+    ethereum: Object.fromEntries(
+        ETHEREUM_SCOPE_CONFIGS.flatMap(({ scope, chain }) =>
+            chain ? [[scope.networkId, chain.rpcUrl]] : [],
+        ),
+    ),
+}
+
+export const chainEndpointsFor = (chainId: ChainId): ChainEndpoints =>
+    CHAIN_ENDPOINTS[chainId]
 
 const SCOPE_CONFIGS: readonly ScopeConfig[] = [
     ...ALGORAND_SCOPE_CONFIGS,

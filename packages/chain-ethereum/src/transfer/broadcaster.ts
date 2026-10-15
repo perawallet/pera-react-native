@@ -99,9 +99,7 @@ export const createEthereumBroadcasterAdapter = (
         }),
         submitAndAutoRefresh: () =>
             Promise.reject(
-                new Error(
-                    "Ethereum submits through createSubmitTransport: submitAndAutoRefresh takes Algorand's PeraSignedTransaction envelope",
-                ),
+                new Error('Ethereum submits through createSubmitTransport'),
             ),
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,

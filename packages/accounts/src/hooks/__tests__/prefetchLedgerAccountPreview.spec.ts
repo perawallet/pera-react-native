@@ -22,6 +22,7 @@ import {
     fakeAccountStateSnapshot,
     fakeAccountsChain,
     MAINNET_SCOPE,
+    registerFakeNativeAsset,
 } from '../../__tests__/fakeAccountsChain'
 
 const mocks = {
@@ -38,6 +39,7 @@ const mocks = {
 describe('prefetchLedgerAccountPreview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerFakeNativeAsset()
         mocks.fetchAccountState.mockResolvedValue(fakeAccountStateSnapshot())
         mocks.fetchDelegatedAddresses.mockResolvedValue([])
     })

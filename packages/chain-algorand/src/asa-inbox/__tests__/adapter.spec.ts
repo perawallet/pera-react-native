@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ZodError } from 'zod'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { algorandAssetInbox } from '../adapter'
+import { payloadTransactionOf } from '../../signing/__tests__/transactions'
 
 const mocks = vi.hoisted(() => ({
     createWalletAlgorandClient: vi.fn(),
@@ -39,7 +40,7 @@ vi.mock('../builders', () => ({
 }))
 
 const CLIENT = { name: 'wallet-client' }
-const TXNS = [{ txn: 'stub' }]
+const TXNS = [{ txn: 'stub', sender: 'SENDER' }]
 
 const summary = {
     is_arc59_opted_in: true,
@@ -111,7 +112,8 @@ describe('algorandAssetInbox', () => {
             senderMinFee: 1000n,
         })
 
-        expect(result).toBe(TXNS)
+        expect(result.map(payloadTransactionOf)).toEqual(TXNS)
+        expect(result[0].scope).toEqual(scopeForLegacyNetwork('testnet'))
         expect(mocks.createWalletAlgorandClient).toHaveBeenCalledWith('testnet')
         expect(mocks.buildArc59SendViaInboxTxs).toHaveBeenCalledWith(
             { algokit: CLIENT, network: 'testnet' },

@@ -11,10 +11,8 @@
  */
 
 import { useMemo } from 'react'
-import {
-    nativeAssetDecimals,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 
@@ -52,7 +50,7 @@ export const useRekeyFeePreflight = (
         if (!feeAlgos || !accountState) return false
         const reserve = baseUnitsToDisplayUnits(
             accountState.reserveBalance,
-            nativeAssetDecimals(scope.chainId),
+            getChainDescriptor(scope.chainId).nativeAsset.decimals,
         )
         return accountState.nativeBalance.minus(reserve).lessThan(feeAlgos)
     }, [feeAlgos, accountState, scope.chainId])

@@ -16,8 +16,6 @@ import {
     assetMetadataContractTests,
     assetPriceContractTests,
 } from '@perawallet/wallet-core-assets/testing/adapter-contract'
-import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
-import { algorandNodeBackends } from '../../blockchain/node-backends'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { mockAssetPrices } from '../../pricing/msw-handlers'
 import {
@@ -53,8 +51,6 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
     ...(await importOriginal<object>()),
     deviceIdFor: () => null,
 }))
-
-nodeBackendAdapters.register(algorandNodeBackends)
 
 const TOKEN = { assetId: '31566704', unitName: 'USDC', decimals: 6 }
 const FREEZE_ADDRESS =

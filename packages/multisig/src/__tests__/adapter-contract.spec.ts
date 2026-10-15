@@ -20,6 +20,7 @@ const adapter = fakeMultisigAdapter()
 const parameters = { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] }
 
 multisigContractTests(() => adapter, {
+    scope: { chainId: 'algorand', networkId: 'testnet' },
     parameters,
     rawTransactionBase64: fakeRawTransactionFrom(
         adapter.deriveAddress(parameters),

@@ -259,18 +259,22 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'deeplink',
                     txs: transactions,
-                    // An explicit dApp fee we raised is surfaced as an
-                    // adjustment (original → new, matching the WC path); a
-                    // fee we filled in ourselves when the deeplink omitted
-                    // one is Pera-set, not an override — no delta to show.
-                    feeAdjustments:
-                        dAppFee !== undefined && adjustments.length > 0
-                            ? adjustments
-                            : undefined,
+                    chainData: {
+                        algorand: {
+                            // An explicit dApp fee we raised is surfaced as an
+                            // adjustment (original → new, matching the WC
+                            // path); a fee we filled in ourselves when the
+                            // deeplink omitted one is Pera-set, not an
+                            // override — no delta to show.
+                            feeAdjustments:
+                                dAppFee !== undefined && adjustments.length > 0
+                                    ? adjustments
+                                    : undefined,
+                        },
+                    },
                 })
             } catch (error) {
                 logger.error('[deeplink/keyreg] failed', { error })

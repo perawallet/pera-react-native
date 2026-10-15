@@ -76,14 +76,10 @@ const fixture: ChainDescriptor = {
     protocol: {
         feeModel: 'flat',
         hasAccountNonce: false,
-        requiresAssetOptIn: true,
-        hasMinimumBalance: true,
-        supportsAtomicGroups: true,
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
         hasTokenApproval: false,
-        multipleAddressesPerAccount: false,
     },
     explorer: {
         accountUrl: (networkId, address) =>

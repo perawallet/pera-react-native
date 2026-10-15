@@ -14,8 +14,8 @@ import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
-    type PeraTransaction,
     type SigningScheme,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from './models'
@@ -101,8 +101,15 @@ export interface MultisigChainAdapter {
         request: MultisigSignRequest,
         authorizedSenders: ReadonlySet<string>,
     ): MultisigSignRequestValidation
-    /** One unsigned wire-encoded transaction from a request's list. */
-    decodeTransaction(bytes: Uint8Array): PeraTransaction
+    /**
+     * One unsigned wire-encoded transaction from a request's list, as signed
+     * for the joint account `multisig` describes, so its participants cosign.
+     */
+    decodeTransaction(
+        bytes: Uint8Array,
+        scope: ChainScope,
+        multisig: MultisigParameters,
+    ): UnsignedTransaction
     /**
      * Whether a participant slot verifies signatures of `scheme`. A key of any
      * other scheme can never contribute a subsignature, so its account can't

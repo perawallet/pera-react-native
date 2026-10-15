@@ -11,13 +11,9 @@
  */
 
 import { z } from 'zod'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    decodeFromBase64,
-    logger,
-    queryClient,
-} from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
 import { encodeAlgorandAddress } from '../blockchain'
+import { fetchNodeJson } from '../blockchain/utils/nodeHttp'
 import type {
     NfdAddressVerification,
     VerifyForwardResolutionParams,
@@ -68,23 +64,6 @@ const addressesIn = (base64: string): string[] => {
     return addresses
 }
 
-const algodGet = async (
-    scope: ChainScope,
-    url: string,
-    params: object | undefined,
-    signal: AbortSignal | undefined,
-): Promise<unknown> => {
-    const response = await queryClient<unknown>({
-        backend: 'algod',
-        scope,
-        method: 'GET',
-        url,
-        params,
-        signal,
-    })
-    return response.data
-}
-
 /**
  * Checks a name's backend-asserted address against the NFD contract itself.
  * The registry only says which application holds the name; the name, the
@@ -107,12 +86,9 @@ export const verifyNfdAddress = async ({
         if (appId === null) return 'mismatch'
 
         const application = applicationSchema.parse(
-            await algodGet(
-                scope,
-                `/v2/applications/${appId}`,
-                undefined,
+            await fetchNodeJson(scope, 'algod', `/v2/applications/${appId}`, {
                 signal,
-            ),
+            }),
         )
         const state = new Map(
             (application.params['global-state'] ?? []).map(entry => [
@@ -132,21 +108,21 @@ export const verifyNfdAddress = async ({
             encodeAlgorandAddress(decodeFromBase64(owner)),
         ])
         const { boxes } = boxesSchema.parse(
-            await algodGet(
+            await fetchNodeJson(
                 scope,
+                'algod',
                 `/v2/applications/${appId}/boxes`,
-                undefined,
-                signal,
+                { signal },
             ),
         )
         for (const box of boxes) {
             if (!VERIFIED_BOX.test(utf8(box.name))) continue
             const { value } = boxSchema.parse(
-                await algodGet(
+                await fetchNodeJson(
                     scope,
+                    'algod',
                     `/v2/applications/${appId}/box`,
-                    { name: `b64:${box.name}` },
-                    signal,
+                    { params: { name: `b64:${box.name}` }, signal },
                 ),
             )
             for (const verified of addressesIn(value)) trusted.add(verified)

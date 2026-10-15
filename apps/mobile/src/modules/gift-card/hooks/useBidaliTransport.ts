@@ -35,10 +35,7 @@ import {
     useSelectedChainMode,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    useSigningRequest,
-    type TransactionSignRequest,
-} from '@perawallet/wallet-core-signing'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import {
     generateOrderedUniqueId,
@@ -290,7 +287,6 @@ export const useBidaliTransport = (
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'gift-card',
                     txs,
@@ -308,7 +304,7 @@ export const useBidaliTransport = (
                     error: async () => {
                         sendBidaliEvent(webviewRef, 'paymentCancelled')
                     },
-                } as TransactionSignRequest)
+                })
             } catch (e) {
                 logger.error('Bidali: failed to build transaction', {
                     error: e,

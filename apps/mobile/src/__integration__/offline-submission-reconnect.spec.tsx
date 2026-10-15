@@ -38,6 +38,7 @@ import {
     scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { toSignedAlgorandTransaction } from '@perawallet/wallet-core-chain-algorand/signing'
 import {
     mockAlgodAccountInformation,
     mockAlgodPendingTransaction,
@@ -173,9 +174,12 @@ describe('Flow: offline submission reconnect', () => {
             account,
             scopeForLegacyNetwork(NETWORK),
         )
+        const scope = scopeForLegacyNetwork(NETWORK)
         const txIds = await submitAndAutoRefresh(
-            scopeForLegacyNetwork(NETWORK),
-            signedTxns,
+            scope,
+            signedTxns.map(signed =>
+                toSignedAlgorandTransaction(signed, scope),
+            ),
         )
         expect(txIds).toHaveLength(1)
         // The ledger row records the locally-derived txid, while algod's

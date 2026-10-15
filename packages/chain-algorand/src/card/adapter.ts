@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import { toAlgodError, waitForTransactionConfirmation } from '../blockchain'
 import {
     canSignProgram,
@@ -74,14 +75,17 @@ export const algorandCardAdapter: CardChainAdapter = {
             cardAlgorandClient(algorandNetworkOf(scope)).client.algod,
             txId,
         ),
-    buildManualDeposit: (params, scope) => {
+    buildManualDeposit: async (params, scope) => {
         const assetId = settlementAsset(scope)
         if (assetId === null) {
-            return Promise.reject(new CardEscrowNotConfiguredError())
+            throw new CardEscrowNotConfiguredError()
         }
-        return buildAlgorandManualDeposit(
-            { ...params, assetId },
-            algorandNetworkOf(scope),
+        return toUnsignedAlgorandTransactions(
+            await buildAlgorandManualDeposit(
+                { ...params, assetId },
+                algorandNetworkOf(scope),
+            ),
+            scope,
         )
     },
     // A rekeyed account's authority sits elsewhere, so the card contract can't
@@ -110,21 +114,30 @@ export const algorandCardAdapter: CardChainAdapter = {
     },
     useAutoDraw: useAlgorandCardAutoDraw,
     withdrawal: {
-        buildRequest: ({ scope, ...params }) =>
-            algorandEscrowWithdrawals.buildRequest({
-                ...params,
-                network: algorandNetworkOf(scope),
-            }),
-        buildWithdraw: ({ scope, ...params }) =>
-            algorandEscrowWithdrawals.buildWithdraw({
-                ...params,
-                network: algorandNetworkOf(scope),
-            }),
-        buildCancel: ({ scope, ...params }) =>
-            algorandEscrowWithdrawals.buildCancel({
-                ...params,
-                network: algorandNetworkOf(scope),
-            }),
+        buildRequest: async ({ scope, ...params }) =>
+            toUnsignedAlgorandTransactions(
+                await algorandEscrowWithdrawals.buildRequest({
+                    ...params,
+                    network: algorandNetworkOf(scope),
+                }),
+                scope,
+            ),
+        buildWithdraw: async ({ scope, ...params }) =>
+            toUnsignedAlgorandTransactions(
+                await algorandEscrowWithdrawals.buildWithdraw({
+                    ...params,
+                    network: algorandNetworkOf(scope),
+                }),
+                scope,
+            ),
+        buildCancel: async ({ scope, ...params }) =>
+            toUnsignedAlgorandTransactions(
+                await algorandEscrowWithdrawals.buildCancel({
+                    ...params,
+                    network: algorandNetworkOf(scope),
+                }),
+                scope,
+            ),
         getPending: (scope, ownerAddress) =>
             algorandEscrowWithdrawals.getPending(
                 algorandNetworkOf(scope),

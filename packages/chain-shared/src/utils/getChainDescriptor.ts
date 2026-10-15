@@ -10,19 +10,11 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { CHAIN_IDS } from '../models/identity'
-import { nativeAssetDecimals } from '../native-asset'
+import type {
+    ChainDescriptor,
+    ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
-describe('nativeAssetDecimals', () => {
-    it('gives Algorand six decimals, so base units are microAlgos', () => {
-        expect(nativeAssetDecimals('algorand')).toBe(6)
-    })
-
-    it.each(CHAIN_IDS)('has a non-negative integer for %s', chainId => {
-        const decimals = nativeAssetDecimals(chainId)
-
-        expect(Number.isInteger(decimals)).toBe(true)
-        expect(decimals).toBeGreaterThanOrEqual(0)
-    })
-})
+export const getChainDescriptor = (chainId: ChainId): ChainDescriptor =>
+    getProvider().chains.get(chainId).descriptor

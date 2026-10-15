@@ -14,7 +14,6 @@ import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import algosdk, { type modelsv2, type Transaction } from 'algosdk'
 
 import { encodeSignedTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/transact'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms/crypto/pq/resolvePQSigningInfo'
 import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
 import type { LocalKeySigningDeps } from '@perawallet/wallet-core-signing'
@@ -72,7 +71,7 @@ export const buildGroup = async (
 }
 
 /** Unwraps a one-transaction group, failing on any other length. */
-export const onlyTxn = <T extends PeraTransaction>(transactions: T[]): T => {
+export const onlyTxn = <T>(transactions: T[]): T => {
     if (transactions.length !== 1) {
         throw new Error(
             `expected exactly one transaction, got ${transactions.length}`,
@@ -84,6 +83,11 @@ export const onlyTxn = <T extends PeraTransaction>(transactions: T[]): T => {
 export const buildTxn = async (
     compose: (composer: ConformanceComposer) => void,
 ): Promise<Transaction> => onlyTxn(await buildGroup(compose))
+
+/** A transaction the app's local-key signer takes. */
+type SignableTransaction = Parameters<
+    typeof signTransactionsWithLocalKey
+>[1][number]
 
 /**
  * The dependency set the app's own local-key signer runs on, backed by the
@@ -114,7 +118,7 @@ export const localKeySigningDeps = (
 export const signWithKeystore = async (
     keyStore: ConformanceKeyStore,
     account: ConformanceAccount,
-    txn: PeraTransaction,
+    txn: SignableTransaction,
 ): Promise<Uint8Array> => {
     const [signed] = await signTransactionsWithLocalKey(
         localKeySigningDeps(keyStore),
@@ -132,7 +136,7 @@ export const signWithKeystore = async (
 export const signGroupWithKeystore = async (
     keyStore: ConformanceKeyStore,
     account: ConformanceAccount,
-    txns: PeraTransaction[],
+    txns: SignableTransaction[],
 ): Promise<Uint8Array[]> => {
     const signed = await signTransactionsWithLocalKey(
         localKeySigningDeps(keyStore),

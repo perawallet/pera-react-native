@@ -264,7 +264,7 @@ export type TransferIntent = {
     note?: string
 }
 
-/** Only meaningful on a chain whose descriptor has `protocol.requiresAssetOptIn`. */
+/** Only built by a chain whose accounts must opt in before they can hold an asset. */
 export type AssetOptInIntent = {
     kind: 'asset-opt-in'
     account: string
@@ -359,10 +359,17 @@ export interface PaymentUriOpts {
     networkId?: NetworkId
 }
 
+/** Field names and values come from the requester and are never translated. */
+export type MessageTreeNode =
+    | { label: string; value: string }
+    | { label: string; children: MessageTreeNode[] }
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
     preview?: string
+    /** Set for kind `'typed-data'`: the signed fields, in schema order. */
+    tree?: MessageTreeNode[]
 }
 
 export interface MessageRequest {

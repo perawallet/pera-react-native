@@ -13,14 +13,17 @@
 import { useCallback } from 'react'
 import { compactSignedResults, useTransactionEncoder } from '../../blockchain'
 import {
-    type PeraSignedTransaction,
-    type PeraTransaction,
+    type SignedTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type {
+    TransactionSignRequest,
+    UnsignedTransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {
     decodeFromBase64,
@@ -31,6 +34,10 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandNetworkOf } from '../../legacy-network'
+import {
+    algorandTransactionOf,
+    toUnsignedAlgorandTransactions,
+} from '../../signing/unsignedTransaction'
 import { requestFeeDelegation } from '../api'
 import {
     FeeDelegationAttestationRequiredError,
@@ -46,7 +53,7 @@ export type FeeDelegatedSubmitParams = {
      * sponsor payment and re-groups everything (the group id changes), so
      * nothing may be signed before the response comes back.
      */
-    transactions: PeraTransaction[]
+    transactions: UnsignedTransaction[]
     /**
      * Also top the account up to its minimum balance, including new asset
      * opt-ins. Named after the backend field; box/app-storage MBR is out of
@@ -69,7 +76,7 @@ export type UseFeeDelegationResult = {
  * transaction that must be signed against the NEW group id.
  */
 type GroupSlot =
-    | { kind: 'preSigned'; signed: PeraSignedTransaction }
+    | { kind: 'preSigned'; signed: SignedTransaction }
     | { kind: 'toSign'; flatIndex: number }
 
 /**
@@ -80,28 +87,24 @@ type GroupSlot =
  */
 const requestSignatures = (
     addSignRequest: (request: TransactionSignRequest) => void,
-    unsignedTxs: PeraTransaction[],
-    groupContext: PeraTransaction[],
+    unsignedTxs: UnsignedTransaction[],
+    groupContext: UnsignedTransaction[],
     signableIndices: number[],
     sourceMetadata: TransactionSignRequest['sourceMetadata'],
-): Promise<PeraSignedTransaction[]> =>
+): Promise<SignedTransaction[]> =>
     new Promise((resolve, reject) => {
-        const request: TransactionSignRequest = {
+        const request: UnsignedTransactionSignRequest = {
             id: generateOrderedUniqueId(),
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
-            chainId: ALGORAND_CHAIN_ID,
             txs: unsignedTxs,
-            groupContext,
-            signableIndices,
+            chainData: { algorand: { groupContext, signableIndices } },
             sourceMetadata,
             approve: async signed => {
                 // Single full-group headless sign (no per-slot padding), so
                 // every entry is expected to be present — the null filter is
-                // defensive only. A quantum signature is just a
-                // `PeraSignedTransaction` with `pqsig` set, so it flows
-                // through the ordinary submitAndAutoRefresh path unchanged.
+                // defensive only.
                 resolve(compactSignedResults(signed))
             },
             reject: async () => {
@@ -136,6 +139,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
     const {
         encodeTransaction,
         encodeTransactionRaw,
+        encodeSignedTransaction,
         decodeTransaction,
         decodeSignedTransaction,
     } = useTransactionEncoder()
@@ -152,6 +156,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                 throw new FeeDelegationAttestationRequiredError()
             }
 
+            const sent = transactions.map(algorandTransactionOf)
             const { txnGroup } = await requestFeeDelegation(
                 {
                     // ARC-0001 carries prefix-free msgpack; `encodeTransaction`
@@ -159,7 +164,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     // separator and are not wire-safe. (The match check below
                     // keeps using the signable form on BOTH sides, so it is
                     // unaffected.)
-                    txnGroup: transactions.map(txn => ({
+                    txnGroup: sent.map(txn => ({
                         txn: encodeToBase64(encodeTransactionRaw(txn)),
                     })),
                     account,
@@ -173,15 +178,23 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             // `stxn` are sponsor-signed; the rest are the wallet's own and
             // must be signed AFTER the re-group.
             const slots: GroupSlot[] = []
-            const unsignedTxs: PeraTransaction[] = []
-            const groupContext: PeraTransaction[] = []
+            const unsignedTxs: ReturnType<typeof decodeTransaction>[] = []
+            const groupContext: ReturnType<typeof decodeTransaction>[] = []
 
             for (const entry of txnGroup) {
                 if (entry.stxn) {
+                    // Re-encoded, as the sponsor's slot always has been on submit.
                     const signed = decodeSignedTransaction(
                         decodeFromBase64(entry.stxn),
                     )
-                    slots.push({ kind: 'preSigned', signed })
+                    slots.push({
+                        kind: 'preSigned',
+                        signed: {
+                            scope,
+                            id: signed.txn.txID(),
+                            bytes: encodeSignedTransaction(signed),
+                        },
+                    })
                     groupContext.push(signed.txn)
                 } else {
                     const unsignedTxn = decodeTransaction(
@@ -205,7 +218,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             // an attacker-favorable transaction into the wallet's slot.
             if (
                 !returnedTransactionsMatchSent({
-                    sent: transactions,
+                    sent,
                     returnedToSign: unsignedTxs,
                     account,
                     encodeTransaction,
@@ -226,8 +239,8 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
 
             const flatSigned = await requestSignatures(
                 addSignRequest,
-                unsignedTxs,
-                groupContext,
+                toUnsignedAlgorandTransactions(unsignedTxs, scope),
+                toUnsignedAlgorandTransactions(groupContext, scope),
                 signableIndices,
                 sourceMetadata,
             )
@@ -250,6 +263,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             addSignRequest,
             encodeTransaction,
             encodeTransactionRaw,
+            encodeSignedTransaction,
             decodeTransaction,
             decodeSignedTransaction,
         ],

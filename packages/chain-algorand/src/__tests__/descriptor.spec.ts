@@ -11,7 +11,6 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { nativeAssetDecimals } from '@perawallet/wallet-core-chain-contract'
 import { descriptorContractTests } from '@perawallet/wallet-core-chain-contract/testing'
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { chainModule } from '..'
@@ -84,11 +83,5 @@ describe('algorand descriptor', () => {
 
     it('has no explorer link for a network outside the descriptor', () => {
         expect(descriptor.explorer.accountUrl('custom', 'A')).toBeUndefined()
-    })
-
-    it('agrees with nativeAssetDecimals', () => {
-        expect(nativeAssetDecimals('algorand')).toBe(
-            descriptor.nativeAsset.decimals,
-        )
     })
 })

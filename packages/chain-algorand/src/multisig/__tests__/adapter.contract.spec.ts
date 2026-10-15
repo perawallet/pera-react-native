@@ -29,6 +29,7 @@ const parameters = {
 const joint = algorandMultisigAdapter.deriveAddress(parameters)
 
 multisigContractTests(() => algorandMultisigAdapter, {
+    scope: { chainId: 'algorand', networkId: 'testnet' },
     parameters,
     rawTransactionBase64: encodeToBase64(
         encodeUnsignedTransaction(
