@@ -15,9 +15,12 @@ import {
     type AssetTransferDeeplink,
     DeeplinkType,
 } from './types'
-import { normalizeUrl, parseQueryParams } from './utils'
+import {
+    isLegacyChainAddress,
+    normalizeUrl,
+    parseQueryParams,
+} from './utils'
 import { ALGO_SCHEME } from './constants'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const ALGO_URI_PREFIX = `${ALGO_SCHEME}:`
@@ -41,7 +44,7 @@ export const parseCoinbaseFormat = (
     if (parts.length < 2) {
         const address = parts[0].replace(ALGO_URI_PREFIX, '')
 
-        if (isValidAlgorandAddress(address)) {
+        if (isLegacyChainAddress(address)) {
             return {
                 type: DeeplinkType.ADDRESS_ACTIONS,
                 sourceUrl: url,
@@ -54,7 +57,7 @@ export const parseCoinbaseFormat = (
     const assetPart = parts[0].replace(ALGO_URI_PREFIX, '')
     const actionPart = parts[1].split('?')[0]
 
-    if (actionPart === 'transfer' && isValidAlgorandAddress(params.address)) {
+    if (actionPart === 'transfer' && isLegacyChainAddress(params.address)) {
         return {
             type: DeeplinkType.ASSET_TRANSFER,
             sourceUrl: url,
