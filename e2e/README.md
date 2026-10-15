@@ -57,14 +57,14 @@ in the CI secret store and reach the run as environment variables; never commit 
 ## Navigation trace
 
 E2E builds log every screen mount/unmount, focus/blur and app foreground/background
-(`apps/mobile/src/modules/deeplink/handlers/e2eNavTracer.ts`). `resources/libraries/NavTrace.py`
+(`apps/mobile/src/modules/deeplink/handlers/e2eNavTracer.ts`). `e2e/resources/libraries/NavTrace.py`
 reads it after each test, warns on a screen pushed twice, a screen left mounted after a fixture
 reset, or focus bouncing straight back, and writes each scenario's flow to `nav-flows.json`.
-`tools/flow_diff.py` lists scenarios whose Android and iOS flows differ. `Load Fixture` waits on the
+`e2e/tools/flow_diff.py` lists scenarios whose Android and iOS flows differ. `Load Fixture` waits on the
 tracer's post-reset snapshot instead of a fixed delay.
 
 ## Scenario identity
 
 Every case carries an `id:<area>.<behaviour>` tag. The ID is what the parity matrix compares across
 platforms, so keep it when renaming a case and never reuse one for a different behaviour.
-`tools/parity.py` fails unless every scenario passed on both platforms.
+`e2e/tools/parity.py` fails unless every scenario passed on both platforms.
