@@ -12,8 +12,7 @@
 
 // An Ethereum send enters history from the submission ledger the moment it is
 // broadcast, survives an offline read, and gives way to the chain's own row.
-// The flow enters at the broadcaster's submit transport: Ethereum registers no
-// signing planner adapter, so the signing machine cannot carry it further.
+// The flow enters at the broadcaster's submit transport.
 
 import {
     afterAll,

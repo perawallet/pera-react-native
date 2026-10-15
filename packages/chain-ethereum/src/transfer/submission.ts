@@ -125,7 +125,7 @@ export type SubmitAndRecordEthereumTransactionsParams = {
     db?: Database
 }
 
-// Wei. Where gas prices the fee this is the most the transaction can be charged.
+// Wei: gas limit x max fee per gas, the most the transaction can be charged.
 const maxFeeOf = ({
     gas,
     maxFeePerGas,
