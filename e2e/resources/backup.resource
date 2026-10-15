@@ -30,7 +30,7 @@ Start With Unfunded Wallet
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
 
 Start With Wallet Needing Backup
-    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    ${MNEMONIC_FUNDED}
+    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_FUNDED
     Wait Clear Of Startup Prompts
     # The banner waits on the account's funded-state query.
     Wait Until Page Contains Element    ${BACKUP_BANNER_CTA}    timeout=60s

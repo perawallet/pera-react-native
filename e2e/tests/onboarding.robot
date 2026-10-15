@@ -66,13 +66,13 @@ Algorand Secure Backup Option Opens Its Import Flow
 Algo25 Wallet Is Recovered From Its 25 Word Phrase
     [Tags]    id:onboarding.import.algo25    p0    needs-funded
     Skip If    not $MNEMONIC_25    MNEMONIC_25_WORD is not set.
-    Import From Welcome    ${RECOVER_ALGO25}    ${MNEMONIC_25}
+    Import From Welcome    ${RECOVER_ALGO25}    MNEMONIC_25_WORD
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Confetti Plays After Wallet Import
     [Tags]    id:onboarding.import.confetti    p1    needs-funded
     Skip If    not $MNEMONIC_25    MNEMONIC_25_WORD is not set.
-    ${_}    ${saw_confetti}=    Import From Welcome    ${RECOVER_ALGO25}    ${MNEMONIC_25}
+    ${_}    ${saw_confetti}=    Import From Welcome    ${RECOVER_ALGO25}    MNEMONIC_25_WORD
     IF    not ${saw_confetti}
         Wait Until Page Contains Element    ${CONFETTI}    timeout=5s
     END
@@ -80,31 +80,31 @@ Confetti Plays After Wallet Import
 Universal Wallet Is Recovered From Its 24 Word Phrase
     [Tags]    id:onboarding.import.universal    p0    needs-funded
     Skip If    not $MNEMONIC_24    MNEMONIC_24_WORD is not set.
-    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    ${MNEMONIC_24}
+    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_WORD
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Universal And Algo25 Wallets Import Side By Side
     [Tags]    id:onboarding.import.universal-then-algo25    p1    needs-funded
     Skip If    not ($MNEMONIC_24 and $MNEMONIC_25)    MNEMONIC_24_WORD and MNEMONIC_25_WORD must both be set.
-    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    ${MNEMONIC_24}
+    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_WORD
     Wait Clear Of Startup Prompts
     Open Add Account
     Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
     Wait Until Page Contains Element    ${IMPORT_OPTION_RECOVER_WALLET}    timeout=20s
-    Enter Recovery Phrase For    ${RECOVER_ALGO25}    ${MNEMONIC_25}
+    Enter Recovery Phrase For    ${RECOVER_ALGO25}    MNEMONIC_25_WORD
     Finish Import
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Import Detects Accounts Rekeyed To The Wallet
     [Tags]    id:onboarding.import.rekeyed-detected    p1    needs-funded
     Skip If    not $MNEMONIC_24_REKEYED    MNEMONIC_24_REKEYED_ACCOUNT is not set.
-    ${saw_rekeyed}    ${_}=    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    ${MNEMONIC_24_REKEYED}
+    ${saw_rekeyed}    ${_}=    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_REKEYED_ACCOUNT
     Should Be True    ${saw_rekeyed}    msg=Importing a wallet with rekeyed accounts never offered them.
 
 Rescan After Importing Rekeyed Accounts Finds Nothing New
     [Tags]    id:onboarding.rescan.after-import    p1    needs-funded
     Skip If    not $MNEMONIC_24_REKEYED    MNEMONIC_24_REKEYED_ACCOUNT is not set.
-    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    ${MNEMONIC_24_REKEYED}
+    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_REKEYED_ACCOUNT
     Wait Clear Of Startup Prompts
     Open Rescan For Rekeyed Accounts
     Wait Until Page Contains Element    ${RESCAN_SKIP_BUTTON}    timeout=90s
@@ -113,7 +113,7 @@ Rescan After Importing Rekeyed Accounts Finds Nothing New
 Rescan Offers Rekeyed Accounts Skipped At Import
     [Tags]    id:onboarding.rescan.after-skip    p1    needs-funded
     Skip If    not $MNEMONIC_24_REKEYED    MNEMONIC_24_REKEYED_ACCOUNT is not set.
-    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    ${MNEMONIC_24_REKEYED}    rekeyed=skip
+    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_REKEYED_ACCOUNT    rekeyed=skip
     Wait Clear Of Startup Prompts
     Open Rescan For Rekeyed Accounts
     Wait Until Page Contains Element    ${RESCAN_ADD_BUTTON}    timeout=90s

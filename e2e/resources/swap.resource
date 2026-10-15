@@ -101,7 +101,7 @@ Open Swap With Funded Account
     Skip If    not os.environ.get('PERA_E2E_SWAP_MNEMONIC')
     ...    PERA_E2E_SWAP_MNEMONIC is not set; this case needs a funded mainnet wallet.
     IF    not ${FUNDED_WALLET_IMPORTED}
-        Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    %{PERA_E2E_SWAP_MNEMONIC}
+        Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    PERA_E2E_SWAP_MNEMONIC
         VAR    ${FUNDED_WALLET_IMPORTED}    ${True}    scope=SUITE
     END
     Open Swap

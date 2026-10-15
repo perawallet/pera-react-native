@@ -126,9 +126,10 @@ Open Import Options From Welcome
     Accept Terms Until    ${IMPORT_OPTION_RECOVER_WALLET}
 
 Enter Recovery Phrase For
-    [Documentation]    From the import options screen to a submitted phrase. Logging is off while the
-    ...                phrase is in play so it never reaches the run's logs.
-    [Arguments]    ${phrase_type}    ${phrase}
+    [Documentation]    From the import options screen to a submitted phrase. Takes the NAME of the
+    ...                environment variable holding the phrase and reads it with logging off, so the
+    ...                phrase never appears as a resolved argument, even at TRACE.
+    [Arguments]    ${phrase_type}    ${phrase_env}
     Tap    ${IMPORT_OPTION_RECOVER_WALLET}
     Wait Until Settled    ${phrase_type}
     Tap    ${phrase_type}
@@ -137,7 +138,7 @@ Enter Recovery Phrase For
     Wait Until Page Contains Element    ${WORD_INPUT_0}    timeout=20s
     ${level}=    Set Log Level    NONE
     TRY
-        Enter Recovery Phrase    ${phrase}
+        Enter Recovery Phrase    %{${phrase_env}}
     FINALLY
         Set Log Level    ${level}
     END
@@ -205,10 +206,10 @@ Leave Rekeyed Addresses
 
 Import From Welcome
     [Documentation]    Fresh device to Home with the phrase's wallet imported.
-    [Arguments]    ${phrase_type}    ${phrase}    ${rekeyed}=import
+    [Arguments]    ${phrase_type}    ${phrase_env}    ${rekeyed}=import
     Start Without Wallet
     Open Import Options From Welcome
-    Enter Recovery Phrase For    ${phrase_type}    ${phrase}
+    Enter Recovery Phrase For    ${phrase_type}    ${phrase_env}
     ${saw_rekeyed}    ${saw_confetti}=    Finish Import    ${rekeyed}
     RETURN    ${saw_rekeyed}    ${saw_confetti}
 
