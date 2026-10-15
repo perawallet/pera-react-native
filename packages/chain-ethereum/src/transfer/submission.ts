@@ -175,6 +175,7 @@ export const submitAndRecordEthereumTransactions = async ({
                 flow,
                 sender,
                 nonce,
+                maxFee: fee,
                 historyEntry: entry && { ...entry, ...(fee && { fee }) },
             })
         })

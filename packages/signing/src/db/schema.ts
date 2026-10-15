@@ -12,6 +12,7 @@
 
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
+import { decimalColumn } from '@perawallet/wallet-core-database'
 
 /**
  * One broadcast attempt of an atomic transaction group. Written before the
@@ -48,6 +49,13 @@ export const SubmissionAttemptsSchema = sqliteTable(
          * bad blob can't fail the reconcile and nonce reads of the same rows.
          */
         historyEntryJson: text('history_entry_json'),
+        /**
+         * Base units of the native asset: the most the transaction can be
+         * charged (gas limit x max fee per gas on Ethereum). Its own column,
+         * not only the history entry's `fee`, so an attempt with no summary
+         * still holds its fee back from the spendable balance.
+         */
+        maxFee: decimalColumn('max_fee'),
     },
     table => [
         index('submission_attempts_open_idx').on(table.network, table.status),

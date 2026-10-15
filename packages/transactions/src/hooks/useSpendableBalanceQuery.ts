@@ -13,6 +13,7 @@
 import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query'
 import { addressOn } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { getInFlightSpends } from '../in-flight'
 import {
     transferChainAdapters,
     type SpendableBalance,
@@ -45,10 +46,17 @@ export const useSpendableBalanceQuery = (
                 : [MODULE_PREFIX, 'spendable-balance'],
         queryFn:
             input && address
-                ? () =>
-                      transferChainAdapters
+                ? async () => {
+                      // The hook reads the ledger: an adapter must not read
+                      // the signing database.
+                      const inFlight = await getInFlightSpends({
+                          address,
+                          scope: input.scope,
+                      })
+                      return transferChainAdapters
                           .get(input.scope.chainId)
-                          .spendableBalance(input)
+                          .spendableBalance({ ...input, inFlight })
+                  }
                 : skipToken,
         // A synced-state read, so it must not pause offline.
         networkMode: 'always',

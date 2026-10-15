@@ -146,6 +146,7 @@ function cursorState(rounds: Record<string, number | null>) {
     }
 }
 const mockReconcileOpenSubmissions = vi.fn()
+const mockLedgerListeners = new Set<() => void>()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     broadcasterChainAdapters: {
@@ -153,6 +154,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
     reconcileOpenSubmissions: (...args: unknown[]) =>
         mockReconcileOpenSubmissions(...args),
+    subscribeToSubmissionLedger: (listener: () => void) => {
+        mockLedgerListeners.add(listener)
+        return () => {
+            mockLedgerListeners.delete(listener)
+        }
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -222,6 +229,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     ),
     getLatestTransactionRoundTime: vi.fn(() => Promise.resolve(null)),
     upsertTransactions: vi.fn(() => Promise.resolve()),
+    invalidateSpendableBalanceQueries: vi.fn(),
     invalidateTransactionQueries: vi.fn(),
     invalidateTransactionQueriesForAddresses: vi.fn(),
     fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
@@ -340,6 +348,39 @@ describe('SyncService', () => {
 
         service.stop()
         expect(service.isRunning()).toBe(false)
+    })
+
+    describe('submission ledger', () => {
+        const ledgerChanged = () => {
+            for (const listener of mockLedgerListeners) listener()
+        }
+
+        it('re-prices the spendable balance once for a burst of ledger writes', async () => {
+            const { invalidateSpendableBalanceQueries } =
+                await import('@perawallet/wallet-core-transactions')
+            service.start()
+
+            ledgerChanged()
+            ledgerChanged()
+            ledgerChanged()
+            expect(invalidateSpendableBalanceQueries).not.toHaveBeenCalled()
+            await vi.advanceTimersByTimeAsync(250)
+
+            expect(invalidateSpendableBalanceQueries).toHaveBeenCalledTimes(1)
+            expect(invalidateSpendableBalanceQueries).toHaveBeenCalledWith(
+                queryClient,
+            )
+        })
+
+        it('subscribes once while running and not after stop', () => {
+            service.start()
+            service.start()
+            expect(mockLedgerListeners.size).toBe(1)
+
+            service.stop()
+
+            expect(mockLedgerListeners.size).toBe(0)
+        })
     })
 
     it('reconciles open submission attempts on each online tick', async () => {
