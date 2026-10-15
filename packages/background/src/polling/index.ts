@@ -11,5 +11,4 @@
  */
 
 export * from './models'
-export { sendShouldRefreshRequest } from './endpoints'
 export { useSyncCursorStore } from './store'

@@ -243,6 +243,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 initializeSyncService({
                     queryClient,
                     stores: createSyncStorePorts(),
+                    chains: getProvider().chains,
                     registerCompletionHandler: handler =>
                         setOnConfirmedHandler(LEGACY_CHAIN_ID, handler),
                 })

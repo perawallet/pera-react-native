@@ -13,13 +13,13 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import {
     rekeyLegacyNetworkRecord,
-    scopeKeyForLegacyNetwork,
+    toScopeKey,
+    type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     guardedPersist,
     registerStore,
-    type Network,
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -90,10 +90,10 @@ export const migrateSyncCursorState = (
 
 const patchCursor = (
     cursors: SyncCursors,
-    network: Network,
+    scope: ChainScope,
     patch: Partial<SyncCursor>,
 ): SyncCursors => {
-    const key = scopeKeyForLegacyNetwork(network)
+    const key = toScopeKey(scope)
     return {
         ...cursors,
         [key]: { ...EMPTY_CURSOR, ...cursors[key], ...patch },
@@ -106,20 +106,20 @@ export const useSyncCursorStore: UseBoundStore<
     guardedPersist(
         set => ({
             ...initialState,
-            setRefreshRound: (network: Network, round: Nullable<number>) => {
+            setRefreshRound: (scope: ChainScope, round: Nullable<number>) => {
                 set(state => ({
-                    cursors: patchCursor(state.cursors, network, {
+                    cursors: patchCursor(state.cursors, scope, {
                         refreshRound: round,
                     }),
                 }))
             },
             markSynced: (
-                network: Network,
+                scope: ChainScope,
                 kind: AssetSyncKind,
                 atMs: number,
             ) => {
                 set(state => ({
-                    cursors: patchCursor(state.cursors, network, {
+                    cursors: patchCursor(state.cursors, scope, {
                         [SYNCED_AT_FIELD[kind]]: atMs,
                     }),
                 }))

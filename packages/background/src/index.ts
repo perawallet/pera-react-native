@@ -12,19 +12,18 @@
 
 import { SyncService } from './service'
 export {
-    sendShouldRefreshRequest,
     useSyncCursorStore,
     type AssetSyncKind,
     type SyncCursor,
     type SyncCursors,
     type SyncCursorState,
     type SyncCursorStore,
-    type ShouldRefreshResponse,
 } from './polling'
 import type { SyncServiceDeps } from './models'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type {
+    AccountChainAddress,
     SyncServiceDeps,
     SyncStorePorts,
     SyncCompletionHandler,

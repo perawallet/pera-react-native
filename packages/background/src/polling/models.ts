@@ -10,17 +10,16 @@
  limitations under the License
  */
 
-import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import type {
-    BaseStoreState,
-    Network,
-    Nullable,
-} from '@perawallet/wallet-core-shared'
+    ChainScope,
+    ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetSyncKind = 'assets' | 'prices'
 
 export interface SyncCursor {
-    /** Algorand round the account pass last observed; null until a network first syncs. */
+    /** Chain position (round or block) the scope is known synced to; null until it first syncs. */
     refreshRound: Nullable<number>
     /** Epoch ms of the last successful asset-metadata pass. */
     lastAssetSyncAt: Nullable<number>
@@ -36,13 +35,8 @@ export type SyncCursorState = {
 }
 
 export type SyncCursorActions = BaseStoreState & {
-    setRefreshRound: (network: Network, round: Nullable<number>) => void
-    markSynced: (network: Network, kind: AssetSyncKind, atMs: number) => void
+    setRefreshRound: (scope: ChainScope, round: Nullable<number>) => void
+    markSynced: (scope: ChainScope, kind: AssetSyncKind, atMs: number) => void
 }
 
 export type SyncCursorStore = SyncCursorState & SyncCursorActions
-
-export type ShouldRefreshResponse = {
-    refresh: boolean
-    round: number
-}

@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
+    InvalidScopeKeyError,
+    legacyNetworkOf,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    accountsChainAdapters,
     getAllHeldAssetIdsForNetwork,
     fetchAndPersistAccount,
     type AccountSyncResult,
@@ -31,13 +36,11 @@ import {
 import type { AssetSyncKind } from '../polling/models'
 
 /**
- * Max concurrent per-account requests within one sync phase.
+ * Max concurrent per-account history requests within the transactions phase.
  *
- * Each phase issues one request per account, so an unbounded fan-out scales the
+ * The phase issues one request per account, so an unbounded fan-out scales the
  * burst with the size of the user's wallet and trips the backend's rate limiter
- * on large ones. That is self-sustaining rather than self-correcting: a 429
- * freezes the round checkpoint (see resolveCheckpointRound), so the next tick
- * re-syncs the whole network and bursts again.
+ * on large ones.
  *
  * Capping costs wall-clock on large wallets, which is the right trade — the
  * tick is background work, and a slower complete pass beats a fast rejected
@@ -80,7 +83,7 @@ const summarize = <T>(
 export const logPhaseFailures = (
     phase: string,
     results: PromiseSettledResult<unknown>[],
-    network: Network,
+    scope: ChainScope,
     subject: (index: number) => Optional<string>,
 ): void => {
     results.forEach((result, index) => {
@@ -89,7 +92,7 @@ export const logPhaseFailures = (
         if (isRateLimitError(result.reason)) return
         logger.warn('Sync step failed', {
             phase,
-            network,
+            scope,
             subject: subject(index),
             error:
                 result.reason instanceof Error
@@ -102,19 +105,23 @@ export const logPhaseFailures = (
     })
 }
 
-/** Fetches and persists each account; one failure never blocks the others. */
+/**
+ * Fetches and persists each account; one failure never blocks the others. The
+ * chain caps how many reads are in flight; without a cap they all start
+ * together, so a chain that batches concurrent reads sees them as one.
+ */
 export const syncAccountsPhase = async (
     addresses: string[],
-    network: Network,
+    scope: ChainScope,
     phase: string,
 ): Promise<AccountPhaseResult> => {
+    const { maxConcurrentStateReads } = accountsChainAdapters.get(scope.chainId)
     const results = await mapWithConcurrency(
         addresses,
-        ACCOUNT_FETCH_CONCURRENCY,
-        address =>
-            fetchAndPersistAccount(address, scopeForLegacyNetwork(network)),
+        maxConcurrentStateReads ?? addresses.length,
+        address => fetchAndPersistAccount(address, scope),
     )
-    logPhaseFailures(phase, results, network, i => addresses[i])
+    logPhaseFailures(phase, results, scope, i => addresses[i])
 
     const changedAddresses = addresses.filter((_, i) => {
         const r = results[i]
@@ -128,47 +135,51 @@ export const syncAccountsPhase = async (
 
 export const syncTransactionsPhase = async (
     addresses: string[],
-    network: Network,
+    scope: ChainScope,
     phase: string,
 ): Promise<SyncPhaseResult<void>> => {
     const results = await mapWithConcurrency(
         addresses,
         ACCOUNT_FETCH_CONCURRENCY,
-        address =>
-            fetchAndPersistTransactions(
-                address,
-                scopeForLegacyNetwork(network),
-            ),
+        address => fetchAndPersistTransactions(address, scope),
     )
-    logPhaseFailures(phase, results, network, i => addresses[i])
+    logPhaseFailures(phase, results, scope, i => addresses[i])
     return summarize(results)
 }
 
 /**
- * Asset metadata and/or prices for every asset held on `network`. The held-id
+ * The price syncer is still keyed by the legacy network, so a scope without
+ * one has no price pass.
+ */
+export const legacyNetworkFor = (scope: ChainScope): Optional<Network> => {
+    try {
+        return legacyNetworkOf(scope)
+    } catch (error) {
+        if (error instanceof InvalidScopeKeyError) return undefined
+        throw error
+    }
+}
+
+/**
+ * Asset metadata and/or prices for every asset held on `scope`. The held-id
  * read is not isolated: if it throws, the phase throws, and the caller decides
  * whether that aborts the pass.
  */
 export const syncAssetsPhase = async (
-    network: Network,
+    scope: ChainScope,
     kinds: AssetSyncKind[],
     phase: string,
 ): Promise<AssetPhaseResult> => {
-    // Fetched and stored under the synced network so DB JOINs line up.
-    const assetIds = await getAllHeldAssetIdsForNetwork({
-        scope: scopeForLegacyNetwork(network),
-    })
+    // Fetched and stored under the synced scope so DB JOINs line up.
+    const assetIds = await getAllHeldAssetIdsForNetwork({ scope })
     const results = await Promise.allSettled(
-        kinds.map(kind =>
+        kinds.map(async kind =>
             kind === 'assets'
-                ? fetchAndPersistAssets(
-                      assetIds,
-                      scopeForLegacyNetwork(network),
-                  )
-                : fetchAndPersistPrices(assetIds, network),
+                ? fetchAndPersistAssets(assetIds, scope)
+                : fetchAndPersistPrices(assetIds, legacyNetworkOf(scope)),
         ),
     )
-    logPhaseFailures(phase, results, network, i => kinds[i])
+    logPhaseFailures(phase, results, scope, i => kinds[i])
     const succeededKinds = kinds.filter(
         (_, i) => results[i].status === 'fulfilled',
     )
@@ -176,17 +187,17 @@ export const syncAssetsPhase = async (
 }
 
 /**
- * The round the should-refresh checkpoint may advance to after an account
- * pass, or null to leave it where it is.
+ * The position the change cursor may advance to after an account pass, or
+ * null to leave it where it is.
  *
- * Only advances when every account fetch succeeded: the checkpoint is
- * per-network, so advancing past a failed account's unfetched rounds would
- * leave it stale until its next on-chain activity. On a clean pass, advances to
- * the minimum round the fetches observed (state at round X covers all activity
- * ≤ X), falling back to the backend-reported round only when no fetch reported
- * one. If the observed round still trails the backend's, the next tick's
- * should-refresh answers yes again and the sync retries until the data source
- * catches up.
+ * Only advances when every account fetch succeeded: the cursor is per scope,
+ * so advancing past a failed account's unfetched rounds would leave it stale
+ * until its next on-chain activity. On a clean pass, advances to the minimum
+ * round the fetches observed (state at round X covers all activity ≤ X),
+ * falling back to the change signal's cursor only when no fetch reported one.
+ * If the observed round still trails the signal's, the next tick's signal
+ * reports a change again and the sync retries until the data source catches
+ * up.
  */
 export const resolveCheckpointRound = (
     accountResults: PromiseSettledResult<AccountSyncResult>[],

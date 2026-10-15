@@ -11,10 +11,9 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import type { ShouldRefreshResponse } from './models'
 
 export type MockShouldRefreshParams = {
-    response: ShouldRefreshResponse
+    response: { refresh: boolean; round: number }
     status?: number
 }
 
