@@ -311,8 +311,8 @@ describe('Flow: Add an Ethereum account', () => {
 
         render(<AccountOptionsHost account={imported} />)
 
-        await waitFor(() =>
-            screen.getByTestId('account_option_view-private-key'),
-        )
+        expect(
+            await screen.findByTestId('account_option_view-private-key'),
+        ).toBeTruthy()
     })
 })

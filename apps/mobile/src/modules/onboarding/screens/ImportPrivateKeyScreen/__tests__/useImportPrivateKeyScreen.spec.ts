@@ -124,9 +124,7 @@ describe('useImportPrivateKeyScreen', () => {
 
         enter(result, VALID_KEY)
         expect(result.current.isValidInput).toBe(true)
-        expect(mocks.parsed.every(b => b.every(byte => byte === 0))).toBe(
-            true,
-        )
+        expect(mocks.parsed.every(b => b.every(byte => byte === 0))).toBe(true)
     })
 
     it('imports the key on the chain and names the new account there', async () => {
@@ -187,8 +185,8 @@ describe('useImportPrivateKeyScreen', () => {
     })
 
     it('never logs the entered key', async () => {
-        const spies = (['debug', 'info', 'warn', 'error'] as const).map(
-            level => vi.spyOn(logger, level),
+        const spies = (['debug', 'info', 'warn', 'error'] as const).map(level =>
+            vi.spyOn(logger, level),
         )
         mocks.importAccountFromPrivateKey.mockRejectedValue(new Error('x'))
         const { result } = render()
