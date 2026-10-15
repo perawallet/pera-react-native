@@ -11,25 +11,21 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query'
-import { invalidateAllPredicate } from './querykeys'
+import { isAssetInboxQuery } from './querykeys'
 
-export const useArc59Invalidator = () => {
+export const useAssetInboxInvalidator = (): {
+    invalidate: () => void
+    remove: () => void
+} => {
     const queryClient = useQueryClient()
 
     const invalidate = () => {
-        void queryClient.invalidateQueries({
-            predicate: invalidateAllPredicate,
-        })
+        void queryClient.invalidateQueries({ predicate: isAssetInboxQuery })
     }
 
     const remove = () => {
-        queryClient.removeQueries({
-            predicate: invalidateAllPredicate,
-        })
+        queryClient.removeQueries({ predicate: isAssetInboxQuery })
     }
 
-    return {
-        invalidate,
-        remove,
-    }
+    return { invalidate, remove }
 }

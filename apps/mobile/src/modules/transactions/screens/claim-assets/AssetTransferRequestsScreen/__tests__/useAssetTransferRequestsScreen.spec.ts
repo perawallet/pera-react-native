@@ -13,14 +13,15 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAssetTransferRequestsScreen } from '../useAssetTransferRequestsScreen'
-import { useArc59AssetRequestsQuery } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useAssetInboxRequestsQuery } from '@perawallet/wallet-core-transactions'
 
 const mockPush = vi.fn()
 const mockSetAccountAddress = vi.fn()
 const mockSetAssetRequests = vi.fn()
 
-vi.mock('@perawallet/wallet-core-chain-algorand/asa-inbox', () => ({
-    useArc59AssetRequestsQuery: vi.fn(),
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetInboxRequestsQuery: vi.fn(),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -45,14 +46,14 @@ const mockAssetRequests = (
     data: unknown[] | undefined,
     overrides: { isPending?: boolean; isUnavailableOnNetwork?: boolean } = {},
 ) =>
-    vi.mocked(useArc59AssetRequestsQuery).mockReturnValue({
+    vi.mocked(useAssetInboxRequestsQuery).mockReturnValue({
         data,
         isPending: false,
         isError: false,
         error: null,
         isUnavailableOnNetwork: false,
         ...overrides,
-    } as unknown as ReturnType<typeof useArc59AssetRequestsQuery>)
+    } as unknown as ReturnType<typeof useAssetInboxRequestsQuery>)
 
 describe('useAssetTransferRequestsScreen', () => {
     beforeEach(() => {
@@ -66,6 +67,15 @@ describe('useAssetTransferRequestsScreen', () => {
         const { result } = renderHook(() => useAssetTransferRequestsScreen())
 
         expect(result.current.assetRequests).toEqual([])
+    })
+
+    it("reads the selected account's requests on the legacy chain", () => {
+        renderHook(() => useAssetTransferRequestsScreen())
+
+        expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
+            'ACCOUNT_ADDR',
+            LEGACY_CHAIN_ID,
+        )
     })
 
     it('forwards isUnavailableOnNetwork from the asset requests query', () => {

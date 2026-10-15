@@ -11,18 +11,18 @@
  */
 
 import { create } from 'zustand'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type ClaimAssetsState = {
     accountAddress: Nullable<string>
-    assetRequests: Arc59AssetRequest[]
+    assetRequests: AssetInboxRequest[]
     onFinished?: () => void
 }
 
 type ClaimAssetsActions = {
     setAccountAddress: (address: Nullable<string>) => void
-    setAssetRequests: (assets: Arc59AssetRequest[]) => void
+    setAssetRequests: (assets: AssetInboxRequest[]) => void
     setOnFinished: (fn: () => void) => void
     reset: () => void
 }
@@ -45,10 +45,10 @@ export const useClaimAssetsStore = create<ClaimAssetsStore>()(set => ({
 
 type UseClaimAssetsResult = {
     accountAddress: Nullable<string>
-    assetRequests: Arc59AssetRequest[]
+    assetRequests: AssetInboxRequest[]
     onFinished?: () => void
     setAccountAddress: (address: Nullable<string>) => void
-    setAssetRequests: (assets: Arc59AssetRequest[]) => void
+    setAssetRequests: (assets: AssetInboxRequest[]) => void
     setOnFinished: (fn: () => void) => void
     reset: () => void
 }

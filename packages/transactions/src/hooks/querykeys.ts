@@ -14,7 +14,7 @@ import type {
     AssetRef,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { QueryClient, QueryKey } from '@tanstack/react-query'
+import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'transactions'
 
@@ -126,3 +126,21 @@ export function invalidateTransactionQueriesForAddresses(
             }),
     })
 }
+
+// Its own prefix, and deliberately not 'transactions': the app's query
+// persistence classifies this one (an inbox request list survives a restart).
+const ASSET_INBOX_PREFIX = 'asa-inbox'
+
+export const getAssetInboxRequestsQueryKey = (
+    address: string,
+    scope: ChainScope,
+) => [ASSET_INBOX_PREFIX, 'requests', { address, scope }]
+
+export const getAssetInboxSendSummaryQueryKey = (
+    receiver: string,
+    assetId: string,
+    scope: ChainScope,
+) => [ASSET_INBOX_PREFIX, 'send-summary', { receiver, assetId, scope }]
+
+export const isAssetInboxQuery = (query: Query): boolean =>
+    query.queryKey.at(0) === ASSET_INBOX_PREFIX

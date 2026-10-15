@@ -11,40 +11,38 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { fetchArc59AssetRequests, type Arc59AssetRequest } from '../api'
-import { getArc59AssetRequestsQueryKey } from './querykeys'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { sendFlowFeatureFor, type AssetInboxRequest } from '../chain-adapter'
+import { getAssetInboxRequestsQueryKey } from './querykeys'
 
-export type UseArc59AssetRequestsQueryResult = {
-    data: Arc59AssetRequest[]
+export type UseAssetInboxRequestsQueryResult = {
+    data: AssetInboxRequest[]
     isPending: boolean
     isError: boolean
     error: Nullable<Error>
-    /** True when the active network has no Pera backend — this can never succeed here. */
+    /** True when the chain's active network has no inbox backend: this can never succeed here. */
     isUnavailableOnNetwork: boolean
 }
 
-export const useArc59AssetRequestsQuery = (
+export const useAssetInboxRequestsQuery = (
     address: Nullable<string>,
-): UseArc59AssetRequestsQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-    const isUnavailableOnNetwork = !useChainCapability(
-        scope.chainId,
-        'assetInbox',
-    )
+    chainId: ChainId,
+): UseAssetInboxRequestsQueryResult => {
+    const scope = useSelectedScope(chainId)
+    const isUnavailableOnNetwork = !useChainCapability(chainId, 'assetInbox')
 
     const query = useQuery({
-        queryKey: getArc59AssetRequestsQueryKey(address ?? '', scope),
-        queryFn: () => fetchArc59AssetRequests(network, address!),
+        queryKey: getAssetInboxRequestsQueryKey(address ?? '', scope),
+        queryFn: () =>
+            sendFlowFeatureFor(scope, 'assetInbox').fetchRequests({
+                scope,
+                address: address!,
+            }),
         enabled: !!address && !isUnavailableOnNetwork,
     })
 
