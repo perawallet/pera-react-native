@@ -43,7 +43,11 @@ export const ExpandableText = ({
             <PWText style={textStyle}>{displayText}</PWText>
             {shouldTruncate && (
                 <PWButton
-                    title={isExpanded ? t('common.show_less') : t('common.show_more')}
+                    title={
+                        isExpanded
+                            ? t('common.show_less')
+                            : t('common.show_more')
+                    }
                     onPress={() => setIsExpanded(!isExpanded)}
                     variant='linkPositive'
                 />

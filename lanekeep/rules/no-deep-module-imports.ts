@@ -18,12 +18,13 @@ const ENTRIES = new Set(['', 'index', 'routes', 'shell', 'web'])
 // need its parser and constants, PWWebView mounts the whole dApp bridge, and
 // the locale tour's register/registry are the files metro.config.js stubs out
 // of release builds, the history row needs only Algorand's icon map, and the
-// chain-UI registry only Algorand's per-feature UI, so neither goes through the
-// barrel.
+// chain-UI registry only each chain's per-feature UI, so neither goes through
+// the barrel.
 const EXTRA_ENTRIES: Record<string, readonly string[]> = {
     algorand: ['icons', 'chain-ui'],
     banners: ['carousel'],
     deeplink: ['core'],
+    ethereum: ['chain-ui'],
     'locale-tour': ['register', 'registry'],
     webview: ['browser'],
 }

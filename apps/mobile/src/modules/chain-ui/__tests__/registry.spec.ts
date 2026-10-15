@@ -11,7 +11,9 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
+import { ethereumChainUi } from '@modules/ethereum/chain-ui'
 import { chainUiFor } from '../registry'
 
 describe('chainUiFor', () => {
@@ -23,8 +25,18 @@ describe('chainUiFor', () => {
         expect(ui.assetDetails?.resolveAbout).toBeDefined()
     })
 
-    it('returns an entry with no slots for a family nobody registered', () => {
+    it("returns Ethereum's transaction slots for the evm family, with no asset details", () => {
         const ui = chainUiFor('evm')
+
+        expect(ui).toBe(ethereumChainUi)
+        expect(ui.transactionDetails?.ReviewBody).toBeDefined()
+        expect(ui.transactionDetails?.DetailBody).toBeDefined()
+        expect(ui.transactionDetails?.PreviewRow).toBeDefined()
+        expect(ui.assetDetails).toBeUndefined()
+    })
+
+    it('returns an entry with no slots for a family nobody registered', () => {
+        const ui = chainUiFor('solana' as ChainFamily)
 
         expect(ui.transactionDetails).toBeUndefined()
         expect(ui.assetDetails).toBeUndefined()

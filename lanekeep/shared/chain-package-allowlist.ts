@@ -24,6 +24,7 @@ interface ChainUiModule {
 }
 
 const ALGORAND = '@perawallet/wallet-core-chain-algorand'
+const ETHEREUM = '@perawallet/wallet-core-chain-ethereum'
 
 export const COMPOSITION_ROOTS: ExemptPath[] = [
     {
@@ -55,6 +56,11 @@ export const CHAIN_UI_MODULES: ChainUiModule[] = [
         path: 'apps/mobile/src/modules/algorand/',
         pkg: ALGORAND,
         reason: "Algorand's review and detail UI: renders TransactionNative's algorand member with chain-algorand's view types and classifiers",
+    },
+    {
+        path: 'apps/mobile/src/modules/ethereum/',
+        pkg: ETHEREUM,
+        reason: "Ethereum's review and detail UI: renders TransactionNative's evm member with chain-ethereum's EthereumTransactionView; metro stubs its chain-ui entry out of builds whose CHAINS omits ethereum",
     },
 ]
 
