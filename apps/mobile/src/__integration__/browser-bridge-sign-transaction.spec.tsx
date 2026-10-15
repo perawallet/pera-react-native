@@ -171,9 +171,7 @@ describe('Flow: in-app browser sign bridge → review → signed answer', () => 
         )
         const [slot] = answerTo(webview, 'bridge-1') as string[]
         const signed = decodeSignedTransaction(decodeFromBase64(slot))
-        expect(encodeToBase64(encodeTransactionRaw(signed.txn))).toBe(
-            requested,
-        )
+        expect(encodeToBase64(encodeTransactionRaw(signed.txn))).toBe(requested)
         expect(signed.sig).toEqual(VISIBLE_SIGNATURE)
     })
 })

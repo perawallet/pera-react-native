@@ -106,4 +106,5 @@ export const MAINNET_GENESIS_HASH = decodeFromBase64(
 /** The transaction a wrapped payload carries, read without the network check fixtures on a mocked node would fail. */
 export const payloadTransactionOf = (
     unsigned: UnsignedTransaction,
-): PeraTransaction => (unsigned.payload as AlgorandTransactionPayload).transaction
+): PeraTransaction =>
+    (unsigned.payload as AlgorandTransactionPayload).transaction

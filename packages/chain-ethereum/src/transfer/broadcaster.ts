@@ -98,9 +98,7 @@ export const createEthereumBroadcasterAdapter = (
         }),
         submitAndAutoRefresh: () =>
             Promise.reject(
-                new Error(
-                    'Ethereum submits through createSubmitTransport',
-                ),
+                new Error('Ethereum submits through createSubmitTransport'),
             ),
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,

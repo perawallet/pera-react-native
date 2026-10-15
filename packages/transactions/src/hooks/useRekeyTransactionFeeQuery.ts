@@ -102,7 +102,9 @@ export const useRekeyTransactionFeeQuery = (
             })
             return microAlgosToAlgos(
                 toBigInt(
-                    sendFlowChainAdapters.get(scope.chainId).transactionFee(txn),
+                    sendFlowChainAdapters
+                        .get(scope.chainId)
+                        .transactionFee(txn),
                 ),
             )
         },

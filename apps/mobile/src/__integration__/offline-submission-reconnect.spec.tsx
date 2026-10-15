@@ -177,7 +177,9 @@ describe('Flow: offline submission reconnect', () => {
         const scope = scopeForLegacyNetwork(NETWORK)
         const txIds = await submitAndAutoRefresh(
             scope,
-            signedTxns.map(signed => toSignedAlgorandTransaction(signed, scope)),
+            signedTxns.map(signed =>
+                toSignedAlgorandTransaction(signed, scope),
+            ),
         )
         expect(txIds).toHaveLength(1)
         // The ledger row records the locally-derived txid, while algod's

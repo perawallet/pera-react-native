@@ -63,8 +63,7 @@ export const sendFlowContractTests = (
         [
             'a transfer',
             fixtures.transfer?.scope,
-            fixtures.transfer &&
-                (a => a.buildTransferTxs(fixtures.transfer!)),
+            fixtures.transfer && (a => a.buildTransferTxs(fixtures.transfer!)),
         ],
         [
             'an express transfer',

@@ -96,7 +96,9 @@ export const algorandSendFlowAdapter: SendFlowChainAdapter = {
             ),
     },
     transactionFee: transaction =>
-        new Decimal(readAlgorandTransaction(transaction).transaction.fee.toString()),
+        new Decimal(
+            readAlgorandTransaction(transaction).transaction.fee.toString(),
+        ),
 }
 
 export const algorandTransferAdapter: TransferChainAdapter = {

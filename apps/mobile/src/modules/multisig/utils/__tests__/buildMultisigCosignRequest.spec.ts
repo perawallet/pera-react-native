@@ -89,7 +89,9 @@ describe('buildMultisigCosignRequest', () => {
     })
 
     it('produces a multisig-cosign TransactionSignRequest with the threaded signRequestId', () => {
-        const decodeTransaction = vi.fn((_bytes: Uint8Array, _scope: unknown) => txFrom())
+        const decodeTransaction = vi.fn((_bytes: Uint8Array, _scope: unknown) =>
+            txFrom(),
+        )
 
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
@@ -107,7 +109,9 @@ describe('buildMultisigCosignRequest', () => {
     })
 
     it('decodes each base64 raw transaction in the first transaction list', () => {
-        const decodeTransaction = vi.fn((_bytes: Uint8Array, _scope: unknown) => txFrom())
+        const decodeTransaction = vi.fn((_bytes: Uint8Array, _scope: unknown) =>
+            txFrom(),
+        )
 
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),

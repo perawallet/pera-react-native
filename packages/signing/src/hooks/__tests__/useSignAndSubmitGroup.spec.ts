@@ -65,9 +65,11 @@ describe('useSignAndSubmitGroup', () => {
     it('resolves with the algod txIds after the pipeline approves', async () => {
         mockSubmitAndAutoRefresh.mockResolvedValue(['tx1', 'tx2'])
         let captured: Optional<UnsignedTransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
-            captured = r
-        })
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
 
         const { result } = renderHook(() => useSignAndSubmitGroup())
 
@@ -100,9 +102,11 @@ describe('useSignAndSubmitGroup', () => {
     it('submits only the signed slots when the pipeline pads with null', async () => {
         mockSubmitAndAutoRefresh.mockResolvedValue(['tx1'])
         let captured: Optional<UnsignedTransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
-            captured = r
-        })
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
 
         const { result } = renderHook(() => useSignAndSubmitGroup())
 
@@ -126,9 +130,11 @@ describe('useSignAndSubmitGroup', () => {
         // failed submission.
         mockSubmitAndAutoRefresh.mockRejectedValueOnce(new Error('overspend'))
         let captured: Optional<UnsignedTransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
-            captured = r
-        })
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
 
         const { result } = renderHook(() => useSignAndSubmitGroup())
 
@@ -152,9 +158,11 @@ describe('useSignAndSubmitGroup', () => {
 
     it('rejects with UserRejectedSigningError when reject() fires', async () => {
         let captured: Optional<UnsignedTransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
-            captured = r
-        })
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
 
         const { result } = renderHook(() => useSignAndSubmitGroup())
 
@@ -174,9 +182,11 @@ describe('useSignAndSubmitGroup', () => {
 
     it('rejects with the original error when error() fires', async () => {
         let captured: Optional<UnsignedTransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
-            captured = r
-        })
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
         const upstream = new Error('LedgerDisconnected')
 
         const { result } = renderHook(() => useSignAndSubmitGroup())
@@ -201,9 +211,11 @@ describe('useSignAndSubmitGroup', () => {
         // those into Error so downstream consumers can rely on Error.message.
         mockSubmitAndAutoRefresh.mockRejectedValue('plain-string-failure')
         let captured: Optional<UnsignedTransactionSignRequest>
-        mockAddSignRequest.mockImplementation((r: UnsignedTransactionSignRequest) => {
-            captured = r
-        })
+        mockAddSignRequest.mockImplementation(
+            (r: UnsignedTransactionSignRequest) => {
+                captured = r
+            },
+        )
 
         const { result } = renderHook(() => useSignAndSubmitGroup())
 

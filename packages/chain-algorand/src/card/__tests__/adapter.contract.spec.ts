@@ -42,9 +42,8 @@ vi.mock('../escrow/lsig', async () => ({
 // The escrow calls' own builds are covered in withdrawal.spec; here they only
 // need to hand the adapter a real transaction to wrap.
 vi.mock('../escrow/withdrawal', async () => {
-    const { makeTestAddress, makeTestPaymentTx } = await import(
-        '../../signing/__tests__/transactions'
-    )
+    const { makeTestAddress, makeTestPaymentTx } =
+        await import('../../signing/__tests__/transactions')
     const build = async () => [
         makeTestPaymentTx(makeTestAddress(1), { receiver: makeTestAddress(2) }),
     ]

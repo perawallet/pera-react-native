@@ -35,11 +35,7 @@ describe('requestRekeySignatures', () => {
     it('hands a headless transactions sign request to the pipeline with the supplied txs', () => {
         const addSignRequest = vi.fn()
 
-        void requestRekeySignatures(
-            addSignRequest,
-            source,
-            unsignedTxs,
-        )
+        void requestRekeySignatures(addSignRequest, source, unsignedTxs)
 
         expect(addSignRequest).toHaveBeenCalledTimes(1)
         const request = addSignRequest.mock
@@ -54,9 +50,11 @@ describe('requestRekeySignatures', () => {
 
     it('resolves with the signed bytes when the pipeline calls approve', async () => {
         let capturedRequest: UnsignedTransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
-            capturedRequest = request
-        })
+        const addSignRequest = vi.fn(
+            (request: UnsignedTransactionSignRequest) => {
+                capturedRequest = request
+            },
+        )
         const signed = [{ signed: true } as unknown as SignedTransaction]
 
         const promise = requestRekeySignatures(
@@ -72,9 +70,11 @@ describe('requestRekeySignatures', () => {
 
     it('drops padded null slots from the signed result', async () => {
         let capturedRequest: UnsignedTransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
-            capturedRequest = request
-        })
+        const addSignRequest = vi.fn(
+            (request: UnsignedTransactionSignRequest) => {
+                capturedRequest = request
+            },
+        )
         const signedA = { signed: true } as unknown as SignedTransaction
 
         const promise = requestRekeySignatures(
@@ -90,9 +90,11 @@ describe('requestRekeySignatures', () => {
 
     it('rejects with a user_rejected RekeyError when the pipeline calls reject', async () => {
         let capturedRequest: UnsignedTransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
-            capturedRequest = request
-        })
+        const addSignRequest = vi.fn(
+            (request: UnsignedTransactionSignRequest) => {
+                capturedRequest = request
+            },
+        )
 
         const promise = requestRekeySignatures(
             addSignRequest,
@@ -108,9 +110,11 @@ describe('requestRekeySignatures', () => {
 
     it('rejects with a signing_failed RekeyError wrapping the original error', async () => {
         let capturedRequest: UnsignedTransactionSignRequest | undefined
-        const addSignRequest = vi.fn((request: UnsignedTransactionSignRequest) => {
-            capturedRequest = request
-        })
+        const addSignRequest = vi.fn(
+            (request: UnsignedTransactionSignRequest) => {
+                capturedRequest = request
+            },
+        )
         const originalError = new Error('signing transport failed')
 
         const promise = requestRekeySignatures(

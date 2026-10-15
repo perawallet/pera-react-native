@@ -88,7 +88,8 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                                     signRequest,
                                     signerAddress: address,
                                     scope,
-                                    decodeTransaction: decodeUnsignedAlgorandTransaction,
+                                    decodeTransaction:
+                                        decodeUnsignedAlgorandTransaction,
                                     localAccounts: accounts,
                                 }),
                             )

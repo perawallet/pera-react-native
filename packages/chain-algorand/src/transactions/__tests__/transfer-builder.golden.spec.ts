@@ -59,7 +59,6 @@ import {
     standaloneAccount,
 } from '../../__tests__/algorandAccounts'
 
-
 // The msw node's genesis isn't testnet's, so the payload is read without
 // `readAlgorandTransaction`'s network check.
 const transactionOf = (built: UnsignedTransaction): PeraTransaction =>
@@ -186,14 +185,12 @@ describe('buildAlgorandTransfer golden bytes', () => {
             const built = await buildAlgorandTransfer(intent, { scope })
             const expected = await today()
 
-            expect(
-                built.map(entry => transactionOf(entry).fee),
-            ).toEqual(expected.map(() => fee))
+            expect(built.map(entry => transactionOf(entry).fee)).toEqual(
+                expected.map(() => fee),
+            )
             expect(
                 built.map(entry =>
-                    encodeToBase64(
-                        encodeTransactionRaw(transactionOf(entry)),
-                    ),
+                    encodeToBase64(encodeTransactionRaw(transactionOf(entry))),
                 ),
             ).toEqual(
                 expected.map(transaction =>

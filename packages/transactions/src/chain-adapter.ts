@@ -148,12 +148,18 @@ export interface SendFlowChainAdapter {
     buildTransferTxs(params: TransferTxsParams): Promise<UnsignedTransaction[]>
     /** Fund the receiver, opt it in, then transfer, in one group. */
     express?: {
-        buildTxs(params: ExpressTransferTxsParams): Promise<UnsignedTransaction[]>
+        buildTxs(
+            params: ExpressTransferTxsParams,
+        ): Promise<UnsignedTransaction[]>
     }
     assetInbox?: AssetInboxSendFlow
     assetHolding?: {
-        buildOptInTxs(params: AssetOptInTxsParams): Promise<UnsignedTransaction[]>
-        buildOptOutTxs(params: AssetOptOutTxsParams): Promise<UnsignedTransaction[]>
+        buildOptInTxs(
+            params: AssetOptInTxsParams,
+        ): Promise<UnsignedTransaction[]>
+        buildOptOutTxs(
+            params: AssetOptOutTxsParams,
+        ): Promise<UnsignedTransaction[]>
     }
     rekey?: { buildTx(params: RekeyTxParams): Promise<UnsignedTransaction> }
     keyRegistration?: {

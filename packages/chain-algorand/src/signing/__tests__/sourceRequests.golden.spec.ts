@@ -235,9 +235,7 @@ const cases: Case[] = [
     },
     {
         source: 'opt-out',
-        build: () => [
-            assetTransfer(ALICE_ADDRESS, RECEIVER, 0n, RECEIVER),
-        ],
+        build: () => [assetTransfer(ALICE_ADDRESS, RECEIVER, 0n, RECEIVER)],
     },
     {
         source: 'rekey',
@@ -250,11 +248,15 @@ const cases: Case[] = [
     },
     {
         source: 'key registration',
-        build: () => [txn(TransactionType.keyreg, ALICE_ADDRESS, { keyregParams: {} })],
+        build: () => [
+            txn(TransactionType.keyreg, ALICE_ADDRESS, { keyregParams: {} }),
+        ],
     },
     {
         source: 'keyreg deeplink',
-        build: () => [txn(TransactionType.keyreg, ALICE_ADDRESS, { keyregParams: {} })],
+        build: () => [
+            txn(TransactionType.keyreg, ALICE_ADDRESS, { keyregParams: {} }),
+        ],
         // The adapter normalises a key registration through its wire form.
         wrap: transactions =>
             toUnsignedAlgorandTransactions(
@@ -268,8 +270,14 @@ const cases: Case[] = [
         source: 'inbox send',
         build: () => groupTransactions([pay(), appCall(), appCall()]),
     },
-    { source: 'inbox claim', build: () => groupTransactions([appCall(), appCall()]) },
-    { source: 'inbox reject', build: () => groupTransactions([appCall(), appCall()]) },
+    {
+        source: 'inbox claim',
+        build: () => groupTransactions([appCall(), appCall()]),
+    },
+    {
+        source: 'inbox reject',
+        build: () => groupTransactions([appCall(), appCall()]),
+    },
     {
         source: 'swap',
         build: () =>
@@ -318,46 +326,42 @@ describe('every source signs the same bytes in the chain-neutral shape', () => {
         useAccountChainStateStore.getState().resetState()
     })
 
-    it.each(cases)(
-        'for $source',
-        async ({ build, wrap, account, source }) => {
-            useAccountsStore.getState().setAccounts([alice, bob])
-            if (source === 'a rekeyed sender') {
-                seedAuthority(BOB_ADDRESS.toString(), ALICE_ADDRESS.toString())
-            }
-            const transactions = build()
-            const before = rawOf(transactions)
-            // Each slot signed by its own sender's account, as the pipeline
-            // groups them, unless the case names the authority that signs.
-            const expected = await Promise.all(
-                transactions.map(async (transaction, index) => {
-                    const signer =
-                        account ??
-                        (transaction.sender.toString() ===
-                        ALICE_ADDRESS.toString()
-                            ? alice
-                            : bob)
-                    const signed = await signedAsBefore(
-                        transactions,
-                        [index],
-                        signer,
-                    )
-                    // The signer returns the slots it signed, or the whole
-                    // group with the others left unsigned.
-                    return signed.length === transactions.length
-                        ? signed[index]
-                        : signed[0]
-                }),
-            )
+    it.each(cases)('for $source', async ({ build, wrap, account, source }) => {
+        useAccountsStore.getState().setAccounts([alice, bob])
+        if (source === 'a rekeyed sender') {
+            seedAuthority(BOB_ADDRESS.toString(), ALICE_ADDRESS.toString())
+        }
+        const transactions = build()
+        const before = rawOf(transactions)
+        // Each slot signed by its own sender's account, as the pipeline
+        // groups them, unless the case names the authority that signs.
+        const expected = await Promise.all(
+            transactions.map(async (transaction, index) => {
+                const signer =
+                    account ??
+                    (transaction.sender.toString() === ALICE_ADDRESS.toString()
+                        ? alice
+                        : bob)
+                const signed = await signedAsBefore(
+                    transactions,
+                    [index],
+                    signer,
+                )
+                // The signer returns the slots it signed, or the whole
+                // group with the others left unsigned.
+                return signed.length === transactions.length
+                    ? signed[index]
+                    : signed[0]
+            }),
+        )
 
-            const unsigned = (wrap ?? (txs => toUnsignedAlgorandTransactions(txs, SCOPE)))(
-                transactions,
-            )
+        const unsigned = (
+            wrap ?? (txs => toUnsignedAlgorandTransactions(txs, SCOPE))
+        )(transactions)
 
-            expect(rawOf(unsigned.map(payloadTransactionOf))).toEqual(before)
-            expect(await signedThroughPlanner(unsigned)).toEqual(expected)
-        },
-    )
+        expect(rawOf(unsigned.map(payloadTransactionOf))).toEqual(before)
+        expect(await signedThroughPlanner(unsigned)).toEqual(expected)
+    })
 
     it('for a multisig cosign, decoded from the sign request it cosigns', async () => {
         const transactions = [pay()]
@@ -409,7 +413,9 @@ describe('every source signs the same bytes in the chain-neutral shape', () => {
             originalIndices: [0, 1],
             analysis,
         })
-        const bytesOf = (result: ReturnType<typeof buildDeferredProposeSigningResult>) =>
+        const bytesOf = (
+            result: ReturnType<typeof buildDeferredProposeSigningResult>,
+        ) =>
             algorandSignedTransactionsOf(result, SCOPE).map(
                 entry => entry!.bytes,
             )

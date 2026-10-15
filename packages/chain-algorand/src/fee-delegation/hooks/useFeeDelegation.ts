@@ -247,11 +247,10 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     : flatSigned[slot.flatIndex]!,
             )
 
-            await submitAndAutoRefresh(
-                scope,
-                orderedSigned,
-                { flow: 'fee-delegation', sender: account },
-            )
+            await submitAndAutoRefresh(scope, orderedSigned, {
+                flow: 'fee-delegation',
+                sender: account,
+            })
         },
         [
             network,

@@ -20,10 +20,7 @@ import type {
     TransactionSummary,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    authorityOf,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
+import { authorityOf, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     encodeToBase64,
     type Nullable,
@@ -75,7 +72,10 @@ const transferSummary = (
         direction: isSelf ? 'self' : 'out',
         icon: isSelf ? 'self' : 'send',
         counterparty: receiver,
-        amount: { assetRef: assetRefOf(assetId), value: new Decimal(amount.toString()) },
+        amount: {
+            assetRef: assetRefOf(assetId),
+            value: new Decimal(amount.toString()),
+        },
     }
 }
 
@@ -94,7 +94,8 @@ export const summarizeAlgorandTransaction = (
                   )
                 : chainSpecific(DEFAULT_TITLE_KEY, 'unknown')
         case 'axfer': {
-            if (!assetTransfer) return chainSpecific(DEFAULT_TITLE_KEY, 'unknown')
+            if (!assetTransfer)
+                return chainSpecific(DEFAULT_TITLE_KEY, 'unknown')
             const receiver = assetTransfer.receiver.toString()
             if (assetTransfer.closeRemainderTo) {
                 return chainSpecific(OPT_OUT_TITLE_KEY, 'opt-out')
@@ -136,7 +137,9 @@ const chainDataOf = (transaction: PeraTransaction): ChainTransactionData => {
         transaction.assetTransfer?.closeRemainderTo
     return {
         family: 'algorand',
-        ...(transaction.group && { groupId: encodeToBase64(transaction.group) }),
+        ...(transaction.group && {
+            groupId: encodeToBase64(transaction.group),
+        }),
         ...(transaction.rekeyTo && { rekeyTo: transaction.rekeyTo.toString() }),
         ...(closeRemainderTo && {
             closeRemainderTo: closeRemainderTo.toString(),

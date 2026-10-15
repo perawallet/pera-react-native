@@ -112,7 +112,9 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
         const scope = scopeForLegacyNetwork('mainnet')
         const ids = await algorandBroadcasterAdapter.submitAndAutoRefresh(
             scope,
-            signed.map(bytes => signedAlgorandTransactionFromBytes(bytes, scope)),
+            signed.map(bytes =>
+                signedAlgorandTransactionFromBytes(bytes, scope),
+            ),
         )
 
         expect(ids).toEqual([txIds[0]])

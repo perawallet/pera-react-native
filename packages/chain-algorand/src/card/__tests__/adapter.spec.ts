@@ -208,9 +208,7 @@ describe('algorandCardAdapter.buildManualDeposit', () => {
                     payloadTransactionOf(txn) as Transaction,
                 ),
             ),
-        ).toEqual(
-            await buildInPlace(400_000n),
-        )
+        ).toEqual(await buildInPlace(400_000n))
     })
 
     it('refuses a network with no settlement asset', async () => {

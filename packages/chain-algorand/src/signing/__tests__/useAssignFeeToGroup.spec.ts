@@ -96,7 +96,8 @@ describe('useAssignFeeToGroup', () => {
 
         expect(outcome).toEqual({ transactions, adjustments: [] })
         expect(outcome.transactions).toBe(transactions)
-        const [calledParams, deps] = assignFeeToGroup.mock.calls[0] as unknown as [
+        const [calledParams, deps] = assignFeeToGroup.mock
+            .calls[0] as unknown as [
             { transactions: PeraTransaction[]; signableIndices: number[] },
             PlannerDeps,
         ]

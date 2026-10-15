@@ -37,15 +37,15 @@ export const useAssignFeeToGroup = (): AssignFeeToGroup => {
             const assigned = await assignFeeToGroup(
                 { ...params, transactions },
                 {
-                // Read live store state at call time, not a value captured at
-                // render: WalletConnect can invoke this after the owning
-                // component has unmounted, holding a frozen closure over a
-                // pre-rekey accounts array otherwise.
-                accounts: useAccountsStore.getState().accounts,
-                fetchSuggestedMinFee: () =>
-                    fetchSuggestedMinFee({ fallback: 0n }),
-                configMinTxnFee: minTxnFee,
-                pqMultiplier,
+                    // Read live store state at call time, not a value captured at
+                    // render: WalletConnect can invoke this after the owning
+                    // component has unmounted, holding a frozen closure over a
+                    // pre-rekey accounts array otherwise.
+                    accounts: useAccountsStore.getState().accounts,
+                    fetchSuggestedMinFee: () =>
+                        fetchSuggestedMinFee({ fallback: 0n }),
+                    configMinTxnFee: minTxnFee,
+                    pqMultiplier,
                     findFundedIndices: coverage =>
                         findFundedIndices({
                             ...coverage,

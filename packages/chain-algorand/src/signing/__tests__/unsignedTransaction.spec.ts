@@ -83,9 +83,7 @@ describe('toUnsignedAlgorandTransaction', () => {
         const unsigned = toUnsignedAlgorandTransaction(transaction, SCOPE)
 
         expect(unsigned.scope).toEqual(SCOPE)
-        expect(readAlgorandTransaction(unsigned).transaction).toBe(
-            transaction,
-        )
+        expect(readAlgorandTransaction(unsigned).transaction).toBe(transaction)
     })
 
     it('records the group, rekey and close-out the transaction carries', () => {

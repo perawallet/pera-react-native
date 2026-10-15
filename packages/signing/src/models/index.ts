@@ -167,10 +167,12 @@ type DeliveryCallbacks = 'approve' | 'approveSignedBytes' | 'onProposed'
  * one the pipeline would ignore; Algorand's group facts ride in `chainData`.
  */
 export type UnsignedTransactionSignRequest = {
-    [Field in Exclude<
-        keyof (AlgorandRequestFields & ChainStamp),
-        DeliveryCallbacks
-    >]?: never
+    [
+        Field in Exclude<
+            keyof (AlgorandRequestFields & ChainStamp),
+            DeliveryCallbacks
+        >
+    ]?: never
 } & TransactionRequestCallbacks & {
         txs: UnsignedTransaction[]
         chainData?: { algorand?: AlgorandRequestData }

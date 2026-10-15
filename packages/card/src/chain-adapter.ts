@@ -98,7 +98,9 @@ export interface CardEscrowWithdrawals {
      * Builds by simulating, so calling it before the wait has elapsed throws
      * the contract's timestamp assert rather than returning a usable group.
      */
-    buildWithdraw(params: EscrowWithdrawalParams): Promise<UnsignedTransaction[]>
+    buildWithdraw(
+        params: EscrowWithdrawalParams,
+    ): Promise<UnsignedTransaction[]>
     buildCancel(
         params: Omit<EscrowWithdrawalParams, 'amount'>,
     ): Promise<UnsignedTransaction[]>

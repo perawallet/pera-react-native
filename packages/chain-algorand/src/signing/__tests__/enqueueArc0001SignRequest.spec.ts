@@ -482,9 +482,9 @@ describe('enqueueArc0001SignRequest', () => {
             ])
             const g0 = payloadTransactionOf(req.txs[0]).group
             expect(g0).toBeDefined()
-            expect(
-                bytesEqual(g0, payloadTransactionOf(req.txs[1]).group),
-            ).toBe(true)
+            expect(bytesEqual(g0, payloadTransactionOf(req.txs[1]).group)).toBe(
+                true,
+            )
             expect(bytesEqual(g0, originalGroup)).toBe(false)
             expect(
                 bytesEqual(

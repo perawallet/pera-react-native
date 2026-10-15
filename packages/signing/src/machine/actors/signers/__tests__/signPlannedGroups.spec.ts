@@ -128,10 +128,10 @@ describe('signPlannedGroups', () => {
     })
 
     it('reports a keystore failure with the key it carries, as the local-key signer does', async () => {
-        const keyMissing = new AppError(
-            'key gone',
-            { category: ErrorCategory.ACCOUNT, messageKey: 'errors.kms.key_not_found' },
-        )
+        const keyMissing = new AppError('key gone', {
+            category: ErrorCategory.ACCOUNT,
+            messageKey: 'errors.kms.key_not_found',
+        })
         sign.mockRejectedValueOnce(keyMissing)
 
         const failure = await run([neutralGroup()]).catch(error => error)

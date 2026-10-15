@@ -30,7 +30,9 @@ import {
 export type AssetHoldingMutationContext = {
     scope: ChainScope
     /** Returns the built group with the sender's minimum fee applied. */
-    assignFees: (unsignedTxs: UnsignedTransaction[]) => Promise<UnsignedTransaction[]>
+    assignFees: (
+        unsignedTxs: UnsignedTransaction[],
+    ) => Promise<UnsignedTransaction[]>
     submit: (unsignedTxs: UnsignedTransaction[]) => Promise<{ txIds: string[] }>
 }
 

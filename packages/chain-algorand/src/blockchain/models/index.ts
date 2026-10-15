@@ -11,7 +11,6 @@
  */
 
 import type {
-    PeraSignedTransaction,
     PeraSignedTransactionGroup,
     PeraTransactionGroup,
 } from '@perawallet/wallet-core-chain-contract'

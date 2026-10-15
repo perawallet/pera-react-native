@@ -576,7 +576,9 @@ describe('Flow: connections quantum fee override end-to-end', () => {
             .pendingSignRequests[0] as TransactionSignRequest
         expect(enqueued).toBeTruthy()
         expect(algorandOf(enqueued).feeAdjustments).toBeUndefined()
-        expect(algorandOf(enqueued).rawTransactionsBase64![0]).toBe(entries[0].txn)
+        expect(algorandOf(enqueued).rawTransactionsBase64![0]).toBe(
+            entries[0].txn,
+        )
         const group = groupOf(enqueued)
         expect(group[0].fee).toBe(1000n)
         expect(originalGroup).toBeTruthy()
@@ -640,7 +642,9 @@ describe('Flow: connections quantum fee override end-to-end', () => {
             .pendingSignRequests[0] as TransactionSignRequest
         expect(enqueued).toBeTruthy()
         expect(algorandOf(enqueued).feeAdjustments).toBeUndefined()
-        expect(algorandOf(enqueued).rawTransactionsBase64![0]).toBe(entries[0].txn)
+        expect(algorandOf(enqueued).rawTransactionsBase64![0]).toBe(
+            entries[0].txn,
+        )
 
         fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
 
@@ -869,11 +873,13 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
 
         const enqueued = await enqueuedAfter(signReq, baseline)
         expect(algorandOf(enqueued).feeAdjustments).toHaveLength(2)
-        expect(algorandOf(enqueued).feeAdjustments![0].adjustedFee).toBe(EXPECTED_PQ_FEE)
-        expect(algorandOf(enqueued).feeAdjustments![1].adjustedFee).toBe(EXPECTED_PQ_FEE)
-        expect(groupOf(enqueued)[0].fee).toBe(
+        expect(algorandOf(enqueued).feeAdjustments![0].adjustedFee).toBe(
             EXPECTED_PQ_FEE,
         )
+        expect(algorandOf(enqueued).feeAdjustments![1].adjustedFee).toBe(
+            EXPECTED_PQ_FEE,
+        )
+        expect(groupOf(enqueued)[0].fee).toBe(EXPECTED_PQ_FEE)
         expect(connector.rejectRequestCalls).toHaveLength(0)
 
         act(() => {

@@ -106,7 +106,10 @@ const baseParams = {
         {
             scope: SCOPE,
             payload: {
-                transaction: { id: 'optin', sender: { toString: () => ACCOUNT } },
+                transaction: {
+                    id: 'optin',
+                    sender: { toString: () => ACCOUNT },
+                },
             },
             summary: {
                 kind: 'chain-specific',

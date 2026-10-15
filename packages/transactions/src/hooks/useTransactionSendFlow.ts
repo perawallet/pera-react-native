@@ -189,7 +189,9 @@ export const useTransactionSendFlow = (
      * fee exceeds the suggested minimum, so a non-quantum sender is unchanged.
      */
     const buildNormalTxs = useCallback(
-        async (params: SendTransactionParams): Promise<UnsignedTransaction[]> => {
+        async (
+            params: SendTransactionParams,
+        ): Promise<UnsignedTransaction[]> => {
             if (
                 !params.asset ||
                 params.asset.assetId === '' ||
