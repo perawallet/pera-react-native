@@ -36,6 +36,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useIsChainSwitchedOff } from '@perawallet/wallet-core-chain-shared'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
@@ -59,6 +60,8 @@ type UseAccountAssetListResult = {
     chainId: ChainId
     /** Undefined when this build doesn't ship the chain's assets adapter. */
     nativeAssetId: Optional<string>
+    /** The header shows the unavailable notice; the list shows no holdings under it. */
+    isChainSwitchedOff: boolean
     holdings: AccountHoldingsLiteRow[]
     convertFiat: AssetFiatConverter
     isPending: boolean
@@ -84,6 +87,8 @@ type UseAccountAssetListResult = {
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
 
+const EMPTY_HOLDINGS: AccountHoldingsLiteRow[] = []
+
 type UseAccountAssetListParams = {
     account: WalletAccount
     t: (key: string) => string
@@ -100,9 +105,11 @@ export const useAccountAssetList = ({
         [scope.chainId],
     )
     const accountAddress = addressOn(account, scope) ?? ''
-    const canManageAssets = useCapability({
-        chain: { chainId: scope.chainId, capability: 'manageAssets' },
-    })
+    const isChainSwitchedOff = useIsChainSwitchedOff(scope.chainId)
+    const canManageAssets =
+        useCapability({
+            chain: { chainId: scope.chainId, capability: 'manageAssets' },
+        }) && !isChainSwitchedOff
     const { request: requestBottomSheet } = useBottomSheet()
 
     // Search is debounced locally and pushed into the DB query so pagination
@@ -337,7 +344,8 @@ export const useAccountAssetList = ({
     return {
         chainId: scope.chainId,
         nativeAssetId,
-        holdings,
+        isChainSwitchedOff,
+        holdings: isChainSwitchedOff ? EMPTY_HOLDINGS : holdings,
         convertFiat,
         isPending,
         isReadOnly,

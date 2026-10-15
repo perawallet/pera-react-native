@@ -51,6 +51,7 @@ export const AccountAssetList = ({
     const {
         chainId,
         nativeAssetId,
+        isChainSwitchedOff,
         holdings,
         convertFiat,
         isPending,
@@ -168,7 +169,7 @@ export const AccountAssetList = ({
                 )}
                 onSearchChange={setSearchFilter}
                 ListEmptyComponent={
-                    isPending ? (
+                    isChainSwitchedOff ? null : isPending ? (
                         <AssetRowSkeleton count={8} />
                     ) : (
                         <EmptyView

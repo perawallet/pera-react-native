@@ -17,7 +17,10 @@ import { useAccountAssetList } from '../useAccountAssetList'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    setCapabilityOverrides,
+    setChainEnabled,
+} from '@test-utils/capability-overrides'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 
 const mockAccount: WalletAccount = {
@@ -185,6 +188,19 @@ describe('useAccountAssetList', () => {
 
         expect(result.current.canManageAssets).toBe(false)
         expect(result.current.renderItemProps.canManageAssets).toBe(false)
+    })
+
+    it("lists no holdings and no management while the account's chain is switched off", () => {
+        const { result } = renderHook(() =>
+            useAccountAssetList({ account: mockAccount, t: mockT }),
+        )
+        expect(result.current.holdings).toHaveLength(1)
+
+        act(() => setChainEnabled('algorand', false))
+
+        expect(result.current.isChainSwitchedOff).toBe(true)
+        expect(result.current.holdings).toEqual([])
+        expect(result.current.canManageAssets).toBe(false)
     })
 
     it("opens a holding's detail screen on the account's chain", () => {
