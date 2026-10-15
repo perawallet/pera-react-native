@@ -30,7 +30,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-let mockRouteParams: { returnTo?: unknown } | undefined
+let mockRouteParams: { returnTo?: unknown; chainId?: string } | undefined
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
@@ -153,6 +153,15 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
+const derivableState = vi.hoisted(() => ({ groups: [] as HdSeedGroup[] }))
+const mockDeriveChainAccount = vi.fn()
+vi.mock('@modules/onboarding/hooks/useDeriveChainAccount', () => ({
+    useDeriveChainAccount: () => ({
+        derivableWallets: derivableState.groups,
+        deriveChainAccount: mockDeriveChainAccount,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -169,6 +178,7 @@ describe('useSelectHDWalletScreen', () => {
         mockRouteParams = undefined
         // Default to the two-wallet picker; auto-skip tests override this.
         groupsState.groups = mockHdSeedGroups
+        derivableState.groups = []
     })
 
     it('returns HD wallet groups', () => {
@@ -491,5 +501,77 @@ describe('useSelectHDWalletScreen', () => {
             expect(result.current.isAutoSelecting).toBe(false)
             expect(mockReplace).not.toHaveBeenCalled()
         })
+    })
+
+    describe('adding a chain entry', () => {
+        const CHAIN_ID = 'second-chain'
+        const chainAccount = {
+            ...mockHdSeedGroups[1]!.firstAccount,
+            chains: {
+                ...mockHdSeedGroups[1]!.firstAccount.chains,
+                [CHAIN_ID]: { address: 'CHAIN_ADDRESS', keyPairId: 'k' },
+            },
+        }
+
+        beforeEach(() => {
+            mockRouteParams = { chainId: CHAIN_ID, returnTo: undefined }
+            derivableState.groups = mockHdSeedGroups
+        })
+
+        it('lists only the wallets that can derive on the chain', () => {
+            derivableState.groups = [mockHdSeedGroups[1]!, mockHdSeedGroups[0]!]
+
+            const { result } = renderHook(() => useSelectHDWalletScreen())
+
+            expect(result.current.hdSeedGroups.map(g => g.seedKeyId)).toEqual([
+                'wallet-2',
+                'wallet-1',
+            ])
+        })
+
+        it('offers no new wallet', () => {
+            const { result } = renderHook(() => useSelectHDWalletScreen())
+
+            expect(result.current.canCreateNewWallet).toBe(false)
+        })
+
+        it('adds the chain entry to the picked wallet and names it on the chain', async () => {
+            mockDeriveChainAccount.mockResolvedValue(chainAccount)
+            const { result } = renderHook(() => useSelectHDWalletScreen())
+
+            await act(async () => {
+                result.current.handleSelectWallet(mockHdSeedGroups[1]!)
+            })
+
+            expect(mockDeriveChainAccount).toHaveBeenCalledWith('wallet-2')
+            expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: chainAccount,
+                returnTo: undefined,
+                chainId: CHAIN_ID,
+            })
+        })
+
+        it('shows the error toast when the derivation fails', async () => {
+            const error = new Error('duplicate')
+            mockDeriveChainAccount.mockRejectedValue(error)
+            const { result } = renderHook(() => useSelectHDWalletScreen())
+
+            await act(async () => {
+                result.current.handleSelectWallet(mockHdSeedGroups[0]!)
+            })
+
+            expect(mockShowError).toHaveBeenCalledWith(
+                error,
+                'onboarding.create_account.error_title',
+            )
+            expect(mockReplace).not.toHaveBeenCalled()
+        })
+    })
+
+    it('offers a new wallet when no chain is given', () => {
+        const { result } = renderHook(() => useSelectHDWalletScreen())
+
+        expect(result.current.canCreateNewWallet).toBe(true)
     })
 })

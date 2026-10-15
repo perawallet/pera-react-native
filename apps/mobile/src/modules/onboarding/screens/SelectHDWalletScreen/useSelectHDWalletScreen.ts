@@ -24,6 +24,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import { useDeriveChainAccount } from '@modules/onboarding/hooks'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -32,6 +33,8 @@ type UseSelectHDWalletScreenResult = {
     hdSeedGroups: HdSeedGroup[]
     accountBalances: AccountBalances
     isCreatingWallet: boolean
+    /** False when the picked wallet gains a chain entry, since a new wallet can't. */
+    canCreateNewWallet: boolean
     /** A wallet is being selected and its next account built. */
     isSelectingWallet: boolean
     /** Exactly one wallet → skip the picker and auto-select it. */
@@ -48,9 +51,14 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
         useRoute<RouteProp<AddAccountStackParamList, 'SelectHDWallet'>>()
     // Forwarded to NameAccount so a caller flow (e.g. Pera Card) resumes after naming.
     const returnTo = route.params?.returnTo
+    const chainId = route.params?.chainId
     const { t } = useLanguage()
     const { showError } = useErrorToast()
-    const { hdSeedGroups } = useHdSeedGroups()
+    const { hdSeedGroups: allHdSeedGroups } = useHdSeedGroups()
+    const { derivableWallets, deriveChainAccount } = useDeriveChainAccount(
+        chainId ?? LEGACY_CHAIN_ID,
+    )
+    const hdSeedGroups = chainId ? derivableWallets : allHdSeedGroups
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { buildHdWalletAccount } = useCreateAccount(scope)
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
@@ -74,6 +82,15 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
         async (group: HdSeedGroup) => {
             setIsSelectingWallet(true)
             try {
+                if (chainId) {
+                    const account = await deriveChainAccount(group.seedKeyId)
+                    navigation.replace('NameAccount', {
+                        account,
+                        returnTo,
+                        chainId,
+                    })
+                    return
+                }
                 // Group is keyed by the bip39 seed id; siblings are the
                 // accounts already grouped under it. Compute the next free
                 // keyIndex on account 0 from the group itself rather than
@@ -99,7 +116,15 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
                 showError(error, t('onboarding.create_account.error_title'))
             }
         },
-        [buildHdWalletAccount, navigation, returnTo, showError, t],
+        [
+            buildHdWalletAccount,
+            chainId,
+            deriveChainAccount,
+            navigation,
+            returnTo,
+            showError,
+            t,
+        ],
     )
 
     // A lone wallet makes the picker pointless — auto-select it.
@@ -139,6 +164,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
         hdSeedGroups,
         accountBalances,
         isCreatingWallet,
+        canCreateNewWallet: chainId === undefined,
         isSelectingWallet,
         isAutoSelecting,
         handleSelectWallet: (group: HdSeedGroup) =>

@@ -95,6 +95,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         trackEvent(OnboardingEvent.WatchAccountComplete)
         navigation.push('NameAccount', {
             account: newAccount,
+            chainId: watchChainId,
         })
     }, [
         watchChainId,
