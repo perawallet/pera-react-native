@@ -1,0 +1,42 @@
+*** Settings ***
+Documentation       Quantum accounts on Android and iOS from one suite. Fund-free: creating an account
+...                 and reading its own properties need no balance. Rekey to quantum lives in rekey.robot.
+Resource            ../resources/quantum.resource
+
+Suite Setup         Start Pera With Wallet
+Suite Teardown      Close Pera
+Test Setup          Go Home
+Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
+Test Tags           quantum
+
+
+*** Test Cases ***
+Add Account Offers Quantum Creation
+    [Tags]    id:quantum.add.offers-create    p0
+    Open Add Account
+    Skip Unless Quantum Create Is Offered
+    Page Should Contain Element    ${ADD_ACCOUNT_IMPORT_BUTTON}
+
+New Quantum Account Has A 25-Word Passphrase
+    [Documentation]    A quantum passphrase is 25 words where an HD one is 24, so the count proves the
+    ...                created account holds a quantum key and not an ordinary one.
+    [Tags]    id:quantum.create.passphrase    p0
+    Create Quantum Account
+    Reveal Passphrase
+    Passphrase Should Have Words    25
+
+Quantum Account Identifies As Quantum
+    [Tags]    id:quantum.type.label    p1    needs-testid
+    Skip    PWText puts its testID in accessibilityLabel, which hides the rendered type text on iOS, so account_type_label cannot be read on both platforms.
+
+Quantum Import Opens With Its Explanatory Note
+    [Documentation]    The note renders only for the quantum key kind, so it proves the entry routes
+    ...                to a quantum import rather than a generic one.
+    [Tags]    id:quantum.import.option    p1
+    Open Add Account
+    Skip Unless Quantum Create Is Offered
+    Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
+    Wait Until Page Contains Element    ${IMPORT_RECOVER_WALLET_BUTTON}    timeout=15s
+    Tap    ${IMPORT_QUANTUM_BUTTON}
+    Wait Until Page Contains Element    ${IMPORT_QUANTUM_NOTE}    timeout=15s
+    Page Should Contain Element    ${IMPORT_WORD_INPUT}0

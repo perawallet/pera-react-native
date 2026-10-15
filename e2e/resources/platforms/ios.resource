@@ -9,6 +9,11 @@ Library             Process
 ${APPIUM_URL}           http://127.0.0.1:4723
 ${IOS_BUNDLE_ID}        com.algorandllc.perarn.staging
 ${IOS_UDID}             ${EMPTY}
+# One WebDriverAgent port per simulator when several run in parallel.
+${IOS_WDA_PORT}         8100
+# A dev client's own link to its Metro server, e.g. exp+pera-dev://expo-development-client/?url=...
+# Set it for dev-client runs: a plain relaunch can land on the launcher instead of the app.
+${IOS_DEV_CLIENT_URL}   ${EMPTY}
 ${MENU_TAB}             accessibility_id=tab_menu_button
 
 
@@ -28,6 +33,7 @@ Open Pera
     ...    waitForQuiescence=${False}
     ...    waitForIdleTimeout=${0}
     ...    reduceMotion=${True}
+    ...    wdaLocalPort=${{int($IOS_WDA_PORT)}}
     IF    $IOS_UDID    Set To Dictionary    ${caps}    udid=${IOS_UDID}
     IF    $IOS_UDID    Hide Dev Menu Button
     Open Application    ${APPIUM_URL}    &{caps}
@@ -48,7 +54,11 @@ Dismiss Dev Client Intro
 
 Restart Pera
     Terminate Application    ${IOS_BUNDLE_ID}
-    Activate Application    ${IOS_BUNDLE_ID}
+    IF    $IOS_DEV_CLIENT_URL
+        Open Deeplink    ${IOS_DEV_CLIENT_URL}
+    ELSE
+        Activate Application    ${IOS_BUNDLE_ID}
+    END
 
 Open Deeplink
     [Arguments]    ${url}

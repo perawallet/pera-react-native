@@ -29,6 +29,8 @@ Start Pera With Wallet
     Restart Pera
     Wait Until Page Contains Element    ${FIRST_SCREEN}    timeout=30s
     Dismiss Dev Client Intro
+    # An existing wallet meets an "Updated Terms" screen at launch when the terms version moved.
+    Tap If Present    ${TERMS_AGREE_BUTTON}
     ${onboarding}=    Run Keyword And Return Status    Page Should Contain Element    ${CREATE_WALLET_BUTTON}
     IF    ${onboarding}
         Create Wallet
