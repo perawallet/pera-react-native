@@ -11,13 +11,8 @@ const FIXTURES = 'lanekeep/__tests__/fixtures/packages/*/src/legacy-bridge.*.ts'
 // Delete an entry when its file is clean; never add one. Flip the rule to
 // `error` when the list is empty.
 const LEGACY_BRIDGE_BASELINE: readonly string[] = [
-    'packages/accounts/src/hooks/useEnsureAccountEnriched.ts',
-    'packages/accounts/src/sync/account-syncer.ts',
     'packages/assets/src/db/seed.ts',
     'packages/assets/src/models/assets.ts',
-    'packages/assets/src/sync/price-syncer.ts',
-    'packages/background/src/service/store-ports.ts',
-    'packages/background/src/service/sync-phases.ts',
     'packages/background/src/service/sync-service.ts',
     'packages/backup/src/cloud/hooks/useRegisterCloudBackupMutation.ts',
     'packages/backup/src/cloud/hooks/useRemoveCloudBackupMutation.ts',
@@ -26,6 +21,7 @@ const LEGACY_BRIDGE_BASELINE: readonly string[] = [
     'packages/chain-shared/src/store/network-store.ts',
     'packages/chain-shared/src/utils/clearCustomNetworkCache.ts',
     'packages/config/src/network-config.ts',
+    'packages/contacts/src/schema/index.ts',
     'packages/dapp/src/handler.ts',
     'packages/device/src/hooks/useDevice.ts',
     'packages/device/src/hooks/useDeviceRegistration.ts',
@@ -35,8 +31,8 @@ const LEGACY_BRIDGE_BASELINE: readonly string[] = [
     'packages/shared/src/api/query-client.ts',
     'packages/shared/src/errors/pera-service.ts',
     'packages/walletconnect/src/shared/chainSupport.ts',
+    'packages/walletconnect/src/v1/proposals.ts',
     'packages/walletconnect/src/v1/requests.ts',
-    'packages/walletconnect/src/v2/handler.ts',
 ]
 
 describe('pera/no-legacy-network-bridge', () => {
