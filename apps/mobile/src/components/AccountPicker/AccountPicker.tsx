@@ -26,6 +26,13 @@ export type AccountPickerProps = {
     /** Body text for the empty state; omit to render no empty state. */
     emptyBody?: string
     rowTestIDPrefix?: string
+    /**
+     * Lays the list out inside a parent scroll (e.g. `PWSheetLayout`) instead
+     * of scrolling itself. A second sheet scrollable would overwrite the
+     * sheet's measured height with the list's alone, cutting off the parent's
+     * header and safe-area padding.
+     */
+    isEmbedded?: boolean
 }
 
 const keyExtractor = (account: WalletAccount) => account.id
@@ -36,6 +43,7 @@ const AccountPickerComponent = ({
     highlightedAddress,
     emptyBody,
     rowTestIDPrefix,
+    isEmbedded = false,
 }: AccountPickerProps) => {
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
@@ -68,6 +76,8 @@ const AccountPickerComponent = ({
             renderItem={renderItem}
             keyExtractor={keyExtractor}
             ListEmptyComponent={emptyBody != null ? renderEmpty : undefined}
+            inBottomSheet={isEmbedded ? false : undefined}
+            scrollEnabled={!isEmbedded}
         />
     )
 }

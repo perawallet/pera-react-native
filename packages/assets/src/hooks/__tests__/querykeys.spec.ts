@@ -113,6 +113,17 @@ describe('getAssetsQueryKey', () => {
         )
     })
 
+    test('gives fetchMissing reads their own entry under the DB-only prefix', () => {
+        const scope = scopeForLegacyNetwork('mainnet')
+        const dbOnly = getAssetsQueryKey(['123'], scope)
+        const fetching = getAssetsQueryKey(['123'], scope, {
+            fetchMissing: true,
+        })
+
+        expect(fetching).not.toEqual(dbOnly)
+        expect(fetching.slice(0, dbOnly.length)).toEqual(dbOnly)
+    })
+
     test('partitions by scope', () => {
         expect(
             getAssetsQueryKey(['123'], scopeForLegacyNetwork('mainnet')),

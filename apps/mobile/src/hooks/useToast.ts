@@ -22,6 +22,7 @@ import {
     SHORT_PROMPT_DISPLAY_DELAY,
     LONG_PROMPT_DISPLAY_DELAY,
 } from '@constants/ui'
+import { getContainerTestProps } from '@utils/test-id-helper'
 
 interface ToastMessage {
     title: string
@@ -121,6 +122,9 @@ export const useToast = () => {
                         titleStyle: textStyle,
                         descriptionStyle: textStyle,
                     },
+                    containerProps: getContainerTestProps(
+                        `toast_${message.type}`,
+                    ),
                     ...notifierOptions,
                 })
             }, delay)

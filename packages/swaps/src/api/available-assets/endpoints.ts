@@ -31,7 +31,9 @@ export const fetchAvailableAssets = async (
         url: `/v1/dex-swap/available-assets/`,
         params: {
             asset_in_id: assetInId,
-            ...(q ? { q } : {}),
+            // The backend substring-matches q against a lowercased name/unit
+            // index without lowercasing q itself.
+            ...(q ? { q: q.toLowerCase() } : {}),
         },
     })
 

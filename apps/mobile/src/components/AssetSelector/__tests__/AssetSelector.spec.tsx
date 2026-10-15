@@ -14,8 +14,10 @@ import { vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { AssetSelector } from '../AssetSelector'
 
+const mockUseAssetsQuery = vi.hoisted(() => vi.fn(() => ({ data: undefined })))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetsQuery: () => ({ data: undefined }),
+    useAssetsQuery: mockUseAssetsQuery,
 }))
 
 describe('AssetSelector', () => {
@@ -48,5 +50,21 @@ describe('AssetSelector', () => {
         )
 
         expect(screen.getByText('Select asset')).toBeTruthy()
+    })
+
+    it('fetches an asset id missing from the local DB', () => {
+        render(
+            <AssetSelector
+                variant='receive'
+                assetId='31566704'
+                onPress={vi.fn()}
+            />,
+        )
+
+        expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+            expect.anything(),
+            ['31566704'],
+            { fetchMissing: true },
+        )
     })
 })

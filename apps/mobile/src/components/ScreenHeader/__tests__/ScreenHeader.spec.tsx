@@ -49,4 +49,17 @@ describe('ScreenHeader', () => {
 
         expect(screen.queryByTestId('screen-header-icon')).toBeNull()
     })
+
+    it('derives the title testID from testID', () => {
+        render(
+            <ScreenHeader
+                title='Enter your PIN'
+                testID='pin_entry'
+            />,
+        )
+
+        expect(screen.getByTestId('pin_entry_title').textContent).toBe(
+            'Enter your PIN',
+        )
+    })
 })

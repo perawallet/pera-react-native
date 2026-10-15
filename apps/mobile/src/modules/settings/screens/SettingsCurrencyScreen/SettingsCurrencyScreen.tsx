@@ -23,6 +23,7 @@ import {
 } from '@components/core'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { InfoCallout } from '@components/InfoCallout'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
@@ -39,6 +40,9 @@ export const SettingsCurrencyScreen = () => {
         setSearch,
         filteredData,
         isRateUnavailableOffline,
+        isOffline,
+        isError,
+        refetch,
     } = useSettingsCurrencyScreen()
 
     const keyExtractor = (item: Currency) => item.id
@@ -117,6 +121,17 @@ export const SettingsCurrencyScreen = () => {
                     keyExtractor={keyExtractor}
                     extraData={preferredCurrency}
                     ItemSeparatorComponent={ListItemDivider}
+                    ListEmptyComponent={
+                        <OfflineTolerantView
+                            isOffline={isOffline}
+                            isError={isError}
+                            onRetry={refetch}
+                            offlineTestID='settings_currency_offline'
+                            errorTestID='settings_currency_error'
+                        >
+                            {null}
+                        </OfflineTolerantView>
+                    }
                     testID='settings_currency_list'
                 />
             </PWView>

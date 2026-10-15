@@ -64,7 +64,10 @@ export const PinEntry = ({
 
     return (
         <PWView style={styles.container}>
-            <ScreenHeader title={title} />
+            <ScreenHeader
+                title={title}
+                testID='pin_entry'
+            />
 
             <PWView style={styles.circlesContainer}>
                 <PWPinCircles
