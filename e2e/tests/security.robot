@@ -1,13 +1,13 @@
 *** Settings ***
 Documentation       PIN, duress PIN and lockout on Android and iOS from one suite. Every case starts on
-...                 the Security screen with ${REGULAR_PIN} set and no duress PIN, so any case runs
-...                 alone. A duress wipe does not drop to onboarding: it provisions a decoy wallet and
+...                 the Security screen and, once its flag gate passes, sets ${REGULAR_PIN} with no
+...                 duress PIN, so any case runs alone. A duress wipe does not drop to onboarding: it provisions a decoy wallet and
 ...                 lands on an ordinary empty Home, so a wipe is proved by the PIN being gone.
 Resource            ../resources/security.resource
 
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Run Keywords    Turn Pin Off    AND    Close Pera
-Test Setup          Start On Security With Regular Pin
+Test Setup          Start On Security
 Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
 Test Tags           security
 
@@ -15,13 +15,13 @@ Test Tags           security
 *** Test Cases ***
 Duress Pin Can Be Enabled
     [Tags]    id:security.duress.enable    p0    rc
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Regular Pin Should Still Be Set
 
 Duress Pin Equal To The Regular Pin Is Rejected
     [Tags]    id:security.duress.rejects-regular-pin    p0    rc
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Start Duress Pin Setup
     Enter Pin    ${REGULAR_PIN}
     Wait Until Page Contains Element    ${PIN_CONFIRM_TITLE}    timeout=15s
@@ -33,7 +33,7 @@ Duress Pin Equal To The Regular Pin Is Rejected
 
 Mismatched Duress Confirmation Saves Nothing
     [Tags]    id:security.duress.mismatch-not-saved    p1
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Start Duress Pin Setup
     Enter Pin    ${DURESS_PIN}
     Wait Until Page Contains Element    ${PIN_CONFIRM_TITLE}    timeout=15s
@@ -48,6 +48,9 @@ Shake To Lock Can Be Switched On And Off
     [Documentation]    Only the switch: no device farm or simulator can drive the shake itself.
     [Tags]    id:security.shake-to-lock.toggle    p2
     Require Security Switch    ${SHAKE_TOGGLE}    enable_motion_lock
+    # The switch stays disabled until a PIN is set.
+    Require Regular Pin
+    Reveal On Security Screen    ${SHAKE_TOGGLE}
     ${before}=    Switch Is On    ${SHAKE_TOGGLE_ID}
     Tap    ${SHAKE_TOGGLE}
     Switch Should Turn    ${SHAKE_TOGGLE_ID}    ${{not $before}}
@@ -56,7 +59,7 @@ Shake To Lock Can Be Switched On And Off
 
 Regular Pin Unlocks Without Wiping
     [Tags]    id:security.duress.regular-pin-no-wipe    p0    rc
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Lock By Restart
     Unlock With Pin    ${REGULAR_PIN}
@@ -66,7 +69,7 @@ Regular Pin Unlocks Without Wiping
 
 Wrong Pin Neither Unlocks Nor Wipes
     [Tags]    id:security.duress.wrong-pin-no-wipe    p0
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Lock By Restart
     Enter Rejected Pin    ${OTHER_PIN}
@@ -76,7 +79,7 @@ Wrong Pin Neither Unlocks Nor Wipes
 
 Disabled Duress Pin Is Just A Wrong Pin
     [Tags]    id:security.duress.disable    p1
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Disable Duress Pin
     Lock By Restart
@@ -85,9 +88,21 @@ Disabled Duress Pin Is Just A Wrong Pin
     Open Security Settings
     Regular Pin Should Still Be Set
 
+Changed Regular Pin Is The Only One That Unlocks
+    [Tags]    id:security.pin.change    p1
+    Require Regular Pin
+    Change Regular Pin    ${REGULAR_PIN}    ${NEW_REGULAR_PIN}
+    Lock By Restart
+    Enter Rejected Pin    ${REGULAR_PIN}
+    Unlock With Pin    ${NEW_REGULAR_PIN}
+    Open Security Settings
+    Regular Pin Should Still Be Set
+    [Teardown]    Run Keywords    Run Keyword If Test Failed    Capture Page Screenshot
+    ...    AND    Restore Regular Pin
+
 Changing The Regular Pin Keeps The Duress Pin
     [Tags]    id:security.duress.survives-pin-change    p1
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Change Regular Pin    ${REGULAR_PIN}    ${NEW_REGULAR_PIN}
     Lock By Restart
@@ -97,14 +112,13 @@ Changing The Regular Pin Keeps The Duress Pin
     Regular Pin Should Still Be Set
     Switch Should Turn    ${DURESS_TOGGLE_ID}    ${True}
     [Teardown]    Run Keywords    Run Keyword If Test Failed    Capture Page Screenshot
-    ...    AND    Restore Regular Pin    ${NEW_REGULAR_PIN}
+    ...    AND    Restore Regular Pin
 
 Repeated Wrong Pins Lock Out Without Wiping
     [Documentation]    Five wrong PINs swap the pad for a 30s lockout that offers, but does not run,
     ...                Reset All Data.
     [Tags]    id:security.lockout.no-wipe    p0    slow
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
-    Set Duress Pin    ${DURESS_PIN}
+    Require Regular Pin
     Lock By Restart
     FOR    ${attempt}    IN RANGE    5
         Enter Pin    ${OTHER_PIN}
@@ -122,8 +136,7 @@ Repeated Wrong Pins Lock Out Without Wiping
 
 Backgrounding Past The Timeout Locks And Returns To The Same Screen
     [Tags]    id:security.autolock.background    p1    slow
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
-    Set Duress Pin    ${DURESS_PIN}
+    Require Regular Pin
     Lock By Background
     Unlock With Pin    ${REGULAR_PIN}
     Wait Until Page Contains Element    ${PIN_TOGGLE}    timeout=15s
@@ -131,7 +144,7 @@ Backgrounding Past The Timeout Locks And Returns To The Same Screen
 
 Duress Pin Wipes The Wallet Silently
     [Tags]    id:security.duress.wipe    p0    rc
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Lock By Restart
     Enter Duress Pin At Lock Screen    ${DURESS_PIN}
@@ -143,7 +156,7 @@ Duress Pin Wipes The Wallet Silently
 
 Wipe Survives An App Restart
     [Tags]    id:security.duress.wipe-persists-restart    p0
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Lock By Restart
     Enter Duress Pin At Lock Screen    ${DURESS_PIN}
@@ -155,7 +168,7 @@ Wipe Survives An App Restart
 Replaced Duress Pin Stops Wiping And The New One Wipes
     [Documentation]    There is no change-duress screen; replacing it is off then on with a new PIN.
     [Tags]    id:security.duress.replace    p1
-    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Duress Pin Feature
     Set Duress Pin    ${DURESS_PIN}
     Disable Duress Pin
     Set Duress Pin    ${NEW_DURESS_PIN}

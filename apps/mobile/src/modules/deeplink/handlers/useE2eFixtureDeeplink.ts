@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { LogBox } from 'react-native'
 
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
@@ -22,6 +22,7 @@ import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { navigationRef } from '@routes/navigationRef'
 
 import type { DevE2eFixtureDeeplink, E2eFixtureName } from '../types'
+import { startNavTracer, traceSnapshot } from './e2eNavTracer'
 
 export type E2eFixtureDeeplinkHandler = (
     deeplink: Pick<DevE2eFixtureDeeplink, 'fixture'>,
@@ -54,6 +55,8 @@ const FIXTURE_CONTACTS: Record<Exclude<E2eFixtureName, 'home'>, Contact[]> = {
 export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
     const hasAccounts = useHasAccounts()
 
+    useEffect(startNavTracer, [])
+
     return useCallback(
         ({ fixture }) => {
             if (!hasAccounts) return
@@ -69,6 +72,7 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
             const tabBar = { name: 'TabBar', key: `TabBar-e2e-${Date.now()}` }
             if (fixture === 'home') {
                 navigationRef.reset({ index: 0, routes: [tabBar] })
+                setTimeout(() => traceSnapshot(`fixture:${fixture}`), 500)
                 return
             }
             useContactsStore.setState({
@@ -85,6 +89,7 @@ export const useE2eFixtureDeeplink = (): E2eFixtureDeeplinkHandler => {
                     },
                 ],
             })
+            setTimeout(() => traceSnapshot(`fixture:${fixture}`), 500)
         },
         [hasAccounts],
     )

@@ -67,7 +67,11 @@ Close Account Switcher
     [Documentation]    The switcher is a drawer with no close control; tapping the content it
     ...                slides aside dismisses it.
     Tap    ${DRAWER_CONTENT_SLIVER}
-    Wait Until Page Does Not Contain Element    ${ACCOUNT_MENU_ADD_BUTTON}    timeout=10s
+    Wait Until Switcher Closed
+
+Wait Until Switcher Closed
+    # The closed panel stays mounted, so its buttons do not leave the tree; the sliver does.
+    Wait Until Page Does Not Contain Element    ${DRAWER_CONTENT_SLIVER}    timeout=10s
 
 Switcher Row
     [Arguments]    ${address}
@@ -78,7 +82,7 @@ Switcher Addresses
     @{rows}=    Get WebElements    ${SWITCHER_ROWS}
     @{addresses}=    Create List
     FOR    ${row}    IN    @{rows}
-        ${id}=    Get Element Attribute    ${row}    name
+        ${id}=    Get Test ID    ${row}
         Append To List    ${addresses}    ${id.replace('account_switcher_row_', '')}
     END
     RETURN    ${addresses}
@@ -116,10 +120,10 @@ Open Account Options
     Tap    ${MORE_BUTTON}
     Wait Until Settled    ${OPTION_COPY_ADDRESS}
 
-Scroll Into View
-    [Documentation]    Swipes up until the element sits inside the window. A row below the fold can
-    ...                be in the tree and report itself displayed, and tapping it there lands on
-    ...                whatever is at its off-screen coordinates instead.
+Scroll Until Tappable
+    [Documentation]    Swipes up until the element's centre, where a tap lands, is inside the window.
+    ...                A row below the fold can be in the tree and report itself displayed, and
+    ...                tapping it there lands on whatever is at its off-screen coordinates instead.
     [Arguments]    ${locator}
     ${height}=    Get Window Height
     FOR    ${i}    IN RANGE    6
@@ -127,7 +131,7 @@ Scroll Into View
         IF    ${present}
             ${location}=    Get Element Location    ${locator}
             ${size}=    Get Element Size    ${locator}
-            IF    ${location}[y] + ${size}[height] < ${height} * 0.9    RETURN
+            IF    ${location}[y] + ${size}[height] / 2 < ${height} * 0.95    RETURN
         END
         Swipe By Percent    50    75    50    35    duration=600ms
     END
@@ -136,7 +140,7 @@ Scroll Into View
 Open Account Option
     [Arguments]    ${option}
     Open Account Options
-    Scroll Into View    ${option}
+    Scroll Until Tappable    ${option}
     Tap    ${option}
 
 Start Account Removal
@@ -173,14 +177,14 @@ Switch To Testnet
     Open Menu
     Tap    ${MENU_SETTINGS_BUTTON}
     Wait Until Page Contains Element    ${SETTINGS_SECURITY_ITEM}    timeout=20s
-    Scroll Into View    ${SETTINGS_DEVELOPER_ITEM}
+    Scroll Until Tappable    ${SETTINGS_DEVELOPER_ITEM}
     Tap    ${SETTINGS_DEVELOPER_ITEM}
     Wait Until Page Contains Element    ${DEVELOPER_NODE_ITEM}    timeout=20s
     Tap    ${DEVELOPER_NODE_ITEM}
     Wait Until Page Contains Element    ${NODE_DEVELOPER_MODE_SWITCH}    timeout=20s
     ${listed}=    Run Keyword And Return Status    Page Should Contain Element    ${NODE_CHAIN_NETWORKS}
     IF    not ${listed}    Tap    ${NODE_DEVELOPER_MODE_SWITCH}
-    Scroll Into View    ${NODE_TESTNET_RADIO}
+    Scroll Until Tappable    ${NODE_TESTNET_RADIO}
     Tap    ${NODE_TESTNET_RADIO}
     Go Home
 
@@ -192,7 +196,7 @@ Select Watch Account
     Open Account Switcher
     ${listed}=    Tap If Present    ${row}
     IF    ${listed}
-        Wait Until Page Does Not Contain Element    ${ACCOUNT_MENU_ADD_BUTTON}    timeout=10s
+        Wait Until Switcher Closed
         RETURN
     END
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
@@ -213,4 +217,4 @@ Select Watch Account
     Go Home
     Open Account Switcher
     Tap    ${row}
-    Wait Until Page Does Not Contain Element    ${ACCOUNT_MENU_ADD_BUTTON}    timeout=10s
+    Wait Until Switcher Closed

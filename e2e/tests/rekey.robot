@@ -6,7 +6,7 @@ Resource            ../resources/rekey.resource
 
 Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
-Test Setup          Go Home
+Test Setup          Go Home Without Rekey Sheet
 Test Teardown       Run Keyword If Test Failed    Capture Page Screenshot
 Test Tags           rekey
 

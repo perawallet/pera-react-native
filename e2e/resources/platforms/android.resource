@@ -68,5 +68,20 @@ Get Text In Container
     ${text}=    Get Text    xpath=//*[@resource-id='${test_id}']/following-sibling::android.widget.TextView[${n}]
     RETURN    ${text}
 
+Get Test ID
+    # UiAutomator2 reports an accessibility label as content-desc; its name attribute is empty.
+    [Arguments]    ${element}
+    ${id}=    Get Element Attribute    ${element}    content-desc
+    RETURN    ${id}
+
+Scroll Into View
+    [Documentation]    Scrolls the first scrollable until the element with this test ID is on screen,
+    ...                in one driver call (UiScrollable) instead of a swipe-and-look loop. A bare
+    ...                testID (no accessibility label) is a resource-id on Android: pass by=resourceId.
+    [Arguments]    ${test_id}    ${by}=description
+    ${selector}=    Set Variable    new UiSelector().${by}("${test_id}")
+    Wait Until Page Contains Element
+    ...    android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(${selector})    timeout=10s
+
 Close Sheet
     Swipe By Percent    50    40    50    90    duration=800ms

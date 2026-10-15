@@ -45,6 +45,15 @@ ${IMPORT_REKEYED_SKIP}              accessibility_id=import_rekeyed_addresses_sk
 
 
 *** Keywords ***
+Go Home Without Rekey Sheet
+    [Documentation]    On iOS the rekey target sheet outlives the home fixture's dismissAll and
+    ...                covers Home, so a case that stopped on it would block the next one.
+    Go Home
+    ${open}=    Run Keyword And Return Status    Page Should Contain Element    ${TARGET_STANDARD}
+    IF    not ${open}    RETURN
+    Close Sheet
+    Wait Until Page Does Not Contain Element    ${TARGET_STANDARD}    timeout=10s
+
 Open Rekey Target Sheet
     Open Account Option    ${OPTION_REKEY_ACCOUNT}
     Wait Until Settled    ${TARGET_STANDARD}

@@ -99,14 +99,14 @@ Enable Cloud Backup Flag
     [Documentation]    Settings -> Developer -> Debug Tools -> Feature Flags. Only called while the flag is
     ...                off: the override switch toggles, so tapping it when already on turns it off.
     Unlock Debug Tools
-    Scroll Into View    ${SETTINGS_DEVELOPER_ROW}
+    Swipe Until In View    ${SETTINGS_DEVELOPER_ROW}
     Tap    ${SETTINGS_DEVELOPER_ROW}
-    Scroll Into View    ${DEBUG_TOOLS_ROW}
+    Swipe Until In View    ${DEBUG_TOOLS_ROW}
     Tap    ${DEBUG_TOOLS_ROW}
     Wait Until Page Contains Element    ${FEATURE_FLAGS_ROW}    timeout=15s
     Tap    ${FEATURE_FLAGS_ROW}
     Wait Until Page Contains Element    ${CB_FLAG_EXPAND}    timeout=15s
-    Scroll Into View    ${CB_FLAG_EXPAND}
+    Swipe Until In View    ${CB_FLAG_EXPAND}
     Tap    ${CB_FLAG_EXPAND}
     Wait Until Page Contains Element    ${CB_FLAG_OVERRIDE}    timeout=15s
     Tap    ${CB_FLAG_OVERRIDE}
@@ -115,13 +115,13 @@ Unlock Debug Tools
     [Documentation]    Ten taps on the version row, each within 1s of the last (AppVersion.tsx resets the
     ...                count on a longer gap). Re-locating the element per tap can exceed that on a
     ...                loaded device, so the point is resolved once and tapped by coordinate.
-    Scroll Into View    ${SETTINGS_APP_VERSION}
+    Swipe Until In View    ${SETTINGS_APP_VERSION}
     ${loc}=    Get Element Location    ${SETTINGS_APP_VERSION}
     ${size}=    Get Element Size    ${SETTINGS_APP_VERSION}
     VAR    @{point}    ${{int($loc['x'] + $size['width'] / 2)}}    ${{int($loc['y'] + $size['height'] / 2)}}
     AppiumLibrary.Tap    ${point}    count=10    duration=0.05s
 
-Scroll Into View
+Swipe Until In View
     [Documentation]    Swipes until the element sits in the upper three quarters of the window, clear of
     ...                sticky footers. Android leaves off-screen rows out of the tree; iOS keeps them
     ...                with an off-screen position, which also says which way to scroll.
@@ -151,7 +151,7 @@ Start At Choice
     Wait Until Page Contains Element    ${CB_SETUP_OPTION}    timeout=20s
 
 Turn Off Cloud Backup
-    Scroll Into View    ${CB_OVERVIEW_TURN_OFF}
+    Swipe Until In View    ${CB_OVERVIEW_TURN_OFF}
     Tap    ${CB_OVERVIEW_TURN_OFF}
     Wait Until Settled    ${CB_TURN_OFF_OPTION}
     Tap    ${CB_TURN_OFF_OPTION}
@@ -190,11 +190,11 @@ Start At Overview
     Wait Until Page Contains Element    ${CB_OVERVIEW_SCREEN}    timeout=30s
 
 Acknowledge Passphrase
-    Scroll Into View    ${CB_SETUP_CHECKBOX}
+    Swipe Until In View    ${CB_SETUP_CHECKBOX}
     Tap    ${CB_SETUP_CHECKBOX}
 
 Acknowledge Store Key
-    Scroll Into View    ${CB_STORE_KEY_CHECKBOX}
+    Swipe Until In View    ${CB_STORE_KEY_CHECKBOX}
     Tap    ${CB_STORE_KEY_CHECKBOX}
 
 Should Be Enabled
@@ -257,7 +257,7 @@ Answer Verify Quiz
     VAR    ${wrong}    ${EMPTY}
     FOR    ${i}    IN RANGE    ${CB_QUIZ_ITEMS}
         ${item}=    Quiz Item    ${i}
-        Scroll Into View    ${item}
+        Swipe Until In View    ${item}
         ${n}=    Asked Word Position    ${i}
         ${word}=    Get From List    ${words}    ${{int($n) - 1}}
         IF    ${i} == ${wrong_index}
@@ -265,7 +265,7 @@ Answer Verify Quiz
             VAR    ${wrong}    ${word}
         END
         ${option}=    Set Variable    accessibility_id=cloud_backup_verify_item_${i}_option_${word}
-        Scroll Into View    ${option}
+        Swipe Until In View    ${option}
         Tap    ${option}
     END
     RETURN    ${wrong}

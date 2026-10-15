@@ -43,6 +43,11 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetStore: { getState: () => ({ dismissAll: mockDismissAll }) },
 }))
 
+vi.mock('../e2eNavTracer', () => ({
+    startNavTracer: vi.fn(),
+    traceSnapshot: vi.fn(),
+}))
+
 vi.mock('@routes/navigationRef', () => ({
     navigationRef: { reset: mockReset, isReady: mockIsReady },
 }))

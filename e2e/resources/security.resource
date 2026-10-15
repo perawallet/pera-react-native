@@ -11,6 +11,8 @@ ${DURESS_PIN}                   654321
 ${OTHER_PIN}                    112233
 ${NEW_REGULAR_PIN}              445566
 ${NEW_DURESS_PIN}               778899
+# The PIN the app holds once a case changes it; Restore Regular Pin reads it.
+${CURRENT_PIN}                  ${REGULAR_PIN}
 # AUTO_LOCK_TIMEOUT_MS is 2 minutes and the lock only arms once the background time exceeds it.
 ${AUTO_LOCK_BACKGROUND}         125
 
@@ -22,6 +24,7 @@ ${SHAKE_TOGGLE_ID}              settings_security_shake_to_lock_toggle
 ${PIN_TOGGLE}                   accessibility_id=${PIN_TOGGLE_ID}
 ${DURESS_TOGGLE}                accessibility_id=${DURESS_TOGGLE_ID}
 ${SHAKE_TOGGLE}                 accessibility_id=${SHAKE_TOGGLE_ID}
+${REKEY_TOGGLE}                 accessibility_id=settings_security_rekey_toggle
 ${CHANGE_PIN_BUTTON}            accessibility_id=settings_security_change_pin_button
 ${PIN_SHEET}                    accessibility_id=settings_security_pin_edit_view
 ${PIN_SHEET_CLOSE}              accessibility_id=close-button
@@ -56,10 +59,10 @@ Switch Should Turn
     ${locator}=    Switch Locator    ${test_id}    ${on}
     Wait Until Page Contains Element    ${locator}    timeout=10s
 
-Start On Security With Regular Pin
-    [Documentation]    Security screen with ${REGULAR_PIN} as the PIN and no duress PIN, whatever the
-    ...                last case left: locked, wiped back to a decoy wallet, or dropped to onboarding
-    ...                by a failed wipe.
+Start On Security
+    [Documentation]    Security screen, whatever the last case left: locked, wiped back to a decoy
+    ...                wallet, or dropped to onboarding by a failed wipe. Sets no PIN, so a case that
+    ...                skips on a flag costs only the navigation.
     Unlock If Locked
     ${onboarding}=    Run Keyword And Return Status    Page Should Contain Element    ${CREATE_WALLET_BUTTON}
     IF    ${onboarding}
@@ -70,6 +73,11 @@ Start On Security With Regular Pin
     Tap If Present    ${BANNERS_MODAL_CLOSE}
     Go Home
     Open Security Settings
+
+Require Regular Pin
+    [Documentation]    ${REGULAR_PIN} as the PIN and no duress PIN, on the Security screen.
+    ${top}=    Run Keyword And Return Status    Page Should Contain Element    ${PIN_TOGGLE}
+    IF    not ${top}    Swipe By Percent    50    35    50    75
     # The screen reads the PIN record after mount, so both switches start off; give the read a
     # moment before deciding the PIN is missing.
     ${pin_set}=    Run Keyword And Return Status
@@ -84,6 +92,11 @@ Open Security Settings
     Wait Until Page Contains Element    ${SETTINGS_ITEM_SECURITY}    timeout=15s
     Tap    ${SETTINGS_ITEM_SECURITY}
     Wait Until Page Contains Element    ${PIN_TOGGLE}    timeout=15s
+
+Require Duress Pin Feature
+    [Documentation]    Skips before any PIN is set when the flag is off.
+    Require Security Switch    ${DURESS_TOGGLE}    enable_duress_pin
+    Require Regular Pin
 
 Require Security Switch
     [Documentation]    Duress PIN (enable_duress_pin) and shake to lock (enable_motion_lock) are
@@ -101,6 +114,10 @@ Reveal On Security Screen
     FOR    ${i}    IN RANGE    3
         ${shown}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
         IF    ${shown}    RETURN    ${True}
+        # The advanced panel starts collapsed when no advanced flag or setting is on; then the
+        # screen is too short to scroll and the switch is not rendered at all.
+        ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${REKEY_TOGGLE}
+        IF    not ${expanded}    RETURN    ${False}
         Swipe By Percent    50    75    50    35
     END
     ${shown}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
@@ -167,15 +184,16 @@ Change Regular Pin
     Wait Until Page Contains Element    ${PIN_CHANGE_OLD_TITLE}    timeout=15s
     Enter Pin    ${current}
     Enter New Pin Twice    ${new}
+    Set Test Variable    ${CURRENT_PIN}    ${new}
 
 Restore Regular Pin
     [Documentation]    Teardown for the case that changes the PIN: every other case unlocks with
-    ...                ${REGULAR_PIN}.
-    [Arguments]    ${current}
-    Unlock If Locked    ${current}
+    ...                ${REGULAR_PIN}. A no-op when the case failed before changing it.
+    IF    $CURRENT_PIN == $REGULAR_PIN    RETURN
+    Unlock If Locked    ${CURRENT_PIN}
     Go Home
     Open Security Settings
-    Change Regular Pin    ${current}    ${REGULAR_PIN}
+    Change Regular Pin    ${CURRENT_PIN}    ${REGULAR_PIN}
 
 Lock By Restart
     [Documentation]    A cold start with a PIN set opens on the lock screen.

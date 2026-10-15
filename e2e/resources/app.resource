@@ -3,6 +3,7 @@ Documentation       Shared session, wallet and fixture keywords. The platform ad
 ...                 PLATFORM (android or ios) and supplies Open Pera (attached, past any dev-client intro), Restart Pera, Open Deeplink,
 ...                 Close Sheet and ${MENU_TAB}.
 Library             AppiumLibrary    run_on_failure=Nothing
+Library             libraries/NavTrace.py
 Resource            platforms/${PLATFORM}.resource
 
 

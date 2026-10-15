@@ -79,7 +79,7 @@ Verify Quiz Asks For Words And Gates Proceed
     ...    The verify Proceed button was enabled before any word was chosen.
     FOR    ${i}    IN RANGE    ${CB_QUIZ_ITEMS}
         ${item}=    Quiz Item    ${i}
-        Scroll Into View    ${item}
+        Swipe Until In View    ${item}
         Asked Word Position    ${i}
     END
 
@@ -140,14 +140,14 @@ Overview Names The Credential The Backup Is Keyed To
     [Tags]    id:cloud-backup.overview.credential    p2    needs-backend
     Skip Unless Backend Keyed
     Start At Overview
-    Scroll Into View    ${CB_OVERVIEW_CREDENTIAL_ADDRESS}
+    Swipe Until In View    ${CB_OVERVIEW_CREDENTIAL_ADDRESS}
 
 Overview Offers Sync And Turn Off
     [Tags]    id:cloud-backup.overview.lifecycle    p2    needs-backend
     Skip Unless Backend Keyed
     Start At Overview
-    Scroll Into View    ${CB_OVERVIEW_SYNC_DEVICES}
-    Scroll Into View    ${CB_OVERVIEW_TURN_OFF}
+    Swipe Until In View    ${CB_OVERVIEW_SYNC_DEVICES}
+    Swipe Until In View    ${CB_OVERVIEW_TURN_OFF}
 
 Accounts Row Lists This Device's Wallet With Its Backup State
     [Tags]    id:cloud-backup.overview.accounts    p1    needs-backend

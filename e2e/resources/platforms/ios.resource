@@ -85,6 +85,18 @@ Get Text In Container
     ${text}=    Get Text    xpath=(//*[@name='${test_id}']//XCUIElementTypeStaticText)[${n}]
     RETURN    ${text}
 
+Get Test ID
+    [Arguments]    ${element}
+    ${id}=    Get Element Attribute    ${element}    name
+    RETURN    ${id}
+
+Scroll Into View
+    [Documentation]    XCUITest scrolls the nearest scroll view until the element is visible, in one call.
+    [Arguments]    ${test_id}    ${by}=description
+    Wait Until Page Contains Element    accessibility_id=${test_id}    timeout=10s
+    ${element}=    Get WebElement    accessibility_id=${test_id}
+    Execute Script    mobile: scrollToElement    elementId=${element.id}
+
 Close Sheet
     # Modal sheets hide the drag handle and their scroll view swallows swipes; tap the backdrop above.
     ${w}=    Get Window Width

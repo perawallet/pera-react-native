@@ -109,7 +109,7 @@ Switcher Row Selects That Account
         Open Account Switcher
         ${row}=    Switcher Row    ${address}
         Tap    ${row}
-        Wait Until Page Does Not Contain Element    ${ACCOUNT_MENU_ADD_BUTTON}    timeout=10s
+        Wait Until Switcher Closed
         Receive Should Show Address    ${address}
     END
 
