@@ -14,9 +14,13 @@ ${WATCH_ADDRESS}                        UUZB34HTTJ6GM2XB44YSL333AWASFH7K3HSAK7R2
 ${KNOWN_SHARED_ADDRESS}                 XUYLM5AGYOJ2JDHUKZVQFSP47K447G54BS36MRAEHSILEMEX2CWW3SHU64
 # Stands in for an address in Create Shared Account: add the wallet's own account instead.
 ${OWN}                                  own
+# Shared accounts this suite created, by name. iOS hides an account row's name inside its
+# accessible row, so accounts are found by address (the row's test ID) instead.
+&{CREATED}
 ${IMPORT_LINK}                          perawallet://app/shared-account-import/?address=
 
 ${ACCOUNT_SELECTION_BUTTON}             accessibility_id=account_selection_button
+${ACCOUNT_ROW_PREFIX}                   account_switcher_row_
 ${ACCOUNT_MENU_ADD_BUTTON}              accessibility_id=account_menu_add_account_button
 ${MORE_BUTTON}                          accessibility_id=more_button
 ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}   accessibility_id=add_account_create_multisig_button
@@ -50,7 +54,6 @@ ${REKEY_OPTION_LEDGER}                  accessibility_id=rekey_option_ledger
 
 ${IMPORT_ADD_BUTTON}                    accessibility_id=import-shared-account-add-button
 ${IMPORT_IGNORE_BUTTON}                 accessibility_id=import-shared-account-ignore-button
-${IMPORT_RETRY_BUTTON}                  accessibility_id=import-shared-account-retry
 # The import screen once its lookup has answered: the account, or the error state.
 ${IMPORT_LOADED}                        xpath=//*[@name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button' or @name='import-shared-account-retry' or @content-desc='import-shared-account-retry']
 
@@ -80,46 +83,126 @@ Tap Screen At
 
 Open Account Menu
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=15s
-    Tap    ${ACCOUNT_SELECTION_BUTTON}
+    # The menu's rows stay in the Android tree while it is closed, and its buttons hold still
+    # until the spring starts, so neither presence nor a settled position proves it opened. Home
+    # moving aside (or, on iOS, hiding) does. A tap while Home re-renders after a reset opens
+    # nothing, so the header is tapped once more when Home has not moved.
+    FOR    ${attempt}    IN RANGE    2
+        Tap    ${ACCOUNT_SELECTION_BUTTON}
+        ${open}=    Run Keyword And Return Status    Wait Until Keyword Succeeds    3s    0.1s
+        ...    Home Should Be Pushed Aside
+        IF    ${open}    BREAK
+    END
+    Should Be True    ${open}    The account menu did not open.
     Wait Until Settled    ${ACCOUNT_MENU_ADD_BUTTON}
+
+Home Should Be Pushed Aside
+    ${home}=    Test Id    pw_drawer_content
+    ${status}    ${location}=    Run Keyword And Ignore Error    Get Element Location    ${home}
+    IF    $status == 'FAIL'    RETURN
+    Should Be True    ${location}[x] > 0
 
 Close Account Menu
     [Documentation]    The drawer has no close control; tapping the content it uncovers closes it.
-    ...                Home is hidden from accessibility while it is open.
     Tap Screen At    0.95    0.5
-    Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=10s
+    Wait Until Account Menu Closed
+
+Wait Until Account Menu Closed
+    [Documentation]    Android keeps a closed menu's rows in the tree, so presence proves nothing;
+    ...                the menu is closed once Home is back at the left edge.
+    ${home}=    Test Id    pw_drawer_content
+    Wait Until Keyword Succeeds    5s    0.1s    Home Should Be Back    ${home}
+
+Home Should Be Back
+    [Arguments]    ${home}
+    ${location}=    Get Element Location    ${home}
+    Should Be Equal As Integers    ${location}[x]    0
+
+Accounts In Open Menu
+    [Documentation]    Addresses of the wallet's accounts, read from the account rows' test IDs.
+    ${prefix}=    Test Id Starting With    ${ACCOUNT_ROW_PREFIX}
+    ${rows}=    Get Webelements    ${prefix}
+    VAR    @{addresses}
+    FOR    ${row}    IN    @{rows}
+        ${id}=    Get Test ID    ${row}
+        VAR    @{addresses}    @{addresses}    ${{ $id.replace($ACCOUNT_ROW_PREFIX, '') }}
+    END
+    RETURN    ${addresses}
 
 Pick Account In Open Menu
-    [Arguments]    ${name}
-    Wait Until Page Contains    ${name}    timeout=10s
-    Wait Until Keyword Succeeds    3x    0.2s    Click Text    ${name}
-    Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=15s
+    [Arguments]    ${address}
+    Tap    accessibility_id=${ACCOUNT_ROW_PREFIX}${address}
+    Wait Until Account Menu Closed
 
 Select Account
-    [Arguments]    ${name}
+    [Arguments]    ${address}
     Open Account Menu
-    Pick Account In Open Menu    ${name}
+    Pick Account In Open Menu    ${address}
 
-Account Menu Should List
-    [Arguments]    ${name}
-    Open Account Menu
-    Wait Until Page Contains    ${name}    timeout=10s
-    Close Account Menu
+Account Name Should Be
+    [Documentation]    The account options sheet is titled with the account's name on both platforms.
+    [Arguments]    ${address}    ${name}
+    Select Account    ${address}
+    Open Account Options
+    Wait Until Page Contains    ${name}    timeout=5s
+    Close Sheet
+    Wait Until Page Does Not Contain Element    ${ACCOUNT_OPTION_COPY_ADDRESS}    timeout=10s
 
 Open Add Account
+    [Documentation]    Returns the addresses the wallet held before, so a creation can find its account.
     Open Account Menu
+    ${accounts}=    Accounts In Open Menu
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}    timeout=15s
+    RETURN    ${accounts}
 
 Open Multisig Introduction
-    Open Add Account
+    ${accounts}=    Open Add Account
     Tap    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}
     Wait Until Settled    ${MULTISIG_INTRO_CONTINUE_BUTTON}
+    RETURN    ${accounts}
 
 Open Create Shared Account
-    Open Multisig Introduction
+    ${accounts}=    Open Multisig Introduction
     Tap    ${MULTISIG_INTRO_CONTINUE_BUTTON}
     Wait Until Page Contains Element    ${ADD_PARTICIPANT_BUTTON}    timeout=15s
+    RETURN    ${accounts}
+
+Register New Account
+    [Documentation]    Records, under ${name}, the address that joined the wallet since ${before} was
+    ...                read, and returns it.
+    [Arguments]    ${name}    ${before}
+    Open Account Menu
+    ${after}=    Accounts In Open Menu
+    Close Account Menu
+    ${new}=    Evaluate    [a for a in $after if a not in $before]
+    Length Should Be    ${new}    1    Expected exactly one new account, found ${new}.
+    Set To Dictionary    ${CREATED}    ${name}=${new}[0]
+    RETURN    ${new}[0]
+
+Clean Up Test Accounts
+    [Documentation]    Test Teardown. Removes the accounts the case created, except those named in
+    ...                @{keep}, so the menu stays short enough to show every row: its list renders
+    ...                only the rows in view.
+    [Arguments]    @{keep}
+    Capture Failure Screenshot
+    FOR    ${name}    IN    @{{ [n for n in $CREATED if n not in $keep] }}
+        ${address}=    Evaluate    $CREATED.pop($name)
+        Run Keyword And Ignore Error    Remove Account    ${address}
+    END
+
+Remove Account
+    [Arguments]    ${address}
+    Go Home
+    Open Account Menu
+    ${present}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    accessibility_id=${ACCOUNT_ROW_PREFIX}${address}
+    IF    not ${present}
+        Close Account Menu
+        RETURN
+    END
+    Pick Account In Open Menu    ${address}
+    Remove Selected Account
 
 Open Participant Search
     # A long participant list pushes the button below the fold, where an Android tap misses it.
@@ -136,7 +219,7 @@ Add Participant
     ${add}=    Test Id    address-search-add-icon
     Wait Until Page Contains Element    ${add}    timeout=15s
     Tap    ${add}
-    Wait Until Page Does Not Contain Element    ${ADDRESS_SEARCH_INPUT}    timeout=20s
+    Wait Until Participant Sheet Closed    20s
 
 Add Own Account As Participant
     [Documentation]    With nothing typed, the search lists the wallet's own eligible accounts.
@@ -144,7 +227,14 @@ Add Own Account As Participant
     ${own}=    Test Id Starting With    account_result_row_
     Wait Until Page Contains Element    ${own}    timeout=15s
     Tap    ${own}
-    Wait Until Page Does Not Contain Element    ${ADDRESS_SEARCH_INPUT}    timeout=15s
+    Wait Until Participant Sheet Closed    15s
+
+Wait Until Participant Sheet Closed
+    [Documentation]    The search input goes as soon as the sheet starts closing; a tap before its
+    ...                backdrop is gone lands on the backdrop.
+    [Arguments]    ${timeout}
+    Wait Until Page Does Not Contain Element    ${ADDRESS_SEARCH_INPUT}    timeout=${timeout}
+    Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
 
 Add Participants
     [Arguments]    @{addresses}
@@ -193,6 +283,9 @@ Finish Account
     [Documentation]    Creating or importing registers the account with the backend. A build without
     ...                BACKEND_API_KEY cannot, and says so only in a short-lived toast, so poll for
     ...                it while waiting to leave the name screen and skip rather than blame the app.
+    # The name field takes focus on arrival and the keyboard lifts the button; a tap while it
+    # rises misses.
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     FOR    ${i}    IN RANGE    30
         ${left}=    Run Keyword And Return Status
@@ -205,16 +298,18 @@ Finish Account
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
 
 Create Shared Account
-    [Documentation]    Creates the account with the default threshold. Pass ${OWN} for the wallet's
-    ...                own account. The new account becomes the selected one.
+    [Documentation]    Creates the account with the default threshold and returns its address. Pass
+    ...                ${OWN} for the wallet's own account. The new account becomes the selected one.
     [Arguments]    ${name}    @{participants}
-    Open Create Shared Account
+    ${before}=    Open Create Shared Account
     Add Participants    @{participants}
     Open Set Threshold
     Open Before You Create
     Open Name Shared Account
     Enter Account Name    ${name}
     Finish Account
+    ${address}=    Register New Account    ${name}    ${before}
+    RETURN    ${address}
 
 Open Account Options
     [Documentation]    For the selected account, from Home.
@@ -246,37 +341,34 @@ Remove Selected Account
     Tap    ${REMOVE_ACCOUNT_CONFIRM_BUTTON}
     Wait Until Page Does Not Contain Element    ${REMOVE_ACCOUNT_CONFIRM_BUTTON}    timeout=15s
 
-Remove Account If Present
-    [Documentation]    Accounts persist across runs and a shared account's address is fixed by its
-    ...                participants, so a leftover one would make the next creation a duplicate.
-    [Arguments]    ${name}
-    Go Home
+Start From Wallet Account Only
+    [Documentation]    Suite Setup. Accounts outlive a run and a shared account's address is fixed by
+    ...                its participants, so a leftover one would turn the next creation into a
+    ...                duplicate. Any account beyond the wallet's own means a reset.
+    Start Pera With Wallet
     Open Account Menu
-    ${present}=    Run Keyword And Return Status    Page Should Contain Text    ${name}    loglevel=NONE
-    IF    not ${present}
-        Close Account Menu
-        RETURN
-    END
-    Pick Account In Open Menu    ${name}
-    Remove Selected Account
-
-Clean Up Account
-    [Arguments]    ${name}
-    Run Keyword If Test Failed    Capture Page Screenshot
-    Run Keyword And Ignore Error    Remove Account If Present    ${name}
+    ${accounts}=    Accounts In Open Menu
+    Close Account Menu
+    ${count}=    Get Length    ${accounts}
+    IF    ${count} > 1    Reset To Fresh Wallet
 
 Start With Shared Account
-    [Documentation]    Selects the named shared account, creating it first when it is missing.
+    [Documentation]    Selects the named shared account, creating it first when this run has not.
     [Arguments]    ${name}    @{participants}
     Go Home
-    Open Account Menu
-    ${present}=    Run Keyword And Return Status    Page Should Contain Text    ${name}    loglevel=NONE
-    IF    ${present}
-        Pick Account In Open Menu    ${name}
-    ELSE
+    ${address}=    Evaluate    $CREATED.get($name)
+    IF    $address
+        Open Account Menu
+        ${present}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    accessibility_id=${ACCOUNT_ROW_PREFIX}${address}
+        IF    ${present}
+            Pick Account In Open Menu    ${address}
+            RETURN    ${address}
+        END
         Close Account Menu
-        Create Shared Account    ${name}    @{participants}
     END
+    ${address}=    Create Shared Account    ${name}    @{participants}
+    RETURN    ${address}
 
 Ensure Watch Account
     [Documentation]    Adds ${WATCH_ADDRESS} as a watch account unless the wallet already holds it,
@@ -284,6 +376,9 @@ Ensure Watch Account
     Open Add Account
     Tap If Present    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_WATCH_BUTTON}    timeout=15s
+    # The option opens at the bottom edge, partly under the system navigation bar that takes the tap.
+    Swipe By Percent    50    70    50    40
+    Wait Until Settled    ${ADD_ACCOUNT_WATCH_BUTTON}
     Tap    ${ADD_ACCOUNT_WATCH_BUTTON}
     Wait Until Page Contains    Create a Watch Account    timeout=15s
     Click Text    Create a Watch Account    exact_match=${True}
@@ -294,7 +389,7 @@ Ensure Watch Account
     ...    Expect Element    ${WATCH_SUBMIT_BUTTON}    enabled    timeout=2s    loglevel=NONE
     IF    not ${new}    RETURN
     Tap    ${WATCH_SUBMIT_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=15s
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
 
@@ -313,6 +408,7 @@ Add Imported Account
     Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=15s
     Enter Account Name    ${name}
     Finish Account
+    Set To Dictionary    ${CREATED}    ${name}=${KNOWN_SHARED_ADDRESS}
 
 Start With Known Shared Account Imported
     [Arguments]    ${name}

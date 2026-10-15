@@ -96,7 +96,11 @@ Create Wallet
         Click Element    ${TERMS_AGREE_BUTTON}
     END
     Wait Until Page Contains Element    ${ACCOUNT_NAME_INPUT}    timeout=30s
+    # The field is prefilled with the truncated address; without clearing, the name becomes both.
+    Clear Text    ${ACCOUNT_NAME_INPUT}
     Input Text    ${ACCOUNT_NAME_INPUT}    E2E
+    # The field takes focus and the keyboard lifts Finish while it settles.
+    Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
     # The account is written asynchronously after Finish; a fixture fired before Home exists
     # interrupts it and leaves contacts with no wallet, which breaks every later navigation.
@@ -177,7 +181,14 @@ Reset To Fresh Wallet
         Tap    ${MENU_TAB}
         Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     END
-    Tap    ${MENU_SETTINGS_BUTTON}
+    # A toast the suite raised last can still cover the header and take the tap; tap again
+    # until Settings is up.
+    FOR    ${attempt}    IN RANGE    3
+        Tap    ${MENU_SETTINGS_BUTTON}
+        ${settings}=    Run Keyword And Return Status    Wait Until Page Contains Element
+        ...    xpath=//*[@resource-id='settings_screen' or @name='settings_screen']    timeout=3s
+        IF    ${settings}    BREAK
+    END
     Scroll Into View    settings_remove_all_accounts_button
     Tap    accessibility_id=settings_remove_all_accounts_button
     Wait Until Settled    accessibility_id=settings_delete_all_confirm_button
@@ -186,6 +197,9 @@ Reset To Fresh Wallet
     Wait Until Page Contains Element
     ...    xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
     ...    timeout=30s
+    # A backdrop tap while the sheet still slides up is lost.
+    Wait Until Settled
+    ...    xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
     # Its Close button has no testID (ConfirmActionContent gets no confirmTestID); a backdrop tap
     # (the adapters' Close Sheet) closes it on both platforms.
     Close Sheet

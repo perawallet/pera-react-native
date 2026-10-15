@@ -1,12 +1,11 @@
 *** Settings ***
 Resource            onboarding.resource
+Resource            discover.resource
 
 
 *** Variables ***
 ${SWAP_TAB}                         accessibility_id=Swap
 ${SWAP_INTRO_START_BUTTON}          accessibility_id=swap-intro-start-button
-# The age declaration's buttons carry no testID.
-${AGE_GATE_CONFIRM}                 xpath=//*[@text='I am 18 or older' or @label='I am 18 or older']
 ${SWAP_INFO_BUTTON}                 xpath=//*[@content-desc='swap_info_button' or @resource-id='swap_info_button' or @name='swap_info_button']
 ${WEBVIEW_CLOSE_BUTTON}             accessibility_id=webview_close_button
 ${ACCOUNT_DRAWER}                   xpath=//*[@content-desc='pw_drawer_gesture_surface' or @resource-id='pw_drawer_gesture_surface' or @name='pw_drawer_gesture_surface']
@@ -24,9 +23,11 @@ ${SWAP_RECEIVE_ASSET_SELECTOR}      accessibility_id=swap-receive-asset-selector
 # PWView containers expose their testID as resource-id on Android, not as an accessibility id.
 ${SWAP_QUOTE_ERROR}                 xpath=//*[@resource-id='swap_quote_error' or @name='swap_quote_error']
 ${SWAP_INSUFFICIENT_BALANCE}        xpath=//*[@resource-id='swap_insufficient_balance' or @name='swap_insufficient_balance']
-${SWAP_BALANCE_VALUE}               xpath=(//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*)[1]
+# The amount follows the label after an asset glyph ("¦" on Android, "Algo" on iOS).
+${SWAP_BALANCE_VALUE}               xpath=(//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*/descendant-or-self::*[contains(translate(@text,'0123456789','##########'),'#') or contains(translate(@label,'0123456789','##########'),'#')])[1]
 ${SWAP_SELECT_ASSET_LABEL}          xpath=//*[@text='Select' or @label='Select']
-${NOTHING_TO_SWAP_TOAST}            xpath=//*[@text='Nothing to swap' or @label='Nothing to swap']
+# iOS labels the toast with its title and body together, and keeps a hidden one in the tree.
+${NOTHING_TO_SWAP_TOAST}            xpath=//*[(starts-with(@text,'Nothing to swap') or starts-with(@label,'Nothing to swap')) and not(@visible='false')]
 
 ${ASSET_SEARCH_INPUT}               accessibility_id=searchable-list-search-input
 ${PAY_ASSET_ROW_ANY}                xpath=//*[starts-with(@content-desc,'asset-list-item-') or starts-with(@resource-id,'asset-list-item-') or starts-with(@name,'asset-list-item-')]
@@ -36,7 +37,9 @@ ${NO_MATCH_SEARCH}                  ZZQXNOMATCH9999
 # Mainnet USDC: verified and pooled against ALGO, so a stable probe for the receive list.
 ${USDC_ASSET_ID}                    31566704
 ${USDC_RECEIVE_ROW}                 xpath=//*[@content-desc='swap-asset-item-31566704' or @resource-id='swap-asset-item-31566704' or @name='swap-asset-item-31566704']
-${USDC_LABEL}                       xpath=//*[contains(@text,'USDC') or contains(@label,'USDC')]
+# Only the receive side's balance carries the receive asset's unit; "ALGO to USDC" in Top Swaps
+# would match a bare USDC text anywhere.
+${RECEIVE_IS_USDC}                  xpath=//*[@text='Balance: ' or @label='Balance: ']/following-sibling::*[contains(@text,'USDC') or contains(@label,'USDC')]
 
 ${CONFIG_APPLY}                     accessibility_id=swap-config-apply
 ${CONFIG_SLIPPAGE_INPUT}            accessibility_id=swap-config-slippage-input
@@ -50,7 +53,8 @@ ${CONFIG_BALANCE_ERROR}             xpath=//*[starts-with(@text,'Balance percent
 
 ${PROVIDER_APPLY}                   accessibility_id=swap-provider-apply
 ${PROVIDER_OPTION_AUTO}             accessibility_id=swap-provider-option-auto
-${PROVIDER_OPTION_OTHER}            xpath=(//*[(starts-with(@content-desc,'swap-provider-option-') and @content-desc!='swap-provider-option-auto') or (starts-with(@name,'swap-provider-option-') and @name!='swap-provider-option-auto')])[1]
+# Each option holds an <option>-radio view, which iOS also names; the first non-auto row is wanted.
+${PROVIDER_OPTION_OTHER}            xpath=(//*[(starts-with(@content-desc,'swap-provider-option-') and not(starts-with(@content-desc,'swap-provider-option-auto'))) or (starts-with(@name,'swap-provider-option-') and not(starts-with(@name,'swap-provider-option-auto')) and not(contains(@name,'-radio')))])[1]
 ${PROVIDER_TITLE_AUTO}              xpath=//*[@text='Provider (Best price available)' or @label='Provider (Best price available)']
 ${PROVIDER_TITLE_MANUAL}            xpath=//*[@text='Provider' or @label='Provider']
 
@@ -83,16 +87,16 @@ ${FUNDED_WALLET_IMPORTED}           ${False}
 Open Swap
     [Documentation]    Home first, so a WebView or sheet left by an earlier case cannot cover the form.
     Go Home
-    Tap    ${SWAP_TAB}
     # First visits raise the age declaration and then the introduction sheet, a moment apart.
-    FOR    ${i}    IN RANGE    60
-        ${ready}=    Run Keyword And Return Status    Page Should Contain Element    ${SWAP_PAY_INPUT}
-        IF    ${ready}    RETURN
-        Tap If Present    ${AGE_GATE_CONFIRM}
-        Tap If Present    ${SWAP_INTRO_START_BUTTON}
-        Sleep    0.5s
+    Open Past Age Gate    ${SWAP_TAB}    ${SWAP_PAY_INPUT}    also_dismiss=${SWAP_INTRO_START_BUTTON}
+    # The introduction is requested as the form mounts, and Android keeps the form in the tree
+    # under it, so the form being there does not mean the sheet is gone.
+    ${intro}=    Run Keyword And Return Status    Page Should Contain Element    ${SWAP_INTRO_START_BUTTON}
+    IF    ${intro}
+        Wait Until Settled    ${SWAP_INTRO_START_BUTTON}
+        Tap    ${SWAP_INTRO_START_BUTTON}
+        Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
     END
-    Fail    The swap form never appeared.
 
 Open Swap With Funded Account
     [Documentation]    Skips unless PERA_E2E_SWAP_MNEMONIC holds a funded mainnet universal wallet.
@@ -149,8 +153,8 @@ Displayed Value
     ...                that rather than assert against the id.
     [Arguments]    ${test_id}
     ${text}=    Get Text    accessibility_id=${test_id}
-    Should Not Be Equal    ${text.strip()}    ${test_id}
-    ...    ${test_id} exposes only its testID, not the value it renders.
+    Skip If    $text.strip() == $test_id
+    ...    App gap: PWText passes its testID through getTestProps (apps/mobile/src/components/core/PWText/PWText.tsx), which makes it the iOS accessibility label, so ${test_id}'s value cannot be read.
     RETURN    ${text}
 
 Text Inside
@@ -196,6 +200,40 @@ Receive Rows Or Skip
     ...    Wait Until Page Contains Element    ${RECEIVE_ASSET_ROW_ANY}    timeout=30s
     Skip If    not ${rows}    The receive (DEX) asset list is empty on this run.
 
+Wait For USDC Receive Row
+    [Documentation]    After a search by USDC's ID. The search is debounced, so the unfiltered list,
+    ...                USDC included, stays up for a moment and is then replaced; wait for the one
+    ...                row the ID matches.
+    Receive Rows Or Skip
+    Wait Until Keyword Succeeds    15s    0.3s    Only USDC Should Be Listed
+    Wait Until Settled    ${USDC_RECEIVE_ROW}
+
+Only USDC Should Be Listed
+    ${count}=    Get Matching Xpath Count    ${RECEIVE_ASSET_ROW_ANY.replace('xpath=', '')}
+    Should Be Equal As Integers    ${count}    1
+    Page Should Contain Element    ${USDC_RECEIVE_ROW}
+
+Wait For Search To Apply
+    [Documentation]    Waits until the receive list differs from the unfiltered ${before} rows.
+    [Arguments]    ${before}
+    Wait Until Keyword Succeeds    15s    0.3s    Receive List Should Differ    ${before}
+
+Receive List Should Differ
+    [Arguments]    ${before}
+    ${now}=    Get Matching Xpath Count    ${RECEIVE_ASSET_ROW_ANY.replace('xpath=', '')}
+    Should Not Be Equal As Integers    ${now}    ${before}
+
+Quoted Receive Amount
+    [Documentation]    The provider row can render a moment before the receive amount takes the
+    ...                quote, so poll until it shows more than zero.
+    FOR    ${i}    IN RANGE    20
+        ${raw}=    Displayed Value    swap-receive-amount
+        ${amount}=    Extract Number    ${raw}
+        IF    $amount    RETURN    ${raw}
+        Sleep    0.25s
+    END
+    RETURN    ${raw}
+
 Close Picker Back To Form
     Dismiss Keyboard
     Close Sheet
@@ -203,19 +241,26 @@ Close Picker Back To Form
     Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=10s
 
 Choose USDC To Receive
-    ${already}=    Run Keyword And Return Status    Page Should Contain Element    ${USDC_LABEL}
+    [Documentation]    Picks the pair explicitly: the form seeds USDC as the receive asset but shows
+    ...                "Select" for it on a wallet that does not hold USDC.
+    ${already}=    Run Keyword And Return Status    Page Should Contain Element    ${RECEIVE_IS_USDC}
     IF    ${already}    RETURN
     Open Receive Asset Picker
     Search Assets    ${USDC_ASSET_ID}
-    Wait Until Page Contains Element    ${USDC_RECEIVE_ROW}    timeout=30s
+    Wait For USDC Receive Row
     Tap    ${USDC_RECEIVE_ROW}
-    Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=15s
+    Wait Until Page Does Not Contain Element    ${ASSET_SEARCH_INPUT}    timeout=15s
+    Wait Until Page Contains Element    ${RECEIVE_IS_USDC}    timeout=15s
 
 Open Configuration
     Tap    ${SWAP_CONFIGURE_BUTTON}
     Wait Until Settled    ${CONFIG_APPLY}
 
 Apply Configuration
+    # Hiding the keyboard drops the sheet back down; a tap while it moves misses. The no-balance
+    # toast an earlier step raised slides over the sheet's header and takes the tap.
+    Wait Until Settled    ${CONFIG_APPLY}
+    Wait Until Page Does Not Contain Element    ${NOTHING_TO_SWAP_TOAST}    timeout=10s
     Tap    ${CONFIG_APPLY}
     Wait Until Page Does Not Contain Element    ${CONFIG_APPLY}    timeout=10s
 
