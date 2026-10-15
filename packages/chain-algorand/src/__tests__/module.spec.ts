@@ -15,7 +15,6 @@ import {
     CHAIN_CAPABILITIES,
     createChainRegistry,
     registerChainSetup,
-    type ChainContext,
     type ChainModule,
     type ChainSetup,
 } from '@perawallet/wallet-core-chain-contract'
@@ -35,6 +34,8 @@ import { messageSignerChainAdapters } from '@perawallet/wallet-core-signing'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { backupChainAdapters } from '@perawallet/wallet-core-backup'
 import { chainModule } from '..'
+import { getAlgorandChainContext } from '../chain-context'
+import { testChainContext } from './context'
 import { algorandDappRequestAdapter } from '../connect'
 import {
     algorandHistoryAdapter,
@@ -53,8 +54,7 @@ import { algorandBackupAdapter } from '../backup'
 import { algorandPinnedHosts } from '../blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from '../blockchain/remote-config'
 
-// register ignores its context: the adapters are module-level instances.
-const stubCtx = {} as ChainContext
+const stubCtx = testChainContext()
 
 const setup: ChainSetup = [
     { chainId: 'algorand', enabled: true, module: chainModule, endpoints: {} },
@@ -145,6 +145,17 @@ describe('chainModule', () => {
         }).not.toThrow()
         expect(chains.get('algorand').descriptor).toBe(chainModule.descriptor)
         expectAdaptersRegistered()
+    })
+
+    it('keeps the context it was registered with for its node clients', () => {
+        const ctx = {
+            ...testChainContext(),
+            timeouts: { readMs: 111, submitMs: 222 },
+        }
+
+        chainModule.register(ctx)
+
+        expect(getAlgorandChainContext()).toBe(ctx)
     })
 
     it('leaves a feature registry without its adapter throwing for algorand', () => {

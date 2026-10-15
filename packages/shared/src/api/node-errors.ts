@@ -13,46 +13,31 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
-    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { ErrorMessageKeys } from '../errors/base'
-import type { RequestConfiguration } from '../models/queries'
-
-/** The `queryClient` backends a chain's own nodes serve. */
-export type NodeBackendName = Exclude<
-    RequestConfiguration['backend'],
-    'pera' | 'backup'
->
-
-/** A node's base URL and the header its API token rides in; an empty token sends no header. */
-export type NodeBackend = { url: string; tokenHeader: string; token: string }
 
 /** Copy for an error a chain's node raised, with `params` that may hold bigint. */
 export type NodeErrorCopy = ErrorMessageKeys & {
     params: Readonly<Record<string, unknown>>
 }
 
-/** Registered by a chain package so `queryClient` can reach that chain's nodes. */
-export interface NodeBackendsAdapter {
+/** Registered by a chain package that can word its own nodes' errors. */
+export interface NodeErrorsAdapter {
     readonly chainId: ChainId
     /** `undefined` when the chain can't improve on the caller's own copy for this error. */
-    describeError?(error: unknown): NodeErrorCopy | undefined
-    /** Read on a scope's first node request, and again after `resetNodeClients`. */
-    backendsFor(
-        scope: ChainScope,
-    ): Partial<Record<NodeBackendName, NodeBackend>>
+    describeError(error: unknown): NodeErrorCopy | undefined
 }
 
-export const nodeBackendAdapters =
-    createChainAdapterRegistry<NodeBackendsAdapter>('nodeBackends')
+export const nodeErrorAdapters =
+    createChainAdapterRegistry<NodeErrorsAdapter>('nodeErrors')
 
 // An error doesn't carry the chain whose node raised it, so every chain is asked
 // and each describes only errors it recognises as its own.
 export const describeNodeError = (
     error: unknown,
 ): NodeErrorCopy | undefined => {
-    for (const adapter of nodeBackendAdapters.list()) {
-        const copy = adapter.describeError?.(error)
+    for (const adapter of nodeErrorAdapters.list()) {
+        const copy = adapter.describeError(error)
         if (copy) return copy
     }
     return undefined

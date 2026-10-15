@@ -23,6 +23,7 @@ import {
     fakeAccountStateSnapshot,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    registerFakeNativeAsset,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 import { testAccount } from '../../__tests__/accountFactory'
@@ -90,6 +91,7 @@ describe.each(STATES)('delegation gate when $name', state => {
         registerFakeAccountsChain(
             state.hasMember ? {} : { authority: undefined },
         )
+        registerFakeNativeAsset()
         const fetchDelegatedAddresses = fetchDelegated()
         if (fetchDelegatedAddresses) {
             vi.mocked(fetchDelegatedAddresses).mockResolvedValue(['D1'])

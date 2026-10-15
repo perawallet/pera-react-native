@@ -21,7 +21,6 @@ import {
 import {
     i18nKey,
     isNativeAsset,
-    nativeAssetDecimals,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -62,7 +61,7 @@ const ZERO = new Decimal(0)
 const toAlgo = (microAlgos: Decimal): string =>
     baseUnitsToDisplayUnits(
         microAlgos,
-        nativeAssetDecimals(ALGORAND_CHAIN_ID),
+        algorandDescriptor.nativeAsset.decimals,
     ).toString()
 
 const reserveNoticeFor = (

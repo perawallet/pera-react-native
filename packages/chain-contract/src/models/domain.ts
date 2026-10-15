@@ -264,7 +264,7 @@ export type TransferIntent = {
     note?: string
 }
 
-/** Only meaningful on a chain whose descriptor has `protocol.requiresAssetOptIn`. */
+/** Only built by a chain whose accounts must opt in before they can hold an asset. */
 export type AssetOptInIntent = {
     kind: 'asset-opt-in'
     account: string

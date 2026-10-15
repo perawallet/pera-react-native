@@ -12,10 +12,10 @@
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import {
-    nativeAssetDecimals,
     type AccountState,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
@@ -67,7 +67,7 @@ export const fetchOnChainAccountState = async (
         ...snapshot,
         nativeBalance: baseUnitsToDisplayUnits(
             snapshot.nativeBalanceBaseUnits,
-            nativeAssetDecimals(scope.chainId),
+            getChainDescriptor(scope.chainId).nativeAsset.decimals,
         ),
         ...adapter.summarizeChainState(snapshot.chainState),
         authorityAddress: authorityAddressOf(snapshot.chainState),

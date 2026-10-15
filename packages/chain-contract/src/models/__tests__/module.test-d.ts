@@ -69,12 +69,18 @@ describe('ChainModule', () => {
         >().toEqualTypeOf<ChainContext>()
     })
 
-    it('widens a module with typed endpoints to the default', () => {
-        expectTypeOf<ChainModule<{ algod: string }>>().toExtend<ChainModule>()
+    it('takes no type parameter', () => {
+        // @ts-expect-error ChainModule is not generic
+        assertType<ChainModule<{ algod: string }>>({} as ChainModule)
     })
 })
 
 describe('ChainContext', () => {
+    it('takes no type parameter', () => {
+        // @ts-expect-error ChainContext is not generic
+        assertType<ChainContext<{ algod: string }>>({} as ChainContext)
+    })
+
     it('exposes only the scope, endpoints, Pera backend, timeouts and key store', () => {
         expectTypeOf<keyof ChainContext>().toEqualTypeOf<
             'getScope' | 'getEndpoints' | 'getPeraBackend' | 'timeouts' | 'kms'

@@ -14,26 +14,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     describeNodeError,
-    nodeBackendAdapters,
-    type NodeBackendsAdapter,
-} from '../node-backends'
+    nodeErrorAdapters,
+    type NodeErrorsAdapter,
+} from '../node-errors'
 
 const adapter = (
-    describeError?: NodeBackendsAdapter['describeError'],
+    describeError: NodeErrorsAdapter['describeError'],
     chainId = 'test:chain' as ChainId,
-): NodeBackendsAdapter => ({
-    chainId,
-    backendsFor: () => ({}),
-    describeError,
-})
+): NodeErrorsAdapter => ({ chainId, describeError })
 
 describe('describeNodeError', () => {
-    afterEach(() => nodeBackendAdapters.reset())
+    afterEach(() => nodeErrorAdapters.reset())
 
     it('returns the copy the registered adapter describes', () => {
         const copy = { titleKey: 't', bodyKey: 'b', params: { n: 1n } }
         const describeError = vi.fn(() => copy)
-        nodeBackendAdapters.register(adapter(describeError))
+        nodeErrorAdapters.register(adapter(describeError))
         const error = new Error('boom')
 
         expect(describeNodeError(error)).toBe(copy)
@@ -42,10 +38,10 @@ describe('describeNodeError', () => {
 
     it('returns the copy of whichever chain recognises the error', () => {
         const copy = { titleKey: 't', bodyKey: 'b', params: {} }
-        nodeBackendAdapters.register(
+        nodeErrorAdapters.register(
             adapter(() => undefined, 'first:chain' as ChainId),
         )
-        nodeBackendAdapters.register(
+        nodeErrorAdapters.register(
             adapter(() => copy, 'second:chain' as ChainId),
         )
 
@@ -53,12 +49,6 @@ describe('describeNodeError', () => {
     })
 
     it('returns undefined when no adapter is registered', () => {
-        expect(describeNodeError(new Error('boom'))).toBeUndefined()
-    })
-
-    it('returns undefined when no adapter has describeError', () => {
-        nodeBackendAdapters.register(adapter())
-
         expect(describeNodeError(new Error('boom'))).toBeUndefined()
     })
 })

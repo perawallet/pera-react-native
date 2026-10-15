@@ -11,13 +11,11 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import type { Currency } from '../models'
 
 export const nativeCurrencyFor = (scope: ChainScope): Currency => {
-    const { displayName, nativeAsset } = getProvider().chains.get(
-        scope.chainId,
-    ).descriptor
+    const { displayName, nativeAsset } = getChainDescriptor(scope.chainId)
     return {
         id: nativeAsset.symbol,
         name: displayName,

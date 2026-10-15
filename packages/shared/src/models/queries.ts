@@ -33,7 +33,7 @@ type RequestTarget =
       }
 
 export type RequestConfiguration<TData = unknown> = RequestTarget & {
-    backend: 'algod' | 'indexer' | 'pera' | 'backup'
+    backend: 'pera' | 'backup'
     /**
      * The Pera service this request needs. Read only for `backend: 'pera'`
      * with a scope or network target: a service the scope's configuration does

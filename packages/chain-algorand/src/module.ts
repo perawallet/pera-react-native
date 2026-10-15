@@ -15,6 +15,7 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from './capability-defaults'
+import { setAlgorandChainContext } from './chain-context'
 import { algorandPinnedHosts } from './blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from './blockchain/remote-config'
 import { algorandDescriptor } from './descriptor'
@@ -24,8 +25,12 @@ export const chainModule: ChainModule = {
     descriptor: algorandDescriptor,
     capabilityDefaults: algorandCapabilityDefaults,
     capabilityRestrictions: algorandCapabilityRestrictions,
-    // The adapters are module-level instances that don't read the context yet.
-    register: _ctx => registerChain(),
+    // The adapters are module-level instances the registries dedupe, so the
+    // context goes to a holder instead of into rebuilt adapters.
+    register: ctx => {
+        setAlgorandChainContext(ctx)
+        registerChain()
+    },
     remoteConfigDefaults: algorandRemoteConfigDefaults,
     pinnedHosts: algorandPinnedHosts,
 }
