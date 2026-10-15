@@ -16,6 +16,7 @@ import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import { PWButton, PWText } from '@components/core'
+import { ChainNotice } from '@components/ChainNotice'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { CopyableText } from '@components/CopyableText'
@@ -43,6 +44,48 @@ import { registerPreview } from './registry'
 import { VariantPreview } from './VariantPreview'
 
 import type { GallerySection } from './types'
+
+registerPreview({
+    id: 'comp-chain-notice',
+    render: () => (
+        <VariantPreview
+            items={[
+                {
+                    label: 'warning / pending',
+                    node: (
+                        <ChainNotice
+                            kind='warning'
+                            titleKey='transactions.notice.pending'
+                            params={{ since: 'Oct 15, 2026, 10:42 AM' }}
+                        />
+                    ),
+                },
+                {
+                    label: 'warning / replaced',
+                    node: (
+                        <ChainNotice
+                            kind='warning'
+                            titleKey='transactions.notice.replaced'
+                        />
+                    ),
+                },
+                {
+                    label: 'error / failed with action',
+                    node: (
+                        <ChainNotice
+                            kind='error'
+                            titleKey='transactions.notice.failed'
+                            action={{
+                                labelKey: 'common.retry.label',
+                                onPress: () => undefined,
+                            }}
+                        />
+                    ),
+                },
+            ]}
+        />
+    ),
+})
 
 registerPreview({
     id: 'comp-contact-avatar',
@@ -750,6 +793,11 @@ export const getSharedComponentSections = (): GallerySection[] => [
     {
         title: 'Shared — display',
         items: [
+            {
+                id: 'comp-chain-notice',
+                label: 'ChainNotice',
+                launch: { kind: 'preview' },
+            },
             {
                 id: 'comp-contact-avatar',
                 label: 'ContactAvatar',

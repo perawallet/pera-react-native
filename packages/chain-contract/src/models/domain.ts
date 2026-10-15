@@ -171,6 +171,16 @@ export interface TransactionSummary {
     /** Shown instead of `amount` when set. */
     balanceChanges?: BalanceChange[]
     icon: TransactionIconKind
+    /** Absent on a confirmed transaction with nothing chain-specific to flag. */
+    notice?: TransactionNotice
+}
+
+/** A chain-specific state the row and detail must flag, such as pending, failed or replaced. */
+export interface TransactionNotice {
+    kind: 'warning' | 'error'
+    title: LocalizedText
+    /** Unix ms. The UI formats it into the title's `since` param. */
+    since?: number
 }
 
 export type ChainTransactionData =

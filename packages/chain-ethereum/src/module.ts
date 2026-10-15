@@ -11,6 +11,7 @@
  */
 
 import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
+import { TRANSACTION_STATUS_NOTICE_KEYS } from '@perawallet/wallet-core-transactions'
 import { EVM_ERROR_I18N_KEYS } from './blockchain'
 import { ethereumCapabilityDefaults } from './capability-defaults'
 import { ethereumDescriptor } from './descriptor'
@@ -31,6 +32,7 @@ export const ethereumModule: ChainModule = {
             ...ETHEREUM_TRANSFER_TITLE_KEYS,
             ...Object.values(ETHEREUM_REVIEW_TITLE_KEYS),
             ...ETHEREUM_HISTORY_SUMMARY_KEYS,
+            ...TRANSACTION_STATUS_NOTICE_KEYS,
         ]),
     ],
 }

@@ -82,6 +82,19 @@ const none = (
     icon,
 })
 
+const sentHalfAlgo: TransactionSummary = {
+    kind: 'transfer',
+    title: key('send'),
+    direction: 'out',
+    icon: 'send',
+    counterparty: B,
+    amount: {
+        assetRef: ALGO,
+        value: new Decimal(500_000),
+        display: ALGO_DISPLAY,
+    },
+}
+
 // Every expected summary is a literal, so a change to the row logic shows up
 // as a diff here rather than being recomputed by the code under test.
 export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
@@ -431,5 +444,48 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                     display: ALGO_DISPLAY,
                 },
             },
+        },
+        {
+            name: 'pending payment',
+            account: A,
+            item: item({ amount: new Decimal(500_000), status: 'pending' }),
+            summary: {
+                ...sentHalfAlgo,
+                notice: {
+                    kind: 'warning',
+                    title: { key: 'transactions.notice.pending' },
+                    since: 1_700_000_000_000,
+                },
+            },
+        },
+        {
+            name: 'failed payment',
+            account: A,
+            item: item({ amount: new Decimal(500_000), status: 'failed' }),
+            summary: {
+                ...sentHalfAlgo,
+                notice: {
+                    kind: 'error',
+                    title: { key: 'transactions.notice.failed' },
+                },
+            },
+        },
+        {
+            name: 'replaced payment',
+            account: A,
+            item: item({ amount: new Decimal(500_000), status: 'replaced' }),
+            summary: {
+                ...sentHalfAlgo,
+                notice: {
+                    kind: 'warning',
+                    title: { key: 'transactions.notice.replaced' },
+                },
+            },
+        },
+        {
+            name: 'payment confirmed with an explicit status',
+            account: A,
+            item: item({ amount: new Decimal(500_000), status: 'confirmed' }),
+            summary: sentHalfAlgo,
         },
     ]

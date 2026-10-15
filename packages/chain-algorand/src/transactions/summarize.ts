@@ -26,6 +26,7 @@ import {
 import {
     getDebitedAddress,
     isOutgoingFor,
+    transactionStatusNotice,
     type TransactionHistoryItem,
     type TransactionSwapGroupDetail,
 } from '@perawallet/wallet-core-transactions'
@@ -193,12 +194,17 @@ export const summarizeAlgorandHistoryItem = (
         ? swapSummary(item.swapGroupDetail)
         : classifiedSummary(item, address)
     const interpretedTitle = item.interpretedMeaning?.title
-    return interpretedTitle
-        ? {
-              ...summary,
-              title: text(INTERPRETED_TITLE, { title: interpretedTitle }),
-          }
-        : summary
+    const notice = transactionStatusNotice(
+        item.status,
+        item.roundTime > 0 ? item.roundTime * 1000 : undefined,
+    )
+    return {
+        ...summary,
+        ...(interpretedTitle
+            ? { title: text(INTERPRETED_TITLE, { title: interpretedTitle }) }
+            : {}),
+        ...(notice && { notice }),
+    }
 }
 
 const classifiedSummary = (

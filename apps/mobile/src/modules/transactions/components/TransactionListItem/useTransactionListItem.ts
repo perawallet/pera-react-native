@@ -28,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
+import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
 import { transactionIconName } from '@components/TransactionIcon'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
@@ -56,6 +57,8 @@ export type UseTransactionListItemResult = {
      * broadcast but not yet definitively resolved.
      */
     isPendingVerifying: boolean
+    /** Set when the chain flags a non-final status (pending, failed, replaced). */
+    notice: Nullable<ChainNoticeContent>
     handlePress: () => void
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
@@ -96,6 +99,8 @@ export const useTransactionListItem = ({
         return summary.counterparty ? counterpartyName : null
     }, [render, summary, counterpartyName])
 
+    const notice = useMemo(() => chainNoticeOf(summary.notice), [summary])
+
     const allAmounts = useMemo(() => summaryAmountsOf(summary), [summary])
     const visibleAmounts = useMemo(
         () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),
@@ -135,6 +140,7 @@ export const useTransactionListItem = ({
             allAmounts.length - MAX_VISIBLE_AMOUNTS,
         ),
         isPendingVerifying: openTxIds.has(transaction.id),
+        notice,
         handlePress,
         handleLongPress,
     }

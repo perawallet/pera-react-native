@@ -16,6 +16,7 @@ import type {
     ChainScope,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import { transactionStatusNotice } from '@perawallet/wallet-core-transactions'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { fromCaip19, InvalidCaip19Error } from '../blockchain/utils/caip19'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
@@ -170,9 +171,15 @@ export const summarizeEthereumHistoryItem = (
     item: EvmHistoryItem,
     address: string,
     scope: ChainScope,
-): TransactionSummary =>
-    item.kind === 'withdrawal'
-        ? summarizeWithdrawal(item, scope)
-        : (summarizeNativeTransfer(item, address) ??
-          summarizeTokenTransfer(item, address) ??
-          summarizeContractCall(item, address, scope))
+): TransactionSummary => {
+    const summary =
+        item.kind === 'withdrawal'
+            ? summarizeWithdrawal(item, scope)
+            : (summarizeNativeTransfer(item, address) ??
+              summarizeTokenTransfer(item, address) ??
+              summarizeContractCall(item, address, scope))
+    const notice = transactionStatusNotice(
+        item.status === 'success' ? 'confirmed' : 'failed',
+    )
+    return notice ? { ...summary, notice } : summary
+}

@@ -235,6 +235,33 @@ describe('useTransactionListItem', () => {
         })
     })
 
+    describe('status notices', () => {
+        it.each([
+            ['pending payment', 'warning', 'transactions.notice.pending'],
+            ['failed payment', 'error', 'transactions.notice.failed'],
+            ['replaced payment', 'warning', 'transactions.notice.replaced'],
+        ] as const)('flags a %s', (name, kind, titleKey) => {
+            expect(renderRow(golden(name)).notice).toMatchObject({
+                kind,
+                titleKey,
+            })
+        })
+
+        it('says since when a pending row has been waiting', () => {
+            expect(
+                renderRow(golden('pending payment')).notice?.params?.since,
+            ).toBeTruthy()
+        })
+
+        it('has no notice on a confirmed row', () => {
+            expect(renderRow(golden('payment sent')).notice).toBeNull()
+            expect(
+                renderRow(golden('payment confirmed with an explicit status'))
+                    .notice,
+            ).toBeNull()
+        })
+    })
+
     describe('interactions', () => {
         it('passes the transaction to onPress', () => {
             const onPress = vi.fn()

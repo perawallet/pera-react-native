@@ -15,6 +15,7 @@ import { useEffect } from 'react'
 import { trackScreen, AnalyticsScreenName } from '@analytics'
 
 import { PWButton, PWScreen } from '@components/core'
+import { ChainNotice } from '@components/ChainNotice'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -39,6 +40,7 @@ export const TransactionDetailsScreen = () => {
         groupTransactions,
         currentTransactionId,
         isExternal,
+        notice,
         handleTransactionPress,
         handleRelatedTransactionPress,
         handleRetry,
@@ -47,6 +49,12 @@ export const TransactionDetailsScreen = () => {
     if (renderState.kind === 'content') {
         return (
             <PWScreen testID='transaction_details_screen'>
+                {notice && (
+                    <ChainNotice
+                        {...notice}
+                        testID='transaction_details_notice'
+                    />
+                )}
                 <TransactionDetailBody
                     transaction={renderState.transaction}
                     onRelatedTransactionPress={handleRelatedTransactionPress}

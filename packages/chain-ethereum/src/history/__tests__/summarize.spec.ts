@@ -97,6 +97,25 @@ describe('summarizeEthereumHistoryItem', () => {
         expect(summary.kind).toBe('transfer')
     })
 
+    it('flags a failed row with an error notice', () => {
+        const summary = summarize(
+            row({ from: ME, to: PEER, value: '5', status: 'failed' }),
+        )
+
+        expect(summary.notice).toEqual({
+            kind: 'error',
+            title: { key: 'transactions.notice.failed' },
+        })
+    })
+
+    it('carries no notice on a successful row', () => {
+        const summary = summarize(
+            row({ from: ME, to: PEER, value: '5', status: 'success' }),
+        )
+
+        expect(summary.notice).toBeUndefined()
+    })
+
     it('reads a direct token transfer call as an outgoing token transfer', () => {
         const summary = summarize(
             row({

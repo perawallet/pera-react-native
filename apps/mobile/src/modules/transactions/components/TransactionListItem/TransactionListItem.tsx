@@ -12,6 +12,7 @@
 
 import { memo } from 'react'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
+import { ChainNotice } from '@components/ChainNotice'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
@@ -40,6 +41,7 @@ const TransactionListItemView = ({
         amounts,
         amountsOverflowCount,
         isPendingVerifying,
+        notice,
         handlePress,
         handleLongPress,
     } = useTransactionListItem({
@@ -116,6 +118,13 @@ const TransactionListItemView = ({
                     >
                         {t('transactions.common.pending_verifying')}
                     </PWText>
+                )}
+                {notice && (
+                    <ChainNotice
+                        {...notice}
+                        style={styles.notice}
+                        testID={`transaction_row_notice_${transaction.id}`}
+                    />
                 )}
             </PWView>
         </PWListItemLayout>

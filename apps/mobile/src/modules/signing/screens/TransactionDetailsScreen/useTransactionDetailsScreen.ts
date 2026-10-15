@@ -20,6 +20,10 @@ import {
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import {
+    chainAccountOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
     readAlgorandNative,
     toAlgorandNative,
     useTransactionDetailQuery,
@@ -30,8 +34,15 @@ import {
     LEGACY_CHAIN_ID,
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
-import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
-import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
+import {
+    getNetworkErrorMessageKeys,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import {
+    mapHistoryItemToDisplayableTransaction,
+    summarizeHistoryItem,
+} from '@perawallet/wallet-core-transactions'
+import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
@@ -56,6 +67,8 @@ type UseTransactionDetailsScreenResult = {
     groupTransactions: AlgorandTransactionView[]
     currentTransactionId: string
     isExternal: boolean
+    /** Only a history row carries a status, so a signing-flow transaction has none. */
+    notice: Nullable<ChainNoticeContent>
     handleTransactionPress: (tx: AlgorandTransactionView) => void
     handleRelatedTransactionPress: (related: TransactionNative) => void
     handleRetry: () => void
@@ -100,6 +113,24 @@ export const useTransactionDetailsScreen =
                     : null,
             [historyTransaction],
         )
+        const account = useSelectedAccount()
+        const address = account
+            ? (chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '')
+            : ''
+        const notice = useMemo(
+            () =>
+                historyTransaction
+                    ? chainNoticeOf(
+                          summarizeHistoryItem(
+                              historyTransaction,
+                              address,
+                              LEGACY_CHAIN_ID,
+                          ).notice,
+                      )
+                    : null,
+            [historyTransaction, address],
+        )
+
         const transaction = useMemo((): TransactionNative | null => {
             if (paramTransaction) {
                 return paramTransaction
@@ -178,6 +209,7 @@ export const useTransactionDetailsScreen =
                 transactionId ??
                 '',
             isExternal: isExternal ?? false,
+            notice,
             handleTransactionPress,
             handleRelatedTransactionPress,
             handleRetry,

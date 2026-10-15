@@ -311,4 +311,54 @@ describe('useTransactionDetailsScreen', () => {
             groupId: 'GROUP1',
         })
     })
+
+    describe('status notice', () => {
+        it.each([
+            ['pending', 'warning', 'transactions.notice.pending'],
+            ['failed', 'error', 'transactions.notice.failed'],
+            ['replaced', 'warning', 'transactions.notice.replaced'],
+        ] as const)('flags a %s history row', (status, kind, titleKey) => {
+            routeParams.current = {
+                transactionId: 'TX123',
+                historyTransaction: { ...historyItem, status },
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.notice).toMatchObject({
+                kind,
+                titleKey,
+            })
+        })
+
+        it('says since when a pending row has been waiting', () => {
+            routeParams.current = {
+                transactionId: 'TX123',
+                historyTransaction: { ...historyItem, status: 'pending' },
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.notice?.params?.since).toBeTruthy()
+        })
+
+        it('has none for a confirmed history row', () => {
+            routeParams.current = {
+                transactionId: 'TX123',
+                historyTransaction: historyItem,
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.notice).toBeNull()
+        })
+
+        it('has none for a transaction opened outside history', () => {
+            routeParams.current = { transactionId: 'TX123' }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.notice).toBeNull()
+        })
+    })
 })
