@@ -44,7 +44,7 @@ const registerFakeMessageSigner = () => {
     messageSignerChainAdapters.reset()
     messageSignerChainAdapters.register({
         chainId: 'algorand',
-        buildSiwxAuthData,
+        authData: { buildSiwxAuthData },
     } as unknown as MessageSignerChainAdapter)
 }
 

@@ -22,6 +22,7 @@ import { CannotSignError } from '../pipeline/errors'
 import {
     arbitraryDataMessageRequest,
     authDataMessageRequest,
+    authDataSignerFor,
     buildSiwxAuthData,
     canSignMessage,
     isAuthDataWirePayload,
@@ -52,22 +53,22 @@ describe('message signer wrappers', () => {
             authData: {} as never,
             metadata: { scope: 1, encoding: 'base64' },
         }
-        const overrides: Partial<MessageSignerChainAdapter> = {
+        const authData = {
             isAuthDataWirePayload: vi.fn(() => true),
             parseAuthDataWireRequest: vi.fn(() => payload),
             buildSiwxAuthData: vi.fn(() => payload),
         }
-        registerFakeMessageSignerAdapter(overrides)
+        registerFakeMessageSignerAdapter({ authData })
 
         expect(isAuthDataWirePayload(CHAIN, { a: 1 })).toBe(true)
         expect(parseAuthDataWireRequest(CHAIN, { b: 2 })).toBe(payload)
         expect(buildSiwxAuthData(CHAIN, siwxArgs)).toBe(payload)
 
-        expect(overrides.isAuthDataWirePayload).toHaveBeenCalledWith({ a: 1 })
-        expect(overrides.parseAuthDataWireRequest).toHaveBeenCalledWith({
+        expect(authData.isAuthDataWirePayload).toHaveBeenCalledWith({ a: 1 })
+        expect(authData.parseAuthDataWireRequest).toHaveBeenCalledWith({
             b: 2,
         })
-        expect(overrides.buildSiwxAuthData).toHaveBeenCalledWith(siwxArgs)
+        expect(authData.buildSiwxAuthData).toHaveBeenCalledWith(siwxArgs)
     })
 
     it('throw ChainAdapterNotRegisteredError when nothing is registered', () => {
@@ -82,6 +83,43 @@ describe('message signer wrappers', () => {
         expect(() => buildSiwxAuthData(CHAIN, siwxArgs)).toThrow(
             ChainAdapterNotRegisteredError,
         )
+    })
+})
+
+describe('a chain whose message signer signs no auth data', () => {
+    beforeEach(() => {
+        registerFakeMessageSignerAdapter({ authData: null })
+    })
+
+    it('has no auth-data wire payload', () => {
+        expect(isAuthDataWirePayload(CHAIN, { a: 1 })).toBe(false)
+    })
+
+    it('refuses to parse or build auth data', () => {
+        expect(() => parseAuthDataWireRequest(CHAIN, {})).toThrow(
+            `chain ${CHAIN} has no auth-data signer`,
+        )
+        expect(() => buildSiwxAuthData(CHAIN, siwxArgs)).toThrow(
+            `chain ${CHAIN} has no auth-data signer`,
+        )
+    })
+
+    it('refuses an auth-data signer with a CannotSignError', () => {
+        expect(() => authDataSignerFor(CHAIN, 'ADDR')).toThrow(CannotSignError)
+    })
+})
+
+describe('authDataSignerFor', () => {
+    it("returns the chain's auth-data leg", () => {
+        const adapter = registerFakeMessageSignerAdapter()
+
+        expect(authDataSignerFor(CHAIN, 'ADDR')).toBe(adapter.authData)
+    })
+
+    it('refuses with a CannotSignError when no signer is registered', () => {
+        messageSignerChainAdapters.reset()
+
+        expect(() => authDataSignerFor(CHAIN, 'ADDR')).toThrow(CannotSignError)
     })
 })
 
@@ -118,6 +156,8 @@ describe('canSignMessage and signsMessageVerifiably', () => {
         registerFakeMessageSignerAdapter(overrides)
 
         expect(canSignMessage(CHAIN, account, 'authData')).toBe(true)
+        expect(canSignMessage(CHAIN, account, 'typedData')).toBe(true)
+        expect(signsMessageVerifiably(CHAIN, account, 'message')).toBe(false)
         expect(signsMessageVerifiably(CHAIN, account, 'arbitraryData')).toBe(
             false,
         )

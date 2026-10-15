@@ -66,14 +66,19 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
     }
 
     if (isAuthDataRequest(req)) {
+        const chainId = chainIdOfSignRequest(req)
+        const authData = messageSignerChainAdapters.get(chainId).authData
         return {
             type: 'auth-data',
-            parsed: messageSignerChainAdapters
-                .get(chainIdOfSignRequest(req))
-                .parseAuthDataForDisplay(
-                    req.authData.data,
-                    req.metadata.encoding,
-                ),
+            parsed: authData
+                ? authData.parseAuthDataForDisplay(
+                      req.authData.data,
+                      req.metadata.encoding,
+                  )
+                : {
+                      type: 'error',
+                      message: `chain ${chainId} has no auth-data signer`,
+                  },
         }
     }
 
