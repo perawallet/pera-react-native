@@ -37,7 +37,7 @@ type UseAlgorandTransactionDetailResult = {
     isError: boolean
     isLoading: boolean
     error: Nullable<Error>
-    refetch: () => Promise<unknown>
+    refetch: () => unknown
 }
 
 /**

@@ -15,8 +15,12 @@ import { z } from 'zod'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
+type NoteForm = { note?: string }
+
 /** Accepts any note when the chain declares no limit. */
-export const useNoteSchema = (chainId: ChainId): z.ZodType<{ note?: string }> =>
+export const useNoteSchema = (
+    chainId: ChainId,
+): z.ZodType<NoteForm, NoteForm> =>
     useMemo(() => {
         const { maxNoteBytes } =
             getProvider().chains.get(chainId).descriptor.protocol
