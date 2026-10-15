@@ -21,7 +21,7 @@ import {
     type DeeplinkChainAdapter,
     type DeeplinkParseResult,
 } from '@perawallet/wallet-core-deeplinks'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { isValidAlgorandAddress } from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import {
     algorandApplicationExplorerUrl,
