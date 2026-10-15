@@ -11,7 +11,12 @@
  */
 
 import { Address, Transaction, TransactionType } from 'algosdk'
-import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    PeraTransaction,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import type { AlgorandTransactionPayload } from '../planner'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
 // hand-built literals with SDK-shaped fields are exactly what let
@@ -84,3 +89,16 @@ export const makeUnsignedAlgorandTransaction = (): UnsignedTransaction => ({
     },
     chainData: { family: 'algorand' },
 })
+
+export const asUnsignedAlgorandTransaction = (
+    transaction: PeraTransaction,
+    payload: Omit<AlgorandTransactionPayload, 'transaction'> = {},
+): UnsignedTransaction => ({
+    ...makeUnsignedAlgorandTransaction(),
+    payload: { transaction, ...payload },
+})
+
+/** The genesis a chain-neutral payload must carry for the mainnet scope to read it. */
+export const MAINNET_GENESIS_HASH = decodeFromBase64(
+    'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+)

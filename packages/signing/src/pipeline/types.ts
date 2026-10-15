@@ -53,6 +53,15 @@ export const isUnsignedTransactionsData = (
     data: TransactionSignableData,
 ): data is UnsignedTransactionsSignableData => 'chainData' in data
 
+/**
+ * Keyed by the signer its planner names, so a rekey isn't followed again. An
+ * Algorand group is keyed by the account it signs for, whose rekey is followed once.
+ */
+export const isKeyedByPlanner = (data: SignableData): boolean =>
+    data.type === 'transactions' &&
+    isUnsignedTransactionsData(data) &&
+    data.chainData.algorand === undefined
+
 export interface ArbitraryDataSignableData {
     type: 'arbitrary-data'
     data: PeraArbitraryDataMessage[]

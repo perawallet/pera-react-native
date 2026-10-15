@@ -12,7 +12,13 @@
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createLocalKeyStrategy } from '../createLocalKeyStrategy'
-import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedAlgorandTransaction,
+} from '../../__tests__/transactions'
 import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
@@ -146,7 +152,53 @@ describe('createLocalKeyStrategy', () => {
     })
 
     describe('sign - transactions', () => {
-        test('refuses chain-neutral transactions for good, without signing anything', async () => {
+        test('signs a chain-neutral group as the Algorand transactions its payloads carry', async () => {
+            const sender = makeTestAddress(1)
+            const transactions = [1n, 2n].map(amount =>
+                makeTestPaymentTx(sender, {
+                    receiver: makeTestAddress(2),
+                    amount,
+                    genesisHash: MAINNET_GENESIS_HASH,
+                }),
+            )
+            const algorandGroup = {
+                ...makeTransactionGroup(),
+                data: {
+                    type: 'transactions',
+                    transactions,
+                    indicesToSign: [1],
+                },
+            } as AnalyzedSignableGroup
+            const neutralGroup = {
+                ...makeTransactionGroup(),
+                data: {
+                    type: 'transactions',
+                    transactions: transactions.map(transaction =>
+                        asUnsignedAlgorandTransaction(transaction),
+                    ),
+                    chainData: { algorand: { indicesToSign: [1] } },
+                },
+            } as AnalyzedSignableGroup
+
+            const expected = await makeStrategy().sign(
+                algorandGroup,
+                standaloneAccount,
+            )
+            const result = await makeStrategy().sign(
+                neutralGroup,
+                standaloneAccount,
+            )
+
+            expect(result).toEqual(expected)
+            expect(signTransactions).toHaveBeenLastCalledWith(
+                transactions,
+                [1],
+                standaloneAccount,
+                ALGORAND_MAINNET,
+            )
+        })
+
+        test('refuses for good a chain-neutral payload it cannot read, without signing anything', async () => {
             const group = {
                 ...makeTransactionGroup(),
                 data: {

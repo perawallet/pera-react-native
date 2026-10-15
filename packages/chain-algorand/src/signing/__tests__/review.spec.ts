@@ -51,6 +51,7 @@ import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwor
 import { generateMultisigAddress } from '../../multisig/address'
 import {
     TEST_SUGGESTED_PARAMS,
+    asUnsignedAlgorandTransaction,
     makeUnsignedAlgorandTransaction,
     makeTestAddress,
     makeTestAssetTransferTx,
@@ -324,6 +325,27 @@ describe('algorandReviewerAdapter review parts', () => {
         const group = transactionsGroup([KINDS.payment], {
             rawTransactionsBase64: [rawOf(KINDS.assetTransfer)],
         })
+
+        await expect(
+            algorandReviewerAdapter.decoder.decode(group, context),
+        ).rejects.toBeInstanceOf(TransactionRoundTripError)
+    })
+
+    it("refuses a chain-neutral group whose request bytes don't round-trip to its payloads", async () => {
+        const group = {
+            signerAddress: WALLET.toString(),
+            source: { type: 'walletconnect' },
+            data: {
+                type: 'transactions',
+                transactions: [asUnsignedAlgorandTransaction(KINDS.payment)],
+                chainData: {
+                    algorand: {
+                        indicesToSign: [0],
+                        rawTransactionsBase64: [rawOf(KINDS.assetTransfer)],
+                    },
+                },
+            },
+        } as unknown as SignableGroup
 
         await expect(
             algorandReviewerAdapter.decoder.decode(group, context),

@@ -15,7 +15,7 @@ import { renderHook } from '@testing-library/react'
 import type {
     ChainId,
     ChainScope,
-    PeraDisplayableTransaction,
+    TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
 import { useSigningPipeline } from '../useSigningPipeline'
@@ -29,20 +29,24 @@ vi.mock('../useGroupSimulationQuery', () => ({
     useGroupSimulationQuery: vi.fn(),
 }))
 
-const payment = { txType: 'pay' } as unknown as PeraDisplayableTransaction
-const appCall = { txType: 'appl' } as unknown as PeraDisplayableTransaction
+const payment = { txType: 'pay' } as unknown as TransactionNative
+const appCall = { txType: 'appl' } as unknown as TransactionNative
 const innerTxn = {
     txType: 'pay',
     id: 'inner',
-} as unknown as PeraDisplayableTransaction
+} as unknown as TransactionNative
 
 const SIGNERS = new Set(['ADDR_A'])
 
-const mockPipeline = (allTransactions: PeraDisplayableTransaction[]) => {
+const mockPipeline = (allTransactions: TransactionNative[]) => {
     vi.mocked(useSigningPipeline).mockReturnValue({
         allTransactions,
         signableAddresses: SIGNERS,
-        currentRequest: { id: 'req-1', txs: allTransactions },
+        currentRequest: {
+            id: 'req-1',
+            type: 'transactions',
+            txs: allTransactions,
+        },
     } as unknown as ReturnType<typeof useSigningPipeline>)
 }
 
@@ -92,6 +96,30 @@ describe('useImpactTransactions', () => {
             expect.objectContaining({ enabled: true }),
         )
         expect(result.current.transactions).toEqual([appCall, innerTxn])
+    })
+
+    test("simulates a chain-neutral request's full group from its Algorand group facts", () => {
+        const signable = { scope: SCOPE, payload: {}, chainData: {} }
+        const groupContext = [
+            signable,
+            { scope: SCOPE, payload: {}, chainData: {} },
+        ]
+        vi.mocked(useSigningPipeline).mockReturnValue({
+            allTransactions: [appCall],
+            signableAddresses: SIGNERS,
+            currentRequest: {
+                id: 'req-neutral',
+                type: 'transactions',
+                txs: [signable],
+                chainData: { algorand: { groupContext } },
+            },
+        } as unknown as ReturnType<typeof useSigningPipeline>)
+
+        renderHook(() => useImpactTransactions(SCOPE))
+
+        expect(useGroupSimulationQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ groupTxs: groupContext, enabled: true }),
+        )
     })
 
     test('flags isSimulating while an app-call group is still fetching', () => {

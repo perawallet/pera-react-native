@@ -13,29 +13,22 @@
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
-import { bytesToHex, toBytes } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-import { useMemo } from 'react'
 
 type GroupPreviewItemProps = {
-    transactions: SingleTransactionItem[]
+    transactionCount: number
+    /** Hex. */
+    groupId?: string
     onPress: () => void
 }
 
 export const GroupPreviewItem = ({
-    transactions,
+    transactionCount,
+    groupId,
     onPress,
 }: GroupPreviewItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    // The signing store persists through the same serializer as the query
-    // cache, so a group written before rehydrates as a plain object
-    // rather than bytes — truthy, so `?? ''` does not catch it.
-    const groupId = useMemo(() => {
-        const group = toBytes(transactions.at(0)?.transaction.group)
-        return group ? bytesToHex(group).slice(0, 10) : ''
-    }, [transactions])
 
     return (
         <PWTouchableOpacity
@@ -57,7 +50,7 @@ export const GroupPreviewItem = ({
                         style={styles.groupPreviewSubtitle}
                     >
                         {t('transactions.group.transactions_count', {
-                            count: transactions.length,
+                            count: transactionCount,
                         })}
                     </PWText>
                     <PWText
@@ -65,7 +58,7 @@ export const GroupPreviewItem = ({
                         style={styles.groupPreviewSubtitle}
                     >
                         {t('transactions.group.group_id', {
-                            groupId,
+                            groupId: groupId?.slice(0, 10) ?? '',
                         })}
                     </PWText>
                 </PWView>

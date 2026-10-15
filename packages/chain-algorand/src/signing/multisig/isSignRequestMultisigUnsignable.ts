@@ -17,10 +17,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     isTransactionRequest,
-    isUnsignedTransactionRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { algorandAddressOf } from '../../accounts/vocabulary'
+import { algorandRequestOf } from '../algorandRequest'
 
 /**
  * True iff `request` is a transaction sign request in which ANY transaction's
@@ -40,12 +40,13 @@ export const isSignRequestMultisigUnsignable = (
 ): boolean => {
     if (request.sourceType === 'multisig-cosign') return false
     if (!isTransactionRequest(request)) return false
-    if (isUnsignedTransactionRequest(request)) return false
+    const algorand = algorandRequestOf(request)
+    if (!algorand) return false
 
     const signerAddresses = new Set<string>()
-    request.txs.forEach((tx, index) => {
+    algorand.txs.forEach((tx, index) => {
         const address =
-            request.signerOverrides?.get(index) ?? tx.sender?.toString?.()
+            algorand.signerOverrides?.get(index) ?? tx.sender?.toString?.()
         if (address) signerAddresses.add(address)
     })
 

@@ -12,11 +12,11 @@
 
 import { useCallback } from 'react'
 import { PWFlatList, PWScreen, PWView } from '@components/core'
-import { TransactionPreview } from '@modules/algorand'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
 import { GroupDetailHeader } from './GroupDetailHeader'
 import { useStyles } from './styles'
 import { useGroupDetailScreen } from './useGroupDetailScreen'
+import { TransactionPreviewRow } from '../../transactions/TransactionPreviewRow'
 
 export const GroupDetailScreen = () => {
     const styles = useStyles()
@@ -25,7 +25,7 @@ export const GroupDetailScreen = () => {
 
     const renderItem = useCallback(
         ({ item }: { item: SingleTransactionItem }) => (
-            <TransactionPreview
+            <TransactionPreviewRow
                 transaction={item.transaction}
                 isExternal={item.isExternal}
                 onPress={() => handleTransactionPress(item)}

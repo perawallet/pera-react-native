@@ -115,31 +115,39 @@ describe('useFeeAdjustment', () => {
         expect(second.result.current.adjustedFee.toString()).toBe('0.003')
     })
 
-    it('never reports an adjustment for a chain-neutral request, whose fees are not Algorand fees', () => {
-        const neutral = {
-            scope: { chainId: 'ethereum', networkId: 'mainnet' },
-            payload: {},
+    it("matches a chain-neutral request's slot by the Algorand transaction its payload carries", () => {
+        const neutral = (transaction: PeraTransaction) => ({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            payload: { transaction },
             summary: {},
-            chainData: { family: 'evm' },
-        }
+            chainData: { family: 'algorand' },
+        })
+        const groupContext = [neutral(rawTx0), neutral(rawTx1)]
         mockPipeline({
             feeAdjustments: [
                 {
-                    index: 0,
+                    index: 1,
                     originalFee: 1000n,
                     adjustedFee: 3000n,
                     reason: 'quantum-minimum',
                 },
             ],
-            currentRequest: { type: 'transactions', txs: [neutral] },
+            currentRequest: {
+                type: 'transactions',
+                txs: [groupContext[1]],
+                chainData: { algorand: { groupContext } },
+            },
         })
 
-        const { result } = renderHook(() =>
-            useFeeAdjustment(
-                buildDisplayable(neutral as unknown as PeraTransaction),
-            ),
+        const first = renderHook(() =>
+            useFeeAdjustment(buildDisplayable(rawTx0)),
+        )
+        const second = renderHook(() =>
+            useFeeAdjustment(buildDisplayable(rawTx1)),
         )
 
-        expect(result.current.isAdjusted).toBe(false)
+        expect(first.result.current.isAdjusted).toBe(false)
+        expect(second.result.current.isAdjusted).toBe(true)
+        expect(second.result.current.adjustedFee.toString()).toBe('0.003')
     })
 })

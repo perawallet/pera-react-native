@@ -18,7 +18,13 @@ import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { multisigAccount } from '../../../__tests__/algorandAccounts'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
 import { isSignRequestMultisigUnsignable } from '../isSignRequestMultisigUnsignable'
-import { makeUnsignedAlgorandTransaction } from '../../__tests__/transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedAlgorandTransaction,
+} from '../../__tests__/transactions'
 
 // Only the account-capability predicate is mocked; the request-type guard and
 // signer resolution use their real implementations against the fixtures below.
@@ -80,15 +86,70 @@ describe('isSignRequestMultisigUnsignable', () => {
         expect(isMultisigUnsignable).not.toHaveBeenCalled()
     })
 
-    it('returns false for a chain-neutral request, which no Algorand multisig signs', () => {
-        vi.mocked(isMultisigUnsignable).mockReturnValue(true)
+    describe('on a chain-neutral request', () => {
+        const SENDER = makeTestAddress(5)
+        const neutralAccounts = [multisigAccount(SENDER.toString(), null)]
+        const neutralRequest = (overrides: object = {}): SignRequest =>
+            txRequest({
+                txs: [
+                    asUnsignedAlgorandTransaction(
+                        makeTestPaymentTx(SENDER, {
+                            receiver: makeTestAddress(6),
+                            genesisHash: MAINNET_GENESIS_HASH,
+                        }),
+                    ),
+                ],
+                ...overrides,
+            })
 
-        expect(
-            isSignRequestMultisigUnsignable(
-                txRequest({ txs: [makeUnsignedAlgorandTransaction()] }),
-                accounts,
-            ),
-        ).toBe(false)
+        it('judges the multisig its Algorand payload is sent from', () => {
+            vi.mocked(isMultisigUnsignable).mockReturnValue(true)
+
+            expect(
+                isSignRequestMultisigUnsignable(
+                    neutralRequest(),
+                    neutralAccounts,
+                ),
+            ).toBe(true)
+            expect(isMultisigUnsignable).toHaveBeenCalledWith(
+                neutralAccounts[0],
+                neutralAccounts,
+                LEGACY_CHAIN_ID,
+            )
+        })
+
+        it('judges the signer its Algorand group facts name instead', () => {
+            vi.mocked(isMultisigUnsignable).mockReturnValue(true)
+
+            expect(
+                isSignRequestMultisigUnsignable(
+                    neutralRequest({
+                        chainData: {
+                            algorand: {
+                                signerOverrides: new Map([[0, SIGNER]]),
+                            },
+                        },
+                    }),
+                    [...neutralAccounts, ...accounts],
+                ),
+            ).toBe(true)
+            expect(isMultisigUnsignable).toHaveBeenCalledWith(
+                accounts[0],
+                [...neutralAccounts, ...accounts],
+                LEGACY_CHAIN_ID,
+            )
+        })
+
+        it('returns false for a payload it cannot read, which the reviewer refuses', () => {
+            vi.mocked(isMultisigUnsignable).mockReturnValue(true)
+
+            expect(
+                isSignRequestMultisigUnsignable(
+                    txRequest({ txs: [makeUnsignedAlgorandTransaction()] }),
+                    accounts,
+                ),
+            ).toBe(false)
+        })
     })
 
     it('returns false for a non-transaction request', () => {

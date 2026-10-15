@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     BalanceImpact,
     BalanceImpactCreatedAsset,
     BalanceImpactDelta,
 } from '@perawallet/wallet-core-signing'
+import type { AlgorandTransactionView } from '../blockchain'
 
 /** Asset id used for the native ALGO balance in {@link BalanceImpact} deltas. */
 export const ALGO_BALANCE_IMPACT_ASSET_ID = '0'
@@ -41,7 +41,7 @@ const toBig = (value: bigint | number | undefined): bigint => {
  * typically the pipeline's signable addresses.
  */
 export const computeBalanceImpact = (
-    transactions: PeraDisplayableTransaction[],
+    transactions: AlgorandTransactionView[],
     userAddresses: Set<string>,
 ): BalanceImpact => {
     const net = new Map<string, bigint>()

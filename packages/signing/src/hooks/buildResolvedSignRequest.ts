@@ -16,6 +16,7 @@ import {
     isArbitraryDataRequest,
     isAuthDataRequest,
     isTransactionRequest,
+    reviewGroupOf,
 } from '../models'
 import { isInteractiveSource } from '../pipeline/types'
 import { messageSignerChainAdapters } from '../message-signer'
@@ -43,16 +44,17 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
     const req = context.request
 
     if (isTransactionRequest(req)) {
+        const group = reviewGroupOf(req)
         const isMultisigCosign =
             req.sourceType === 'multisig-cosign' && !!req.signRequestId
         const cosignSignerAddress = isMultisigCosign
-            ? (req.signerOverrides?.get(0) ?? null)
+            ? (group.signerOverrides?.get(0) ?? null)
             : null
         return {
             type: 'transactions',
             isMultisigCosign,
             cosignSignerAddress,
-            hasMultiple: (req.groupContext ?? req.txs).length > 1,
+            hasMultiple: group.transactions.length > 1,
         }
     }
 

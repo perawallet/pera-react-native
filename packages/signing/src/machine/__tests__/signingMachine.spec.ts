@@ -13,14 +13,20 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
+import { Address } from 'algosdk'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { registerFakeBroadcaster } from '../../__tests__/fakeBroadcaster'
 import {
+    asUnsignedAlgorandTransaction,
+    fakeAlgorandTransactionPlanner,
+    makeTestAddress,
+    makeTestPaymentTx,
     makeUnsignedTransaction,
     registerFakeTransactionPlanner,
 } from '../../__tests__/transactions'
+import { registerFakeLocalKeySignerAdapter } from '../../__tests__/fakeLocalKeySignerAdapter'
 import { SIGNING_KEY_DOMAIN } from '../../constants'
 import {
     fakeReviewerAdapter,
@@ -43,6 +49,7 @@ import {
     algo25Account,
     ledgerAccount,
     multisigAccount,
+    quantumAccount,
 } from '../../__tests__/accounts'
 import type {
     SignableAnalysis,
@@ -1152,6 +1159,116 @@ describe('signingMachine', () => {
             await waitFor(actor, s => s.matches('awaiting_user'))
 
             expect(secondAutoApproveLocal).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('on Algorand, a chain-neutral request', () => {
+        const SENDER = makeTestAddress(1).toString()
+        const strategyResult: SigningResult = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [{ address: SENDER }],
+        }
+        const signGroups = vi.fn(async () => [strategyResult])
+        const keyStore = {
+            sign: vi.fn(async (_keyPairId: string, payload: Uint8Array) =>
+                payload.slice(0, 64),
+            ),
+        }
+        let transportInput: { isKeyedByPlanner: boolean } | undefined
+
+        const machine = signingMachine.provide({
+            actors: {
+                analyzerActor: fromPromise(
+                    async (): Promise<SignableAnalysis[]> => [
+                        { ...mockAnalysis, signableAddresses: [SENDER] },
+                    ],
+                ),
+                transportActor: fromPromise(async ({ input }) => {
+                    transportInput = input as { isKeyedByPlanner: boolean }
+                    return mockTransportResult
+                }),
+            },
+        })
+
+        const neutralRequest = (
+            overrides: Partial<TransactionSignRequest> = {},
+        ): TransactionSignRequest =>
+            ({
+                ...mockRequest,
+                txs: [
+                    asUnsignedAlgorandTransaction(
+                        makeTestPaymentTx(Address.fromString(SENDER), {
+                            receiver: makeTestAddress(2),
+                        }),
+                    ),
+                ],
+                ...overrides,
+            }) as TransactionSignRequest
+
+        const sign = async (input: Partial<SigningMachineInput>) => {
+            const actor = createActor(machine, {
+                input: makeInput({
+                    keyStore,
+                    allAccounts: [
+                        algo25Account(SENDER, { keyPairId: 'key-1' }),
+                    ],
+                    ...input,
+                }),
+            })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+            return waitFor(actor, s => s.matches('completed'))
+        }
+
+        beforeEach(() => {
+            registerFakeTransactionPlanner(fakeAlgorandTransactionPlanner())
+            registerFakeLocalKeySignerAdapter({ signGroups })
+            transportInput = undefined
+        })
+
+        it('signs an ed25519 key through the planner, never the Algorand strategy', async () => {
+            const state = await sign({ request: neutralRequest() })
+
+            expect(keyStore.sign).toHaveBeenCalledTimes(1)
+            expect(signGroups).not.toHaveBeenCalled()
+            expect(state.context.signingResults?.[0].signedData.type).toBe(
+                'signed-transactions',
+            )
+            // Keyed by the account it signs for, so transport follows its rekey.
+            expect(transportInput?.isKeyedByPlanner).toBe(false)
+        })
+
+        it("signs a key in a scheme the planner doesn't plan through the Algorand strategy", async () => {
+            const state = await sign({
+                request: neutralRequest(),
+                allAccounts: [quantumAccount(SENDER, { keyPairId: 'key-q' })],
+            })
+
+            expect(signGroups).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    groups: [
+                        expect.objectContaining({
+                            signerAddress: SENDER,
+                        }),
+                    ],
+                }),
+            )
+            expect(keyStore.sign).not.toHaveBeenCalled()
+            expect(state.context.signingResults).toEqual([strategyResult])
+        })
+
+        it('signs a multisig cosignature through the Algorand strategy, which the planner cannot assemble', async () => {
+            await sign({
+                request: neutralRequest({
+                    sourceType: 'multisig-cosign',
+                    signRequestId: 'sign-request-1',
+                    transport: 'callback',
+                }),
+            })
+
+            expect(signGroups).toHaveBeenCalledTimes(1)
+            expect(keyStore.sign).not.toHaveBeenCalled()
         })
     })
 })

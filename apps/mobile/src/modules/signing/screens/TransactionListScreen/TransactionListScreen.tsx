@@ -17,7 +17,7 @@ import { TransactionListHeader } from './TransactionListHeader'
 import { TransactionListFooter } from './TransactionListFooter'
 import { GroupPreviewItem } from './GroupPreviewItem'
 import { useTransactionListScreen } from './useTransactionListScreen'
-import { TransactionPreview } from '@modules/algorand'
+import { TransactionPreviewRow } from '../../transactions/TransactionPreviewRow'
 
 export const TransactionListScreen = () => {
     const {
@@ -35,14 +35,15 @@ export const TransactionListScreen = () => {
             if (item.type === 'group') {
                 return (
                     <GroupPreviewItem
-                        transactions={item.transactions}
+                        transactionCount={item.transactions.length}
+                        groupId={item.groupId}
                         onPress={() => handleGroupPress(item.groupIndex)}
                     />
                 )
             }
 
             return (
-                <TransactionPreview
+                <TransactionPreviewRow
                     transaction={item.transaction}
                     isExternal={item.isExternal}
                     onPress={() => handleTransactionPress(item)}

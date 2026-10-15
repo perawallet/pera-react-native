@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
-import type { SigningResult } from '@perawallet/wallet-core-signing'
+import type {
+    PeraSignedTransaction,
+    SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    SigningError,
+    type SigningResult,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * Merges multiple signing results (one per group) into a single SigningResult
@@ -31,21 +37,49 @@ export const mergeSigningResults = (
 
     const allIndices = results.flatMap(r => r.originalIndices ?? [])
     const totalCount = allIndices.length > 0 ? Math.max(...allIndices) + 1 : 0
-    const reordered = new Array<PeraSignedTransaction>(totalCount)
+    const signers = results.flatMap(r => r.signers)
 
-    for (const result of results) {
-        if (result.signedData.type !== 'transactions') continue
-        const { signed } = result.signedData
-        const indices = result.originalIndices
-        if (indices) {
-            indices.forEach((origIdx, i) => {
-                reordered[origIdx] = signed[i]
-            })
+    // The machine refuses this before signing; this only backstops it.
+    if (results.every(r => r.signedData.type === 'signed-transactions')) {
+        return {
+            signedData: {
+                type: 'signed-transactions',
+                signed: reorder<SignedTransaction>(results, totalCount),
+            },
+            signers,
         }
+    }
+    if (results.some(r => r.signedData.type === 'signed-transactions')) {
+        throw new SigningError(
+            'A request signed partly through its planner cannot be delivered as one group',
+            undefined,
+            { retryable: false },
+        )
     }
 
     return {
-        signedData: { type: 'transactions', signed: reordered },
-        signers: results.flatMap(r => r.signers),
+        signedData: {
+            type: 'transactions',
+            signed: reorder<PeraSignedTransaction>(results, totalCount),
+        },
+        signers,
     }
+}
+
+const reorder = <T>(results: SigningResult[], totalCount: number): T[] => {
+    const reordered = new Array<T>(totalCount)
+    for (const result of results) {
+        const { signedData } = result
+        if (
+            signedData.type !== 'transactions' &&
+            signedData.type !== 'signed-transactions'
+        ) {
+            continue
+        }
+        const signed = signedData.signed as T[]
+        result.originalIndices?.forEach((origIdx, i) => {
+            reordered[origIdx] = signed[i]
+        })
+    }
+    return reordered
 }

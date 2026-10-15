@@ -16,6 +16,7 @@ export { SourceMetadataBadge } from './components/SourceMetadataBadge'
 export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
 export type {
     DetailBodyProps,
+    PreviewRowProps,
     ReviewBodyProps,
     TransactionDisplay,
 } from './transactions/types'

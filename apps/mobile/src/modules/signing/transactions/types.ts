@@ -27,7 +27,15 @@ export type DetailBodyProps = {
     onRelatedTransactionPress?: (transaction: TransactionNative) => void
 }
 
+export type PreviewRowProps = {
+    transaction: TransactionNative
+    /** Shown in the request for the group's sake; another party signs it. */
+    isExternal?: boolean
+    onPress?: () => void
+}
+
 export type TransactionDisplay = {
     ReviewBody: ComponentType<ReviewBodyProps>
     DetailBody: ComponentType<DetailBodyProps>
+    PreviewRow: ComponentType<PreviewRowProps>
 }

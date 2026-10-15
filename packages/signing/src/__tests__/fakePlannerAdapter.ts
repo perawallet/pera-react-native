@@ -16,6 +16,7 @@ import { Transaction, computeGroupID } from 'algosdk'
 import {
     scopeForLegacyNetwork,
     type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
 
@@ -25,7 +26,9 @@ import {
     type FetchSuggestedMinFee,
     type PlannerChainAdapter,
 } from '../chain-adapter'
+import { isUnsignedTransaction } from '../models'
 import { InvalidSignableDataError } from '../pipeline/errors'
+import { isUnsignedTransactionsData } from '../pipeline/types'
 
 const fetchZeroMinFee: FetchSuggestedMinFee = async () => 0n
 
@@ -62,6 +65,16 @@ const passThroughAssignFee: AssignFeeToGroup = async ({ transactions }) => ({
     transactions,
     adjustments: [],
 })
+
+const payloadTransactions = (
+    transactions: PeraTransaction[] | UnsignedTransaction[],
+): PeraTransaction[] =>
+    transactions.map(transaction =>
+        isUnsignedTransaction(transaction)
+            ? (transaction.payload as { transaction: PeraTransaction })
+                  .transaction
+            : transaction,
+    )
 
 export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
@@ -100,8 +113,34 @@ export const fakePlannerAdapter = (
     programPayload: vi.fn((program: Uint8Array) => program),
     encodeProgramAccount: vi.fn((program: Uint8Array) => program),
     validateGroup: vi.fn((transactions, { isCosigner }) => {
-        if (!isCosigner) recomputeGroupIds(transactions)
+        if (!isCosigner) recomputeGroupIds(payloadTransactions(transactions))
     }),
+    // Algorand's rule, minus the override check: each transaction's sender.
+    signedForAddresses: vi.fn(request =>
+        request.txs[0]?.chainData.family === 'algorand'
+            ? request.txs.map(
+                  (unsigned, index) =>
+                      request.chainData?.algorand?.signerOverrides?.get(
+                          index,
+                      ) ?? payloadTransactions([unsigned])[0].sender.toString(),
+              )
+            : undefined,
+    ),
+    readTransactionsData: vi.fn(data =>
+        isUnsignedTransactionsData(data)
+            ? {
+                  type: 'transactions' as const,
+                  transactions: payloadTransactions(data.transactions),
+                  indicesToSign:
+                      data.chainData.algorand?.indicesToSign ??
+                      data.transactions.map((_, index) => index),
+                  ...(data.chainData.algorand?.rawTransactionsBase64 && {
+                      rawTransactionsBase64:
+                          data.chainData.algorand.rawTransactionsBase64,
+                  }),
+              }
+            : data,
+    ),
     mergeSigningResults: vi.fn(results => results[0]),
     assembleSignedTransaction: vi.fn((txn, signature) => ({
         txn,

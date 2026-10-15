@@ -16,13 +16,17 @@ import {
     classifyRequestStructure,
     createTransactionListItems,
 } from '../classification'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import {
+    toAlgorandNative,
+    type AlgorandTransactionView,
+} from '../../blockchain'
 
-const createTx = (id: string, group?: Uint8Array): PeraDisplayableTransaction =>
-    ({
-        id,
-        group,
-    }) as PeraDisplayableTransaction
+const createTx = (id: string, group?: Uint8Array): TransactionNative =>
+    toAlgorandNative({ id, group } as AlgorandTransactionView)
+
+const idOf = (native: TransactionNative): string | undefined =>
+    (native.transaction as AlgorandTransactionView).id
 
 describe('createTransactionListItems', () => {
     test('returns empty array for empty transactions', () => {
@@ -36,6 +40,7 @@ describe('createTransactionListItems', () => {
         expect(items[0]).toEqual({
             type: 'transaction',
             transaction: tx,
+            id: 'tx1',
             groupIndex: 0,
             isExternal: false,
         })
@@ -53,18 +58,21 @@ describe('createTransactionListItems', () => {
             {
                 type: 'transaction',
                 transaction: tx0,
+                id: idOf(tx0),
                 groupIndex: 0,
                 isExternal: false,
             },
             {
                 type: 'transaction',
                 transaction: tx1,
+                id: idOf(tx1),
                 groupIndex: 1,
                 isExternal: true,
             },
             {
                 type: 'transaction',
                 transaction: tx2,
+                id: idOf(tx2),
                 groupIndex: 2,
                 isExternal: false,
             },
@@ -83,18 +91,21 @@ describe('createTransactionListItems', () => {
         expect(items[0]).toEqual({
             type: 'transaction',
             transaction: tx1,
+            id: idOf(tx1),
             groupIndex: 0,
             isExternal: false,
         })
         expect(items[1]).toEqual({
             type: 'transaction',
             transaction: tx2,
+            id: idOf(tx2),
             groupIndex: 1,
             isExternal: false,
         })
         expect(items[2]).toEqual({
             type: 'transaction',
             transaction: tx3,
+            id: idOf(tx3),
             groupIndex: 2,
             isExternal: false,
         })
@@ -113,16 +124,11 @@ describe('createTransactionListItems', () => {
         expect(items).toHaveLength(2)
         const groupAItem = items[0] as GroupTransactionItem
         expect(groupAItem.type).toBe('group')
-        expect(groupAItem.transactions.map(t => t.transaction.id)).toEqual([
-            'tx1',
-            'tx3',
-        ])
+        expect(groupAItem.groupId).toBe('010203')
+        expect(groupAItem.transactions.map(t => t.id)).toEqual(['tx1', 'tx3'])
         expect(groupAItem.transactions.map(t => t.groupIndex)).toEqual([0, 2])
         const groupBItem = items[1] as GroupTransactionItem
-        expect(groupBItem.transactions.map(t => t.transaction.id)).toEqual([
-            'tx2',
-            'tx4',
-        ])
+        expect(groupBItem.transactions.map(t => t.id)).toEqual(['tx2', 'tx4'])
         expect(groupBItem.transactions.map(t => t.groupIndex)).toEqual([1, 3])
     })
 
@@ -141,7 +147,7 @@ describe('createTransactionListItems', () => {
         expect(items).toHaveLength(2)
         expect(items[0].type).toBe('group')
         const groupItem = items[0] as GroupTransactionItem
-        expect(groupItem.transactions.map(t => t.transaction.id)).toEqual([
+        expect(groupItem.transactions.map(t => t.id)).toEqual([
             'grouped1',
             'grouped2',
         ])
@@ -149,6 +155,7 @@ describe('createTransactionListItems', () => {
         expect(items[1]).toEqual({
             type: 'transaction',
             transaction: ungroupedTx,
+            id: idOf(ungroupedTx),
             groupIndex: 1,
             isExternal: false,
         })
@@ -166,6 +173,7 @@ describe('createTransactionListItems', () => {
             expect(item).toEqual({
                 type: 'transaction',
                 transaction: [tx1, tx2, tx3][i],
+                id: `tx${i + 1}`,
                 groupIndex: i,
                 isExternal: false,
             })

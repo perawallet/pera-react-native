@@ -13,13 +13,17 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    PeraTransaction,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import {
+    isUnsignedTransaction,
+    reviewGroupOf,
     useSigningPipeline,
     type FeeAdjustment,
-    isUnsignedTransactionRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 
@@ -84,16 +88,12 @@ export const useFeeAdjustment = (
             }
         }
 
-        // Per-transaction mode: resolve the full group and match by slot. Fee
-        // adjustments are Algorand's, so a chain-neutral request has none.
+        // Per-transaction mode: resolve the full group and match by slot.
         const request =
             currentRequest?.type === 'transactions' && 'txs' in currentRequest
                 ? (currentRequest as TransactionSignRequest)
                 : undefined
-        const source =
-            request && !isUnsignedTransactionRequest(request)
-                ? (request.groupContext ?? request.txs)
-                : []
+        const source = request ? reviewGroupOf(request).transactions : []
 
         const match = feeAdjustments.find((adjustment: FeeAdjustment) =>
             matchesTransaction(source[adjustment.index], transaction),
@@ -118,9 +118,15 @@ export const useFeeAdjustment = (
 }
 
 const matchesTransaction = (
-    raw: PeraTransaction | undefined,
+    slot: PeraTransaction | UnsignedTransaction | undefined,
     transaction: AlgorandTransactionView,
 ): boolean => {
+    // The reviewer read the transaction out of this payload, so identity
+    // still matches; nothing here signs or trusts it.
+    const raw =
+        slot && isUnsignedTransaction(slot)
+            ? (slot.payload as { transaction?: PeraTransaction }).transaction
+            : slot
     if (!raw) {
         return false
     }

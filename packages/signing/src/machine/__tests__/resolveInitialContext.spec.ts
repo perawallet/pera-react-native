@@ -11,7 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
-import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
+import {
+    registerAlgorandRulesAs,
+    seedAuthority,
+} from '../../__tests__/registerAlgorandAccounts'
 import { Address, Transaction, assignGroupID } from 'algosdk'
 import {
     addressCodecs,
@@ -22,6 +25,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     SECOND_CHAIN_SCOPE,
+    asUnsignedAlgorandTransaction,
+    fakeAlgorandTransactionPlanner,
     makeTestAddress,
     makeTestPaymentTx,
     makeUnsignedTransaction,
@@ -697,4 +702,171 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
             )
         },
     )
+})
+
+describe('resolveInitialContext: Algorand chain-neutral requests', () => {
+    const authAddr = makeTestAddress(3)
+    const strangerAddr = makeTestAddress(4)
+
+    beforeEach(() => {
+        registerFakeTransactionPlanner(fakeAlgorandTransactionPlanner())
+    })
+
+    // The WalletConnect shape: the wallet's subset, the full group beside it,
+    // and an ARC-0001 signer override.
+    const fullGroup = () =>
+        groupTransactions([
+            makePayment(userAddr, 1n),
+            makePayment(strangerAddr, 2n),
+            makePayment(userAddr, 3n),
+            makePayment(userAddr, 4n),
+        ])
+
+    const bothShapes = (group: Transaction[]) => {
+        const txs = [group[0], group[2], group[3]]
+        const signerOverrides = new Map([[2, authAddr.toString()]])
+        const raw = ['raw-0', 'raw-2', 'raw-3']
+        const algorand: TransactionSignRequest = {
+            id: 'req-algorand',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            txs,
+            groupContext: group,
+            signableIndices: [0, 2, 3],
+            signerOverrides,
+            rawTransactionsBase64: raw,
+        }
+        const neutral: TransactionSignRequest = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            txs: txs.map(txn => asUnsignedAlgorandTransaction(txn)),
+            chainData: {
+                algorand: {
+                    groupContext: group.map(txn =>
+                        asUnsignedAlgorandTransaction(txn),
+                    ),
+                    signableIndices: [0, 2, 3],
+                    signerOverrides,
+                    rawTransactionsBase64: raw,
+                },
+            },
+        }
+        return { algorand, neutral }
+    }
+
+    const withAccounts = (
+        request: TransactionSignRequest,
+        auth = algo25Account(authAddr.toString(), { id: 'auth' }),
+    ) => ({
+        ...baseInput(request),
+        hardwareWalletRegistry: {} as never,
+        allAccounts: [userAccount, auth],
+    })
+    const ledgerAuth = () =>
+        ledgerAccount(authAddr.toString(), 0, {}, { id: 'auth' })
+
+    it('signs the same indices under the same signers as the request in Algorand form', () => {
+        const { algorand, neutral } = bothShapes(fullGroup())
+
+        const expected = resolveInitialContext(withAccounts(algorand))
+        const context = resolveInitialContext(withAccounts(neutral))
+
+        expect(
+            context.signableGroups?.map(g => [
+                g.signerAddress,
+                g.originalIndices,
+            ]),
+        ).toEqual(
+            expected.signableGroups?.map(g => [
+                g.signerAddress,
+                g.originalIndices,
+            ]),
+        )
+        expect(context.groupSigners).toEqual(expected.groupSigners)
+    })
+
+    it("carries each group's indices and request bytes as its Algorand group facts", () => {
+        const { neutral } = bothShapes(fullGroup())
+
+        const context = resolveInitialContext(withAccounts(neutral))
+
+        expect(context.signableGroups?.map(g => g.data)).toEqual([
+            expect.objectContaining({
+                chainData: {
+                    algorand: {
+                        indicesToSign: [0, 1],
+                        rawTransactionsBase64: ['raw-0', 'raw-2'],
+                    },
+                },
+            }),
+            expect.objectContaining({
+                chainData: {
+                    algorand: {
+                        indicesToSign: [0],
+                        rawTransactionsBase64: ['raw-3'],
+                    },
+                },
+            }),
+        ])
+    })
+
+    it('refuses before anything signs a request whose signers sign in different ways', () => {
+        const { neutral } = bothShapes(fullGroup())
+
+        expect(() =>
+            resolveInitialContext(withAccounts(neutral, ledgerAuth())),
+        ).toThrow(
+            expect.objectContaining({
+                metadata: expect.objectContaining({ retryable: false }),
+            }),
+        )
+    })
+
+    it('refuses a full group whose transactions no longer hash to their group id', () => {
+        const group = fullGroup()
+        const { neutral } = bothShapes(group)
+        const stale = {
+            ...neutral,
+            chainData: {
+                algorand: {
+                    ...neutral.chainData!.algorand,
+                    groupContext: group
+                        .slice(0, 3)
+                        .map(txn => asUnsignedAlgorandTransaction(txn)),
+                },
+            },
+        } as TransactionSignRequest
+
+        expect(() => resolveInitialContext(withAccounts(stale))).toThrow(
+            InvalidSignableDataError,
+        )
+    })
+
+    it("follows a sender's rekey once to the custody that signs for it", () => {
+        const txn = makePayment(userAddr, 1n)
+        const request: TransactionSignRequest = {
+            id: 'req-rekeyed',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [
+                asUnsignedAlgorandTransaction(txn, {
+                    authorizer: authAddr.toString(),
+                }),
+            ],
+        }
+        seedAuthority(USER_ADDRESS, authAddr.toString())
+
+        const context = resolveInitialContext(
+            withAccounts(request, ledgerAuth()),
+        )
+
+        expect(context.signableGroups?.[0].signerAddress).toBe(USER_ADDRESS)
+        expect(context.groupSigners?.get(USER_ADDRESS)?.custody).toBe(
+            'hardware',
+        )
+        seedAuthority(USER_ADDRESS, null)
+    })
 })

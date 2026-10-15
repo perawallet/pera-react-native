@@ -18,9 +18,10 @@ import {
     type Arc0001ResolveContext,
     type Arc0001ResolveResult,
     type Arc0001SignTxnsRequest,
-    type PeraDisplayableTransaction,
     type PeraSignedTransaction,
     type PeraTransaction,
+    type TransactionNative,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -34,6 +35,7 @@ import type {
     FeeAdjustment,
     SignRequest,
     TransactionSignRequest,
+    UnsignedTransactionSignRequest,
     TransactionWarning,
 } from './models'
 import type { ExternalSignTxnTransport } from './hooks/useEnqueueArc0001SignRequest'
@@ -46,6 +48,7 @@ import type {
     AuthDataMetadata,
     DataTransport,
     DecodedGroup,
+    PeraTransactionsSignableData,
     SignableAnalysis,
     SignableGroup,
     SignRequestStatus,
@@ -53,6 +56,7 @@ import type {
     SigningResult,
     SigningStrategy,
     SourceMetadata,
+    TransactionSignableData,
 } from './pipeline/types'
 import type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
 import { chainIdOfSignRequest } from './models/chain'
@@ -61,7 +65,9 @@ export type RequestStructure = 'single' | 'list'
 
 export type SingleTransactionItem = {
     type: 'transaction'
-    transaction: PeraDisplayableTransaction
+    transaction: TransactionNative
+    /** The chain's transaction id, when the chain can derive one before signing. */
+    id?: string
     /** Index into the originating groupContext array. */
     groupIndex: number
     /**
@@ -75,6 +81,8 @@ export type SingleTransactionItem = {
 export type GroupTransactionItem = {
     type: 'group'
     transactions: SingleTransactionItem[]
+    /** Hex. */
+    groupId?: string
     groupIndex: number
 }
 
@@ -130,13 +138,13 @@ export interface ReviewerChainAdapter {
     warnings: WarningDetector
     policy: ReviewPolicy
     createTransactionListItems(
-        transactions: PeraDisplayableTransaction[],
+        transactions: TransactionNative[],
         signableIndices?: ReadonlySet<number>,
     ): TransactionListItem[]
     classifyRequestStructure(listItems: TransactionListItem[]): RequestStructure
     /** `authorizerByIndex` keys index into `transactions`. */
     aggregateTransactionWarnings(
-        transactions: PeraDisplayableTransaction[],
+        transactions: TransactionNative[],
         userAccountAddresses: Set<string>,
         signableAddresses: Set<string>,
         authorizerByIndex?: Map<number, string>,
@@ -148,10 +156,14 @@ export interface ReviewerChainAdapter {
     ): DelegatedUnsignableReason | null
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
-    /** The review model of one unsigned transaction. */
-    toDisplayableTransaction(
-        transaction: PeraTransaction,
-    ): Nullable<PeraDisplayableTransaction>
+    /**
+     * The review model of one unsigned transaction. Takes the Algorand shape
+     * too, so a request in it renders until every source builds the
+     * chain-neutral one. Null for a transaction the chain can't read.
+     */
+    toTransactionNative(
+        transaction: PeraTransaction | UnsignedTransaction,
+    ): Nullable<TransactionNative>
 }
 
 export const reviewerChainAdapters =
@@ -744,21 +756,21 @@ export interface PlannerChainAdapter {
      */
     encodeUnsignedTransaction(transaction: PeraTransaction): Uint8Array
     reviewGroupFees(
-        transactions: PeraDisplayableTransaction[],
+        transactions: TransactionNative[],
         signableAddresses: Set<string>,
     ): GroupFeeReview
 
     computeBalanceImpact(
-        transactions: PeraDisplayableTransaction[],
+        transactions: TransactionNative[],
         userAddresses: Set<string>,
     ): BalanceImpact
     /** Whether the group moves funds the top-level transactions don't reveal. */
-    needsSimulation(transactions: PeraDisplayableTransaction[]): boolean
+    needsSimulation(transactions: TransactionNative[]): boolean
     /** The transactions a simulated run of `groupTxs` reveals beyond its top level. */
     simulateGroup(
-        groupTxs: PeraTransaction[],
+        groupTxs: PeraTransaction[] | UnsignedTransaction[],
         network: Network,
-    ): Promise<PeraDisplayableTransaction[]>
+    ): Promise<TransactionNative[]>
 
     /** The bytes a program signature must cover. */
     programPayload(program: Uint8Array): Uint8Array
@@ -774,9 +786,27 @@ export interface PlannerChainAdapter {
      * so `isCosigner` is the one sanctioned relaxation.
      */
     validateGroup(
-        transactions: PeraTransaction[],
+        transactions: PeraTransaction[] | UnsignedTransaction[],
         options: { isCosigner: boolean },
     ): void
+    /**
+     * The group as the chain's own signers read it, from a chain-neutral
+     * payload when it is one.
+     * @throws InvalidSignableDataError when a payload isn't this chain's.
+     */
+    readTransactionsData(
+        data: TransactionSignableData,
+    ): PeraTransactionsSignableData
+    /**
+     * The account each of `request.txs` signs for, when the chain groups its
+     * chain-neutral requests that way rather than by planned signer; the
+     * pipeline then follows that account's rekey once. Undefined otherwise.
+     * @throws InvalidSignableDataError when a signer override names an
+     * account the transaction can't be signed for.
+     */
+    signedForAddresses(
+        request: UnsignedTransactionSignRequest,
+    ): string[] | undefined
     mergeSigningResults(results: SigningResult[]): SigningResult
 
     /**
@@ -904,7 +934,7 @@ const NO_BALANCE_IMPACT: BalanceImpact = {
 /** No impact on a chain with no planner: there is nothing to compute it from. */
 export const computeBalanceImpact = (
     chainId: ChainId,
-    transactions: PeraDisplayableTransaction[],
+    transactions: TransactionNative[],
     userAddresses: Set<string>,
 ): BalanceImpact =>
     plannerChainAdapters.has(chainId)
@@ -916,7 +946,7 @@ export const computeBalanceImpact = (
 /** False on a chain with no planner: nothing there needs simulating. */
 export const needsSimulation = (
     chainId: ChainId,
-    transactions: PeraDisplayableTransaction[],
+    transactions: TransactionNative[],
 ): boolean =>
     plannerChainAdapters.has(chainId) &&
     plannerChainAdapters.get(chainId).needsSimulation(transactions)

@@ -23,7 +23,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     isTransactionRequest,
-    isUnsignedTransactionRequest,
     type SignRequest,
     type StaleGroupReason,
 } from '@perawallet/wallet-core-signing'
@@ -34,6 +33,7 @@ import {
     isAlgodError,
     toAlgodError,
 } from '../blockchain'
+import { algorandRequestOf } from './algorandRequest'
 import { simulateSignedGroup } from './feeCoverage'
 
 // How long a WalletConnect request may wait on this check before its sheet
@@ -160,8 +160,9 @@ export const findStaleGroupReason = async (
     } = {},
 ): Promise<Nullable<StaleGroupReason>> => {
     if (!isTransactionRequest(request)) return null
-    if (isUnsignedTransactionRequest(request)) return null
-    const txs = request.groupContext ?? request.txs
+    const algorand = algorandRequestOf(request)
+    if (!algorand) return null
+    const txs = algorand.groupContext ?? algorand.txs
     if (txs.length === 0) return null
 
     try {

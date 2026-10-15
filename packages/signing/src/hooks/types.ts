@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
 import type { SnapshotFrom } from 'xstate'
 
@@ -63,7 +63,7 @@ export type SigningPipeline = {
 
     // Display data — equivalent to useSigningRequestAnalysis output.
     // Populated from request.txs for transaction requests; empty for others.
-    allTransactions: PeraDisplayableTransaction[]
+    allTransactions: TransactionNative[]
     listItems: TransactionListItem[]
     signableAddresses: Set<string>
     /**

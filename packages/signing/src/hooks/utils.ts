@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 
@@ -25,7 +25,7 @@ import type {
 import type { TransactionListItem } from '../chain-adapter'
 import type { MachineSnapshot } from './types'
 
-export const EMPTY_TRANSACTIONS: PeraDisplayableTransaction[] = []
+export const EMPTY_TRANSACTIONS: TransactionNative[] = []
 export const EMPTY_LIST_ITEMS: TransactionListItem[] = []
 export const EMPTY_WARNINGS: TransactionWarning[] = []
 export const EMPTY_SIGNABLE_ADDRESSES = new Set<string>()

@@ -22,10 +22,10 @@ import type { Database } from '@perawallet/wallet-core-database'
 import {
     getSubmissionAttemptsByTxIds,
     isTransactionRequest,
-    isUnsignedTransactionRequest,
     LANDABLE_SUBMISSION_STATUSES,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { algorandRequestOf } from '../algorandRequest'
 
 /**
  * Reproduces the txids a persisted sign-request's group would have at submit
@@ -88,9 +88,10 @@ export const isRequestGroupAlreadySubmitted = async (
     }: { db?: Database; scope?: ChainScope } = {},
 ): Promise<boolean> => {
     if (!isTransactionRequest(request)) return false
-    if (isUnsignedTransactionRequest(request)) return false
+    const algorand = algorandRequestOf(request)
+    if (!algorand) return false
 
-    const txIds = deriveRequestGroupTxIds(request.txs)
+    const txIds = deriveRequestGroupTxIds(algorand.txs)
     if (txIds.length === 0) return false
 
     try {

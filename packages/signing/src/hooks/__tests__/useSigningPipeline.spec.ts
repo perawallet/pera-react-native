@@ -12,12 +12,12 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { TransactionSignRequest } from '../../models'
+import type { FeeAdjustment, TransactionSignRequest } from '../../models'
 import {
     TEST_CHAIN_ID,
     algo25Account,
@@ -59,7 +59,12 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
 
 import { registerFakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
-import { makeUnsignedTransaction } from '../../__tests__/transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedTransaction,
+} from '../../__tests__/transactions'
 import {
     useSigningPipeline,
     __resetDisplayDataCacheForTests,
@@ -67,8 +72,8 @@ import {
 
 beforeEach(() => {
     registerFakeReviewerAdapter({
-        toDisplayableTransaction: tx =>
-            mockMapToDisplayable(tx) as PeraDisplayableTransaction,
+        toTransactionNative: tx =>
+            mockMapToDisplayable(tx) as TransactionNative,
     })
     mockSigningRequest.currentRequest = undefined
     mockSigningRequest.currentActorRef = null
@@ -145,11 +150,10 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableAddresses.size).toBeGreaterThan(0)
     })
 
-    test('shows no Algorand transactions for a chain-neutral request, which its own chain reviews', () => {
+    test('shows nothing for a request on a chain with no planner, which its own body reviews', () => {
         mockSigningRequest.currentRequest = {
             id: 'req-neutral',
             type: 'transactions',
-            chainId: 'algorand',
             transport: 'algod',
             txs: [makeUnsignedTransaction('0xFROM')],
         } satisfies TransactionSignRequest
@@ -158,6 +162,68 @@ describe('useSigningPipeline', () => {
 
         expect(result.current.allTransactions).toEqual([])
         expect(mockMapToDisplayable).not.toHaveBeenCalled()
+    })
+
+    describe('on an Algorand chain-neutral request', () => {
+        const [tx0, tx1, tx2] = [1n, 2n, 3n].map(amount =>
+            asUnsignedAlgorandTransaction(
+                makeTestPaymentTx(makeTestAddress(1), {
+                    receiver: makeTestAddress(2),
+                    amount,
+                }),
+            ),
+        )
+        const feeAdjustments: FeeAdjustment[] = [
+            {
+                index: 2,
+                originalFee: 1000n,
+                adjustedFee: 2000n,
+                reason: 'quantum-minimum',
+            },
+        ]
+        const request = {
+            id: 'req-neutral-algorand',
+            type: 'transactions',
+            transport: 'callback',
+            txs: [tx0, tx2],
+            chainData: {
+                algorand: {
+                    groupContext: [tx0, tx1, tx2],
+                    signableIndices: [0, 2],
+                    signerOverrides: new Map([[1, 'AUTH']]),
+                    feeAdjustments,
+                },
+            },
+        } satisfies TransactionSignRequest
+
+        test('reviews its full group from its Algorand group facts', () => {
+            const adapter = registerFakeReviewerAdapter()
+            mockSigningRequest.currentRequest = request
+
+            const { result } = renderHook(() => useSigningPipeline())
+
+            expect(adapter.toTransactionNative).toHaveBeenCalledTimes(3)
+            expect(adapter.createTransactionListItems).toHaveBeenCalledWith(
+                [tx0, tx1, tx2],
+                new Set([0, 2]),
+            )
+            expect(result.current.signableIndices).toEqual(new Set([0, 2]))
+            expect(result.current.feeAdjustments).toBe(feeAdjustments)
+        })
+
+        test("gates warnings on a signer override, at its transaction's slot in the full group", () => {
+            const adapter = registerFakeReviewerAdapter()
+            mockSigningRequest.currentRequest = request
+
+            renderHook(() => useSigningPipeline())
+
+            expect(adapter.aggregateTransactionWarnings).toHaveBeenCalledWith(
+                [tx0, tx1, tx2],
+                expect.any(Set),
+                expect.any(Set),
+                new Map([[2, 'AUTH']]),
+            )
+        })
     })
 
     test('prefers groupContext over txs for display so partial atomic groups show fully', () => {

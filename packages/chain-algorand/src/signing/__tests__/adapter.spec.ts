@@ -17,7 +17,10 @@ import {
     encodeAlgorandAddress,
     encodeTransactionRaw,
     groupTransactions,
+    readAlgorandNative,
+    toAlgorandNative,
     useFetchSuggestedMinFee,
+    type AlgorandTransactionView,
 } from '../../blockchain'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
@@ -51,7 +54,12 @@ import {
     useAlgorandSuggestedMinFeeQuery,
 } from '../feeHooks'
 import { draftProposeContexts } from '../multisig/draftProposeContexts'
-import { makeTestAddress, makeTestPaymentTx } from './transactions'
+import {
+    MAINNET_GENESIS_HASH,
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeUnsignedAlgorandTransaction,
+} from './transactions'
 
 const senderA = makeTestAddress(1)
 const senderB = makeTestAddress(2)
@@ -70,7 +78,7 @@ describe('algorandPlannerAdapter', () => {
         const txs = [
             { fee: 1000n, txType: 'pay', sender: 'ADDR1' },
             { fee: 2000n, txType: 'pay', sender: 'ADDR1' },
-        ] as unknown as PeraDisplayableTransaction[]
+        ].map(view => toAlgorandNative(view as AlgorandTransactionView))
 
         const review = algorandPlannerAdapter.reviewGroupFees(
             txs,
@@ -174,19 +182,31 @@ describe('algorandPlannerAdapter.encodeUnsignedTransaction', () => {
     })
 })
 
-describe('algorandReviewerAdapter.toDisplayableTransaction', () => {
-    test('maps a payment to its review model', () => {
-        const tx = makeTestPaymentTx(senderA, {
+describe('algorandReviewerAdapter.toTransactionNative', () => {
+    const payment = () =>
+        makeTestPaymentTx(senderA, {
             receiver: senderB,
             amount: 5n,
+            genesisHash: MAINNET_GENESIS_HASH,
         })
 
-        const display = algorandReviewerAdapter.toDisplayableTransaction(tx)
+    test('maps a payment to its review model', () => {
+        const native = algorandReviewerAdapter.toTransactionNative(payment())
+        const view = native && readAlgorandNative(native)
 
-        expect(display?.txType).toBe('pay')
-        expect(display?.sender).toBe(senderA.toString())
-        expect(display?.paymentTransaction?.receiver).toBe(senderB.toString())
-        expect(display?.paymentTransaction?.amount).toBe(5n)
+        expect(native?.family).toBe('algorand')
+        expect(view?.txType).toBe('pay')
+        expect(view?.sender).toBe(senderA.toString())
+        expect(view?.paymentTransaction?.receiver).toBe(senderB.toString())
+        expect(view?.paymentTransaction?.amount).toBe(5n)
+    })
+
+    test("is null for a chain-neutral payload it can't read", () => {
+        expect(
+            algorandReviewerAdapter.toTransactionNative(
+                makeUnsignedAlgorandTransaction(),
+            ),
+        ).toBeNull()
     })
 })
 

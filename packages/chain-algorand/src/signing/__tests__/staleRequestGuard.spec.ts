@@ -16,7 +16,10 @@ import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { getExpectedGenesisHash } from '../../blockchain'
-import { makeUnsignedAlgorandTransaction } from './transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    makeUnsignedAlgorandTransaction,
+} from './transactions'
 import {
     findStaleGroupReason,
     partitionByGroup,
@@ -124,7 +127,37 @@ describe('findStaleGroupReason', () => {
     const run = (request: SignRequest, simulate: SimulateOriginalGroup) =>
         findStaleGroupReason(request, { simulate, network: 'mainnet' })
 
-    it('never simulates a chain-neutral request', async () => {
+    it("simulates a chain-neutral request's full Algorand group, as the same request in either shape", async () => {
+        const first = grouped(payment(1n), payment(2n))
+        const second = grouped(payment(3n), payment(4n))
+        const group = [...first, ...second]
+        const simulate = vi.fn<SimulateOriginalGroup>(async txns =>
+            alreadyInLedger(txns[0] as unknown as Transaction),
+        )
+        const neutral = {
+            id: 'req-neutral',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            txs: [asUnsignedAlgorandTransaction(asPera(group)[0])],
+            chainData: {
+                algorand: {
+                    groupContext: asPera(group).map(txn =>
+                        asUnsignedAlgorandTransaction(txn),
+                    ),
+                },
+            },
+        } as SignRequest
+
+        const expected = await run(makeRequest(group), simulate)
+        const algorandCalls = [...simulate.mock.calls]
+        simulate.mockClear()
+
+        await expect(run(neutral, simulate)).resolves.toBe(expected)
+        expect(simulate.mock.calls).toEqual(algorandCalls)
+    })
+
+    it("never simulates a chain-neutral payload it can't read", async () => {
         const simulate = vi.fn<SimulateOriginalGroup>()
         const request = {
             id: 'req-neutral',

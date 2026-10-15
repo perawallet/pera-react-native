@@ -13,7 +13,7 @@
 import { vi } from 'vitest'
 import {
     scopeForLegacyNetwork,
-    type PeraDisplayableTransaction,
+    type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     reviewerChainAdapters,
@@ -38,9 +38,7 @@ export const fakeReviewerAdapter = (
     resolveAllSignerAddresses: vi.fn(() => []),
     getDelegatedUnsignableReason: vi.fn(() => null),
     decodeArbitraryDataForDisplay: vi.fn(() => ({ kind: 'hex', hex: '' })),
-    toDisplayableTransaction: vi.fn(
-        tx => tx as unknown as PeraDisplayableTransaction,
-    ),
+    toTransactionNative: vi.fn(tx => tx as unknown as TransactionNative),
     ...overrides,
 })
 

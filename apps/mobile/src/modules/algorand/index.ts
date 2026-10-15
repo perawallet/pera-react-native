@@ -11,7 +11,4 @@
  */
 
 export { FeeDisplay } from './components/FeeDisplay'
-export {
-    GroupTransactionsPanel,
-    TransactionPreview,
-} from './components/transaction-details'
+export { GroupTransactionsPanel } from './components/transaction-details'

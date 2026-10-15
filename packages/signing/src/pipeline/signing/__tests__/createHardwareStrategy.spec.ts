@@ -39,7 +39,10 @@ import { plannerChainAdapters } from '../../../chain-adapter'
 import { messageSignerChainAdapters } from '../../../message-signer'
 import { CannotSignError, HardwareWalletError } from '../../errors'
 import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
-import { makeUnsignedTransaction } from '../../../__tests__/transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    makeUnsignedTransaction,
+} from '../../../__tests__/transactions'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
 import type { AnalyzedSignableGroup } from '../../types'
 import type {
@@ -841,12 +844,40 @@ describe('createHardwareStrategy', () => {
             expect(passed.constructor.name).toBe('SigningError')
         })
 
-        it("refuses chain-neutral transactions, which the device's Algorand app can't sign", async () => {
+        it('signs a chain-neutral group as the Algorand transactions its payloads carry', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
                 getAllAccounts: () => [],
                 chainId: 'algorand',
+            })
+            const txns = [mockTransaction(), mockTransaction()]
+            const algorandResult = await strategy.sign(
+                makeGroup(txns, [1]),
+                makeLedgerAccount(),
+            )
+            const group = {
+                ...makeGroup([], []),
+                data: {
+                    type: 'transactions' as const,
+                    transactions: txns.map(txn =>
+                        asUnsignedAlgorandTransaction(txn),
+                    ),
+                    chainData: { algorand: { indicesToSign: [1] } },
+                },
+            } as unknown as AnalyzedSignableGroup
+
+            const result = await strategy.sign(group, makeLedgerAccount())
+
+            expect(result).toEqual(algorandResult)
+        })
+
+        it('refuses chain-neutral transactions on a chain no planner adapter reads, without touching the device', async () => {
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+                getAllAccounts: () => [],
+                chainId: 'ethereum',
             })
             const group = {
                 ...makeGroup([], []),
@@ -858,14 +889,9 @@ describe('createHardwareStrategy', () => {
             } as unknown as AnalyzedSignableGroup
 
             await expect(
-                strategy.sign(group, makeLedgerAccount()),
-            ).rejects.toMatchObject({
-                reason: 'unsupported_data_type',
-                metadata: expect.objectContaining({ retryable: false }),
-            })
-            await expect(
-                strategy.sign(group, makeLedgerAccount()),
-            ).rejects.toBeInstanceOf(HardwareWalletError)
+                strategy.sign(group, ethereumLedgerAccount()),
+            ).rejects.toMatchObject({ reason: 'unsupported_data_type' })
+            expect(mockProvider.connect).not.toHaveBeenCalled()
         })
 
         it('throws SigningError for arbitrary-data (hardware not supported)', async () => {
