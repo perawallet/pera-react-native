@@ -86,7 +86,7 @@ Amount Above The Balance Is Flagged
 Clearing The Amount Clears Its Result
     [Tags]    id:swap.form.clear-resets    swap-form    p1
     Open Swap
-    Enter Pay Amount    1
+    Enter Pay Amount    999999999
     Wait Until Page Contains Element    ${SWAP_INSUFFICIENT_BALANCE}    timeout=15s
     Clear Text    ${SWAP_PAY_INPUT}
     Wait Until Page Does Not Contain Element    ${SWAP_INSUFFICIENT_BALANCE}    timeout=10s
@@ -118,7 +118,7 @@ Quote Shows The Swap Button Disabled Without Funds
     Open Swap
     Enter Amount And Wait For Quote    1
     Wait Until Page Contains Element    ${SWAP_BUTTON}    timeout=15s
-    Element Should Be Disabled    ${SWAP_BUTTON}
+    Expect Element    ${SWAP_BUTTON}    disabled
 
 Receive Amount Keeps Its Decimals
     [Tags]    id:swap.quote.decimal-precision    swap-form    p1    needs-testid
@@ -196,6 +196,7 @@ Pay Picker Leaves Out An Asset The Account Does Not Hold
     Receive Rows Or Skip
     Close Picker Back To Form
     Open Pay Asset Picker
+    Wait Until Page Contains Element    ${PAY_ASSET_ROW_ANY}    timeout=15s
     Search Assets    USDC
     Wait Until Page Does Not Contain Element    ${PAY_ASSET_ROW_ANY}    timeout=15s
     Close Picker Back To Form
@@ -215,7 +216,7 @@ Configuration Offers Slippage Presets
     Open Configuration
     Page Should Contain Element    ${CONFIG_SLIPPAGE_CHIP_1}
     Page Should Contain Element    ${CONFIG_SLIPPAGE_CUSTOM}
-    Element Should Be Enabled    ${CONFIG_APPLY}
+    Expect Element    ${CONFIG_APPLY}    enabled
 
 Slippage Preset Is Saved
     [Tags]    id:swap.config.slippage-preset    swap-config    p1
@@ -234,7 +235,7 @@ Custom Slippage Is Saved
     Tap    ${CONFIG_SLIPPAGE_CUSTOM}
     Input Text    ${CONFIG_SLIPPAGE_INPUT}    3
     Dismiss Keyboard
-    Element Should Be Enabled    ${CONFIG_APPLY}
+    Expect Element    ${CONFIG_APPLY}    enabled
     Apply Configuration
     Open Configuration
     ${saved}=    Get Text    ${CONFIG_SLIPPAGE_INPUT}
@@ -247,7 +248,7 @@ Out Of Range Slippage Blocks Apply
     Tap    ${CONFIG_SLIPPAGE_CUSTOM}
     Input Text    ${CONFIG_SLIPPAGE_INPUT}    99
     Wait Until Page Contains Element    ${CONFIG_SLIPPAGE_ERROR}    timeout=5s
-    Element Should Be Disabled    ${CONFIG_APPLY}
+    Expect Element    ${CONFIG_APPLY}    disabled
 
 Balance Preset Fills From The Balance
     [Tags]    id:swap.config.balance-preset    swap-config    p1
@@ -264,7 +265,7 @@ Custom Balance Percentage Is Accepted
     Input Text    ${CONFIG_BALANCE_INPUT}    40
     Dismiss Keyboard
     Page Should Not Contain Element    ${CONFIG_BALANCE_ERROR}
-    Element Should Be Enabled    ${CONFIG_APPLY}
+    Expect Element    ${CONFIG_APPLY}    enabled
     Apply Configuration
     Wait Until Page Contains Element    ${NOTHING_TO_SWAP_TOAST}    timeout=10s
 
@@ -368,7 +369,7 @@ Top Pair Row Shows Its Pair And Volume
 Swap History Opens From See All And Closes Back To The Form
     [Tags]    id:swap.history.open-close    swap-history    p2    needs-funded    excludefromci
     Open Swap With Funded Account
-    Page Should Contain Element    ${HISTORY_WIDGET}
+    Wait Until Page Contains Element    ${HISTORY_WIDGET}    timeout=15s
     Open Swap History
     Page Should Not Contain Element    ${HISTORY_EMPTY}
     Close Sheet
@@ -397,7 +398,8 @@ Large Amount Warns About Price Impact
     Open Swap With Funded Account
     Choose USDC To Receive
     Enter Amount And Wait For Quote    1000000
-    ${affordable}=    Run Keyword And Return Status    Element Should Be Enabled    ${SWAP_BUTTON}
+    ${affordable}=    Run Keyword And Return Status
+    ...    Expect Element    ${SWAP_BUTTON}    enabled    timeout=1ms    retry_interval=0s    loglevel=NONE
     Skip If    not ${affordable}    The funded wallet cannot afford an amount large enough to move the price.
     Tap    ${SWAP_BUTTON}
     Wait Until Settled    ${CONFIRM_SLIDE}
@@ -427,7 +429,7 @@ Minimum Received Does Not Exceed The Quote
     ${quoted_raw}=    Displayed Value    swap-receive-amount
     ${quoted}=    Extract Number    ${quoted_raw}
     Should Not Be Equal    ${quoted}    ${None}    The quoted amount is not a number: "${quoted_raw}".
-    Wait Until Keyword Succeeds    30s    1s    Element Should Be Enabled    ${SWAP_BUTTON}
+    Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
     Tap    ${SWAP_BUTTON}
     Wait Until Settled    ${CONFIRM_SLIDE}
     ${minimum_raw}=    Displayed Value    swap-confirm-min-received

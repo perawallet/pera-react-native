@@ -41,7 +41,7 @@ New Contact Is Saved With Its Name And Address
 Saved Contact Survives An App Restart
     [Tags]    id:contacts.persist.restart    p1
     Start With One Contact
-    Restart Pera
+    Relaunch Pera
     Open Contacts From Menu
     Contact Row Should Be Listed    ${FIXTURE_CONTACT_ADDRESS}
 

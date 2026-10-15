@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation       The passphrase backup reminder: the banner on a funded account whose phrase has not
 ...                 been backed up, and the wizard behind it. Not Cloud Backup.
+Library             Collections
 Library             String
 Resource            onboarding.resource
 
@@ -45,34 +46,41 @@ Open Passphrase
     Tap    ${BACKUP_WRITE_DOWN_BEGIN}
     Wait Until Page Contains Element    ${BACKUP_MNEMONIC_CONTINUE}    timeout=30s
 
-Read Passphrase
-    [Documentation]    The words the grid displays, in order. Logging is off while they are read.
-    @{cells}=    Get WebElements    ${PASSPHRASE_CELL_ANY}
-    ${count}=    Get Length    ${cells}
-    VAR    @{words}    @{EMPTY}
+Remember Passphrase
+    [Documentation]    Keeps the words the grid displays, in order, as ${PASSPHRASE} for this test.
+    ...                Logging is off while they are read so they never reach the run's logs.
     ${level}=    Set Log Level    NONE
     TRY
+        @{cells}=    Get WebElements    ${PASSPHRASE_CELL_ANY}
+        ${count}=    Get Length    ${cells}
+        VAR    @{words}    @{EMPTY}
         FOR    ${position}    IN RANGE    1    ${count + 1}
             ${word}=    Get Text In Container    passphrase_word_${position}    2
             Append To List    ${words}    ${word}
         END
+        VAR    @{PASSPHRASE}    @{words}    scope=TEST
     FINALLY
         Set Log Level    ${level}
     END
-    RETURN    @{words}
+
+Passphrase Should Match The Wallet
+    ${level}=    Set Log Level    NONE
+    TRY
+        ${matches}=    Evaluate    $PASSPHRASE == $MNEMONIC_FUNDED.split()
+    FINALLY
+        Set Log Level    ${level}
+    END
+    Should Be True    ${matches}    msg=The grid did not show the wallet's recovery phrase word for word.
 
 Open Verification Quiz
-    [Documentation]    Returns the passphrase shown on the way, for answering the quiz.
     Open Passphrase
-    @{words}=    Read Passphrase
+    Remember Passphrase
     Tap    ${BACKUP_MNEMONIC_CONTINUE}
     Wait Until Page Contains Element    ${BACKUP_VERIFICATION_NEXT}    timeout=20s
-    RETURN    @{words}
 
 Answer Quiz Correctly
     [Documentation]    Each item reads "Select word #N" and each option's ID carries its word, so the
     ...                right option is addressable once N is known. Logging is off throughout.
-    [Arguments]    @{words}
     @{items}=    Get WebElements    ${QUIZ_ITEM_ANY}
     ${count}=    Get Length    ${items}
     Should Be True    ${count} > 0    msg=The quiz shows no items, so nothing is verified.
@@ -82,7 +90,7 @@ Answer Quiz Correctly
             ${label}=    Get Text In Container    backup_verification_item_${i}    1
             ${digits}=    Get Regexp Matches    ${label}    \\d+
             Should Not Be Empty    ${digits}    msg=A quiz label no longer carries the word position.
-            ${word}=    Get From List    ${words}    ${{int($digits[0]) - 1}}
+            ${word}=    Get From List    ${PASSPHRASE}    ${{int($digits[0]) - 1}}
             Tap    accessibility_id=backup_verification_item_${i}_option_${word}
         END
     FINALLY

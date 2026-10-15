@@ -13,6 +13,7 @@ ${ACCOUNT_NAME_INPUT}           accessibility_id=name_account_name_input
 ${ACCOUNT_FINISH_BUTTON}        accessibility_id=name_account_finish_button
 ${PIN_PROMPT_DONT_ASK}          accessibility_id=pin_security_prompt_dont_ask_button
 ${BANNERS_MODAL_CLOSE}          accessibility_id=banners_carousel_modal_close
+${ANALYTICS_CONSENT_DECLINE}    accessibility_id=analytics_consent_prompt_decline_button
 ${NAVIGATION_BACK_BUTTON}       accessibility_id=navigation_back_button
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
 ${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu']
@@ -26,17 +27,22 @@ Start Pera With Wallet
     ...                fixture hook never handles key material. Reuses the wallet when one is there.
     Open Pera
     # A relaunch shows the app's real start screen rather than whatever a previous run left up.
+    Relaunch Pera
+
+    Go Home
+
+Relaunch Pera
+    [Documentation]    Cold-starts the app and clears whatever stands between launch and a usable
+    ...                first screen: dev-client intro, updated terms, a new wallet when there is none,
+    ...                and the prompts that arrive just after Home.
     Restart Pera
     Wait Until Page Contains Element    ${FIRST_SCREEN}    timeout=30s
     Dismiss Dev Client Intro
     # An existing wallet meets an "Updated Terms" screen at launch when the terms version moved.
     Tap If Present    ${TERMS_AGREE_BUTTON}
     ${onboarding}=    Run Keyword And Return Status    Page Should Contain Element    ${CREATE_WALLET_BUTTON}
-    IF    ${onboarding}
-        Create Wallet
-        Wait Clear Of Startup Prompts
-    END
-    Go Home
+    IF    ${onboarding}    Create Wallet
+    Wait Clear Of Startup Prompts
 
 Go Home
     [Documentation]    Home with a fresh back stack and no sheet open, data untouched. The usual
@@ -55,13 +61,14 @@ Create Wallet
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=60s
 
 Wait Clear Of Startup Prompts
-    [Documentation]    The PIN prompt and banner modal arrive about 3s after Home and swallow taps.
+    [Documentation]    The PIN, analytics-consent and banner prompts arrive about 3s after Home and swallow taps.
     ...                Dismiss them until none has shown for longer than that delay.
     VAR    ${clear}    ${0}
     FOR    ${i}    IN RANGE    90
         ${pin}=    Tap If Present    ${PIN_PROMPT_DONT_ASK}
         ${banner}=    Tap If Present    ${BANNERS_MODAL_CLOSE}
-        ${clear}=    Set Variable If    ${pin} or ${banner}    ${0}    ${clear + 1}
+        ${consent}=    Tap If Present    ${ANALYTICS_CONSENT_DECLINE}
+        ${clear}=    Set Variable If    ${pin} or ${banner} or ${consent}    ${0}    ${clear + 1}
         IF    ${clear} >= 8    RETURN
         Sleep    0.5s
     END

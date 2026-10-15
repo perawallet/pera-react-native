@@ -181,9 +181,10 @@ Finish Import
     Fail    The import never reached Home.
 
 Continue With Selected Addresses
-    ${ready}=    Run Keyword And Return Status    Element Should Be Enabled    ${SELECT_ADDRESSES_CONTINUE}
+    ${ready}=    Run Keyword And Return Status
+    ...    Expect Element    ${SELECT_ADDRESSES_CONTINUE}    enabled    timeout=0s    loglevel=NONE
     IF    not ${ready}    Tap    ${SELECT_ADDRESSES_ALL}
-    Wait Until Keyword Succeeds    5x    0.5s    Element Should Be Enabled    ${SELECT_ADDRESSES_CONTINUE}
+    Expect Element    ${SELECT_ADDRESSES_CONTINUE}    enabled    timeout=3s    retry_interval=0.5s    loglevel=NONE
     Tap    ${SELECT_ADDRESSES_CONTINUE}
     Run Keyword And Ignore Error
     ...    Wait Until Page Does Not Contain Element    ${SELECT_ADDRESSES_CONTINUE}    timeout=10s
@@ -193,9 +194,10 @@ Leave Rekeyed Addresses
     IF    $choice == 'skip'
         Tap    ${REKEYED_SKIP}
     ELSE
-        ${ready}=    Run Keyword And Return Status    Element Should Be Enabled    ${REKEYED_CONTINUE}
+        ${ready}=    Run Keyword And Return Status
+        ...    Expect Element    ${REKEYED_CONTINUE}    enabled    timeout=0s    loglevel=NONE
         IF    not ${ready}    Tap    ${REKEYED_CHECKBOX_ANY}
-        Wait Until Keyword Succeeds    5x    0.5s    Element Should Be Enabled    ${REKEYED_CONTINUE}
+        Expect Element    ${REKEYED_CONTINUE}    enabled    timeout=3s    retry_interval=0.5s    loglevel=NONE
         Tap    ${REKEYED_CONTINUE}
     END
     Run Keyword And Ignore Error

@@ -27,7 +27,7 @@ New Quantum Account Has A 25-Word Passphrase
 
 Quantum Account Identifies As Quantum
     [Tags]    id:quantum.type.label    p1    needs-testid
-    Skip    PWText puts its testID in accessibilityLabel, which hides the rendered type text on iOS, so account_type_label cannot be read on both platforms.
+    Skip    PWText's testID replaces the iOS accessibility label, hiding the type text there.
 
 Quantum Import Opens With Its Explanatory Note
     [Documentation]    The note renders only for the quantum key kind, so it proves the entry routes

@@ -46,8 +46,7 @@ ${IMPORT_REKEYED_SKIP}              accessibility_id=import_rekeyed_addresses_sk
 
 *** Keywords ***
 Open Rekey Target Sheet
-    Open Account Options
-    Tap Option Row    ${OPTION_REKEY_ACCOUNT}
+    Open Account Option    ${OPTION_REKEY_ACCOUNT}
     Wait Until Settled    ${TARGET_STANDARD}
 
 Open Standard Rekey Intro
@@ -58,7 +57,7 @@ Open Standard Rekey Intro
 Open Quantum Rekey Intro
     Open Rekey Target Sheet
     ${offered}=    Run Keyword And Return Status    Page Should Contain Element    ${TARGET_QUANTUM}
-    Skip If    not ${offered}    The rekey sheet offers no quantum target: the quantumAccounts capability is off on this build.
+    Skip If    not ${offered}    The rekey sheet offers no quantum target: quantumAccounts is off.
     Tap    ${TARGET_QUANTUM}
     Wait Until Page Contains Element    ${QUANTUM_INTRO_START}    timeout=15s
 
@@ -70,11 +69,10 @@ Rekey Should Be Blocked As Underfunded
     [Documentation]    The source pays the fee, so a zero-balance source must not be able to confirm.
     [Arguments]    ${notice}    ${cta}
     Wait Until Page Contains Element    ${notice}    timeout=20s
-    Element Should Be Disabled    ${cta}
+    Expect Element    ${cta}    disabled
 
 Open Rescan Rekeyed
-    Open Account Options
-    Tap Option Row    ${OPTION_SCAN_REKEYED}
+    Open Account Option    ${OPTION_SCAN_REKEYED}
     Wait Until Page Contains Element    ${RESCAN_SETTLED}    timeout=30s
     Page Should Not Contain Element    ${RESCAN_ERROR}    Rescan settled on its error state: discovery failed.
 
@@ -87,7 +85,8 @@ Use Account From Environment
     [Documentation]    Selects the account when the wallet already holds it, otherwise imports it.
     [Arguments]    ${mnemonic_env}    ${address}
     Open Account Switcher
-    ${held}=    Tap If Present    accessibility_id=account_switcher_row_${address}
+    ${row}=    Switcher Row    ${address}
+    ${held}=    Tap If Present    ${row}
     IF    not ${held}
         Tap    ${ACCOUNT_MENU_ADD_BUTTON}
         Import Passphrase    ${mnemonic_env}
@@ -113,13 +112,13 @@ Import Passphrase
     Set Log Level    ${level}
     Dismiss Keyboard
     Tap    ${IMPORT_ACCOUNT_BUTTON}
-    Finish Import
+    Finish Passphrase Import
     [Teardown]    Set Log Level    ${level}
 
-Finish Import
+Finish Passphrase Import
     [Documentation]    The account search ends on naming the account or, when other accounts are
     ...                rekeyed to it, on offering them; skip those so rescan still finds them.
-    FOR    ${i}    IN RANGE    120
+    FOR    ${_}    IN RANGE    120
         Tap If Present    ${IMPORT_SELECT_CONTINUE}
         ${named}=    Tap If Present    ${ACCOUNT_FINISH_BUTTON}
         ${skipped}=    Tap If Present    ${IMPORT_REKEYED_SKIP}

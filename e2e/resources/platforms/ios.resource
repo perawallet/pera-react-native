@@ -3,6 +3,7 @@ Documentation       iOS adapter; see android.resource.
 Library             AppiumLibrary    run_on_failure=Nothing
 Library             Collections
 Library             Process
+Library             String
 
 
 *** Variables ***
@@ -69,6 +70,19 @@ Open Deeplink
 Dismiss Keyboard
     # Header taps work with the keyboard up on iOS, and Hide Keyboard costs ~3s failing there.
     No Operation
+
+Enter Recovery Phrase
+    # Typing the whole phrase into one field breaks words apart on iOS, so fill each field.
+    [Arguments]    ${phrase}
+    @{words}=    Split String    ${phrase}
+    FOR    ${i}    ${word}    IN ENUMERATE    @{words}
+        Input Text    accessibility_id=import_account_word_input_${i}    ${word}
+    END
+
+Get Text In Container
+    [Arguments]    ${test_id}    ${n}
+    ${text}=    Get Text    xpath=(//*[@name='${test_id}']//XCUIElementTypeStaticText)[${n}]
+    RETURN    ${text}
 
 Close Sheet
     # Modal sheets hide the drag handle and their scroll view swallows swipes; tap the backdrop above.

@@ -1,5 +1,5 @@
 *** Settings ***
-Resource            app.resource
+Resource            onboarding.resource
 
 
 *** Variables ***
@@ -9,7 +9,6 @@ ${SWAP_INTRO_START_BUTTON}          accessibility_id=swap-intro-start-button
 ${AGE_GATE_CONFIRM}                 xpath=//*[@text='I am 18 or older' or @label='I am 18 or older']
 ${SWAP_INFO_BUTTON}                 xpath=//*[@content-desc='swap_info_button' or @resource-id='swap_info_button' or @name='swap_info_button']
 ${WEBVIEW_CLOSE_BUTTON}             accessibility_id=webview_close_button
-${ACCOUNT_SELECTION_BUTTON}         accessibility_id=account_selection_button
 ${ACCOUNT_DRAWER}                   xpath=//*[@content-desc='pw_drawer_gesture_surface' or @resource-id='pw_drawer_gesture_surface' or @name='pw_drawer_gesture_surface']
 ${ACCOUNT_ROW_ANY}                  xpath=//*[starts-with(@content-desc,'account_switcher_row_') or starts-with(@resource-id,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
 
@@ -78,8 +77,6 @@ ${QUOTE_TIMEOUT}                    45
 ${QUOTE_SETTLE}                     3s
 ${FUNDED_PAY_AMOUNT}                0.1
 ${FUNDED_WALLET_IMPORTED}           ${False}
-# The shared wallet-import journey; named indirectly so the suite dry-runs before it exists.
-${IMPORT_WALLET_KEYWORD}            Import Wallet
 
 
 *** Keywords ***
@@ -98,13 +95,13 @@ Open Swap
     Fail    The swap form never appeared.
 
 Open Swap With Funded Account
-    [Documentation]    Skips unless PERA_E2E_SWAP_MNEMONIC holds a funded mainnet wallet. Imports it once
-    ...                per session; the secret is passed straight through and never assigned or logged.
+    [Documentation]    Skips unless PERA_E2E_SWAP_MNEMONIC holds a funded mainnet universal wallet.
+    ...                Replaces the device wallet with it once per session; the phrase is passed
+    ...                straight through and never assigned or logged.
     Skip If    not os.environ.get('PERA_E2E_SWAP_MNEMONIC')
     ...    PERA_E2E_SWAP_MNEMONIC is not set; this case needs a funded mainnet wallet.
     IF    not ${FUNDED_WALLET_IMPORTED}
-        Go Home
-        Run Keyword    ${IMPORT_WALLET_KEYWORD}    %{PERA_E2E_SWAP_MNEMONIC}
+        Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    %{PERA_E2E_SWAP_MNEMONIC}
         VAR    ${FUNDED_WALLET_IMPORTED}    ${True}    scope=SUITE
     END
     Open Swap
@@ -277,7 +274,7 @@ Open Confirmation
     [Arguments]    ${amount}=${FUNDED_PAY_AMOUNT}
     Choose USDC To Receive
     Enter Amount And Wait For Quote    ${amount}
-    Wait Until Keyword Succeeds    30s    1s    Element Should Be Enabled    ${SWAP_BUTTON}
+    Expect Element    ${SWAP_BUTTON}    enabled    timeout=30s
     Tap    ${SWAP_BUTTON}
     Wait Until Settled    ${CONFIRM_SLIDE}
 

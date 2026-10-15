@@ -164,7 +164,7 @@ Watch Account Is Added From An Address
     Wait Until Page Contains Element    ${WATCH_ADDRESS_INPUT}    timeout=15s
     Input Text    ${WATCH_ADDRESS_INPUT}    ${WATCH_ADDRESS}
     Dismiss Keyboard
-    Wait Until Keyword Succeeds    10x    0.5s    Element Should Be Enabled    ${WATCH_SUBMIT_BUTTON}
+    Expect Element    ${WATCH_SUBMIT_BUTTON}    enabled    timeout=5s    retry_interval=0.5s
     Tap    ${WATCH_SUBMIT_BUTTON}
     Name Account And Finish    ${WATCH_ACCOUNT_NAME}
     Wait Until Page Contains    ${WATCH_ACCOUNT_NAME}    timeout=15s

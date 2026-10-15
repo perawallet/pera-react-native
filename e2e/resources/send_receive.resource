@@ -1,0 +1,218 @@
+*** Settings ***
+Documentation       Receive needs no funds, so it runs on the suite's own wallet. Send and every other
+...                 funded case use a funded testnet account imported from E2E_FUNDED_MNEMONIC (a
+...                 24-word Universal wallet) whose primary address is E2E_FUNDED_ADDRESS; they skip
+...                 when either is unset. Sends go to that same address, so a run spends only fees.
+Library             String
+Resource            app.resource
+
+
+*** Variables ***
+${FUNDED_MNEMONIC}                  %{E2E_FUNDED_MNEMONIC=}
+${FUNDED_ADDRESS}                   %{E2E_FUNDED_ADDRESS=}
+${SEND_AMOUNT}                      0.001
+
+${ACCOUNT_SELECTION_BUTTON}         accessibility_id=account_selection_button
+${MORE_BUTTON}                      accessibility_id=more_button
+${ACCOUNT_MENU_ADD_BUTTON}          accessibility_id=account_menu_add_account_button
+${ADD_ACCOUNT_IMPORT_BUTTON}        accessibility_id=add_account_import_button
+${IMPORT_RECOVER_WALLET_BUTTON}     accessibility_id=import_account_options_recover_wallet_button
+${IMPORT_HD_WALLET_OPTION}          accessibility_id=import_options_hd_wallet_button
+${IMPORT_INFO_RECOVER_BUTTON}       accessibility_id=import_info_recover_button
+${IMPORT_FIRST_WORD_INPUT}          accessibility_id=import_account_word_input_0
+${IMPORT_SUBMIT_BUTTON}             accessibility_id=import_account_import_button
+${IMPORT_SELECT_CONTINUE}           accessibility_id=import_select_addresses_continue_button
+${NAME_ACCOUNT_FINISH}              accessibility_id=name_account_finish_button
+# Any account row other than the funded one: the suite's own wallet account.
+${OTHER_ACCOUNT_ROW}                xpath=(//*[(starts-with(@content-desc,'account_switcher_row_') or starts-with(@name,'account_switcher_row_')) and not(contains(@content-desc,'${FUNDED_ADDRESS}')) and not(contains(@name,'${FUNDED_ADDRESS}'))])[1]
+
+${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
+${SETTINGS_DEVELOPER_ITEM}          accessibility_id=settings_item_developer_settings
+${DEVELOPER_NODE_ITEM}              accessibility_id=developer_settings_node_item
+${DEVELOPER_MODE_SWITCH}            accessibility_id=node_settings_developer_mode_switch
+# Listed only while Developer Mode is on; turning it off is how mainnet comes back.
+${TESTNET_RADIO}                    accessibility_id=node_settings_algorand_testnet_radio
+
+${SEND_BUTTON}                      accessibility_id=send_button
+${RECEIVE_BUTTON}                   accessibility_id=receive_button
+${RECEIVE_COPY_ADDRESS}             accessibility_id=receive_copy_address_button
+${RECEIVE_SHARE_ADDRESS}            accessibility_id=receive_share_address_button
+${COPIED_TOAST_TEXT}                Copied to clipboard
+${SEND_ALGO_ROW}                    accessibility_id=asset-list-item-0
+# The send-info sheet over the numpad has no testID on its button.
+${SEND_INFO_UNDERSTAND}             xpath=//*[@text='I Understand' or @label='I Understand']
+${SEND_NEXT_BUTTON}                 accessibility_id=send_input_next_button
+${SEND_MAX_BUTTON}                  accessibility_id=send_input_max_button
+${ADDRESS_SEARCH_INPUT}             accessibility_id=address_search_input
+${SEND_CONFIRM_SLIDE}               accessibility_id=send_confirm_button
+${SEND_SUCCESS_DONE}                accessibility_id=send_success-primary
+
+
+*** Keywords ***
+Use Funded Testnet Account
+    [Documentation]    Selects the funded account on testnet, importing it the first time. Pair with
+    ...                Leave Funded Testnet Account as the case teardown so later cases see the suite
+    ...                wallet on mainnet again.
+    Skip If    not $FUNDED_MNEMONIC or not $FUNDED_ADDRESS
+    ...    Set E2E_FUNDED_MNEMONIC and E2E_FUNDED_ADDRESS to run funded cases.
+    Go Home
+    Open Account Switcher
+    ${row}=    Funded Account Row
+    ${known}=    Run Keyword And Return Status    Page Should Contain Element    ${row}
+    IF    not ${known}    Import Funded Account
+    Select Account    ${row}
+    ${funded}=    Run Keyword And Return Status    Page Should Contain Element    ${SEND_BUTTON}
+    IF    not ${funded}    Set Testnet    ${True}
+    Wait Until Page Contains Element    ${SEND_BUTTON}    timeout=60s
+
+Leave Funded Testnet Account
+    Run Keyword If Test Failed    Capture Page Screenshot
+    Run Keyword If    $FUNDED_MNEMONIC and $FUNDED_ADDRESS    Restore Suite Wallet
+
+Restore Suite Wallet
+    Set Testnet    ${False}
+    Open Account Switcher
+    Select Account    ${OTHER_ACCOUNT_ROW}
+
+Funded Account Row
+    RETURN    accessibility_id=account_switcher_row_${FUNDED_ADDRESS}
+
+Open Account Switcher
+    Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
+    Tap    ${ACCOUNT_SELECTION_BUTTON}
+    Wait Until Settled    ${ACCOUNT_MENU_ADD_BUTTON}
+
+Select Account
+    [Arguments]    ${row}
+    Wait Until Page Contains Element    ${row}    timeout=15s
+    Tap    ${row}
+    Wait Until Element Is Visible    ${MORE_BUTTON}    timeout=15s
+
+Import Funded Account
+    [Documentation]    From the open account switcher: Add Account -> Import -> Recover wallet ->
+    ...                Universal (24-word) -> phrase -> pick the funded address -> name -> Home.
+    Tap    ${ACCOUNT_MENU_ADD_BUTTON}
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=15s
+    Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
+    Wait Until Page Contains Element    ${IMPORT_RECOVER_WALLET_BUTTON}    timeout=15s
+    Tap    ${IMPORT_RECOVER_WALLET_BUTTON}
+    Wait Until Settled    ${IMPORT_HD_WALLET_OPTION}
+    Tap    ${IMPORT_HD_WALLET_OPTION}
+    Wait Until Page Contains Element    ${IMPORT_INFO_RECOVER_BUTTON}    timeout=15s
+    Tap    ${IMPORT_INFO_RECOVER_BUTTON}
+    Wait Until Page Contains Element    ${IMPORT_FIRST_WORD_INPUT}    timeout=15s
+    # The first input spreads a pasted phrase across all word inputs. Logging is off so the
+    # phrase never lands in the run log.
+    ${level}=    Set Log Level    NONE
+    Input Text    ${IMPORT_FIRST_WORD_INPUT}    ${FUNDED_MNEMONIC.strip()}
+    Set Log Level    ${level}
+    Dismiss Keyboard
+    Tap    ${IMPORT_SUBMIT_BUTTON}
+    Pick Funded Address
+    Wait Until Page Contains Element    ${NAME_ACCOUNT_FINISH}    timeout=60s
+    Tap    ${NAME_ACCOUNT_FINISH}
+    Wait Until Page Contains Element    ${MENU_TAB}    timeout=60s
+    Wait Clear Of Startup Prompts
+    Open Account Switcher
+
+Pick Funded Address
+    Wait Until Page Contains Element    ${IMPORT_SELECT_CONTINUE}    timeout=60s
+    ${checkbox}=    Set Variable    accessibility_id=import_select_addresses_item_checkbox_${FUNDED_ADDRESS}
+    Wait Until Page Contains Element    ${checkbox}    timeout=30s
+    ${ready}=    Run Keyword And Return Status    Element Should Be Enabled    ${IMPORT_SELECT_CONTINUE}
+    IF    not ${ready}    Tap    ${checkbox}
+    Wait Until Keyword Succeeds    5s    0.5s    Element Should Be Enabled    ${IMPORT_SELECT_CONTINUE}
+    Tap    ${IMPORT_SELECT_CONTINUE}
+
+Open Node Settings
+    Go Home
+    Tap    ${MENU_TAB}
+    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
+    Tap    ${MENU_SETTINGS_BUTTON}
+    Scroll Until Present    ${SETTINGS_DEVELOPER_ITEM}
+    Tap    ${SETTINGS_DEVELOPER_ITEM}
+    Wait Until Page Contains Element    ${DEVELOPER_NODE_ITEM}    timeout=15s
+    Tap    ${DEVELOPER_NODE_ITEM}
+    Wait Until Page Contains Element    ${DEVELOPER_MODE_SWITCH}    timeout=15s
+
+Set Testnet
+    [Arguments]    ${on}
+    Open Node Settings
+    ${listed}=    Run Keyword And Return Status    Page Should Contain Element    ${TESTNET_RADIO}
+    IF    ${on}
+        IF    not ${listed}    Tap    ${DEVELOPER_MODE_SWITCH}
+        Wait Until Page Contains Element    ${TESTNET_RADIO}    timeout=15s
+        Tap    ${TESTNET_RADIO}
+    ELSE IF    ${listed}
+        Tap    ${DEVELOPER_MODE_SWITCH}
+        Wait Until Page Does Not Contain Element    ${TESTNET_RADIO}    timeout=15s
+    END
+    Go Home
+
+Scroll Until Present
+    [Arguments]    ${locator}
+    FOR    ${i}    IN RANGE    5
+        ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
+        IF    ${present}    RETURN
+        Swipe By Percent    50    75    50    30    duration=400ms
+    END
+    Wait Until Page Contains Element    ${locator}    timeout=5s
+
+Slide To Confirm
+    [Documentation]    The confirm control is a pan gesture; a tap does nothing.
+    [Arguments]    ${slide}
+    Wait Until Settled    ${slide}
+    ${loc}=    Get Element Location    ${slide}
+    ${size}=    Get Element Size    ${slide}
+    ${y}=    Evaluate    int($loc['y'] + $size['height'] / 2)
+    ${x1}=    Evaluate    int($loc['x'] + $size['width'] * 0.1)
+    ${x2}=    Evaluate    int($loc['x'] + $size['width'] * 0.95)
+    Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms
+
+Open Receive
+    Wait Until Page Contains Element    ${RECEIVE_BUTTON}    timeout=30s
+    Tap    ${RECEIVE_BUTTON}
+    Wait Until Page Contains Element    ${RECEIVE_COPY_ADDRESS}    timeout=20s
+
+Open Send
+    Wait Until Page Contains Element    ${SEND_BUTTON}    timeout=30s
+    Tap    ${SEND_BUTTON}
+    Wait Until Settled    ${SEND_ALGO_ROW}
+
+Open Amount Entry
+    Open Send
+    Tap    ${SEND_ALGO_ROW}
+    Wait Until Page Contains Element    ${SEND_NEXT_BUTTON}    timeout=20s
+    # Shown until acknowledged once; it covers the numpad.
+    ${info}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${SEND_INFO_UNDERSTAND}    timeout=5s
+    IF    ${info}
+        Wait Until Settled    ${SEND_INFO_UNDERSTAND}
+        Tap    ${SEND_INFO_UNDERSTAND}
+        Wait Until Page Does Not Contain Element    ${SEND_INFO_UNDERSTAND}    timeout=10s
+    END
+
+Enter Amount
+    [Arguments]    ${amount}
+    Element Should Be Disabled    ${SEND_NEXT_BUTTON}
+    @{chars}=    Split String To Characters    ${amount}
+    FOR    ${c}    IN    @{chars}
+        IF    $c == '.'
+            Tap    accessibility_id=numpad_key_decimal
+        ELSE
+            Tap    accessibility_id=numpad_key_${c}
+        END
+    END
+    Wait Until Keyword Succeeds    5s    0.5s    Element Should Be Enabled    ${SEND_NEXT_BUTTON}
+
+Open Destination
+    Tap    ${SEND_NEXT_BUTTON}
+    Wait Until Page Contains Element    ${ADDRESS_SEARCH_INPUT}    timeout=20s
+
+Choose Own Address As Recipient
+    Input Text    ${ADDRESS_SEARCH_INPUT}    ${FUNDED_ADDRESS}
+    ${row}=    Set Variable    accessibility_id=account_result_row_${FUNDED_ADDRESS}
+    Wait Until Page Contains Element    ${row}    timeout=15s
+    Dismiss Keyboard
+    Tap    ${row}
+    Wait Until Page Contains Element    ${SEND_CONFIRM_SLIDE}    timeout=25s

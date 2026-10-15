@@ -56,5 +56,16 @@ Open Deeplink
 Dismiss Keyboard
     Run Keyword And Ignore Error    Hide Keyboard
 
+Enter Recovery Phrase
+    # The import screen spreads a pasted phrase across its word fields.
+    [Arguments]    ${phrase}
+    Input Text    accessibility_id=import_account_word_input_0    ${phrase}
+
+Get Text In Container
+    # A testID-only container is a resource-id on Android, with its text in following siblings.
+    [Arguments]    ${test_id}    ${n}
+    ${text}=    Get Text    xpath=//*[@resource-id='${test_id}']/following-sibling::android.widget.TextView[${n}]
+    RETURN    ${text}
+
 Close Sheet
     Swipe By Percent    50    40    50    90    duration=800ms
