@@ -94,6 +94,7 @@ const createOriginHandler = (): ConnectionHandler => {
                         peer: { name: 'Page dApp', url: PAGE },
                         requested: {
                             networks: [Networks.mainnet],
+                            chains: ['algorand'],
                             methods: ['algo_signTxn'],
                         },
                         expiresAt: Date.now() + 60_000,

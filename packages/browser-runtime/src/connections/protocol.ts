@@ -475,6 +475,8 @@ const isProposalSummary = (
     isPeer(value.peer) &&
     isRecord(value.requested) &&
     isStringArray(value.requested.networks) &&
+    Array.isArray(value.requested.chains) &&
+    value.requested.chains.every(isChainId) &&
     isStringArray(value.requested.methods) &&
     typeof value.expiresAt === 'number'
 

@@ -36,7 +36,7 @@ const makeProposal = (
         proposalId,
         pairingId,
         peer: { name: 'dApp' },
-        requested: { networks: [], methods: [] },
+        requested: { networks: [], chains: ['algorand'], methods: [] },
         expiresAt: Date.now() + 60_000,
         approve: vi.fn(async () => makeConnection(proposalId)),
         reject: vi.fn(async () => {}),

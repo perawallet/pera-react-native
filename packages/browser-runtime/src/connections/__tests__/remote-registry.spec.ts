@@ -56,7 +56,11 @@ const proposalEvent = (pairingId: string): ConnectionsEvent => ({
         proposalId: `proposal-${pairingId}`,
         pairingId,
         peer: { name: 'dApp' },
-        requested: { networks: [NETWORKS[0]], methods: ['algo_signTxn'] },
+        requested: {
+            networks: [NETWORKS[0]],
+            chains: ['algorand'],
+            methods: ['algo_signTxn'],
+        },
         expiresAt: 1,
     },
 })
