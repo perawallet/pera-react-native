@@ -13,16 +13,16 @@
 // The dependency-free half of the module, for callers the handlers reach back
 // into (connections, webview, messages, multisig). Nothing here may import a
 // handler or a hook, or those callers close a cycle through it.
-export { buildDeeplink } from './builders'
 export {
+    DeeplinkType,
     PERAWALLET_UNIVERSAL_LINK_HOST,
     PERAWALLET_WC_SCHEME,
     WC_SCHEME,
-} from './constants'
+    buildDeeplink,
+    getUniversalLinkPath,
+    isNotificationAllowedDeeplinkType,
+    isOriginGatedDeeplinkType,
+} from '@perawallet/wallet-core-deeplinks'
 export { DeeplinkTimeoutError } from './handlers/timeout'
-export { isNotificationAllowedDeeplinkType } from './notification-policy'
 export { navigateToScreen, pushScreen } from './navigateToScreen'
-export { isOriginGatedDeeplinkType } from './page-initiated-policy'
 export { parseDeeplink } from './parser'
-export { DeeplinkType } from './types'
-export { getUniversalLinkPath, isLegacyChainAddress } from './utils'

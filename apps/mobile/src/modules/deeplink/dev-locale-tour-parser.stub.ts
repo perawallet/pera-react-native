@@ -12,7 +12,7 @@
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import type { AnyParsedDeeplink, DevLocaleTourDeeplink } from './types'
+import type { AppDeeplink, DevLocaleTourDeeplink } from './types'
 
 // Returning null here is what makes `perawallet://app/dev/locale-tour?...`
 // fall through to the ordinary `perawallet://app/...` parser and resolve to a
@@ -20,5 +20,5 @@ import type { AnyParsedDeeplink, DevLocaleTourDeeplink } from './types'
 export const parseDevLocaleTourUri = (): Nullable<DevLocaleTourDeeplink> => null
 
 export const isDevLocaleTourDeeplink = (
-    _parsed: AnyParsedDeeplink,
+    _parsed: AppDeeplink,
 ): _parsed is DevLocaleTourDeeplink => false

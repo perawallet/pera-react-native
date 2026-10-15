@@ -12,12 +12,21 @@
 
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
-import { baseUnitsToDisplayUnits, logger } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import {
+    buildDeeplink,
+    DeeplinkType,
+    isNotificationAllowedDeeplinkType,
+    isPeraOwnedDeeplink,
+    resolveChainDeeplink,
+    type BuildDeeplinkInput,
+    type LinkSource,
+} from '@perawallet/wallet-core-deeplinks'
 import { parseDeeplink } from '../parser'
 import { isDevLocaleTourDeeplink } from '../dev-locale-tour-parser'
-import { DeeplinkType, type LinkSource } from '../types'
+import type { AppDeeplink } from '../types'
 import {
     findAccountByAddressOn,
     findAccountByAnyChainAddress,
@@ -25,7 +34,10 @@ import {
     useAccountsStore,
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
@@ -41,9 +53,6 @@ import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
-import { isNotificationAllowedDeeplinkType } from '../notification-policy'
-import { isLegacyChainAddress, isPeraOwnedDeeplink } from '../utils'
-import { buildDeeplink, type BuildDeeplinkInput } from '../builders'
 import {
     useAssetOptInDeeplink,
     useBrowserDeeplink,
@@ -75,12 +84,25 @@ type UseDeepLinkResult = {
     buildDeeplink: (input: BuildDeeplinkInput) => string
 }
 
+// Handlers act on the legacy chain until routing resolves each link's own chain.
+const ROUTABLE_LINK_CHAINS: ReadonlySet<ChainId> = new Set([LEGACY_CHAIN_ID])
+
+// A chain's adapter claimed the link but refused it for a reason the user can
+// act on, so it is refused with a toast rather than ignored as "not a link".
+const isUnsupportedChainLink = (url: string): boolean => {
+    const resolution = resolveChainDeeplink(url)
+    return resolution.status === 'failed' && resolution.reason !== 'malformed'
+}
+
+const isRoutableLink = (link: AppDeeplink): boolean => {
+    const target = 'target' in link ? link.target : undefined
+    return !target || ROUTABLE_LINK_CHAINS.has(target.chainId)
+}
+
 // Hoisted for a stable identity: `useDeeplinkListener`'s effects depend on it,
 // and a per-render arrow re-registers the `Linking` subscription every render.
-const isValidDeepLink = (url: string): boolean => {
-    if (isLegacyChainAddress(url)) return true
-    return parseDeeplink(url) !== null
-}
+const isValidDeepLink = (url: string): boolean =>
+    parseDeeplink(url) !== null || isUnsupportedChainLink(url)
 
 export const useDeepLink = (): UseDeepLinkResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
@@ -115,7 +137,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const isAllowed = useCapabilityCheck()
 
     // CARDS and SELL gate on flag hooks that already fold in their capability.
-    const isTypeAvailable = (type: DeeplinkType): boolean => {
+    const isTypeAvailable = (type: AppDeeplink['type']): boolean => {
         if (type === DeeplinkType.CARDS) return isPeraCardEnabled
         if (type === DeeplinkType.SELL) return isGiftCardsEnabled
         const requirement = capabilityRequirementForDeeplink(type)
@@ -164,10 +186,28 @@ export const useDeepLink = (): UseDeepLinkResult => {
     ) => {
         let parsedData: ReturnType<typeof parseDeeplink> = null
 
+        const refuseUnavailable = (type: string) => {
+            logger.warn('Blocked deeplink for an unavailable capability', {
+                type,
+            })
+            // A notification refusal stays silent, like the policy below.
+            if (source !== 'notification') {
+                errorToast(
+                    t('common.network_unavailable.title'),
+                    t('common.network_unavailable.generic_body'),
+                )
+            }
+            onError?.()
+        }
+
         try {
             parsedData = parseDeeplink(url)
 
             if (!parsedData) {
+                if (isUnsupportedChainLink(url)) {
+                    refuseUnavailable('UNSUPPORTED_CHAIN_LINK')
+                    return
+                }
                 // A recognized-but-unsupported Pera deeplink stays silent, like the QR
                 // scanner re-arming on unknown codes; only input not aimed at Pera at
                 // all surfaces the invalid-URL toast.
@@ -192,18 +232,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 return
             }
 
-            const refuseUnavailable = (type: DeeplinkType) => {
-                logger.warn('Blocked deeplink for an unavailable capability', {
-                    type,
-                })
-                // A notification refusal stays silent, like the policy above.
-                if (source !== 'notification') {
-                    errorToast(
-                        t('common.network_unavailable.title'),
-                        t('common.network_unavailable.generic_body'),
-                    )
-                }
-                onError?.()
+            if (!isRoutableLink(parsedData)) {
+                refuseUnavailable(parsedData.type)
+                return
             }
 
             if (!isTypeAvailable(parsedData.type)) {
@@ -270,35 +301,20 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     break
                 }
 
-                case DeeplinkType.ALGO_TRANSFER: {
+                case DeeplinkType.TRANSFER: {
                     openSendFunds({
-                        assetId: nativeAsset.assetId,
-                        destination: parsedData.receiverAddress,
-                        // Wire is native base units; the store holds display units.
-                        amount: parsedData.amount
-                            ? baseUnitsToDisplayUnits(
-                                  BigInt(parsedData.amount),
-                                  nativeAsset.decimals,
-                              )
-                            : undefined,
-                        note: parsedData.note ?? parsedData.xnote,
-                    })
-                    break
-                }
-
-                case DeeplinkType.ASSET_TRANSFER: {
-                    openSendFunds({
-                        assetId: parsedData.assetId,
+                        assetId:
+                            parsedData.assetRef?.assetId ?? nativeAsset.assetId,
                         destination: parsedData.receiverAddress,
                         // Base units — InputScreen converts once the asset's
                         // `decimals` resolve.
                         amountBaseUnits: parsedData.amount,
-                        note: parsedData.note ?? parsedData.xnote,
+                        note: parsedData.note ?? parsedData.chainData?.xnote,
                     })
                     break
                 }
 
-                case DeeplinkType.KEYREG: {
+                case DeeplinkType.CHAIN_ACTION: {
                     await submitKeyreg(parsedData)
                     break
                 }
@@ -333,7 +349,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // needs observing; detached because it awaits its own sheets.
                     dispatchDetached(
                         optInAsset({
-                            assetId: parsedData.assetId,
+                            assetId: parsedData.assetRef.assetId,
                             address: parsedData.address,
                         }),
                         parsedData.type,
@@ -349,8 +365,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         params: {
                             screen: 'AssetDetails',
                             params: {
-                                assetId: parsedData.assetId,
-                                chainId: LEGACY_CHAIN_ID,
+                                assetId:
+                                    parsedData.assetRef?.assetId ??
+                                    nativeAsset.assetId,
+                                chainId: parsedData.target.chainId,
                             },
                         },
                     })
@@ -428,8 +446,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Swap',
                         params: {
-                            assetInId: parsedData.assetInId,
-                            assetOutId: parsedData.assetOutId,
+                            assetInId: parsedData.assetInRef?.assetId,
+                            assetOutId: parsedData.assetOutRef?.assetId,
                         },
                     })
                     break
@@ -587,7 +605,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
     isTypeAvailableRef.current = isTypeAvailable
     const isDeepLinkAvailable = useCallback((url: string): boolean => {
         const parsed = parseDeeplink(url)
-        return !parsed || isTypeAvailableRef.current(parsed.type)
+        if (!parsed) return !isUnsupportedChainLink(url)
+        return isRoutableLink(parsed) && isTypeAvailableRef.current(parsed.type)
     }, [])
 
     return {

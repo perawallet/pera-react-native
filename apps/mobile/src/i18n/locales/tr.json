@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Panodan yapıştır",
         "invalid_qr_title": "Geçersiz QR kodu",
         "invalid_qr_body": "Bu QR kodu bir cüzdan adresi içermiyor",
+        "other_chain_qr_body": "Bu, {{chain}} üzerinde bir adres.",
         "address": "Adres",
         "contacts": "Kişiler",
         "my_accounts": "Hesaplar",

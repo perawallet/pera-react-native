@@ -168,9 +168,9 @@ vi.mock('@hooks/useLanguage', () => ({
 
 vi.mock('@modules/deeplink', async () => ({
     DeeplinkType: (
-        await vi.importActual<typeof import('@modules/deeplink/types')>(
-            '@modules/deeplink/types',
-        )
+        await vi.importActual<
+            typeof import('@perawallet/wallet-core-deeplinks')
+        >('@perawallet/wallet-core-deeplinks')
     ).DeeplinkType,
     useDeepLink: vi.fn(() => ({
         parseDeeplink: vi.fn(),

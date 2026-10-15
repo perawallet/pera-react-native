@@ -30,6 +30,7 @@ export const WatchAccountScreen = () => {
     const { t } = useLanguage()
     const {
         address,
+        watchableChainIds,
         resolvedAddress,
         isValidAddress,
         isDuplicateAddress,
@@ -71,6 +72,7 @@ export const WatchAccountScreen = () => {
             />
 
             <AddressEntryField
+                chainIds={watchableChainIds}
                 testID='watch_account_address_input'
                 placeholder={t('onboarding.watch_account.address_placeholder')}
                 value={address}

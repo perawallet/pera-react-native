@@ -16,7 +16,7 @@ import {
     detectImportKind,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
-import { DeeplinkType } from '@modules/deeplink/types'
+import { DeeplinkType } from '@perawallet/wallet-core-deeplinks'
 import {
     useImportAccountOptionsScreen,
     type UseImportAccountOptionsScreenResult,

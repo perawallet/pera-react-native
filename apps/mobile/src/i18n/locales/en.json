@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Paste From Clipboard",
         "invalid_qr_title": "Invalid QR Code",
         "invalid_qr_body": "This QR code doesn't contain a wallet address",
+        "other_chain_qr_body": "This is an address on {{chain}}.",
         "address": "Address",
         "contacts": "Contacts",
         "my_accounts": "Accounts",

@@ -11,7 +11,8 @@
  */
 
 import type { CapabilityRequirement } from '@hooks/useCapability'
-import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
+import { DeeplinkType } from '@perawallet/wallet-core-deeplinks'
+import type { AppDeeplink } from './types'
 
 /**
  * What a deeplink needs before it may navigate: a deeplink must never reach a
@@ -22,7 +23,7 @@ import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
  * `SELL` beside this table, since their flag hooks already fold in the capability.
  */
 export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
-    Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
+    DeeplinkType,
     CapabilityRequirement | null
 > = {
     [DeeplinkType.DISCOVER_PATH]: {
@@ -48,9 +49,8 @@ export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
     [DeeplinkType.EDIT_CONTACT]: null,
     [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: null,
     [DeeplinkType.ADDRESS_ACTIONS]: null,
-    [DeeplinkType.ALGO_TRANSFER]: null,
-    [DeeplinkType.ASSET_TRANSFER]: null,
-    [DeeplinkType.KEYREG]: null,
+    [DeeplinkType.TRANSFER]: null,
+    [DeeplinkType.CHAIN_ACTION]: null,
     [DeeplinkType.RECOVER_ADDRESS]: null,
     [DeeplinkType.ASSET_DETAIL]: null,
     [DeeplinkType.ASSET_TRANSACTIONS]: null,
@@ -64,9 +64,9 @@ export const DEEPLINK_CAPABILITY_REQUIREMENTS: Record<
 }
 
 const REQUIREMENT_BY_TYPE: Partial<
-    Record<DeeplinkType, CapabilityRequirement | null>
+    Record<AppDeeplink['type'], CapabilityRequirement | null>
 > = DEEPLINK_CAPABILITY_REQUIREMENTS
 
 export const capabilityRequirementForDeeplink = (
-    type: DeeplinkType,
+    type: AppDeeplink['type'],
 ): CapabilityRequirement | null => REQUIREMENT_BY_TYPE[type] ?? null

@@ -18,7 +18,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { navigateToScreen } from '../navigateToScreen'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
-import type { LinkSource } from '../types'
+import type { LinkSource } from '@perawallet/wallet-core-deeplinks'
 
 export type RecoverAddressDeeplinkHandler = (params: {
     mnemonic: string

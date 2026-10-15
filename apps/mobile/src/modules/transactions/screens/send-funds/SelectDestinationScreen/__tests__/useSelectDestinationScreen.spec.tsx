@@ -419,7 +419,7 @@ describe('useSelectDestinationScreen', () => {
 
         it('stops auto-advancing (no infinite spinner) when the deeplinked asset is not in the local DB', () => {
             // Asset query settled but the id resolves to nothing — an
-            // ASSET_TRANSFER for an ASA the user has never held.
+            // TRANSFER of an ASA the user has never held.
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map(),
                 isFetched: true,

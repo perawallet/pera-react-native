@@ -33,25 +33,31 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+import { isValidAddress } from 'algosdk'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-// By source path: the bare subpath is mocked, and this is the real validator.
-import { isValidAlgorandAddress as isChecksummedAlgorandAddress } from '@packages/chain-algorand/src/blockchain/utils/addresses'
+import {
+    DeeplinkType,
+    deeplinkAdapters,
+} from '@perawallet/wallet-core-deeplinks'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 import { parseDeeplink } from '../parser'
 import { parseDevLocaleTourUri } from '../dev-locale-tour-parser'
-
-import { DeeplinkType } from '../types'
 
 // Test addresses from CSV
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 beforeEach(() => {
-    registerLegacyAddressCodec(isChecksummedAlgorandAddress)
+    // The checksum, not the shape: the chain-algorand blockchain barrel is
+    // mocked here, and so is the codec built on it.
+    registerLegacyAddressCodec(address => isValidAddress(address))
+    registerDeeplinkAdapters()
 })
 
 afterEach(() => {
     addressCodecs.reset()
+    deeplinkAdapters.reset()
 })
 
 describe('Deeplink Parser - Main Parser', () => {
@@ -65,7 +71,7 @@ describe('Deeplink Parser - Main Parser', () => {
         const result = parseDeeplink(
             `algo:31566704/transfer?address=${TEST_ADDRESS}`,
         )
-        expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
+        expect(result?.type).toBe(DeeplinkType.TRANSFER)
     })
 
     it('routes to new format parser for /app/ URLs', () => {
@@ -192,7 +198,7 @@ describe('Deeplink Parser - universal-link origin', () => {
             ),
         ).toMatchObject({
             type: DeeplinkType.ASSET_OPT_IN,
-            assetId: '31566704',
+            assetRef: { assetId: '31566704' },
             address: TEST_ADDRESS,
         })
     })
@@ -333,57 +339,6 @@ describe('Deeplink Parser - Edge Cases', () => {
         expect(
             parseDeeplink('perawallet://asset-inbox?account=100%'),
         ).toBeNull()
-    })
-
-    describe('Pera Web import (JSON QR)', () => {
-        // 32-byte base64 secretbox key. Stable across tests so we can
-        // assert byte-for-byte equality on the decoded result.
-        const KEY = Uint8Array.from(Array.from({ length: 32 }, (_, i) => i + 1))
-        const KEY_B64 = Buffer.from(KEY).toString('base64')
-
-        it('recognizes a Pera Web QR JSON as PERA_WEB_IMPORT', () => {
-            const qr = JSON.stringify({
-                backupId: 'backup-abc',
-                encryptionKey: KEY_B64,
-                version: '1',
-                action: 'import',
-            })
-
-            const result = parseDeeplink(qr)
-            expect(result?.type).toBe(DeeplinkType.PERA_WEB_IMPORT)
-            if (result?.type === DeeplinkType.PERA_WEB_IMPORT) {
-                expect(result.backupId).toBe('backup-abc')
-                expect(Array.from(result.encryptionKey)).toEqual(
-                    Array.from(KEY),
-                )
-            }
-        })
-
-        it('returns null for JSON that is not a Pera Web QR (no relevant fields)', () => {
-            // JSON-shaped but missing the required fields — the parser
-            // returns null so the QR scanner re-arms silently rather than
-            // dispatching a malformed deeplink.
-            expect(parseDeeplink('{"foo":"bar"}')).toBeNull()
-        })
-
-        it('returns null for a Pera Web JSON QR with an unsupported version', () => {
-            const qr = JSON.stringify({
-                backupId: 'b',
-                encryptionKey: KEY_B64,
-                version: '99',
-            })
-            // Version mismatches surface as null at the parser layer; the
-            // scanner treats this the same as "unrecognized QR" and
-            // re-arms, mirroring the broader app pattern for unknown
-            // codes.
-            expect(parseDeeplink(qr)).toBeNull()
-        })
-
-        it('returns null for non-JSON QRs to keep the JSON sniff cheap', () => {
-            // A QR that doesn't start with `{` shouldn't be JSON.parsed at
-            // all — verifies the early-exit sniff in `parsePeraWebJsonQr`.
-            expect(parseDeeplink('not json at all')).toBeNull()
-        })
     })
 
     describe('legacy recover-account (mnemonic JSON QR)', () => {

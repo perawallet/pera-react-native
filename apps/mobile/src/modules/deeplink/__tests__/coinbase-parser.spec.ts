@@ -12,62 +12,65 @@
 
 // @vitest-environment node
 
-import { parseCoinbaseFormat } from '../coinbase-parser'
-import { DeeplinkType } from '../types'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import {
+    DeeplinkType,
+    deeplinkAdapters,
+} from '@perawallet/wallet-core-deeplinks'
+import { algorandAddressCodec } from '@packages/chain-algorand/src/accounts/address-codec'
+import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
+import { parseDeeplink } from '../parser'
 
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 beforeEach(() => {
-    registerLegacyAddressCodec()
+    addressCodecs.register(algorandAddressCodec)
+    registerDeeplinkAdapters()
 })
 
 afterEach(() => {
     addressCodecs.reset()
+    deeplinkAdapters.reset()
 })
 
-describe('Coinbase Parser', () => {
-    it('returns null for invalid scheme', () => {
-        expect(parseCoinbaseFormat('perawallet://test')).toBeNull()
-    })
-
+describe('algo: links through the Algorand adapter', () => {
     it('returns null for invalid action', () => {
-        expect(parseCoinbaseFormat('algo:123/invalid?address=test')).toBeNull()
+        expect(parseDeeplink('algo:123/invalid?address=test')).toBeNull()
     })
 
     it('returns null for missing address', () => {
-        expect(parseCoinbaseFormat('algo:123/transfer')).toBeNull()
+        expect(parseDeeplink('algo:123/transfer')).toBeNull()
     })
 
     it('returns null for non-address without path', () => {
-        expect(parseCoinbaseFormat('algo:123')).toBeNull()
+        expect(parseDeeplink('algo:123')).toBeNull()
     })
 
     it('parses valid address as ADDRESS_ACTIONS', () => {
-        const result = parseCoinbaseFormat(`algo:${TEST_ADDRESS}`)
-        expect(result).toEqual({
+        const result = parseDeeplink(`algo:${TEST_ADDRESS}`)
+        expect(result).toMatchObject({
             type: DeeplinkType.ADDRESS_ACTIONS,
             sourceUrl: `algo:${TEST_ADDRESS}`,
             address: TEST_ADDRESS,
+            target: { chainId: 'algorand' },
         })
     })
 
-    it('parses asset transfer with ASSET_TRANSFER type and receiverAddress', () => {
+    it('parses an asset transfer as TRANSFER with the asset and receiverAddress', () => {
         const url = `algo:31566704/transfer?address=${TEST_ADDRESS}`
-        const result = parseCoinbaseFormat(url)
-        expect(result).toEqual({
-            type: DeeplinkType.ASSET_TRANSFER,
+        const result = parseDeeplink(url)
+        expect(result).toMatchObject({
+            type: DeeplinkType.TRANSFER,
             sourceUrl: url,
-            assetId: '31566704',
+            assetRef: { chainId: 'algorand', assetId: '31566704' },
             receiverAddress: TEST_ADDRESS,
         })
     })
 
     it('rejects a transfer whose receiver is not a valid address', () => {
         expect(
-            parseCoinbaseFormat(
+            parseDeeplink(
                 `algo:31566704/transfer?address=${TEST_ADDRESS.slice(0, 57)}`,
             ),
         ).toBeNull()

@@ -25,12 +25,11 @@ export type SendFundsDeeplinkPrefill = {
      */
     amount?: Decimal
     /**
-     * Raw base-units amount (e.g. micro-USDC). Set for ASSET_TRANSFER
-     * deeplinks where the conversion needs the asset's `decimals`, which
-     * aren't known until the asset query resolves. InputScreen converts
-     * this once `asset` loads.
+     * Base-units amount (e.g. micro-USDC). Set for TRANSFER deeplinks, where
+     * the conversion needs the asset's `decimals`, which aren't known until
+     * the asset query resolves. InputScreen converts this once `asset` loads.
      */
-    amountBaseUnits?: string
+    amountBaseUnits?: Decimal
     note?: string
     /** Advance past the amount step to confirmation, for an already-confirmed send. */
     shouldContinueToConfirm?: boolean
@@ -42,8 +41,8 @@ export type SendFundsDeeplinkHandler = (
 
 /**
  * Opens the SendFunds bottom sheet with optional prefill (destination,
- * asset, amount, note). Used by ALGO_TRANSFER, ASSET_TRANSFER and
- * RECEIVER_ACCOUNT_SELECTION deeplinks.
+ * asset, amount, note). Used by TRANSFER and RECEIVER_ACCOUNT_SELECTION
+ * deeplinks.
  */
 export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
     const { requestByType } = useBottomSheetStore()
@@ -69,7 +68,9 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
             }
             if (amount) sendFundsStore.setAmount(amount)
             if (amountBaseUnits) {
-                sendFundsStore.setPendingAmountBaseUnits(amountBaseUnits)
+                sendFundsStore.setPendingAmountBaseUnits(
+                    amountBaseUnits.toFixed(),
+                )
             }
             if (shouldContinueToConfirm) {
                 sendFundsStore.setShouldContinueToConfirm(true)

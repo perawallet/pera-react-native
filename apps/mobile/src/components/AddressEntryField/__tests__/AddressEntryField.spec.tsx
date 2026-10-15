@@ -12,7 +12,13 @@
 
 import { render, screen, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { AddressEntryField } from '../AddressEntryField'
+
+const CHAIN_IDS: ChainId[] = [LEGACY_CHAIN_ID]
 
 const { mockResolveScannedAddress, scannerProps } = vi.hoisted(() => ({
     mockResolveScannedAddress: vi.fn(),
@@ -49,12 +55,17 @@ describe('AddressEntryField', () => {
     })
 
     it('renders correctly', () => {
-        render(<AddressEntryField />)
+        render(<AddressEntryField chainIds={CHAIN_IDS} />)
         expect(screen.getByRole('textbox')).toBeTruthy()
     })
 
     it('shows QR scanner icon when allowed', () => {
-        render(<AddressEntryField allowQRCode />)
+        render(
+            <AddressEntryField
+                chainIds={CHAIN_IDS}
+                allowQRCode
+            />,
+        )
         expect(screen.getByRole('textbox')).toBeTruthy()
     })
 
@@ -65,6 +76,7 @@ describe('AddressEntryField', () => {
         const onScanned = vi.fn()
         render(
             <AddressEntryField
+                chainIds={CHAIN_IDS}
                 allowQRCode
                 onChangeText={onChangeText}
                 onScanned={onScanned}
@@ -82,6 +94,7 @@ describe('AddressEntryField', () => {
         const onChangeText = vi.fn()
         render(
             <AddressEntryField
+                chainIds={CHAIN_IDS}
                 allowQRCode
                 onChangeText={onChangeText}
             />,

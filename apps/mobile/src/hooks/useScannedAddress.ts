@@ -13,38 +13,21 @@
 import { useCallback } from 'react'
 
 import { useLanguage } from '@hooks/useLanguage'
-import { isLegacyChainAddress, parseDeeplink } from '@modules/deeplink/core'
 import { useToast } from '@hooks/useToast'
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { readScannedAddress } from '@perawallet/wallet-core-deeplinks'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-
-export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
-    if (isLegacyChainAddress(url)) return url
-
-    const parsed = parseDeeplink(url)
-    if (!parsed) return null
-
-    if ('receiverAddress' in parsed && parsed.receiverAddress) {
-        return parsed.receiverAddress
-    }
-    if ('address' in parsed && parsed.address) {
-        return parsed.address
-    }
-    // Keyreg carries its account as `senderAddress`; without this a QR that
-    // does hold an address would be reported as holding none.
-    if ('senderAddress' in parsed && parsed.senderAddress) {
-        return parsed.senderAddress
-    }
-
-    return null
-}
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 /**
  * Resolves an address from a scanned QR, surfacing a readable error when the
  * code carries none.
  *
  * Shared by every address-field scanner (AddressEntryField, ContactForm) so the
- * wrong-context message is worded once.
+ * wrong-context message is worded once. `chainIds` are the chains the field
+ * takes: an address for any other chain is named as such rather than reported
+ * as no address at all.
  *
  * The addressless-but-parseable set this exists for is WalletConnect v1,
  * liquid-auth (`fido:`/`liquid:`), Pera web import and the legacy mnemonic JSON
@@ -59,27 +42,35 @@ export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
  * it out from under the Modal — long enough for the dismiss animation to finish,
  * rather than racing it on the next macrotask.
  */
-export const useScannedAddress = (): ((url: string) => Nullable<string>) => {
+export const useScannedAddress = (
+    chainIds: readonly ChainId[],
+): ((url: string) => Nullable<string>) => {
     const { t } = useLanguage()
     const { showToast } = useToast()
 
     return useCallback(
         (url: string) => {
-            const address = extractAddressFromScannedUrl(url)
+            const scanned = readScannedAddress(url, chainIds)
+            if (scanned.status === 'found') return scanned.address
 
-            if (!address) {
-                showToast(
-                    {
-                        title: t('address_entry.invalid_qr_title'),
-                        body: t('address_entry.invalid_qr_body'),
-                        type: 'error',
-                    },
-                    { delayLength: 'short' },
-                )
-            }
+            showToast(
+                {
+                    title: t('address_entry.invalid_qr_title'),
+                    body:
+                        scanned.status === 'other-chain'
+                            ? t('address_entry.other_chain_qr_body', {
+                                  chain: getProvider().chains.get(
+                                      scanned.chainId,
+                                  ).descriptor.displayName,
+                              })
+                            : t('address_entry.invalid_qr_body'),
+                    type: 'error',
+                },
+                { delayLength: 'short' },
+            )
 
-            return address
+            return null
         },
-        [showToast, t],
+        [chainIds, showToast, t],
     )
 }
