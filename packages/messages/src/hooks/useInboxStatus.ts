@@ -17,7 +17,7 @@ import { config } from '@perawallet/wallet-core-config'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     useAnyEnabledChainHasCapability,
-    useNetworkStore,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import {
     fetchMessageStatus,
@@ -46,7 +46,7 @@ const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
 
 /** `scope` picks the inbox the v1 fallback counts; the status endpoints are the deployment's. */
 export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
-    const deployment = useNetworkStore(state => state.mode)
+    const deployment = useWalletDeployment()
     const deviceID = useDeploymentDeviceID(deployment)
     const isUnavailableOnNetwork =
         !useAnyEnabledChainHasCapability('notifications')

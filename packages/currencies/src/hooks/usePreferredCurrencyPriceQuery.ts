@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { fetchCurrency } from '../api/currencies'
 import { getPreferredCurrencyPriceQueryKey } from './querykeys'
 
@@ -19,7 +19,7 @@ export const usePreferredCurrencyPriceQuery = (
     preferredFiatCurrency: string,
     enabled: boolean = true,
 ) => {
-    const deployment = useNetworkStore(state => state.mode)
+    const deployment = useWalletDeployment()
     return useQuery({
         queryKey: getPreferredCurrencyPriceQueryKey(
             deployment,

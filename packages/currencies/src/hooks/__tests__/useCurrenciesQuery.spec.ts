@@ -35,8 +35,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: (selector: (state: { mode: string }) => unknown) =>
-        selector({ mode: 'live' }),
+    useWalletDeployment: () => 'live',
 }))
 
 const mockFetchCurrenciesList = vi.hoisted(() => vi.fn())

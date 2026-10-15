@@ -23,10 +23,7 @@ const modeState = vi.hoisted(() => ({ current: 'live' as WalletMode }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useAnyEnabledChainHasCapability: vi.fn(() => true),
-    useNetworkStore: vi.fn(
-        (selector: (state: { mode: WalletMode }) => unknown) =>
-            selector({ mode: modeState.current }),
-    ),
+    useWalletDeployment: () => modeState.current,
 }))
 
 vi.mock('../../api/notifications', () => ({

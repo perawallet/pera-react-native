@@ -15,8 +15,7 @@ import { act, renderHook } from '@testing-library/react'
 
 const mockMode = vi.hoisted(() => ({ current: 'live' }))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: (selector: (state: { mode: string }) => unknown) =>
-        selector({ mode: mockMode.current }),
+    useWalletDeployment: () => mockMode.current,
 }))
 
 const registerMock = vi.fn()

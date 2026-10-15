@@ -15,7 +15,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     useAnyEnabledChainHasCapability,
-    useNetworkStore,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'
@@ -28,7 +28,7 @@ type UseMarkNotificationsAsReadMutationResult = {
 
 export const useMarkNotificationsAsReadMutation =
     (): UseMarkNotificationsAsReadMutationResult => {
-        const deployment = useNetworkStore(state => state.mode)
+        const deployment = useWalletDeployment()
         const deviceID = useDeploymentDeviceID(deployment)
         const isUnavailableOnNetwork =
             !useAnyEnabledChainHasCapability('notifications')

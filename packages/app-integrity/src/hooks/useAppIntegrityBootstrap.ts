@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { registerAppIntegrity } from '../services/registerAppIntegrity'
 import { useAppIntegrityStore } from '../store'
 
@@ -32,7 +32,7 @@ const hasValidToken = (): boolean => {
  * `registerAppIntegrity` no-ops with status `skipped` on development builds.
  */
 export const useAppIntegrityBootstrap = (): void => {
-    const deployment = useNetworkStore(state => state.mode)
+    const deployment = useWalletDeployment()
     const hasRun = useRef(false)
 
     useEffect(() => {

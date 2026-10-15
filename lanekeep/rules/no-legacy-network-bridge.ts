@@ -19,10 +19,10 @@ export default defineRule({
         message:
             'A package must not convert between a ChainScope and the legacy Network',
         remediation:
-            "Take the `ChainScope` from the caller and pass `{ scope }` down; only an app pins the Algorand scope with `useSelectedScope(LEGACY_CHAIN_ID)`. Code that is Algorand's own belongs in chain-algorand, which is exempt.",
+            "Take the `ChainScope` from the caller and pass `{ scope }` down; only an app pins the Algorand scope with `useSelectedScope(LEGACY_CHAIN_ID)`. A chain-agnostic Pera endpoint (banners, inbox, currencies, integrity) takes no scope: route it by `useWalletDeployment()` and pass `deployment`. Code that is Algorand's own belongs in chain-algorand, which is exempt.",
         examples: {
             bad: 'const scope = useSelectedScope(LEGACY_CHAIN_ID)\nconst network = legacyNetworkOf(scope)',
-            good: 'export const useBannersQuery = (scope: ChainScope) =>\n    useQuery({ queryFn: () => fetchBanners(scope, deviceId) })',
+            good: 'export const useNfdSearchQuery = (scope: ChainScope, name: string) =>\n    useQuery({ queryFn: () => fetchNfdSearch({ name, scope }) })',
         },
     },
     gates: withoutTests({

@@ -15,7 +15,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    useNetworkStore,
+    useWalletDeployment,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -51,7 +51,7 @@ type UseSettingsCurrencyScreenResult = {
 export const useSettingsCurrencyScreen =
     (): UseSettingsCurrencyScreenResult => {
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const deployment = useNetworkStore(state => state.mode)
+        const deployment = useWalletDeployment()
         const {
             setPreferredCurrency,
             setFallbackCurrency,

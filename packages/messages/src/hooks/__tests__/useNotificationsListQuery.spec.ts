@@ -22,10 +22,7 @@ import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useAnyEnabledChainHasCapability: vi.fn(() => true),
-    useNetworkStore: vi.fn(
-        (selector: (state: { mode: WalletMode }) => unknown) =>
-            selector({ mode: 'live' }),
-    ),
+    useWalletDeployment: () => 'live',
 }))
 
 vi.mock('../../api/notifications', () => ({

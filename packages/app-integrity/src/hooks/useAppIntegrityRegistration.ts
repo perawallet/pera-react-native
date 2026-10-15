@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import {
     registerAppIntegrity,
     type RegisterAppIntegrityResult,
@@ -28,7 +28,7 @@ export type UseAppIntegrityRegistrationResult = {
  */
 export const useAppIntegrityRegistration =
     (): UseAppIntegrityRegistrationResult => {
-        const deployment = useNetworkStore(state => state.mode)
+        const deployment = useWalletDeployment()
         const [isRegistering, setIsRegistering] = useState(false)
 
         const register = useCallback(async () => {

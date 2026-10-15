@@ -11,14 +11,14 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { closeSpotBanner } from '../api/spot-banners'
 import type { SpotBannerListResponse } from '../api/spot-banners'
 import { getSpotBannersQueryKey } from './querykeys'
 
 export const useDismissSpotBannerMutation = () => {
-    const deployment = useNetworkStore(state => state.mode)
+    const deployment = useWalletDeployment()
     const deviceID = useDeploymentDeviceID(deployment)
     const queryClient = useQueryClient()
 

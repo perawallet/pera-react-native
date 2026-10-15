@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { fetchBanners, type BannerListResponse } from '../api/banners'
 import { getBannersQueryKey } from './querykeys'
@@ -28,7 +28,7 @@ export type UseBannersQueryResult = {
 }
 
 export const useBannersQuery = (): UseBannersQueryResult => {
-    const deployment = useNetworkStore(state => state.mode)
+    const deployment = useWalletDeployment()
     const deviceID = useDeploymentDeviceID(deployment)
 
     const query = useQuery({

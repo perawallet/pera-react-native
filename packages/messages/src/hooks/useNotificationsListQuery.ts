@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     useAnyEnabledChainHasCapability,
-    useNetworkStore,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import {
@@ -78,7 +78,7 @@ export type UseNotificationsListQueryResult = {
 
 export const useNotificationsListQuery =
     (): UseNotificationsListQueryResult => {
-        const deployment = useNetworkStore(state => state.mode)
+        const deployment = useWalletDeployment()
         const deviceID = useDeploymentDeviceID(deployment)
         const isUnavailableOnNetwork =
             !useAnyEnabledChainHasCapability('notifications')

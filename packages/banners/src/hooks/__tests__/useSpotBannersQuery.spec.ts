@@ -28,8 +28,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 const network = vi.hoisted(() => ({ mode: 'live' }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: (selector: (state: typeof network) => unknown) =>
-        selector(network),
+    useWalletDeployment: () => network.mode,
 }))
 
 beforeEach(() => {

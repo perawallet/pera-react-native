@@ -13,14 +13,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { fetchCurrenciesList } from '../api/currencies'
 import { nativeCurrencyFor } from './nativeCurrency'
 import { getCurrenciesQueryKey } from './querykeys'
 
 /** `scope` only picks the native currency listed first; the fiat list is the deployment's. */
 export const useCurrenciesQuery = (scope: ChainScope) => {
-    const deployment = useNetworkStore(state => state.mode)
+    const deployment = useWalletDeployment()
     const results = useQuery({
         queryKey: getCurrenciesQueryKey(deployment),
         queryFn: ({ signal }) => fetchCurrenciesList({ deployment, signal }),

@@ -19,8 +19,7 @@ import { Decimal } from 'decimal.js'
 
 const mockMode = vi.hoisted(() => ({ current: 'live' }))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: (selector: (state: { mode: string }) => unknown) =>
-        selector({ mode: mockMode.current }),
+    useWalletDeployment: () => mockMode.current,
 }))
 
 // Mock the fetch function
