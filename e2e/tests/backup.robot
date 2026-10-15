@@ -19,12 +19,6 @@ Unfunded Wallet Gets No Backup Reminder
     Sleep    1.5s
     Page Should Not Contain Element    ${BACKUP_BANNER_CTA}
 
-Reminder Opens The Backup Info Screen
-    [Tags]    id:backup.banner.opens-info    p1    needs-funded
-    Skip If    not $MNEMONIC_FUNDED    MNEMONIC_24_FUNDED is not set.
-    Start With Wallet Needing Backup
-    Open Backup Info
-
 Passphrase Screen Shows The Wallet's Whole Phrase
     [Tags]    id:backup.passphrase.matches    p1    needs-funded
     Skip If    not $MNEMONIC_FUNDED    MNEMONIC_24_FUNDED is not set.
@@ -42,7 +36,7 @@ Next Stays Disabled Until The Quiz Is Answered
     Expect Element    ${BACKUP_VERIFICATION_NEXT}    disabled    timeout=0s    loglevel=NONE
 
 Answering Every Word Correctly Enables Next
-    [Tags]    id:backup.verify.correct-enables-next    p1    needs-funded
+    [Tags]    id:backup.verify.correct-enables-next    p2    integration-covered    needs-funded
     Skip If    not $MNEMONIC_FUNDED    MNEMONIC_24_FUNDED is not set.
     Start With Wallet Needing Backup
     Open Verification Quiz

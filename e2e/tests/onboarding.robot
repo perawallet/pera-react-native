@@ -17,11 +17,6 @@ ${WATCH_ACCOUNT_NAME}       E2E Watch
 
 
 *** Test Cases ***
-Welcome Offers Create And Import
-    [Tags]    id:onboarding.welcome.entry-points    p0    rc
-    Start Without Wallet
-    Page Should Contain Element    ${IMPORT_ACCOUNT_BUTTON}
-
 New Wallet Reaches Home With Its Name
     [Tags]    id:onboarding.create.named    p0    rc    release-gate
     Start Without Wallet
@@ -30,7 +25,7 @@ New Wallet Reaches Home With Its Name
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Confetti Plays After Wallet Creation
-    [Tags]    id:onboarding.create.confetti    p1
+    [Tags]    id:onboarding.create.confetti    p2
     Start Without Wallet
     Tap    ${CREATE_WALLET_BUTTON}
     Accept Terms Until    ${ACCOUNT_NAME_INPUT}
@@ -70,7 +65,7 @@ Algo25 Wallet Is Recovered From Its 25 Word Phrase
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Confetti Plays After Wallet Import
-    [Tags]    id:onboarding.import.confetti    p1    needs-funded
+    [Tags]    id:onboarding.import.confetti    p2    needs-funded
     Skip If    not $MNEMONIC_25    MNEMONIC_25_WORD is not set.
     ${_}    ${saw_confetti}=    Import From Welcome    ${RECOVER_ALGO25}    MNEMONIC_25_WORD
     IF    not ${saw_confetti}

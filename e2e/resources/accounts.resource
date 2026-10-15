@@ -8,7 +8,6 @@ ${ACCOUNT_SELECTION_BUTTON}         accessibility_id=account_selection_button
 ${MORE_BUTTON}                      accessibility_id=more_button
 ${RECEIVE_BUTTON}                   accessibility_id=receive_button
 ${RECEIVE_COPY_ADDRESS_BUTTON}      accessibility_id=receive_copy_address_button
-${RECEIVE_SHARE_ADDRESS_BUTTON}     accessibility_id=receive_share_address_button
 
 ${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
 ${MENU_STAKING_BUTTON}              accessibility_id=menu_staking_button

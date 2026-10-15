@@ -46,14 +46,16 @@ Pay Balance Shows A Number
     Should Be True    ${balance} >= 0
 
 Receive Selector Says Select When No Asset Is Chosen
-    [Tags]    id:swap.asset.receive-unset    swap-asset    p1    needs-harness
+    [Tags]    id:swap.asset.receive-unset    swap-asset    p1
     Open Swap
     ${unset}=    Run Keyword And Return Status    Page Should Contain Element    ${SWAP_SELECT_ASSET_LABEL}
     Skip If    not ${unset}    A receive asset is already chosen on this wallet.
     Page Should Not Contain Element    ${SWAP_PROVIDER_ROW}
 
 Account List Is Sorted By Balance
-    [Tags]    id:swap.account.sorted-by-balance    swap-form    p2    needs-harness    needs-testid
+    [Tags]    id:swap.account.sorted-by-balance    swap-form    p2    needs-testid
+    # AccountWithBalance (apps/mobile/src/components/AccountWithBalance/AccountWithBalance.tsx) gives the
+    # balance no testID, so it is read from the row's text, where a digit in the name can win.
     Open Swap
     Tap    ${ACCOUNT_SELECTION_BUTTON}
     Wait Until Page Contains Element    ${ACCOUNT_ROW_ANY}    timeout=15s
@@ -127,13 +129,6 @@ Receive Amount Keeps Its Decimals
     ${raw}=    Displayed Value    swap-receive-amount
     Should Not Be Equal    ${{ None }}    ${{ re.search(r'[0-9][.][0-9]', $raw) }}
     ...    Receive amount "${raw}" shows no fractional part.
-
-Pay Picker Lists Held Assets
-    [Tags]    id:swap.asset.pay-picker-open    swap-asset    p2
-    Open Swap
-    Open Pay Asset Picker
-    Wait Until Page Contains Element    ${PAY_ASSET_ROW_ANY}    timeout=15s
-    Close Picker Back To Form
 
 Receive Picker Lists Swappable Assets
     [Tags]    id:swap.asset.receive-picker-open    swap-asset    p2
@@ -210,18 +205,12 @@ Receive Picker Lists USDC
     Page Should Contain Element    ${USDC_RECEIVE_ROW}
     Close Picker Back To Form
 
-Configuration Offers Slippage Presets
-    [Tags]    id:swap.config.presets-shown    swap-config    p2
-    Open Swap
-    Open Configuration
-    Page Should Contain Element    ${CONFIG_SLIPPAGE_CHIP_1}
-    Page Should Contain Element    ${CONFIG_SLIPPAGE_CUSTOM}
-    Expect Element    ${CONFIG_APPLY}    enabled
-
 Slippage Preset Is Saved
     [Tags]    id:swap.config.slippage-preset    swap-config    p1
     Open Swap
     Open Configuration
+    Page Should Contain Element    ${CONFIG_SLIPPAGE_CUSTOM}
+    Expect Element    ${CONFIG_APPLY}    enabled
     Tap    ${CONFIG_SLIPPAGE_CHIP_1}
     Apply Configuration
     Open Configuration
@@ -282,23 +271,6 @@ Quote Shows The Auto Provider
     Open Swap
     Enter Amount And Wait For Quote
     Page Should Contain Element    ${PROVIDER_TITLE_AUTO}
-
-Applying Auto Keeps The Best Price Provider
-    [Tags]    id:swap.provider.apply-auto    swap-provider    p2
-    Open Swap
-    Enter Amount And Wait For Quote
-    Restore Auto Provider
-
-Provider Can Be Chosen Manually
-    [Tags]    id:swap.provider.select-manual    swap-provider    p1
-    Open Swap
-    Enter Amount And Wait For Quote
-    Open Provider Sheet
-    Other Provider Or Skip
-    Tap    ${PROVIDER_OPTION_OTHER}
-    Tap    ${PROVIDER_APPLY}
-    Wait Until Page Contains Element    ${PROVIDER_TITLE_MANUAL}    timeout=15s
-    Page Should Not Contain Element    ${PROVIDER_TITLE_AUTO}
     Restore Auto Provider
 
 Dismissing The Provider Sheet Discards The Choice
@@ -321,6 +293,7 @@ Chosen Provider Survives Reopening The Sheet
     Tap    ${PROVIDER_OPTION_OTHER}
     Tap    ${PROVIDER_APPLY}
     Wait Until Page Contains Element    ${PROVIDER_TITLE_MANUAL}    timeout=15s
+    Page Should Not Contain Element    ${PROVIDER_TITLE_AUTO}
     Open Provider Sheet
     Close Provider Sheet
     Page Should Contain Element    ${PROVIDER_TITLE_MANUAL}
@@ -338,19 +311,13 @@ Each Provider States Its Price
     Should Not Be Equal    ${{ None }}    ${{ re.search(r'[0-9][.][0-9]', $text) }}
     ...    The provider row states no price: "${text}".
 
-Top Pairs Render On The Form
-    [Tags]    id:swap.pairs.top-shown    swap-history    p2
-    Open Swap
-    ${shown}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${TOP_PAIR_FIRST}    timeout=20s
-    Skip If    not ${shown}    No top pairs from the backend on this run.
-    Page Should Contain Element    ${TOP_PAIRS}
-    Page Should Contain Element    ${TOP_PAIRS_TITLE}
-
 Tapping A Top Pair Fills The Form
     [Tags]    id:swap.pairs.top-populates    swap-history    p1
     Open Swap
     ${shown}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${TOP_PAIR_FIRST}    timeout=20s
     Skip If    not ${shown}    No top pairs from the backend on this run.
+    Page Should Contain Element    ${TOP_PAIRS}
+    Page Should Contain Element    ${TOP_PAIRS_TITLE}
     Tap    ${TOP_PAIR_FIRST}
     Wait Until Page Contains Element    ${SWAP_PAY_INPUT}    timeout=15s
     Page Should Contain Element    ${SWAP_PAY_ASSET_SELECTOR}
@@ -385,14 +352,6 @@ Swap History Row Opens It In The Explorer
     Wait Until Page Contains Element    ${WEBVIEW_CLOSE_BUTTON}    timeout=30s
     Tap    ${WEBVIEW_CLOSE_BUTTON}
 
-Swap Button Opens The Confirmation
-    [Tags]    id:swap.confirm.opens    swap-exec    p2    needs-funded    excludefromci
-    Open Swap With Funded Account
-    Open Confirmation
-    Page Should Contain Element    ${CONFIRM_TITLE}
-    Tap    ${CONFIRM_CLOSE}
-    Wait Until Page Does Not Contain Element    ${CONFIRM_SLIDE}    timeout=10s
-
 Large Amount Warns About Price Impact
     [Tags]    id:swap.confirm.price-impact-warning    swap-exec    p1    needs-funded    excludefromci
     Open Swap With Funded Account
@@ -410,6 +369,7 @@ Confirmation Shows Every Quote Detail
     [Tags]    id:swap.confirm.details    swap-exec    p0    needs-funded    needs-testid    excludefromci
     Open Swap With Funded Account
     Open Confirmation
+    Page Should Contain Element    ${CONFIRM_TITLE}
     FOR    ${label}    IN    @{CONFIRM_LABELS}
         Page Should Contain Element    xpath=//*[@text='${label}' or @label='${label}']
     END
@@ -420,6 +380,7 @@ Confirmation Shows Every Quote Detail
     ${fee}=    Displayed Value    swap-confirm-pera-fee
     Should Not Be Equal    ${None}    ${{ re.search(r'[0-9]', $fee) }}    The Pera fee is not a number: "${fee}".
     Tap    ${CONFIRM_CLOSE}
+    Wait Until Page Does Not Contain Element    ${CONFIRM_SLIDE}    timeout=10s
 
 Minimum Received Does Not Exceed The Quote
     [Tags]    id:swap.confirm.min-received    swap-exec    p0    needs-funded    needs-testid    excludefromci

@@ -13,10 +13,6 @@ Test Tags           cloud-backup
 
 
 *** Test Cases ***
-Settings Offers Cloud Backup Once The Flag Is On
-    [Tags]    id:cloud-backup.entry.flag    p1
-    Open Cloud Backup
-
 Intro Lists The Steps And Continues To The Choice
     [Documentation]    The intro shows only until it is first continued past; afterwards the row opens
     ...                the choice screen directly, so this skips on a device that has seen it.
@@ -35,13 +31,6 @@ Choice Offers Both Set Up And Restore
     Page Should Contain Element    ${CB_RESTORE_OPTION}
     ...    message=The restore route is missing, stranding anyone with an existing backup.
 
-Set Up Generates A Twelve Word Encryption Passphrase
-    [Tags]    id:cloud-backup.setup.passphrase-length    p1
-    Start At Setup Passphrase
-    @{words}=    Read Passphrase
-    Length Should Be    ${words}    12
-    ...    msg=The encryption passphrase did not render 12 words; a partial key cannot decrypt the backup.
-
 Every Encryption Passphrase Word Is Readable
     [Documentation]    The id sits on the grid cell, whose own text is empty. If it moved onto the word's
     ...                PWText, getTestProps would overwrite the word with the id and every cell would
@@ -49,20 +38,21 @@ Every Encryption Passphrase Word Is Readable
     [Tags]    id:cloud-backup.setup.passphrase-readable    p1
     Start At Setup Passphrase
     @{words}=    Read Passphrase
-    Should Not Be Empty    ${words}
+    Length Should Be    ${words}    12
+    ...    msg=The encryption passphrase did not render 12 words; a partial key cannot decrypt the backup.
     FOR    ${w}    IN    @{words}
         Should Match Regexp    ${w}    ^[a-z]+$
         ...    msg=Passphrase cell reads "${w}", not a word: the cell exposes an id, a number or nothing.
     END
 
 Proceed Stays Disabled Until The Passphrase Is Acknowledged
-    [Tags]    id:cloud-backup.setup.proceed-gated    p1
+    [Tags]    id:cloud-backup.setup.proceed-gated    p2    integration-covered
     Start At Setup Passphrase
     Should Be Enabled    ${CB_SETUP_PROCEED}    false
     ...    Proceed was enabled before the "I saved it" checkbox was ticked.
 
 Acknowledging The Passphrase Unlocks Proceed To The Quiz
-    [Tags]    id:cloud-backup.setup.acknowledge    p1
+    [Tags]    id:cloud-backup.setup.acknowledge    p2    integration-covered
     Start At Setup Passphrase
     Acknowledge Passphrase
     Should Be Enabled    ${CB_SETUP_PROCEED}    true
@@ -84,7 +74,7 @@ Verify Quiz Asks For Words And Gates Proceed
     END
 
 Answering Every Word Correctly Unlocks Proceed
-    [Tags]    id:cloud-backup.verify.correct    p1
+    [Tags]    id:cloud-backup.verify.correct    p2    integration-covered
     @{words}=    Start At Verify Quiz
     Answer Verify Quiz    ${words}
     Should Be Enabled    ${CB_VERIFY_PROCEED}    true
@@ -106,10 +96,10 @@ A Wrong Word Is Refused On Submit
     Page Should Not Contain Element    ${CB_STORE_KEY_SCREEN}
     ...    message=A wrong quiz answer advanced to the store-encryption-key screen.
 
-Enable Stays Gated Until The Encryption Key Is Acknowledged
-    [Documentation]    The last screen before the credentials become unrecoverable; asserted in both
-    ...                directions so a build that dropped the gate fails.
-    [Tags]    id:cloud-backup.store-key.gated    p1    needs-backend
+Enabling The Backup Lands On The Overview
+    [Documentation]    Enable persists the key to the keystore and marks the backup configured; it
+    ...                uploads nothing, so no cloud account is needed.
+    [Tags]    id:cloud-backup.enable.overview    p1    needs-backend
     Skip Unless Backend Keyed
     Start At Store Key
     Should Be Enabled    ${CB_STORE_KEY_ENABLE}    false
@@ -117,14 +107,6 @@ Enable Stays Gated Until The Encryption Key Is Acknowledged
     Acknowledge Store Key
     Should Be Enabled    ${CB_STORE_KEY_ENABLE}    true
     ...    Enable stayed disabled after the acknowledgement was ticked.
-
-Enabling The Backup Lands On The Overview
-    [Documentation]    Enable persists the key to the keystore and marks the backup configured; it
-    ...                uploads nothing, so no cloud account is needed.
-    [Tags]    id:cloud-backup.enable.overview    p1    needs-backend
-    Skip Unless Backend Keyed
-    Start At Store Key
-    Acknowledge Store Key
     Tap    ${CB_STORE_KEY_ENABLE}
     Wait Until Page Contains Element    ${CB_OVERVIEW_SCREEN}    timeout=30s
 
@@ -135,17 +117,7 @@ Overview Lists Every Category Of Protected Data
     Page Should Contain Element    ${CB_OVERVIEW_ACCOUNTS}    message=The overview offers no Accounts row.
     Page Should Contain Element    ${CB_OVERVIEW_CONTACTS}    message=The overview offers no Contacts row.
     Page Should Contain Element    ${CB_OVERVIEW_PASSKEYS}    message=The overview offers no Passkeys row.
-
-Overview Names The Credential The Backup Is Keyed To
-    [Tags]    id:cloud-backup.overview.credential    p2    needs-backend
-    Skip Unless Backend Keyed
-    Start At Overview
     Swipe Until In View    ${CB_OVERVIEW_CREDENTIAL_ADDRESS}
-
-Overview Offers Sync And Turn Off
-    [Tags]    id:cloud-backup.overview.lifecycle    p2    needs-backend
-    Skip Unless Backend Keyed
-    Start At Overview
     Swipe Until In View    ${CB_OVERVIEW_SYNC_DEVICES}
     Swipe Until In View    ${CB_OVERVIEW_TURN_OFF}
 

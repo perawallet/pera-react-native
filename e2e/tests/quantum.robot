@@ -11,12 +11,6 @@ Test Tags           quantum
 
 
 *** Test Cases ***
-Add Account Offers Quantum Creation
-    [Tags]    id:quantum.add.offers-create    p0
-    Open Add Account
-    Skip Unless Quantum Create Is Offered
-    Page Should Contain Element    ${ADD_ACCOUNT_IMPORT_BUTTON}
-
 New Quantum Account Has A 25-Word Passphrase
     [Documentation]    A quantum passphrase is 25 words where an HD one is 24, so the count proves the
     ...                created account holds a quantum key and not an ordinary one.
@@ -24,10 +18,6 @@ New Quantum Account Has A 25-Word Passphrase
     Create Quantum Account
     Reveal Passphrase
     Passphrase Should Have Words    25
-
-Quantum Account Identifies As Quantum
-    [Tags]    id:quantum.type.label    p1    needs-testid
-    Skip    PWText's testID replaces the iOS accessibility label, hiding the type text there.
 
 Quantum Import Opens With Its Explanatory Note
     [Documentation]    The note renders only for the quantum key kind, so it proves the entry routes

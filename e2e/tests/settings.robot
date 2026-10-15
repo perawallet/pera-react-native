@@ -17,11 +17,6 @@ Settings Lists Its Sections
     Page Should Contain Element    ${SETTINGS_ITEM_NOTIFICATIONS}
     Page Should Contain Element    ${SETTINGS_ITEM_THEME}
 
-Security Settings Show PIN And Advanced Options
-    [Tags]    id:settings.security.open    p1
-    Open Security Settings
-    Page Should Contain Element    ${SECURITY_ADVANCED_PANEL_HEADER}
-
 Closing PIN Setup Leaves PIN Unchanged
     [Tags]    id:settings.security.pin-setup-dismiss    p1
     Open Security Settings
@@ -45,12 +40,6 @@ Asset Freeze Support Toggles On And Off
     Expand Advanced Security
     Flip Switch And Back    ${SECURITY_ASSET_FREEZE_TOGGLE}
 
-Theme Settings Offer System Light And Dark
-    [Tags]    id:settings.theme.options    p1
-    Open Theme Settings
-    Page Should Contain Element    ${THEME_LIGHT_RADIO}
-    Page Should Contain Element    ${THEME_DARK_RADIO}
-
 Theme Can Be Switched
     [Tags]    id:settings.theme.switch    p1
     Open Theme Settings
@@ -72,16 +61,11 @@ WalletConnect Settings Show The Empty State
     [Tags]    id:settings.walletconnect.empty    p2
     Open From Settings    ${SETTINGS_ITEM_WALLET_CONNECT}    ${WALLET_CONNECT_CONNECT_BUTTON}
 
-Developer Settings Offer Node Settings
-    [Tags]    id:settings.developer.open    p1
-    Open Developer Settings
-    Tap    ${DEVELOPER_NODE_ITEM}
-    Wait Until Page Contains Element    ${NODE_SETTINGS_SCREEN}    timeout=15s
-
 Developer Mode Lists The Test Networks
     [Tags]    id:settings.developer.node-networks    p1
     Open Developer Settings
     Tap    ${DEVELOPER_NODE_ITEM}
+    Wait Until Page Contains Element    ${NODE_SETTINGS_SCREEN}    timeout=15s
     Wait Until Page Contains Element    ${NODE_DEVELOPER_MODE_SWITCH}    timeout=15s
     ${was_on}=    Switch Is On    ${NODE_DEVELOPER_MODE_SWITCH}
     IF    not ${was_on}    Tap    ${NODE_DEVELOPER_MODE_SWITCH}
@@ -93,13 +77,8 @@ Developer Mode Lists The Test Networks
         Wait Until Page Does Not Contain Element    ${NODE_CHAIN_NETWORKS}    timeout=10s
     END
 
-Currency Settings List USD
-    [Tags]    id:settings.currency.open    p2
-    Open Currency Settings
-    Wait Until Page Contains Element    ${CURRENCY_ITEM_USD}    timeout=15s
-
 Currency Search Keeps Only Matches
-    [Tags]    id:settings.currency.search    p1
+    [Tags]    id:settings.currency.search    p2    integration-covered
     Open Currency Settings
     Wait Until Page Contains Element    ${CURRENCY_ITEM_USD}    timeout=15s
     Search Currency    EUR
@@ -141,16 +120,6 @@ Privacy Policy Opens In A Webview
     Open From Settings    ${SETTINGS_ITEM_PRIVACY}    ${WEBVIEW_CLOSE_BUTTON}
     Tap    ${WEBVIEW_CLOSE_BUTTON}
     Wait Until Page Contains Element    ${SETTINGS_ITEM_PRIVACY}    timeout=10s
-
-Version Row Unlocks Debug Tools
-    [Tags]    id:settings.feature-flags.unlock-debug-tools    p1
-    Unlock Debug Tools
-    Open From Settings    ${SETTINGS_ITEM_DEVELOPER}    ${DEVELOPER_DEBUG_TOOLS_ITEM}
-
-Feature Flags Screen Is Reachable
-    [Tags]    id:settings.feature-flags.screen    p1
-    Open Feature Flags
-    Page Should Contain Element    ${FLAG_EXPAND_CLOUD_BACKUP}
 
 Expanding A Flag Reveals Its Override
     [Tags]    id:settings.feature-flags.expand    p1

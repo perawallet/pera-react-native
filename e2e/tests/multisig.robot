@@ -71,15 +71,6 @@ Go Back On Before You Create Returns To Set Threshold
     Page Should Contain Element    ${SET_THRESHOLD_CONTINUE_BUTTON}
     Page Should Not Contain Element    ${ACCOUNT_FINISH_BUTTON}
 
-Proceed On Before You Create Opens Naming
-    [Tags]    id:multisig.confirm.proceed    p1
-    Open Create Shared Account
-    Add Participants    ${PARTICIPANT_1}    ${PARTICIPANT_2}
-    Open Set Threshold
-    Open Before You Create
-    Open Name Shared Account
-    Page Should Contain Element    ${ACCOUNT_NAME_INPUT}
-
 Default Name Is Shared Account
     [Tags]    id:multisig.name.default    p1
     Open Create Shared Account
@@ -149,7 +140,7 @@ External Participant Opens Edit Name
     Wait Until Page Contains Element    ${EDIT_PARTICIPANT_NAME_INPUT}    timeout=15s
 
 Continue Needs Two Participants
-    [Tags]    id:multisig.create.continue-needs-two    p1
+    [Tags]    id:multisig.create.continue-needs-two    p2    integration-covered
     Open Create Shared Account
     Add Participant    ${PARTICIPANT_1}
     Expect Element    ${CREATE_MULTISIG_CONTINUE_BUTTON}    disabled
@@ -175,7 +166,7 @@ At Most Sixteen Participants Can Be Added
     Page Should Not Contain Element    ${ADD_PARTICIPANT_BUTTON}
 
 Default Threshold Is Two
-    [Tags]    id:multisig.threshold.default    p1
+    [Tags]    id:multisig.threshold.default    p2    integration-covered
     Open Create Shared Account
     Add Participants    ${PARTICIPANT_1}    ${PARTICIPANT_2}    ${PARTICIPANT_3}
     Open Set Threshold
@@ -183,7 +174,7 @@ Default Threshold Is Two
     Threshold Should Be    2
 
 Threshold Cannot Exceed The Participant Count
-    [Tags]    id:multisig.threshold.increment-max    p1
+    [Tags]    id:multisig.threshold.increment-max    p2    integration-covered
     Open Create Shared Account
     Add Participants    ${PARTICIPANT_1}    ${PARTICIPANT_2}    ${PARTICIPANT_3}
     Open Set Threshold
@@ -192,7 +183,7 @@ Threshold Cannot Exceed The Participant Count
     Expect Element    ${THRESHOLD_INCREMENT_BUTTON}    disabled
 
 Threshold Cannot Go Below One
-    [Tags]    id:multisig.threshold.decrement-min    p1
+    [Tags]    id:multisig.threshold.decrement-min    p2    integration-covered
     Open Create Shared Account
     Add Participants    ${PARTICIPANT_1}    ${PARTICIPANT_2}    ${PARTICIPANT_3}
     Open Set Threshold

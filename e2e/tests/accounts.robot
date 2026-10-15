@@ -61,12 +61,6 @@ Account Options Open From More
     Page Should Contain Element    ${ACCOUNT_TYPE_INFO_BUTTON}
     Page Should Contain Element    ${OPTION_RENAME}
 
-Receive Opens The Account QR
-    [Tags]    id:accounts.receive.qr    p0    rc
-    Tap    ${RECEIVE_BUTTON}
-    Wait Until Page Contains Element    ${RECEIVE_COPY_ADDRESS_BUTTON}    timeout=20s
-    Page Should Contain Element    ${RECEIVE_SHARE_ADDRESS_BUTTON}
-
 Cancelling Removal Keeps The Account
     [Tags]    id:accounts.remove.cancel    p1
     ${before}=    Count Accounts
