@@ -16,7 +16,9 @@ import { customNodeAdapters, type CustomNodeAdapter } from '../custom-node'
 import { useChainCapability } from './useChainCapability'
 
 /** The chain's custom-node adapter while `customNetworks` is on and one is registered. */
-export const useCustomNode = (chainId: ChainId): Nullable<CustomNodeAdapter> => {
+export const useCustomNode = (
+    chainId: ChainId,
+): Nullable<CustomNodeAdapter> => {
     const isEnabled = useChainCapability(chainId, 'customNetworks')
     return isEnabled && customNodeAdapters.has(chainId)
         ? customNodeAdapters.get(chainId)

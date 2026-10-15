@@ -81,10 +81,13 @@ describe('pera/no-chain-package-imports', () => {
         expect(inFile(found, 'asa-inbox/src/index.ts')).toEqual(['index.ts:6'])
     })
 
-    it('lets app files reach only the whole-moved subpaths', async () => {
+    it('reports every chain-package import from an app file', async () => {
         const found = await runRule(RULE, FIXTURES)
 
         expect(inFile(found, 'chain-imports.transitional.ts')).toEqual([
+            'chain-imports.transitional.ts:6',
+            'chain-imports.transitional.ts:7',
+            'chain-imports.transitional.ts:8',
             'chain-imports.transitional.ts:9',
             'chain-imports.transitional.ts:10',
         ])

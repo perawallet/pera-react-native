@@ -19,7 +19,10 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { sendFlowChainAdapters, type SendFlowChainAdapter } from '../../chain-adapter'
+import {
+    sendFlowChainAdapters,
+    type SendFlowChainAdapter,
+} from '../../chain-adapter'
 import { useAssetInboxRequestsQuery } from '../useAssetInboxRequestsQuery'
 
 const scope = scopeForLegacyNetwork('testnet')

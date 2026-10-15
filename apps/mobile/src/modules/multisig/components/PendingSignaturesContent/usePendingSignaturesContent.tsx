@@ -309,14 +309,7 @@ export const usePendingSignaturesContent =
                     )
                 }
             },
-            [
-                signRequest,
-                addSignRequest,
-                accounts,
-                errorToast,
-                t,
-                scope,
-            ],
+            [signRequest, addSignRequest, accounts, errorToast, t, scope],
         )
 
         const handleSign = useCallback(() => {

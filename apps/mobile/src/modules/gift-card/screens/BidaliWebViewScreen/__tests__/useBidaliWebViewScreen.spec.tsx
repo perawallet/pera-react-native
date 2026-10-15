@@ -61,8 +61,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ) => account.chains[chainId],
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    useAlgorandClient: () => ({ newGroup: () => ({}) }),
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    sendFlowChainAdapters: { get: () => ({ buildTransferTxs: vi.fn() }) },
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ decimals: 6 }))

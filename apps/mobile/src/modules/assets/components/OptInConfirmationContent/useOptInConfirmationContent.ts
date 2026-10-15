@@ -11,7 +11,10 @@
  */
 
 import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { useFeeConfig, useMinFeeForSender } from '@perawallet/wallet-core-signing'
+import {
+    useFeeConfig,
+    useMinFeeForSender,
+} from '@perawallet/wallet-core-signing'
 
 import type { Decimal } from 'decimal.js'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'

@@ -49,8 +49,7 @@ export const useClaimProcessingScreen = () => {
     const account = useFindAccountByAddress(accountAddress ?? '', scope)
     const { showError } = useErrorToast()
 
-    const { remove: removeAssetInboxQueries } =
-        useAssetInboxInvalidator()
+    const { remove: removeAssetInboxQueries } = useAssetInboxInvalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()

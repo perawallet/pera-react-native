@@ -26,9 +26,9 @@ describe('useNoteSchema', () => {
         const { result } = renderHook(() => useNoteSchema(LEGACY_CHAIN_ID))
 
         // 512 two-byte characters fill the 1024-byte limit exactly.
-        expect(result.current.safeParse({ note: 'é'.repeat(512) }).success).toBe(
-            true,
-        )
+        expect(
+            result.current.safeParse({ note: 'é'.repeat(512) }).success,
+        ).toBe(true)
     })
 
     it('rejects a note one byte over the limit with the limit message', () => {
@@ -50,8 +50,8 @@ describe('useNoteSchema', () => {
         registerEthereumChain()
         const { result } = renderHook(() => useNoteSchema(ETHEREUM_CHAIN_ID))
 
-        expect(result.current.safeParse({ note: 'a'.repeat(5000) }).success).toBe(
-            true,
-        )
+        expect(
+            result.current.safeParse({ note: 'a'.repeat(5000) }).success,
+        ).toBe(true)
     })
 })

@@ -37,7 +37,9 @@ describe('describeAlgodError', () => {
     })
 
     it('shares the no-connection copy for network_unavailable', () => {
-        const copy = describeAlgodError(new AlgodError('network_unavailable', {}))
+        const copy = describeAlgodError(
+            new AlgodError('network_unavailable', {}),
+        )
 
         expect(copy).toEqual({
             titleKey: 'errors.network.no_connection.title',

@@ -63,7 +63,9 @@ export const fakeMultisigAdapter = (
             : { kind: 'unauthorized-sender', txIndex }
     },
     decodeTransaction: bytes =>
-        ({ sender: new TextDecoder().decode(bytes) }) as unknown as PeraTransaction,
+        ({
+            sender: new TextDecoder().decode(bytes),
+        }) as unknown as PeraTransaction,
     acceptsParticipantScheme: scheme => scheme === 'ed25519',
     classifyParticipant: async () => 'unclassified',
     ...overrides,

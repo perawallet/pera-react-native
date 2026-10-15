@@ -80,7 +80,11 @@ export const useARC59SendSummaryScreen =
             data: summaryData,
             isLoading: summaryLoading,
             isUnavailableOnNetwork,
-        } = useAssetInboxSendSummaryQuery(receiverAddress, assetId, LEGACY_CHAIN_ID)
+        } = useAssetInboxSendSummaryQuery(
+            receiverAddress,
+            assetId,
+            LEGACY_CHAIN_ID,
+        )
         // Query data is Maybe<T> (null while unavailable); this screen only
         // distinguishes "have a summary" from "don't", so collapse to undefined.
         const summary = summaryData ?? undefined

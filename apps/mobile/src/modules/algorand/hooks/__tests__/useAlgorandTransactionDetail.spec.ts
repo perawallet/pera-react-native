@@ -111,11 +111,10 @@ describe('useAlgorandTransactionDetail', () => {
             }),
         )
 
-        const native = result.current.transaction
-        expect(native?.family).toBe('algorand')
-        expect((native?.transaction as PeraDisplayableTransaction).id).toBe(
-            'TX123',
-        )
+        expect(result.current.transaction).toMatchObject({
+            family: 'algorand',
+            transaction: { id: 'TX123' },
+        })
         expect(result.current.isPaused).toBe(true)
     })
 

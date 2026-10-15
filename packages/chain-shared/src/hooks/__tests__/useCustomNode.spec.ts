@@ -13,10 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    customNodeAdapters,
-    type CustomNodeAdapter,
-} from '../../custom-node'
+import { customNodeAdapters, type CustomNodeAdapter } from '../../custom-node'
 import { useChainCapability } from '../useChainCapability'
 import { useCustomNode } from '../useCustomNode'
 

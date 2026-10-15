@@ -102,5 +102,9 @@ export const registerLegacyAddressCodec = (
         ALGORAND_ADDRESS_SHAPE.test(address),
 ): void => {
     addressCodecs.reset()
-    addressCodecs.register({ ...fixtureCodec, chainId: LEGACY_CHAIN_ID, isValid })
+    addressCodecs.register({
+        ...fixtureCodec,
+        chainId: LEGACY_CHAIN_ID,
+        isValid,
+    })
 }

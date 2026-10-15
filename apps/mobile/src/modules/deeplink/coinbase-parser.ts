@@ -15,11 +15,7 @@ import {
     type AssetTransferDeeplink,
     DeeplinkType,
 } from './types'
-import {
-    isLegacyChainAddress,
-    normalizeUrl,
-    parseQueryParams,
-} from './utils'
+import { isLegacyChainAddress, normalizeUrl, parseQueryParams } from './utils'
 import { ALGO_SCHEME } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 

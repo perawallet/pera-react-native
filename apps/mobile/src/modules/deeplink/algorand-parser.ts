@@ -22,11 +22,7 @@ import {
     type DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
-import {
-    inferKeyregType,
-    isLegacyChainAddress,
-    isValidAssetId,
-} from './utils'
+import { inferKeyregType, isLegacyChainAddress, isValidAssetId } from './utils'
 // config and Networks removed because unused
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'

@@ -61,9 +61,8 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
                     getNetwork: () => useNetworkStore.getState().network,
                     getCustomNetworkGenesisHash: () =>
                         customNodeAdapters.has(LEGACY_CHAIN_ID)
-                            ? customNodeAdapters
-                                  .get(LEGACY_CHAIN_ID)
-                                  .read()?.genesisHash
+                            ? customNodeAdapters.get(LEGACY_CHAIN_ID).read()
+                                  ?.genesisHash
                             : undefined,
                     // Descriptor-only in UI realms; the offscreen host owns the live handler.
                     getAccounts: () => [],
