@@ -24,10 +24,6 @@ import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
 import { crypto_sign_keypair } from '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js'
 import { sha512 } from '@noble/hashes/sha2.js'
 import type { Optional } from '@perawallet/wallet-core-shared'
-// No package exports the shim's internals; the relative path reaches the same
-// secp256k1 code the device keystore runs.
-import { secp256k1Binding } from '../../../../extensions/provider/src/keystore/shims/secp256k1/binding'
-import { bip39SeedFromEntropy } from '../../../../extensions/provider/src/keystore/shims/secp256k1/bip39Seed'
 
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,
 // which are transitive deps not listed in apps/mobile's package.json. tsc
@@ -125,6 +121,18 @@ const falconShapedSignature = (
 // module-evaluation time.
 const loadPQProvider = async () =>
     (await import('@perawallet/wallet-core-kms')).getPQProvider()
+
+// No package exports the shim's internals; the relative path reaches the same
+// secp256k1 code the device keystore runs. Lazy because this module loads for
+// every spec that reaches the provider, and only Ethereum flows need it.
+const loadSecp256k1Binding = async () =>
+    (
+        await import('../../../../extensions/provider/src/keystore/shims/secp256k1/binding')
+    ).secp256k1Binding
+const loadBip39SeedFromEntropy = async () =>
+    (
+        await import('../../../../extensions/provider/src/keystore/shims/secp256k1/bip39Seed')
+    ).bip39SeedFromEntropy
 
 // Module-level in-memory key map. Mirrors what production stores in MMKV
 // (minus encryption). Keep this exported so tests can reset between runs
@@ -471,6 +479,8 @@ const createKeyStoreApi = (
                 )
             }
             if (opts?.curve === 'secp256k1') {
+                const secp256k1Binding = await loadSecp256k1Binding()
+                const bip39SeedFromEntropy = await loadBip39SeedFromEntropy()
                 const seed = await bip39SeedFromEntropy(
                     globalThis.crypto.subtle,
                     parent.privateKey,
@@ -549,7 +559,7 @@ const createKeyStoreApi = (
                 data.privateKey
                     ? {
                           ...data,
-                          publicKey: secp256k1Binding.publicKeyOf(
+                          publicKey: (await loadSecp256k1Binding()).publicKeyOf(
                               data.privateKey,
                           ),
                       }
