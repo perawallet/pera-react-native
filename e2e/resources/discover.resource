@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation       Discover is a full-screen WebView of a remote site behind the shared age gate. Only
 ...                 the native shell is asserted; in-page content would need a webview context.
-Resource            app.resource
+Resource            settings.resource
 
 
 *** Variables ***
@@ -14,6 +14,9 @@ ${AGE_GATE_CONFIRM}         xpath=//*[@text='I am 18 or older' or @label='I am 1
 ${AGE_GATE_RETRY}           accessibility_id=age-gate-retry
 ${WEBVIEW_OFFLINE}          accessibility_id=pw-webview-offline
 ${WEBVIEW_TIMEOUT}          accessibility_id=pw-webview-timeout
+# The Debug Tools row to Manage Cache has no testID.
+${DEBUG_TOOLS_MANAGE_CACHE}     xpath=//*[@text='Manage Cache' or @label='Manage Cache']
+${CLEAR_ONE_TIME_FLAGS}         accessibility_id=manage_cache_clear_flags_button
 
 
 *** Keywords ***
@@ -42,3 +45,25 @@ Discover Page Should Be Loaded
     Page Should Not Contain Element    ${AGE_GATE_RETRY}
     Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
     Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
+
+Clear One-Time Flags
+    [Documentation]    Developer > Debug Tools > Manage Cache: resets the age declaration and every
+    ...                one-time prompt and disclaimer, so a case can see them again.
+    Open Settings
+    Open From Settings    ${SETTINGS_ITEM_DEVELOPER}    ${DEVELOPER_NODE_ITEM}
+    # A back tap while the screen still slides in is dropped.
+    Wait Until Settled    ${DEVELOPER_NODE_ITEM}
+    ${unlocked}=    Run Keyword And Return Status    Page Should Contain Element    ${DEVELOPER_DEBUG_TOOLS_ITEM}
+    IF    not ${unlocked}
+        Tap Back
+        Unlock Debug Tools
+        Open From Settings    ${SETTINGS_ITEM_DEVELOPER}    ${DEVELOPER_DEBUG_TOOLS_ITEM}
+    END
+    # Each row exists while its screen still slides in, and a tap there is dropped.
+    Wait Until Settled    ${DEVELOPER_DEBUG_TOOLS_ITEM}
+    Tap    ${DEVELOPER_DEBUG_TOOLS_ITEM}
+    Wait Until Settled    ${DEBUG_TOOLS_MANAGE_CACHE}
+    Tap    ${DEBUG_TOOLS_MANAGE_CACHE}
+    Wait Until Settled    ${CLEAR_ONE_TIME_FLAGS}
+    Tap    ${CLEAR_ONE_TIME_FLAGS}
+    Go Home

@@ -3,7 +3,6 @@ Documentation       Staking: Menu -> Staking behind the shared age gate. Project
 ...                 config, and opening one pushes its site in the in-app browser after a one-time
 ...                 disclaimer that unlocks only once scrolled to the end.
 Resource            discover.resource
-Resource            settings.resource
 
 
 *** Variables ***
@@ -19,9 +18,6 @@ ${STAKING_DISCLAIMER_ACCEPT}    accessibility_id=staking-disclaimer-accept-butto
 ${WEBVIEW_CLOSE_BUTTON}         accessibility_id=webview_close_button
 ${STAKING_EMPTY_VIEW}           xpath=//*[@resource-id='staking-empty-view' or @name='staking-empty-view' or @content-desc='staking-empty-view']
 ${STAKING_SETTLED}              xpath=//*[starts-with(@content-desc,'staking-project-card-') or starts-with(@name,'staking-project-card-') or @content-desc='staking-error-title' or @name='staking-error-title' or @resource-id='staking-empty-view' or @name='staking-empty-view']
-# The Debug Tools row to Manage Cache has no testID.
-${DEBUG_TOOLS_MANAGE_CACHE}     xpath=//*[@text='Manage Cache' or @label='Manage Cache']
-${CLEAR_ONE_TIME_FLAGS}         accessibility_id=manage_cache_clear_flags_button
 
 
 *** Keywords ***
@@ -62,36 +58,21 @@ Open Disclaimer
     ${disclaimer}=    Tap First Project
     Should Be True    ${disclaimer}    Clearing the one-time flags did not bring the disclaimer back.
 
-Clear One-Time Flags
-    Open Settings
-    Open From Settings    ${SETTINGS_ITEM_DEVELOPER}    ${DEVELOPER_NODE_ITEM}
-    ${unlocked}=    Run Keyword And Return Status    Page Should Contain Element    ${DEVELOPER_DEBUG_TOOLS_ITEM}
-    IF    not ${unlocked}
-        Tap Back
-        Unlock Debug Tools
-        Open From Settings    ${SETTINGS_ITEM_DEVELOPER}    ${DEVELOPER_DEBUG_TOOLS_ITEM}
-    END
-    # Each row exists while its screen still slides in, and a tap there is dropped.
-    Wait Until Settled    ${DEVELOPER_DEBUG_TOOLS_ITEM}
-    Tap    ${DEVELOPER_DEBUG_TOOLS_ITEM}
-    Wait Until Settled    ${DEBUG_TOOLS_MANAGE_CACHE}
-    Tap    ${DEBUG_TOOLS_MANAGE_CACHE}
-    Wait Until Settled    ${CLEAR_ONE_TIME_FLAGS}
-    Tap    ${CLEAR_ONE_TIME_FLAGS}
-    Go Home
-
 Accept Should Be Disabled Before Scrolling
     [Documentation]    The button sits below the fold, and Android lists it only once on screen. Short
     ...                steps bring it in before the end of the text unlocks it: about 160px separate the
     ...                two on a phone, and each step scrolls about 120px.
     Wait Until Settled    ${STAKING_DISCLAIMER_TITLE}
+    ${w}=    Get Window Width
+    ${h}=    Get Window Height
+    VAR    ${x}    ${{ int(${w} / 2) }}
     FOR    ${i}    IN RANGE    20
         ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_ACCEPT}
         IF    ${present}
             Element Should Be Disabled    ${STAKING_DISCLAIMER_ACCEPT}
             RETURN
         END
-        Swipe By Percent    50    70    50    65    duration=400ms
+        Swipe    start_x=${x}    start_y=${{ int(${h} * 0.7) }}    end_x=${x}    end_y=${{ int(${h} * 0.65) }}    duration=400ms
     END
     Fail    The accept button never came on screen.
 

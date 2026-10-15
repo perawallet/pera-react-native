@@ -2,7 +2,7 @@
 Documentation       Onramp (Fund tab) on Android and iOS from one suite.
 Resource            ../resources/onramp.resource
 
-Suite Setup         Start Pera With Wallet
+Suite Setup         Run Keywords    Start Pera With Wallet    AND    Acknowledge Onramp Introduction
 Suite Teardown      Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot

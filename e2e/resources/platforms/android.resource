@@ -85,7 +85,11 @@ Scroll Into View
     ...    android=new UiScrollable(new UiSelector().scrollable(true)).scrollIntoView(${selector})    timeout=10s
 
 Close Sheet
-    Swipe By Percent    50    40    50    90    duration=800ms
+    # Tap the backdrop above the sheet, as on iOS. A swipe starting on the backdrop of a short
+    # sheet never reaches its pan handler, and hardware back is blocked while a sheet is open.
+    ${w}=    Get Window Width
+    ${h}=    Get Window Height
+    Execute Script    mobile: clickGesture    x=${{int(${w} * 0.5)}}    y=${{int(${h} * 0.08)}}
 
 Open Deeplink Cold
     [Documentation]    Fires the link at a stopped app, so it cold-starts on it (Linking.getInitialURL).

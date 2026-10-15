@@ -17,11 +17,9 @@ Discover Tab Loads The Web Page
 
 Accepting The Age Declaration Opens Discover
     [Tags]    id:discover.age-gate.accept    p1
-    Wait Until Page Contains Element    ${DISCOVER_TAB}    timeout=30s
+    Clear One-Time Flags
     Tap    ${DISCOVER_TAB}
-    ${declared}=    Run Keyword And Return Status
-    ...    Wait Until Page Contains Element    ${AGE_GATE_CONFIRM}    timeout=10s
-    Skip If    not ${declared}    Age already declared on this install.
+    Wait Until Settled    ${AGE_GATE_CONFIRM}
     Tap    ${AGE_GATE_CONFIRM}
     Discover Page Should Be Loaded
 

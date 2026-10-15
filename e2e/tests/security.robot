@@ -122,7 +122,7 @@ Repeated Wrong Pins Lock Out Without Wiping
     Lock By Restart
     FOR    ${attempt}    IN RANGE    5
         Enter Pin    ${OTHER_PIN}
-        Wait Until Page Does Not Contain Element    ${PIN_LOGGING_IN}    timeout=30s
+        Wait Out Pin Check
         ${locked_out}=    Run Keyword And Return Status    Page Should Contain Element    ${LOCKOUT_VIEW}
         IF    ${locked_out}    BREAK
         Sleep    0.5s    reason=Let the error shake clear the dots before the next attempt.

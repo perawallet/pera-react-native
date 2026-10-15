@@ -23,6 +23,7 @@ ${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word
 ${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu' or @name='numpad_key_1' or @content-desc='numpad_key_1']
 ${PIN_PAD_KEY}                  accessibility_id=numpad_key_1
 ${ACCOUNT_DRAWER_SLIVER}        xpath=//*[@resource-id='pw_drawer_gesture_surface' or @name='pw_drawer_gesture_surface']
+${SHEET_BACKDROP}                accessibility_id=Bottom sheet backdrop
 # The only PINs any suite sets (security.robot). A run that dies with one set leaves the next cold
 # start on the lock screen, so every relaunch unlocks with them rather than failing there.
 @{E2E_PINS}                     123456    445566
@@ -65,8 +66,10 @@ Unlock With Known Pins
         FOR    ${digit}    IN    @{{ list($pin) }}
             Tap    accessibility_id=numpad_key_${digit}
         END
-        # A wrong PIN keeps the pad up; fall through to the next one.
+        # A Logging in overlay hides the pad while the PIN is checked; a wrong PIN brings the pad
+        # back, a right one lands on Home. Then the loop tries the next PIN or returns.
         Run Keyword And Return Status    Wait Until Page Does Not Contain Element    ${PIN_PAD_KEY}    timeout=10s
+        Wait Until Page Contains Element    ${FIRST_SCREEN}    timeout=30s
     END
 
 Go Home
@@ -76,6 +79,9 @@ Go Home
     # On iOS the reset leaves the account drawer open over Home; tapping its content sliver closes it.
     Tap If Present    ${ACCOUNT_DRAWER_SLIVER}
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
+    # The reset only starts the last test's sheet sliding out; a sheet requested before it has
+    # gone is dropped with it.
+    Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
 
 Create Wallet
     # Onboarding slides in after Remove All; a tap while it moves misses the button.
@@ -120,8 +126,9 @@ Load Fixture
     IF    not ${applied}    Sleep    ${FIXTURE_SETTLE}
 
 Tap
-    [Documentation]    Retries only a stale element: that tap never landed. Any other error may follow a
-    ...                tap that did land, and retrying it could toggle a switch twice.
+    [Documentation]    Retries only a stale or briefly missing element (a re-render between the wait and
+    ...                the click): that tap never landed. Any other error may follow a tap that did
+    ...                land, and retrying it could toggle a switch twice.
     [Arguments]    ${locator}
     FOR    ${attempt}    IN RANGE    3
         TRY
@@ -129,6 +136,8 @@ Tap
             RETURN
         EXCEPT    StaleElementReferenceException*    type=GLOB    AS    ${error}
             Sleep    0.2s
+        EXCEPT    *did not match any elements*    type=GLOB    AS    ${error}
+            Wait Until Page Contains Element    ${locator}    timeout=5s
         END
     END
     Fail    ${locator} kept going stale: ${error}
@@ -160,8 +169,14 @@ Reset To Fresh Wallet
     Wait Until Page Contains Element
     ...    xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
     ...    timeout=30s
+    # Its Close button has no testID (ConfirmActionContent gets no confirmTestID); a backdrop tap
+    # (the adapters' Close Sheet) closes it on both platforms.
     Close Sheet
-    Wait Until Page Contains Element    ${CREATE_WALLET_BUTTON}    timeout=30s
+    # Onboarding is already in the tree under the closing sheet; a tap before it is gone is lost.
+    Wait Until Page Does Not Contain Element
+    ...    xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
+    ...    timeout=15s
+    Wait Until Settled    ${CREATE_WALLET_BUTTON}
     Create Wallet
     Wait Clear Of Startup Prompts
 

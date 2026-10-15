@@ -54,6 +54,8 @@ ${WALLET_CONNECT_CONNECT_BUTTON}        accessibility_id=wallet_connect_connect_
 ${WEBVIEW_CLOSE_BUTTON}                 accessibility_id=webview_close_button
 
 ${DEBUG_TOOLS_FEATURE_FLAGS_ITEM}       accessibility_id=debug_tools_feature_flags_item
+# The toast has no testID; its text is the only handle.
+${DEBUG_TOOLS_ENABLED_TOAST}            xpath=//*[@text='Debug tools enabled' or @label='Debug tools enabled']
 ${CLOUD_BACKUP_FLAG}                    enable_cloud_backup
 ${FLAG_EXPAND_CLOUD_BACKUP}             accessibility_id=feature_flag_expand_${CLOUD_BACKUP_FLAG}
 ${FLAG_OVERRIDE_CLOUD_BACKUP}           accessibility_id=feature_flag_override_${CLOUD_BACKUP_FLAG}
@@ -65,7 +67,8 @@ Open Settings
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     Tap    ${MENU_SETTINGS_BUTTON}
-    Wait Until Page Contains Element    ${SETTINGS_ITEM_SECURITY}    timeout=15s
+    # Settings slides in; a row tapped mid-slide is missed.
+    Wait Until Settled    ${SETTINGS_ITEM_SECURITY}
 
 Scroll To
     [Documentation]    Brings an element on screen in one driver call. Takes this file's locators:
@@ -172,9 +175,15 @@ Unlock Debug Tools
     # ponytail: one request per tap; a remote grid slower than ~1s per round trip needs a single
     # W3C action sequence instead.
     AppiumLibrary.Tap    ${point}    count=10    duration=50ms
-    Wait Until Page Contains    Debug tools enabled    timeout=10s
-    # The toast covers the top rows for ~3s and swallows taps there.
-    Wait Until Page Does Not Contain    Debug tools enabled    timeout=10s
+    Wait Until Page Contains Element    ${DEBUG_TOOLS_ENABLED_TOAST}    timeout=10s
+    # The toast covers the top rows for ~3s and swallows taps there. iOS keeps it in the tree
+    # off-screen once hidden, so wait on visibility rather than presence.
+    Wait Until Keyword Succeeds    10s    0.3s    Should Not Be Visible    ${DEBUG_TOOLS_ENABLED_TOAST}
+
+Should Not Be Visible
+    [Arguments]    ${locator}
+    ${visible}=    Is Visible    ${locator}
+    Should Not Be True    ${visible}
 
 Open Feature Flags
     Unlock Debug Tools

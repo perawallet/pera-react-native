@@ -230,9 +230,15 @@ Enter Rejected Pin
     [Arguments]    ${pin}
     Clear Pin Pad
     Enter Pin    ${pin}
+    Wait Out Pin Check
+    Wait Until Page Contains Element    ${PIN_VERIFY_TITLE}    timeout=5s
+    Sleep    0.5s    reason=The dots shake for 250ms and clear; digits typed meanwhile are lost.
+
+Wait Out Pin Check
+    [Documentation]    The Logging in overlay replaces the whole lock screen while a PIN is checked,
+    ...                title included, and can take a moment to appear after the sixth digit.
+    Run Keyword And Return Status    Wait Until Page Contains Element    ${PIN_LOGGING_IN}    timeout=3s
     Wait Until Page Does Not Contain Element    ${PIN_LOGGING_IN}    timeout=30s
-    Sleep    0.5s
-    Page Should Contain Element    ${PIN_VERIFY_TITLE}
 
 Enter Duress Pin At Lock Screen
     [Documentation]    The wipe and decoy wallet are created behind the Logging in overlay, and the
