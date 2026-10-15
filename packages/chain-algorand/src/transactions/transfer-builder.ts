@@ -21,13 +21,14 @@ import {
     type UnsignedTransaction,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { encodeToBase64, toBigInt } from '@perawallet/wallet-core-shared'
+import { toBigInt } from '@perawallet/wallet-core-shared'
 import { getMinimumFeeConfig } from '../blockchain'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { assignFeeToGroup } from '../signing/assignMinimumFeesToGroup'
 import { buildOptInTxs, buildTransferTxs } from './builders'
 import { fetchSuggestedMinFee, resolveAlgorandSenderFee } from './transfer-fees'
 import { assertBuildableIntent } from './transfer-validation'
+import { toAlgorandUnsignedTransaction } from '../signing/unsignedAlgorandTransactions'
 
 const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
 const OPT_IN_TITLE_KEY = i18nKey('transactions.list_item.opt_in')
@@ -77,17 +78,26 @@ const buildTransfer = async (
 const buildAssetOptIn = async (
     intent: AssetOptInIntent,
     { scope }: BuildContext,
-): Promise<PeraTransaction[]> => {
+): Promise<UnsignedTransaction[]> => {
     const { minTxnFee, pqMultiplier } = getMinimumFeeConfig()
+    const accounts = useAccountsStore.getState().accounts
     const drafts = await buildOptInTxs({
         scope,
         sender: intent.account,
         assetId: BigInt(intent.assetRef.assetId),
     })
     const { transactions } = await assignFeeToGroup(
-        { transactions: drafts },
         {
-            accounts: useAccountsStore.getState().accounts,
+            transactions: drafts.map(draft =>
+                toAlgorandUnsignedTransaction(
+                    draft,
+                    { scope, accounts },
+                    OPT_IN_SUMMARY,
+                ),
+            ),
+        },
+        {
+            accounts,
             fetchSuggestedMinFee: () =>
                 fetchSuggestedMinFee(scope).catch(() => 0n),
             configMinTxnFee: minTxnFee,
@@ -102,20 +112,14 @@ export const buildAlgorandTransfer = async (
     context: BuildContext,
 ): Promise<UnsignedTransaction[]> => {
     assertBuildableIntent(intent, context)
-    const [transactions, summary] =
-        intent.kind === 'transfer'
-            ? [await buildTransfer(intent, context), transferSummary(intent)]
-            : [await buildAssetOptIn(intent, context), OPT_IN_SUMMARY]
+    if (intent.kind !== 'transfer') return buildAssetOptIn(intent, context)
 
-    return transactions.map(transaction => ({
+    const summary = transferSummary(intent)
+    const wrapContext = {
         scope: context.scope,
-        payload: transaction,
-        summary,
-        chainData: {
-            family: 'algorand',
-            groupId: transaction.group
-                ? encodeToBase64(transaction.group)
-                : undefined,
-        },
-    }))
+        accounts: useAccountsStore.getState().accounts,
+    }
+    return (await buildTransfer(intent, context)).map(transaction =>
+        toAlgorandUnsignedTransaction(transaction, wrapContext, summary),
+    )
 }

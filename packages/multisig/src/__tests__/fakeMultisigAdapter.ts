@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigChainAdapter, MultisigParameters } from '../chain-adapter'
 
 // A raw "transaction" here is just its base64-encoded sender.
@@ -62,10 +62,20 @@ export const fakeMultisigAdapter = (
             ? { kind: 'valid' }
             : { kind: 'unauthorized-sender', txIndex }
     },
-    decodeTransaction: bytes =>
-        ({
+    decodeTransaction: (bytes, joint, scope) => ({
+        scope,
+        payload: {
             sender: new TextDecoder().decode(bytes),
-        }) as unknown as PeraTransaction,
+            multisig: joint.parameters,
+        },
+        summary: {
+            kind: 'chain-specific',
+            title: { key: i18nKey('transactions.list_item.default') },
+            direction: 'none',
+            icon: 'unknown',
+        },
+        chainData: { family: 'algorand' },
+    }),
     acceptsParticipantScheme: scheme => scheme === 'ed25519',
     classifyParticipant: async () => 'unclassified',
     ...overrides,

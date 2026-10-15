@@ -48,6 +48,7 @@ import { CardEscrowNotConfiguredError } from '@perawallet/wallet-core-card'
 import { AlgodError } from '../../blockchain'
 import { algorandCardAdapter as adapter } from '../adapter'
 import { autoDrawDelegationRequest } from '../delegation'
+import { payloadTransactionsOf } from '../../signing/unsignedAlgorandTransactions'
 
 const TESTNET: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 const MAINNET: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -197,9 +198,11 @@ describe('algorandCardAdapter.buildManualDeposit', () => {
             TESTNET,
         )
 
-        expect(group.map(txn => encodeUnsignedTransaction(txn))).toEqual(
-            await buildInPlace(400_000n),
-        )
+        expect(
+            payloadTransactionsOf(group).map(txn =>
+                encodeUnsignedTransaction(txn),
+            ),
+        ).toEqual(await buildInPlace(400_000n))
     })
 
     it('refuses a network with no settlement asset', async () => {

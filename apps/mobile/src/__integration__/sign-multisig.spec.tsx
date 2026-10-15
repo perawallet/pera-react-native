@@ -15,6 +15,7 @@
 // participant of: confirm → the multisig strategy signs the participant → the
 // propose transport POSTs the sign request to the joint-accounts backend.
 
+import { multisigAddress } from 'algosdk'
 import {
     afterAll,
     beforeAll,
@@ -40,7 +41,6 @@ import {
     renderSignReview,
     screen,
     waitFor,
-    REVIEW_RECEIVER_ADDRESS,
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
@@ -53,7 +53,11 @@ import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 // The multisig account's address is the transaction sender; the seeded Algo25
 // signer is its (only) participant, so the wallet can sign for it.
-const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
+const MSIG_ADDRESS = multisigAddress({
+    version: 1,
+    threshold: 1,
+    addrs: [REVIEW_SIGNER_ADDRESS],
+}).toString()
 
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',

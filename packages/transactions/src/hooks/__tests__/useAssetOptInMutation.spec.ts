@@ -92,6 +92,12 @@ describe('useAssetOptInMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
+            totalFee: transactions =>
+                transactions.reduce(
+                    (total, transaction) =>
+                        total + (transaction as unknown as { fee: bigint }).fee,
+                    0n,
+                ),
             assetHolding: { buildOptInTxs: mockBuild, buildOptOutTxs: vi.fn() },
         })
         transferChainAdapters.reset()

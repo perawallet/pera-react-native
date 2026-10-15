@@ -33,6 +33,10 @@ import type {
 
 import { validateTransactionGroupIntegrity } from './validateTransactionGroupIntegrity'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import {
+    payloadTransactionsOf,
+    rewrapAlgorandTransactions,
+} from './unsignedAlgorandTransactions'
 
 export type AssignMinimumFeesToGroupParams = {
     /** Full atomic payload as received (groupContext), NOT the signable subset */
@@ -50,6 +54,12 @@ export type AssignMinimumFeesToGroupParams = {
     pqMultiplier: bigint
     /** Indices whose partition already pays for its signers; never raised. */
     fundedIndices?: ReadonlySet<number>
+}
+
+export type AlgorandFeeAssignment = {
+    /** Same array reference as input when nothing was adjusted */
+    transactions: PeraTransaction[]
+    adjustments: FeeAdjustment[]
 }
 
 /** Effective authorizer for the signable slot at `subsetIndex`. */
@@ -142,7 +152,7 @@ export const assignMinimumFeesToGroup = ({
     configMinTxnFee,
     pqMultiplier,
     fundedIndices,
-}: AssignMinimumFeesToGroupParams): AssignMinimumFeesToGroupResult => {
+}: AssignMinimumFeesToGroupParams): AlgorandFeeAssignment => {
     // Congestion guard (same as resolveMinFeeForSender): derive both the
     // surcharge and the floor from the max of algod's suggested minimum and
     // the configured base, at most once.
@@ -273,10 +283,11 @@ export const assignFeeToGroup = async (
     }: AssignFeeToGroupDeps,
 ): Promise<AssignMinimumFeesToGroupResult> => {
     const indices = signableIndices ?? transactions.map((_, index) => index)
+    const algorandTransactions = payloadTransactionsOf(transactions)
 
     if (
         !groupHasQuantumSigner({
-            transactions,
+            transactions: algorandTransactions,
             signableIndices: indices,
             signerOverrides,
             accounts,
@@ -298,8 +309,8 @@ export const assignFeeToGroup = async (
             : undefined,
     ])
 
-    return assignMinimumFeesToGroup({
-        transactions,
+    const assigned = assignMinimumFeesToGroup({
+        transactions: algorandTransactions,
         signableIndices: indices,
         signerOverrides,
         accounts,
@@ -308,4 +319,13 @@ export const assignFeeToGroup = async (
         pqMultiplier,
         fundedIndices,
     })
+    return assigned.adjustments.length === 0
+        ? { transactions, adjustments: [] }
+        : {
+              transactions: rewrapAlgorandTransactions(
+                  transactions,
+                  assigned.transactions,
+              ),
+              adjustments: assigned.adjustments,
+          }
 }

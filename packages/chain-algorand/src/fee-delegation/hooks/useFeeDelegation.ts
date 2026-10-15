@@ -13,10 +13,11 @@
 import { useCallback } from 'react'
 import { compactSignedResults, useTransactionEncoder } from '../../blockchain'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     scopeForLegacyNetwork,
     type PeraSignedTransaction,
-    type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     submitAndAutoRefresh,
@@ -30,7 +31,11 @@ import {
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 
-import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import {
+    decodeAlgorandUnsignedTransaction,
+    payloadTransactionsOf,
+    toAlgorandUnsignedTransaction,
+} from '../../signing/unsignedAlgorandTransactions'
 import { requestFeeDelegation } from '../api'
 import {
     FeeDelegationAttestationRequiredError,
@@ -46,7 +51,7 @@ export type FeeDelegatedSubmitParams = {
      * sponsor payment and re-groups everything (the group id changes), so
      * nothing may be signed before the response comes back.
      */
-    transactions: PeraTransaction[]
+    transactions: UnsignedTransaction[]
     /**
      * Also top the account up to its minimum balance, including new asset
      * opt-ins. Named after the backend field; box/app-storage MBR is out of
@@ -80,8 +85,7 @@ type GroupSlot =
  */
 const requestSignatures = (
     addSignRequest: (request: TransactionSignRequest) => void,
-    unsignedTxs: PeraTransaction[],
-    groupContext: PeraTransaction[],
+    groupContext: UnsignedTransaction[],
     signableIndices: number[],
     sourceMetadata: TransactionSignRequest['sourceMetadata'],
 ): Promise<PeraSignedTransaction[]> =>
@@ -91,10 +95,8 @@ const requestSignatures = (
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
-            chainId: ALGORAND_CHAIN_ID,
-            txs: unsignedTxs,
-            groupContext,
-            signableIndices,
+            txs: signableIndices.map(index => groupContext[index]),
+            chainData: { algorand: { groupContext, signableIndices } },
             sourceMetadata,
             approve: async signed => {
                 // Single full-group headless sign (no per-slot padding), so
@@ -133,12 +135,8 @@ const requestSignatures = (
 export const useFeeDelegation = (): UseFeeDelegationResult => {
     const { network } = useNetwork()
     const { addSignRequest } = useSigningRequest()
-    const {
-        encodeTransaction,
-        encodeTransactionRaw,
-        decodeTransaction,
-        decodeSignedTransaction,
-    } = useTransactionEncoder()
+    const { encodeTransaction, encodeTransactionRaw, decodeSignedTransaction } =
+        useTransactionEncoder()
 
     const submitWithFeeDelegation = useCallback(
         async ({
@@ -159,7 +157,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     // separator and are not wire-safe. (The match check below
                     // keeps using the signable form on BOTH sides, so it is
                     // unaffected.)
-                    txnGroup: transactions.map(txn => ({
+                    txnGroup: payloadTransactionsOf(transactions).map(txn => ({
                         txn: encodeToBase64(encodeTransactionRaw(txn)),
                     })),
                     account,
@@ -172,9 +170,14 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             // Decode the re-grouped txns into a merge plan: slots carrying
             // `stxn` are sponsor-signed; the rest are the wallet's own and
             // must be signed AFTER the re-group.
+            const scope = scopeForLegacyNetwork(network)
+            const wrapContext = {
+                scope,
+                accounts: useAccountsStore.getState().accounts,
+            }
             const slots: GroupSlot[] = []
-            const unsignedTxs: PeraTransaction[] = []
-            const groupContext: PeraTransaction[] = []
+            const unsignedTxs: UnsignedTransaction[] = []
+            const groupContext: UnsignedTransaction[] = []
 
             for (const entry of txnGroup) {
                 if (entry.stxn) {
@@ -182,10 +185,13 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                         decodeFromBase64(entry.stxn),
                     )
                     slots.push({ kind: 'preSigned', signed })
-                    groupContext.push(signed.txn)
+                    groupContext.push(
+                        toAlgorandUnsignedTransaction(signed.txn, wrapContext),
+                    )
                 } else {
-                    const unsignedTxn = decodeTransaction(
+                    const unsignedTxn = decodeAlgorandUnsignedTransaction(
                         decodeFromBase64(entry.txn),
+                        wrapContext,
                     )
                     slots.push({
                         kind: 'toSign',
@@ -205,8 +211,8 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             // an attacker-favorable transaction into the wallet's slot.
             if (
                 !returnedTransactionsMatchSent({
-                    sent: transactions,
-                    returnedToSign: unsignedTxs,
+                    sent: payloadTransactionsOf(transactions),
+                    returnedToSign: payloadTransactionsOf(unsignedTxs),
                     account,
                     encodeTransaction,
                 })
@@ -226,7 +232,6 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
 
             const flatSigned = await requestSignatures(
                 addSignRequest,
-                unsignedTxs,
                 groupContext,
                 signableIndices,
                 sourceMetadata,
@@ -240,18 +245,16 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     : flatSigned[slot.flatIndex]!,
             )
 
-            await submitAndAutoRefresh(
-                scopeForLegacyNetwork(network),
-                orderedSigned,
-                { flow: 'fee-delegation', sender: account },
-            )
+            await submitAndAutoRefresh(scope, orderedSigned, {
+                flow: 'fee-delegation',
+                sender: account,
+            })
         },
         [
             network,
             addSignRequest,
             encodeTransaction,
             encodeTransactionRaw,
-            decodeTransaction,
             decodeSignedTransaction,
         ],
     )

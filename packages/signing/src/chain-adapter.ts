@@ -218,7 +218,7 @@ export type ResolveMinFeeForSenderParams = {
 
 export type AssignFeeToGroupParams = {
     /** Full atomic payload (groupContext space), NOT just the signable subset */
-    transactions: PeraTransaction[]
+    transactions: UnsignedTransaction[]
     /** Indices into `transactions` the wallet will sign; defaults to all */
     signableIndices?: number[]
     /** Subset-position → authorizer address (ARC-0001 `signers`) */
@@ -229,7 +229,7 @@ export type AssignFeeToGroupParams = {
 
 export type AssignMinimumFeesToGroupResult = {
     /** Same array reference as input when nothing was adjusted */
-    transactions: PeraTransaction[]
+    transactions: UnsignedTransaction[]
     /** Empty when nothing was adjusted */
     adjustments: FeeAdjustment[]
 }
@@ -258,13 +258,14 @@ export type AssignFeeToGroupDeps = {
      * asked only for externally priced groups; resolves to none when unsure.
      */
     findFundedIndices?: (params: {
-        transactions: PeraTransaction[]
+        transactions: UnsignedTransaction[]
         signableIndices: number[]
         signerOverrides?: Map<number, string>
     }) => Promise<ReadonlySet<number>>
 }
 
 export type EnqueueDappRequestDeps = {
+    scope: ChainScope
     assignFeeToGroup: AssignFeeToGroup
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void

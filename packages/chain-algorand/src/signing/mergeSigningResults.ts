@@ -10,10 +10,28 @@
  limitations under the License
  */
 
-import {
-    SigningError,
-    type SigningResult,
-} from '@perawallet/wallet-core-signing'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { SigningResult } from '@perawallet/wallet-core-signing'
+import { decodeSignedTransaction } from '../blockchain'
+
+// The planner returns signed bytes, while every Algorand transport and source
+// callback consumes PeraSignedTransaction; decoding here is what lets planner-
+// and strategy-signed groups share one delivery path.
+const asPeraSigned = (result: SigningResult): SigningResult =>
+    result.signedData.type === 'signed-transactions'
+        ? {
+              ...result,
+              signedData: {
+                  type: 'transactions',
+                  signed: result.signedData.signed.map(
+                      ({ bytes }) =>
+                          decodeSignedTransaction(
+                              bytes,
+                          ) as PeraSignedTransaction,
+                  ),
+              },
+          }
+        : result
 
 /**
  * Merges multiple signing results (one per group) into a single SigningResult
@@ -27,75 +45,24 @@ import {
 export const mergeSigningResults = (
     results: SigningResult[],
 ): SigningResult => {
-    if (results.length === 1) {
-        return results[0]
+    const normalised = results.map(asPeraSigned)
+    if (normalised.length === 1) {
+        return normalised[0]
     }
 
-    const allIndices = results.flatMap(r => r.originalIndices ?? [])
+    const allIndices = normalised.flatMap(r => r.originalIndices ?? [])
     const totalCount = allIndices.length > 0 ? Math.max(...allIndices) + 1 : 0
-    const signers = results.flatMap(r => r.signers)
-
-    // The machine refuses this before signing; this only backstops it.
-    const planned = results.flatMap(({ signedData, originalIndices }) =>
-        signedData.type === 'signed-transactions'
-            ? [{ data: signedData, originalIndices }]
-            : [],
-    )
-    if (planned.length === results.length) {
-        return {
-            signedData: {
-                type: 'signed-transactions',
-                signed: reorder(
-                    totalCount,
-                    planned.map(({ data, originalIndices }) => ({
-                        items: data.signed,
-                        originalIndices,
-                    })),
-                ),
-                historyEntries: reorder(
-                    totalCount,
-                    planned.map(({ data, originalIndices }) => ({
-                        items: data.historyEntries,
-                        originalIndices,
-                    })),
-                ),
-            },
-            signers,
-        }
-    }
-    if (planned.length > 0) {
-        throw new SigningError(
-            'A request signed partly through its planner cannot be delivered as one group',
-            undefined,
-            { retryable: false },
-        )
+    const reordered = new Array<PeraSignedTransaction>(totalCount)
+    for (const result of normalised) {
+        if (result.signedData.type !== 'transactions') continue
+        const { signed } = result.signedData
+        result.originalIndices?.forEach((origIdx, i) => {
+            reordered[origIdx] = signed[i]
+        })
     }
 
     return {
-        signedData: {
-            type: 'transactions',
-            signed: reorder(
-                totalCount,
-                results.flatMap(({ signedData, originalIndices }) =>
-                    signedData.type === 'transactions'
-                        ? [{ items: signedData.signed, originalIndices }]
-                        : [],
-                ),
-            ),
-        },
-        signers,
+        signedData: { type: 'transactions', signed: reordered },
+        signers: normalised.flatMap(r => r.signers),
     }
-}
-
-const reorder = <T>(
-    totalCount: number,
-    groups: { items: readonly T[]; originalIndices?: number[] }[],
-): T[] => {
-    const reordered = new Array<T>(totalCount)
-    for (const { items, originalIndices } of groups) {
-        originalIndices?.forEach((origIdx, i) => {
-            reordered[origIdx] = items[i]
-        })
-    }
-    return reordered
 }

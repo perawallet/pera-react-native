@@ -440,6 +440,9 @@ describe('useBidaliTransport', () => {
                     }),
                 }),
             )
+            expect(mockAddSignRequest.mock.calls[0][0]).not.toHaveProperty(
+                'chainId',
+            )
         })
 
         it('builds a USDC asset transfer for usdcalgorand protocol', async () => {

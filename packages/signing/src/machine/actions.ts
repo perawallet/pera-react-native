@@ -25,7 +25,6 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     isKeyedByPlanner,
-    isUnsignedTransactionsData,
     type SignableGroup,
     type SigningResult,
     type SourceCallbacks,
@@ -36,10 +35,10 @@ import {
     CannotSignError,
     HardwareWalletError,
     InvalidSignableDataError,
+    PipelineError,
     SigningError,
 } from '../pipeline/errors'
 import { plannerAdapterForScope, plannerChainAdapters } from '../chain-adapter'
-import { isPlannerSigned } from './utils/isPlannerSigned'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import { resolveSignerCredential } from './utils/resolveSignerCredential'
 import type {
@@ -205,22 +204,27 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
         // WalletConnect-only: a serializable delivery context so the multisig
         // sync-flow handoff can answer the dApp after an app kill. Gated on
         // `payloadId`, which only the WalletConnect handler sets.
-        handoffDelivery:
-            isTransactionRequest(request) && request.payloadId !== undefined
-                ? {
-                      clientId: request.transportId ?? '',
-                      payloadId: request.payloadId,
-                      indicesToSign: request.signableIndices ?? [],
-                      totalLength: request.totalLength ?? 0,
-                  }
-                : undefined,
+        handoffDelivery: walletConnectDelivery(request),
+    }
+}
+
+const walletConnectDelivery = (
+    request: SignRequest,
+): SourceMetadata['handoffDelivery'] => {
+    if (!isTransactionRequest(request)) return undefined
+    const algorand = isUnsignedTransactionRequest(request)
+        ? request.chainData?.algorand
+        : request
+    if (algorand?.payloadId === undefined) return undefined
+    return {
+        clientId: request.transportId ?? '',
+        payloadId: algorand.payloadId,
+        indicesToSign: algorand.signableIndices ?? [],
+        totalLength: algorand.totalLength ?? 0,
     }
 }
 
 const MIXED_SHAPES = 'the request mixes Algorand and chain-neutral transactions'
-
-const isChainNeutralTransactions = (group: SignableGroup): boolean =>
-    group.data.type === 'transactions' && isUnsignedTransactionsData(group.data)
 
 /**
  * Groups chain-neutral transactions by signer. As on the Algorand path, a
@@ -330,7 +334,8 @@ const signedForAddresses = (
     )
 }
 
-// A payload the chain can't read is untrusted data, not an internal fault.
+// A payload the chain can't read is untrusted data, not an internal fault; a
+// typed refusal such as a genesis mismatch keeps its own user-facing error.
 const planSigners = (
     planner: TransactionPlanner,
     transaction: UnsignedTransaction,
@@ -338,6 +343,7 @@ const planSigners = (
     try {
         return planner.plan(transaction).map(entry => entry.signer)
     } catch (error) {
+        if (error instanceof PipelineError) throw error
         throw new InvalidSignableDataError(
             error instanceof Error ? error.message : String(error),
         )
@@ -517,24 +523,6 @@ export const resolveInitialContext = (
         allAccounts,
         input.scope.chainId,
     )
-
-    // A planner-signed group and one the chain's own signer signs have no
-    // common signed shape to deliver in, so refuse before anything is signed.
-    const chainNeutral = signableGroups.filter(isChainNeutralTransactions)
-    const planned = chainNeutral.filter(group =>
-        isPlannerSigned(
-            group,
-            groupSigners.get(group.signerAddress),
-            input.scope.chainId,
-        ),
-    )
-    if (planned.length > 0 && planned.length < chainNeutral.length) {
-        throw new SigningError(
-            'This request needs signers that sign in different ways, so it cannot be delivered as one group',
-            undefined,
-            { retryable: false },
-        )
-    }
 
     const hasHardwareSigners = [...groupSigners.values()].some(
         signer => signer.custody === 'hardware',

@@ -70,6 +70,7 @@ describe('useEnqueueArc0001SignRequest', () => {
             resolved,
             transport,
             {
+                scope: SCOPE,
                 assignFeeToGroup: mockAssignFeeToGroup,
                 addSignRequest: mockAddSignRequest,
                 removeSignRequest: mockRemoveSignRequest,

@@ -290,7 +290,6 @@ export const useBidaliTransport = (
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'gift-card',
                     txs,

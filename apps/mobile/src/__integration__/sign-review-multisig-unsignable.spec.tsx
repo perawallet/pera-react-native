@@ -14,6 +14,7 @@
 // meet threshold for must surface the "cannot sign" notice up front instead of
 // the slide-to-confirm control.
 
+import { multisigAddress } from 'algosdk'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -29,7 +30,6 @@ import {
     renderSignReview,
     screen,
     waitFor,
-    REVIEW_RECEIVER_ADDRESS,
     REVIEW_SIGNER_ADDRESS,
 } from '@test-utils/signing-review'
 import {
@@ -39,7 +39,11 @@ import {
 
 // A multisig account whose participants the wallet holds no key for — so the
 // request is unsignable. The account's own address is the tx sender.
-const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
+const MSIG_ADDRESS = multisigAddress({
+    version: 1,
+    threshold: 1,
+    addrs: [REVIEW_SIGNER_ADDRESS],
+}).toString()
 const unsignableMultisig: MultiSigAccount = {
     id: 'msig-unsignable',
     custody: { kind: 'multisig' },

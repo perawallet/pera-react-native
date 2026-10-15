@@ -23,6 +23,7 @@ import type {
 import {
     getHoldingRestriction,
     isMultisigAccount,
+    useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import {
     getOpenSubmissionAttempts,
@@ -48,6 +49,7 @@ import {
     type SwapExecutionFailure,
 } from '@perawallet/wallet-core-swaps'
 import { computeSwapAlgoShortfall } from './computeSwapAlgoShortfall'
+import { toAlgorandUnsignedTransactions } from '../signing/unsignedAlgorandTransactions'
 import { validateSwapGroupAgainstQuote } from './validateSwapGroupAgainstQuote'
 import {
     buildGroupPlans,
@@ -270,6 +272,19 @@ export const executeAlgorandSwap = async (
         decodeTransaction,
         decodeSignedTransaction,
     })
+    const wrappedGroup = toAlgorandUnsignedTransactions(groupContext, {
+        scope,
+        accounts: useAccountsStore.getState().accounts,
+    })
+    const wrapperOf = new Map(
+        groupContext.map((transaction, index) => [
+            transaction,
+            wrappedGroup[index],
+        ]),
+    )
+    const wrappedToSign = unsignedTxs.map(transaction =>
+        wrapperOf.get(transaction)!,
+    )
 
     // Fail-closed: the prepared group is backend-built and these flows skip
     // the standard signing review sheet, so verify it only spends what the
@@ -316,8 +331,8 @@ export const executeAlgorandSwap = async (
                 addSignRequest,
                 signer,
                 signingSource,
-                unsignedTxs,
-                groupContext,
+                wrappedToSign,
+                wrappedGroup,
                 ({ signRequestId, rawTransactionsBase64 }) => {
                     registerHandoff({
                         swapIdStr,
@@ -360,8 +375,8 @@ export const executeAlgorandSwap = async (
                       addSignRequest,
                       signer,
                       signingSource,
-                      unsignedTxs,
-                      groupContext,
+                      wrappedToSign,
+                      wrappedGroup,
                       { isQuantumSwapEnabled },
                   )
                 : []

@@ -247,6 +247,45 @@ describe('useSigningActorLifecycle', () => {
         expect(actor.subscribe).toHaveBeenCalled()
     })
 
+    test('a request that fails while its actor starts and is withdrawn by its error callback does not block the next one', async () => {
+        const failing = makeMockActor('tx-fails')
+        const next = makeMockActor('tx-next')
+        vi.mocked(createSigningMachine)
+            .mockReturnValueOnce(failing as never)
+            .mockReturnValueOnce(next as never)
+        const { result } = renderHook(() => useSigningActorLifecycle())
+        const request = makeTxRequest({
+            id: 'tx-fails',
+            sourceType: 'deeplink',
+            transport: 'callback',
+            error: () => {
+                result.current.stopActor('tx-fails')
+                useSigningStore.getState().removeSignRequest(request)
+            },
+        })
+        failing.start.mockImplementation(() =>
+            failing.emit({
+                value: 'failed',
+                request,
+                error: new Error('unreadable'),
+            }),
+        )
+
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+        act(() => {
+            useSigningStore
+                .getState()
+                .addSignRequest(makeTxRequest({ id: 'tx-next' }))
+        })
+        await flushQueue()
+
+        expect(failing.stop).toHaveBeenCalled()
+        expect(next.start).toHaveBeenCalled()
+    })
+
     test("captures the request chain's selected scope for the machine and its transports", async () => {
         const actor = makeMockActor('tx-1')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)

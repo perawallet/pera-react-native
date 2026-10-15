@@ -33,9 +33,12 @@ import {
     registerFakeTransactionPlanner,
 } from '../../../../__tests__/transactions'
 import { SIGNING_KEY_DOMAIN } from '../../../../constants'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     CannotSignError,
+    GenesisHashMismatchError,
     InvalidSignableDataError,
+    SIGNING_ERROR_KEYS,
     SigningError,
 } from '../../../../pipeline/errors'
 import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
@@ -296,6 +299,45 @@ describe('signPlannedGroups', () => {
             InvalidSignableDataError,
         )
         expect(sign).not.toHaveBeenCalled()
+    })
+
+    it('keeps a typed refusal from the planner as it was raised', async () => {
+        const mismatch = new GenesisHashMismatchError('mainnet', 0, 'a', 'b')
+        planning(() => {
+            throw mismatch
+        })
+
+        await expect(run([neutralGroup()])).rejects.toBe(mismatch)
+    })
+
+    it("reports a keystore failure as a signing error carrying the keystore's copy", async () => {
+        sign.mockRejectedValueOnce(
+            new AppError('missing', {
+                category: ErrorCategory.KMS,
+                messageKey: 'errors.kms.key_not_found',
+            }),
+        )
+
+        const error = await run([neutralGroup()]).catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(SigningError)
+        expect(error).toMatchObject({
+            metadata: expect.objectContaining({
+                messageKey: 'errors.kms.key_not_found',
+            }),
+        })
+    })
+
+    it('falls back to the local-key copy for an untyped keystore failure', async () => {
+        sign.mockRejectedValueOnce(new Error('boom'))
+
+        const error = await run([neutralGroup()]).catch((e: unknown) => e)
+
+        expect(error).toMatchObject({
+            metadata: expect.objectContaining({
+                messageKey: SIGNING_ERROR_KEYS.localKeyFailed,
+            }),
+        })
     })
 
     it("fails for good when the planner won't assemble the signatures", async () => {

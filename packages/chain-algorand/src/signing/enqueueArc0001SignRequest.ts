@@ -11,10 +11,11 @@
  */
 
 import { encodeSignedTransaction, encodeTransactionRaw } from '../blockchain'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type {
     Arc0001ResolveResult,
     PeraSignedTransaction,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     encodeToBase64,
@@ -28,12 +29,16 @@ import {
     type EnqueueDappRequestDeps,
     type ExternalSignTxnTransport,
     type FeeAdjustment,
-    type PeraTransactionSignRequest,
     type RejectReason,
     type TransactionSignRequest,
+    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { buildWalletConnectSignResult } from './multisig/buildWalletConnectSignResult'
+import {
+    payloadTransactionsOf,
+    toAlgorandUnsignedTransaction,
+    withDeclaredSigner,
+} from './unsignedAlgorandTransactions'
 
 // Bridges an ARC-0001 resolver result to the signing pipeline: builds the
 // TransactionSignRequest, short-circuits when nothing is signable, and pads the
@@ -47,6 +52,7 @@ export const enqueueArc0001SignRequest = async (
     resolved: Arc0001ResolveResult,
     transport: ExternalSignTxnTransport,
     {
+        scope,
         assignFeeToGroup,
         addSignRequest,
         removeSignRequest,
@@ -61,11 +67,24 @@ export const enqueueArc0001SignRequest = async (
     }
 
     const indicesToSign = toSign.map(t => t.index)
+    const accounts = useAccountsStore.getState().accounts
+    const wrapped = allDecoded.map((transaction, index) => {
+        const unsigned = toAlgorandUnsignedTransaction(transaction, {
+            scope,
+            accounts,
+        })
+        const subsetIndex = indicesToSign.indexOf(index)
+        const declared =
+            subsetIndex === -1 ? undefined : signerOverrides.get(subsetIndex)
+        return declared === undefined
+            ? unsigned
+            : withDeclaredSigner(unsigned, declared)
+    })
 
     let assigned: Awaited<ReturnType<typeof assignFeeToGroup>>
     try {
         assigned = await assignFeeToGroup({
-            transactions: allDecoded,
+            transactions: wrapped,
             signableIndices: indicesToSign,
             signerOverrides:
                 signerOverrides.size > 0 ? signerOverrides : undefined,
@@ -81,43 +100,46 @@ export const enqueueArc0001SignRequest = async (
     // No-raise path reproduces the resolver's exact field values: full payload
     // as groupContext, the signable subset as txs, and the dApp's original wire
     // bytes passed through verbatim.
-    let groupContext: PeraTransaction[] = allDecoded
-    let txs: PeraTransaction[] = toSign.map(t => t.decoded)
+    const groupContext: UnsignedTransaction[] = assigned.transactions
+    const txs = indicesToSign.map(i => groupContext[i])
     let rawTransactionsBase64 = toSign.map(t => t.walletTxn.txn)
     let feeAdjustments: FeeAdjustment[] | undefined
 
     if (assigned.adjustments.length > 0) {
-        groupContext = assigned.transactions
-        txs = indicesToSign.map(i => assigned.transactions[i])
         // Re-encode the signable subset from the modified group so the wire
         // bytes carry the raised fees and recomputed grp.
-        rawTransactionsBase64 = indicesToSign.map(i =>
-            encodeToBase64(encodeTransactionRaw(assigned.transactions[i])),
+        rawTransactionsBase64 = payloadTransactionsOf(txs).map(transaction =>
+            encodeToBase64(encodeTransactionRaw(transaction)),
         )
         feeAdjustments = assigned.adjustments
     }
 
-    const signRequest: PeraTransactionSignRequest = {
+    const signRequest: UnsignedTransactionSignRequest = {
         id: generateOrderedUniqueId(),
         type: 'transactions',
-        chainId: ALGORAND_CHAIN_ID,
         transport: 'callback',
         sourceType: transport.sourceType,
         transportId: transport.transportId,
         sourceMetadata: transport.sourceMetadata,
         verifiedOrigin: transport.verifiedOrigin,
         txs,
-        // Full payload so the pipeline can recompute the group hash; `txs` is
-        // just the signable subset.
-        groupContext,
-        // Index map back into `groupContext` so the signing UI can render the
-        // full atomic group while marking which slots the wallet will sign.
-        signableIndices: indicesToSign,
-        rawTransactionsBase64,
-        payloadId: transport.payloadId,
-        totalLength,
-        signerOverrides: signerOverrides.size > 0 ? signerOverrides : undefined,
-        feeAdjustments,
+        chainData: {
+            algorand: {
+                // Full payload so the pipeline can recompute the group hash;
+                // `txs` is just the signable subset.
+                groupContext,
+                // Index map back into `groupContext` so the signing UI can
+                // render the full atomic group while marking which slots the
+                // wallet will sign.
+                signableIndices: indicesToSign,
+                rawTransactionsBase64,
+                payloadId: transport.payloadId,
+                totalLength,
+                signerOverrides:
+                    signerOverrides.size > 0 ? signerOverrides : undefined,
+                feeAdjustments,
+            },
+        },
         approve: async (signed: Nullable<PeraSignedTransaction>[]) => {
             const result: Nullable<string>[] = new Array(totalLength).fill(null)
             signed.forEach((tx, i) => {

@@ -17,11 +17,13 @@ import {
     FeeDelegationAttestationRequiredError,
     useFeeDelegation,
 } from '../fee-delegation'
+import { toAlgorandUnsignedTransactions } from '../signing/unsignedAlgorandTransactions'
 import {
     RampAttestationRequiredError,
     type EnsureCanReceive,
     type EnsureCanReceiveParams,
 } from '@perawallet/wallet-core-onramp'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
@@ -136,7 +138,13 @@ export const useEnsureDestinationOptIn =
                 try {
                     await submitWithFeeDelegation({
                         account: address,
-                        transactions: transactions.map(t => t.txn),
+                        transactions: toAlgorandUnsignedTransactions(
+                            transactions.map(t => t.txn),
+                            {
+                                scope,
+                                accounts: useAccountsStore.getState().accounts,
+                            },
+                        ),
                         includeAssetOptInMbr: true,
                         optInAssetIds: [assetId],
                         sourceMetadata: SOURCE,

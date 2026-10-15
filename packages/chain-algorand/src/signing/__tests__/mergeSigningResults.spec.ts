@@ -11,12 +11,13 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { mergeSigningResults } from '../mergeSigningResults'
 import {
-    SigningError,
-    type SigningResult,
-    type SubmissionHistoryEntry,
-} from '@perawallet/wallet-core-signing'
+    generateAccount,
+    makePaymentTxnWithSuggestedParamsFromObject,
+    encodeMsgpack,
+} from 'algosdk'
+import { mergeSigningResults } from '../mergeSigningResults'
+import type { SigningResult } from '@perawallet/wallet-core-signing'
 import type {
     PeraSignedTransaction,
     SignedTransaction,
@@ -25,21 +26,38 @@ import type {
 const makeSigned = (id: string): PeraSignedTransaction =>
     ({ txID: id, blob: new Uint8Array() }) as unknown as PeraSignedTransaction
 
-const makePlannerSigned = (id: string): SignedTransaction => ({
-    scope: { chainId: 'algorand', networkId: 'mainnet' },
-    id,
-    bytes: new Uint8Array(),
-})
+const SIGNER = generateAccount()
 
-const makeHistoryEntry = (id: string): SubmissionHistoryEntry => ({
-    summary: {
-        kind: 'transfer',
-        title: { key: id },
-        direction: 'out',
-        icon: 'send',
-    },
-    chainData: { family: 'algorand' },
-})
+// Real signed bytes, so a test proves what the planner signed is what gets delivered.
+const signedPayment = (amount: number): Uint8Array =>
+    makePaymentTxnWithSuggestedParamsFromObject({
+        sender: SIGNER.addr,
+        receiver: SIGNER.addr,
+        amount,
+        suggestedParams: {
+            fee: 1000,
+            minFee: 1000,
+            firstValid: 1,
+            lastValid: 1000,
+            genesisHash: new Uint8Array(32),
+            genesisID: 'testnet-v1.0',
+        },
+    }).signTxn(SIGNER.sk)
+
+const plannerBytes = new Map<string, Uint8Array>()
+
+const makePlannerSigned = (id: string): SignedTransaction => {
+    const bytes = plannerBytes.get(id) ?? signedPayment(plannerBytes.size + 1)
+    plannerBytes.set(id, bytes)
+    return {
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
+        id,
+        bytes,
+    }
+}
+
+const amountOf = (signed: PeraSignedTransaction): bigint =>
+    (signed.txn as unknown as { payment: { amount: bigint } }).payment.amount
 
 const plannerResult = (
     ids: string[],
@@ -48,45 +66,61 @@ const plannerResult = (
     signedData: {
         type: 'signed-transactions',
         signed: ids.map(makePlannerSigned),
-        historyEntries: ids.map(makeHistoryEntry),
+        historyEntries: [],
     },
     signers: [{ address: `ADDR_${ids[0]}` }],
     originalIndices,
 })
 
 describe('mergeSigningResults', () => {
-    test('reassembles planner-signed groups in request order', () => {
-        const merged = mergeSigningResults([
+    test('delivers planner-signed groups as the transactions they sign, in request order', () => {
+        const groups = [
             plannerResult(['tx0', 'tx2'], [0, 2]),
             plannerResult(['tx1'], [1]),
-        ])
+        ]
 
-        expect(merged).toEqual({
-            signedData: {
-                type: 'signed-transactions',
-                signed: ['tx0', 'tx1', 'tx2'].map(makePlannerSigned),
-                historyEntries: ['tx0', 'tx1', 'tx2'].map(makeHistoryEntry),
-            },
-            signers: [{ address: 'ADDR_tx0' }, { address: 'ADDR_tx1' }],
-        })
+        const merged = mergeSigningResults(groups)
+
+        expect(merged.signedData.type).toBe('transactions')
+        if (merged.signedData.type !== 'transactions') return
+        expect(
+            merged.signedData.signed.map(signed =>
+                encodeMsgpack(signed as never),
+            ),
+        ).toEqual(['tx0', 'tx1', 'tx2'].map(id => plannerBytes.get(id)))
+        expect(merged.signers).toEqual([
+            { address: 'ADDR_tx0' },
+            { address: 'ADDR_tx1' },
+        ])
     })
 
-    test('refuses for good to merge planner-signed and Algorand-signed groups rather than drop either', () => {
+    test('delivers one group of planner-signed and Algorand-signed results together', () => {
+        const planned = plannerResult(['tx0'], [0])
         const algorandSigned: SigningResult = {
-            signedData: { type: 'transactions', signed: [makeSigned('tx1')] },
+            signedData: {
+                type: 'transactions',
+                signed: [makeSigned('tx1')],
+            },
             signers: [{ address: 'ADDR_B' }],
             originalIndices: [1],
         }
 
-        const merge = () =>
-            mergeSigningResults([plannerResult(['tx0'], [0]), algorandSigned])
+        const merged = mergeSigningResults([planned, algorandSigned])
 
-        expect(merge).toThrow(SigningError)
-        expect(merge).toThrow(
-            expect.objectContaining({
-                metadata: expect.objectContaining({ retryable: false }),
-            }),
+        expect(merged.signedData.type).toBe('transactions')
+        if (merged.signedData.type !== 'transactions') return
+        expect(amountOf(merged.signedData.signed[0])).toBe(1n)
+        expect(merged.signedData.signed[1]).toBe(
+            algorandSigned.signedData.type === 'transactions'
+                ? algorandSigned.signedData.signed[0]
+                : undefined,
         )
+    })
+
+    test('delivers a single planner-signed group as transactions', () => {
+        const merged = mergeSigningResults([plannerResult(['tx9'], [0])])
+
+        expect(merged.signedData.type).toBe('transactions')
     })
 
     test('returns the single result unchanged when given one result', () => {

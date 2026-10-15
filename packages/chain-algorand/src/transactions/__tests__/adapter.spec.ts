@@ -38,7 +38,9 @@ const testnet = scopeForLegacyNetwork('testnet')
 describe('algorandSendFlowAdapter', () => {
     it('serves the Algorand chain with every optional feature', () => {
         expect(algorandSendFlowAdapter.chainId).toBe(ALGORAND_CHAIN_ID)
-        expect(algorandSendFlowAdapter.assetInbox).toBe(algorandAssetInbox)
+        expect(Object.keys(algorandSendFlowAdapter.assetInbox ?? {})).toEqual(
+            Object.keys(algorandAssetInbox),
+        )
         expect(algorandSendFlowAdapter.express).toBeDefined()
         expect(algorandSendFlowAdapter.assetHolding).toBeDefined()
         expect(algorandSendFlowAdapter.rekey).toBeDefined()

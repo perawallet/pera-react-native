@@ -14,7 +14,7 @@ import { useMutation } from '@tanstack/react-query'
 
 import type {
     ChainScope,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
@@ -115,7 +115,7 @@ export const useSubmitRekeyMutation = ({
                 )
             }
 
-            let unsignedTxn: PeraTransaction
+            let unsignedTxn: UnsignedTransaction
             try {
                 // OFF-004: fail fast offline BEFORE the signing pipeline opens
                 // (no Ledger prompt / no biometric on a request that can't be
@@ -150,7 +150,6 @@ export const useSubmitRekeyMutation = ({
             // (`user_rejected` / `signing_failed`), so it is not re-wrapped.
             const signed = await requestRekeySignatures(
                 addSignRequest,
-                scope.chainId,
                 signingMetadata,
                 [unsignedTxn],
             )

@@ -35,6 +35,10 @@ import {
     watchAccount,
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../signing/__tests__/transactions'
 import '../../__tests__/registerAlgorandAccounts'
 
 const mockAddSignRequest = vi.fn()
@@ -253,11 +257,16 @@ const standardAccountRekeyedToQuantum: WalletAccount = {
     rekeyAddress: 'QUANTUM_ADDR',
 }
 
-const makeSignedTxn = (id: string): PeraSignedTransaction =>
-    ({
-        txn: { txID: () => id },
-        sig: new Uint8Array([1]),
-    }) as unknown as PeraSignedTransaction
+const makeTxn = (note: string): PeraTransaction =>
+    makeTestPaymentTx(makeTestAddress(1), {
+        receiver: makeTestAddress(2),
+        note: new Uint8Array(Buffer.from(note)),
+    })
+
+const makeSignedTxn = (id: string): PeraSignedTransaction => ({
+    txn: makeTxn(id),
+    sig: new Uint8Array([1]),
+})
 
 const autoApproveWith = (signed: PeraSignedTransaction[]) => {
     mockAddSignRequest.mockImplementation((request: TransactionSignRequest) => {
@@ -294,15 +303,8 @@ describe('executeAlgorandSwap', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
-        mockDecodeTransaction.mockImplementation(
-            () =>
-                ({
-                    sender: {
-                        toString: () => 'SENDER',
-                        publicKey: new Uint8Array(),
-                    },
-                    txID: () => 'mock-tx-id',
-                }) as unknown as PeraTransaction,
+        mockDecodeTransaction.mockImplementation((bytes: Uint8Array) =>
+            makeTxn(Buffer.from(bytes).toString()),
         )
         autoApproveWith([makeSignedTxn('tx-id-1'), makeSignedTxn('tx-id-2')])
         mockEncodeSignedTransactions.mockReturnValue([
@@ -348,12 +350,15 @@ describe('executeAlgorandSwap', () => {
         // must stay `'local'` (outside `INTERACTIVE_SOURCES`) to skip the
         // standard review/completion sheets.
         expect(request.sourceType).toBe('local')
-        expect(request).toMatchObject({ chainId: 'algorand' })
+        expect(request.txs.map(tx => tx.scope.chainId)).toEqual([
+            'algorand',
+            'algorand',
+        ])
         expect(request.sourceMetadata).toEqual(SIGNING_SOURCE)
         expect(request.txs).toHaveLength(2)
         // The signing-machine analyzer recomputes the group hash over
         // `groupContext`, so it must cover every slot of the prepare result.
-        expect(request.groupContext).toHaveLength(2)
+        expect(request.chainData?.algorand?.groupContext).toHaveLength(2)
 
         expect(mockSendRawTransaction).toHaveBeenCalled()
         expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
@@ -399,7 +404,7 @@ describe('executeAlgorandSwap', () => {
         // groupContext must cover ALL 3 slots so the analyzer recomputes the
         // right group hash; without it every mixed-group swap fails with
         // `blockchain_error`.
-        expect(request.groupContext).toHaveLength(3)
+        expect(request.chainData?.algorand?.groupContext).toHaveLength(3)
 
         expect(mockSendRawTransaction).toHaveBeenCalledTimes(1)
         const submitted = mockSendRawTransaction.mock

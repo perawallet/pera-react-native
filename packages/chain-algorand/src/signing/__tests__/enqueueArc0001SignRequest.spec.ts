@@ -35,6 +35,9 @@ import {
 import { assignFeeToGroup } from '../assignMinimumFeesToGroup'
 import { enqueueArc0001SignRequest } from '../enqueueArc0001SignRequest'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { payloadTransactionsOf } from '../unsignedAlgorandTransactions'
+
+const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
@@ -63,7 +66,18 @@ const bytesEqual = (a?: Uint8Array, b?: Uint8Array): boolean =>
 const decodeWire = (wire: string): Transaction =>
     decodeUnsignedTransaction(decodeFromBase64(wire))
 
+const enqueued = () => {
+    const request = mockAddSignRequest.mock.calls[0][0]
+    const algorand = request.chainData.algorand
+    return {
+        ...algorand,
+        txs: payloadTransactionsOf(request.txs),
+        groupContext: payloadTransactionsOf(algorand.groupContext),
+    }
+}
+
 const makeDeps = (accounts: WalletAccount[] = []): EnqueueDappRequestDeps => ({
+    scope: SCOPE,
     addSignRequest: mockAddSignRequest,
     removeSignRequest: mockRemoveSignRequest,
     assignFeeToGroup: params =>
@@ -82,21 +96,20 @@ const resolvedWithSlots = (
     totalCount: number,
     signableIndices: number[],
 ): Arc0001ResolveResult => {
+    const allDecoded = Array.from({ length: totalCount }, (_, i) =>
+        makePayment(new Address(new Uint8Array(32).fill(i + 1))),
+    )
     const toSign = signableIndices.map(i => ({
         index: i,
         walletTxn: { txn: `txn-${i}` },
-        decoded: { sender: { toString: () => `sender-${i}` } } as any,
-        sender: `sender-${i}`,
-        signer: { kind: 'single' as const, address: `sender-${i}` },
+        decoded: allDecoded[i],
+        sender: allDecoded[i].sender.toString(),
+        signer: {
+            kind: 'single' as const,
+            address: allDecoded[i].sender.toString(),
+        },
     }))
-    return {
-        allDecoded: Array.from(
-            { length: totalCount },
-            (_, i) => toSign.find(t => t.index === i)?.decoded ?? ({} as any),
-        ),
-        toSign,
-        signerOverrides: new Map(),
-    }
+    return { allDecoded, toSign, signerOverrides: new Map() }
 }
 
 const makeResolved = (
@@ -210,16 +223,15 @@ describe('enqueueArc0001SignRequest', () => {
             expect.objectContaining({
                 id: expect.any(String),
                 type: 'transactions',
-                chainId: 'algorand',
                 transport: 'callback',
                 sourceType: 'walletconnect',
                 transportId: 'test-transport-id',
                 sourceMetadata: { name: 'Test' },
                 txs: expect.any(Array),
-                groupContext: resolved.allDecoded,
-                rawTransactionsBase64: ['txn-0', 'txn-1'],
             }),
         )
+        expect(enqueued().groupContext).toEqual(resolved.allDecoded)
+        expect(enqueued().rawTransactionsBase64).toEqual(['txn-0', 'txn-1'])
         expect(outcome).toBe(mockAddSignRequest.mock.calls[0][0])
     })
 
@@ -246,9 +258,7 @@ describe('enqueueArc0001SignRequest', () => {
 
         await enqueue(resolvedWithSlots(5, [0, 2, 4]), transport)
 
-        expect(mockAddSignRequest).toHaveBeenCalledWith(
-            expect.objectContaining({ signableIndices: [0, 2, 4] }),
-        )
+        expect(enqueued().signableIndices).toEqual([0, 2, 4])
     })
 
     it('threads signerOverrides through only when non-empty', async () => {
@@ -258,19 +268,13 @@ describe('enqueueArc0001SignRequest', () => {
 
         await enqueue(resolved, transport)
 
-        expect(mockAddSignRequest).toHaveBeenCalledWith(
-            expect.objectContaining({
-                signerOverrides: resolved.signerOverrides,
-            }),
-        )
+        expect(enqueued().signerOverrides).toBe(resolved.signerOverrides)
     })
 
     it('omits signerOverrides when the map is empty', async () => {
         await enqueue(makeResolved(1, 1), makeTransport())
 
-        expect(
-            mockAddSignRequest.mock.calls[0][0].signerOverrides,
-        ).toBeUndefined()
+        expect(enqueued().signerOverrides).toBeUndefined()
     })
 
     it('approve callback pads result back to the original length with nulls', async () => {
@@ -405,7 +409,7 @@ describe('enqueueArc0001SignRequest', () => {
             ])
 
             expect(mockFetchSuggestedMinFee).toHaveBeenCalledTimes(1)
-            const req = mockAddSignRequest.mock.calls[0][0]
+            const req = enqueued()
             expect(req.txs[0].fee).toBe(3000n)
             expect(req.groupContext[0].fee).toBe(3000n)
             expect(req.feeAdjustments).toEqual([
@@ -429,7 +433,7 @@ describe('enqueueArc0001SignRequest', () => {
                 quantumAccount(),
             ])
 
-            const req = mockAddSignRequest.mock.calls[0][0]
+            const req = enqueued()
             // Every quantum txn pays the surcharge: the 3000 µAlgo one was
             // pooling a fee for an inner txn, not sitting at its own minimum.
             expect(req.feeAdjustments).toEqual([
@@ -463,7 +467,7 @@ describe('enqueueArc0001SignRequest', () => {
                 quantumAccount(),
             ])
 
-            expect(mockAddSignRequest.mock.calls[0][0].feeAdjustments).toEqual([
+            expect(enqueued().feeAdjustments).toEqual([
                 {
                     index: 0,
                     originalFee: 1000n,
@@ -504,7 +508,7 @@ describe('enqueueArc0001SignRequest', () => {
             await enqueue(resolved, makeTransport())
 
             expect(mockFetchSuggestedMinFee).not.toHaveBeenCalled()
-            const req = mockAddSignRequest.mock.calls[0][0]
+            const req = enqueued()
             expect(req.feeAdjustments).toBeUndefined()
             expect(req.txs[0].fee).toBe(1000n)
             expect(req.rawTransactionsBase64[0]).toBe(
@@ -524,7 +528,7 @@ describe('enqueueArc0001SignRequest', () => {
                 quantumAccount(),
             ])
             const req = mockAddSignRequest.mock.calls[0][0]
-            expect(req.feeAdjustments).toBeDefined()
+            expect(req.chainData.algorand.feeAdjustments).toBeDefined()
 
             await expect(
                 req.approve([{ sig: 1 } as any]),
@@ -545,7 +549,7 @@ describe('enqueueArc0001SignRequest', () => {
 
             await enqueue(resolvedFor([txn], [0]), transport)
             const req = mockAddSignRequest.mock.calls[0][0]
-            expect(req.feeAdjustments).toBeUndefined()
+            expect(req.chainData.algorand.feeAdjustments).toBeUndefined()
 
             await expect(req.approve([{ sig: 1 } as any])).rejects.toBe(
                 deliveryFailure,

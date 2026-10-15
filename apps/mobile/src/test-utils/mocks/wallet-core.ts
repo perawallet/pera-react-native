@@ -548,13 +548,18 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             manual: 'manual',
         },
         findAccountByAnyChainAddress: vi.fn(findInAnyChain),
-        useAccountsStore: vi.fn((selector: (s: any) => any) =>
-            selector({
-                accounts: [],
-                addAccount: vi.fn(),
-                removeAccount: vi.fn(),
-                resetState: vi.fn(),
-            }),
+        // Shaped like the zustand store: hooks that sign read the accounts
+        // through `getState` at call time.
+        useAccountsStore: Object.assign(
+            vi.fn((selector: (s: any) => any) =>
+                selector({
+                    accounts: [],
+                    addAccount: vi.fn(),
+                    removeAccount: vi.fn(),
+                    resetState: vi.fn(),
+                }),
+            ),
+            { getState: vi.fn(() => ({ accounts: [] })) },
         ),
         useOwnedAssets: vi.fn(() => ({
             assets: [],
@@ -719,12 +724,18 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => {
     const { ALGOD_ERROR_MESSAGE_KEYS } = await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/errors/algodErrorCodes')
     >('@packages/chain-algorand/src/blockchain/errors/algodErrorCodes')
+    // Real wire codecs: the chain-neutral wrappers decode the bytes they wrap.
+    const { decodeTransaction, encodeTransaction } = await vi.importActual<
+        typeof import('@packages/chain-algorand/src/blockchain/utils/transact')
+    >('@packages/chain-algorand/src/blockchain/utils/transact')
 
     return {
         ALGOD_ERROR_MESSAGE_KEYS,
         ...arc0001,
         ...transactionView,
         ...warnings,
+        decodeTransaction,
+        encodeTransaction,
         useAlgorandClient: vi.fn(),
         useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
         useTransactionEncoder: vi.fn(() => ({

@@ -65,6 +65,18 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     sendFlowChainAdapters: { get: () => ({ buildTransferTxs: vi.fn() }) },
 }))
 
+vi.mock('@perawallet/wallet-core-chain-algorand/signing', () => ({
+    toAlgorandUnsignedTransactions: vi.fn(
+        (transactions: unknown[], { scope }: { scope: unknown }) =>
+            transactions.map(transaction => ({
+                scope,
+                payload: { transaction },
+                summary: {},
+                chainData: { family: 'algorand' },
+            })),
+    ),
+}))
+
 const NATIVE_ASSET = vi.hoisted(() => ({ decimals: 6 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

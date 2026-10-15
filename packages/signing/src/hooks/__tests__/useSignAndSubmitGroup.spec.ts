@@ -80,7 +80,7 @@ describe('useSignAndSubmitGroup', () => {
         expect(captured?.transport).toBe('callback')
         expect(captured?.sourceType).toBe('local')
         expect(captured?.txs).toEqual([fakeTxn, fakeTxn])
-        expect(captured).toMatchObject({ chainId: 'algorand' })
+        expect(captured).not.toHaveProperty('chainId')
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledWith(SCOPE, signed, {
             flow: 'sign-and-submit',
         })

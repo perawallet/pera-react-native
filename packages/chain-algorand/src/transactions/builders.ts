@@ -200,3 +200,12 @@ export const buildKeyRegistrationTx = (
               }),
     )
 }
+
+// AlgoKit hands back an `Address` sender; a decoded transaction is the shape
+// every signing path reads, so the result is round-tripped through the wire.
+export const buildDecodedKeyRegistrationTx = async (
+    params: KeyRegistrationTxParams,
+): Promise<PeraTransaction> =>
+    decodeTransaction(
+        encodeTransaction(await buildKeyRegistrationTx(params)),
+    ) as PeraTransaction

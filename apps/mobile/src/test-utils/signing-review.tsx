@@ -46,6 +46,7 @@ import {
     type SignRequest,
     type PeraTransactionSignRequest,
     type TransactionSignRequest,
+    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
     useKMS,
@@ -58,6 +59,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
+import {
+    toAlgorandUnsignedTransactions,
+    withDeclaredSigner,
+} from '@perawallet/wallet-core-chain-algorand/signing'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     decodeFromBase64,
@@ -220,17 +226,55 @@ export const buildTransactionSignRequest = ({
     overrides?: Partial<PeraTransactionSignRequest>
 } = {}): BuiltRequest<TransactionSignRequest> => {
     const spies = makeCallbackSpies()
-    const request: PeraTransactionSignRequest = {
+    const {
+        chainId: _chainId,
+        txs: _txs,
+        groupContext,
+        signableIndices,
+        signerOverrides,
+        rawTransactionsBase64,
+        feeAdjustments,
+        payloadId,
+        totalLength,
+        ...rest
+    } = overrides
+    // Wrapped as the dApp enqueue path wraps them.
+    const context = {
+        scope: getSelectedScope(LEGACY_CHAIN_ID),
+        accounts: useAccountsStore.getState().accounts,
+    }
+    const wrapped = toAlgorandUnsignedTransactions(
+        txs ?? [buildPaymentTransaction()],
+        context,
+    ).map((unsigned, index) => {
+        const declared = signerOverrides?.get(index)
+        return declared === undefined
+            ? unsigned
+            : withDeclaredSigner(unsigned, declared)
+    })
+    const request: UnsignedTransactionSignRequest = {
         id: `review-tx-${Math.round(Math.random() * 1e9)}`,
         type: 'transactions',
-        chainId: LEGACY_CHAIN_ID,
         transport: 'callback',
         sourceType,
-        txs: txs ?? [buildPaymentTransaction()],
+        txs: wrapped,
+        chainData: {
+            algorand: {
+                groupContext:
+                    groupContext &&
+                    toAlgorandUnsignedTransactions(groupContext, context),
+                signableIndices,
+                signerOverrides,
+                rawTransactionsBase64,
+                feeAdjustments,
+                payloadId,
+                totalLength,
+            },
+        },
         approve: spies.approve as unknown as TransactionSignRequest['approve'],
         reject: spies.reject as unknown as TransactionSignRequest['reject'],
         error: spies.error as unknown as TransactionSignRequest['error'],
-        ...overrides,
+        ...rest,
     }
     return { request, ...spies }
 }

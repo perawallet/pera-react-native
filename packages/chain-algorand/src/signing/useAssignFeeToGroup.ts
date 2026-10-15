@@ -17,6 +17,7 @@ import { useFetchSuggestedMinFee, useMinimumFeeConfig } from '../blockchain'
 import type { AssignFeeToGroup } from '@perawallet/wallet-core-signing'
 import { assignFeeToGroup } from './assignMinimumFeesToGroup'
 import { findFundedIndices } from './feeCoverage'
+import { payloadTransactionsOf } from './unsignedAlgorandTransactions'
 
 // The suggested-params fetch goes through `useFetchSuggestedMinFee`, the
 // shared query cache, and never blocks the flow: on failure it falls back to
@@ -40,6 +41,9 @@ export const useAssignFeeToGroup = (): AssignFeeToGroup => {
                 findFundedIndices: coverage =>
                     findFundedIndices({
                         ...coverage,
+                        transactions: payloadTransactionsOf(
+                            coverage.transactions,
+                        ),
                         accounts: useAccountsStore.getState().accounts,
                         network: useNetworkStore.getState().network,
                     }),

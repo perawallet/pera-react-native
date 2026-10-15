@@ -23,11 +23,19 @@ import {
     groupTransactions,
     rawTransactionsMatch,
 } from '../../blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type {
+    PeraTransaction,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import { makeTestAddress, makeTestPaymentTx } from './transactions'
+import {
+    asUnsignedAlgorandTransaction,
+    makeTestAddress,
+    makeTestPaymentTx,
+} from './transactions'
+import { payloadTransactionsOf } from '../unsignedAlgorandTransactions'
 import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
 import { validateTransactionGroupIntegrity } from '../validateTransactionGroupIntegrity'
 import {
@@ -591,8 +599,16 @@ describe('assignFeeToGroup', () => {
         pqMultiplier: 3n,
     })
 
+    const wrap = (transactions: PeraTransaction[]) =>
+        transactions.map(transaction =>
+            asUnsignedAlgorandTransaction(transaction),
+        )
+
+    const feeAt = (transactions: UnsignedTransaction[], index: number) =>
+        payloadTransactionsOf(transactions)[index].fee
+
     test('returns the same array and fetches nothing for a non-quantum group', async () => {
-        const transactions = [makePayment(algoAddress, 1000n)]
+        const transactions = wrap([makePayment(algoAddress, 1000n)])
         const planDeps = deps([])
 
         const result = await assignFeeToGroup({ transactions }, planDeps)
@@ -603,22 +619,46 @@ describe('assignFeeToGroup', () => {
     })
 
     test('raises a quantum signer fee using the fetched suggested minimum', async () => {
-        const transactions = [makePayment(quantumAddress, 1000n)]
+        const transactions = wrap([makePayment(quantumAddress, 1000n)])
         const planDeps = deps([quantum()])
         planDeps.fetchSuggestedMinFee.mockResolvedValue(2000n)
 
         const result = await assignFeeToGroup({ transactions }, planDeps)
 
         // max(suggested 2000, config 1000) x 3
-        expect(result.transactions[0].fee).toBe(6000n)
+        expect(feeAt(result.transactions, 0)).toBe(6000n)
         expect(planDeps.fetchSuggestedMinFee).toHaveBeenCalledTimes(1)
     })
 
-    test('defaults signableIndices to every slot', async () => {
+    test('keeps who signs and the summary when it puts a raised fee back', async () => {
+        const [transaction] = wrap([makePayment(quantumAddress, 1000n)])
         const transactions = [
+            {
+                ...transaction,
+                payload: {
+                    ...(transaction.payload as object),
+                    authorizer: algoAddress,
+                },
+            },
+        ]
+
+        const result = await assignFeeToGroup(
+            { transactions },
+            deps([quantum()]),
+        )
+
+        expect(result.transactions[0].payload).toMatchObject({
+            authorizer: algoAddress,
+        })
+        expect(result.transactions[0].summary).toBe(transactions[0].summary)
+        expect(result.transactions[0].scope).toBe(transactions[0].scope)
+    })
+
+    test('defaults signableIndices to every slot', async () => {
+        const transactions = wrap([
             makePayment(algoAddress, 1000n),
             makePayment(quantumAddress, 1000n),
-        ]
+        ])
 
         const result = await assignFeeToGroup(
             { transactions },
@@ -629,10 +669,10 @@ describe('assignFeeToGroup', () => {
     })
 
     test('leaves alone what the coverage check reports funded, for a dApp-priced group', async () => {
-        const transactions = [
+        const transactions = wrap([
             makePayment(quantumAddress, 3000n),
             makePayment(quantumAddress, 1000n),
-        ]
+        ])
         const findFundedIndices = vi.fn(async () => new Set([0]))
 
         const result = await assignFeeToGroup(
@@ -646,11 +686,11 @@ describe('assignFeeToGroup', () => {
             signerOverrides: undefined,
         })
         expect(result.adjustments.map(a => a.index)).toEqual([1])
-        expect(result.transactions[0].fee).toBe(3000n)
+        expect(feeAt(result.transactions, 0)).toBe(3000n)
     })
 
     test('never runs the coverage check for a wallet-built group', async () => {
-        const transactions = [makePayment(quantumAddress, 3000n)]
+        const transactions = wrap([makePayment(quantumAddress, 3000n)])
         const findFundedIndices = vi.fn(async () => new Set([0]))
 
         const result = await assignFeeToGroup(
@@ -659,14 +699,14 @@ describe('assignFeeToGroup', () => {
         )
 
         expect(findFundedIndices).not.toHaveBeenCalled()
-        expect(result.transactions[0].fee).toBe(5000n)
+        expect(feeAt(result.transactions, 0)).toBe(5000n)
     })
 
     test('leaves a quantum slot outside explicit signableIndices untouched', async () => {
-        const transactions = [
+        const transactions = wrap([
             makePayment(algoAddress, 1000n),
             makePayment(quantumAddress, 1000n),
-        ]
+        ])
         const planDeps = deps([quantum()])
 
         const result = await assignFeeToGroup(

@@ -38,6 +38,7 @@ import {
 import { algorandEscrowWithdrawals } from './escrow/withdrawal'
 import { buildAlgorandManualDeposit } from './manualDeposit'
 import { useAlgorandCardAutoDraw } from './useAlgorandCardAutoDraw'
+import { wrapsAlgorandGroup } from '../signing/unsignedAlgorandTransactions'
 
 // Both mean the same thing to the user: the account can't cover the fee and
 // keep its minimum balance.
@@ -79,10 +80,12 @@ export const algorandCardAdapter: CardChainAdapter = {
         if (assetId === null) {
             return Promise.reject(new CardEscrowNotConfiguredError())
         }
-        return buildAlgorandManualDeposit(
-            { ...params, assetId },
-            algorandNetworkOf(scope),
-        )
+        return wrapsAlgorandGroup(() =>
+            buildAlgorandManualDeposit(
+                { ...params, assetId },
+                algorandNetworkOf(scope),
+            ),
+        )({ scope })
     },
     // A rekeyed account's authority sits elsewhere, so the card contract can't
     // draw from it. Ledger signs the sign-in proof on-device but its firmware
@@ -110,21 +113,24 @@ export const algorandCardAdapter: CardChainAdapter = {
     },
     useAutoDraw: useAlgorandCardAutoDraw,
     withdrawal: {
-        buildRequest: ({ scope, ...params }) =>
+        buildRequest: wrapsAlgorandGroup(({ scope, ...params }) =>
             algorandEscrowWithdrawals.buildRequest({
                 ...params,
                 network: algorandNetworkOf(scope),
             }),
-        buildWithdraw: ({ scope, ...params }) =>
+        ),
+        buildWithdraw: wrapsAlgorandGroup(({ scope, ...params }) =>
             algorandEscrowWithdrawals.buildWithdraw({
                 ...params,
                 network: algorandNetworkOf(scope),
             }),
-        buildCancel: ({ scope, ...params }) =>
+        ),
+        buildCancel: wrapsAlgorandGroup(({ scope, ...params }) =>
             algorandEscrowWithdrawals.buildCancel({
                 ...params,
                 network: algorandNetworkOf(scope),
             }),
+        ),
         getPending: (scope, ownerAddress) =>
             algorandEscrowWithdrawals.getPending(
                 algorandNetworkOf(scope),

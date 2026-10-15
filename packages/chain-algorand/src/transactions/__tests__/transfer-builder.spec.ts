@@ -86,7 +86,7 @@ const send = (overrides: Partial<TransferIntent> = {}): TransferIntent => ({
 })
 
 const payloadOf = (built: { payload: unknown }) =>
-    built.payload as PeraTransaction
+    (built.payload as { transaction: PeraTransaction }).transaction
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))

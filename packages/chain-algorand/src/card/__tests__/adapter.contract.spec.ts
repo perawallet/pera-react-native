@@ -65,6 +65,10 @@ vi.mock('../../accounts/vocabulary', async () => ({
 
 import { AlgodError } from '../../blockchain'
 import { algorandCardAdapter } from '../adapter'
+import {
+    makeTestAddress,
+    makeTestAssetTransferTx,
+} from '../../signing/__tests__/transactions'
 
 const ADDRESS = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
 const REKEYED_ADDRESS = 'REKEYED'
@@ -114,7 +118,20 @@ cardContractTests(() => algorandCardAdapter, {
             arrangeClient({
                 newGroup: () => ({
                     addAssetTransfer: vi.fn(),
-                    build: async () => ({ transactions: [{ txn: {} }] }),
+                    build: async () => ({
+                        transactions: [
+                            {
+                                txn: makeTestAssetTransferTx(
+                                    makeTestAddress(1),
+                                    {
+                                        assetIndex: 10458941n,
+                                        receiver: makeTestAddress(2),
+                                        amount: 1n,
+                                    },
+                                ),
+                            },
+                        ],
+                    }),
                 }),
             }),
     },

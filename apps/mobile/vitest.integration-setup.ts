@@ -48,6 +48,32 @@ beforeAll(async () => {
     registerChainAdapters()
 })
 
+// Every source builds chain-neutral sign requests; deleting the PeraTransaction
+// request shape depends on it, so a flow that still queues one fails.
+let legacyRequestIds = new Set<string>()
+let stopWatchingSignRequests: () => void = () => {}
+beforeEach(async () => {
+    const { useSigningStore } = await import('@packages/signing/src/store')
+    const { legacySignRequestIds } =
+        await import('./src/test-utils/legacySignRequests')
+    legacyRequestIds = new Set()
+    stopWatchingSignRequests = useSigningStore.subscribe(state => {
+        for (const id of legacySignRequestIds(
+            state.pendingSignRequests ?? [],
+        )) {
+            legacyRequestIds.add(id)
+        }
+    })
+})
+afterEach(() => {
+    stopWatchingSignRequests()
+    if (legacyRequestIds.size > 0) {
+        throw new Error(
+            `Sign requests built from PeraTransaction: ${[...legacyRequestIds].join(', ')}`,
+        )
+    }
+})
+
 // The bottom-sheet store is a module-scoped singleton, so requests opened in one
 // test survive into the next unless reset.
 afterEach(() => {

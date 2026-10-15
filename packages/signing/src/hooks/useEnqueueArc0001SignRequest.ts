@@ -84,6 +84,7 @@ export const useEnqueueArc0001SignRequest = (
                 resolved,
                 transport,
                 {
+                    scope,
                     assignFeeToGroup,
                     addSignRequest,
                     removeSignRequest,

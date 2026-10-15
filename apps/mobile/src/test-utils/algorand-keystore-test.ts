@@ -571,8 +571,9 @@ const createKeyStoreApi = (
                 return falconShapedSignature(entry.privateKey, data)
             }
             // 64-byte deterministic stub. Real flows that care about
-            // signature contents should override at the test level.
-            return new Uint8Array(64)
+            // signature contents should override at the test level. Not all
+            // zeros: algosdk drops a zero `sig` when it encodes signed bytes.
+            return new Uint8Array(64).fill(1)
         },
         async verify(
             id: string,

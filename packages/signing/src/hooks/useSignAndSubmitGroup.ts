@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import type {
     ChainScope,
     PeraSignedTransaction,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
 import {
@@ -52,8 +52,8 @@ export type SignAndSubmitGroupSource = {
 
 export type SignAndSubmitGroupParams = {
     scope: ChainScope
-    /** Unsigned transactions, already grouped by the caller. */
-    unsignedTxs: PeraTransaction[]
+    /** Already grouped by the caller. */
+    unsignedTxs: UnsignedTransaction[]
     /** Display metadata threaded through the pipeline. */
     source: SignAndSubmitGroupSource
 }
@@ -92,7 +92,6 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     type: 'transactions',
                     transport: 'callback',
                     sourceType: 'local',
-                    chainId: scope.chainId,
                     txs: unsignedTxs,
                     sourceMetadata: source,
                     approve: async (

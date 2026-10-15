@@ -41,6 +41,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
+import type {
+    TransactionSignRequest,
+    UnsignedTransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
 const txFrom = (sender = 'MULTISIG'): PeraTransaction =>
@@ -77,6 +81,9 @@ const buildSignRequest = (
     ...overrides,
 })
 
+const algorandFactsOf = (request: TransactionSignRequest) =>
+    (request as UnsignedTransactionSignRequest).chainData?.algorand
+
 describe('buildMultisigCosignRequest', () => {
     beforeEach(() => {
         vi.mocked(authorityOf).mockReset()
@@ -99,7 +106,7 @@ describe('buildMultisigCosignRequest', () => {
         })
 
         expect(result.type).toBe('transactions')
-        expect(result.chainId).toBe('algorand')
+        expect(result).not.toHaveProperty('chainId')
         expect(result.transport).toBe('callback')
         expect(result.sourceType).toBe('multisig-cosign')
         expect(result.signRequestId).toBe('sr-42')
@@ -114,8 +121,23 @@ describe('buildMultisigCosignRequest', () => {
         })
 
         expect(mocks.decodeTransaction).toHaveBeenCalledTimes(2)
+        expect(mocks.decodeTransaction).toHaveBeenCalledWith(
+            expect.any(Uint8Array),
+            {
+                address: 'MULTISIG',
+                parameters: {
+                    version: 1,
+                    threshold: 2,
+                    addresses: ['A', 'B', 'C'],
+                },
+            },
+            { chainId: 'algorand', networkId: 'testnet' },
+        )
         expect(result.txs).toHaveLength(2)
-        expect(result.rawTransactionsBase64).toEqual(['dHgx', 'dHgy'])
+        expect(algorandFactsOf(result)?.rawTransactionsBase64).toEqual([
+            'dHgx',
+            'dHgy',
+        ])
     })
 
     it('routes every tx to the same signer via signerOverrides', () => {
@@ -126,9 +148,9 @@ describe('buildMultisigCosignRequest', () => {
             localAccounts: [],
         })
 
-        expect(result.signerOverrides).toBeDefined()
-        expect(result.signerOverrides!.get(0)).toBe('B')
-        expect(result.signerOverrides!.get(1)).toBe('B')
+        const signerOverrides = algorandFactsOf(result)?.signerOverrides
+        expect(signerOverrides?.get(0)).toBe('B')
+        expect(signerOverrides?.get(1)).toBe('B')
     })
 
     it('assigns a deterministic id per (signRequestId, signer) so distinct signers stay distinct', () => {

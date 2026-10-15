@@ -47,6 +47,7 @@ import {
 import {
     encodeTransaction,
     encodeSignedTransaction,
+    getExpectedGenesisHash,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
@@ -69,7 +70,10 @@ import { useOnrampStore } from '@perawallet/wallet-core-onramp'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { Networks } from '@perawallet/wallet-core-config'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+} from '@perawallet/wallet-core-shared'
 import { useWebViewStore } from '@modules/webview'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { OnrampScreen } from '@modules/onramp/routes'
@@ -442,7 +446,11 @@ const buildSponsorTxn = (mbrFunding: bigint): Transaction =>
             firstValid: 1000n,
             lastValid: 2000n,
             genesisID: 'mainnet-v1.0',
-            genesisHash: new Uint8Array(32).fill(0xab),
+            // The pipeline refuses a group with any leg off the active network;
+            // copied because algosdk rejects jsdom's Uint8Array.
+            genesisHash: Uint8Array.from(
+                decodeFromBase64(getExpectedGenesisHash(Networks.mainnet)),
+            ),
         },
         paymentParams: {
             receiver:

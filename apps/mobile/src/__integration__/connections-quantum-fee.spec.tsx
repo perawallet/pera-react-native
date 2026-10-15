@@ -83,7 +83,6 @@ import {
     groupTransactions,
     rawTransactionsMatch,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     mockAlgodAccountInformation,
@@ -103,7 +102,10 @@ import {
 import {
     useSigningRequest,
     type TransactionSignRequest,
+    type SignRequest,
+    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import { payloadTransactionsOf } from '@packages/chain-algorand/src/signing/unsignedAlgorandTransactions'
 import { AlgorandWalletConnectChainId } from '@perawallet/wallet-core-walletconnect'
 import {
     useConnectionRegistry,
@@ -143,6 +145,15 @@ const EXPECTED_PQ_FEE = 3000n
 
 // 'in-app' suppresses the post-approval success sheet, which would otherwise
 // sit over the surface the review sheet needs.
+const algorandFactsOf = (request: SignRequest) => {
+    const algorand = (request as UnsignedTransactionSignRequest).chainData
+        ?.algorand
+    return {
+        ...algorand,
+        groupContext: payloadTransactionsOf(algorand?.groupContext ?? []),
+    }
+}
+
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
 
 const hookQueryClient = createTestQueryClient()
@@ -487,16 +498,16 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         // request the pipeline signs (the quantum slot's own bytes are a
         // pqsig carrier, so the fee/grp are asserted on this decodable
         // representation).
-        const enqueued = signReq.current
-            .pendingSignRequests[0] as TransactionSignRequest
-        expect(enqueued).toBeTruthy()
+        const request = signReq.current.pendingSignRequests[0]
+        expect(request).toBeTruthy()
+        const enqueued = algorandFactsOf(request)
         expect(enqueued.feeAdjustments).toHaveLength(2)
         for (const adjustment of enqueued.feeAdjustments!) {
             expect(adjustment.originalFee).toBe(1000n)
             expect(adjustment.adjustedFee).toBe(EXPECTED_PQ_FEE)
         }
 
-        const group = enqueued.groupContext as PeraTransaction[]
+        const group = enqueued.groupContext
         expect(group[0].fee).toBe(EXPECTED_PQ_FEE)
         expect(group[1].fee).toBe(EXPECTED_PQ_FEE)
         // Regrouped over the whole group: both slots carry the SAME new grp
@@ -561,12 +572,12 @@ describe('Flow: connections quantum fee override end-to-end', () => {
         expect(screen.queryByText(ADJUSTED_LABEL_KEY)).toBeNull()
         expect(screen.getAllByText(EXTERNAL_PILL_KEY)).toHaveLength(1)
 
-        const enqueued = signReq.current
-            .pendingSignRequests[0] as TransactionSignRequest
-        expect(enqueued).toBeTruthy()
+        const request = signReq.current.pendingSignRequests[0]
+        expect(request).toBeTruthy()
+        const enqueued = algorandFactsOf(request)
         expect(enqueued.feeAdjustments).toBeUndefined()
         expect(enqueued.rawTransactionsBase64![0]).toBe(entries[0].txn)
-        const group = enqueued.groupContext as PeraTransaction[]
+        const group = enqueued.groupContext
         expect(group[0].fee).toBe(1000n)
         expect(originalGroup).toBeTruthy()
         expect(bytesEqual(group[0].group!, originalGroup!)).toBe(true)
@@ -625,9 +636,9 @@ describe('Flow: connections quantum fee override end-to-end', () => {
 
         // Enqueue fast-path: no adjustments, and the signable slot's wire
         // bytes are passed through verbatim (byte-identical to the dApp's).
-        const enqueued = signReq.current
-            .pendingSignRequests[0] as TransactionSignRequest
-        expect(enqueued).toBeTruthy()
+        const request = signReq.current.pendingSignRequests[0]
+        expect(request).toBeTruthy()
+        const enqueued = algorandFactsOf(request)
         expect(enqueued.feeAdjustments).toBeUndefined()
         expect(enqueued.rawTransactionsBase64![0]).toBe(entries[0].txn)
 
@@ -856,17 +867,16 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
         const baseline = signReq.current.pendingSignRequests.length
         fireSignRequest(connector, 7101, entries)
 
-        const enqueued = await enqueuedAfter(signReq, baseline)
+        const request = await enqueuedAfter(signReq, baseline)
+        const enqueued = algorandFactsOf(request)
         expect(enqueued.feeAdjustments).toHaveLength(2)
         expect(enqueued.feeAdjustments![0].adjustedFee).toBe(EXPECTED_PQ_FEE)
         expect(enqueued.feeAdjustments![1].adjustedFee).toBe(EXPECTED_PQ_FEE)
-        expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
-            EXPECTED_PQ_FEE,
-        )
+        expect(enqueued.groupContext[0].fee).toBe(EXPECTED_PQ_FEE)
         expect(connector.rejectRequestCalls).toHaveLength(0)
 
         act(() => {
-            signReq.current.removeSignRequest(enqueued)
+            signReq.current.removeSignRequest(request)
         })
     })
 
@@ -892,13 +902,14 @@ describe('Flow: connections rekey after the pairing surface unmounts', () => {
         const baseline = signReq.current.pendingSignRequests.length
         fireSignRequest(connector, 7102, entries)
 
-        const enqueued = await enqueuedAfter(signReq, baseline)
+        const request = await enqueuedAfter(signReq, baseline)
+        const enqueued = algorandFactsOf(request)
         expect(enqueued.feeAdjustments).toBeUndefined()
-        expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(1000n)
+        expect(enqueued.groupContext[0].fee).toBe(1000n)
         expect(connector.rejectRequestCalls).toHaveLength(0)
 
         act(() => {
-            signReq.current.removeSignRequest(enqueued)
+            signReq.current.removeSignRequest(request)
         })
     })
 })

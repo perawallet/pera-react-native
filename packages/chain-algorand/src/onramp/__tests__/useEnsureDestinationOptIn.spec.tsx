@@ -70,9 +70,17 @@ vi.mock('../../fee-delegation', async () => ({
 import { FeeDelegationAttestationRequiredError } from '../../fee-delegation'
 import { RampAttestationRequiredError } from '@perawallet/wallet-core-onramp'
 import { useEnsureDestinationOptIn } from '../useEnsureDestinationOptIn'
+import {
+    makeTestAddress,
+    makeTestAssetTransferTx,
+} from '../../signing/__tests__/transactions'
 
-const ADDRESS = 'TESTADDRESS'
+const ADDRESS = makeTestAddress(1).toString()
 const ASSET_ID = 31566704n
+const OPT_IN_TXN = makeTestAssetTransferTx(makeTestAddress(1), {
+    assetIndex: ASSET_ID,
+    receiver: makeTestAddress(1),
+})
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const RAMP_NETWORK = { id: 'ALGORAND', name: 'Algorand', logo: null }
 const ALGO_TOKEN = { id: 'ALGO', symbol: 'ALGO', network: RAMP_NETWORK }
@@ -103,7 +111,7 @@ function renderEnsure() {
 beforeEach(() => {
     vi.clearAllMocks()
     getSuggestedParamsMock.mockResolvedValue({ minFee: 1000n })
-    buildMock.mockResolvedValue({ transactions: [{ txn: { id: 'optin' } }] })
+    buildMock.mockResolvedValue({ transactions: [{ txn: OPT_IN_TXN }] })
     useMinimumFeeConfigMock.mockReturnValue({
         minTxnFee: 1000n,
         pqMultiplier: 3n,
@@ -209,7 +217,12 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         expect(submitWithFeeDelegationMock).toHaveBeenCalledTimes(1)
         expect(submitWithFeeDelegationMock).toHaveBeenCalledWith({
             account: ADDRESS,
-            transactions: [{ id: 'optin' }],
+            transactions: [
+                expect.objectContaining({
+                    scope: MAINNET,
+                    payload: { transaction: OPT_IN_TXN },
+                }),
+            ],
             includeAssetOptInMbr: true,
             optInAssetIds: [ASSET_ID],
             sourceMetadata: expect.objectContaining({

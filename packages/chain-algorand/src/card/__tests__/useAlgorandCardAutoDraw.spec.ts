@@ -57,6 +57,17 @@ vi.mock('../../fee-delegation', () => ({
 }))
 
 import { useAlgorandCardAutoDraw } from '../useAlgorandCardAutoDraw'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../signing/__tests__/transactions'
+
+const ENABLE = makeTestPaymentTx(makeTestAddress(7), {
+    receiver: makeTestAddress(9),
+})
+const KILL = makeTestPaymentTx(makeTestAddress(7), {
+    receiver: makeTestAddress(8),
+})
 
 const TESTNET: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 const account = {
@@ -77,8 +88,8 @@ beforeEach(() => {
     autoDraw.isConfigured.mockReturnValue(true)
     // Not enabled by default: enable proceeds, kill no-ops.
     autoDraw.isEnabled.mockResolvedValue(false)
-    autoDraw.buildEnable.mockResolvedValue([{ txn: 'enable' }])
-    autoDraw.buildKill.mockResolvedValue([{ txn: 'kill' }])
+    autoDraw.buildEnable.mockResolvedValue([ENABLE])
+    autoDraw.buildKill.mockResolvedValue([KILL])
     submit.mockResolvedValue({ txIds: ['TX1'] })
     submitWithFeeDelegation.mockResolvedValue(undefined)
 })
@@ -117,7 +128,12 @@ describe('useAlgorandCardAutoDraw.enableAutoDraw', () => {
         })
         expect(submitWithFeeDelegation).toHaveBeenCalledWith({
             account: 'FUNDINGADDR',
-            transactions: [{ txn: 'enable' }],
+            transactions: [
+                expect.objectContaining({
+                    scope: TESTNET,
+                    payload: expect.objectContaining({ transaction: ENABLE }),
+                }),
+            ],
             includeAssetOptInMbr: true,
             sourceMetadata: {
                 name: 'card-autodraw-enable',
@@ -195,7 +211,12 @@ describe('useAlgorandCardAutoDraw.disableAutoDraw', () => {
         })
         expect(submit).toHaveBeenCalledWith({
             scope: TESTNET,
-            unsignedTxs: [{ txn: 'kill' }],
+            unsignedTxs: [
+                expect.objectContaining({
+                    scope: TESTNET,
+                    payload: expect.objectContaining({ transaction: KILL }),
+                }),
+            ],
             source: {
                 name: 'card-autodraw-disable',
                 description: 'Turn off auto funding',

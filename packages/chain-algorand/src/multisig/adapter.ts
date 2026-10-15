@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigChainAdapter } from '@perawallet/wallet-core-multisig'
 import { acceptsAlgorandParticipantScheme } from '../accounts/multisig-participants'
-import { decodeTransaction } from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { generateMultisigAddress } from './address'
 import { assembleSignedMultisigTransactions } from './assemble'
 import { classifyAlgorandParticipant } from './classify'
 import { validateAlgorandSignRequest } from './validate'
+import { decodeAlgorandMultisigTransaction } from '../signing/unsignedAlgorandTransactions'
 
 export const algorandMultisigAdapter = {
     chainId: ALGORAND_CHAIN_ID,
@@ -26,7 +25,7 @@ export const algorandMultisigAdapter = {
         generateMultisigAddress(version, threshold, addresses),
     assembleSignedTransactions: assembleSignedMultisigTransactions,
     validateSignRequest: validateAlgorandSignRequest,
-    decodeTransaction: bytes => decodeTransaction(bytes) as PeraTransaction,
+    decodeTransaction: decodeAlgorandMultisigTransaction,
     acceptsParticipantScheme: acceptsAlgorandParticipantScheme,
     classifyParticipant: classifyAlgorandParticipant,
 } satisfies MultisigChainAdapter

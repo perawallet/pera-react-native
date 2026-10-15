@@ -73,7 +73,7 @@ type ChainStamp = {
     chainId: ChainId
 }
 
-/** Algorand group and delivery concepts; a chain-neutral request carries none. */
+/** Algorand group concepts; a chain-neutral request carries them in `chainData.algorand`. */
 type AlgorandRequestFields = {
     /**
      * The full atomic group, for ARC-0001 group-integrity validation. A source
@@ -109,6 +109,10 @@ type AlgorandRequestFields = {
      * space. Absent when nothing was modified.
      */
     feeAdjustments?: FeeAdjustment[]
+}
+
+/** How the signed result reaches the source; either request shape may carry them. */
+type TransactionDeliveryCallbacks = {
     /**
      * Entries are `Nullable` because enqueue pads unsignable slots
      * (contract-signed / unresolved signer) with `null`, preserving the
@@ -134,6 +138,7 @@ type TransactionRequestCallbacks = {
 } & BaseSignRequest
 
 export type PeraTransactionSignRequest = AlgorandRequestFields &
+    TransactionDeliveryCallbacks &
     ChainStamp &
     TransactionRequestCallbacks & {
         txs: PeraTransaction[]
@@ -151,6 +156,8 @@ export type AlgorandRequestData = {
     rawTransactionsBase64?: string[]
     /** Indexed in `groupContext` space, as {@link FeeAdjustment.index}. */
     feeAdjustments?: FeeAdjustment[]
+    payloadId?: number
+    totalLength?: number
 }
 
 /**
@@ -160,7 +167,8 @@ export type AlgorandRequestData = {
  */
 export type UnsignedTransactionSignRequest = {
     [Field in keyof (AlgorandRequestFields & ChainStamp)]?: never
-} & TransactionRequestCallbacks & {
+} & TransactionDeliveryCallbacks &
+    TransactionRequestCallbacks & {
         txs: UnsignedTransaction[]
         chainData?: { algorand?: AlgorandRequestData }
     }

@@ -28,8 +28,16 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { SIGNING_KEY_DOMAIN } from '../../../constants'
 import {
+    AppError,
+    isRetryableError,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
+import {
     CannotSignError,
     InvalidSignableDataError,
+    PipelineError,
+    SIGNING_ERROR_KEYS,
     SigningError,
 } from '../../../pipeline/errors'
 import {
@@ -111,11 +119,7 @@ export const signPlannedGroups = async ({
                 requestIndex: request.requestIndex,
                 signer: request.signer,
                 scheme: request.scheme,
-                bytes: await keyStore.sign(
-                    keyPairId,
-                    request.payload,
-                    SIGNING_KEY_DOMAIN,
-                ),
+                bytes: await signWithKey(keyStore, keyPairId, request.payload),
             })
         }
         return assembleOrRefuse(planner, transaction, signatures)
@@ -147,6 +151,31 @@ export const signPlannedGroups = async ({
     return results
 }
 
+// A keystore failure reaches the user as a signing error carrying the
+// keystore's own copy, as it does from the local-key strategy.
+const signWithKey = async (
+    keyStore: Pick<ChainKeyStore, 'sign'>,
+    keyPairId: string,
+    payload: Uint8Array,
+): Promise<Uint8Array> => {
+    try {
+        return await keyStore.sign(keyPairId, payload, SIGNING_KEY_DOMAIN)
+    } catch (error) {
+        const cause = toError(error)
+        const causeMetadata =
+            cause instanceof AppError ? cause.metadata : undefined
+        logger.error('Planned signing failed', { error: cause })
+        throw new SigningError(cause.message, cause, {
+            retryable: isRetryableError(cause),
+            messageKey:
+                causeMetadata?.messageKey ?? SIGNING_ERROR_KEYS.localKeyFailed,
+            params: causeMetadata?.messageKey
+                ? causeMetadata.params
+                : undefined,
+        })
+    }
+}
+
 const messageOf = (error: unknown): string =>
     error instanceof Error ? error.message : String(error)
 
@@ -157,6 +186,7 @@ const planOrRefuse = (
     try {
         return planner.plan(transaction)
     } catch (error) {
+        if (error instanceof PipelineError) throw error
         throw new InvalidSignableDataError(messageOf(error))
     }
 }

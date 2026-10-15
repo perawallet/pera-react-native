@@ -16,6 +16,7 @@
 // Isolated in its own file: the propose sync-flow leaves its request pending,
 // which would shadow any later test in the same file.
 
+import { multisigAddress } from 'algosdk'
 import {
     afterAll,
     beforeAll,
@@ -42,7 +43,6 @@ import {
     renderSignReview,
     screen,
     waitFor,
-    REVIEW_RECEIVER_ADDRESS,
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
@@ -60,7 +60,11 @@ import { REKEY_TARGET_ADDRESS } from './__fixtures__/onboarding'
 
 // The seeded Algo25 signer is the multisig's (only) participant; the sender
 // is a watch account whose on-chain auth is the multisig.
-const MSIG_ADDRESS = REVIEW_RECEIVER_ADDRESS
+const MSIG_ADDRESS = multisigAddress({
+    version: 1,
+    threshold: 1,
+    addrs: [REVIEW_SIGNER_ADDRESS],
+}).toString()
 
 const multisigAccount: MultiSigAccount = {
     id: 'msig-signable',

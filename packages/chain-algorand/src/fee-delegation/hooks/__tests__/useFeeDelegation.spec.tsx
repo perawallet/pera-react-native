@@ -12,11 +12,27 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    assignGroupID,
+    decodeSignedTransaction,
+    decodeUnsignedTransaction,
+    encodeUnsignedTransaction,
+    generateAccount,
+    type Transaction,
+} from 'algosdk'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import {
     FeeDelegationAttestationRequiredError,
     FeeDelegationResponseMismatchError,
 } from '../../errors'
+import {
+    asUnsignedAlgorandTransaction,
+    makeTestAddress,
+    makeTestAssetTransferTx,
+    makeTestPaymentTx,
+} from '../../../signing/__tests__/transactions'
+import { payloadTransactionsOf } from '../../../signing/unsignedAlgorandTransactions'
 
 const {
     addSignRequestMock,
@@ -30,38 +46,10 @@ const {
     requestFeeDelegationMock: vi.fn(),
 }))
 
-vi.mock('../../../blockchain', () => ({
-    compactSignedResults: (signed: unknown[]) =>
-        signed.filter(tx => tx !== null),
-    // Order-sensitive byte match; with deterministic base64 inputs, comparing
-    // the encoded strings is equivalent to the real decode-and-compare.
-    rawTransactionsMatch: (expected: string[], polled: string[]) =>
-        expected.length === polled.length &&
-        expected.every((value, index) => value === polled[index]),
-    useTransactionEncoder: () => ({
-        // Mirrors the real pair: the signable form leads with the "TX" domain
-        // separator, the wire form does not. Only the wire form goes to the
-        // backend, so the ids assertions track come from the raw encoder.
-        encodeTransaction: (txn: { id: string }) =>
-            new Uint8Array([...`TX${txn.id}`].map(c => c.charCodeAt(0))),
-        encodeTransactionRaw: (txn: { id: string }) =>
-            new Uint8Array([...txn.id].map(c => c.charCodeAt(0))),
-        // Decoders turn the base64-decoded bytes back into readable ids so
-        // assertions can track slots through the flow. Decoded wallet slots
-        // carry the requesting account as sender so the trust-anchor check
-        // (sender === account) passes on the happy path.
-        decodeTransaction: (bytes: Uint8Array) => ({
-            id: String.fromCharCode(...bytes),
-            sender: { toString: () => 'TESTADDRESS' },
-        }),
-        decodeSignedTransaction: (bytes: Uint8Array) => ({
-            sig: new Uint8Array([9]),
-            txn: { id: String.fromCharCode(...bytes) },
-        }),
-    }),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
@@ -83,22 +71,54 @@ vi.mock('../../api', () => ({
 
 import { useFeeDelegation } from '../useFeeDelegation'
 
-const ACCOUNT = 'TESTADDRESS'
+const ACCOUNT_ADDRESS = makeTestAddress(1)
+const ACCOUNT = ACCOUNT_ADDRESS.toString()
 const ASSET_ID = 31566704n
+const SPONSOR = generateAccount()
 
-// Inputs are ASCII, so btoa is byte-exact and needs no Node Buffer global.
-const toBase64 = (text: string) => btoa(text)
+const optInTxn = makeTestAssetTransferTx(ACCOUNT_ADDRESS, {
+    assetIndex: ASSET_ID,
+    receiver: ACCOUNT_ADDRESS,
+})
 
 const baseParams = {
     account: ACCOUNT,
-    // Sender matches the encoder/decoder shape so the trust-anchor check can
-    // assert the returned slot is byte-identical (modulo group) to this txn.
-    transactions: [
-        { id: 'optin', sender: { toString: () => ACCOUNT } },
-    ] as never[],
+    transactions: [asUnsignedAlgorandTransaction(optInTxn)],
     includeAssetOptInMbr: true,
     optInAssetIds: [ASSET_ID],
     sourceMetadata: { name: 'test-flow', description: 'Test flow' },
+}
+
+const toBase64 = (txn: Transaction) =>
+    encodeToBase64(encodeUnsignedTransaction(txn))
+
+// Mirrors the backend: prepend a pre-signed sponsor payment and re-group, so
+// the wallet slot comes back with a new group id.
+const regroupWithSponsor = (walletTxn: Transaction) => {
+    const sponsorTxn = makeTestPaymentTx(SPONSOR.addr, {
+        receiver: ACCOUNT_ADDRESS,
+        amount: 100_000n,
+    })
+    const returnedWalletTxn = decodeUnsignedTransaction(
+        encodeUnsignedTransaction(walletTxn),
+    )
+    assignGroupID([sponsorTxn, returnedWalletTxn])
+    const sponsorSigned = sponsorTxn.signTxn(SPONSOR.sk)
+    return {
+        sponsorTxn,
+        sponsorSigned,
+        returnedWalletTxn,
+        response: {
+            txnGroup: [
+                {
+                    txn: toBase64(sponsorTxn),
+                    signers: [],
+                    stxn: encodeToBase64(sponsorSigned),
+                },
+                { txn: toBase64(returnedWalletTxn), signers: [ACCOUNT] },
+            ],
+        },
+    }
 }
 
 function renderDelegation() {
@@ -124,26 +144,23 @@ describe('fee-delegation/useFeeDelegation', () => {
 
     test('sends the encoded group, signs the wallet slot, and submits in order', async () => {
         const callOrder: string[] = []
+        const { sponsorTxn, sponsorSigned, returnedWalletTxn, response } =
+            regroupWithSponsor(optInTxn)
+        const walletSigned = {
+            txn: returnedWalletTxn,
+            sig: new Uint8Array([9]),
+        }
 
         // Sponsor slot (signed, first) + the wallet's opt-in slot (unsigned).
         requestFeeDelegationMock.mockImplementation(async () => {
             callOrder.push('request')
-            return {
-                txnGroup: [
-                    {
-                        txn: toBase64('sponsor'),
-                        signers: [],
-                        stxn: toBase64('sponsor'),
-                    },
-                    { txn: toBase64('optin'), signers: [ACCOUNT] },
-                ],
-            }
+            return response
         })
 
         addSignRequestMock.mockImplementation(request => {
             callOrder.push('sign')
             // The pipeline returns one signed txn per unsigned slot.
-            void request.approve([{ kind: 'signed', txn: { id: 'optin' } }])
+            void request.approve([walletSigned])
         })
 
         submitAndAutoRefreshMock.mockImplementation(async () => {
@@ -158,9 +175,10 @@ describe('fee-delegation/useFeeDelegation', () => {
         // on the active network.
         expect(requestFeeDelegationMock).toHaveBeenCalledWith(
             {
-                // 'optin', not 'TXoptin': ARC-0001 carries the prefix-free wire
-                // form. Sending the signable bytes fails the backend decoder.
-                txnGroup: [{ txn: toBase64('optin') }],
+                // Prefix-free wire form, not the "TX"-prefixed signable bytes:
+                // ARC-0001 carries the former and the backend decoder rejects
+                // the latter.
+                txnGroup: [{ txn: toBase64(optInTxn) }],
                 account: ACCOUNT,
                 includeAssetOptInMbr: true,
                 optInAssetIds: [ASSET_ID.toString()],
@@ -172,13 +190,14 @@ describe('fee-delegation/useFeeDelegation', () => {
         // is signable; the full group is the integrity context.
         expect(addSignRequestMock).toHaveBeenCalledTimes(1)
         const signRequest = addSignRequestMock.mock.calls[0]![0]
-        expect(signRequest.signableIndices).toEqual([1])
-        expect(signRequest.txs.map((tx: { id: string }) => tx.id)).toEqual([
-            'optin',
-        ])
+        const algorand = signRequest.chainData.algorand
+        expect(algorand.signableIndices).toEqual([1])
         expect(
-            signRequest.groupContext.map((tx: { id: string }) => tx.id),
-        ).toEqual(['sponsor', 'optin'])
+            payloadTransactionsOf(signRequest.txs).map(tx => tx.txID()),
+        ).toEqual([returnedWalletTxn.txID()])
+        expect(
+            payloadTransactionsOf(algorand.groupContext).map(tx => tx.txID()),
+        ).toEqual([sponsorTxn.txID(), returnedWalletTxn.txID()])
         expect(signRequest.sourceMetadata).toEqual(baseParams.sourceMetadata)
 
         // Submission: sponsor's pre-signed slot first, wallet signature after,
@@ -187,23 +206,16 @@ describe('fee-delegation/useFeeDelegation', () => {
         const [scope, orderedSigned] = submitAndAutoRefreshMock.mock.calls[0]!
         expect(scope).toEqual({ chainId: 'algorand', networkId: 'mainnet' })
         expect(orderedSigned).toEqual([
-            { sig: new Uint8Array([9]), txn: { id: 'sponsor' } },
-            { kind: 'signed', txn: { id: 'optin' } },
+            decodeSignedTransaction(sponsorSigned),
+            walletSigned,
         ])
         expect(callOrder).toEqual(['request', 'sign', 'submit'])
     })
 
     test('a signing rejection propagates and nothing is submitted', async () => {
-        requestFeeDelegationMock.mockResolvedValue({
-            txnGroup: [
-                {
-                    txn: toBase64('sponsor'),
-                    signers: [],
-                    stxn: toBase64('sponsor'),
-                },
-                { txn: toBase64('optin'), signers: [ACCOUNT] },
-            ],
-        })
+        requestFeeDelegationMock.mockResolvedValue(
+            regroupWithSponsor(optInTxn).response,
+        )
         addSignRequestMock.mockImplementation(request => {
             void request.reject()
         })
@@ -220,16 +232,13 @@ describe('fee-delegation/useFeeDelegation', () => {
         // The backend swaps the wallet's opt-in for an attacker-favorable
         // transaction in the same slot. It must never reach the signing
         // pipeline or be submitted.
-        requestFeeDelegationMock.mockResolvedValue({
-            txnGroup: [
-                {
-                    txn: toBase64('sponsor'),
-                    signers: [],
-                    stxn: toBase64('sponsor'),
-                },
-                { txn: toBase64('drain-payment'), signers: [ACCOUNT] },
-            ],
+        const drainPayment = makeTestPaymentTx(ACCOUNT_ADDRESS, {
+            receiver: makeTestAddress(9),
+            amount: 5_000_000n,
         })
+        requestFeeDelegationMock.mockResolvedValue(
+            regroupWithSponsor(drainPayment).response,
+        )
 
         const result = renderDelegation()
 

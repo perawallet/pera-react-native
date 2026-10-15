@@ -813,16 +813,12 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
         ])
     })
 
-    it('refuses before anything signs a request whose signers sign in different ways', () => {
+    it('accepts a request whose signers sign in different ways', () => {
         const { neutral } = bothShapes(fullGroup())
 
         expect(() =>
             resolveInitialContext(withAccounts(neutral, ledgerAuth())),
-        ).toThrow(
-            expect.objectContaining({
-                metadata: expect.objectContaining({ retryable: false }),
-            }),
-        )
+        ).not.toThrow()
     })
 
     it('refuses a full group whose transactions no longer hash to their group id', () => {

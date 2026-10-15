@@ -19,6 +19,7 @@ import {
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     chainAccountOf,
+    useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -34,6 +35,7 @@ import { algorandNetworkOf } from '../legacy-network'
 import { autoDrawDelegationRequest } from './delegation'
 import { algorandAutoDraw } from './escrow/killswitch'
 import { compileAutoDrawProgram, resolveEscrowChainConfig } from './escrow/lsig'
+import { toAlgorandUnsignedTransactions } from '../signing/unsignedAlgorandTransactions'
 
 const fundingAddressOf = (
     account: WalletAccount,
@@ -126,7 +128,10 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             // the Killswitch app account, not the sponsor.
             await submitWithFeeDelegation({
                 account: address,
-                transactions: txns,
+                transactions: toAlgorandUnsignedTransactions(txns, {
+                    scope,
+                    accounts: useAccountsStore.getState().accounts,
+                }),
                 includeAssetOptInMbr: true,
                 sourceMetadata: {
                     name: 'card-autodraw-enable',
@@ -170,7 +175,10 @@ export const useAlgorandCardAutoDraw = (): CardAutoDrawOperations => {
             })
             await submit({
                 scope,
-                unsignedTxs: txns,
+                unsignedTxs: toAlgorandUnsignedTransactions(txns, {
+                    scope,
+                    accounts: useAccountsStore.getState().accounts,
+                }),
                 source: {
                     name: 'card-autodraw-disable',
                     description: 'Turn off auto funding',

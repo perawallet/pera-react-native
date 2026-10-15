@@ -15,7 +15,7 @@ import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
 import type {
     ChainScope,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchAndPersistAssets,
@@ -126,7 +126,7 @@ export const useTransactionSendFlow = (
             receiver: string
             assetId: bigint
             amount: bigint
-        }): Promise<PeraTransaction[]> => {
+        }): Promise<UnsignedTransaction[]> => {
             const { sender, receiver, assetId, amount } = params
 
             // Look up receiver's current balance to determine funding needed
@@ -189,7 +189,9 @@ export const useTransactionSendFlow = (
      * fee exceeds the suggested minimum, so a non-quantum sender is unchanged.
      */
     const buildNormalTxs = useCallback(
-        async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
+        async (
+            params: SendTransactionParams,
+        ): Promise<UnsignedTransaction[]> => {
             if (
                 !params.asset ||
                 params.asset.assetId === '' ||

@@ -19,7 +19,7 @@ import {
     useFeeConfig,
     useSuggestedMinFeeQuery,
 } from '@perawallet/wallet-core-signing'
-import { sendFlowFeatureFor } from '../chain-adapter'
+import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 
 import type { Decimal } from 'decimal.js'
 
@@ -100,7 +100,9 @@ export const useRekeyTransactionFeeQuery = (
                 rekeyToAddress,
                 minFee: resolvedMinFee,
             })
-            return microAlgosToAlgos(txn.fee ?? resolvedMinFee)
+            return microAlgosToAlgos(
+                sendFlowChainAdapters.get(scope.chainId).totalFee([txn]),
+            )
         },
         enabled:
             !!sourceAddress && !!rekeyToAddress && suggestedMinFee !== null,

@@ -88,6 +88,12 @@ beforeEach(() => {
     sendFlowChainAdapters.register({
         chainId: 'algorand',
         buildTransferTxs: vi.fn(),
+        totalFee: transactions =>
+            transactions.reduce(
+                (total, transaction) =>
+                    total + (transaction as unknown as { fee: bigint }).fee,
+                0n,
+            ),
         rekey: { buildTx: mockBuildRekeyTx },
     })
     mockUseSuggestedMinFeeQuery.mockReturnValue({
@@ -184,42 +190,6 @@ describe('useRekeyTransactionFeeQuery', () => {
             'algorand',
             expect.objectContaining({ suggestedMinFee: 1000n }),
         )
-    })
-
-    it('falls back to the resolved minimum fee when the built transaction has no fee', async () => {
-        // Some constructs leave `fee` undefined (1000 microAlgo → 0.001 ALGO).
-        mockBuildRekeyTx.mockResolvedValueOnce({ fee: undefined })
-        const { wrapper } = buildWrapper()
-
-        const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
-            { wrapper },
-        )
-
-        await waitFor(() => {
-            expect(result.current.isPending).toBe(false)
-        })
-        expect(result.current.feeAlgos?.toString()).toBe('0.001')
-    })
-
-    it('follows the resolved minimum fee when the built transaction has no fee', async () => {
-        // Non-default config: the resolver floors at the 2000 µAlgo config
-        // minimum, so the displayed fee is 0.002 ALGO.
-        mockUseFeeConfig.mockReturnValue({
-            minTxnFee: 2000n,
-            pqMultiplier: 3n,
-        })
-        mockResolveMinFeeForSender.mockReturnValue(2000n)
-        mockBuildRekeyTx.mockResolvedValueOnce({ fee: undefined })
-        const { wrapper } = buildWrapper()
-
-        const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.feeAlgos?.toString()).toBe('0.002')
     })
 
     it('does not run the query when sourceAddress is empty', async () => {

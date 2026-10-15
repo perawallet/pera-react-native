@@ -25,7 +25,7 @@ import { getAlgorandTransactionHistory } from './history-records'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 import {
     buildExpressTransferTxs,
-    buildKeyRegistrationTx,
+    buildDecodedKeyRegistrationTx,
     buildOptInTxs,
     buildOptOutTxs,
     buildRekeyTx,
@@ -35,6 +35,11 @@ import { summarizeAlgorandHistoryItem } from './summarize'
 import { buildAlgorandTransfer } from './transfer-builder'
 import { estimateAlgorandTransferFee } from './transfer-fees'
 import {
+    payloadTransactionsOf,
+    wrapsAlgorandGroup,
+    wrapsAlgorandTransaction,
+} from '../signing/unsignedAlgorandTransactions'
+import {
     algorandHoldingReserve,
     readAlgorandRecipientWarning,
     readAlgorandSpendableBalance,
@@ -42,12 +47,27 @@ import {
 
 export const algorandSendFlowAdapter: SendFlowChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    buildTransferTxs,
-    express: { buildTxs: buildExpressTransferTxs },
-    assetInbox: algorandAssetInbox,
-    assetHolding: { buildOptInTxs, buildOptOutTxs },
-    rekey: { buildTx: buildRekeyTx },
-    keyRegistration: { buildTx: buildKeyRegistrationTx },
+    buildTransferTxs: wrapsAlgorandGroup(buildTransferTxs),
+    totalFee: transactions =>
+        payloadTransactionsOf(transactions).reduce(
+            (total, transaction) => total + (transaction.fee ?? 0n),
+            0n,
+        ),
+    express: { buildTxs: wrapsAlgorandGroup(buildExpressTransferTxs) },
+    assetInbox: {
+        ...algorandAssetInbox,
+        buildSendTxs: wrapsAlgorandGroup(algorandAssetInbox.buildSendTxs),
+        buildClaimTxs: wrapsAlgorandGroup(algorandAssetInbox.buildClaimTxs),
+        buildRejectTxs: wrapsAlgorandGroup(algorandAssetInbox.buildRejectTxs),
+    },
+    assetHolding: {
+        buildOptInTxs: wrapsAlgorandGroup(buildOptInTxs),
+        buildOptOutTxs: wrapsAlgorandGroup(buildOptOutTxs),
+    },
+    rekey: { buildTx: wrapsAlgorandTransaction(buildRekeyTx) },
+    keyRegistration: {
+        buildTx: wrapsAlgorandTransaction(buildDecodedKeyRegistrationTx),
+    },
 }
 
 export const algorandTransferAdapter: TransferChainAdapter = {

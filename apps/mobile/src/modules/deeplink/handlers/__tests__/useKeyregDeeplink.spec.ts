@@ -471,17 +471,21 @@ describe('useKeyregDeeplink', () => {
             })
 
             // The dApp fee reaches the builder untouched; the raise happens
-            // after build, on the normalized txn.
+            // after build, on the built txn itself.
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({ fee: 1000n }),
             )
+            const built = await mockOfflineKeyRegistration.mock.results[0].value
             expect(mockAssignFeeToGroup).toHaveBeenCalledExactlyOnceWith({
-                transactions: [{ kind: 'offline-tx' }],
+                transactions: [built],
             })
+            expect(mockAssignFeeToGroup.mock.calls[0][0].transactions[0]).toBe(
+                built,
+            )
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     txs: [adjustedTx],
-                    feeAdjustments: adjustments,
+                    chainData: { algorand: { feeAdjustments: adjustments } },
                 }),
             )
         })
@@ -511,7 +515,7 @@ describe('useKeyregDeeplink', () => {
                 expect.objectContaining({
                     txs: [adjustedTx],
                     // …but no original → adjusted delta is shown.
-                    feeAdjustments: undefined,
+                    chainData: { algorand: { feeAdjustments: undefined } },
                 }),
             )
         })
@@ -531,7 +535,7 @@ describe('useKeyregDeeplink', () => {
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     txs: [{ kind: 'offline-tx' }],
-                    feeAdjustments: undefined,
+                    chainData: { algorand: { feeAdjustments: undefined } },
                 }),
             )
         })

@@ -11,6 +11,7 @@
  */
 
 import { createWalletAlgorandClient } from '../blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { AssetInboxSendFlow } from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../legacy-network'
 import {
@@ -25,9 +26,18 @@ import {
     buildArc59SendViaInboxTxs,
 } from './builders'
 
+type InboxBuilder = 'buildSendTxs' | 'buildClaimTxs' | 'buildRejectTxs'
+
+/** The send-flow adapter wraps the builders into chain-neutral transactions. */
+type AlgorandAssetInbox = Omit<AssetInboxSendFlow, InboxBuilder> & {
+    [Builder in InboxBuilder]: (
+        params: Parameters<AssetInboxSendFlow[Builder]>[0],
+    ) => Promise<PeraTransaction[]>
+}
+
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
 // memo does.
-export const algorandAssetInbox: AssetInboxSendFlow = {
+export const algorandAssetInbox: AlgorandAssetInbox = {
     fetchRequests: ({ scope, address }) =>
         fetchArc59AssetRequests(algorandNetworkOf(scope), address),
     fetchSendSummary: async ({ scope, receiver, assetId }) => {

@@ -129,7 +129,16 @@ export const multisigContractTests = (
                 char.charCodeAt(0),
             )
 
-            expect(makeAdapter().decodeTransaction(bytes)).toBeDefined()
+            const adapter = makeAdapter()
+            const scope = { chainId: adapter.chainId, networkId: 'testnet' }
+            const joint = {
+                address: adapter.deriveAddress(parameters),
+                parameters,
+            }
+
+            expect(
+                adapter.decodeTransaction(bytes, joint, scope),
+            ).toMatchObject({ scope })
         })
 
         it('reports missing signatures as retryable, not as an error', async () => {
