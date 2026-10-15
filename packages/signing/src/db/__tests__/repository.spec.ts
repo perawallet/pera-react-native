@@ -425,7 +425,7 @@ describe('submission ledger repository', () => {
                 scope: ETHEREUM,
             })
 
-            const entry = attempt!.historyEntry!
+            const entry = attempt!.historyEntry
             expect(entry.summary.amount!.value).toBeInstanceOf(Decimal)
             expect(entry.summary.amount!.value.eq('1500000000000000000')).toBe(
                 true,
@@ -441,13 +441,35 @@ describe('submission ledger repository', () => {
             expect(entry.chainData).toEqual({ family: 'evm' })
         })
 
-        it('reads null for an attempt recorded without one', async () => {
-            await recordRekey()
+        it.each([
+            ['unparseable text', 'not json'],
+            [
+                'an entry of another version',
+                JSON.stringify({ v: 0, entry: { summary: {} } }),
+            ],
+        ])(
+            'skips %s and still serves the open-attempt read',
+            async (_label, historyEntryJson) => {
+                const id = await recordWithEntry()
+                await db
+                    .update(SubmissionAttemptsSchema)
+                    .set({ historyEntryJson })
+                    .where(eq(SubmissionAttemptsSchema.id, id))
+                    .run()
 
-            const [attempt] = await getOpenSubmissionAttempts({ db })
-
-            expect(attempt!.historyEntry).toBeNull()
-        })
+                expect(
+                    await getSubmissionAttemptsWithHistoryEntry({
+                        db,
+                        scope: ETHEREUM,
+                    }),
+                ).toEqual([])
+                expect(
+                    (await getOpenSubmissionAttempts({ db })).map(
+                        row => row.id,
+                    ),
+                ).toEqual([id])
+            },
+        )
 
         it('returns entry-bearing rows of every status for the scope, newest first', async () => {
             const statuses = [

@@ -126,16 +126,14 @@ export type SubmitAndRecordEthereumTransactionsParams = {
 }
 
 // Wei: gas limit x max fee per gas, the most the transaction can be charged.
+// The signing adapter signs EIP-1559 only, so there is no legacy gasPrice.
 const maxFeeOf = ({
     gas,
     maxFeePerGas,
-    gasPrice,
-}: ReturnType<typeof parseTransaction>): Decimal | undefined => {
-    const price = maxFeePerGas ?? gasPrice
-    return gas === undefined || price === undefined
+}: ReturnType<typeof parseTransaction>): Decimal | undefined =>
+    gas === undefined || maxFeePerGas === undefined
         ? undefined
-        : new Decimal((gas * price).toString())
-}
+        : new Decimal((gas * maxFeePerGas).toString())
 
 const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     try {

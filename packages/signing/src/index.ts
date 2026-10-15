@@ -288,6 +288,7 @@ export {
     SubmissionAttemptsSchema,
     type IntentKey,
     type SubmissionAttempt,
+    type SubmissionAttemptWithHistoryEntry,
     type SubmissionFlow,
     type SubmissionHistoryEntry,
     type SubmissionStatus,

@@ -18,7 +18,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getSubmissionAttemptsWithHistoryEntry,
-    type SubmissionAttempt,
+    type SubmissionAttemptWithHistoryEntry,
     type SubmissionStatus,
 } from '@perawallet/wallet-core-signing'
 import { historyChainAdapters } from '../history-adapter'
@@ -43,8 +43,8 @@ const ADDRESS = '0xSENDER'
 const CREATED_AT = 1_700_000_000_000
 
 const attempt = (
-    overrides: Partial<SubmissionAttempt> = {},
-): SubmissionAttempt => ({
+    overrides: Partial<SubmissionAttemptWithHistoryEntry> = {},
+): SubmissionAttemptWithHistoryEntry => ({
     id: 'attempt-1',
     network: 'ethereum/mainnet',
     txIds: ['0xhash1'],
@@ -69,10 +69,14 @@ const attempt = (
     ...overrides,
 })
 
-const minedRecord = (id: string): TransactionRecord => ({
+const minedRecord = (
+    id: string,
+    timestamp = CREATED_AT - 60_000,
+): TransactionRecord => ({
     id,
     scope: SCOPE,
     status: 'confirmed',
+    timestamp,
     summary: {
         kind: 'transfer',
         title: { key: 'transactions.summary.sent' },
@@ -82,7 +86,7 @@ const minedRecord = (id: string): TransactionRecord => ({
     chainData: { family: 'evm' },
 })
 
-const ledger = (...attempts: SubmissionAttempt[]) =>
+const ledger = (...attempts: SubmissionAttemptWithHistoryEntry[]) =>
     vi.mocked(getSubmissionAttemptsWithHistoryEntry).mockResolvedValue(attempts)
 
 const pendingRecords = (listedIds: string[] = []) =>
@@ -174,12 +178,6 @@ describe('getPendingTransactionRecords', () => {
         expect(await pendingRecords()).toEqual([])
     })
 
-    it('leaves out an attempt that carries no history entry', async () => {
-        ledger(attempt({ historyEntry: null }))
-
-        expect(await pendingRecords()).toEqual([])
-    })
-
     it('lists a hash recorded twice once, with the newest attempt', async () => {
         ledger(
             attempt({ id: 'retry', status: 'unknown' }),
@@ -231,6 +229,24 @@ describe('getTransactionHistoryWithPending', () => {
         ])
         expect(page.items[0].status).toBe('pending')
         expect(page.next).toEqual({ cursor: 'page-2' })
+    })
+
+    it('merges a resolved attempt into page one by time, not ahead of it', async () => {
+        ledger(attempt({ status: 'replaced' }))
+        getTransactionHistory.mockResolvedValue({
+            items: [
+                minedRecord('0xnewer', CREATED_AT + 1_000),
+                minedRecord('0xolder', CREATED_AT - 1_000),
+            ],
+        })
+
+        const page = await getTransactionHistoryWithPending(ADDRESS, SCOPE)
+
+        expect(page.items.map(record => record.id)).toEqual([
+            '0xnewer',
+            '0xhash1',
+            '0xolder',
+        ])
     })
 
     it('passes a later page straight through', async () => {

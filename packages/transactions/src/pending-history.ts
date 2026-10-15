@@ -44,9 +44,11 @@ export type GetPendingTransactionRecordsParams = {
 
 /**
  * Attempts the wallet broadcast for `address`, as history records, newest
- * first. Reads SQLite only, so it works offline. Confirmed attempts stay
- * until the chain lists them or retention prunes them: the reconciler
- * confirms a send before a cached history page does.
+ * first. Reads SQLite only, so it works offline. Resolved attempts
+ * (confirmed, failed, replaced) stay until the chain lists them or retention
+ * prunes them: the reconciler confirms a send before a cached history page
+ * does, and a failed or replaced one is never listed, so it shows until
+ * pruned.
  */
 export const getPendingTransactionRecords = async ({
     address,
@@ -60,7 +62,6 @@ export const getPendingTransactionRecords = async ({
     for (const attempt of attempts) {
         const { historyEntry, sender, txIds } = attempt
         if (
-            historyEntry === null ||
             sender === null ||
             !isSameAddress(scope.chainId, sender, address) ||
             txIds.length === 0 ||
@@ -85,9 +86,28 @@ export const getPendingTransactionRecords = async ({
     return records
 }
 
+// Both lists are newest first; mined order is the backend's and is kept as is.
+const mergeNewestFirst = (
+    ledger: TransactionRecord[],
+    mined: TransactionRecord[],
+): TransactionRecord[] => {
+    const merged: TransactionRecord[] = []
+    let next = 0
+    for (const record of mined) {
+        while (
+            next < ledger.length &&
+            ledger[next].timestamp! >= (record.timestamp ?? -Infinity)
+        ) {
+            merged.push(ledger[next++])
+        }
+        merged.push(record)
+    }
+    return [...merged, ...ledger.slice(next)]
+}
+
 /**
- * The chain's history page, with this wallet's own broadcasts ahead of page
- * one so a send shows before the backend lists it. A rejected mined page
+ * The chain's history page, with this wallet's own broadcasts merged into
+ * page one by time so a send shows before the backend lists it. A rejected mined page
  * rejects; a caller that must render offline reads
  * {@link getPendingTransactionRecords} itself.
  */
@@ -104,5 +124,5 @@ export const getTransactionHistoryWithPending = async (
         scope,
         listedIds: new Set(mined.items.map(record => record.id)),
     })
-    return { ...mined, items: [...pending, ...mined.items] }
+    return { ...mined, items: mergeNewestFirst(pending, mined.items) }
 }

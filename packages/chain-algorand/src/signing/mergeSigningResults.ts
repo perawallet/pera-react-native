@@ -10,15 +10,9 @@
  limitations under the License
  */
 
-import type {
-    PeraSignedTransaction,
-    SignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
 import {
     SigningError,
     type SigningResult,
-    type SignedData,
-    type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
 
 /**
@@ -42,26 +36,34 @@ export const mergeSigningResults = (
     const signers = results.flatMap(r => r.signers)
 
     // The machine refuses this before signing; this only backstops it.
-    if (results.every(r => r.signedData.type === 'signed-transactions')) {
+    const planned = results.flatMap(({ signedData, originalIndices }) =>
+        signedData.type === 'signed-transactions'
+            ? [{ data: signedData, originalIndices }]
+            : [],
+    )
+    if (planned.length === results.length) {
         return {
             signedData: {
                 type: 'signed-transactions',
-                signed: reorder<SignedTransaction>(
-                    results,
+                signed: reorder(
                     totalCount,
-                    data => data.signed,
+                    planned.map(({ data, originalIndices }) => ({
+                        items: data.signed,
+                        originalIndices,
+                    })),
                 ),
-                historyEntries: reorder<SubmissionHistoryEntry>(
-                    results,
+                historyEntries: reorder(
                     totalCount,
-                    data =>
-                        'historyEntries' in data ? data.historyEntries : [],
+                    planned.map(({ data, originalIndices }) => ({
+                        items: data.historyEntries,
+                        originalIndices,
+                    })),
                 ),
             },
             signers,
         }
     }
-    if (results.some(r => r.signedData.type === 'signed-transactions')) {
+    if (planned.length > 0) {
         throw new SigningError(
             'A request signed partly through its planner cannot be delivered as one group',
             undefined,
@@ -72,10 +74,13 @@ export const mergeSigningResults = (
     return {
         signedData: {
             type: 'transactions',
-            signed: reorder<PeraSignedTransaction>(
-                results,
+            signed: reorder(
                 totalCount,
-                data => data.signed,
+                results.flatMap(({ signedData, originalIndices }) =>
+                    signedData.type === 'transactions'
+                        ? [{ items: signedData.signed, originalIndices }]
+                        : [],
+                ),
             ),
         },
         signers,
@@ -83,22 +88,13 @@ export const mergeSigningResults = (
 }
 
 const reorder = <T>(
-    results: SigningResult[],
     totalCount: number,
-    pick: (data: Extract<SignedData, { signed: unknown }>) => unknown,
+    groups: { items: readonly T[]; originalIndices?: number[] }[],
 ): T[] => {
     const reordered = new Array<T>(totalCount)
-    for (const result of results) {
-        const { signedData } = result
-        if (
-            signedData.type !== 'transactions' &&
-            signedData.type !== 'signed-transactions'
-        ) {
-            continue
-        }
-        const signed = pick(signedData) as T[]
-        result.originalIndices?.forEach((origIdx, i) => {
-            reordered[origIdx] = signed[i]
+    for (const { items, originalIndices } of groups) {
+        originalIndices?.forEach((origIdx, i) => {
+            reordered[origIdx] = items[i]
         })
     }
     return reordered

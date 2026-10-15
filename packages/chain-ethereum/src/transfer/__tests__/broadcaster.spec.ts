@@ -26,6 +26,7 @@ import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
+    getSubmissionAttemptsWithHistoryEntry,
     SubmissionAttemptsSchema,
     TransportError,
     type SigningResult,
@@ -136,7 +137,10 @@ describe('Ethereum broadcaster adapter', () => {
                 .createSubmitTransport(SCOPE)
                 .send(signedTransactions, SOURCE)
 
-            const [attempt] = await getOpenSubmissionAttempts({ db })
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: SCOPE,
+            })
             expect(attempt!.historyEntry).toEqual({
                 ...HISTORY_ENTRY,
                 fee: new Decimal('420000000000000'),
@@ -155,8 +159,12 @@ describe('Ethereum broadcaster adapter', () => {
                 SOURCE,
             )
 
-            const [attempt] = await getOpenSubmissionAttempts({ db })
-            expect(attempt!.historyEntry).toBeNull()
+            expect(
+                await getSubmissionAttemptsWithHistoryEntry({
+                    db,
+                    scope: SCOPE,
+                }),
+            ).toEqual([])
         })
 
         it('resolves the row failed and rejects as rejected-by-node when the node refuses', async () => {

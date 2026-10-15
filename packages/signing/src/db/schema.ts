@@ -12,8 +12,6 @@
 
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
-import { decimalJsonColumn } from '@perawallet/wallet-core-database'
-import type { SubmissionHistoryEntry } from './types'
 
 /**
  * One broadcast attempt of an atomic transaction group. Written before the
@@ -44,8 +42,12 @@ export const SubmissionAttemptsSchema = sqliteTable(
         nonce: integer('nonce'),
         createdAt: integer('created_at').notNull(),
         resolvedAt: integer('resolved_at'),
-        historyEntry:
-            decimalJsonColumn<SubmissionHistoryEntry>('history_entry_json'),
+        /**
+         * Versioned, Decimal-tagged JSON of a SubmissionHistoryEntry. Plain
+         * text, not a JSON column type: only the history read parses it, so a
+         * bad blob can't fail the reconcile and nonce reads of the same rows.
+         */
+        historyEntryJson: text('history_entry_json'),
     },
     table => [
         index('submission_attempts_open_idx').on(table.network, table.status),
