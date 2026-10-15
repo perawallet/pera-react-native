@@ -41,7 +41,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    useTransactionEncoder: () => ({ decodeTransaction: vi.fn(() => ({})) }),
+    decodeUnsignedAlgorandTransaction: vi.fn(() => ({})),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({

@@ -20,7 +20,9 @@ import type {
 
 const openSheetMock = vi.fn()
 const addSignRequestMock = vi.fn()
-const decodeTransactionMock = vi.fn(() => ({}))
+const { decodeTransactionMock } = vi.hoisted(() => ({
+    decodeTransactionMock: vi.fn(() => ({})),
+}))
 const localUnsignedSignersMock = vi.fn<() => WalletAccount[]>(() => [])
 const buildCosignArgsMock = vi.fn()
 const cosignRequestStub = { id: 'cosign-stub' }
@@ -49,7 +51,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
+    decodeUnsignedAlgorandTransaction: decodeTransactionMock,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({

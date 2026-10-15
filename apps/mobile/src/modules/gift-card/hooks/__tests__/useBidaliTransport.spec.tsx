@@ -24,20 +24,13 @@ import type {
 import { useBidaliTransport } from '../useBidaliTransport'
 
 const mockAddSignRequest = vi.fn()
-const mockAddPayment = vi.fn()
-const mockAddAssetTransfer = vi.fn()
 // Mutable so the "fallback network" providerJS test below can switch away
 // from mainnet without a new vi.mock factory.
 let mockNetwork = 'mainnet'
 let mockChainMode = 'live'
-const mockBuildTransactions = vi.fn().mockResolvedValue({
-    transactions: [{ fake: 'txn' }],
-})
-const mockComposer = {
-    addPayment: mockAddPayment,
-    addAssetTransfer: mockAddAssetTransfer,
-    buildTransactions: mockBuildTransactions,
-}
+const { mockBuildTransferTxs } = vi.hoisted(() => ({
+    mockBuildTransferTxs: vi.fn(),
+}))
 
 vi.mock('react-native', () => ({
     Linking: { openURL: vi.fn() },
@@ -69,10 +62,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: mockNetwork }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    useAlgorandClient: () => ({
-        newGroup: () => mockComposer,
-    }),
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    sendFlowChainAdapters: {
+        get: () => ({ buildTransferTxs: mockBuildTransferTxs }),
+    },
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
@@ -162,6 +155,7 @@ describe('useBidaliTransport', () => {
         vi.clearAllMocks()
         mockNetwork = 'mainnet'
         mockChainMode = 'live'
+        mockBuildTransferTxs.mockResolvedValue([{ fake: 'txn' }])
     })
 
     // -- providerJS --------------------------------------------------------
@@ -440,13 +434,19 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddPayment).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    sender: VALID_ADDRESS,
-                    receiver: VALID_ADDRESS,
-                }),
+            // AlgoKit patches BigInt's prototype, so amounts compare as strings.
+            const [params] = mockBuildTransferTxs.mock.calls[0]
+            expect({ ...params, amount: String(params.amount) }).toEqual({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                sender: VALID_ADDRESS,
+                receiver: VALID_ADDRESS,
+                assetId: '0',
+                amount: '1500000',
+                note: undefined,
+            })
+            expect(mockAddSignRequest).not.toHaveBeenCalledWith(
+                expect.objectContaining({ chainId: expect.anything() }),
             )
-            expect(mockBuildTransactions).toHaveBeenCalled()
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'transactions',
@@ -473,11 +473,14 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddAssetTransfer).toHaveBeenCalledTimes(1)
-            const call = mockAddAssetTransfer.mock.calls[0][0]
-            expect(call.sender).toBe(VALID_ADDRESS)
-            expect(call.receiver).toBe(VALID_ADDRESS)
-            expect(call.assetId.toString()).toBe('31566704')
+            expect(mockBuildTransferTxs).toHaveBeenCalledTimes(1)
+            const [params] = mockBuildTransferTxs.mock.calls[0]
+            expect(params).toMatchObject({
+                sender: VALID_ADDRESS,
+                receiver: VALID_ADDRESS,
+                assetId: '31566704',
+            })
+            expect(String(params.amount)).toBe('10000000')
             expect(mockAddSignRequest).toHaveBeenCalled()
         })
 
@@ -500,7 +503,7 @@ describe('useBidaliTransport', () => {
                 ),
             )
 
-            expect(mockAddAssetTransfer).not.toHaveBeenCalled()
+            expect(mockBuildTransferTxs).not.toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             expect(logger.warn).toHaveBeenCalledWith(
                 'Bidali: unsupported protocol',
@@ -522,7 +525,7 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddPayment).toHaveBeenCalledWith(
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith(
                 expect.objectContaining({
                     note: 'bidali-charge-123',
                 }),
@@ -543,7 +546,7 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddPayment).toHaveBeenCalledWith(
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith(
                 expect.objectContaining({
                     note: undefined,
                 }),
@@ -551,7 +554,7 @@ describe('useBidaliTransport', () => {
         })
 
         it('sends paymentCancelled when transaction build fails', async () => {
-            mockBuildTransactions.mockRejectedValueOnce(
+            mockBuildTransferTxs.mockRejectedValueOnce(
                 new Error('network error'),
             )
             const { logger } = await import('@perawallet/wallet-core-shared')

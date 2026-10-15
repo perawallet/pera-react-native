@@ -20,8 +20,6 @@ const {
     mockShowError,
     mockOnlineKeyRegistration,
     mockOfflineKeyRegistration,
-    mockEncodeTransaction,
-    mockDecodeTransaction,
     mockAllAccounts,
     mockResolveAuthAccount,
     mockResolveSignerForAccount,
@@ -32,8 +30,6 @@ const {
     mockShowError: vi.fn(),
     mockOnlineKeyRegistration: vi.fn(),
     mockOfflineKeyRegistration: vi.fn(),
-    mockEncodeTransaction: vi.fn((tx: unknown) => tx),
-    mockDecodeTransaction: vi.fn((tx: unknown) => tx),
     mockAllAccounts: {
         current: [] as {
             id: string
@@ -54,10 +50,6 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
     // valid vs invalid sender discrimination in this hook.
     isValidAlgorandAddress: (address: string) =>
         typeof address === 'string' && /^[A-Z2-7]{58}$/.test(address),
-    useTransactionEncoder: () => ({
-        encodeTransaction: mockEncodeTransaction,
-        decodeTransaction: mockDecodeTransaction,
-    }),
     getExpectedGenesisHash: (network: string) => `hash-${network}`,
 }))
 
@@ -154,8 +146,6 @@ describe('useKeyregDeeplink', () => {
         mockShowError.mockReset()
         mockOnlineKeyRegistration.mockReset()
         mockOfflineKeyRegistration.mockReset()
-        mockEncodeTransaction.mockClear()
-        mockDecodeTransaction.mockClear()
         mockResolveAuthAccount.mockReset()
         mockResolveAuthAccount.mockImplementation(account => account)
         mockAllAccounts.current = []
@@ -476,7 +466,7 @@ describe('useKeyregDeeplink', () => {
             })
 
             // The dApp fee reaches the builder untouched; the raise happens
-            // after build, on the normalized txn.
+            // after build.
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({ fee: 1000n }),
             )
@@ -486,7 +476,7 @@ describe('useKeyregDeeplink', () => {
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     txs: [adjustedTx],
-                    feeAdjustments: adjustments,
+                    chainData: { algorand: { feeAdjustments: adjustments } },
                 }),
             )
         })
@@ -516,7 +506,7 @@ describe('useKeyregDeeplink', () => {
                 expect.objectContaining({
                     txs: [adjustedTx],
                     // …but no original → adjusted delta is shown.
-                    feeAdjustments: undefined,
+                    chainData: { algorand: { feeAdjustments: undefined } },
                 }),
             )
         })
@@ -536,7 +526,7 @@ describe('useKeyregDeeplink', () => {
             expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
                     txs: [{ kind: 'offline-tx' }],
-                    feeAdjustments: undefined,
+                    chainData: { algorand: { feeAdjustments: undefined } },
                 }),
             )
         })
