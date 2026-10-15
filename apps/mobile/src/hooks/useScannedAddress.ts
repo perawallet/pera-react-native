@@ -12,18 +12,14 @@
 
 import { useCallback } from 'react'
 
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
-import { parseDeeplink } from '@modules/deeplink/core'
+import { isLegacyChainAddress, parseDeeplink } from '@modules/deeplink/core'
 import { useToast } from '@hooks/useToast'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
-    if (addressCodecs.get(LEGACY_CHAIN_ID).isValid(url)) return url
+    if (isLegacyChainAddress(url)) return url
 
     const parsed = parseDeeplink(url)
     if (!parsed) return null

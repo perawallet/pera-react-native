@@ -16,12 +16,11 @@ import {
     describeNodeError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import type { ErrorCopy } from '@i18n/resolveErrorCopy'
 import { useLanguage } from './useLanguage'
 
-type NodeErrorMessage = { title: string; body: string }
-
 type UseAlgodErrorMessageResult = {
-    getMessage: (err: unknown) => Optional<NodeErrorMessage>
+    getMessage: (err: unknown) => Optional<ErrorCopy>
 }
 
 // i18n interpolation doesn't accept bigint — convert to string at the boundary.
@@ -43,7 +42,7 @@ export const useAlgodErrorMessage = (): UseAlgodErrorMessageResult => {
     const { t } = useLanguage()
 
     const getMessage = useCallback(
-        (err: unknown): Optional<NodeErrorMessage> => {
+        (err: unknown): Optional<ErrorCopy> => {
             const copy = describeNodeError(LEGACY_CHAIN_ID, err)
             if (!copy) return undefined
             return {
