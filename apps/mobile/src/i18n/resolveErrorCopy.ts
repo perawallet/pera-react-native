@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
 import {
     AppError,
@@ -39,19 +40,19 @@ export type NodeErrorMessageFn = (err: unknown) => Optional<ErrorCopy>
  * Exhaustive `Record` on purpose: adding an `ErrorCategory` is a compile error
  * until someone classifies it here.
  */
-export const TITLE_KEY_BY_CATEGORY: Record<ErrorCategory, string> = {
-    [ErrorCategory.ACCOUNTS]: 'errors.account.title',
-    [ErrorCategory.KMS]: 'errors.account.title',
-    [ErrorCategory.TRANSACTIONS]: 'errors.transaction.title',
-    [ErrorCategory.BLOCKCHAIN]: 'errors.transaction.title',
-    [ErrorCategory.ASSETS]: 'errors.general.title',
-    [ErrorCategory.NETWORK]: 'errors.general.title',
-    [ErrorCategory.STAKING]: 'errors.general.title',
-    [ErrorCategory.STORAGE]: 'errors.general.title',
-    [ErrorCategory.UNKNOWN]: 'errors.general.title',
-    [ErrorCategory.VALIDATION]: 'errors.general.title',
-    [ErrorCategory.WALLETCONNECT]: 'errors.general.title',
-    [ErrorCategory.CONNECTIONS]: 'errors.general.title',
+export const TITLE_KEY_BY_CATEGORY: Record<ErrorCategory, I18nKey> = {
+    [ErrorCategory.ACCOUNTS]: i18nKey('errors.account.title'),
+    [ErrorCategory.KMS]: i18nKey('errors.account.title'),
+    [ErrorCategory.TRANSACTIONS]: i18nKey('errors.transaction.title'),
+    [ErrorCategory.BLOCKCHAIN]: i18nKey('errors.transaction.title'),
+    [ErrorCategory.ASSETS]: i18nKey('errors.general.title'),
+    [ErrorCategory.NETWORK]: i18nKey('errors.general.title'),
+    [ErrorCategory.STAKING]: i18nKey('errors.general.title'),
+    [ErrorCategory.STORAGE]: i18nKey('errors.general.title'),
+    [ErrorCategory.UNKNOWN]: i18nKey('errors.general.title'),
+    [ErrorCategory.VALIDATION]: i18nKey('errors.general.title'),
+    [ErrorCategory.WALLETCONNECT]: i18nKey('errors.general.title'),
+    [ErrorCategory.CONNECTIONS]: i18nKey('errors.general.title'),
 }
 
 // An offline or timed-out request has no bespoke copy by design; the request

@@ -80,8 +80,6 @@ export interface ChainModule<E extends ChainEndpoints = ChainEndpoints> {
     capabilityRestrictions?: ChainCapabilityRestrictions
     /** Adds every adapter the chain implements to its feature registry; `registerChainSetup` registers the descriptor. */
     register(ctx: ChainContext<E>): void
-    /** Every i18n key the chain's adapters emit as data, which the literal-`t()` lint can't see. */
-    i18nKeys(): readonly string[]
     /** Key names are the wire contract with remote config, so they never change. */
     remoteConfigDefaults?: ChainRemoteConfigDefaults
     /** Called once at registration. */

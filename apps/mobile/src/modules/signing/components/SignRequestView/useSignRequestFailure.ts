@@ -16,6 +16,8 @@ import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
     legacyNetworkOf,
+    i18nKey,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
@@ -54,19 +56,19 @@ export type UseSignRequestFailureResult = {
  * first", so it keeps the generic copy.
  */
 const ALREADY_RESOLVED_COPY: Partial<
-    Record<SignRequestStatus, { title: string; body: string }>
+    Record<SignRequestStatus, { title: I18nKey; body: I18nKey }>
 > = {
     confirmed: {
-        title: 'multisig.already_resolved.confirmed.title',
-        body: 'multisig.already_resolved.confirmed.body',
+        title: i18nKey('multisig.already_resolved.confirmed.title'),
+        body: i18nKey('multisig.already_resolved.confirmed.body'),
     },
     declined: {
-        title: 'multisig.already_resolved.declined.title',
-        body: 'multisig.already_resolved.declined.body',
+        title: i18nKey('multisig.already_resolved.declined.title'),
+        body: i18nKey('multisig.already_resolved.declined.body'),
     },
     expired: {
-        title: 'multisig.already_resolved.expired.title',
-        body: 'multisig.already_resolved.expired.body',
+        title: i18nKey('multisig.already_resolved.expired.title'),
+        body: i18nKey('multisig.already_resolved.expired.body'),
     },
 }
 

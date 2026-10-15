@@ -86,7 +86,12 @@ export default defineRule({
     query: `
         (pair
           key: (_) @key
-          value: (string (string_fragment) @value)) @pair
+          value: [
+            (string (string_fragment) @value)
+            (call_expression
+              function: (identifier) @fn
+              arguments: (arguments . (string (string_fragment) @value)))
+          ]) @pair
     `,
     check(ctx, m) {
         const pair = m.pair
@@ -97,6 +102,7 @@ export default defineRule({
         }
         const keyName = ctx.text(key)
         if (keyName === undefined || unquote(keyName) !== 'messageKey') return
+        if (m.fn !== undefined && ctx.text(m.fn) !== 'i18nKey') return
 
         const container = ctx.parent(pair)
         if (container === undefined || ctx.kind(container) !== 'object') return
@@ -106,7 +112,7 @@ export default defineRule({
         const raw = ctx.readFile(EN_JSON)
         if (raw === undefined) return
         const copy = flattenLocale(raw)[messageKey]
-        if (copy === undefined) return // error-message-key-exists owns this case
+        if (copy === undefined) return // i18n-key-exists owns this case
 
         const placeholders = [...copy.matchAll(PLACEHOLDER_RE)].map(
             ([, name]) => name,

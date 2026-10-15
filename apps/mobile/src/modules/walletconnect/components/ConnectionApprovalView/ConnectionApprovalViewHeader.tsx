@@ -11,6 +11,11 @@
  */
 
 import {
+    i18nKey,
+    type I18nKey,
+    type NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     PWBadge,
     PWButton,
     PWIcon,
@@ -21,7 +26,6 @@ import {
 } from '@components/core'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as usePermissionItemStyles } from '../PermissionItem/styles'
-import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -62,10 +66,12 @@ export type ConnectionApprovalViewHeaderProps = {
 
 const LABELED_NETWORKS: readonly NetworkId[] = ['mainnet', 'testnet', 'betanet']
 
-const permissionTitleKey: Record<string, string> = {
-    algo_signTxn: 'walletconnect.request.permissions_sign_transaction',
-    algo_signData: 'walletconnect.request.permissions_sign_data',
-    algo_getAccounts: 'walletconnect.request.permissions_request_accounts',
+const permissionTitleKey: Record<string, I18nKey> = {
+    algo_signTxn: i18nKey('walletconnect.request.permissions_sign_transaction'),
+    algo_signData: i18nKey('walletconnect.request.permissions_sign_data'),
+    algo_getAccounts: i18nKey(
+        'walletconnect.request.permissions_request_accounts',
+    ),
 }
 
 export const ConnectionApprovalViewHeader = ({

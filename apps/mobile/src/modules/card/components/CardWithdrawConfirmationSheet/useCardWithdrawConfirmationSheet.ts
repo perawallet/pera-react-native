@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -53,8 +54,8 @@ export const useCardWithdrawConfirmationSheet = ({
     const { balance: cardBalance } = useCardEscrowBalance()
     const destinationAccount = useCardOwnerAccount()
     const showError = useCardErrorToast({
-        titleKey: 'peraCard.withdraw.error_title',
-        bodyKey: 'peraCard.withdraw.error_body',
+        titleKey: i18nKey('peraCard.withdraw.error_title'),
+        bodyKey: i18nKey('peraCard.withdraw.error_body'),
         shouldUseBackendMessage: false,
     })
 

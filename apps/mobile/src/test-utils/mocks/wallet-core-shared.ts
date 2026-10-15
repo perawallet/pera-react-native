@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -22,6 +23,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { ErrorCategory } = await vi.importActual<
         typeof import('@packages/shared/src/errors/base')
     >('@packages/shared/src/errors/base')
+
+    // The same module the app resolves, so its `I18nKey` brand matches the types.
+    const { i18nKey } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-chain-contract')
+    >('@perawallet/wallet-core-chain-contract')
 
     // Same reasoning as ErrorCategory: bytes.ts has no runtime imports, so it is
     // side-effect free to pull in by path. These decode persisted byte fields —
@@ -88,12 +94,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     type AppErrorMetadata = {
         severity: string
         category: string
-        messageKey?: string
-        titleKey?: string
+        messageKey?: I18nKey
+        titleKey?: I18nKey
         params?: Record<string, unknown>
         recoverable: boolean
         retryable: boolean
     }
+
+    type ErrorMessageKeys = { titleKey: I18nKey; bodyKey: I18nKey }
 
     class AppError extends Error {
         public readonly metadata: AppErrorMetadata
@@ -230,7 +238,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                     severity: 'high',
                     category: 'blockchain',
                     retryable: false,
-                    messageKey: 'errors.blockchain.generic',
+                    messageKey: i18nKey('errors.blockchain.generic'),
                     ...metadata,
                 },
                 originalError,
@@ -266,7 +274,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                     category: 'network',
                     retryable: false,
                     recoverable: false,
-                    messageKey: 'errors.pera_service.unavailable',
+                    messageKey: i18nKey('errors.pera_service.unavailable'),
                     params: { scope: scopeKey, service },
                 },
             )
@@ -289,14 +297,12 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         return (error as { name?: string } | null)?.name === 'NetworkError'
     }
 
-    const keysFor = (base: string): { titleKey: string; bodyKey: string } => ({
-        titleKey: `${base}.title`,
-        bodyKey: `${base}.body`,
+    const keysFor = (base: string): ErrorMessageKeys => ({
+        titleKey: i18nKey(`${base}.title`),
+        bodyKey: i18nKey(`${base}.body`),
     })
 
-    const getNetworkErrorMessageKeys = (
-        error: unknown,
-    ): { titleKey: string; bodyKey: string } => {
+    const getNetworkErrorMessageKeys = (error: unknown): ErrorMessageKeys => {
         if (error instanceof NoConnectionError) {
             return keysFor('errors.network.no_connection')
         }
@@ -520,7 +526,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isPeraServiceUnavailableError,
         isConnectivityError,
         getNetworkErrorMessageKeys,
-        messageKeysFor: keysFor,
         ErrorSeverity: {
             LOW: 'low',
             MEDIUM: 'medium',

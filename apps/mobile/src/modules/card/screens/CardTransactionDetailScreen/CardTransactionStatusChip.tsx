@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { TransactionStatus } from '@perawallet/wallet-core-card'
 import { PWChip, type PWChipProps } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,7 +21,7 @@ type CardTransactionStatusChipProps = {
 }
 
 type StatusMeta = {
-    titleKey: string
+    titleKey: I18nKey
     variant: PWChipProps['variant']
 }
 
@@ -28,25 +29,25 @@ const statusMeta = (status: TransactionStatus): StatusMeta => {
     switch (status) {
         case TransactionStatus.Confirmed: {
             return {
-                titleKey: 'peraCard.transactions.status_completed',
+                titleKey: i18nKey('peraCard.transactions.status_completed'),
                 variant: 'positive',
             }
         }
         case TransactionStatus.Pending: {
             return {
-                titleKey: 'peraCard.transactions.status_pending',
+                titleKey: i18nKey('peraCard.transactions.status_pending'),
                 variant: 'secondary',
             }
         }
         case TransactionStatus.Declined: {
             return {
-                titleKey: 'peraCard.transactions.status_declined',
+                titleKey: i18nKey('peraCard.transactions.status_declined'),
                 variant: 'negative',
             }
         }
         case TransactionStatus.Reverted: {
             return {
-                titleKey: 'peraCard.transactions.status_reverted',
+                titleKey: i18nKey('peraCard.transactions.status_reverted'),
                 variant: 'negative',
             }
         }

@@ -12,26 +12,13 @@
 
 import { AppError, type NodeErrorCopy } from '@perawallet/wallet-core-shared'
 import { AlgodError } from './AlgodError'
-import { AlgodErrorCode } from './algodErrorCodes'
+import { ALGOD_ERROR_MESSAGE_KEYS, AlgodErrorCode } from './algodErrorCodes'
 import { toAlgodError } from './toAlgodError'
 
-// Offline shares one copy across algod and the Pera backend.
-const NO_CONNECTION_KEYS = [
-    'errors.network.no_connection.title',
-    'errors.network.no_connection.body',
-] as const
-
-const copyFor = (error: AlgodError): NodeErrorCopy => {
-    if (error.code === AlgodErrorCode.NETWORK_UNAVAILABLE) {
-        const [titleKey, bodyKey] = NO_CONNECTION_KEYS
-        return { titleKey, bodyKey, params: {} }
-    }
-    return {
-        titleKey: `errors.algod.${error.code}.title`,
-        bodyKey: `errors.algod.${error.code}.body`,
-        params: error.params,
-    }
-}
+const copyFor = (error: AlgodError): NodeErrorCopy => ({
+    ...ALGOD_ERROR_MESSAGE_KEYS[error.code],
+    params: error.params,
+})
 
 /**
  * An `AlgodError` of any code gets its copy. A plain `Error` goes through
@@ -51,14 +38,3 @@ export const describeAlgodError = (
         ? undefined
         : copyFor(algodError)
 }
-
-/** Every key `describeAlgodError` can return, for the module's `i18nKeys()`. */
-export const ALGOD_ERROR_I18N_KEYS: readonly string[] = [
-    ...NO_CONNECTION_KEYS,
-    ...Object.values(AlgodErrorCode)
-        .filter(code => code !== AlgodErrorCode.NETWORK_UNAVAILABLE)
-        .flatMap(code => [
-            `errors.algod.${code}.title`,
-            `errors.algod.${code}.body`,
-        ]),
-]

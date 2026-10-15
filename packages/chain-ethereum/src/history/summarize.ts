@@ -11,10 +11,11 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type {
-    BalanceChange,
-    ChainScope,
-    TransactionSummary,
+import {
+    type BalanceChange,
+    type ChainScope,
+    type TransactionSummary,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { transactionStatusNotice } from '@perawallet/wallet-core-transactions'
 import { ethereumAddressCodec } from '../accounts/address-codec'
@@ -23,16 +24,9 @@ import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 import type { EvmHistoryItem } from './api/schema'
 
-const SEND = 'transactions.list_item.send'
-const RECEIVE = 'transactions.list_item.receive'
-const CONTRACT_CALL = 'transactions.list_item.contract_call'
-
-/** Every i18n key a history summary can carry. */
-export const ETHEREUM_HISTORY_SUMMARY_KEYS = [
-    SEND,
-    RECEIVE,
-    CONTRACT_CALL,
-] as const
+const SEND = i18nKey('transactions.list_item.send')
+const RECEIVE = i18nKey('transactions.list_item.receive')
+const CONTRACT_CALL = i18nKey('transactions.list_item.contract_call')
 
 const { areEqual, normalize } = ethereumAddressCodec
 const NATIVE_REF = ethereumDescriptor.nativeAsset.ref

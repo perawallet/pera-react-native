@@ -193,6 +193,8 @@ See `docs/TESTING.md` for the integration test harness, MSW handler factories, a
 
 Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pera/locale-key-parity` (in `pnpm lint`) enforces **bidirectional** key parity against `en.json`, so an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps, such as Turkish suffixes never attaching to a `{{placeholder}}`.
 
+A value that carries an i18n key as data is typed `I18nKey` and minted with `i18nKey('whole.key')` from `@perawallet/wallet-core-chain-contract`; `pera/i18n-key-exists` checks the literal, and casting to `I18nKey` is banned.
+
 ## Work Completion
 
 Before reporting any task complete:

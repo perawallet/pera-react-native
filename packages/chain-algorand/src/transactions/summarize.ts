@@ -11,12 +11,14 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type {
-    AssetDisplayHint,
-    AssetRef,
-    LocalizedText,
-    PeraDisplayableTransaction,
-    TransactionSummary,
+import {
+    type AssetDisplayHint,
+    type AssetRef,
+    type LocalizedText,
+    type PeraDisplayableTransaction,
+    type TransactionSummary,
+    type I18nKey,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
@@ -36,40 +38,23 @@ import { algorandDescriptor } from '../descriptor'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 
-const SEND = 'transactions.list_item.send'
-const RECEIVE = 'transactions.list_item.receive'
-const SWAP = 'transactions.list_item.swap'
-const OPT_IN = 'transactions.list_item.opt_in'
-const OPT_OUT = 'transactions.list_item.opt_out'
-const ASSET_CONFIG = 'transactions.list_item.asset_config'
-const ASSET_FREEZE = 'transactions.list_item.asset_freeze'
-const APP_CALL = 'transactions.list_item.app_call'
-const KEY_REGISTRATION = 'transactions.list_item.key_registration'
-const HEARTBEAT = 'transactions.list_item.heartbeat'
-const STATE_PROOF = 'transactions.list_item.state_proof'
-const DEFAULT = 'transactions.list_item.default'
-const INTERPRETED_TITLE = 'transactions.list_item.interpreted_title'
-const SWAP_SUBTITLE = 'transactions.list_item.swap_subtitle'
-const INNER_TRANSACTION_COUNT = 'transactions.list_item.inner_transaction_count'
-
-/** Every i18n key a history summary can carry. */
-export const ALGORAND_HISTORY_SUMMARY_KEYS = [
-    SEND,
-    RECEIVE,
-    SWAP,
-    OPT_IN,
-    OPT_OUT,
-    ASSET_CONFIG,
-    ASSET_FREEZE,
-    APP_CALL,
-    KEY_REGISTRATION,
-    HEARTBEAT,
-    STATE_PROOF,
-    DEFAULT,
-    INTERPRETED_TITLE,
-    SWAP_SUBTITLE,
-    INNER_TRANSACTION_COUNT,
-] as const
+const SEND = i18nKey('transactions.list_item.send')
+const RECEIVE = i18nKey('transactions.list_item.receive')
+const SWAP = i18nKey('transactions.list_item.swap')
+const OPT_IN = i18nKey('transactions.list_item.opt_in')
+const OPT_OUT = i18nKey('transactions.list_item.opt_out')
+const ASSET_CONFIG = i18nKey('transactions.list_item.asset_config')
+const ASSET_FREEZE = i18nKey('transactions.list_item.asset_freeze')
+const APP_CALL = i18nKey('transactions.list_item.app_call')
+const KEY_REGISTRATION = i18nKey('transactions.list_item.key_registration')
+const HEARTBEAT = i18nKey('transactions.list_item.heartbeat')
+const STATE_PROOF = i18nKey('transactions.list_item.state_proof')
+const DEFAULT = i18nKey('transactions.list_item.default')
+const INTERPRETED_TITLE = i18nKey('transactions.list_item.interpreted_title')
+const SWAP_SUBTITLE = i18nKey('transactions.list_item.swap_subtitle')
+const INNER_TRANSACTION_COUNT = i18nKey(
+    'transactions.list_item.inner_transaction_count',
+)
 
 /** Trailing zeros below this are trimmed, so whole amounts stay short. */
 const MIN_FRACTION_DIGITS = 2
@@ -113,7 +98,7 @@ const netTransferAmount = (
     return paid
 }
 
-const text = (key: string, params?: Record<string, string>): LocalizedText =>
+const text = (key: I18nKey, params?: Record<string, string>): LocalizedText =>
     params ? { key, params } : { key }
 
 const assetRefOf = (assetId: string): AssetRef => ({
@@ -241,7 +226,7 @@ const classifiedSummary = (
         counterparty,
     } as const
     const chainSpecific = (
-        key: string,
+        key: I18nKey,
         icon: TransactionSummary['icon'],
     ): TransactionSummary => ({
         kind: 'chain-specific',

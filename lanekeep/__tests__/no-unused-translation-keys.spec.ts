@@ -20,7 +20,7 @@ describe('pera/no-unused-translation-keys', () => {
 
         expect(messages).toContain('"orphan.never" is not used anywhere')
         expect(messages).toContain(
-            'error key "errors.orphan_one" is not claimed by a messageKey, a keysFor() base or a t() call',
+            'error key "errors.orphan_one" is not claimed by an i18nKey() call or a t() call',
         )
     })
 })

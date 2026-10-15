@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWDialog, PWImage, PWText, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -25,9 +26,9 @@ type MultisigIntroductionDialogProps = {
 }
 
 const BULLET_KEYS = [
-    'multisig.introduction.bullet_1',
-    'multisig.introduction.bullet_2',
-    'multisig.introduction.bullet_3',
+    i18nKey('multisig.introduction.bullet_1'),
+    i18nKey('multisig.introduction.bullet_2'),
+    i18nKey('multisig.introduction.bullet_3'),
 ] as const
 
 export const MultisigIntroductionDialog = ({

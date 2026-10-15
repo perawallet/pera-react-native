@@ -11,6 +11,7 @@
  */
 
 import { useState } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWSheetLayout, PWSwitch, PWText, PWView } from '@components/core'
 import { SEARCH_SCOPES, type SearchScope } from '@perawallet/wallet-core-search'
 import { SheetHeader } from '@modules/bottom-sheet'
@@ -22,10 +23,10 @@ export type SearchFilterContentProps = {
     onToggleScope: (scope: SearchScope) => void
 }
 
-const SCOPE_LABEL_KEYS: Record<SearchScope, string> = {
-    accounts: 'search.filter.accounts',
-    contacts: 'search.filter.contacts',
-    assets: 'search.filter.assets',
+const SCOPE_LABEL_KEYS: Record<SearchScope, I18nKey> = {
+    accounts: i18nKey('search.filter.accounts'),
+    contacts: i18nKey('search.filter.contacts'),
+    assets: i18nKey('search.filter.assets'),
 }
 
 export const SearchFilterContent = ({

@@ -11,3 +11,4 @@
  */
 
 export { RekeyConfirmView } from './RekeyConfirmView'
+export type { RekeyConfirmCopy } from './RekeyConfirmView'

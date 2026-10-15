@@ -26,6 +26,7 @@ import {
 import {
     LEGACY_CHAIN_ID,
     type TransactionNative,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getNetworkErrorMessageKeys,
@@ -51,7 +52,7 @@ type TransactionDetailsRenderState =
     | { kind: 'content'; transaction: TransactionNative }
     | { kind: 'loading' }
     | { kind: 'offline' }
-    | { kind: 'error'; titleKey: string; bodyKey: string }
+    | { kind: 'error'; titleKey: I18nKey; bodyKey: I18nKey }
 
 type UseTransactionDetailsScreenResult = {
     renderState: TransactionDetailsRenderState

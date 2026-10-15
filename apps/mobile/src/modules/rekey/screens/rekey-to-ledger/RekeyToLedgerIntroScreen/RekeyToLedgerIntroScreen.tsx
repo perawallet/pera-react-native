@@ -10,14 +10,31 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
+import {
+    RekeyIntroScreen,
+    type RekeyIntroCopy,
+} from '../../../components/RekeyIntroScreen'
+
+const INTRO_COPY: RekeyIntroCopy = {
+    titleKey: i18nKey('rekey.to_ledger.intro.title'),
+    bodyKey: i18nKey('rekey.to_ledger.intro.body'),
+    learnMoreKey: i18nKey('rekey.to_ledger.intro.learn_more'),
+    expectLabelKey: i18nKey('rekey.to_ledger.intro.expect_label'),
+    ctaKey: i18nKey('rekey.to_ledger.intro.cta'),
+    expectationKeys: [
+        i18nKey('rekey.to_ledger.intro.expect_1'),
+        i18nKey('rekey.to_ledger.intro.expect_2'),
+        i18nKey('rekey.to_ledger.intro.expect_3'),
+        i18nKey('rekey.to_ledger.intro.expect_4'),
+    ],
+}
 
 export const RekeyToLedgerIntroScreen = () => (
     <RekeyIntroScreen
-        i18nBaseKey='rekey.to_ledger.intro'
+        copy={INTRO_COPY}
         testIdPrefix='rekey-to-ledger'
-        expectationCount={4}
         navConfig={{
             parentRoute: 'RekeyToLedger',
             selectTargetScreen: 'RekeyToLedgerSelectTarget',

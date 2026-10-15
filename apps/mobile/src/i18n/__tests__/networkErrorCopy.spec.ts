@@ -13,7 +13,6 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import { AlgodErrorCode } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import en from '../locales/en.json'
 
 const errors = en.errors as Record<string, unknown>
@@ -58,23 +57,5 @@ describe('network/api error copy', () => {
         expect(
             (errors.algod as Record<string, unknown>).network_unavailable,
         ).toBeUndefined()
-    })
-
-    it('has title and body copy for every AlgodErrorCode', () => {
-        const algod = errors.algod as Record<
-            string,
-            { title?: string; body?: string }
-        >
-        for (const code of Object.values(AlgodErrorCode)) {
-            if (code === AlgodErrorCode.NETWORK_UNAVAILABLE) continue
-
-            expect(
-                typeof algod[code]?.title,
-                `errors.algod.${code}.title`,
-            ).toBe('string')
-            expect(typeof algod[code]?.body, `errors.algod.${code}.body`).toBe(
-                'string',
-            )
-        }
     })
 })

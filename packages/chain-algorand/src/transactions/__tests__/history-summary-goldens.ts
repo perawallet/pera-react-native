@@ -11,9 +11,10 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type {
-    AssetRef,
-    TransactionSummary,
+import {
+    type AssetRef,
+    type TransactionSummary,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     TransactionHistoryItem,
@@ -70,7 +71,9 @@ const item = (
     ...overrides,
 })
 
-const key = (name: string) => ({ key: `transactions.list_item.${name}` })
+const key = (name: string) => ({
+    key: i18nKey(`transactions.list_item.${name}`),
+})
 
 const none = (
     name: string,
@@ -351,7 +354,9 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'none',
                 icon: 'contract-call',
                 subtitle: {
-                    key: 'transactions.list_item.inner_transaction_count',
+                    key: i18nKey(
+                        'transactions.list_item.inner_transaction_count',
+                    ),
                     params: { innerCount: '3' },
                 },
                 balanceChanges: [
@@ -402,7 +407,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 direction: 'in',
                 icon: 'swap',
                 subtitle: {
-                    key: 'transactions.list_item.swap_subtitle',
+                    key: i18nKey('transactions.list_item.swap_subtitle'),
                     params: {
                         amountIn: '2.00',
                         assetIn: 'ALGO',
@@ -432,7 +437,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
             summary: {
                 kind: 'transfer',
                 title: {
-                    key: 'transactions.list_item.interpreted_title',
+                    key: i18nKey('transactions.list_item.interpreted_title'),
                     params: { title: 'Received 0.5 ALGO' },
                 },
                 direction: 'in',
@@ -453,7 +458,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 ...sentHalfAlgo,
                 notice: {
                     kind: 'warning',
-                    title: { key: 'transactions.notice.pending' },
+                    title: { key: i18nKey('transactions.notice.pending') },
                     since: 1_700_000_000_000,
                 },
             },
@@ -466,7 +471,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 ...sentHalfAlgo,
                 notice: {
                     kind: 'error',
-                    title: { key: 'transactions.notice.failed' },
+                    title: { key: i18nKey('transactions.notice.failed') },
                 },
             },
         },
@@ -478,7 +483,7 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 ...sentHalfAlgo,
                 notice: {
                     kind: 'warning',
-                    title: { key: 'transactions.notice.replaced' },
+                    title: { key: i18nKey('transactions.notice.replaced') },
                 },
             },
         },

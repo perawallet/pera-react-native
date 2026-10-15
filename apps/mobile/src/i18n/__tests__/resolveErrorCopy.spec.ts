@@ -18,6 +18,7 @@ import {
     PeraNetworkError,
     logger,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { SubmissionError, SigningError } from '@perawallet/wallet-core-signing'
 import { resolveErrorCopy } from '../resolveErrorCopy'
 
@@ -160,7 +161,7 @@ describe('resolveErrorCopy', () => {
     it('resolves a declared messageKey as the body', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.webview.unsupported_url',
+            messageKey: i18nKey('errors.webview.unsupported_url'),
         })
 
         const result = resolveErrorCopy(
@@ -177,7 +178,7 @@ describe('resolveErrorCopy', () => {
         const spy = vi.fn((key: string) => key)
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.webview.unsupported_url',
+            messageKey: i18nKey('errors.webview.unsupported_url'),
             params: { url: 'ABC' },
         })
 
@@ -191,7 +192,7 @@ describe('resolveErrorCopy', () => {
     it('derives the title from the error category', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.ACCOUNTS,
-            messageKey: 'errors.account.no_hd_wallet',
+            messageKey: i18nKey('errors.account.no_hd_wallet'),
         })
 
         const result = resolveErrorCopy(
@@ -210,7 +211,7 @@ describe('resolveErrorCopy', () => {
         // branch, the generic blockchain copy would win over the specific one.
         const error = new AppError('duplicate', {
             category: ErrorCategory.BLOCKCHAIN,
-            messageKey: 'errors.blockchain.generic',
+            messageKey: i18nKey('errors.blockchain.generic'),
         })
         describing(error)
 
@@ -241,7 +242,7 @@ describe('resolveErrorCopy', () => {
     it('keeps an AppError the chain does not describe on its own copy', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.webview.unsupported_url',
+            messageKey: i18nKey('errors.webview.unsupported_url'),
         })
 
         const result = resolveErrorCopy(
@@ -257,7 +258,7 @@ describe('resolveErrorCopy', () => {
     it('lets an explicit fallback title win over the category title', () => {
         const error = new AppError('log only', {
             category: ErrorCategory.ACCOUNTS,
-            messageKey: 'errors.account.no_hd_wallet',
+            messageKey: i18nKey('errors.account.no_hd_wallet'),
         })
 
         const result = resolveErrorCopy(
@@ -273,7 +274,7 @@ describe('resolveErrorCopy', () => {
     it('renders a SigningError that forwards a KMS key under the signing title', () => {
         const result = resolveErrorCopy(
             new SigningError('key missing', undefined, {
-                messageKey: 'errors.kms.key_not_found',
+                messageKey: i18nKey('errors.kms.key_not_found'),
             }),
             t,
             undefined,

@@ -11,4 +11,3 @@
  */
 
 export { ethereumHistoryAdapter } from './adapter'
-export { ETHEREUM_HISTORY_SUMMARY_KEYS } from './summarize'

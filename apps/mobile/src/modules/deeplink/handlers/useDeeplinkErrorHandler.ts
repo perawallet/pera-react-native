@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { DEEPLINK_TIMEOUT_TAG } from './timeout'
@@ -36,50 +37,50 @@ export type ShowDeeplinkErrorParams = {
 
 export type ShowDeeplinkError = (params: ShowDeeplinkErrorParams) => void
 
-const MESSAGE_KEYS: Record<Variant, { title: string; body: string }> = {
+const MESSAGE_KEYS: Record<Variant, { title: I18nKey; body: I18nKey }> = {
     generic: {
-        title: 'deeplink.error.title_generic',
-        body: 'deeplink.error.body_generic',
+        title: i18nKey('deeplink.error.title_generic'),
+        body: i18nKey('deeplink.error.body_generic'),
     },
     walletconnect: {
-        title: 'deeplink.error.title_walletconnect',
-        body: 'deeplink.error.body_walletconnect',
+        title: i18nKey('deeplink.error.title_walletconnect'),
+        body: i18nKey('deeplink.error.body_walletconnect'),
     },
     walletconnect_timeout: {
-        title: 'deeplink.error.title_walletconnect',
-        body: 'deeplink.error.body_walletconnect_timeout',
+        title: i18nKey('deeplink.error.title_walletconnect'),
+        body: i18nKey('deeplink.error.body_walletconnect_timeout'),
     },
     walletconnect_unsupported: {
-        title: 'deeplink.error.title_wc_unsupported',
-        body: 'deeplink.error.body_wc_unsupported',
+        title: i18nKey('deeplink.error.title_wc_unsupported'),
+        body: i18nKey('deeplink.error.body_wc_unsupported'),
     },
     keyreg: {
-        title: 'deeplink.error.title_keyreg',
-        body: 'deeplink.error.body_keyreg',
+        title: i18nKey('deeplink.error.title_keyreg'),
+        body: i18nKey('deeplink.error.body_keyreg'),
     },
     'keyreg-unknown-account': {
-        title: 'deeplink.error.title_keyreg',
-        body: 'deeplink.error.body_keyreg_unknown_account',
+        title: i18nKey('deeplink.error.title_keyreg'),
+        body: i18nKey('deeplink.error.body_keyreg_unknown_account'),
     },
     'keyreg-cannot-sign': {
-        title: 'deeplink.error.title_keyreg',
-        body: 'deeplink.error.body_keyreg_cannot_sign',
+        title: i18nKey('deeplink.error.title_keyreg'),
+        body: i18nKey('deeplink.error.body_keyreg_cannot_sign'),
     },
     'keyreg-network-mismatch': {
-        title: 'deeplink.error.title_keyreg',
-        body: 'deeplink.error.body_keyreg_network_mismatch',
+        title: i18nKey('deeplink.error.title_keyreg'),
+        body: i18nKey('deeplink.error.body_keyreg_network_mismatch'),
     },
     recover: {
-        title: 'deeplink.error.title_recover',
-        body: 'deeplink.error.body_recover',
+        title: i18nKey('deeplink.error.title_recover'),
+        body: i18nKey('deeplink.error.body_recover'),
     },
     recover_duplicate: {
-        title: 'deeplink.error.title_recover',
-        body: 'deeplink.error.body_recover_duplicate',
+        title: i18nKey('deeplink.error.title_recover'),
+        body: i18nKey('deeplink.error.body_recover_duplicate'),
     },
     timeout: {
-        title: 'deeplink.error.title_timeout',
-        body: 'deeplink.error.body_timeout',
+        title: i18nKey('deeplink.error.title_timeout'),
+        body: i18nKey('deeplink.error.body_timeout'),
     },
 }
 

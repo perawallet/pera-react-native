@@ -10,9 +10,23 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyConfirmView } from '../../../components/RekeyConfirmView'
+import {
+    RekeyConfirmView,
+    type RekeyConfirmCopy,
+} from '../../../components/RekeyConfirmView'
 import { useRekeyToQuantumConfirmScreen } from './useRekeyToQuantumConfirmScreen'
+
+const CONFIRM_COPY: RekeyConfirmCopy = {
+    titleKey: i18nKey('rekey.to_quantum.confirm.title'),
+    bodyKey: i18nKey('rekey.to_quantum.confirm.body'),
+    learnMoreKey: i18nKey('rekey.to_quantum.confirm.learn_more'),
+    currentAuthLabelKey: i18nKey('rekey.to_quantum.confirm.current_auth_label'),
+    feeLabelKey: i18nKey('rekey.to_quantum.confirm.fee_label'),
+    summaryLabelKey: i18nKey('rekey.to_quantum.confirm.summary_label'),
+    ctaKey: i18nKey('rekey.to_quantum.confirm.cta'),
+}
 
 export const RekeyToQuantumConfirmScreen = () => {
     const { handleConfirmPress, ...rest } = useRekeyToQuantumConfirmScreen()
@@ -20,7 +34,7 @@ export const RekeyToQuantumConfirmScreen = () => {
     return (
         <RekeyConfirmView
             {...rest}
-            i18nPrefix='rekey.to_quantum.confirm'
+            copy={CONFIRM_COPY}
             testIDPrefix='rekey-to-quantum'
             supportUrl={config.quantumAccountSupportUrl}
             onConfirmPress={handleConfirmPress}

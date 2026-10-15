@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { PWInputRef } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -24,8 +25,8 @@ export type UseImportAccountScreenResult = {
     handleWordChange: (word: string, index: number) => void
     handleImportAccount: () => void
     mnemonicLength: number
-    titleKey: string
-    infoNoteKey: string | null
+    titleKey: I18nKey
+    infoNoteKey: I18nKey | null
     t: (key: string) => string
     handleOpenSupportOptions: () => void
     isQRScannerVisible: boolean

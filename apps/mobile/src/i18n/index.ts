@@ -48,7 +48,7 @@ void i18n.use(initReactI18next).init({
     interpolation: {
         escapeValue: false, // react already safes from xss
     },
-    // Surfaces dynamically-built keys (e.g. t(`errors.algod.${code}.title`))
+    // Surfaces dynamically-built keys (e.g. t(`transactions.type.${type}`))
     // that the i18n lint rules can't see. __DEV__-only:
     // production must not pay for the bookkeeping or warn on users' devices.
     saveMissing: __DEV__,

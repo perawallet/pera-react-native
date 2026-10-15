@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWInfoView, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { UserPreferences } from '@constants/user-preferences'
@@ -35,8 +36,8 @@ export const LegacyQuantumPrompt = ({ onDismiss }: PromptViewProps) => {
     }, [onDismiss])
 
     const bodyKey = shouldUseDependentAwareCopy
-        ? 'accounts.legacyQuantum.bodyWithDependents'
-        : 'accounts.legacyQuantum.body'
+        ? i18nKey('accounts.legacyQuantum.bodyWithDependents')
+        : i18nKey('accounts.legacyQuantum.body')
 
     return (
         <PWView

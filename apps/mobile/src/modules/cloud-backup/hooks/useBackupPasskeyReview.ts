@@ -21,6 +21,7 @@ import {
     type BackupPasskeyReview,
     type BackupReviewAction,
 } from '@perawallet/wallet-core-backup'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { NoConnectionError, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -46,19 +47,19 @@ export type UseBackupPasskeyReviewResult = {
 
 const TOAST_KEY: Record<
     BackupReviewAction,
-    { success: string; error: string }
+    { success: I18nKey; error: I18nKey }
 > = {
     backUp: {
-        success: 'cloud_backup.passkeys.back_up_success',
-        error: 'cloud_backup.passkeys.back_up_error',
+        success: i18nKey('cloud_backup.passkeys.back_up_success'),
+        error: i18nKey('cloud_backup.passkeys.back_up_error'),
     },
     add: {
-        success: 'cloud_backup.passkeys.add_success',
-        error: 'cloud_backup.passkeys.add_error',
+        success: i18nKey('cloud_backup.passkeys.add_success'),
+        error: i18nKey('cloud_backup.passkeys.add_error'),
     },
     delete: {
-        success: 'cloud_backup.passkeys.delete_success',
-        error: 'cloud_backup.passkeys.delete_error',
+        success: i18nKey('cloud_backup.passkeys.delete_success'),
+        error: i18nKey('cloud_backup.passkeys.delete_error'),
     },
 }
 

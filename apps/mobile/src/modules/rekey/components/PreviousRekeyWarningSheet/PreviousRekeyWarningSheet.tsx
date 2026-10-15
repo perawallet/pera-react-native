@@ -11,19 +11,26 @@
  */
 
 import { Trans } from 'react-i18next'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 
-export type PreviousRekeyWarningSheetProps = {
+export type RekeyWarningCopy = {
+    titleKey: I18nKey
     /**
-     * i18n base key for the sheet copy. Expected children:
-     * `{i18nPrefix}.title`, `.body`, `.confirm`, `.cancel`. The `body` Trans
-     * interpolates `currentAuth` and `source`; component children at indexes 0
-     * and 1 are bodySemibold spans for those names, and index 2 is the
-     * `Learn more` link pressed via {@link onLearnMore}.
+     * Rendered through `Trans`, interpolating `currentAuth` and `source`;
+     * component children at indexes 0 and 1 are bodySemibold spans for those
+     * names, and index 2 is the `Learn more` link pressed via
+     * {@link PreviousRekeyWarningSheetProps.onLearnMore}.
      */
-    i18nPrefix: string
+    bodyKey: I18nKey
+    confirmKey: I18nKey
+    cancelKey: I18nKey
+}
+
+export type PreviousRekeyWarningSheetProps = {
+    copy: RekeyWarningCopy
     testID: string
     currentAuthName: string
     sourceName: string
@@ -33,7 +40,7 @@ export type PreviousRekeyWarningSheetProps = {
 }
 
 export const PreviousRekeyWarningSheet = ({
-    i18nPrefix,
+    copy,
     testID,
     currentAuthName,
     sourceName,
@@ -45,11 +52,11 @@ export const PreviousRekeyWarningSheet = ({
         <ConfirmActionContent
             icon='warning'
             iconVariant='error'
-            title={t(`${i18nPrefix}.title`)}
+            title={t(copy.titleKey)}
             message={
                 <PWText variant='body'>
                     <Trans
-                        i18nKey={`${i18nPrefix}.body`}
+                        i18nKey={copy.bodyKey}
                         values={{
                             currentAuth: currentAuthName,
                             source: sourceName,
@@ -72,8 +79,8 @@ export const PreviousRekeyWarningSheet = ({
                     />
                 </PWText>
             }
-            confirmLabel={t(`${i18nPrefix}.confirm`)}
-            cancelLabel={t(`${i18nPrefix}.cancel`)}
+            confirmLabel={t(copy.confirmKey)}
+            cancelLabel={t(copy.cancelKey)}
             confirmVariant={confirmVariant}
             testID={testID}
         />

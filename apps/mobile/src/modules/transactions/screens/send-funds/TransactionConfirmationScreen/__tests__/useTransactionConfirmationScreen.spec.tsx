@@ -24,6 +24,7 @@ import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
     useRecipientWarningQuery,
@@ -160,8 +161,15 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 }))
 
 const RECIPIENT_WARNING: ChainNotice = {
-    title: { key: 'recipient.title' },
-    body: [{ key: 'recipient.body', params: { min: '0.1' } }],
+    title: {
+        key: i18nKey('send_funds.confirmation.recipient_below_mbr.title'),
+    },
+    body: [
+        {
+            key: i18nKey('send_funds.confirmation.recipient_below_mbr.body'),
+            params: { min: '0.1' },
+        },
+    ],
 }
 
 describe('useTransactionConfirmationScreen', () => {
@@ -495,8 +503,8 @@ describe('useTransactionConfirmationScreen', () => {
             expect(mockNavigate).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    title: 'recipient.title',
-                    body: 'recipient.body',
+                    title: 'send_funds.confirmation.recipient_below_mbr.title',
+                    body: 'send_funds.confirmation.recipient_below_mbr.body',
                     type: 'error',
                 }),
                 expect.anything(),

@@ -10,19 +10,15 @@
  limitations under the License
  */
 
-import type { TransactionNotice } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type TransactionNotice,
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryStatus } from '../models/types'
 
-const PENDING = 'transactions.notice.pending'
-const FAILED = 'transactions.notice.failed'
-const REPLACED = 'transactions.notice.replaced'
-
-/** Every i18n key {@link transactionStatusNotice} can emit; a chain module lists them in `i18nKeys()`. */
-export const TRANSACTION_STATUS_NOTICE_KEYS = [
-    PENDING,
-    FAILED,
-    REPLACED,
-] as const
+const PENDING = i18nKey('transactions.notice.pending')
+const FAILED = i18nKey('transactions.notice.failed')
+const REPLACED = i18nKey('transactions.notice.replaced')
 
 /**
  * The notice a summary carries for a non-final status; undefined for a

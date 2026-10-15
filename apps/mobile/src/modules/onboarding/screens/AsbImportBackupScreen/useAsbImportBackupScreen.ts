@@ -16,7 +16,10 @@ import {
     SecureBackupImportError,
     parseBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -41,7 +44,7 @@ type UseAsbImportBackupScreenResult = {
     handleContinue: () => void
 }
 
-const PASTED_FILE_NAME_KEY = 'onboarding.asb_import.backup.pasted_name'
+const PASTED_FILE_NAME_KEY = i18nKey('onboarding.asb_import.backup.pasted_name')
 
 export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     const navigation = useAppNavigation()

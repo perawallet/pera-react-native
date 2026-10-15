@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { uriSchemeOf } from '@perawallet/wallet-core-deeplinks'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { isValidAlgorandAddress } from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 

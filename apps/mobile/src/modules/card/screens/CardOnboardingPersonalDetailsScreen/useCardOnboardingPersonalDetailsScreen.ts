@@ -37,6 +37,7 @@ import {
     type PersonalDetailsFormValues,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
@@ -87,15 +88,15 @@ export const useCardOnboardingPersonalDetailsScreen =
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.personal_details.error_title',
-            bodyKey: 'peraCard.personal_details.error_body',
+            titleKey: i18nKey('peraCard.personal_details.error_title'),
+            bodyKey: i18nKey('peraCard.personal_details.error_body'),
         })
         // Baanx's own wording for this is "User is not verified", which reads
         // as an account problem rather than an unfinished step, so this toast
         // always uses our copy.
         const showKycError = useCardErrorToast({
-            titleKey: 'peraCard.kyc_required.title',
-            bodyKey: 'peraCard.kyc_required.body',
+            titleKey: i18nKey('peraCard.kyc_required.title'),
+            bodyKey: i18nKey('peraCard.kyc_required.body'),
             shouldUseBackendMessage: false,
         })
         const { request } = useBottomSheet()

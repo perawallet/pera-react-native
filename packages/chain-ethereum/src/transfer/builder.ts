@@ -45,10 +45,7 @@ import type { EthereumTransactionPayload } from '../signing/adapter'
 import { readTransferFees, toEthereumFeeEstimate } from './fees'
 import { allocateEthereumNonce } from './nonce-pool'
 import { readEthereumSpendableBalance } from './spendable-balance'
-import { SEND_TITLE_KEY, sendSummary } from './summary'
-
-/** Every i18n key a built transaction's summary can carry. */
-export const ETHEREUM_TRANSFER_TITLE_KEYS = [SEND_TITLE_KEY] as const
+import { sendSummary } from './summary'
 
 const MAX_UINT256 = new Decimal(maxUint256.toString())
 

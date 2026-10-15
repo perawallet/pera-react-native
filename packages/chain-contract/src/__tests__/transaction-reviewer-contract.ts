@@ -17,6 +17,7 @@ import type {
     TransactionReviewer,
 } from '../contracts/transaction-reviewer'
 import type { UnsignedTransaction } from '../models/domain'
+import { i18nKey } from '../models/i18n'
 import type { ChainId } from '../models/identity'
 
 export interface TransactionReviewerContractFixtures {
@@ -176,7 +177,7 @@ export const transactionReviewerContractTests = (
                 ...transaction,
                 summary: {
                     kind: 'transfer' as const,
-                    title: { key: 'claimed' },
+                    title: { key: i18nKey('claimed') },
                     direction: 'out' as const,
                     counterparty: fixtures.signer,
                     icon: 'send' as const,

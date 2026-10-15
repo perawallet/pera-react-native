@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { createLocalKeyStrategy } from '../createLocalKeyStrategy'
 import {
     asUnsignedAlgorandTransaction,
@@ -543,7 +544,7 @@ describe('createLocalKeyStrategy', () => {
                 signTransactions.mockRejectedValue(
                     new AppError('bad request', {
                         category: ErrorCategory.VALIDATION,
-                        messageKey: 'errors.webview.invalid_method',
+                        messageKey: i18nKey('errors.webview.invalid_method'),
                     }),
                 )
 

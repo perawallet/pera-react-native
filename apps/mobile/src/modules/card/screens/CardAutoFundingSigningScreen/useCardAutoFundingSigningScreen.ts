@@ -21,7 +21,10 @@ import {
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useAutoDrawSwitch,
@@ -83,8 +86,8 @@ export const useCardAutoFundingSigningScreen =
         // and this toast both stay human-readable, and the real error goes to
         // the logger below.
         const showError = useCardErrorToast({
-            titleKey: 'peraCard.auto_funding_signing.error_title',
-            bodyKey: 'peraCard.auto_funding_signing.error_body',
+            titleKey: i18nKey('peraCard.auto_funding_signing.error_title'),
+            bodyKey: i18nKey('peraCard.auto_funding_signing.error_body'),
             shouldUseBackendMessage: false,
         })
 

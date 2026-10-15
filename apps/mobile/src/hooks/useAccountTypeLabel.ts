@@ -11,7 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
@@ -82,7 +85,9 @@ export const useAccountTypeLabel = (
             return { label, ...splitAccountTypeLabel(label) }
         }
 
-        return plain(t(presentation?.labelKey ?? 'account_info.type_unknown'))
+        return plain(
+            t(presentation?.labelKey ?? i18nKey('account_info.type_unknown')),
+        )
     }, [
         account,
         authority,

@@ -20,6 +20,7 @@ import {
     type Mock,
 } from 'vitest'
 import { cleanup, renderHook, waitFor } from '@testing-library/react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
@@ -681,7 +682,7 @@ describe('useConnectionsProvider', () => {
 
             errorSubscription.listener?.(
                 new AppError('No connection handler accepts this URI', {
-                    messageKey: 'errors.connections.no_handler',
+                    messageKey: i18nKey('errors.connections.no_handler'),
                 }),
                 scoped('client-1'),
             )

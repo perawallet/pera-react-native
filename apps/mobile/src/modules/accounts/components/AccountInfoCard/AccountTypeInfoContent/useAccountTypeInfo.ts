@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
@@ -42,13 +45,13 @@ type UseAccountTypeInfoResult = {
 }
 
 const REKEYED_UNSIGNABLE_I18N = {
-    title: 'account_type_info.no_auth_title',
-    description: 'account_type_info.no_auth_description',
+    title: i18nKey('account_type_info.no_auth_title'),
+    description: i18nKey('account_type_info.no_auth_description'),
 }
 
 const REKEYED_SIGNABLE_I18N = {
-    title: 'account_type_info.rekeyed_standard_title',
-    description: 'account_type_info.rekeyed_standard_description',
+    title: i18nKey('account_type_info.rekeyed_standard_title'),
+    description: i18nKey('account_type_info.rekeyed_standard_description'),
 }
 
 export const useAccountTypeInfo = ({

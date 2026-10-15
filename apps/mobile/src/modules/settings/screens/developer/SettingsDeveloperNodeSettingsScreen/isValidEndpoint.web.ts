@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 
 // Mirrors the extension CSP's connect-src (apps/browser/scripts/csp.mjs), which
@@ -32,5 +33,6 @@ export const isValidEndpoint = (value: string): boolean => {
     }
 }
 
-export const INVALID_ENDPOINT_MESSAGE_KEY =
-    'settings.developer.node_settings.invalid_https_url'
+export const INVALID_ENDPOINT_MESSAGE_KEY: I18nKey = i18nKey(
+    'settings.developer.node_settings.invalid_https_url',
+)

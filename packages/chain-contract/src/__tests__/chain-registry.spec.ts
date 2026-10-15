@@ -114,7 +114,6 @@ const moduleWith = (overrides: Partial<ChainModule> = {}): ChainModule => ({
     descriptor,
     capabilityDefaults: build,
     register: vi.fn(),
-    i18nKeys: () => [],
     ...overrides,
 })
 

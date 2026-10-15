@@ -16,10 +16,11 @@
 
 import type { Decimal } from 'decimal.js'
 import type { ChainDescriptor } from './descriptor'
+import type { I18nKey } from './i18n'
 import type { ChainFamily, ChainId, ChainScope, NetworkId } from './identity'
 
 /** An i18n key plus its interpolation params, resolved by the UI. */
-export type LocalizedText = { key: string; params?: Record<string, string> }
+export type LocalizedText = { key: I18nKey; params?: Record<string, string> }
 
 export interface AssetRef {
     chainId: ChainId

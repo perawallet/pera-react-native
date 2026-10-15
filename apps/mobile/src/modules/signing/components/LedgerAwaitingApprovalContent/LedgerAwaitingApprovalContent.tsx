@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWLottie, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -26,6 +27,32 @@ export type LedgerAwaitingApprovalContentProps = {
     totalTxs: number | null
     operation: HardwareSigningOperation
     onCancel: () => void
+}
+
+type AwaitingApprovalCopy = {
+    titleKey: I18nKey
+    bodyKey: I18nKey
+    bodyNoDeviceKey: I18nKey
+}
+
+const COPY_BY_OPERATION: Record<
+    HardwareSigningOperation,
+    AwaitingApprovalCopy
+> = {
+    transaction: {
+        titleKey: i18nKey('ledger.signing.awaitingApproval.title'),
+        bodyKey: i18nKey('ledger.signing.awaitingApproval.body'),
+        bodyNoDeviceKey: i18nKey(
+            'ledger.signing.awaitingApproval.body_noDevice',
+        ),
+    },
+    data: {
+        titleKey: i18nKey('ledger.signing.awaitingApprovalData.title'),
+        bodyKey: i18nKey('ledger.signing.awaitingApprovalData.body'),
+        bodyNoDeviceKey: i18nKey(
+            'ledger.signing.awaitingApprovalData.body_noDevice',
+        ),
+    },
 }
 
 export const LedgerAwaitingApprovalContent = ({
@@ -47,15 +74,9 @@ export const LedgerAwaitingApprovalContent = ({
         typeof totalTxs === 'number' &&
         totalTxs > 1
 
-    const contentNs =
-        operation === 'data'
-            ? 'ledger.signing.awaitingApprovalData'
-            : 'ledger.signing.awaitingApproval'
-
-    const titleKey = `${contentNs}.title`
-    const bodyKey = deviceName
-        ? `${contentNs}.body`
-        : `${contentNs}.body_noDevice`
+    const copy = COPY_BY_OPERATION[operation]
+    const titleKey = copy.titleKey
+    const bodyKey = deviceName ? copy.bodyKey : copy.bodyNoDeviceKey
 
     const progressFillPercent =
         showProgress && totalTxs !== null && totalTxs > 0 && currentTx !== null

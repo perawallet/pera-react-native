@@ -12,6 +12,7 @@
 
 import { useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWChip,
@@ -30,16 +31,16 @@ import cloudBackupIntroHeroLight from '@assets/images/cloud-backup-intro-hero-li
 
 const STEP_KEYS = [
     {
-        title: 'cloud_backup.intro.encryption_title',
-        description: 'cloud_backup.intro.encryption_description',
+        title: i18nKey('cloud_backup.intro.encryption_title'),
+        description: i18nKey('cloud_backup.intro.encryption_description'),
     },
     {
-        title: 'cloud_backup.intro.sync_title',
-        description: 'cloud_backup.intro.sync_description',
+        title: i18nKey('cloud_backup.intro.sync_title'),
+        description: i18nKey('cloud_backup.intro.sync_description'),
     },
     {
-        title: 'cloud_backup.intro.recovery_title',
-        description: 'cloud_backup.intro.recovery_description',
+        title: i18nKey('cloud_backup.intro.recovery_title'),
+        description: i18nKey('cloud_backup.intro.recovery_description'),
     },
 ] as const
 

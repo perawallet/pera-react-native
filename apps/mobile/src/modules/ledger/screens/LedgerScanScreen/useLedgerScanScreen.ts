@@ -12,6 +12,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -42,19 +43,19 @@ import { isScanGestureRequired } from '../../utils/scanGesture'
  * `CBManagerState` → banner mapping on the device-list screen.
  */
 const BLUETOOTH_TOAST_COPY: Partial<
-    Record<HardwareWalletAdapterState, { titleKey: string; bodyKey: string }>
+    Record<HardwareWalletAdapterState, { titleKey: I18nKey; bodyKey: I18nKey }>
 > = {
     poweredOff: {
-        titleKey: 'ledger.scan.bluetooth.off_title',
-        bodyKey: 'ledger.scan.bluetooth.off',
+        titleKey: i18nKey('ledger.scan.bluetooth.off_title'),
+        bodyKey: i18nKey('ledger.scan.bluetooth.off'),
     },
     unauthorized: {
-        titleKey: 'ledger.scan.bluetooth.unauthorized_title',
-        bodyKey: 'ledger.scan.bluetooth.unauthorized',
+        titleKey: i18nKey('ledger.scan.bluetooth.unauthorized_title'),
+        bodyKey: i18nKey('ledger.scan.bluetooth.unauthorized'),
     },
     unsupported: {
-        titleKey: 'ledger.scan.bluetooth.unsupported_title',
-        bodyKey: 'ledger.scan.bluetooth.unsupported',
+        titleKey: i18nKey('ledger.scan.bluetooth.unsupported_title'),
+        bodyKey: i18nKey('ledger.scan.bluetooth.unsupported'),
     },
 }
 

@@ -10,9 +10,23 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyConfirmView } from '../../../components/RekeyConfirmView'
+import {
+    RekeyConfirmView,
+    type RekeyConfirmCopy,
+} from '../../../components/RekeyConfirmView'
 import { useRekeyToSharedConfirmScreen } from './useRekeyToSharedConfirmScreen'
+
+const CONFIRM_COPY: RekeyConfirmCopy = {
+    titleKey: i18nKey('rekey.to_shared.confirm.title'),
+    bodyKey: i18nKey('rekey.to_shared.confirm.body'),
+    learnMoreKey: i18nKey('rekey.to_shared.confirm.learn_more'),
+    currentAuthLabelKey: i18nKey('rekey.to_shared.confirm.current_auth_label'),
+    feeLabelKey: i18nKey('rekey.to_shared.confirm.fee_label'),
+    summaryLabelKey: i18nKey('rekey.to_shared.confirm.summary_label'),
+    ctaKey: i18nKey('rekey.to_shared.confirm.cta'),
+}
 
 export const RekeyToSharedConfirmScreen = () => {
     const { handleConfirmPress, ...rest } = useRekeyToSharedConfirmScreen()
@@ -20,7 +34,7 @@ export const RekeyToSharedConfirmScreen = () => {
     return (
         <RekeyConfirmView
             {...rest}
-            i18nPrefix='rekey.to_shared.confirm'
+            copy={CONFIRM_COPY}
             testIDPrefix='rekey-to-shared'
             supportUrl={config.rekeyToSharedSupportUrl}
             onConfirmPress={handleConfirmPress}

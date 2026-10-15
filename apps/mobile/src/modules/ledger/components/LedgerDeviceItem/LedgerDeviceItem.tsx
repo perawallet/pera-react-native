@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWView,
     PWText,
@@ -34,9 +35,9 @@ type LedgerDeviceItemProps = {
 
 // On Android the same physical Ledger can be reachable over BLE and USB at
 // once — the badge is what distinguishes the two otherwise identical rows.
-const TRANSPORT_LABEL_KEY: Record<LedgerTransportType, string> = {
-    ble: 'ledger.scan.transport_ble',
-    usb: 'ledger.scan.transport_usb',
+const TRANSPORT_LABEL_KEY: Record<LedgerTransportType, I18nKey> = {
+    ble: i18nKey('ledger.scan.transport_ble'),
+    usb: i18nKey('ledger.scan.transport_usb'),
 }
 
 export const LedgerDeviceItem = ({
