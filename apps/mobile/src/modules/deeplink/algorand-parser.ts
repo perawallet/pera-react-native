@@ -23,7 +23,7 @@ import {
     type DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
-import { inferKeyregType, isValidAssetId } from './utils'
+import { inferKeyregType, isValidAssetId, parseBaseUnitsParam } from './utils'
 // config and Networks removed because unused
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -85,7 +85,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
                 sourceUrl: url,
                 assetId: assetId,
                 receiverAddress: address,
-                amount: amount,
+                amount: parseBaseUnitsParam(amount),
                 note: note,
                 xnote: xnote,
                 label: label,
@@ -98,7 +98,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
                 type: DeeplinkType.ALGO_TRANSFER,
                 sourceUrl: url,
                 receiverAddress: address,
-                amount: amount,
+                amount: parseBaseUnitsParam(amount),
                 note: note,
                 xnote: xnote,
                 label: label,
@@ -140,7 +140,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
             keyregType: inferKeyregType(participation),
             targetNetwork: network,
             ...participation,
-            fee: params.fee,
+            fee: parseBaseUnitsParam(params.fee),
             note: params.note,
             xnote: params.xnote,
         } as KeyregDeeplink

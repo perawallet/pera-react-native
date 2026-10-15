@@ -364,7 +364,7 @@ describe('useKeyregDeeplink', () => {
 
             await act(async () => {
                 await result.current(
-                    baseOfflineDeeplink({ note: 'going offline', fee: '2000' }),
+                    baseOfflineDeeplink({ note: 'going offline', fee: 2000n }),
                 )
             })
 
@@ -472,7 +472,7 @@ describe('useKeyregDeeplink', () => {
             const { result } = renderHook(() => useKeyregDeeplink())
 
             await act(async () => {
-                await result.current(baseOfflineDeeplink({ fee: '1000' }))
+                await result.current(baseOfflineDeeplink({ fee: 1000n }))
             })
 
             // The dApp fee reaches the builder untouched; the raise happens
@@ -527,7 +527,7 @@ describe('useKeyregDeeplink', () => {
             const { result } = renderHook(() => useKeyregDeeplink())
 
             await act(async () => {
-                await result.current(baseOfflineDeeplink({ fee: '1000' }))
+                await result.current(baseOfflineDeeplink({ fee: 1000n }))
             })
 
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
@@ -578,6 +578,25 @@ describe('useKeyregDeeplink', () => {
                     error: buildErr,
                 }),
             )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('surfaces a malformed fee through the error sheet with the "keyreg" variant, without building', async () => {
+            seedSenderInWallet()
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(baseOfflineDeeplink({ fee: null }))
+            })
+
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    variant: 'keyreg',
+                    error: expect.any(SyntaxError),
+                }),
+            )
+            expect(mockOfflineKeyRegistration).not.toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
     })

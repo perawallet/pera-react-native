@@ -1058,7 +1058,7 @@ describe('useDeepLink', () => {
             ;(parseDeeplink as Mock).mockReturnValue({
                 type: DeeplinkType.ALGO_TRANSFER,
                 receiverAddress: 'receiver1',
-                amount: '1000000',
+                amount: 1_000_000n,
             })
             const onError = vi.fn()
             const { result } = renderHook(() => useDeepLink())
@@ -1107,7 +1107,7 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ALGO_TRANSFER,
             receiverAddress: 'receiver1',
-            amount: '1000000',
+            amount: 1_000_000n,
             note: 'test note',
         })
         const { result } = renderHook(() => useDeepLink())
@@ -1140,7 +1140,7 @@ describe('useDeepLink', () => {
             type: DeeplinkType.ASSET_TRANSFER,
             assetId: '123',
             receiverAddress: 'receiver1',
-            amount: '100',
+            amount: 100n,
             note: 'test note',
         })
         const { result } = renderHook(() => useDeepLink())
@@ -1170,6 +1170,33 @@ describe('useDeepLink', () => {
         expect(mockSetAmount).not.toHaveBeenCalled()
         expect(mockSetPendingAmountBaseUnits).toHaveBeenCalledWith('100')
     })
+
+    it.each([DeeplinkType.ALGO_TRANSFER, DeeplinkType.ASSET_TRANSFER])(
+        'fails a %s deeplink whose amount is not an integer without opening send-funds',
+        async type => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type,
+                assetId: '123',
+                receiverAddress: 'receiver1',
+                amount: null,
+            })
+            const onError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/asset-transfer',
+                    false,
+                    'deeplink',
+                    onError,
+                )
+            })
+
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            expect(onError).toHaveBeenCalled()
+            await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        },
+    )
 
     it('should handle ASSET_OPT_IN deeplink by prompting account selection', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
@@ -2247,7 +2274,7 @@ describe('useDeepLink', () => {
             votefst: '1',
             votelst: '1000',
             votekd: '10',
-            fee: '1000',
+            fee: 1000n,
         })
         const { result } = renderHook(() => useDeepLink())
 

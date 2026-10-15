@@ -116,9 +116,9 @@ export const ethereumAddressCodec: AddressCodec = {
         }
 
         const query = new URLSearchParams(search)
-        let rawAmount: string | null
+        let amountParam: string | null
         if (fn === undefined) {
-            rawAmount = query.get('value')
+            amountParam = query.get('value')
         } else if (fn === 'transfer') {
             const recipient = query.get('address')
             if (!recipient || !isAddress(recipient)) return undefined
@@ -127,13 +127,13 @@ export const ethereumAddressCodec: AddressCodec = {
                 assetId: normalize(target),
             }
             parsed.address = normalize(recipient)
-            rawAmount = query.get('uint256')
+            amountParam = query.get('uint256')
         } else {
             return undefined
         }
 
-        if (rawAmount !== null) {
-            const amount = parseBaseUnits(rawAmount)
+        if (amountParam !== null) {
+            const amount = parseBaseUnits(amountParam)
             if (!amount) return undefined
             parsed.amount = amount
         }

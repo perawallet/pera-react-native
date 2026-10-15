@@ -156,7 +156,8 @@ type InsertAssetHoldingParams = {
     accountAddress: string
     assetId: string
     scope: ChainScope
-    amount?: string
+    /** In base units; an opt-in starts at zero. */
+    amount?: Decimal
     native?: ChainHoldingNative
 }
 
@@ -175,7 +176,7 @@ export async function insertAssetHolding({
             accountAddress,
             assetId,
             network,
-            amount: new Decimal(amount ?? '0'),
+            amount: amount ?? new Decimal(0),
             native: native ?? null,
             updatedAt: Date.now(),
         })
@@ -225,7 +226,7 @@ export async function addToAssetHolding({
             accountAddress,
             assetId,
             scope,
-            amount: amount.toString(),
+            amount,
         })
         return
     }

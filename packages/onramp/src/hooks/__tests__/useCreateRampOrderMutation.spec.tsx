@@ -12,6 +12,7 @@
 
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { setupServer } from 'msw/node'
 import React from 'react'
@@ -63,7 +64,7 @@ describe('onramp/useCreateRampOrderMutation', () => {
         const order = await result.current.mutateAsync({
             scope: { chainId: 'algorand', networkId: 'mainnet' },
             quote: 'quote-1',
-            sourceAmount: '100',
+            sourceAmount: new Decimal(100),
             sourceAddress: 'SOURCE_ADDRESS',
         })
 

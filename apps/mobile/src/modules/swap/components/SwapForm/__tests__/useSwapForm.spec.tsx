@@ -361,7 +361,7 @@ describe('useSwapForm', () => {
         // In a fresh tab the route's pay asset lands after mount, and that
         // change resets the amounts, so applying earlier would be wiped.
         const { result, rerender } = renderHook(() =>
-            useSwapForm(SCOPE, { assetId: '123', amount: '2.5' }),
+            useSwapForm(SCOPE, { assetId: '123', amount: new Decimal('2.5') }),
         )
         expect(result.current.payAmount).toBeNull()
 
@@ -374,7 +374,7 @@ describe('useSwapForm', () => {
     it('applies a resumed amount once, not again on a later return to its asset', () => {
         mockFromAsset = '123'
         const { result, rerender } = renderHook(() =>
-            useSwapForm(SCOPE, { assetId: '123', amount: '2.5' }),
+            useSwapForm(SCOPE, { assetId: '123', amount: new Decimal('2.5') }),
         )
         expect(result.current.payAmount).toEqual(new Decimal('2.5'))
 
@@ -401,7 +401,7 @@ describe('useSwapForm', () => {
 
         it('reopens the confirmation once, on a fresh quote', async () => {
             const { result } = renderHook(() =>
-                useSwapForm(SCOPE, { assetId: '0', amount: '5' }),
+                useSwapForm(SCOPE, { assetId: '0', amount: new Decimal(5) }),
             )
             await act(async () => {})
 
@@ -411,7 +411,9 @@ describe('useSwapForm', () => {
 
         it('waits for the pay balance before reopening the confirmation', async () => {
             mockIsPayBalanceFetched = false
-            renderHook(() => useSwapForm(SCOPE, { assetId: '0', amount: '5' }))
+            renderHook(() =>
+                useSwapForm(SCOPE, { assetId: '0', amount: new Decimal(5) }),
+            )
             await act(async () => {})
 
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
@@ -419,7 +421,7 @@ describe('useSwapForm', () => {
 
         it('leaves the confirmation closed once the user edits the amount', async () => {
             const { result } = renderHook(() =>
-                useSwapForm(SCOPE, { assetId: '0', amount: '5' }),
+                useSwapForm(SCOPE, { assetId: '0', amount: new Decimal(5) }),
             )
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(3))
@@ -729,7 +731,7 @@ describe('useSwapForm', () => {
     })
 
     describe('handleOpenConfirm error toast', () => {
-        const selectAQuote = async () => {
+        const selectAQuote = async (amount = new Decimal(5)) => {
             mockCreateQuotes.mockResolvedValue([
                 {
                     provider: 'tinyman',
@@ -744,7 +746,7 @@ describe('useSwapForm', () => {
             ])
             const { result } = renderHook(() => useSwapForm(SCOPE))
             await act(async () => {
-                result.current.handlePayAmountChange(new Decimal(5))
+                result.current.handlePayAmountChange(amount)
             })
             return result
         }
@@ -789,6 +791,19 @@ describe('useSwapForm', () => {
             })
 
             expect(mockClearTabResume).toHaveBeenCalledOnce()
+        })
+
+        it('hands the tab the pay amount in plain notation, never exponent form', async () => {
+            const result = await selectAQuote(new Decimal('0.0000001'))
+            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'cancelled' })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockRegisterTabResume).toHaveBeenCalledWith(
+                expect.objectContaining({ payAmount: '0.0000001' }),
+            )
         })
 
         it('hands a successful swap back to the popup with its toast copy', async () => {

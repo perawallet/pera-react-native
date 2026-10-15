@@ -18,7 +18,6 @@ import {
     useEnsureRampDestination,
     useOnramp,
     toOnrampUserMessage,
-    parseRampAmount,
     rampTokenAsset,
     type RampPair,
     type RampQuote,
@@ -44,8 +43,8 @@ import { useOnrampTerms } from './useOnrampTerms'
 type UseOnrampConfirmParams = {
     selectedPair: Nullable<RampPair>
     selectedQuote: Nullable<RampQuote>
-    /** Raw source amount string from the form. */
-    sourceAmount: string
+    /** Display units; null when no valid amount is entered. */
+    sourceAmount: Nullable<Decimal>
     destinationAmount: Nullable<Decimal>
     isMeld: boolean
     /** Switch the screen to the History tab (after an XO order is placed). */
@@ -61,8 +60,7 @@ type UseOnrampConfirmResult = {
  * Owns the "Buy" flow: the one-time Terms gate, destination opt-in (with its
  * confirmation sheet), order creation, and post-order routing (Meld widget vs
  * the XO review sheet). Split out of `useOnrampForm` so each concern reads on
- * its own; `sourceAmount` arrives already parsed (the caller gates Buy on a
- * valid amount).
+ * its own.
  */
 export const useOnrampConfirm = ({
     selectedPair,
@@ -87,11 +85,10 @@ export const useOnrampConfirm = ({
     const [isConfirming, setIsConfirming] = useState(false)
 
     const handleConfirm = useCallback(async () => {
-        const parsedSourceAmount = parseRampAmount(sourceAmount)
         if (
             !selectedPair ||
             !selectedQuote ||
-            parsedSourceAmount === null ||
+            sourceAmount === null ||
             !selectedAccountAddress ||
             scope === null
         ) {
@@ -180,7 +177,7 @@ export const useOnrampConfirm = ({
                 const reviewItem = buildPendingXoHistoryItem(
                     order,
                     selectedPair,
-                    parsedSourceAmount,
+                    sourceAmount,
                     destinationAmount,
                     new Date().toISOString(),
                 )

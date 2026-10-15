@@ -133,13 +133,14 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     },
 }))
 
+// Stable across renders like the real hook's memoised scope; a fresh object
+// would refire the quote effect on every render.
+const MAINNET_SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
+
 vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
     useOnrampAccount: () => ({
         account: selectedAccountMock(),
-        scope:
-            mockSelectedAccountAddress === null
-                ? null
-                : { chainId: 'algorand', networkId: 'mainnet' },
+        scope: mockSelectedAccountAddress === null ? null : MAINNET_SCOPE,
         address: mockSelectedAccountAddress,
     }),
 }))
@@ -320,7 +321,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
 
         // Before the debounce window the quote endpoint has not been called.
@@ -339,6 +340,25 @@ describe('useOnrampForm', () => {
                 sourceAmount: 100,
             }),
         )
+    })
+
+    it('does not re-quote when an edit leaves the amount unchanged', async () => {
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+
+        act(() => {
+            result.current.setSourceAmountText('100')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        act(() => {
+            result.current.setSourceAmountText('100.')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
     })
 
     it('applies only the latest quote result when amount changes rapidly (stale guard)', async () => {
@@ -366,14 +386,14 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
         })
 
         act(() => {
-            result.current.setSourceAmount('200')
+            result.current.setSourceAmountText('200')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -403,7 +423,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -428,7 +448,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -451,7 +471,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -485,7 +505,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -519,7 +539,7 @@ describe('useOnrampForm', () => {
         })
 
         act(() => {
-            result.current.setSourceAmount('5') // below min of 10
+            result.current.setSourceAmountText('5') // below min of 10
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -561,10 +581,10 @@ describe('useOnrampForm', () => {
             }),
         ])
 
-        // The pill calls onSetSourceAmount with limits.min.toString().
+        // The pill calls onSetSourceAmountText with limits.min.toString().
         const min = result.current.limits?.min?.toString() ?? ''
         act(() => {
-            result.current.setSourceAmount(min)
+            result.current.setSourceAmountText(min)
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -663,7 +683,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -683,7 +703,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -705,7 +725,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -725,7 +745,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(usdcMeldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -751,7 +771,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -767,13 +787,13 @@ describe('useOnrampForm', () => {
     it('defaults the source amount to 100 for a Meld pair', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
-        expect(result.current.sourceAmount).toBe('100')
+        expect(result.current.sourceAmountText).toBe('100')
     })
 
     it('leaves the source amount empty for an XO pair', () => {
         const { result } = renderHook(() => useOnrampForm(xoPair))
 
-        expect(result.current.sourceAmount).toBe('')
+        expect(result.current.sourceAmountText).toBe('')
     })
 
     it('opens the review sheet when the order is an XO order', async () => {
@@ -787,7 +807,7 @@ describe('useOnrampForm', () => {
         })
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -804,6 +824,31 @@ describe('useOnrampForm', () => {
         expect(mockOpenURL).not.toHaveBeenCalled()
     })
 
+    it('creates the order with the parsed source amount', async () => {
+        mockCreateQuote.mockResolvedValue([makeXoQuote({ quoteId: 'xo-1' })])
+        mockCreateOrder.mockResolvedValue(xoOrder)
+
+        const { result } = renderHook(() => useOnrampForm(xoPair))
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        act(() => {
+            result.current.setSourceAmountText('100.50')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        const [orderParams] = mockCreateOrder.mock.calls[0]! as [
+            { sourceAmount: Decimal },
+        ]
+        expect(orderParams.sourceAmount.toFixed()).toBe('100.5')
+    })
+
     it('sends a null source address for an XO order with no sender address', async () => {
         // Sender address is optional for XO; an empty value must become null,
         // not '' (the backend rejects an empty string as a missing field).
@@ -817,7 +862,7 @@ describe('useOnrampForm', () => {
             await vi.advanceTimersByTimeAsync(500)
         })
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -843,7 +888,7 @@ describe('useOnrampForm', () => {
             await vi.advanceTimersByTimeAsync(500)
         })
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -881,7 +926,7 @@ describe('useOnrampForm', () => {
             await vi.advanceTimersByTimeAsync(500)
         })
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
@@ -903,7 +948,7 @@ describe('useOnrampForm', () => {
         const { result } = renderHook(() => useOnrampForm(meldPair))
 
         act(() => {
-            result.current.setSourceAmount('100')
+            result.current.setSourceAmountText('100')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)

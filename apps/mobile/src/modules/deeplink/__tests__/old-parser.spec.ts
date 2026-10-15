@@ -47,7 +47,7 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
             if (result?.type === DeeplinkType.ALGO_TRANSFER) {
                 expect(result.receiverAddress).toBe(TEST_ADDRESS)
-                expect(result.amount).toBe('99999')
+                expect(result.amount).toBe(99_999n)
                 expect(result.note).toBe('HELLO WORLD NOTE')
             }
         })
@@ -73,7 +73,7 @@ describe('Deeplink Parser - Old Format', () => {
             if (result?.type === DeeplinkType.ASSET_TRANSFER) {
                 expect(result.assetId).toBe('31566704')
                 expect(result.receiverAddress).toBe(TEST_ADDRESS)
-                expect(result.amount).toBe('99999')
+                expect(result.amount).toBe(99_999n)
                 expect(result.xnote).toBe('HELLO WORLD XNOTE')
             }
         })

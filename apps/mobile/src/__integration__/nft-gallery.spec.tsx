@@ -124,13 +124,13 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
             accountAddress: addressOf(HOLDER),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
         await insertAssetHolding({
             accountAddress: addressOf(HOLDER),
             assetId: USDC_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '50000000',
+            amount: new Decimal('50000000'),
         })
     })
 
@@ -172,7 +172,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
             accountAddress: addressOf(HOLDER),
             assetId: NFT_TEST_ASSET_2_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         // The lower-id NFT gets the HIGHER round: the expected order can
@@ -231,7 +231,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
                 accountAddress: addressOf(HOLDER),
                 assetId,
                 scope: MAINNET_SCOPE,
-                amount: '1',
+                amount: new Decimal(1),
             })
         }
 

@@ -42,7 +42,7 @@ import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
-import { isPeraOwnedDeeplink } from '../utils'
+import { isPeraOwnedDeeplink, requireBaseUnits } from '../utils'
 import { buildDeeplink, type BuildDeeplinkInput } from '../builders'
 import {
     useAssetOptInDeeplink,
@@ -274,12 +274,13 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         assetId: nativeAsset.assetId,
                         destination: parsedData.receiverAddress,
                         // Wire is native base units; the store holds display units.
-                        amount: parsedData.amount
-                            ? baseUnitsToDisplayUnits(
-                                  BigInt(parsedData.amount),
-                                  nativeAsset.decimals,
-                              )
-                            : undefined,
+                        amount:
+                            parsedData.amount === undefined
+                                ? undefined
+                                : baseUnitsToDisplayUnits(
+                                      requireBaseUnits(parsedData.amount),
+                                      nativeAsset.decimals,
+                                  ),
                         note: parsedData.note ?? parsedData.xnote,
                     })
                     break
@@ -291,7 +292,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         destination: parsedData.receiverAddress,
                         // Base units — InputScreen converts once the asset's
                         // `decimals` resolve.
-                        amountBaseUnits: parsedData.amount,
+                        amountBaseUnits:
+                            parsedData.amount === undefined
+                                ? undefined
+                                : requireBaseUnits(
+                                      parsedData.amount,
+                                  ).toString(),
                         note: parsedData.note ?? parsedData.xnote,
                     })
                     break

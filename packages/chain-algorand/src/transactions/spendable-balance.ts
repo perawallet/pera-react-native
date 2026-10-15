@@ -74,13 +74,16 @@ const toAlgo = (microAlgos: Decimal): string =>
 
 const reserveNoticeFor = (
     isRekeyed: boolean,
-    minBalance: string,
+    minBalanceLabel: string,
 ): ReserveNotice =>
     isRekeyed
         ? {
               title: { key: REKEYED_TITLE_KEY },
               body: [
-                  { key: REKEYED_AMOUNT_KEY, params: { minBalance } },
+                  {
+                      key: REKEYED_AMOUNT_KEY,
+                      params: { minBalance: minBalanceLabel },
+                  },
                   { key: REKEYED_BODY_KEY },
               ],
               isFirm: true,
@@ -88,7 +91,10 @@ const reserveNoticeFor = (
         : {
               title: { key: MIN_BALANCE_TITLE_KEY },
               body: [
-                  { key: MIN_BALANCE_AMOUNT_KEY, params: { minBalance } },
+                  {
+                      key: MIN_BALANCE_AMOUNT_KEY,
+                      params: { minBalance: minBalanceLabel },
+                  },
                   { key: MIN_BALANCE_BODY_KEY },
               ],
               isFirm: false,

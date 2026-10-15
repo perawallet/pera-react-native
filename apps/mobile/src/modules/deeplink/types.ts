@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const DeeplinkType = {
     ADD_CONTACT: 'ADD_CONTACT',
     EDIT_CONTACT: 'EDIT_CONTACT',
@@ -106,7 +108,8 @@ export interface AddressActionsDeeplink extends ParsedDeeplink {
 export interface AlgoTransferDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.ALGO_TRANSFER
     receiverAddress: string
-    amount?: string
+    /** MicroAlgos; `null` when present but not an integer (`parseBaseUnitsParam`). */
+    amount?: Nullable<bigint>
     note?: string
     xnote?: string
     label?: string
@@ -116,7 +119,8 @@ export interface AssetTransferDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.ASSET_TRANSFER
     assetId: string
     receiverAddress: string
-    amount?: string
+    /** Asset base units; `null` when present but not an integer (`parseBaseUnitsParam`). */
+    amount?: Nullable<bigint>
     note?: string
     xnote?: string
     label?: string
@@ -147,7 +151,8 @@ export interface KeyregDeeplink extends ParsedDeeplink {
     votefst?: string
     votelst?: string
     votekd?: string
-    fee?: string
+    /** MicroAlgos; `null` when present but not an integer (`parseBaseUnitsParam`). */
+    fee?: Nullable<bigint>
     note?: string
     xnote?: string
 }

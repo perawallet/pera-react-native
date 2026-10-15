@@ -89,7 +89,7 @@ type UseSwapFormResult = {
  */
 export type SwapFormInitialPayAmount = {
     assetId: string
-    amount: string
+    amount: Decimal
 }
 
 export const useSwapForm = (
@@ -252,7 +252,7 @@ export const useSwapForm = (
         if (!pending || fromAsset !== pending.assetId) return
         pendingPayAmountRef.current = undefined
         shouldReopenConfirmRef.current = true
-        setPayAmount(new Decimal(pending.amount))
+        setPayAmount(pending.amount)
     }, [fromAsset])
 
     // Leaving the tab must clear the form: the screen stays mounted, so without
@@ -502,7 +502,7 @@ export const useSwapForm = (
                 accountAddress: selectedAddress,
                 assetInId: fromAsset ?? nativeAssetId,
                 assetOutId: toAsset,
-                payAmount: payAmount.toString(),
+                payAmount: payAmount.toFixed(),
             })
         }
         let result: SwapConfirmationResult | undefined

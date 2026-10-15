@@ -20,6 +20,8 @@ import {
     isValidAssetId,
     isPeraOwnedDeeplink,
     getUniversalLinkPath,
+    parseBaseUnitsParam,
+    requireBaseUnits,
 } from '../utils'
 
 describe('Deeplink Parser - Helper Functions', () => {
@@ -157,6 +159,37 @@ describe('Deeplink Parser - Helper Functions', () => {
             expect(isValidAssetId('1.5')).toBe(false)
             expect(isValidAssetId('12x')).toBe(false)
             expect(isValidAssetId('')).toBe(false)
+        })
+    })
+
+    describe('parseBaseUnitsParam', () => {
+        it('reads an absent or empty value as no value', () => {
+            expect(parseBaseUnitsParam(undefined)).toBeUndefined()
+            expect(parseBaseUnitsParam('')).toBeUndefined()
+        })
+
+        it('reads whatever BigInt reads, including zero and a negative', () => {
+            expect(parseBaseUnitsParam('1000000')).toBe(1_000_000n)
+            expect(parseBaseUnitsParam('0')).toBe(0n)
+            expect(parseBaseUnitsParam('-5')).toBe(-5n)
+            expect(parseBaseUnitsParam(' 7 ')).toBe(7n)
+            expect(parseBaseUnitsParam('0x10')).toBe(16n)
+        })
+
+        it('reads a non-integer as null', () => {
+            expect(parseBaseUnitsParam('abc')).toBeNull()
+            expect(parseBaseUnitsParam('1.5')).toBeNull()
+            expect(parseBaseUnitsParam('1e6')).toBeNull()
+        })
+    })
+
+    describe('requireBaseUnits', () => {
+        it('passes a parsed value through', () => {
+            expect(requireBaseUnits(0n)).toBe(0n)
+        })
+
+        it('throws on a malformed value', () => {
+            expect(() => requireBaseUnits(null)).toThrow(SyntaxError)
         })
     })
 

@@ -36,6 +36,7 @@ import {
     inferKeyregType,
     isValidAssetId,
     normalizeUrl,
+    parseBaseUnitsParam,
     parseQueryParams,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
@@ -185,7 +186,7 @@ export const parsePerawalletUri = (
             senderAddress: address,
             keyregType: inferKeyregType(participation),
             ...participation,
-            fee: params.fee,
+            fee: parseBaseUnitsParam(params.fee),
             note: params.note,
         } as KeyregDeeplink
     }
@@ -205,7 +206,7 @@ export const parsePerawalletUri = (
             sourceUrl: url,
             assetId: params.asset,
             receiverAddress: address,
-            amount: params.amount,
+            amount: parseBaseUnitsParam(params.amount),
             note: params.note,
             xnote: params.xnote,
         } as AssetTransferDeeplink
@@ -216,7 +217,7 @@ export const parsePerawalletUri = (
             type: DeeplinkType.ALGO_TRANSFER,
             sourceUrl: url,
             receiverAddress: address,
-            amount: params.amount,
+            amount: parseBaseUnitsParam(params.amount),
             note: params.note,
             xnote: params.xnote,
         } as AlgoTransferDeeplink

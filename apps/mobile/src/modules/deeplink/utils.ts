@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     PERAWALLET_SCHEME,
     PERAWALLET_UNIVERSAL_LINK_HOST,
@@ -75,6 +76,30 @@ export const parseQueryParams = (url: string): Record<string, string> => {
  */
 export const isValidAssetId = (assetId: string): boolean =>
     /^\d+$/.test(assetId)
+
+/**
+ * Base units, as `BigInt()` reads them; absent or empty is `undefined`.
+ * Malformed is `null`, not a rejected link, so the handler fails it via
+ * {@link requireBaseUnits} and the user sees the deeplink error toast.
+ */
+export const parseBaseUnitsParam = (
+    value: Optional<string>,
+): Optional<Nullable<bigint>> => {
+    if (!value) return undefined
+    try {
+        return BigInt(value)
+    } catch {
+        return null
+    }
+}
+
+/** Throws on the `null` {@link parseBaseUnitsParam} gives a malformed value. */
+export const requireBaseUnits = (value: Nullable<bigint>): bigint => {
+    if (value === null) {
+        throw new SyntaxError('Deeplink amount or fee is not an integer')
+    }
+    return value
+}
 
 /**
  * ARC-78 carries no online/offline discriminator — `type=keyreg` is its only

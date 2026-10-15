@@ -44,6 +44,7 @@ import type { Network } from '@perawallet/wallet-core-config'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import { withTimeout } from './timeout'
 import type { KeyregDeeplink } from '../types'
+import { requireBaseUnits } from '../utils'
 
 export type KeyregDeeplinkHandler = (data: KeyregDeeplink) => Promise<void>
 
@@ -197,11 +198,14 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 const noteBytes = note
                     ? new TextEncoder().encode(note)
                     : undefined
-                // `BigInt()` throws on a malformed fee, so keep the coercion
-                // inside the try — a bad deeplink should reach the error sheet,
-                // not throw out of the handler. An out-of-range fee is caught at
-                // review time by the high-fee warning.
-                const dAppFee = data.fee ? BigInt(data.fee) : undefined
+                // A malformed fee throws here, inside the try, so a bad
+                // deeplink reaches the error sheet rather than throwing out of
+                // the handler. An out-of-range fee is caught at review time by
+                // the high-fee warning.
+                const dAppFee =
+                    data.fee === undefined
+                        ? undefined
+                        : requireBaseUnits(data.fee)
 
                 let tx
                 if (data.keyregType === 'offline') {

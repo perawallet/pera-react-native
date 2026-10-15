@@ -69,7 +69,7 @@ describe('ARC-90 Algorand Parser', () => {
             expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
             if (result?.type === DeeplinkType.ALGO_TRANSFER) {
                 expect(result.receiverAddress).toBe(TEST_ADDRESS)
-                expect(result.amount).toBe('1000000')
+                expect(result.amount).toBe(1_000_000n)
             }
         })
 
@@ -84,6 +84,17 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.xnote).toBe('secret')
             }
         })
+
+        it('keeps a non-integer amount as null so the handler, not the parser, fails the link', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?amount=1.5`,
+            )
+
+            expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
+            if (result?.type === DeeplinkType.ALGO_TRANSFER) {
+                expect(result.amount).toBeNull()
+            }
+        })
     })
 
     describe('Asset Transfer', () => {
@@ -95,7 +106,7 @@ describe('ARC-90 Algorand Parser', () => {
             expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
             if (result?.type === DeeplinkType.ASSET_TRANSFER) {
                 expect(result.assetId).toBe('123456')
-                expect(result.amount).toBe('100')
+                expect(result.amount).toBe(100n)
                 expect(result.receiverAddress).toBe(TEST_ADDRESS)
             }
         })
@@ -109,6 +120,17 @@ describe('ARC-90 Algorand Parser', () => {
             if (result?.type === DeeplinkType.ASSET_TRANSFER) {
                 expect(result.assetId).toBe('123456')
                 expect(result.amount).toBeUndefined()
+            }
+        })
+
+        it('keeps a non-numeric asset amount as null', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?amount=abc&asset=123456`,
+            )
+
+            expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
+            if (result?.type === DeeplinkType.ASSET_TRANSFER) {
+                expect(result.amount).toBeNull()
             }
         })
     })
@@ -206,7 +228,18 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.votefst).toBe('1000')
                 expect(result.votelst).toBe('2000')
                 expect(result.votekd).toBe('100')
-                expect(result.fee).toBe('1000')
+                expect(result.fee).toBe(1000n)
+            }
+        })
+
+        it('keeps a non-integer fee as null', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg&fee=abc`,
+            )
+
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.fee).toBeNull()
             }
         })
 
@@ -454,7 +487,7 @@ describe('ARC-90 Algorand Parser', () => {
             expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
             // Should still parse valid params
             if (result?.type === DeeplinkType.ALGO_TRANSFER) {
-                expect(result.amount).toBe('100')
+                expect(result.amount).toBe(100n)
             }
         })
 

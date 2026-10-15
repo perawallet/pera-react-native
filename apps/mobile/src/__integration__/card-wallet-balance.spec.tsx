@@ -128,7 +128,7 @@ describe('Flow: card wallet balance claim', () => {
 
                 // The POST went to this wallet's route, with the typed amount.
                 await waitFor(() => expect(withdrawBody).not.toBeNull())
-                expect(withdrawBody).toEqual({ amount: '25.00' })
+                expect(withdrawBody).toEqual({ amount: '25' })
 
                 await waitFor(() =>
                     expect(Notifier.showNotification).toHaveBeenCalled(),

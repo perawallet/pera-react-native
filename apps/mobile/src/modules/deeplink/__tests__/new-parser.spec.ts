@@ -62,8 +62,19 @@ describe('Deeplink Parser - New Format', () => {
             expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
             if (result?.type === DeeplinkType.ALGO_TRANSFER) {
                 expect(result.receiverAddress).toBe(TEST_RECEIVER_ADDRESS)
-                expect(result.amount).toBe('99999')
+                expect(result.amount).toBe(99_999n)
                 expect(result.note).toBe('HELLO WORLD NOTE')
+            }
+        })
+
+        it('reads an empty amount as no amount', () => {
+            const result = parseDeeplink(
+                `perawallet://app/asset-transfer/?assetId=0&receiverAddress=${TEST_RECEIVER_ADDRESS}&amount=`,
+            )
+
+            expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
+            if (result?.type === DeeplinkType.ALGO_TRANSFER) {
+                expect(result.amount).toBeUndefined()
             }
         })
 

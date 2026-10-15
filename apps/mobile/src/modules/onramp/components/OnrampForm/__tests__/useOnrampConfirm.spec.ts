@@ -232,7 +232,7 @@ const meldQuote: MeldQuote = {
 const defaultProps: Parameters<typeof useOnrampConfirm>[0] = {
     selectedPair: meldPair,
     selectedQuote: meldQuote,
-    sourceAmount: '100',
+    sourceAmount: new Decimal(100),
     destinationAmount: new Decimal(500),
     isMeld: true,
 }
@@ -296,6 +296,19 @@ describe('useOnrampConfirm', () => {
         expect(mockEnsureOptIn).not.toHaveBeenCalled()
         expect(mockCreateRampOrder).not.toHaveBeenCalled()
         expect(result.current.isConfirming).toBe(false)
+    })
+
+    it('does nothing without a valid source amount', async () => {
+        const { result } = renderHook(() =>
+            useOnrampConfirm({ ...defaultProps, sourceAmount: null }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockEnsureOptIn).not.toHaveBeenCalled()
+        expect(mockCreateRampOrder).not.toHaveBeenCalled()
     })
 
     it('opens the Meld widget URL in the system browser', async () => {

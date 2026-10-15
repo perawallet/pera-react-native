@@ -20,6 +20,7 @@ import {
     it,
 } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -184,7 +185,7 @@ describe('Flow: Global search', () => {
             accountAddress: addressOf(nftHolder),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         renderWithNavigation(SearchScreen, 'Search')
