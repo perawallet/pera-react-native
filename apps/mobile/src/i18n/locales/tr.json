@@ -394,7 +394,8 @@
         "backup_warning_continue": "Evet, devam et",
         "backup_warning_cancel": "Hayır, hesabı koru",
         "remove_rekey_error_title": "Hesap kaldırılamıyor",
-        "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın"
+        "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın",
+        "view_private_key": "Özel anahtarı görüntüle"
     },
     "account_info": {
         "min_balance": "Min. bakiye",
@@ -465,6 +466,11 @@
             "error_title": "Passphrase alınamadı",
             "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene."
         }
+    },
+    "reveal_private_key": {
+        "title": "Özel anahtar",
+        "body": "Bu anahtara sahip olan herkes hesabı kontrol eder. Asla paylaşma.",
+        "error_title": "Özel anahtar gösterilemedi"
     },
     "banners": {
         "dismiss": "Bir daha gösterme"
@@ -2133,7 +2139,23 @@
             "create_multisig_option_description": "Birden fazla imzacı gerektiren, gelişmiş güvenlikli yeni bir paylaşılan hesap oluştur",
             "pera_card_option_title": "Pera Card hesabı ekle",
             "pera_card_option_description": "Pera Card ile kriptonu gerçek dünyada harca",
-            "see_other_options": "Diğer seçenekleri gör"
+            "see_other_options": "Diğer seçenekleri gör",
+            "choose_chain_title": "Bir blokzincir seç",
+            "chain_option_description": "{{chain}} hesabı ekle",
+            "derive_from_wallet_option_title": "Bir cüzdandan ekle",
+            "derive_from_wallet_option_description": "Pera’da zaten bulunan bir kurtarma passphrase’i kullan",
+            "import_private_key_option_title": "Özel anahtar içe aktar",
+            "import_private_key_option_description": "Bir hesabı özel anahtarıyla ekle"
+        },
+        "import_private_key": {
+            "title": "Özel anahtarı içe aktar",
+            "body": "{{chain}} hesabının özel anahtarını gir.",
+            "input_label": "Özel anahtar",
+            "invalid": "Bu geçerli bir özel anahtar değil",
+            "submit": "Hesabı içe aktar",
+            "error_title": "Hesap içe aktarılamadı",
+            "backup_included": "Bu hesap bulut yedeğine dahil.",
+            "backup_not_included": "Bu hesap herhangi bir bulut yedeğinde değil. Daha sonra kurtarmak için hesap seçeneklerindeki Özel anahtarı görüntüle seçeneğini kullan ve anahtarı güvenli bir yerde sakla."
         },
         "import_account_options": {
             "title": "Hesap\niçe aktar",

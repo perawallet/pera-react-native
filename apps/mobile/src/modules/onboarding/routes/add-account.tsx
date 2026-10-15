@@ -19,6 +19,7 @@ import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen'
 import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen'
+import { ImportPrivateKeyScreen } from '@modules/onboarding/screens/ImportPrivateKeyScreen'
 import { screenListeners } from '@routes/listeners'
 import { useCapabilityCheck } from '@hooks/useCapability'
 import { fullScreenLayout } from '@layouts/index'
@@ -34,6 +35,9 @@ const AddAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(AddAccountScreen)
 const SelectHDWalletScreenWithErrorBoundary =
     withAccountErrorBoundary(SelectHDWalletScreen)
+const ImportPrivateKeyScreenWithErrorBoundary = withAccountErrorBoundary(
+    ImportPrivateKeyScreen,
+)
 const WatchInfoScreenWithErrorBoundary =
     withAccountErrorBoundary(WatchInfoScreen)
 const WatchAccountScreenWithErrorBoundary =
@@ -66,6 +70,13 @@ export const AddAccountStackNavigator = () => {
                 options={{ title: '' }}
                 component={SelectHDWalletScreenWithErrorBoundary}
             />
+            {isAllowed({ anyChain: 'privateKeys' }) && (
+                <AddAccountStack.Screen
+                    name='ImportPrivateKey'
+                    options={{ title: '' }}
+                    component={ImportPrivateKeyScreenWithErrorBoundary}
+                />
+            )}
             {isAllowed({ anyChain: 'watchAccounts' }) && (
                 <AddAccountStack.Screen
                     name='WatchInfo'

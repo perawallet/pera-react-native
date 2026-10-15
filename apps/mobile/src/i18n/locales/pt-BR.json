@@ -394,7 +394,8 @@
         "backup_warning_continue": "Sim, continuar",
         "backup_warning_cancel": "Não, manter conta",
         "remove_rekey_error_title": "Não é possível remover a conta",
-        "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela"
+        "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela",
+        "view_private_key": "Ver chave privada"
     },
     "account_info": {
         "min_balance": "Saldo mín.",
@@ -465,6 +466,11 @@
             "error_title": "Não foi possível obter a passphrase",
             "error_body": "Algo deu errado. Tente novamente."
         }
+    },
+    "reveal_private_key": {
+        "title": "Chave privada",
+        "body": "Quem tiver esta chave controla a conta. Nunca a compartilhe.",
+        "error_title": "Não foi possível mostrar a chave privada"
     },
     "banners": {
         "dismiss": "Não mostrar novamente"
@@ -2137,7 +2143,23 @@
             "create_multisig_option_description": "Crie uma nova conta compartilhada com segurança reforçada, que exige vários signatários",
             "pera_card_option_title": "Adicionar conta Pera Card",
             "pera_card_option_description": "Gaste suas criptomoedas no mundo real com o Pera Card",
-            "see_other_options": "Ver outras opções"
+            "see_other_options": "Ver outras opções",
+            "choose_chain_title": "Escolha uma blockchain",
+            "chain_option_description": "Adicione uma conta {{chain}}",
+            "derive_from_wallet_option_title": "Adicionar de uma wallet",
+            "derive_from_wallet_option_description": "Use uma passphrase de recuperação que já está na Pera",
+            "import_private_key_option_title": "Importar uma chave privada",
+            "import_private_key_option_description": "Adicione uma conta a partir da chave privada"
+        },
+        "import_private_key": {
+            "title": "Importar chave privada",
+            "body": "Digite a chave privada da conta {{chain}}.",
+            "input_label": "Chave privada",
+            "invalid": "Esta não é uma chave privada válida",
+            "submit": "Importar conta",
+            "error_title": "Não foi possível importar a conta",
+            "backup_included": "Esta conta está incluída no seu backup na nuvem.",
+            "backup_not_included": "Esta conta não está em nenhum backup na nuvem. Para recuperá-la depois, use Ver chave privada nas opções da conta e guarde a chave em um lugar seguro."
         },
         "import_account_options": {
             "title": "Importar uma\nconta",
