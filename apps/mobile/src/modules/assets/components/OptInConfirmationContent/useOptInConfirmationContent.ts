@@ -11,11 +11,14 @@
  */
 
 import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
-import { useMinimumFeeConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
+import {
+    useFeeConfig,
+    useMinFeeForSender,
+} from '@perawallet/wallet-core-signing'
 
 import type { Decimal } from 'decimal.js'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseOptInConfirmationContentResult = {
     /**
@@ -29,8 +32,9 @@ export const useOptInConfirmationContent = (
     accountAddress: string,
     feeOverride?: Decimal,
 ): UseOptInConfirmationContentResult => {
-    const nativeAsset = useNativeAsset()
-    const { minTxnFee } = useMinimumFeeConfig()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
+    const { minTxnFee } = useFeeConfig(LEGACY_CHAIN_ID)
     // Sender-aware so a quantum account is quoted the PQ multiple it will
     // actually pay, matching what useAssetOptInMutation builds.
     const { minFee } = useMinFeeForSender(accountAddress, LEGACY_CHAIN_ID)

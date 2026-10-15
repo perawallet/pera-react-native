@@ -15,14 +15,11 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useOptInConfirmationContent } from '../useOptInConfirmationContent'
 
-const mockUseMinimumFeeConfig = vi.fn()
+const mockUseFeeConfig = vi.fn()
 const mockUseMinFeeForSender = vi.fn()
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-}))
-
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
     useMinFeeForSender: (address: string, chainId: string) =>
         mockUseMinFeeForSender(address, chainId),
 }))
@@ -43,7 +40,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 describe('useOptInConfirmationContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 1000n })
+        mockUseFeeConfig.mockReturnValue({ minTxnFee: 1000n })
         mockUseMinFeeForSender.mockReturnValue({
             minFee: undefined,
             isPending: true,
@@ -51,7 +48,7 @@ describe('useOptInConfirmationContent', () => {
     })
 
     it('falls back to the remote-config minimum while params load', () => {
-        mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 2000n })
+        mockUseFeeConfig.mockReturnValue({ minTxnFee: 2000n })
         const { result } = renderHook(() =>
             useOptInConfirmationContent('SENDER'),
         )
@@ -61,7 +58,7 @@ describe('useOptInConfirmationContent', () => {
     // a quantum sender pays the PQ multiple, and the quote has to
     // match the fee useAssetOptInMutation actually builds.
     it('quotes the sender-resolved fee once it is available', () => {
-        mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 1000n })
+        mockUseFeeConfig.mockReturnValue({ minTxnFee: 1000n })
         mockUseMinFeeForSender.mockReturnValue({
             minFee: 3000n,
             isPending: false,

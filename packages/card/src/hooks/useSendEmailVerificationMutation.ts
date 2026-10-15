@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     sendEmailVerification,
     type SendEmailVerificationResult,
@@ -33,14 +30,12 @@ export type UseSendEmailVerificationMutationResult = CardMutationResult<
 export const useSendEmailVerificationMutation = (
     scope: ChainScope,
 ): UseSendEmailVerificationMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<
         SendEmailVerificationResult,
         Error,
         SendEmailVerificationVariables
     >({
-        mutationFn: ({ email }) => sendEmailVerification({ email, network }),
+        mutationFn: ({ email }) => sendEmailVerification({ email, scope }),
         // Persist the server session id and advance the flow. Runs on every
         // (re)send, so a resend always refreshes contactVerificationId.
         onSuccess: ({ contactVerificationId }) => {

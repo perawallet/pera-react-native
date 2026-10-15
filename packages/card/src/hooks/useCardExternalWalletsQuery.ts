@@ -12,10 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchExternalWallets } from '../api/delegation'
@@ -50,12 +47,11 @@ export const useCardExternalWalletsQuery = (
     params: UseCardExternalWalletsQueryParams,
 ): UseCardExternalWalletsQueryResult => {
     const { address, enabled = true } = params
-    const network = legacyNetworkOf(scope)
     const { isAuthenticated } = useCardSession()
 
     const query = useQuery({
         queryKey: cardQueryKeys.externalWallets(scope),
-        queryFn: ({ signal }) => fetchExternalWallets({ network, signal }),
+        queryFn: ({ signal }) => fetchExternalWallets({ scope, signal }),
         staleTime: config.reactQueryShortLivedStaleTime,
         // The delegation routes require a Baanx session — stay idle otherwise.
         enabled: isAuthenticated && enabled,

@@ -13,7 +13,7 @@
 // @vitest-environment node
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     FIXTURE_CHAIN_ID,
     fixtureCodec,
@@ -223,9 +223,9 @@ const fixturePresentation: AccountPresentationChainAdapter = {
     describe: kindId =>
         kindId.startsWith('fx-')
             ? {
-                  labelKey: `fixturehex.${kindId.slice(3)}`,
-                  infoTitleKey: `fixturehex.${kindId.slice(3)}.title`,
-                  infoBodyKey: `fixturehex.${kindId.slice(3)}.body`,
+                  labelKey: i18nKey(`fixturehex.${kindId.slice(3)}`),
+                  infoTitleKey: i18nKey(`fixturehex.${kindId.slice(3)}.title`),
+                  infoBodyKey: i18nKey(`fixturehex.${kindId.slice(3)}.body`),
                   glyph: `fx/${kindId.slice(3)}`,
               }
             : undefined,

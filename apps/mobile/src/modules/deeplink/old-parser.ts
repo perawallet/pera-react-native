@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -34,6 +33,7 @@ import {
 import {
     decodeBase64Param,
     inferKeyregType,
+    isLegacyChainAddress,
     isValidAssetId,
     normalizeUrl,
     parseBaseUnitsParam,
@@ -126,7 +126,7 @@ export const parsePerawalletUri = (
         } as AssetOptInDeeplink
     }
 
-    if (params.url && !isValidAlgorandAddress(pathPart)) {
+    if (params.url && !isLegacyChainAddress(pathPart)) {
         const decodedUrl = decodeBase64Param(params.url)
         return {
             type: DeeplinkType.DISCOVER_BROWSER,
@@ -163,7 +163,7 @@ export const parsePerawalletUri = (
         } as AssetInboxDeeplink
     }
 
-    if (!pathPart || !isValidAlgorandAddress(pathPart)) {
+    if (!pathPart || !isLegacyChainAddress(pathPart)) {
         return {
             type: DeeplinkType.HOME,
             sourceUrl: url,

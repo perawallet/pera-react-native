@@ -11,8 +11,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { toggleAssetFavorite, toggleAssetPriceAlert } from '../../api'
-import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 // Track the last queryClient call for assertions
 let lastQueryClientCall: any = null
@@ -56,13 +59,13 @@ describe('toggleAssetFavorite', () => {
             assetID: '123',
             deviceId: '12345',
             enabled: true,
-            network: Networks.mainnet,
+            scope: ALGORAND_MAINNET,
         })
 
         expect(lastQueryClientCall).not.toBeNull()
         expect(lastQueryClientCall?.url).toBe('/v2/assets/123/toggle-favorite/')
         expect(lastQueryClientCall?.method).toBe('POST')
-        expect(lastQueryClientCall?.network).toBe('mainnet')
+        expect(lastQueryClientCall?.scope).toEqual(ALGORAND_MAINNET)
         expect(lastQueryClientCall?.body).toBe(
             '{"device_id":12345,"enabled":true}',
         )
@@ -74,13 +77,13 @@ describe('toggleAssetFavorite', () => {
             assetID: '456',
             deviceId: '67890',
             enabled: false,
-            network: Networks.testnet,
+            scope: ALGORAND_TESTNET,
         })
 
         expect(lastQueryClientCall).not.toBeNull()
         expect(lastQueryClientCall?.url).toBe('/v2/assets/456/toggle-favorite/')
         expect(lastQueryClientCall?.method).toBe('POST')
-        expect(lastQueryClientCall?.network).toBe('testnet')
+        expect(lastQueryClientCall?.scope).toEqual(ALGORAND_TESTNET)
         expect(lastQueryClientCall?.body).toBe(
             '{"device_id":67890,"enabled":false}',
         )
@@ -92,7 +95,7 @@ describe('toggleAssetFavorite', () => {
             assetID: '789',
             deviceId: '3721650761318318592',
             enabled: true,
-            network: Networks.mainnet,
+            scope: ALGORAND_MAINNET,
         })
 
         expect(lastQueryClientCall?.body).toBe(
@@ -108,7 +111,7 @@ describe('toggleAssetFavorite', () => {
                 assetID: '123',
                 deviceId: '12345',
                 enabled: true,
-                network: Networks.mainnet,
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toThrow('Network error')
     })
@@ -118,7 +121,7 @@ describe('toggleAssetFavorite', () => {
             assetID: '123',
             deviceId: '12345',
             enabled: true,
-            network: Networks.mainnet,
+            scope: ALGORAND_MAINNET,
         })
 
         expect(lastQueryClientCall?.backend).toBe('pera')
@@ -141,7 +144,7 @@ describe('toggleAssetPriceAlert', () => {
             assetID: '123',
             deviceId: '12345',
             enabled: true,
-            network: Networks.mainnet,
+            scope: ALGORAND_MAINNET,
         })
 
         expect(lastQueryClientCall).not.toBeNull()
@@ -149,7 +152,7 @@ describe('toggleAssetPriceAlert', () => {
             '/v2/assets/123/toggle-price-alert/',
         )
         expect(lastQueryClientCall?.method).toBe('POST')
-        expect(lastQueryClientCall?.network).toBe('mainnet')
+        expect(lastQueryClientCall?.scope).toEqual(ALGORAND_MAINNET)
         expect(lastQueryClientCall?.body).toBe(
             '{"device_id":12345,"enabled":true}',
         )
@@ -161,7 +164,7 @@ describe('toggleAssetPriceAlert', () => {
             assetID: '456',
             deviceId: '67890',
             enabled: false,
-            network: Networks.testnet,
+            scope: ALGORAND_TESTNET,
         })
 
         expect(lastQueryClientCall).not.toBeNull()
@@ -169,7 +172,7 @@ describe('toggleAssetPriceAlert', () => {
             '/v2/assets/456/toggle-price-alert/',
         )
         expect(lastQueryClientCall?.method).toBe('POST')
-        expect(lastQueryClientCall?.network).toBe('testnet')
+        expect(lastQueryClientCall?.scope).toEqual(ALGORAND_TESTNET)
         expect(lastQueryClientCall?.body).toBe(
             '{"device_id":67890,"enabled":false}',
         )
@@ -181,7 +184,7 @@ describe('toggleAssetPriceAlert', () => {
             assetID: '789',
             deviceId: '3721650761318318592',
             enabled: true,
-            network: Networks.mainnet,
+            scope: ALGORAND_MAINNET,
         })
 
         expect(lastQueryClientCall?.body).toBe(
@@ -197,7 +200,7 @@ describe('toggleAssetPriceAlert', () => {
                 assetID: '123',
                 deviceId: '12345',
                 enabled: true,
-                network: Networks.mainnet,
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toThrow('Network error')
     })
@@ -207,7 +210,7 @@ describe('toggleAssetPriceAlert', () => {
             assetID: '123',
             deviceId: '12345',
             enabled: true,
-            network: Networks.mainnet,
+            scope: ALGORAND_MAINNET,
         })
 
         expect(lastQueryClientCall?.backend).toBe('pera')

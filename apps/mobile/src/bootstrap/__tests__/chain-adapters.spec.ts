@@ -20,7 +20,6 @@ import {
     type ChainScope,
     type ChainSetupConfig,
 } from '@perawallet/wallet-core-chain-contract'
-import { UnconfiguredScopeError } from '@perawallet/wallet-core-config'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { ethereumModule } from '@perawallet/wallet-core-chain-ethereum'
 
@@ -81,10 +80,14 @@ const mocks = vi.hoisted(() => ({
     },
     config: {
         chains: { enabled: ['algorand'], capabilities: {} } as ChainSetupConfig,
-        algodReadTimeout: 10_000,
-        algodSubmitTimeout: 30_000,
+        chainRequestTimeouts: {
+            algorand: { readMs: 10_000, submitMs: 30_000 },
+            ethereum: { readMs: 15_000, submitMs: 20_000 },
+        },
     },
-    getChainConfig: vi.fn(),
+    chainEndpointsFor: vi.fn((chainId: string): Record<string, string> =>
+        chainId === 'ethereum' ? { mainnet: 'https://mainnet.rpc.test' } : {},
+    ),
     getPeraServicesConfig: vi.fn(),
     peraServicesFor: vi.fn(),
     registerModule: vi.fn(),
@@ -104,7 +107,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
         typeof import('@perawallet/wallet-core-config')
     >()),
     config: mocks.config,
-    getChainConfig: mocks.getChainConfig,
+    chainEndpointsFor: mocks.chainEndpointsFor,
     getPeraServicesConfig: mocks.getPeraServicesConfig,
     peraServicesFor: mocks.peraServicesFor,
 }))
@@ -144,7 +147,6 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
             capabilityRestrictions:
                 descriptorEntry.algorandCapabilityRestrictions,
             register: mocks.registerModule,
-            i18nKeys: () => [],
             remoteConfigDefaults: { fixture_fee: 1000 },
             pinnedHosts: () => FIXTURE_PINNED_HOSTS,
         },
@@ -440,42 +442,23 @@ describe('registerChainAdapters', () => {
             })
         })
 
-        it('hands over the setup entry endpoints', () => {
+        it('hands each chain its own endpoints', () => {
             registerChainAdapters()
+            const algorand = contextGivenToModule().getEndpoints()
+            const ethereum = contextGivenToEthereum().getEndpoints()
 
-            expect(contextGivenToModule().getEndpoints()).toEqual({})
+            expect(algorand).toEqual({})
+            expect(ethereum).toEqual({ mainnet: 'https://mainnet.rpc.test' })
+            expect(mocks.chainEndpointsFor).toHaveBeenCalledWith('ethereum')
         })
 
-        it("hands over the wallet's request timeouts", () => {
+        it('hands each chain its own request timeouts', () => {
             registerChainAdapters()
+            const algorand = contextGivenToModule().timeouts
+            const ethereum = contextGivenToEthereum().timeouts
 
-            expect(contextGivenToModule().timeouts).toEqual({
-                readMs: 10_000,
-                submitMs: 30_000,
-            })
-        })
-
-        it('hands Ethereum the RPC URL of every configured network, keyed by network id', () => {
-            mocks.getChainConfig.mockImplementation((scope: ChainScope) => {
-                if (scope.networkId === 'sepolia') {
-                    throw new UnconfiguredScopeError(scope)
-                }
-                return { rpcUrl: 'https://mainnet.rpc.test' }
-            })
-
-            expect(contextGivenToEthereum().getEndpoints()).toEqual({
-                mainnet: 'https://mainnet.rpc.test',
-            })
-        })
-
-        it('rethrows a config failure other than an unconfigured network', () => {
-            mocks.getChainConfig.mockImplementation(() => {
-                throw new Error('config broken')
-            })
-
-            expect(() => contextGivenToEthereum().getEndpoints()).toThrow(
-                'config broken',
-            )
+            expect(algorand).toEqual({ readMs: 10_000, submitMs: 30_000 })
+            expect(ethereum).toEqual({ readMs: 15_000, submitMs: 20_000 })
         })
 
         it("hands over the scope's Pera backend URL and services", () => {

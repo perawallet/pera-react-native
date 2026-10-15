@@ -176,7 +176,7 @@ export interface SwapStatusUpdateResult {
 /**
  * A single slot in a group's submission order, serialized for persistence.
  * Mirrors the app-side `GroupSlot` but with the pre-signed transaction stored
- * as base64 (no `Uint8Array`/`PeraSignedTransaction` in persisted state).
+ * as base64 (no `Uint8Array` or signed-transaction object in persisted state).
  */
 export type SerializedGroupSlot =
     | { kind: 'preSigned'; signedTxnBase64: string }

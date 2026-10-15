@@ -24,25 +24,17 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    readAlgorandNative,
-    toAlgorandNative,
-    useTransactionDetailQuery,
-    useGroupTransactionsQuery,
-    type AlgorandTransactionView,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
-import {
     LEGACY_CHAIN_ID,
     type TransactionNative,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     getNetworkErrorMessageKeys,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import {
-    mapHistoryItemToDisplayableTransaction,
-    summarizeHistoryItem,
-} from '@perawallet/wallet-core-transactions'
+import { summarizeHistoryItem } from '@perawallet/wallet-core-transactions'
 import { chainNoticeOf, type ChainNoticeContent } from '@components/ChainNotice'
+import { useAlgorandTransactionDetail } from '@modules/algorand'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
@@ -60,16 +52,14 @@ type TransactionDetailsRenderState =
     | { kind: 'content'; transaction: TransactionNative }
     | { kind: 'loading' }
     | { kind: 'offline' }
-    | { kind: 'error'; titleKey: string; bodyKey: string }
+    | { kind: 'error'; titleKey: I18nKey; bodyKey: I18nKey }
 
 type UseTransactionDetailsScreenResult = {
     renderState: TransactionDetailsRenderState
-    groupTransactions: AlgorandTransactionView[]
-    currentTransactionId: string
+    groupId?: string
     isExternal: boolean
     /** Only a history row carries a status, so a signing-flow transaction has none. */
     notice: Nullable<ChainNoticeContent>
-    handleTransactionPress: (tx: AlgorandTransactionView) => void
     handleRelatedTransactionPress: (related: TransactionNative) => void
     handleRetry: () => void
 }
@@ -87,32 +77,17 @@ export const useTransactionDetailsScreen =
             historyTransaction,
         } = route.params
 
-        const detailQuery = useTransactionDetailQuery({
-            transactionId:
-                transactionId ||
-                (paramTransaction &&
-                    readAlgorandNative(paramTransaction)?.id) ||
-                '',
+        const detail = useAlgorandTransactionDetail({
+            transactionId: transactionId ?? '',
+            historyTransaction,
             isEnabled: !paramTransaction && !!transactionId,
         })
 
-        const { groupTransactions } = useGroupTransactionsQuery({ groupId })
-
         const { hasInternet } = useNetworkStatus()
         // The signing flow's in-memory object is authoritative (unsigned txns
-        // have no on-chain id). The indexer fetch enriches the history row
-        // (note, inner txns), so prefer it once it lands; until then the
-        // mapped SQLite row renders — including while offline.
-        const localTransaction = useMemo(
-            () =>
-                historyTransaction
-                    ? mapHistoryItemToDisplayableTransaction(
-                          historyTransaction,
-                          LEGACY_CHAIN_ID,
-                      )
-                    : null,
-            [historyTransaction],
-        )
+        // have no on-chain id).
+        const transaction = paramTransaction ?? detail.transaction
+
         const account = useSelectedAccount()
         const address = account
             ? (chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '')
@@ -131,15 +106,6 @@ export const useTransactionDetailsScreen =
             [historyTransaction, address],
         )
 
-        const transaction = useMemo((): TransactionNative | null => {
-            if (paramTransaction) {
-                return paramTransaction
-            }
-            // Both sources here (indexer, Algorand history row) are Algorand-only.
-            const fetched = detailQuery.data ?? localTransaction
-            return fetched ? toAlgorandNative(fetched) : null
-        }, [paramTransaction, detailQuery.data, localTransaction])
-
         const renderState = useMemo((): TransactionDetailsRenderState => {
             if (transaction) {
                 return { kind: 'content', transaction }
@@ -148,38 +114,28 @@ export const useTransactionDetailsScreen =
             // carrying a prior error (e.g. `timeout`) must show the offline
             // surface, not a dead Retry that just re-pauses. Mirrors the
             // charts contract (`isPaused || (isError && !online)`).
-            if (detailQuery.isPaused || (detailQuery.isError && !hasInternet)) {
+            if (detail.isPaused || (detail.isError && !hasInternet)) {
                 return { kind: 'offline' }
             }
-            if (detailQuery.isError) {
+            if (detail.isError) {
                 const { titleKey, bodyKey } = getNetworkErrorMessageKeys(
-                    detailQuery.error,
+                    detail.error,
                 )
                 return { kind: 'error', titleKey, bodyKey }
             }
-            if (detailQuery.isLoading) {
+            if (detail.isLoading) {
                 return { kind: 'loading' }
             }
             const { titleKey, bodyKey } = getNetworkErrorMessageKeys(undefined)
             return { kind: 'error', titleKey, bodyKey }
         }, [
             transaction,
-            detailQuery.isError,
-            detailQuery.error,
-            detailQuery.isPaused,
-            detailQuery.isLoading,
+            detail.isError,
+            detail.error,
+            detail.isPaused,
+            detail.isLoading,
             hasInternet,
         ])
-
-        const handleTransactionPress = useCallback(
-            (tx: AlgorandTransactionView) => {
-                navigation.push('TransactionDetails', {
-                    transaction: toAlgorandNative(tx),
-                    groupId,
-                })
-            },
-            [navigation, groupId],
-        )
 
         const handleRelatedTransactionPress = useCallback(
             (related: TransactionNative) => {
@@ -198,19 +154,14 @@ export const useTransactionDetailsScreen =
             if (!useNetworkStatusStore.getState().hasInternet) {
                 return
             }
-            void detailQuery.refetch()
-        }, [detailQuery])
+            void detail.refetch()
+        }, [detail])
 
         return {
             renderState,
-            groupTransactions,
-            currentTransactionId:
-                (transaction && readAlgorandNative(transaction)?.id) ??
-                transactionId ??
-                '',
+            groupId,
             isExternal: isExternal ?? false,
             notice,
-            handleTransactionPress,
             handleRelatedTransactionPress,
             handleRetry,
         }

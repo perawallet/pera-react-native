@@ -3133,7 +3133,6 @@
             "completed": "Completed",
             "failed": "Failed",
             "pending": "Pending",
-            "pending_verifying": "Pending — verifying",
             "raw_transaction": "Raw Transaction"
         },
         "notice": {

@@ -18,6 +18,7 @@ import type {
     CardChainAdapter,
     CardManualDepositBuildParams,
     DelegationApprovalParams,
+    EscrowWithdrawalParams,
 } from '../chain-adapter'
 
 export interface CardContractFixtures {
@@ -34,6 +35,11 @@ export interface CardContractFixtures {
     deposit: {
         params: CardManualDepositBuildParams
         /** Makes the chain answer whatever building a transfer needs. */
+        arrangeBuild(): void
+    }
+    withdrawal: {
+        params: EscrowWithdrawalParams
+        /** Makes the chain answer whatever building the escrow calls needs. */
         arrangeBuild(): void
     }
     eligibility: {
@@ -54,6 +60,24 @@ export interface CardContractFixtures {
         arrangeState(enabled: boolean): void
         /** Transactions the adapter has submitted to the chain so far. */
         submissions(): number
+    }
+}
+
+// The builders hand back chain-neutral transactions on the asked scope.
+const expectChainNeutral = (
+    transactions: unknown[],
+    scope: ChainScope,
+): void => {
+    expect(transactions.length).toBeGreaterThan(0)
+    for (const transaction of transactions) {
+        expect(transaction).toEqual(
+            expect.objectContaining({
+                scope,
+                payload: expect.anything(),
+                summary: expect.anything(),
+                chainData: expect.anything(),
+            }),
+        )
     }
 }
 
@@ -97,7 +121,7 @@ export const cardContractTests = (
             },
         )
 
-        it('builds a manual deposit as a non-empty group', async () => {
+        it('builds a manual deposit as chain-neutral transactions on the scope', async () => {
             fixtures.deposit.arrangeBuild()
 
             const group = await makeAdapter().buildManualDeposit(
@@ -105,8 +129,21 @@ export const cardContractTests = (
                 fixtures.scope,
             )
 
-            expect(group.length).toBeGreaterThan(0)
+            expectChainNeutral(group, fixtures.scope)
         })
+
+        it.each(['buildRequest', 'buildWithdraw', 'buildCancel'] as const)(
+            'builds a withdrawal %s as chain-neutral transactions on the scope',
+            async builder => {
+                fixtures.withdrawal.arrangeBuild()
+
+                const group = await makeAdapter().withdrawal[builder](
+                    fixtures.withdrawal.params,
+                )
+
+                expectChainNeutral(group, fixtures.withdrawal.params.scope)
+            },
+        )
 
         it('reads an absent holding as zero', async () => {
             fixtures.balance.arrangeNoHolding()

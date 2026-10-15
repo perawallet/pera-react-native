@@ -3133,7 +3133,6 @@
             "completed": "Terminée",
             "failed": "Échouée",
             "pending": "En attente",
-            "pending_verifying": "En attente — vérification",
             "raw_transaction": "Transaction brute"
         },
         "notice": {

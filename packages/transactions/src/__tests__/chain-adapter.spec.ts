@@ -35,6 +35,7 @@ const fakeAssetInbox = (): AssetInboxSendFlow => ({
 const bareAdapter = (): SendFlowChainAdapter => ({
     chainId: 'algorand',
     buildTransferTxs: vi.fn(),
+    transactionFee: vi.fn(),
 })
 
 describe('sendFlowFeatureFor', () => {

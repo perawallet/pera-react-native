@@ -19,6 +19,7 @@ import {
     mockAlgo25Account,
 } from '@perawallet/wallet-core-dev-fixtures'
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
 import { AccountMenuContent } from '@modules/accounts/components/AccountMenuContent'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
@@ -1300,7 +1301,20 @@ export const getSheetSections = (): GallerySection[] => [
                         contents: (
                             <GallerySheetBoundary>
                                 <PreviousRekeyWarningSheet
-                                    i18nPrefix='rekey.to_ledger.confirm.replace_warning'
+                                    copy={{
+                                        titleKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.title',
+                                        ),
+                                        bodyKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.body',
+                                        ),
+                                        confirmKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.confirm',
+                                        ),
+                                        cancelKey: i18nKey(
+                                            'rekey.to_ledger.confirm.replace_warning.cancel',
+                                        ),
+                                    }}
                                     testID='previous-rekey-warning-gallery'
                                     currentAuthName='Ledger Account'
                                     sourceName='Mock Account'

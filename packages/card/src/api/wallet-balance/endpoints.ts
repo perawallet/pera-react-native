@@ -12,7 +12,8 @@
 
 import { isHTTPError } from 'ky'
 import type { Decimal } from 'decimal.js'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
 import type {
     CardWalletBalance,
@@ -33,7 +34,7 @@ import {
 
 export type WalletParams = {
     kind: CardWalletKind
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -58,7 +59,7 @@ export const fetchWalletBalance = async (
 ): Promise<Nullable<CardWalletBalance>> => {
     try {
         const response = await getCardTransport().request({
-            network: params.network,
+            scope: params.scope,
             method: 'GET',
             path: walletPath(params.kind),
             authenticated: true,
@@ -81,7 +82,7 @@ export const withdrawWalletBalance = async (
     params: WithdrawWalletBalanceParams,
 ): Promise<WalletWithdrawResult> => {
     const response = await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: `${walletPath(params.kind)}/withdraw`,
         authenticated: true,
@@ -102,9 +103,9 @@ export type FetchWalletHistoryParams = WalletParams & {
 export const fetchWalletHistory = async (
     params: FetchWalletHistoryParams,
 ): Promise<CardWalletHistoryPage> => {
-    const { kind, walletId, page = 0, network, signal } = params
+    const { kind, walletId, page = 0, scope, signal } = params
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'GET',
         path: '/v1/wallet/history',
         authenticated: true,

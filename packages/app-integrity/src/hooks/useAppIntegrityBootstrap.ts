@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { registerAppIntegrity } from '../services/registerAppIntegrity'
 import { useAppIntegrityStore } from '../store'
 
@@ -32,7 +32,7 @@ const hasValidToken = (): boolean => {
  * `registerAppIntegrity` no-ops with status `skipped` on development builds.
  */
 export const useAppIntegrityBootstrap = (): void => {
-    const { network } = useNetwork()
+    const deployment = useWalletDeployment()
     const hasRun = useRef(false)
 
     useEffect(() => {
@@ -41,8 +41,8 @@ export const useAppIntegrityBootstrap = (): void => {
 
         if (hasValidToken()) return
 
-        void registerAppIntegrity({ network })
-        // Boot-once handshake: `hasRun` makes later network changes a no-op, so
-        // registration always uses the network captured on the first run.
-    }, [network])
+        void registerAppIntegrity({ deployment })
+        // Boot-once handshake: `hasRun` makes later mode changes a no-op, so
+        // registration always uses the deployment captured on the first run.
+    }, [deployment])
 }

@@ -11,13 +11,13 @@
  */
 
 import { queryClient } from '@perawallet/wallet-core-shared'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { CurrentRegion } from '../../models'
 import { currentRegionResponseSchema } from './schema'
 import { transformCurrentRegion } from './transformers'
 
 export type FetchCurrentRegionParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -30,7 +30,7 @@ export const fetchCurrentRegion = async (
 ): Promise<CurrentRegion> => {
     const response = await queryClient<unknown>({
         backend: 'pera',
-        network: params.network,
+        scope: params.scope,
         method: 'GET',
         url: 'v1/cards/supported-countries/',
         signal: params.signal,

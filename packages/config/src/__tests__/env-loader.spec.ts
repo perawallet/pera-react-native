@@ -291,8 +291,10 @@ describe('env-loader', () => {
             mainnetDispenserUrl: 'https://base-mainnet-dispenser.example.com',
             notificationRefreshTime: 30000,
             remoteConfigRefreshTime: 3600000,
-            algodReadTimeout: 10000,
-            algodSubmitTimeout: 30000,
+            chainRequestTimeouts: {
+                algorand: { readMs: 10000, submitMs: 30000 },
+                ethereum: { readMs: 15000, submitMs: 30000 },
+            },
             signingTransportTimeout: 60000,
             reactQueryDefaultGCTime: 3600000,
             reactQueryDefaultStaleTime: 60000,

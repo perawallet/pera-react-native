@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import heroImage from '@assets/images/rekey-hero.jpg'
 import { PWButton, PWImage, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -21,28 +22,32 @@ import {
 } from './useRekeyIntroScreen'
 import { useStyles } from './styles'
 
+export type RekeyIntroCopy = {
+    titleKey: I18nKey
+    bodyKey: I18nKey
+    learnMoreKey: I18nKey
+    expectLabelKey: I18nKey
+    ctaKey: I18nKey
+    expectationKeys: readonly I18nKey[]
+}
+
 export type RekeyIntroScreenProps = {
-    i18nBaseKey: string
+    copy: RekeyIntroCopy
     testIdPrefix: string
-    expectationCount: 3 | 4
     navConfig: RekeyIntroNavConfig
 }
 
 export const RekeyIntroScreen = ({
-    i18nBaseKey,
+    copy,
     testIdPrefix,
-    expectationCount,
     navConfig,
 }: RekeyIntroScreenProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     const expectations = useMemo(
-        () =>
-            Array.from({ length: expectationCount }, (_, index) =>
-                t(`${i18nBaseKey}.expect_${index + 1}`),
-            ),
-        [expectationCount, i18nBaseKey, t],
+        () => copy.expectationKeys.map(key => t(key)),
+        [copy.expectationKeys, t],
     )
 
     const { handleStartProcess, handleLearnMore } =
@@ -55,7 +60,7 @@ export const RekeyIntroScreen = ({
             footer={
                 <PWButton
                     variant='primary'
-                    title={t(`${i18nBaseKey}.cta`)}
+                    title={t(copy.ctaKey)}
                     onPress={handleStartProcess}
                     style={styles.cta}
                     testID={`${testIdPrefix}-intro-start`}
@@ -73,19 +78,19 @@ export const RekeyIntroScreen = ({
             />
 
             <PWView style={styles.body}>
-                <PWText variant='h1'>{t(`${i18nBaseKey}.title`)}</PWText>
+                <PWText variant='h1'>{t(copy.titleKey)}</PWText>
 
                 <PWText
                     variant='bodyLarge'
                     style={styles.bodyText}
                 >
-                    {t(`${i18nBaseKey}.body`)}{' '}
+                    {t(copy.bodyKey)}{' '}
                     <PWText
                         variant='bodyLarge'
                         style={styles.learnMore}
                         onPress={handleLearnMore}
                     >
-                        {t(`${i18nBaseKey}.learn_more`)}
+                        {t(copy.learnMoreKey)}
                     </PWText>
                 </PWText>
 
@@ -94,7 +99,7 @@ export const RekeyIntroScreen = ({
                         variant='bodySemibold'
                         style={styles.expectLabel}
                     >
-                        {t(`${i18nBaseKey}.expect_label`)}
+                        {t(copy.expectLabelKey)}
                     </PWText>
                     <NumberedList items={expectations} />
                 </PWView>

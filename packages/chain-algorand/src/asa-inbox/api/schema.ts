@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import type {
-    PeraAsset,
-    PeraAssetVerificationTier,
-} from '@perawallet/wallet-core-assets'
+import type { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
+import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
 import { Decimal } from 'decimal.js'
 import { z } from 'zod'
 import { uint64IdSchema, type Nullable } from '@perawallet/wallet-core-shared'
@@ -134,31 +132,7 @@ export type Arc59AssetRequestsResponse = z.infer<
     typeof arc59AssetRequestsResponseSchema
 >
 
-export type Arc59AssetRequest = {
-    id?: string
-    /** The receiver's ARC-59 inbox account address, or null if none exists yet. */
-    inboxAddress: Nullable<string>
-    /** Total amount across all senders, in base units */
-    totalAmount: Decimal
-    asset: PeraAsset
-    usdValue: Nullable<Decimal>
-    /** ALGO gain on claim, in microAlgos (base units) */
-    microAlgoGainOnClaim: Decimal
-    /** ALGO gain on reject, in microAlgos (base units) */
-    microAlgoGainOnReject: Decimal
-    senders: {
-        count: number
-        results: Array<{
-            sender: { address: string; name: Nullable<string> }
-            /** Sender's amount, in base units */
-            amount: Decimal
-        }>
-    }
-    insufficientAlgoForClaiming: boolean
-    insufficientAlgoForRejecting: boolean
-    shouldUseFundsBeforeClaiming: boolean
-    shouldUseFundsBeforeRejecting: boolean
-}
+export type Arc59AssetRequest = AssetInboxRequest
 
 export const mapArc59AssetRequest = (
     raw: Arc59AssetRequestResponse,

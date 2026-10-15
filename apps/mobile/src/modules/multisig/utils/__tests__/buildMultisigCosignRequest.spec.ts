@@ -24,6 +24,7 @@ vi.mock(import('@perawallet/wallet-core-shared'), async importOriginal => ({
 const mocks = vi.hoisted(() => ({
     multisigAdapterFor: vi.fn(),
     validateSignRequest: vi.fn(),
+    decodeTransaction: vi.fn(),
 }))
 
 // The chain adapter owns the derive and sender checks (real-transaction
@@ -34,7 +35,7 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     return { ...actual, multisigAdapterFor: mocks.multisigAdapterFor }
 })
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     authorityOf,
     type WalletAccount,
@@ -42,8 +43,10 @@ import {
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
-const txFrom = (sender = 'MULTISIG'): PeraTransaction =>
-    ({ sender: { toString: () => sender } }) as unknown as PeraTransaction
+const txFrom = (sender = 'MULTISIG'): UnsignedTransaction =>
+    ({
+        payload: { transaction: { sender: { toString: () => sender } } },
+    }) as unknown as UnsignedTransaction
 
 const buildSignRequest = (
     overrides: Partial<MultisigSignRequest> = {},
@@ -81,78 +84,78 @@ describe('buildMultisigCosignRequest', () => {
         vi.mocked(authorityOf).mockReset()
         mocks.validateSignRequest.mockReset()
         mocks.validateSignRequest.mockReturnValue({ kind: 'valid' })
+        mocks.decodeTransaction.mockReset()
+        mocks.decodeTransaction.mockImplementation(() => txFrom())
         mocks.multisigAdapterFor.mockReturnValue({
             validateSignRequest: mocks.validateSignRequest,
+            decodeTransaction: mocks.decodeTransaction,
         })
     })
 
     it('produces a multisig-cosign TransactionSignRequest with the threaded signRequestId', () => {
-        const decodeTransaction = vi.fn((_: Uint8Array) => txFrom())
-
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction,
             localAccounts: [],
         })
 
         expect(result.type).toBe('transactions')
-        expect(result.chainId).toBe('algorand')
+        expect(result).not.toHaveProperty('chainId')
         expect(result.transport).toBe('callback')
         expect(result.sourceType).toBe('multisig-cosign')
         expect(result.signRequestId).toBe('sr-42')
     })
 
-    it('decodes each base64 raw transaction in the first transaction list', () => {
-        const decodeTransaction = vi.fn((_: Uint8Array) => txFrom())
-
+    it("decodes each base64 raw transaction in the first list through the chain adapter's decoder", () => {
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction,
             localAccounts: [],
         })
 
-        expect(decodeTransaction).toHaveBeenCalledTimes(2)
+        expect(mocks.decodeTransaction).toHaveBeenCalledTimes(2)
+        // Decoded as signed for the joint account, so a participant cosigns.
+        expect(mocks.decodeTransaction).toHaveBeenCalledWith(
+            expect.any(Uint8Array),
+            { chainId: 'algorand', networkId: 'testnet' },
+            { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
+        )
         expect(result.txs).toHaveLength(2)
-        expect(result.rawTransactionsBase64).toEqual(['dHgx', 'dHgy'])
+        expect(result.chainData?.algorand?.rawTransactionsBase64).toEqual([
+            'dHgx',
+            'dHgy',
+        ])
     })
 
     it('routes every tx to the same signer via signerOverrides', () => {
-        const decodeTransaction = vi.fn(() => txFrom())
-
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'B',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction,
             localAccounts: [],
         })
 
-        expect(result.signerOverrides).toBeDefined()
-        expect(result.signerOverrides!.get(0)).toBe('B')
-        expect(result.signerOverrides!.get(1)).toBe('B')
+        const signerOverrides = result.chainData?.algorand?.signerOverrides
+        expect(signerOverrides?.get(0)).toBe('B')
+        expect(signerOverrides?.get(1)).toBe('B')
     })
 
     it('assigns a deterministic id per (signRequestId, signer) so distinct signers stay distinct', () => {
         // A non-empty, distinct id per signer is what keeps the actor map and
         // the inline-error guards from letting two cosigns trample each other.
-        const decodeTransaction = vi.fn(() => txFrom())
 
         const a = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction,
             localAccounts: [],
         })
         const b = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'B',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction,
             localAccounts: [],
         })
 
@@ -164,20 +167,17 @@ describe('buildMultisigCosignRequest', () => {
     it('is stable across rebuilds of the same (signRequestId, signer) so the queue dedups a re-dispatch', () => {
         // Same work-item → same id → the signing store's id-dedup drops a
         // repeat dispatch instead of stacking a duplicate review sheet.
-        const decodeTransaction = vi.fn(() => txFrom())
 
         const first = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction,
             localAccounts: [],
         })
         const second = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction,
             localAccounts: [],
         })
 
@@ -185,7 +185,6 @@ describe('buildMultisigCosignRequest', () => {
     })
 
     it('throws when the sign request has no transaction lists', () => {
-        const decodeTransaction = vi.fn(() => txFrom())
         const signRequest = buildSignRequest({ transactionLists: [] })
 
         expect(() =>
@@ -193,7 +192,6 @@ describe('buildMultisigCosignRequest', () => {
                 signRequest,
                 signerAddress: 'A',
                 scope: { chainId: 'algorand', networkId: 'testnet' },
-                decodeTransaction,
                 localAccounts: [],
             }),
         ).toThrow(/no transaction lists/)
@@ -207,24 +205,25 @@ describe('buildMultisigCosignRequest', () => {
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             scope: { chainId: 'algorand', networkId: network },
-            decodeTransaction: vi.fn(() => txFrom()),
             localAccounts,
         })
         return mocks.validateSignRequest.mock.calls[0][1] as Set<string>
     }
 
-    it('validates through the adapter of the given network', () => {
+    it('validates through the adapter of the given scope', () => {
         const signRequest = buildSignRequest()
 
         buildMultisigCosignRequest({
             signRequest,
             signerAddress: 'A',
             scope: { chainId: 'algorand', networkId: 'testnet' },
-            decodeTransaction: vi.fn(() => txFrom()),
             localAccounts: [],
         })
 
-        expect(mocks.multisigAdapterFor).toHaveBeenCalledWith('testnet')
+        expect(mocks.multisigAdapterFor).toHaveBeenCalledExactlyOnceWith({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         expect(mocks.validateSignRequest).toHaveBeenCalledWith(
             signRequest,
             new Set(['MULTISIG']),
@@ -301,7 +300,6 @@ describe('buildMultisigCosignRequest', () => {
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
                 scope: { chainId: 'algorand', networkId: 'testnet' },
-                decodeTransaction: vi.fn(() => txFrom()),
                 localAccounts: [],
             }),
         ).toThrow(/transaction 1 is not authorized by the joint account/)
@@ -315,7 +313,6 @@ describe('buildMultisigCosignRequest', () => {
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
                 scope: { chainId: 'algorand', networkId: 'testnet' },
-                decodeTransaction: vi.fn(() => txFrom()),
                 localAccounts: [],
             }),
         ).toThrow(/does not derive from its participant set/)

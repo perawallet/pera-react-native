@@ -10,9 +10,23 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyConfirmView } from '../../../components/RekeyConfirmView'
+import {
+    RekeyConfirmView,
+    type RekeyConfirmCopy,
+} from '../../../components/RekeyConfirmView'
 import { useRekeyToLedgerConfirmScreen } from './useRekeyToLedgerConfirmScreen'
+
+const CONFIRM_COPY: RekeyConfirmCopy = {
+    titleKey: i18nKey('rekey.to_ledger.confirm.title'),
+    bodyKey: i18nKey('rekey.to_ledger.confirm.body'),
+    learnMoreKey: i18nKey('rekey.to_ledger.confirm.learn_more'),
+    currentAuthLabelKey: i18nKey('rekey.to_ledger.confirm.current_auth_label'),
+    feeLabelKey: i18nKey('rekey.to_ledger.confirm.fee_label'),
+    summaryLabelKey: i18nKey('rekey.to_ledger.confirm.summary_label'),
+    ctaKey: i18nKey('rekey.to_ledger.confirm.cta'),
+}
 
 export const RekeyToLedgerConfirmScreen = () => {
     const { handleConfirmPress, ...rest } = useRekeyToLedgerConfirmScreen()
@@ -20,7 +34,7 @@ export const RekeyToLedgerConfirmScreen = () => {
     return (
         <RekeyConfirmView
             {...rest}
-            i18nPrefix='rekey.to_ledger.confirm'
+            copy={CONFIRM_COPY}
             testIDPrefix='rekey-to-ledger'
             supportUrl={config.rekeyToLedgerSupportUrl}
             onConfirmPress={handleConfirmPress}

@@ -138,6 +138,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
     useDeviceID: () => 'device-id',
+    useScopedDeviceID: () => 'device-id',
 }))
 
 vi.mock('@hooks/useToast', () => ({

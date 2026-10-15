@@ -15,6 +15,7 @@ import {
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type ConnectionsErrorCode =
     | 'invalid-payload'
@@ -28,19 +29,19 @@ export type ConnectionsErrorCode =
     | 'no-subscriber'
     | 'not-initialized'
 
-const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, string> = {
-    'invalid-payload': 'errors.connections.invalid_payload',
-    'no-handler': 'errors.connections.no_handler',
+const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, I18nKey> = {
+    'invalid-payload': i18nKey('errors.connections.invalid_payload'),
+    'no-handler': i18nKey('errors.connections.no_handler'),
     // A chain with no registered adapter is, from the peer's perspective, the
     // same "nobody can answer this" as no-handler; no new locale copy needed.
-    'unsupported-chain': 'errors.connections.no_handler',
-    'unsupported-operation': 'errors.connections.no_handler',
-    'unknown-connection': 'errors.connections.unknown_connection',
-    'duplicate-kind': 'errors.connections.duplicate_kind',
-    'already-initialized': 'errors.connections.already_initialized',
-    'already-answered': 'errors.connections.already_answered',
-    'no-subscriber': 'errors.connections.no_subscriber',
-    'not-initialized': 'errors.connections.not_initialized',
+    'unsupported-chain': i18nKey('errors.connections.no_handler'),
+    'unsupported-operation': i18nKey('errors.connections.no_handler'),
+    'unknown-connection': i18nKey('errors.connections.unknown_connection'),
+    'duplicate-kind': i18nKey('errors.connections.duplicate_kind'),
+    'already-initialized': i18nKey('errors.connections.already_initialized'),
+    'already-answered': i18nKey('errors.connections.already_answered'),
+    'no-subscriber': i18nKey('errors.connections.no_subscriber'),
+    'not-initialized': i18nKey('errors.connections.not_initialized'),
 }
 
 /**

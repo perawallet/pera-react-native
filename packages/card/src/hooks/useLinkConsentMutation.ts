@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     linkOnboardingConsent,
@@ -25,7 +22,7 @@ import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type LinkConsentVariables = Omit<
     LinkOnboardingConsentParams,
-    'network' | 'signal'
+    'scope' | 'signal'
 >
 
 export type UseLinkConsentMutationResult =
@@ -34,14 +31,11 @@ export type UseLinkConsentMutationResult =
 export const useLinkConsentMutation = (
     scope: ChainScope,
 ): UseLinkConsentMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<void, Error, LinkConsentVariables>({
         // Step 2 of consent: binds the consent set to the permanent user id the
         // address step issues. Best-effort — registration is already finalized,
         // so the screen does not block on a failure here.
-        mutationFn: variables =>
-            linkOnboardingConsent({ ...variables, network }),
+        mutationFn: variables => linkOnboardingConsent({ ...variables, scope }),
         // An "already linked" 409 is swallowed in the endpoint; anything that
         // still throws is a real failure worth surfacing for diagnosis.
         onError: async error => {

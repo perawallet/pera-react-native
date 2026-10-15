@@ -11,6 +11,7 @@
  */
 
 import type { ImageSourcePropType } from 'react-native'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { CardWalletKind } from '@perawallet/wallet-core-card'
 import { CardEvent } from '@analytics'
 import rewardsHero from '@assets/images/rewards-hero.png'
@@ -36,7 +37,7 @@ export type CardWalletCopy = Record<
     | 'notWithdrawableBody'
     | 'confirmBody'
     | 'successBody',
-    string
+    I18nKey
 >
 
 export type CardWalletPresentation = {
@@ -55,42 +56,48 @@ export const CARD_WALLET_PRESENTATION: Record<
         hero: rewardsHero as ImageSourcePropType,
         homeEvent: CardEvent.HomeRewards,
         copy: {
-            navigationTitle: 'peraCard.rewards.navigation_title',
-            withdrawNavigationTitle:
+            navigationTitle: i18nKey('peraCard.rewards.navigation_title'),
+            withdrawNavigationTitle: i18nKey(
                 'peraCard.rewards.withdraw_navigation_title',
-            balanceLabel: 'peraCard.rewards.balance_label',
-            emptyTitle: 'peraCard.rewards.empty_title',
-            emptyBody: 'peraCard.rewards.empty_body',
-            howTitle: 'peraCard.rewards.how_title',
-            howFirstTitle: 'peraCard.rewards.how_first_title',
-            howFirstBody: 'peraCard.rewards.how_first_body',
-            howSecondTitle: 'peraCard.rewards.how_second_title',
-            howSecondBody: 'peraCard.rewards.how_second_body',
-            body: 'peraCard.rewards.body',
-            notWithdrawableBody: 'peraCard.rewards.not_withdrawable_body',
-            confirmBody: 'peraCard.rewards.confirm_body',
-            successBody: 'peraCard.rewards.success_body',
+            ),
+            balanceLabel: i18nKey('peraCard.rewards.balance_label'),
+            emptyTitle: i18nKey('peraCard.rewards.empty_title'),
+            emptyBody: i18nKey('peraCard.rewards.empty_body'),
+            howTitle: i18nKey('peraCard.rewards.how_title'),
+            howFirstTitle: i18nKey('peraCard.rewards.how_first_title'),
+            howFirstBody: i18nKey('peraCard.rewards.how_first_body'),
+            howSecondTitle: i18nKey('peraCard.rewards.how_second_title'),
+            howSecondBody: i18nKey('peraCard.rewards.how_second_body'),
+            body: i18nKey('peraCard.rewards.body'),
+            notWithdrawableBody: i18nKey(
+                'peraCard.rewards.not_withdrawable_body',
+            ),
+            confirmBody: i18nKey('peraCard.rewards.confirm_body'),
+            successBody: i18nKey('peraCard.rewards.success_body'),
         },
     },
     [CardWalletKind.Credit]: {
         hero: rewardsHero as ImageSourcePropType,
         homeEvent: CardEvent.HomeRefunds,
         copy: {
-            navigationTitle: 'peraCard.refunds.navigation_title',
-            withdrawNavigationTitle:
+            navigationTitle: i18nKey('peraCard.refunds.navigation_title'),
+            withdrawNavigationTitle: i18nKey(
                 'peraCard.refunds.withdraw_navigation_title',
-            balanceLabel: 'peraCard.refunds.balance_label',
-            emptyTitle: 'peraCard.refunds.empty_title',
-            emptyBody: 'peraCard.refunds.empty_body',
-            howTitle: 'peraCard.refunds.how_title',
-            howFirstTitle: 'peraCard.refunds.how_first_title',
-            howFirstBody: 'peraCard.refunds.how_first_body',
-            howSecondTitle: 'peraCard.refunds.how_second_title',
-            howSecondBody: 'peraCard.refunds.how_second_body',
-            body: 'peraCard.refunds.body',
-            notWithdrawableBody: 'peraCard.refunds.not_withdrawable_body',
-            confirmBody: 'peraCard.refunds.confirm_body',
-            successBody: 'peraCard.refunds.success_body',
+            ),
+            balanceLabel: i18nKey('peraCard.refunds.balance_label'),
+            emptyTitle: i18nKey('peraCard.refunds.empty_title'),
+            emptyBody: i18nKey('peraCard.refunds.empty_body'),
+            howTitle: i18nKey('peraCard.refunds.how_title'),
+            howFirstTitle: i18nKey('peraCard.refunds.how_first_title'),
+            howFirstBody: i18nKey('peraCard.refunds.how_first_body'),
+            howSecondTitle: i18nKey('peraCard.refunds.how_second_title'),
+            howSecondBody: i18nKey('peraCard.refunds.how_second_body'),
+            body: i18nKey('peraCard.refunds.body'),
+            notWithdrawableBody: i18nKey(
+                'peraCard.refunds.not_withdrawable_body',
+            ),
+            confirmBody: i18nKey('peraCard.refunds.confirm_body'),
+            successBody: i18nKey('peraCard.refunds.success_body'),
         },
     },
 }

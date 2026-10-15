@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { PasswordScore } from '../../hooks/usePasswordStrength.web'
@@ -32,11 +33,11 @@ const LEVEL_BY_SCORE: Record<PasswordScore, StrengthLevel> = {
 }
 
 // Literal keys so the i18n lint's static usage scan can see them.
-const LABEL_KEYS: Record<StrengthLevel, string> = {
-    weak: 'vault.password_strength.weak',
-    fair: 'vault.password_strength.fair',
-    good: 'vault.password_strength.good',
-    strong: 'vault.password_strength.strong',
+const LABEL_KEYS: Record<StrengthLevel, I18nKey> = {
+    weak: i18nKey('vault.password_strength.weak'),
+    fair: i18nKey('vault.password_strength.fair'),
+    good: i18nKey('vault.password_strength.good'),
+    strong: i18nKey('vault.password_strength.strong'),
 }
 
 export const PasswordStrengthMeter = ({

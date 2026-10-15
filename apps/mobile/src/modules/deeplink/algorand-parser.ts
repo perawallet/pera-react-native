@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     type AnyParsedDeeplink,
     DeeplinkType,
@@ -23,7 +22,12 @@ import {
     type DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
-import { inferKeyregType, isValidAssetId, parseBaseUnitsParam } from './utils'
+import {
+    inferKeyregType,
+    isLegacyChainAddress,
+    isValidAssetId,
+    parseBaseUnitsParam,
+} from './utils'
 // config and Networks removed because unused
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -52,7 +56,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
 
         // A present-but-invalid address is corruption (e.g. a truncated QR),
         // not an address-less opt-in — reject rather than silently prompting.
-        if (address && !isValidAlgorandAddress(address)) {
+        if (address && !isLegacyChainAddress(address)) {
             return null
         }
 
@@ -74,7 +78,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
             } as AssetOptInDeeplink
         }
 
-        if (!address || !isValidAlgorandAddress(address)) {
+        if (!address || !isLegacyChainAddress(address)) {
             return null
         }
 
@@ -117,7 +121,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
     if (parsed.type === 'keyreg') {
         const { address, network, params = {} } = parsed
 
-        if (!address || !isValidAlgorandAddress(address)) {
+        if (!address || !isLegacyChainAddress(address)) {
             return null
         }
 

@@ -52,7 +52,7 @@ import { useToast } from '@hooks/useToast'
 export const useSendDestinationRouter = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const accounts = useAllAccounts()
     const { accountBalances, isPending: isBalancesPending } =
         useAccountBalancesQuery(accounts, scope)
@@ -64,7 +64,10 @@ export const useSendDestinationRouter = () => {
         () => (selectedAssetId ? [selectedAssetId] : []),
         [selectedAssetId],
     )
-    const { data: assets, isFetched: isAssetFetched } = useAssetsQuery(assetIDs)
+    const { data: assets, isFetched: isAssetFetched } = useAssetsQuery(
+        scope,
+        assetIDs,
+    )
     const selectedAsset = useMemo(() => {
         if (!selectedAssetId) return undefined
         return assets.get(selectedAssetId)

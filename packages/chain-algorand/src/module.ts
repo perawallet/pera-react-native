@@ -11,39 +11,26 @@
  */
 
 import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
-import { TRANSACTION_STATUS_NOTICE_KEYS } from '@perawallet/wallet-core-transactions'
 import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from './capability-defaults'
-import { keyKindOptionI18nKeys } from './accounts/key-kind-options'
-import { accountPresentationI18nKeys } from './accounts/presentation'
+import { setAlgorandChainContext } from './chain-context'
 import { algorandPinnedHosts } from './blockchain/pinned-hosts'
 import { algorandRemoteConfigDefaults } from './blockchain/remote-config'
 import { algorandDescriptor } from './descriptor'
 import { registerChain } from './register'
-import { ALGORAND_MESSAGE_TITLE_KEYS } from './signing/message/messageSigner'
-import { ALGORAND_HISTORY_SUMMARY_KEYS } from './transactions/summarize'
-import { ALGORAND_SPEND_NOTICE_KEYS } from './transactions/spendable-balance'
-import { ALGORAND_TRANSFER_TITLE_KEYS } from './transactions/transfer-builder'
 
 export const chainModule: ChainModule = {
     descriptor: algorandDescriptor,
     capabilityDefaults: algorandCapabilityDefaults,
     capabilityRestrictions: algorandCapabilityRestrictions,
-    // The adapters are module-level instances that don't read the context yet.
-    register: _ctx => registerChain(),
-    i18nKeys: () => [
-        ...new Set([
-            ...accountPresentationI18nKeys(),
-            ...keyKindOptionI18nKeys(),
-            ...ALGORAND_TRANSFER_TITLE_KEYS,
-            ...ALGORAND_SPEND_NOTICE_KEYS,
-            ...ALGORAND_MESSAGE_TITLE_KEYS,
-            ...ALGORAND_HISTORY_SUMMARY_KEYS,
-            ...TRANSACTION_STATUS_NOTICE_KEYS,
-        ]),
-    ],
+    // The adapters are module-level instances the registries dedupe, so the
+    // context goes to a holder instead of into rebuilt adapters.
+    register: ctx => {
+        setAlgorandChainContext(ctx)
+        registerChain()
+    },
     remoteConfigDefaults: algorandRemoteConfigDefaults,
     pinnedHosts: algorandPinnedHosts,
 }

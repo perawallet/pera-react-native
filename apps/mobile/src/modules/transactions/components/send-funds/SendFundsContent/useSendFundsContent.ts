@@ -25,6 +25,8 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useSendFunds } from '@modules/transactions/hooks'
 
@@ -37,6 +39,7 @@ type UseSendFundsContentResult = {
 export const useSendFundsContent = (
     assetId: Optional<string>,
 ): UseSendFundsContentResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const selectedAccount = useSelectedAccount()
     const {
         canSelectAsset,
@@ -49,7 +52,10 @@ export const useSendFundsContent = (
     } = useSendFunds()
     const { dismiss } = useBottomSheetResult<void>()
 
-    const { data: assets, isFetched } = useAssetsQuery(assetId ? [assetId] : [])
+    const { data: assets, isFetched } = useAssetsQuery(
+        scope,
+        assetId ? [assetId] : [],
+    )
     const asset = assetId ? assets.get(assetId) : undefined
 
     const [isReady, setIsReady] = useState(assetId == null)

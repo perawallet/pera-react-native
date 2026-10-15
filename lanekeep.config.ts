@@ -6,7 +6,6 @@ import { defineConfig } from 'lanekeep'
 
 import amountTypes from './lanekeep/rules/amount-types.js'
 import copyrightHeader from './lanekeep/rules/copyright-header.js'
-import errorMessageKeyExists from './lanekeep/rules/error-message-key-exists.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import localeKeyParity from './lanekeep/rules/locale-key-parity.js'
 import localePlaceholderSuffix from './lanekeep/rules/locale-placeholder-suffix.js'
@@ -20,8 +19,10 @@ import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.j
 import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
 import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
+import i18nKeyExists from './lanekeep/rules/i18n-key-exists.js'
 import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-suppressions.js'
 import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
+import noLegacyNetworkBridge from './lanekeep/rules/no-legacy-network-bridge.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 import noReactNativeImportsInPackages from './lanekeep/rules/no-react-native-imports-in-packages.js'
@@ -84,6 +85,7 @@ export default defineConfig({
         noWcImportsInConnectionsModule,
         noChainIdentityInSharedPackages,
         noChainPackageImports,
+        noLegacyNetworkBridge,
         noAlgorandAccountVocabulary,
         noAlgorandTermsInChainNeutralPackages,
         noDeepModuleImports,
@@ -91,7 +93,7 @@ export default defineConfig({
         noEmptyStyleObjects,
         noNumericSizes,
         noErrorToastInCatch,
-        errorMessageKeyExists,
+        i18nKeyExists,
         errorParamsMatchCopy,
         noUnusedStyleKeys,
         copyrightHeader,

@@ -30,7 +30,7 @@ import {
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
-import { EVM_ERROR_I18N_KEYS, EvmError, toEvmError } from '..'
+import { EvmError, toEvmError } from '..'
 
 const URL = 'https://rpc.example'
 
@@ -246,11 +246,5 @@ describe('toEvmError', () => {
         const error = new EvmError('nonce_too_low')
 
         expect(toEvmError(error)).toBe(error)
-    })
-
-    it('lists a title and body key for every mapped code', () => {
-        expect(EVM_ERROR_I18N_KEYS).toHaveLength(14)
-        expect(EVM_ERROR_I18N_KEYS).toContain('errors.evm.rate_limited.body')
-        expect(EVM_ERROR_I18N_KEYS).not.toContain('errors.blockchain.generic')
     })
 })

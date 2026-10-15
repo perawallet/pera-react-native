@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
 export type UseWalletConnectErrorContentResult = {
@@ -32,7 +32,7 @@ export const useWalletConnectErrorContent = (
     error: Nullable<Error>,
 ): UseWalletConnectErrorContentResult => {
     const { t } = useLanguage()
-    const { getMessage } = useAlgodErrorMessage()
+    const { getMessage } = useNodeErrorMessage()
 
     const errorBody = useMemo(() => {
         if (!error) return t('errors.walletconnect.unknown')

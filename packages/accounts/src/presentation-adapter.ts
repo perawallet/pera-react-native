@@ -13,14 +13,15 @@
 import {
     createChainAdapterRegistry,
     type ChainId,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { AccountKindId, LocalKeySeed } from './chain-adapter'
 
 /** How an account kind is shown. Keys are i18n keys; glyphs are ids the app maps to icons. */
 export type AccountKindPresentation = {
-    labelKey: string
-    infoTitleKey: string
-    infoBodyKey: string
+    labelKey: I18nKey
+    infoTitleKey: I18nKey
+    infoBodyKey: I18nKey
     glyph: string
     /** The glyph an account delegated to this kind shows; absent uses the generic one. */
     delegatedGlyph?: string
@@ -36,9 +37,9 @@ export type AccountKindContext = {
 /** The copy for an account whose authority moved from one kind to another. */
 export type AuthorityTransitionLabel = {
     /** Interpolates the signer copy as `to`. */
-    labelKey: string
-    signerKey: string
-    descriptionKey: string
+    labelKey: I18nKey
+    signerKey: I18nKey
+    descriptionKey: I18nKey
     supportUrl?: string
 }
 
@@ -46,8 +47,8 @@ export type AuthorityTransitionLabel = {
 export type LocalKeyEntryOption = {
     /** Stable slug the row's test id is built from. */
     id: string
-    titleKey: string
-    descriptionKey: string
+    titleKey: I18nKey
+    descriptionKey: I18nKey
     /** A name from the app's icon set. */
     icon: string
 }
@@ -57,9 +58,9 @@ export type LocalKeyCreateOption = LocalKeyEntryOption & {
     /** Listed among the screen's main options rather than under its other options. */
     isFeatured: boolean
     /** Replaces the screen's progress title while the key is generated. */
-    progressTitleKey?: string
-    badgeKey?: string
-    learnMore?: { labelKey: string; url: string }
+    progressTitleKey?: I18nKey
+    badgeKey?: I18nKey
+    learnMore?: { labelKey: I18nKey; url: string }
     /** Analytics event logged when the user picks the option. */
     analyticsEvent?: string
 }
@@ -68,10 +69,10 @@ export type LocalKeyCreateOption = LocalKeyEntryOption & {
 export type LocalKeyRecoverOption = {
     /** Stable slug the option's test id is built from. */
     id: string
-    titleKey: string
-    chipKey: string
-    descriptionKey: string
-    mnemonicInfoKey: string
+    titleKey: I18nKey
+    chipKey: I18nKey
+    descriptionKey: I18nKey
+    mnemonicInfoKey: I18nKey
     /** Gives the chip the emphasis of the chain's suggested kind. */
     isSuggested: boolean
     /** Analytics event logged when the user picks the option. */

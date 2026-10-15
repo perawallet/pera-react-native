@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { isChainId, type ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    isChainId,
+    type ChainId,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     ConnectionErrorScope,
     ConnectionProposal,
@@ -456,7 +460,7 @@ export type ConnectionsEvent =
           message: string
           name: string
           /** `AppError.metadata.messageKey`, so the UI can still translate it. */
-          messageKey?: string
+          messageKey?: I18nKey
           scope?: ConnectionErrorScope
       }
 

@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { Algodv2, Indexer } from 'algosdk'
 import { toAlgodError } from '../errors'
-import { TimeoutHttpClient } from './TimeoutHttpClient'
+import { algorandNodeOf, createNodeHttpClient } from './nodeHttp'
 
 type AlgorandClientNetworkConfig = {
     algodUrl: string
@@ -37,36 +36,12 @@ export const createTimeoutBoundedAlgorandClient = (
     networkConfig: AlgorandClientNetworkConfig,
 ): AlgorandClient => {
     const algod = new Algodv2(
-        new TimeoutHttpClient(
-            // Omit the header key entirely rather than sending it with an
-            // empty-string value: betanet/custom deliberately carry an empty
-            // `algodToken`/`indexerToken` (see network-config.ts — their
-            // algod/indexer are public third-party endpoints Pera does not
-            // control), and `resolveGenesisHash.ts` / `query-client.ts`'s
-            // `createTokenHeaderClient` already follow this same
-            // empty-means-omit convention for the other two request paths
-            // that carry these tokens.
-            networkConfig.algodToken.length
-                ? { 'X-Algo-API-Token': networkConfig.algodToken }
-                : {},
-            networkConfig.algodUrl,
-            undefined,
-            config.algodReadTimeout,
-            config.algodSubmitTimeout,
-        ),
+        createNodeHttpClient(algorandNodeOf(networkConfig, 'algod')),
         networkConfig.algodUrl,
     )
 
     const indexer = new Indexer(
-        new TimeoutHttpClient(
-            networkConfig.indexerToken.length
-                ? { 'X-Indexer-API-Token': networkConfig.indexerToken }
-                : {},
-            networkConfig.indexerUrl,
-            undefined,
-            config.algodReadTimeout,
-            config.algodSubmitTimeout,
-        ),
+        createNodeHttpClient(algorandNodeOf(networkConfig, 'indexer')),
         networkConfig.indexerUrl,
     )
 

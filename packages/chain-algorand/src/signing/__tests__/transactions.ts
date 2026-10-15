@@ -11,9 +11,10 @@
  */
 
 import { Address, Transaction, TransactionType } from 'algosdk'
-import type {
-    PeraTransaction,
-    UnsignedTransaction,
+import {
+    i18nKey,
+    type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { AlgorandTransactionPayload } from '../planner'
@@ -83,7 +84,7 @@ export const makeUnsignedAlgorandTransaction = (): UnsignedTransaction => ({
     payload: {},
     summary: {
         kind: 'transfer',
-        title: { key: 'transfer' },
+        title: { key: i18nKey('transfer') },
         direction: 'out',
         icon: 'send',
     },
@@ -102,3 +103,9 @@ export const asUnsignedAlgorandTransaction = (
 export const MAINNET_GENESIS_HASH = decodeFromBase64(
     'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
 )
+
+/** The transaction a wrapped payload carries, read without the network check fixtures on a mocked node would fail. */
+export const payloadTransactionOf = (
+    unsigned: UnsignedTransaction,
+): PeraTransaction =>
+    (unsigned.payload as AlgorandTransactionPayload).transaction

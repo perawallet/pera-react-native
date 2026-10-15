@@ -14,16 +14,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ZodError } from 'zod'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { algorandAssetInbox } from '../adapter'
+import { payloadTransactionOf } from '../../signing/__tests__/transactions'
 
 const mocks = vi.hoisted(() => ({
     createWalletAlgorandClient: vi.fn(),
     buildArc59SendViaInboxTxs: vi.fn(),
     buildArc59ClaimTxs: vi.fn(),
     buildArc59RejectTxs: vi.fn(),
+    fetchArc59AssetRequests: vi.fn(),
+    fetchArc59SendSummary: vi.fn(),
 }))
 
 vi.mock('../../blockchain', () => ({
     createWalletAlgorandClient: mocks.createWalletAlgorandClient,
+}))
+vi.mock('../api', async importOriginal => ({
+    ...(await importOriginal<typeof import('../api')>()),
+    fetchArc59AssetRequests: mocks.fetchArc59AssetRequests,
+    fetchArc59SendSummary: mocks.fetchArc59SendSummary,
 }))
 vi.mock('../builders', () => ({
     buildArc59SendViaInboxTxs: mocks.buildArc59SendViaInboxTxs,
@@ -32,7 +40,7 @@ vi.mock('../builders', () => ({
 }))
 
 const CLIENT = { name: 'wallet-client' }
-const TXNS = [{ txn: 'stub' }]
+const TXNS = [{ txn: 'stub', sender: 'SENDER' }]
 
 const summary = {
     is_arc59_opted_in: true,
@@ -55,6 +63,44 @@ describe('algorandAssetInbox', () => {
         mocks.buildArc59RejectTxs.mockResolvedValue(TXNS)
     })
 
+    it("fetches the scope's network requests through the Pera backend reader", async () => {
+        const requests = [{ id: '1' }]
+        mocks.fetchArc59AssetRequests.mockResolvedValue(requests)
+
+        const result = await inbox.fetchRequests({
+            scope: scopeForLegacyNetwork('testnet'),
+            address: 'RECEIVER',
+        })
+
+        expect(result).toBe(requests)
+        expect(mocks.fetchArc59AssetRequests).toHaveBeenCalledWith(
+            'testnet',
+            'RECEIVER',
+        )
+    })
+
+    it('quotes a send with the signed funding amount as algo_fund_amount plus minimum_balance_requirement', async () => {
+        mocks.fetchArc59SendSummary.mockResolvedValue({
+            ...summary,
+            algo_fund_amount: 200_000,
+            minimum_balance_requirement: 100_000,
+        })
+
+        const result = await inbox.fetchSendSummary({
+            scope: scopeForLegacyNetwork('mainnet'),
+            receiver: 'RECEIVER',
+            assetId: '7',
+        })
+
+        expect(mocks.fetchArc59SendSummary).toHaveBeenCalledWith(
+            'mainnet',
+            'RECEIVER',
+            '7',
+        )
+        expect(result.fundingAmount).toBe(300_000n)
+        expect(result.quote).toMatchObject({ algo_fund_amount: 200_000 })
+    })
+
     it("builds an inbox send with the scope's wallet client", async () => {
         const result = await inbox.buildSendTxs({
             scope: scopeForLegacyNetwork('testnet'),
@@ -66,7 +112,8 @@ describe('algorandAssetInbox', () => {
             senderMinFee: 1000n,
         })
 
-        expect(result).toBe(TXNS)
+        expect(result.map(payloadTransactionOf)).toEqual(TXNS)
+        expect(result[0].scope).toEqual(scopeForLegacyNetwork('testnet'))
         expect(mocks.createWalletAlgorandClient).toHaveBeenCalledWith('testnet')
         expect(mocks.buildArc59SendViaInboxTxs).toHaveBeenCalledWith(
             { algokit: CLIENT, network: 'testnet' },

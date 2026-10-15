@@ -36,13 +36,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountHoldingsInvalidator: () => ({ invalidate: mocks.invalidate }),
 }))
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => mocks.deviceId,
+    useScopedDeviceID: () => mocks.deviceId,
 }))
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'betanet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'betanet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useToggleAssetFavoriteMutation: () => ({
@@ -75,7 +75,6 @@ describe('useAssetFavoriteButton', () => {
             assetID: '123',
             deviceId: 'device-1',
             enabled: true,
-            network: 'betanet',
         })
         expect(mocks.showError).not.toHaveBeenCalled()
     })

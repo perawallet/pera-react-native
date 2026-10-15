@@ -12,11 +12,13 @@
 
 import React from 'react'
 import './i18n'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { ThemeProvider } from '@rneui/themed'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
 import { useAppIntegrityBootstrap } from '@perawallet/wallet-core-app-integrity'
+import type { ErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { PWButton } from '@components/core'
@@ -30,6 +32,15 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AppProviders } from './providers/AppProviders'
 import { usePasskeyAutofillLifecycle } from './bootstrap/passkey-autofill'
 import { useAppBootstrap } from './useAppBootstrap'
+
+const KEYSTORE_INIT_ERROR_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('app.initialization_failed.keystore.title'),
+    bodyKey: i18nKey('app.initialization_failed.keystore.body'),
+}
+const GENERIC_INIT_ERROR_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('app.initialization_failed.title'),
+    bodyKey: i18nKey('app.initialization_failed.body'),
+}
 
 // Process-wide setup (Decimal config, network status, splash hold, sheet
 // registry) runs before this tree mounts: see bootstrap/preReact.ts.
@@ -51,16 +62,16 @@ const AppContent = () => {
         // A keystore-integrity failure recurs on every launch, so the generic
         // "try restarting" copy would send users toward a destructive
         // reinstall; it gets its own message instead.
-        const errorKey =
+        const errorKeys =
             initError === 'keystore'
-                ? 'app.initialization_failed.keystore'
-                : 'app.initialization_failed'
+                ? KEYSTORE_INIT_ERROR_KEYS
+                : GENERIC_INIT_ERROR_KEYS
         return (
             <ThemeProvider theme={theme}>
                 <SafeAreaProvider>
                     <EmptyView
-                        title={t(`${errorKey}.title`)}
-                        body={t(`${errorKey}.body`)}
+                        title={t(errorKeys.titleKey)}
+                        body={t(errorKeys.bodyKey)}
                         button={
                             <PWButton
                                 variant='primary'

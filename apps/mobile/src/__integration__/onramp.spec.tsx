@@ -69,7 +69,10 @@ import { useOnrampStore } from '@perawallet/wallet-core-onramp'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { Networks } from '@perawallet/wallet-core-config'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+} from '@perawallet/wallet-core-shared'
 import { useWebViewStore } from '@modules/webview'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { OnrampScreen } from '@modules/onramp/routes'
@@ -442,7 +445,13 @@ const buildSponsorTxn = (mbrFunding: bigint): Transaction =>
             firstValid: 1000n,
             lastValid: 2000n,
             genesisID: 'mainnet-v1.0',
-            genesisHash: new Uint8Array(32).fill(0xab),
+            // Mainnet's: the pipeline checks every group member's network.
+            // Re-wrapped so algosdk's same-realm Uint8Array check passes.
+            genesisHash: new Uint8Array(
+                decodeFromBase64(
+                    'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+                ),
+            ),
         },
         paymentParams: {
             receiver:

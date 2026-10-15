@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { chainNoticeOf } from '../chainNoticeOf'
 
@@ -25,7 +26,7 @@ describe('chainNoticeOf', () => {
         expect(
             chainNoticeOf({
                 kind: 'warning',
-                title: { key: 'transactions.notice.pending' },
+                title: { key: i18nKey('transactions.notice.pending') },
                 since: SINCE,
             }),
         ).toEqual({
@@ -40,7 +41,10 @@ describe('chainNoticeOf', () => {
     it('keeps the title params alongside since', () => {
         const notice = chainNoticeOf({
             kind: 'warning',
-            title: { key: 'k', params: { chain: 'Ethereum' } },
+            title: {
+                key: i18nKey('transactions.notice.pending'),
+                params: { chain: 'Ethereum' },
+            },
             since: SINCE,
         })
 
@@ -52,7 +56,7 @@ describe('chainNoticeOf', () => {
         expect(
             chainNoticeOf({
                 kind: 'error',
-                title: { key: 'transactions.notice.failed' },
+                title: { key: i18nKey('transactions.notice.failed') },
             }),
         ).toEqual({ kind: 'error', titleKey: 'transactions.notice.failed' })
     })

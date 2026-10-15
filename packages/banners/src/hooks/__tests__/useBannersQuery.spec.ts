@@ -13,65 +13,76 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useBannersQuery } from '../useBannersQuery'
 import { fetchBanners } from '../../api/banners'
-import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/banners', () => ({
     fetchBanners: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+    useDeploymentDeviceID: vi.fn().mockReturnValue('test-device-id'),
 }))
 
+const network = vi.hoisted(() => ({ mode: 'live' }))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
+    useWalletDeployment: () => network.mode,
 }))
 
 beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useDeviceID).mockReturnValue('test-device-id')
+    network.mode = 'live'
+    vi.mocked(useDeploymentDeviceID).mockReturnValue('test-device-id')
 })
 
 describe('useBannersQuery', () => {
-    it('maps server response into Banner domain objects', async () => {
-        vi.mocked(fetchBanners).mockResolvedValue({
-            count: 1,
-            results: [
+    it.each(['live', 'developer'])(
+        'maps server response into Banner domain objects for the %s deployment',
+        async deployment => {
+            network.mode = deployment
+            vi.mocked(fetchBanners).mockResolvedValue({
+                count: 1,
+                results: [
+                    {
+                        id: 1,
+                        type: 'governance',
+                        title: 'Vote',
+                        subtitle: 'Now',
+                        button_label: 'Go',
+                        button_url: 'pera://gov',
+                        is_button_url_external: false,
+                    },
+                ],
+            })
+
+            const { result } = renderHook(() => useBannersQuery(), {
+                wrapper: createWrapper(),
+            })
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+            expect(useDeploymentDeviceID).toHaveBeenCalledWith(deployment)
+            expect(fetchBanners).toHaveBeenCalledWith(
+                deployment,
+                'test-device-id',
+            )
+            expect(result.current.banners).toEqual([
                 {
                     id: 1,
                     type: 'governance',
                     title: 'Vote',
                     subtitle: 'Now',
-                    button_label: 'Go',
-                    button_url: 'pera://gov',
-                    is_button_url_external: false,
+                    buttonLabel: 'Go',
+                    buttonUrl: 'pera://gov',
+                    isButtonUrlExternal: false,
+                    autoOpenMode: null,
+                    backgroundImageUrl: null,
                 },
-            ],
-        })
-
-        const { result } = renderHook(() => useBannersQuery(), {
-            wrapper: createWrapper(),
-        })
-
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-
-        expect(fetchBanners).toHaveBeenCalledWith('testnet', 'test-device-id')
-        expect(result.current.banners).toEqual([
-            {
-                id: 1,
-                type: 'governance',
-                title: 'Vote',
-                subtitle: 'Now',
-                buttonLabel: 'Go',
-                buttonUrl: 'pera://gov',
-                isButtonUrlExternal: false,
-                autoOpenMode: null,
-                backgroundImageUrl: null,
-            },
-        ])
-    })
+            ])
+        },
+    )
 
     it('filters out banners with no renderable content', async () => {
         vi.mocked(fetchBanners).mockResolvedValue({
@@ -116,7 +127,7 @@ describe('useBannersQuery', () => {
     })
 
     it('stays disabled and returns empty when deviceID is null', async () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
 
         const { result } = renderHook(() => useBannersQuery(), {
             wrapper: createWrapper(),

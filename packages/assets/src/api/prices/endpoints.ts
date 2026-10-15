@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     CHART_QUERY_TIMEOUT_MS,
     queryClient,
     type HistoryPeriod,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import {
     assetPriceHistoryResponseSchema,
@@ -24,11 +24,11 @@ import {
 export const fetchAssetPriceHistory = async (
     assetID: string,
     period: HistoryPeriod,
-    network: Network,
+    scope: ChainScope,
 ) => {
     const res = await queryClient<AssetPriceHistoryResponse, unknown>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/assets/price-chart/`,
         params: {

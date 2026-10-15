@@ -37,6 +37,8 @@ import {
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import { capabilityState } from '@test-utils/capability-mock'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 
 const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -147,24 +149,6 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
         params.kind === 'offline'
             ? mockOfflineKeyRegistration(params)
             : mockOnlineKeyRegistration(params),
-}))
-
-// Re-mocks only what useDeepLink consumes. Keeps
-// `isValidAlgorandAddress` / `useNetwork` consistent with the global
-// vitest.setup.ts contract.
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    isValidAlgorandAddress: (address: string) => {
-        if (!address) return false
-        return /^[0-9a-zA-Z]{58}$/.test(address)
-    },
-    getExpectedGenesisHash: () => 'mainnet-hash',
-    // Identity encode/decode pair for the keyreg shape-normalization
-    // step. Real impl encodes to msgpack bytes then decodes back to a
-    // string-sender txn; the tests don't care about byte representation.
-    useTransactionEncoder: () => ({
-        encodeTransaction: (tx: unknown) => tx,
-        decodeTransaction: (tx: unknown) => tx,
-    }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -463,6 +447,14 @@ vi.mock('react-native', () => ({
     },
     Platform: { OS: 'ios' },
 }))
+
+beforeEach(() => {
+    registerLegacyAddressCodec()
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('useDeepLink', () => {
     beforeEach(() => {

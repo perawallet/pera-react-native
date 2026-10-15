@@ -37,7 +37,7 @@ describe('lanekeep/shared/scope', () => {
 
     it('drops test files but still reaches fixtures, so gated rules run in their specs', async () => {
         const found = await runRule(
-            'lanekeep/rules/error-message-key-exists.ts',
+            'lanekeep/rules/i18n-key-exists.ts',
             'lanekeep/__tests__/fixtures/scope/**/*.ts',
         )
 

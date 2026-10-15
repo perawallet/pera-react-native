@@ -16,6 +16,8 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
@@ -38,14 +40,15 @@ export const OptInConfirmationContent = ({
     accountAddress,
     fee,
 }: OptInConfirmationContentProps) => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve } = useBottomSheetResult<'confirm'>()
     const { resolvedFee } = useOptInConfirmationContent(accountAddress, fee)
 
-    const { data: assets } = useAssetsQuery([assetId])
+    const { data: assets } = useAssetsQuery(scope, [assetId])
     const asset = assets?.get(assetId)
 
     const assetDisplayName = asset?.name ?? assetId

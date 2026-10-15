@@ -14,10 +14,7 @@ import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchTransactionsCsv,
     CsvExportError,
@@ -127,7 +124,7 @@ export const useCsvExportMutation = (
                 dateRange: exportParams.dateRange,
                 filename: exportParams.filename,
                 assetId: exportParams.assetId,
-                network: legacyNetworkOf(scope),
+                scope,
             })
         },
         onSuccess: result => {

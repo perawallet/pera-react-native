@@ -17,6 +17,7 @@ import {
     type SigningRequest,
     type TransactionPlanner,
     type UnsignedTransaction,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
@@ -108,7 +109,7 @@ export const makeUnsignedTransaction = (
     payload: { from },
     summary: {
         kind: 'transfer',
-        title: { key: 'transfer' },
+        title: { key: i18nKey('transfer') },
         direction: 'out',
         icon: 'send',
     },

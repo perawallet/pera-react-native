@@ -63,7 +63,10 @@ const UNSUPPORTED_CHAINS = 5100
 const UNSUPPORTED_METHODS = 5101
 const UNSUPPORTED_NAMESPACE_KEY = 5104
 
-const algorandAdapter = dappRequestAdapterFor(Networks.mainnet)
+const algorandAdapter = dappRequestAdapterFor({
+    chainId: 'algorand',
+    networkId: Networks.mainnet,
+})
 if (!algorandAdapter) {
     throw new Error('the package setup file registers the Algorand adapter')
 }

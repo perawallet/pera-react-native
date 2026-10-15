@@ -15,6 +15,8 @@ import { transformSearchResults } from '../mappers'
 import type { NfdSearchApiResponse } from '../schema'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const validAddress =
     'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
 
@@ -43,7 +45,7 @@ describe('transformSearchResults', () => {
                 { name: 'attacker.algo', address: 'not-a-real-address' },
                 { name: 'garbage.algo', address: '' },
             ]),
-            'mainnet',
+            ALGORAND_MAINNET,
         )
 
         expect(result).toHaveLength(1)
@@ -57,7 +59,7 @@ describe('transformSearchResults', () => {
     it('passes a valid backend result through unchanged', () => {
         const result = transformSearchResults(
             searchResponse([{ name: 'bob.algo', address: validAddress }]),
-            'mainnet',
+            ALGORAND_MAINNET,
         )
 
         expect(result).toHaveLength(1)

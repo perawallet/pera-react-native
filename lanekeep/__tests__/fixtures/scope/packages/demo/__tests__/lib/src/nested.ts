@@ -1,1 +1,1 @@
-export const nested = { messageKey: 'scope.fixture.missing' }
+export const nested = i18nKey('scope.fixture.missing')

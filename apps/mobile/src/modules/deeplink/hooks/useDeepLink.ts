@@ -30,11 +30,11 @@ import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
 import { usePendingSignaturesSheet } from '@modules/multisig'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     getBiometricSecurityLevel,
     hasStrongBiometricOrCredential,
 } from '@perawallet/wallet-core-security'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
@@ -42,7 +42,11 @@ import { useCapabilityCheck } from '@hooks/useCapability'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
 import { capabilityRequirementForDeeplink } from '../capability-policy'
 import { isNotificationAllowedDeeplinkType } from '../notification-policy'
-import { isPeraOwnedDeeplink, requireBaseUnits } from '../utils'
+import {
+    isLegacyChainAddress,
+    isPeraOwnedDeeplink,
+    requireBaseUnits,
+} from '../utils'
 import { buildDeeplink, type BuildDeeplinkInput } from '../builders'
 import {
     useAssetOptInDeeplink,
@@ -78,11 +82,12 @@ type UseDeepLinkResult = {
 // Hoisted for a stable identity: `useDeeplinkListener`'s effects depend on it,
 // and a per-render arrow re-registers the `Linking` subscription every render.
 const isValidDeepLink = (url: string): boolean => {
-    if (isValidAlgorandAddress(url)) return true
+    if (isLegacyChainAddress(url)) return true
     return parseDeeplink(url) !== null
 }
 
 export const useDeepLink = (): UseDeepLinkResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { errorToast, infoToast } = useToast()
     const { setSelectedAccountId } = useSelectedAccountId()
     // A link naming an address outside the wallet leaves the selection alone.
@@ -131,7 +136,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const showError = useDeeplinkErrorHandler()
     const runLocaleTourStep = useLocaleTourDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
 
     /**
      * Runs a sheet-opening handler WITHOUT awaiting it. Sheets render at the app

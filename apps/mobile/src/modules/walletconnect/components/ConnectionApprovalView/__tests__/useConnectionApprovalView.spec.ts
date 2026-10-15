@@ -12,6 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { AppError } from '@perawallet/wallet-core-shared'
 import {
@@ -217,7 +218,9 @@ describe('useConnectionApprovalView', () => {
     // check here only lets the two answers drift.
     it('surfaces the expired error the handler throws, and settles the proposal', async () => {
         const expired = new AppError('This connection request has expired', {
-            messageKey: 'errors.walletconnect.session_request_expired_body',
+            messageKey: i18nKey(
+                'errors.walletconnect.session_request_expired_body',
+            ),
             retryable: false,
         })
         const proposal = makeProposal({
@@ -241,7 +244,7 @@ describe('useConnectionApprovalView', () => {
 
     it('keeps the sheet open for a retryable delivery failure', async () => {
         const timeout = new AppError("Couldn't reach WalletConnect", {
-            messageKey: 'errors.walletconnect.connection_timeout_body',
+            messageKey: i18nKey('errors.walletconnect.connection_timeout_body'),
             retryable: true,
         })
         const proposal = makeProposal({

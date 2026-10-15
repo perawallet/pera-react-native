@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWText, PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
@@ -36,8 +37,8 @@ export const LegacyQuantumNotice = ({ account }: LegacyQuantumNoticeProps) => {
     if (!isLegacyQuantumAccount) return null
 
     const bodyKey = shouldUseDependentAwareCopy
-        ? 'accounts.legacyQuantum.bodyWithDependents'
-        : 'accounts.legacyQuantum.body'
+        ? i18nKey('accounts.legacyQuantum.bodyWithDependents')
+        : i18nKey('accounts.legacyQuantum.body')
 
     return (
         <PWView style={styles.markerRow}>

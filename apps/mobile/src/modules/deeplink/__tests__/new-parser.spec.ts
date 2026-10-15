@@ -15,12 +15,22 @@
 import { parseDeeplink } from '../parser'
 import { parsePerawalletAppUri } from '../new-parser'
 import { DeeplinkType } from '../types'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 
 // Test addresses from CSV
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 const TEST_RECEIVER_ADDRESS =
     'Z73KQDNF5X3OPYUJNKH77CWZTHAYBKDUYRJELNMVFKWWYUJH2V2Y54W4CM'
+
+beforeEach(() => {
+    registerLegacyAddressCodec()
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('Deeplink Parser - New Format', () => {
     describe('Add contact', () => {

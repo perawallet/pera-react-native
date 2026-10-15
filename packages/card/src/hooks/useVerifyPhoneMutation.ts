@@ -11,16 +11,13 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { verifyPhone, type VerifyPhoneParams } from '../api/onboarding'
 import { OnboardingStep } from '../models'
 import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
-export type VerifyPhoneVariables = Omit<VerifyPhoneParams, 'network' | 'signal'>
+export type VerifyPhoneVariables = Omit<VerifyPhoneParams, 'scope' | 'signal'>
 
 export type UseVerifyPhoneMutationResult =
     CardMutationResult<VerifyPhoneVariables>
@@ -28,10 +25,8 @@ export type UseVerifyPhoneMutationResult =
 export const useVerifyPhoneMutation = (
     scope: ChainScope,
 ): UseVerifyPhoneMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<void, Error, VerifyPhoneVariables>({
-        mutationFn: variables => verifyPhone({ ...variables, network }),
+        mutationFn: variables => verifyPhone({ ...variables, scope }),
         // Phone verified (the last step before KYC): advance to the
         // verification step so the setup checklist unlocks.
         onSuccess: () => {

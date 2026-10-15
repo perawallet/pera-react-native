@@ -26,13 +26,15 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainDescriptor,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     dedupeSecondaryLabel,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { chainUiFor } from '@modules/chain-ui'
@@ -74,10 +76,7 @@ export const useAssetDetailsScreen = ({
     } = useSingleAssetDetailsQuery(assetId, scope)
     // A failed background refetch keeps the loaded asset; only a load that never produced one is an error.
     const isError = isQueryError && !asset
-    const descriptor = useMemo(
-        () => getProvider().chains.get(chainId).descriptor,
-        [chainId],
-    )
+    const descriptor = getChainDescriptor(chainId)
     const assetDetailsDisplay =
         chainUiFor(descriptor.family).assetDetails ?? neutralAssetDetailsDisplay
 

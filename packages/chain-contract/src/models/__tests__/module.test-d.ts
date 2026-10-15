@@ -22,7 +22,6 @@ declare const descriptor: ChainDescriptor
 declare const capabilityDefaults: ChainCapabilities
 
 const register = (_ctx: ChainContext): void => undefined
-const i18nKeys = (): readonly string[] => []
 
 describe('ChainModule', () => {
     it('accepts a complete module', () => {
@@ -30,7 +29,6 @@ describe('ChainModule', () => {
             descriptor,
             capabilityDefaults,
             register,
-            i18nKeys,
         })
     })
 
@@ -40,7 +38,6 @@ describe('ChainModule', () => {
             capabilityDefaults,
             capabilityRestrictions: { onramp: ['developer-override'] },
             register,
-            i18nKeys,
         })
         assertType<ChainModule>({
             descriptor,
@@ -48,25 +45,22 @@ describe('ChainModule', () => {
             // @ts-expect-error live can't be restricted
             capabilityRestrictions: { onramp: ['live'] },
             register,
-            i18nKeys,
         })
     })
 
     it('rejects a module without capabilityDefaults', () => {
         // @ts-expect-error capabilityDefaults is required
-        assertType<ChainModule>({ descriptor, register, i18nKeys })
+        assertType<ChainModule>({ descriptor, register })
     })
 
     it('rejects a module without register', () => {
         // @ts-expect-error register is required
-        assertType<ChainModule>({ descriptor, capabilityDefaults, i18nKeys })
+        assertType<ChainModule>({ descriptor, capabilityDefaults })
     })
 
-    it('rejects a module without descriptor or i18nKeys', () => {
+    it('rejects a module without descriptor', () => {
         // @ts-expect-error descriptor is required
-        assertType<ChainModule>({ capabilityDefaults, register, i18nKeys })
-        // @ts-expect-error i18nKeys is required
-        assertType<ChainModule>({ descriptor, capabilityDefaults, register })
+        assertType<ChainModule>({ capabilityDefaults, register })
     })
 
     it('passes a ChainContext to register', () => {
@@ -75,12 +69,18 @@ describe('ChainModule', () => {
         >().toEqualTypeOf<ChainContext>()
     })
 
-    it('widens a module with typed endpoints to the default', () => {
-        expectTypeOf<ChainModule<{ algod: string }>>().toExtend<ChainModule>()
+    it('takes no type parameter', () => {
+        // @ts-expect-error ChainModule is not generic
+        assertType<ChainModule<{ algod: string }>>({} as ChainModule)
     })
 })
 
 describe('ChainContext', () => {
+    it('takes no type parameter', () => {
+        // @ts-expect-error ChainContext is not generic
+        assertType<ChainContext<{ algod: string }>>({} as ChainContext)
+    })
+
     it('exposes only the scope, endpoints, Pera backend, timeouts and key store', () => {
         expectTypeOf<keyof ChainContext>().toEqualTypeOf<
             'getScope' | 'getEndpoints' | 'getPeraBackend' | 'timeouts' | 'kms'

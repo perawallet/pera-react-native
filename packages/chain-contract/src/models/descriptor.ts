@@ -49,15 +49,13 @@ export type FeeModel = 'flat' | 'gas' | 'rate'
 export interface ChainProtocolFacts {
     feeModel: FeeModel
     hasAccountNonce: boolean
-    requiresAssetOptIn: boolean
-    hasMinimumBalance: boolean
-    supportsAtomicGroups: boolean
     supportsReplacement: boolean
     supportsNativeMultisig: boolean
     supportsRekey: boolean
     /** An account can grant a contract an allowance over its tokens. */
     hasTokenApproval: boolean
-    multipleAddressesPerAccount: boolean
+    /** UTF-8 bytes a transaction's free-text note may hold; absent when the chain has no note field. */
+    maxNoteBytes?: number
 }
 
 /**

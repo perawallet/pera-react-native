@@ -24,19 +24,13 @@ import type { AuthContext } from '../sign'
 import {
     MAIL_TYPED_DATA,
     TRANSFER,
+    VIEM_HELLO_WORLD,
+    VIEM_MAIL,
+    VIEM_PERA,
     VIEM_TRANSFER_NONCE_0,
     VIEM_TRANSFER_NONCE_2,
     createVectorKeyStore,
 } from './fixtures'
-
-// viem's own `signMessage` and `signTypedData` output under the same key as the
-// transaction vectors in `fixtures.ts`; never derived from them.
-const VIEM_HELLO_WORLD =
-    '0xa461f509887bd19e312c0c58467ce8ff8e300d3c1a90b608a760c5b80318eaf15fe57c96f9175d6cd4daad4663763baa7e78836e067d0163e9a2ccf2ff753f5b1b'
-const VIEM_PERA =
-    '0xe04588d881d59ef43990fd1bdd2e05bce76c3052620432089e1d632b6d4bc3884930cf24da1dda4ff05d7dffee6605f6ab807db2cfe2ff01dd73054883b6e8161c'
-const VIEM_MAIL =
-    '0x6ea8bb309a3401225701f3565e32519f94a0ea91a5910ce9229fe488e773584c0390416a2190d9560219dab757ecca2029e63fa9d1c2aebf676cc25b9f03126a1b'
 
 const KEY_PAIR_ID = 'kms-entry-1'
 

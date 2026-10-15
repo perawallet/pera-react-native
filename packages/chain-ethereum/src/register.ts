@@ -28,8 +28,10 @@ import {
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import {
     broadcasterChainAdapters,
+    messageSignerChainAdapters,
     type BroadcasterChainAdapter,
 } from '@perawallet/wallet-core-signing'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import {
     historyChainAdapters,
     transferChainAdapters,
@@ -42,8 +44,10 @@ import {
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
 import { ethereumDappRequestAdapter } from './connect/dappRequestAdapter'
+import { ethereumDeeplinkAdapter } from './deeplinks/adapter'
 import { ethereumHistoryAdapter } from './history'
 import { ethereumPlannerAdapter } from './signing/adapter'
+import { ethereumMessageSignerAdapter } from './signing/messages'
 import { ethereumReviewerAdapter } from './signing/review'
 import {
     createEthereumBroadcasterAdapter,
@@ -67,10 +71,12 @@ export const registerChain = (ctx: ChainContext): void => {
     keyDerivations.register(ethereumKeyDerivation)
     transactionPlanners.register(ethereumPlannerAdapter)
     transactionReviewers.register(ethereumReviewerAdapter)
+    messageSignerChainAdapters.register(ethereumMessageSignerAdapter)
     accountsChainAdapters.register(accountsAdapter)
     assetsChainAdapters.register(assetsAdapter)
     transferChainAdapters.register(transferAdapter)
     broadcasterChainAdapters.register(broadcasterAdapter)
     historyChainAdapters.register(ethereumHistoryAdapter)
     dappRequestChainAdapters.register(ethereumDappRequestAdapter)
+    deeplinkAdapters.register(ethereumDeeplinkAdapter)
 }

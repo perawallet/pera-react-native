@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
@@ -25,11 +26,11 @@ export type ChartPeriodSelectionProps = {
 
 // Record keeps this exhaustive — adding a HistoryPeriod without a label
 // fails to compile.
-const PERIOD_LABELS: Record<HistoryPeriod, string> = {
-    'one-day': 'chart.one_day.label',
-    'one-week': 'chart.one_week.label',
-    'one-month': 'chart.one_month.label',
-    'one-year': 'chart.one_year.label',
+const PERIOD_LABELS: Record<HistoryPeriod, I18nKey> = {
+    'one-day': i18nKey('chart.one_day.label'),
+    'one-week': i18nKey('chart.one_week.label'),
+    'one-month': i18nKey('chart.one_month.label'),
+    'one-year': i18nKey('chart.one_year.label'),
 }
 
 const PERIODS = HISTORY_PERIODS.map(value => ({

@@ -21,7 +21,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     historyChainAdapters,
-    useOpenSubmissionTxIdsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
@@ -43,13 +42,6 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
         typeof import('@perawallet/wallet-core-assets')
     >()),
     useAssetsQuery: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-transactions')
-    >()),
-    useOpenSubmissionTxIdsQuery: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -110,9 +102,6 @@ describe('useTransactionListItem', () => {
         historyChainAdapters.reset()
         historyChainAdapters.register(algorandHistoryAdapter)
         stored([])
-        vi.mocked(useOpenSubmissionTxIdsQuery).mockReturnValue({
-            openTxIds: new Set(),
-        } as unknown as ReturnType<typeof useOpenSubmissionTxIdsQuery>)
     })
 
     describe('transfers', () => {
@@ -196,9 +185,10 @@ describe('useTransactionListItem', () => {
                 ['USDC', '+'],
             ])
             expect(row.amountsOverflowCount).toBe(1)
-            expect(useAssetsQuery).toHaveBeenCalledWith(['0', '31566704'], {
-                scope: expect.objectContaining({ chainId: 'algorand' }),
-            })
+            expect(useAssetsQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ chainId: 'algorand' }),
+                ['0', '31566704'],
+            )
         })
 
         it('survives decimals the backend could not resolve', () => {
@@ -276,16 +266,6 @@ describe('useTransactionListItem', () => {
             renderRow(golden('payment sent')).handleLongPress()
 
             expect(mockCopyToClipboard).toHaveBeenCalledWith('TX')
-        })
-
-        it('flags a broadcast row that has not resolved yet', () => {
-            vi.mocked(useOpenSubmissionTxIdsQuery).mockReturnValue({
-                openTxIds: new Set(['TX']),
-            } as unknown as ReturnType<typeof useOpenSubmissionTxIdsQuery>)
-
-            expect(renderRow(golden('payment sent')).isPendingVerifying).toBe(
-                true,
-            )
         })
     })
 })

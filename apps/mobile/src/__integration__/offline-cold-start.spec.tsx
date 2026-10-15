@@ -233,9 +233,10 @@ describe('Flow: Cold start with no connectivity', () => {
         onlineManager.setOnline(false)
         useNetworkStatusStore.getState().setHasInternet(false)
 
-        const { result } = renderHook(() => useCurrency(), {
-            wrapper: wrapperWithClient(),
-        })
+        const { result } = renderHook(
+            () => useCurrency(scopeForLegacyNetwork('mainnet')),
+            { wrapper: wrapperWithClient() },
+        )
 
         await waitFor(() => {
             expect(result.current.isRatePending).toBe(true)
@@ -244,7 +245,7 @@ describe('Flow: Cold start with no connectivity', () => {
         // The ticket's "no fake numbers" rule: an unknown rate yields no
         // value at all, which CurrencyAmount renders as a placeholder.
         expect(result.current.usdToPreferred(new Decimal(100))).toBeNull()
-        expect(result.current.algoUsdPrice).toBeNull()
+        expect(result.current.nativeUsdPrice).toBeNull()
     })
 
     it('Given a never-synced install holding ALGO and the default USD currency, when the portfolio resolves, then the fiat total is unknown rather than 0', async () => {
@@ -318,7 +319,7 @@ describe('Flow: Cold start with no connectivity', () => {
                 const accounts = useSigningAccounts(scope.chainId)
                 return {
                     totals: useAccountValueTotalsQuery(accounts, scope),
-                    currency: useCurrency(),
+                    currency: useCurrency(scope),
                     history: useAccountHistory(),
                 }
             },

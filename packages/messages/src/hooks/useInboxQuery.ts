@@ -11,11 +11,8 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
@@ -53,8 +50,7 @@ const addressesOn = (
  * per-observer `select` is the only thing a consumer should add.
  */
 export const useInboxQueryOptions = (scope: ChainScope) => {
-    const network = legacyNetworkOf(scope)
-    const deviceID = useDeviceID(network) ?? ''
+    const deviceID = useScopedDeviceID(scope) ?? ''
     const signingAccounts = useSigningAccounts(scope.chainId)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
@@ -70,7 +66,7 @@ export const useInboxQueryOptions = (scope: ChainScope) => {
         () =>
             queryOptions({
                 queryKey: getInboxQueryKey(scope, deviceID, addresses),
-                queryFn: () => fetchInbox(network, deviceID, addresses),
+                queryFn: () => fetchInbox(scope, deviceID, addresses),
                 enabled:
                     !!deviceID.length &&
                     !!addresses.length &&
@@ -98,7 +94,7 @@ export const useInboxQueryOptions = (scope: ChainScope) => {
                 // trip ky's Error subclass via Babel's `_construct` helper.
                 retry: false,
             }),
-        [scope, network, deviceID, addresses, isUnavailableOnNetwork],
+        [scope, deviceID, addresses, isUnavailableOnNetwork],
     )
 
     return { queryOptions: queryOptionsResult, isUnavailableOnNetwork }

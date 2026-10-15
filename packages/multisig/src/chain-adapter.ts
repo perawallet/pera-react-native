@@ -12,12 +12,12 @@
 
 import {
     createChainAdapterRegistry,
-    scopeForLegacyNetwork,
     type ChainId,
     type ChainScope,
     type SigningScheme,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from './models'
 
 /** Chain-encoded: `version` and the participant order are part of the address hash. */
@@ -102,6 +102,15 @@ export interface MultisigChainAdapter {
         authorizedSenders: ReadonlySet<string>,
     ): MultisigSignRequestValidation
     /**
+     * One unsigned wire-encoded transaction from a request's list, as signed
+     * for the joint account `multisig` describes, so its participants cosign.
+     */
+    decodeTransaction(
+        bytes: Uint8Array,
+        scope: ChainScope,
+        multisig: MultisigParameters,
+    ): UnsignedTransaction
+    /**
      * Whether a participant slot verifies signatures of `scheme`. A key of any
      * other scheme can never contribute a subsignature, so its account can't
      * be a participant.
@@ -121,6 +130,5 @@ export interface MultisigChainAdapter {
 export const multisigChainAdapters =
     createChainAdapterRegistry<MultisigChainAdapter>('multisig')
 
-// Every legacy `Network` belongs to one chain; chain-contract owns that mapping.
-export const multisigAdapterFor = (network: Network): MultisigChainAdapter =>
-    multisigChainAdapters.get(scopeForLegacyNetwork(network).chainId)
+export const multisigAdapterFor = (scope: ChainScope): MultisigChainAdapter =>
+    multisigChainAdapters.get(scope.chainId)

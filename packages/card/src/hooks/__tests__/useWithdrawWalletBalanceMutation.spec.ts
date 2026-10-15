@@ -21,14 +21,20 @@ const { withdrawWalletBalance } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/wallet-balance', () => ({ withdrawWalletBalance }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useWithdrawWalletBalanceMutation } from '../useWithdrawWalletBalanceMutation'
 import { cardQueryKeys } from '../querykeys'
 import { CardWalletKind } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useWithdrawWalletBalanceMutation', () => {
+describe.each(SCOPES)('useWithdrawWalletBalanceMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -69,7 +75,7 @@ describe('useWithdrawWalletBalanceMutation', () => {
             expect(withdrawWalletBalance).toHaveBeenCalledWith({
                 kind,
                 amount,
-                network: 'mainnet',
+                scope: SCOPE,
             })
             expect(invalidateSpy).toHaveBeenCalledWith({
                 queryKey: cardQueryKeys.walletBalance(SCOPE, kind),

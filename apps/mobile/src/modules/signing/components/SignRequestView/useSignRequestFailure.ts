@@ -15,11 +15,12 @@ import { useQueryClient } from '@tanstack/react-query'
 import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
-    legacyNetworkOf,
+    i18nKey,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import {
     getSignRequestDetailQueryKey,
     useSignRequestDetailQuery,
@@ -30,7 +31,7 @@ import {
     SubmissionError,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
@@ -54,19 +55,19 @@ export type UseSignRequestFailureResult = {
  * first", so it keeps the generic copy.
  */
 const ALREADY_RESOLVED_COPY: Partial<
-    Record<SignRequestStatus, { title: string; body: string }>
+    Record<SignRequestStatus, { title: I18nKey; body: I18nKey }>
 > = {
     confirmed: {
-        title: 'multisig.already_resolved.confirmed.title',
-        body: 'multisig.already_resolved.confirmed.body',
+        title: i18nKey('multisig.already_resolved.confirmed.title'),
+        body: i18nKey('multisig.already_resolved.confirmed.body'),
     },
     declined: {
-        title: 'multisig.already_resolved.declined.title',
-        body: 'multisig.already_resolved.declined.body',
+        title: i18nKey('multisig.already_resolved.declined.title'),
+        body: i18nKey('multisig.already_resolved.declined.body'),
     },
     expired: {
-        title: 'multisig.already_resolved.expired.title',
-        body: 'multisig.already_resolved.expired.body',
+        title: i18nKey('multisig.already_resolved.expired.title'),
+        body: i18nKey('multisig.already_resolved.expired.body'),
     },
 }
 
@@ -90,10 +91,9 @@ export const useSignRequestFailure = (
     error: Nullable<Error>,
 ): UseSignRequestFailureResult => {
     const { t } = useLanguage()
-    const { getMessage } = useAlgodErrorMessage()
+    const { getMessage } = useNodeErrorMessage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
-    const deviceId = useDeviceID(network) ?? ''
+    const deviceId = useScopedDeviceID(scope) ?? ''
     const queryClient = useQueryClient()
 
     const cosignSignRequestId =
@@ -128,7 +128,7 @@ export const useSignRequestFailure = (
     }, [cosignSignRequestId, scope, queryClient])
 
     const { data: signRequest } = useSignRequestDetailQuery({
-        network,
+        scope,
         deviceId,
         signRequestId: cosignSignRequestId ?? '',
         enabled: cosignSignRequestId !== null && deviceId !== '',

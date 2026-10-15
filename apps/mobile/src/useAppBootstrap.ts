@@ -12,7 +12,6 @@
 
 import { useEffect, useState } from 'react'
 import * as SplashScreen from 'expo-splash-screen'
-import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { seedNativeAssets } from '@perawallet/wallet-core-assets'
 import {
     createSyncStorePorts,
@@ -33,7 +32,10 @@ import {
     RemoteConfigKeys,
     useRemoteConfigStore,
 } from '@perawallet/wallet-core-remote-config'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    legacyNetworkOf,
+} from '@perawallet/wallet-core-chain-contract'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
@@ -50,6 +52,7 @@ import {
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
+import { keystoreMaintenanceDependencies } from './bootstrap/keystore-maintenance'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
 import { updateQueryHeaders } from './bootstrap/query-headers'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
@@ -173,9 +176,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // bootstrap: the alternative is presenting an empty wallet,
                 // which is what prompts users to wipe and re-onboard on top of
                 // keys that were still on disk.
-                const keystoreBranch = runKeystoreMaintenance({
-                    deriveKeygenSeed: derivePQKeygenSeed,
-                })
+                const keystoreBranch = runKeystoreMaintenance(
+                    keystoreMaintenanceDependencies,
+                )
                     .then(({ repair, passkeySplit, failedDecodeIds }) => {
                         if (failedDecodeIds.length > 0) {
                             // Non-fatal this session, but these exact records
@@ -245,7 +248,11 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     stores: createSyncStorePorts(),
                     chains: getProvider().chains,
                     registerCompletionHandler: handler =>
-                        setOnConfirmedHandler(LEGACY_CHAIN_ID, handler),
+                        setOnConfirmedHandler(
+                            LEGACY_CHAIN_ID,
+                            (addresses, scope) =>
+                                handler(addresses, legacyNetworkOf(scope)),
+                        ),
                 })
 
                 updateQueryHeaders()

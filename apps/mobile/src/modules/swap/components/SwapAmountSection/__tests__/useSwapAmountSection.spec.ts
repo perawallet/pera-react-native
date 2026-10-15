@@ -13,7 +13,10 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSwapAmountSection } from '../useSwapAmountSection'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockAsset = {
     assetId: '0',
@@ -44,6 +47,7 @@ describe('useSwapAmountSection', () => {
     it('returns isPay true for pay variant', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: null,
@@ -57,6 +61,7 @@ describe('useSwapAmountSection', () => {
     it('returns isPay false for receive variant', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'receive',
                 assetId: '0',
                 amount: null,
@@ -69,6 +74,7 @@ describe('useSwapAmountSection', () => {
     it('returns hasPositiveAmount false when amount is null', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: null,
@@ -82,6 +88,7 @@ describe('useSwapAmountSection', () => {
     it('returns hasPositiveAmount true when amount is positive', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: new Decimal(5),
@@ -95,6 +102,7 @@ describe('useSwapAmountSection', () => {
     it('returns hasPositiveAmount false when amount is zero', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: new Decimal(0),
@@ -109,6 +117,7 @@ describe('useSwapAmountSection', () => {
         const onAmountChange = vi.fn()
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: null,
@@ -128,6 +137,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,
@@ -149,6 +159,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,
@@ -170,6 +181,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,
@@ -191,6 +203,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,
@@ -210,6 +223,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,
@@ -236,6 +250,7 @@ describe('useSwapAmountSection', () => {
         const onAmountChange = vi.fn()
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: new Decimal(5),
@@ -254,6 +269,7 @@ describe('useSwapAmountSection', () => {
         const onAmountChange = vi.fn()
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: null,
@@ -272,6 +288,7 @@ describe('useSwapAmountSection', () => {
         const onAmountChange = vi.fn()
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'pay',
                 assetId: '0',
                 amount: null,
@@ -290,6 +307,7 @@ describe('useSwapAmountSection', () => {
         const onAmountChange = vi.fn()
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'receive',
                 assetId: '0',
                 amount: null,
@@ -307,6 +325,7 @@ describe('useSwapAmountSection', () => {
     it('returns empty displayValue for receive variant with null amount', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'receive',
                 assetId: '0',
                 amount: null,
@@ -319,6 +338,7 @@ describe('useSwapAmountSection', () => {
     it('returns formatted displayValue for receive variant with amount', () => {
         const { result } = renderHook(() =>
             useSwapAmountSection({
+                scope: SCOPE,
                 variant: 'receive',
                 assetId: '0',
                 amount: new Decimal('1234.56'),
@@ -335,6 +355,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,
@@ -358,6 +379,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,
@@ -381,6 +403,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: new Decimal(10),
@@ -401,6 +424,7 @@ describe('useSwapAmountSection', () => {
         it('displays the fiat equivalent of the asset amount when blurred', () => {
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: new Decimal(200),
@@ -430,6 +454,7 @@ describe('useSwapAmountSection', () => {
 
             const onAmountChange = vi.fn()
             const baseProps = {
+                scope: SCOPE,
                 variant: 'pay' as const,
                 assetId: '0',
                 onAmountChange,
@@ -465,6 +490,7 @@ describe('useSwapAmountSection', () => {
             const onAmountChange = vi.fn()
             const { result } = renderHook(() =>
                 useSwapAmountSection({
+                    scope: SCOPE,
                     variant: 'pay',
                     assetId: '0',
                     amount: null,

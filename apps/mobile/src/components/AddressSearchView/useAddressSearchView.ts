@@ -15,6 +15,8 @@ import {
     addressCodecs,
     LEGACY_CHAIN_ID,
     type ChainFamily,
+    i18nKey,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
@@ -39,7 +41,7 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useFocusEffect } from '@react-navigation/native'
 
 export type AddressSearchItem =
-    | { type: 'section_header'; title: string; key: string }
+    | { type: 'section_header'; title: I18nKey; key: string }
     | { type: 'account'; account: WalletAccount; key: string }
     /** `address` is the contact's entry in the searched family. */
     | { type: 'contact'; contact: Contact; address: string; key: string }
@@ -127,6 +129,7 @@ export const useAddressSearchView = ({
     const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)
     const shouldSearchNfd = debouncedValue.includes('.') && !addressIsValid
     const { data: nfdData, isLoading: isNfdLoading } = useNfdSearchQuery(
+        scope,
         debouncedValue,
         { enabled: shouldSearchNfd },
     )
@@ -199,7 +202,7 @@ export const useAddressSearchView = ({
             const ownAccount = findAddressHolder(accounts, scope, value)
             items.push({
                 type: 'section_header',
-                title: 'address_entry.address',
+                title: i18nKey('address_entry.address'),
                 key: 'header-address',
             })
             if (ownAccount) {
@@ -220,7 +223,7 @@ export const useAddressSearchView = ({
         if (nfdResults.length > 0) {
             items.push({
                 type: 'section_header',
-                title: 'address_entry.nfd_results',
+                title: i18nKey('address_entry.nfd_results'),
                 key: 'header-nfd',
             })
             for (const nfd of nfdResults) {
@@ -235,7 +238,7 @@ export const useAddressSearchView = ({
         if (matchingAccounts.length > 0) {
             items.push({
                 type: 'section_header',
-                title: 'address_entry.my_accounts',
+                title: i18nKey('address_entry.my_accounts'),
                 key: 'header-accounts',
             })
             for (const a of matchingAccounts) {
@@ -250,7 +253,7 @@ export const useAddressSearchView = ({
         if (matchingContacts.length > 0) {
             items.push({
                 type: 'section_header',
-                title: 'address_entry.contacts',
+                title: i18nKey('address_entry.contacts'),
                 key: 'header-contacts',
             })
             for (const { contact, address } of matchingContacts) {

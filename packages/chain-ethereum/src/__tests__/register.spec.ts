@@ -16,7 +16,10 @@ import {
     buildAccount,
 } from '@perawallet/wallet-core-accounts'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
-import { broadcasterChainAdapters } from '@perawallet/wallet-core-signing'
+import {
+    broadcasterChainAdapters,
+    messageSignerChainAdapters,
+} from '@perawallet/wallet-core-signing'
 import {
     addressCodecs,
     keyDerivations,
@@ -25,17 +28,20 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import {
     historyChainAdapters,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { ethereumAddressCodec } from '../accounts/address-codec'
+import { ethereumDeeplinkAdapter } from '../deeplinks/adapter'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
 import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
 import { ethereumDappRequestAdapter } from '../connect/dappRequestAdapter'
 import { ethereumHistoryAdapter } from '../history'
 import { registerChain } from '../register'
 import { ethereumPlannerAdapter } from '../signing/adapter'
+import { ethereumMessageSignerAdapter } from '../signing/messages'
 import { ethereumReviewerAdapter } from '../signing/review'
 
 const ADDRESS = '0x00000000000000000000000000000000000000aa'
@@ -47,15 +53,17 @@ describe('registerChain', () => {
         keyDerivations.reset()
         transactionPlanners.reset()
         transactionReviewers.reset()
+        messageSignerChainAdapters.reset()
         accountsChainAdapters.reset()
         assetsChainAdapters.reset()
         transferChainAdapters.reset()
         historyChainAdapters.reset()
         broadcasterChainAdapters.reset()
         dappRequestChainAdapters.reset()
+        deeplinkAdapters.reset()
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, and accounts, assets, transfer, broadcaster, history and dApp request adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, message signer, and accounts, assets, transfer, broadcaster, history, dApp request and deeplink adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
@@ -63,6 +71,9 @@ describe('registerChain', () => {
         expect(transactionPlanners.get('ethereum')).toBe(ethereumPlannerAdapter)
         expect(transactionReviewers.get('ethereum')).toBe(
             ethereumReviewerAdapter,
+        )
+        expect(messageSignerChainAdapters.get('ethereum')).toBe(
+            ethereumMessageSignerAdapter,
         )
         expect(accountsChainAdapters.get('ethereum').chainId).toBe('ethereum')
         expect(assetsChainAdapters.get('ethereum').getNativeAsset()).toBe(
@@ -78,6 +89,7 @@ describe('registerChain', () => {
         expect(dappRequestChainAdapters.get('ethereum')).toBe(
             ethereumDappRequestAdapter,
         )
+        expect(deeplinkAdapters.get('ethereum')).toBe(ethereumDeeplinkAdapter)
     })
 
     it('can run more than once, so a repeated bootstrap is harmless', () => {

@@ -27,6 +27,7 @@ import type {
     ConnectionOrigin,
 } from '@perawallet/wallet-extension-connections'
 import { logger, Networks } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type {
     WalletKitEvent,
     WalletKitFactory,
@@ -931,7 +932,9 @@ describe('session requests', () => {
 
 describe('empty signatures', () => {
     const stubEmptySignatures = () => {
-        const adapter = dappRequestAdapterFor(Networks.mainnet)
+        const adapter = dappRequestAdapterFor(
+            scopeForLegacyNetwork(Networks.mainnet),
+        )
         if (!adapter) throw new Error('no Algorand adapter registered')
         return vi
             .spyOn(adapter, 'emptySignaturesFor')

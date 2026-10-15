@@ -60,11 +60,6 @@ export type PortfolioViewProps = {
 } & PWViewProps
 
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
-    const nativeAsset = useNativeAsset()
-    const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
-    const { t } = useLanguage()
-
     const {
         scope,
         accounts,
@@ -74,6 +69,10 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         hasFiatTotal,
         isPending,
     } = usePortfolioView()
+    const nativeAsset = useNativeAsset(scope)
+    const styles = useStyles()
+    const { preferredCurrency } = useCurrency(scope)
+    const { t } = useLanguage()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()

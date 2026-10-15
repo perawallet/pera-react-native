@@ -44,7 +44,7 @@ describe('integrity endpoints', () => {
         const challenge = await requestChallenge({
             deviceInstallationId: 'd1',
             platform: 'ios',
-            network: 'mainnet',
+            deployment: 'live',
         })
         expect(challenge).toBe('abc')
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -66,7 +66,7 @@ describe('integrity endpoints', () => {
                 requestChallenge({
                     deviceInstallationId: 'd1',
                     platform: 'ios',
-                    network: 'mainnet' as const,
+                    deployment: 'live',
                 }),
             { data: { challenge: 'abc' } },
         ],
@@ -79,7 +79,7 @@ describe('integrity endpoints', () => {
                         platform: 'android' as const,
                         attestation: 'att',
                     },
-                    network: 'mainnet' as const,
+                    deployment: 'live',
                 }),
             { data: { integrity_token: 'jwt', expires_at: '2026-07-01' } },
         ],
@@ -104,7 +104,7 @@ describe('integrity endpoints', () => {
                 keyId: 'k1',
                 attestation: 'att',
             },
-            network: 'mainnet',
+            deployment: 'live',
         })
         expect(result).toEqual({
             integrityToken: 'jwt',
@@ -133,7 +133,7 @@ describe('integrity endpoints', () => {
                 platform: 'android',
                 attestation: 'tok',
             },
-            network: 'mainnet',
+            deployment: 'live',
         })
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -152,7 +152,7 @@ describe('integrity endpoints', () => {
         })
         const result = await verifyIntegrityToken({
             integrityToken: 'jwt',
-            network: 'mainnet',
+            deployment: 'live',
         })
         expect(result).toEqual({
             ok: true,
@@ -187,7 +187,7 @@ describe('attestDevice web variant', () => {
                 publicKey: 'spki-base64',
                 signature: 'sig-base64',
             },
-            network: 'mainnet',
+            deployment: 'live',
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -215,7 +215,7 @@ describe('attestDevice web variant', () => {
         const challenge = await requestChallenge({
             deviceInstallationId: 'install-1',
             platform: 'web',
-            network: 'mainnet',
+            deployment: 'live',
         })
 
         expect(challenge).toBe('challenge-value')
@@ -232,7 +232,7 @@ describe('enrolDevice', () => {
         deviceInstallationId: 'd1',
         publicKey: 'spki-b64',
         turnstileToken: 'tok',
-        network: 'mainnet' as const,
+        deployment: 'live' as const,
     }
 
     it('posts snake_case fields with the single-use retry', async () => {
@@ -246,7 +246,7 @@ describe('enrolDevice', () => {
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                network: 'mainnet',
+                deployment: 'live',
                 method: 'POST',
                 url: '/api/v3/public/integrity/enrol',
                 data: {

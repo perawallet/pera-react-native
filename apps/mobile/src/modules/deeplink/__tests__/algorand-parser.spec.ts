@@ -14,7 +14,9 @@
 
 import { parseAlgorandUri } from '../algorand-parser'
 import { DeeplinkType } from '../types'
-import { vi } from 'vitest'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { afterEach, beforeEach, vi } from 'vitest'
 
 // Mock getNetworkConfig for all tests in this file
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -35,6 +37,14 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+
+beforeEach(() => {
+    registerLegacyAddressCodec()
+})
+
+afterEach(() => {
+    addressCodecs.reset()
+})
 
 describe('ARC-90 Algorand Parser', () => {
     describe('Address Actions (Basic Scan)', () => {

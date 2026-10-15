@@ -102,7 +102,10 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
 
     const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
-    const { data: assets } = useAssetsQuery(usdcAssetId ? [usdcAssetId] : [])
+    const { data: assets } = useAssetsQuery(
+        scope,
+        usdcAssetId ? [usdcAssetId] : [],
+    )
     const decimals =
         (usdcAssetId === null
             ? undefined

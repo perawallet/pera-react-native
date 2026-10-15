@@ -16,10 +16,7 @@ import { getAddress } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { evmHistoryItem } from '../api/msw-handlers'
 import { evmHistoryItemSchema, type EvmHistoryItem } from '../api/schema'
-import {
-    ETHEREUM_HISTORY_SUMMARY_KEYS,
-    summarizeEthereumHistoryItem,
-} from '../summarize'
+import { summarizeEthereumHistoryItem } from '../summarize'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ME = '0x00000000000000000000000000000000000000aa'
@@ -327,21 +324,5 @@ describe('summarizeEthereumHistoryItem', () => {
                 value: new Decimal(-2),
             },
         ])
-    })
-
-    it('only emits title keys it declares', () => {
-        const rows = [
-            row({ from: ME, to: PEER, value: '5' }),
-            row({ from: PEER, to: ME, value: '5' }),
-            row({ token_transfers: [leg(PEER, ME)] }),
-            row({ from: ME, to: USDC, method: 'approve' }),
-            row({ kind: 'withdrawal', hash: null }),
-        ]
-
-        for (const item of rows) {
-            expect(ETHEREUM_HISTORY_SUMMARY_KEYS).toContain(
-                summarize(item).title.key,
-            )
-        }
     })
 })

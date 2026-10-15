@@ -13,8 +13,8 @@
 import { useCallback } from 'react'
 import type {
     ChainScope,
-    PeraSignedTransaction,
-    PeraTransaction,
+    SignedTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
 import {
@@ -25,7 +25,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { submitAndAutoRefresh } from '../broadcaster'
-import type { TransactionSignRequest } from '../models'
+import type { UnsignedTransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
 
 /**
@@ -53,7 +53,7 @@ export type SignAndSubmitGroupSource = {
 export type SignAndSubmitGroupParams = {
     scope: ChainScope
     /** Unsigned transactions, already grouped by the caller. */
-    unsignedTxs: PeraTransaction[]
+    unsignedTxs: UnsignedTransaction[]
     /** Display metadata threaded through the pipeline. */
     source: SignAndSubmitGroupSource
 }
@@ -64,9 +64,9 @@ export type SignAndSubmitGroupResult = {
 
 /**
  * Push a pre-built unsigned transaction group through the XState signing
- * pipeline as a headless, `transport: 'callback'` request (the pipeline's
- * default — no `sourceType` is set, so it falls outside
- * `INTERACTIVE_SOURCES` and no review or completion sheet is surfaced).
+ * pipeline as a headless, `transport: 'callback'` request (`sourceType:
+ * 'local'` falls outside `INTERACTIVE_SOURCES`, so no review or completion
+ * sheet is surfaced).
  * Resolves with the algod txIds once signing and submission succeed.
  *
  * Local-key accounts run validating → signing → completed without showing
@@ -87,25 +87,21 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                 return Promise.resolve({ txIds: [] })
             }
             return new Promise((resolve, reject) => {
-                const request: TransactionSignRequest = {
+                const request: UnsignedTransactionSignRequest = {
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
                     transport: 'callback',
                     sourceType: 'local',
-                    chainId: scope.chainId,
                     txs: unsignedTxs,
                     sourceMetadata: source,
-                    approve: async (
-                        signed: Nullable<PeraSignedTransaction>[],
-                    ) => {
+                    approve: async (signed: Nullable<SignedTransaction>[]) => {
                         try {
                             // This headless local-submit request never
                             // filters slots (unlike the ARC-0001 enqueue
                             // path), so every entry is expected to be
                             // present — the null guard is defensive only.
                             const signedTxns = signed.filter(
-                                (tx): tx is PeraSignedTransaction =>
-                                    tx !== null,
+                                (tx): tx is SignedTransaction => tx !== null,
                             )
                             const txIds = await submitAndAutoRefresh(
                                 scope,

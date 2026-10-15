@@ -42,14 +42,6 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: mockT }),
 }))
 
-// resolveErrorCopy (exercised via the SubmissionError branch below) does an
-// `instanceof AlgodError` check, so the mock needs a real class identity too
-// — importActual pulls in the network store's own module deps, so stub instead.
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    AlgodError: class AlgodError extends Error {},
-    toAlgodError: (err: unknown) => err,
-}))
-
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
@@ -58,7 +50,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => 'device-1',
+    useScopedDeviceID: () => 'device-1',
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
@@ -90,12 +82,15 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
 }))
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
-        getMessage: () => ({
-            title: 'errors.algod.overspend.title',
-            body: 'errors.algod.overspend.body',
-        }),
+vi.mock('@hooks/useNodeErrorMessage', () => ({
+    useNodeErrorMessage: () => ({
+        getMessage: (err: unknown) =>
+            err instanceof Error && err.message === 'overspend'
+                ? {
+                      title: 'errors.algod.overspend.title',
+                      body: 'errors.algod.overspend.body',
+                  }
+                : undefined,
     }),
 }))
 

@@ -237,15 +237,30 @@ describe('config/main', () => {
     })
 
     test('exposes bounded-timeout defaults in milliseconds', () => {
-        expect(config.algodReadTimeout).toBe(10_000)
-        expect(config.algodSubmitTimeout).toBe(30_000)
+        expect(config.chainRequestTimeouts).toEqual({
+            algorand: { readMs: 10_000, submitMs: 30_000 },
+            ethereum: { readMs: 15_000, submitMs: 30_000 },
+        })
         expect(config.signingTransportTimeout).toBe(60_000)
     })
 
-    test('schema rejects a non-integer algodReadTimeout', () => {
+    test('schema rejects a non-integer readMs', () => {
         const result = configSchema.safeParse({
             ...config,
-            algodReadTimeout: 10.5,
+            chainRequestTimeouts: {
+                ...config.chainRequestTimeouts,
+                algorand: { readMs: 10.5, submitMs: 30_000 },
+            },
+        })
+        expect(result.success).toBe(false)
+    })
+
+    test('schema rejects a timeouts record missing a chain', () => {
+        const result = configSchema.safeParse({
+            ...config,
+            chainRequestTimeouts: {
+                algorand: config.chainRequestTimeouts.algorand,
+            },
         })
         expect(result.success).toBe(false)
     })

@@ -26,6 +26,8 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getCircleFlagUrl } from '@components/CircleFlag'
 
 // Receive amounts fall back to this many fraction digits when the token does
@@ -97,10 +99,11 @@ export const useOnrampAmountSection = ({
     isLoading = false,
     onAmountTextChange,
 }: UseOnrampAmountSectionParams): UseOnrampAmountSectionResult => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const isPay = variant === 'pay'
 
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency(scope)
     const shouldUseUsdFallback = preferredCurrency === nativeAsset.unitName
 
     const inputValue = isPay ? amountText : ''

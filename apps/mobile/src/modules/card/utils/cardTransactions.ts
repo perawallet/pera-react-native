@@ -14,6 +14,7 @@ import {
     type CardTransaction,
     TransactionSign,
 } from '@perawallet/wallet-core-card'
+import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 export type CardTransactionSection<T = CardTransaction> = {
     /** Stable `YYYY-MM` key for the month. */
@@ -145,16 +146,22 @@ export const getCardTransactionKind = (
  */
 // Map (not object literal): an open-set wire value like "Constructor" must
 // miss, not resolve through Object.prototype.
-const MERCHANT_TYPE_LABEL_KEYS = new Map<string, string>([
-    ['instore', 'peraCard.transactions.merchant_type_in_store'],
-    ['instorewithpin', 'peraCard.transactions.merchant_type_in_store_with_pin'],
-    ['outofwalletonline', 'peraCard.transactions.merchant_type_online'],
-    ['atm', 'peraCard.transactions.merchant_type_atm'],
+const MERCHANT_TYPE_LABEL_KEYS = new Map<string, I18nKey>([
+    ['instore', i18nKey('peraCard.transactions.merchant_type_in_store')],
+    [
+        'instorewithpin',
+        i18nKey('peraCard.transactions.merchant_type_in_store_with_pin'),
+    ],
+    [
+        'outofwalletonline',
+        i18nKey('peraCard.transactions.merchant_type_online'),
+    ],
+    ['atm', i18nKey('peraCard.transactions.merchant_type_atm')],
 ])
 
 export const getCardMerchantTypeLabelKey = (
     merchantType: string,
-): string | undefined =>
+): I18nKey | undefined =>
     MERCHANT_TYPE_LABEL_KEYS.get(merchantType.toLowerCase())
 
 /**
@@ -162,20 +169,26 @@ export const getCardMerchantTypeLabelKey = (
  * (SUBSCRIPTIONS, FOOD, TRAVEL, ENTERTAINMENT, HEALTH, ATM, UTILITIES, MISC).
  * Still tolerant: unknown values return undefined so the raw string shows.
  */
-const MCC_CATEGORY_LABEL_KEYS = new Map<string, string>([
-    ['SUBSCRIPTIONS', 'peraCard.transactions.mcc_category_subscriptions'],
-    ['FOOD', 'peraCard.transactions.mcc_category_food'],
-    ['TRAVEL', 'peraCard.transactions.mcc_category_travel'],
-    ['ENTERTAINMENT', 'peraCard.transactions.mcc_category_entertainment'],
-    ['HEALTH', 'peraCard.transactions.mcc_category_health'],
-    ['ATM', 'peraCard.transactions.mcc_category_atm'],
-    ['UTILITIES', 'peraCard.transactions.mcc_category_utilities'],
-    ['MISC', 'peraCard.transactions.mcc_category_misc'],
+const MCC_CATEGORY_LABEL_KEYS = new Map<string, I18nKey>([
+    [
+        'SUBSCRIPTIONS',
+        i18nKey('peraCard.transactions.mcc_category_subscriptions'),
+    ],
+    ['FOOD', i18nKey('peraCard.transactions.mcc_category_food')],
+    ['TRAVEL', i18nKey('peraCard.transactions.mcc_category_travel')],
+    [
+        'ENTERTAINMENT',
+        i18nKey('peraCard.transactions.mcc_category_entertainment'),
+    ],
+    ['HEALTH', i18nKey('peraCard.transactions.mcc_category_health')],
+    ['ATM', i18nKey('peraCard.transactions.mcc_category_atm')],
+    ['UTILITIES', i18nKey('peraCard.transactions.mcc_category_utilities')],
+    ['MISC', i18nKey('peraCard.transactions.mcc_category_misc')],
 ])
 
 export const getCardMccCategoryLabelKey = (
     mccCategory: string,
-): string | undefined => MCC_CATEGORY_LABEL_KEYS.get(mccCategory.toUpperCase())
+): I18nKey | undefined => MCC_CATEGORY_LABEL_KEYS.get(mccCategory.toUpperCase())
 
 /** Relative date as a translatable descriptor; the row maps it to copy. */
 export type CardTransactionRelativeDate =

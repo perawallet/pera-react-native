@@ -24,20 +24,11 @@ import type {
 import { useBidaliTransport } from '../useBidaliTransport'
 
 const mockAddSignRequest = vi.fn()
-const mockAddPayment = vi.fn()
-const mockAddAssetTransfer = vi.fn()
 // Mutable so the "fallback network" providerJS test below can switch away
 // from mainnet without a new vi.mock factory.
 let mockNetwork = 'mainnet'
 let mockChainMode = 'live'
-const mockBuildTransactions = vi.fn().mockResolvedValue({
-    transactions: [{ fake: 'txn' }],
-})
-const mockComposer = {
-    addPayment: mockAddPayment,
-    addAssetTransfer: mockAddAssetTransfer,
-    buildTransactions: mockBuildTransactions,
-}
+const mockBuildTransferTxs = vi.fn()
 
 vi.mock('react-native', () => ({
     Linking: { openURL: vi.fn() },
@@ -69,10 +60,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: () => ({ network: mockNetwork }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', () => ({
-    useAlgorandClient: () => ({
-        newGroup: () => mockComposer,
-    }),
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    sendFlowChainAdapters: {
+        get: () => ({ buildTransferTxs: mockBuildTransferTxs }),
+    },
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({ assetId: '0', decimals: 6 }))
@@ -112,17 +103,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
 vi.mock('@hooks/useLanguage')
 
-// BigInt.microAlgo() is a runtime extension added by algokit-utils.
-// Patch it for the test environment.
-const originalBigInt = globalThis.BigInt
-const patchedBigInt = (value: Parameters<typeof originalBigInt>[0]) => {
-    const v = originalBigInt(value)
-    return Object.assign(v, { microAlgo: () => v })
-}
-Object.assign(patchedBigInt, originalBigInt)
-// eslint-disable-next-line no-global-assign
-globalThis.BigInt = patchedBigInt as unknown as typeof BigInt
-
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
@@ -144,7 +124,7 @@ const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
     id: 'bidali-1234',
 })
 
-// Stands in for the Algorand codec; this spec mocks the Algorand blockchain module.
+// Stands in for the Algorand codec, which the unit registry lacks.
 beforeEach(() => {
     addressCodecs.register({
         ...fixtureCodec,
@@ -162,6 +142,7 @@ describe('useBidaliTransport', () => {
         vi.clearAllMocks()
         mockNetwork = 'mainnet'
         mockChainMode = 'live'
+        mockBuildTransferTxs.mockResolvedValue([{ fake: 'txn' }])
     })
 
     // -- providerJS --------------------------------------------------------
@@ -440,13 +421,17 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddPayment).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    sender: VALID_ADDRESS,
-                    receiver: VALID_ADDRESS,
-                }),
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith({
+                scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+                sender: VALID_ADDRESS,
+                receiver: VALID_ADDRESS,
+                assetId: '0',
+                amount: 1_500_000n,
+                note: undefined,
+            })
+            expect(mockAddSignRequest).not.toHaveBeenCalledWith(
+                expect.objectContaining({ chainId: expect.anything() }),
             )
-            expect(mockBuildTransactions).toHaveBeenCalled()
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'transactions',
@@ -473,11 +458,15 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddAssetTransfer).toHaveBeenCalledTimes(1)
-            const call = mockAddAssetTransfer.mock.calls[0][0]
-            expect(call.sender).toBe(VALID_ADDRESS)
-            expect(call.receiver).toBe(VALID_ADDRESS)
-            expect(call.assetId.toString()).toBe('31566704')
+            expect(mockBuildTransferTxs).toHaveBeenCalledTimes(1)
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sender: VALID_ADDRESS,
+                    receiver: VALID_ADDRESS,
+                    assetId: '31566704',
+                    amount: 10_000_000n,
+                }),
+            )
             expect(mockAddSignRequest).toHaveBeenCalled()
         })
 
@@ -500,7 +489,7 @@ describe('useBidaliTransport', () => {
                 ),
             )
 
-            expect(mockAddAssetTransfer).not.toHaveBeenCalled()
+            expect(mockBuildTransferTxs).not.toHaveBeenCalled()
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             expect(logger.warn).toHaveBeenCalledWith(
                 'Bidali: unsupported protocol',
@@ -522,10 +511,8 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddPayment).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    note: 'bidali-charge-123',
-                }),
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith(
+                expect.objectContaining({ note: 'bidali-charge-123' }),
             )
         })
 
@@ -543,15 +530,13 @@ describe('useBidaliTransport', () => {
                     }),
                 ),
             )
-            expect(mockAddPayment).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    note: undefined,
-                }),
+            expect(mockBuildTransferTxs).toHaveBeenCalledWith(
+                expect.objectContaining({ note: undefined }),
             )
         })
 
         it('sends paymentCancelled when transaction build fails', async () => {
-            mockBuildTransactions.mockRejectedValueOnce(
+            mockBuildTransferTxs.mockRejectedValueOnce(
                 new Error('network error'),
             )
             const { logger } = await import('@perawallet/wallet-core-shared')

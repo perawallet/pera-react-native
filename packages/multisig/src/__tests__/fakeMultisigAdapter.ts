@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigChainAdapter, MultisigParameters } from '../chain-adapter'
 
 // A raw "transaction" here is just its base64-encoded sender.
@@ -61,6 +62,11 @@ export const fakeMultisigAdapter = (
             ? { kind: 'valid' }
             : { kind: 'unauthorized-sender', txIndex }
     },
+    decodeTransaction: (bytes, scope) =>
+        ({
+            scope,
+            payload: { sender: new TextDecoder().decode(bytes) },
+        }) as unknown as UnsignedTransaction,
     acceptsParticipantScheme: scheme => scheme === 'ed25519',
     classifyParticipant: async () => 'unclassified',
     ...overrides,

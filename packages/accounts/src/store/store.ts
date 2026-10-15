@@ -39,6 +39,7 @@ import {
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    getChainDescriptor,
     selectChainNetworkId,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
@@ -554,8 +555,7 @@ export const useAccountsStore: UseBoundStore<
             ) => {
                 try {
                     const scheme = canImportRawKey(chainId)
-                        ? getProvider().chains.get(chainId).descriptor.signing
-                              .rawKeySchemes[0]
+                        ? getChainDescriptor(chainId).signing.rawKeySchemes[0]
                         : undefined
                     if (!scheme) throw new RawKeyImportUnsupportedError(chainId)
                     const networkId = selectChainNetworkId(

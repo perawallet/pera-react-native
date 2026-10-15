@@ -10,18 +10,26 @@
  limitations under the License
  */
 
-import type { RekeyIntroScreenProps } from '../../../components/RekeyIntroScreen'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { RekeyIntroCopy } from '../../../components/RekeyIntroScreen'
 
-const I18N_BASE_KEY = 'rekey.to_quantum.intro'
+const COPY: RekeyIntroCopy = {
+    titleKey: i18nKey('rekey.to_quantum.intro.title'),
+    bodyKey: i18nKey('rekey.to_quantum.intro.body'),
+    learnMoreKey: i18nKey('rekey.to_quantum.intro.learn_more'),
+    expectLabelKey: i18nKey('rekey.to_quantum.intro.expect_label'),
+    ctaKey: i18nKey('rekey.to_quantum.intro.cta'),
+    expectationKeys: [
+        i18nKey('rekey.to_quantum.intro.expect_1'),
+        i18nKey('rekey.to_quantum.intro.expect_2'),
+        i18nKey('rekey.to_quantum.intro.expect_3'),
+        i18nKey('rekey.to_quantum.intro.expect_4'),
+    ],
+}
 
 export type UseRekeyToQuantumIntroScreenResult = {
-    i18nBaseKey: string
-    /** Kept with the keys so the spec can hold the two in sync. */
-    expectationCount: RekeyIntroScreenProps['expectationCount']
+    copy: RekeyIntroCopy
 }
 
 export const useRekeyToQuantumIntroScreen =
-    (): UseRekeyToQuantumIntroScreenResult => ({
-        i18nBaseKey: I18N_BASE_KEY,
-        expectationCount: 4,
-    })
+    (): UseRekeyToQuantumIntroScreenResult => ({ copy: COPY })

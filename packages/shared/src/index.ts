@@ -11,7 +11,7 @@
  */
 
 export * from './api/query-client'
-export * from './api/node-backends'
+export * from './api/node-errors'
 export * from './api/integrity-token-provider'
 export * from './api/mutation-policy'
 export * from './api/query-render-state'

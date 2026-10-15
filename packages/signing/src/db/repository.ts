@@ -12,6 +12,7 @@
 
 import {
     and,
+    desc,
     eq,
     gt,
     inArray,
@@ -22,7 +23,12 @@ import {
     or,
     sql,
 } from 'drizzle-orm'
-import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import {
+    getDatabase,
+    parseDecimalJson,
+    stringifyDecimalJson,
+    type Database,
+} from '@perawallet/wallet-core-database'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
     toScopeKey,
@@ -32,8 +38,11 @@ import {
 import { SubmissionAttemptsSchema } from './schema'
 import {
     OPEN_SUBMISSION_STATUSES,
+    SUBMISSION_HISTORY_ENTRY_VERSION,
     type IntentKey,
     type SubmissionAttempt,
+    type SubmissionAttemptWithHistoryEntry,
+    type SubmissionHistoryEntry,
     type SubmissionFlow,
     type SubmissionStatus,
 } from './types'
@@ -56,6 +65,19 @@ const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
     resolvedAt: row.resolvedAt,
 })
 
+type StoredHistoryEntry = { v: number; entry: SubmissionHistoryEntry }
+
+const parseHistoryEntry = (json: string): SubmissionHistoryEntry | null => {
+    try {
+        const stored = parseDecimalJson<StoredHistoryEntry>(json)
+        return stored.v === SUBMISSION_HISTORY_ENTRY_VERSION
+            ? stored.entry
+            : null
+    } catch {
+        return null
+    }
+}
+
 const serializeIntentKey = (intentKey: IntentKey): string =>
     JSON.stringify(intentKey)
 
@@ -70,6 +92,7 @@ export type RecordSubmissionAttemptParams = {
     lastValid?: number
     /** The account sequence number the transaction consumes. */
     nonce?: number
+    historyEntry?: SubmissionHistoryEntry
 }
 
 /**
@@ -85,6 +108,7 @@ export const recordSubmissionAttempt = async ({
     sender,
     lastValid,
     nonce,
+    historyEntry,
 }: RecordSubmissionAttemptParams): Promise<string> => {
     const id = generateOrderedUniqueId()
     await db
@@ -101,6 +125,12 @@ export const recordSubmissionAttempt = async ({
             nonce: nonce ?? null,
             createdAt: Date.now(),
             resolvedAt: null,
+            historyEntryJson: historyEntry
+                ? stringifyDecimalJson({
+                      v: SUBMISSION_HISTORY_ENTRY_VERSION,
+                      entry: historyEntry,
+                  } satisfies StoredHistoryEntry)
+                : null,
         })
         .run()
     return id
@@ -295,6 +325,42 @@ export const getSubmissionAttemptsByTxIds = async ({
         .all()
 
     return rows.map(fromDb)
+}
+
+export type GetSubmissionAttemptsWithHistoryEntryParams = {
+    db?: Database
+    scope: ChainScope
+}
+
+/**
+ * Every attempt in the scope that carries a readable history entry, in any
+ * status, newest first; an entry of another version or unparseable text is
+ * skipped. The sender is left to the caller, which compares addresses through
+ * the chain's codec (an EVM sender is stored checksummed, and the address
+ * asked about may not be); retention keeps the per-scope scan small.
+ */
+export const getSubmissionAttemptsWithHistoryEntry = async ({
+    db = getDatabase(),
+    scope,
+}: GetSubmissionAttemptsWithHistoryEntryParams): Promise<
+    SubmissionAttemptWithHistoryEntry[]
+> => {
+    const rows = await db
+        .select()
+        .from(SubmissionAttemptsSchema)
+        .where(
+            and(
+                eq(SubmissionAttemptsSchema.network, toScopeKey(scope)),
+                isNotNull(SubmissionAttemptsSchema.historyEntryJson),
+            ),
+        )
+        .orderBy(desc(SubmissionAttemptsSchema.createdAt))
+        .all()
+
+    return rows.flatMap(row => {
+        const historyEntry = parseHistoryEntry(row.historyEntryJson!)
+        return historyEntry ? [{ ...fromDb(row), historyEntry }] : []
+    })
 }
 
 export type PruneResolvedSubmissionAttemptsParams = {

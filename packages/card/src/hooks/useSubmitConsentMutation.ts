@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     submitOnboardingConsent,
@@ -27,7 +24,7 @@ import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type SubmitConsentVariables = Omit<
     SubmitOnboardingConsentParams,
-    'network' | 'signal'
+    'scope' | 'signal'
 >
 
 export type UseSubmitConsentMutationResult = CardMutationResult<
@@ -38,8 +35,6 @@ export type UseSubmitConsentMutationResult = CardMutationResult<
 export const useSubmitConsentMutation = (
     scope: ChainScope,
 ): UseSubmitConsentMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<
         SubmitOnboardingConsentResult,
         Error,
@@ -49,7 +44,7 @@ export const useSubmitConsentMutation = (
         // final address step. No step advance — the address mutation owns
         // completing onboarding.
         mutationFn: variables =>
-            submitOnboardingConsent({ ...variables, network }),
+            submitOnboardingConsent({ ...variables, scope }),
         // Stash the new consent set id so the link step can bind it even on a
         // later duplicate retry (which returns no id). Never overwrite a stored
         // id with null.

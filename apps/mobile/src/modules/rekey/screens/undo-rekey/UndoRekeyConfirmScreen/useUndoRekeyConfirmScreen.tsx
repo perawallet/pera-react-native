@@ -12,7 +12,10 @@
 
 import { useCallback, useRef } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     getAccountDisplayName,
@@ -33,7 +36,10 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
 import { useRekeyProposeHandoff } from '../../../hooks/useRekeyProposeHandoff'
-import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
+import {
+    PreviousRekeyWarningSheet,
+    type RekeyWarningCopy,
+} from '../../../components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
 import type { UndoRekeyStackParamList } from '../../../routes/undo-rekey/types'
@@ -46,6 +52,20 @@ export type UseUndoRekeyConfirmScreenResult = {
     isSubmitting: boolean
     isUnderfunded: boolean
     handleContinuePress: () => void
+}
+
+const WARNING_COPY: RekeyWarningCopy = {
+    titleKey: i18nKey('rekey.undo.warning.title'),
+    bodyKey: i18nKey('rekey.undo.warning.body'),
+    confirmKey: i18nKey('rekey.undo.warning.confirm'),
+    cancelKey: i18nKey('rekey.undo.warning.cancel'),
+}
+
+const NO_AUTH_WARNING_COPY: RekeyWarningCopy = {
+    titleKey: i18nKey('rekey.undo.no_auth_warning.title'),
+    bodyKey: i18nKey('rekey.undo.no_auth_warning.body'),
+    confirmKey: i18nKey('rekey.undo.no_auth_warning.confirm'),
+    cancelKey: i18nKey('rekey.undo.no_auth_warning.cancel'),
 }
 
 export const useUndoRekeyConfirmScreen =
@@ -168,13 +188,11 @@ export const useUndoRekeyConfirmScreen =
                 ? getAccountDisplayName(currentAuth, scope.chainId)
                 : ''
             const willBecomeNoAuth = isWatchAccount(source)
-            const i18nPrefix = willBecomeNoAuth
-                ? 'rekey.undo.no_auth_warning'
-                : 'rekey.undo.warning'
+            const copy = willBecomeNoAuth ? NO_AUTH_WARNING_COPY : WARNING_COPY
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <PreviousRekeyWarningSheet
-                        i18nPrefix={i18nPrefix}
+                        copy={copy}
                         testID='undo-rekey-warning-sheet'
                         currentAuthName={currentAuthName}
                         sourceName={sourceName}

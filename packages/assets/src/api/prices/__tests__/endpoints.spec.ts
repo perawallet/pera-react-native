@@ -25,6 +25,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 import { fetchAssetPriceHistory } from '../endpoints'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+
 describe('prices endpoints', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
@@ -35,13 +37,13 @@ describe('prices endpoints', () => {
             data: [],
         })
 
-        await fetchAssetPriceHistory('123', '1D', 'testnet')
+        await fetchAssetPriceHistory('123', '1D', ALGORAND_TESTNET)
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: '/v1/assets/price-chart/',
                 params: { asset_id: '123', period: '1D' },
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
             }),
         )
     })

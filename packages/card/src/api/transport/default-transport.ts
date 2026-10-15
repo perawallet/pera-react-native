@@ -11,6 +11,7 @@
  */
 
 import { isHTTPError } from 'ky'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import type {
@@ -23,9 +24,9 @@ import { baanxDirectRequest } from './baanx-client'
 /**
  * Refreshes the session and returns whether a usable token is now available.
  * Injected by the session layer (via `setRefreshHandler`) to avoid a
- * transport → session import cycle.
+ * transport → session import cycle. Receives the failing request's scope.
  */
-type RefreshHandler = () => Promise<boolean>
+type RefreshHandler = (scope: ChainScope) => Promise<boolean>
 
 let refreshHandler: RefreshHandler | null = null
 
@@ -52,7 +53,7 @@ const proxyRequest = <TData, TVars>(
 ): Promise<CardTransportResponse<TData>> =>
     queryClient<TData, TVars>({
         backend: 'pera',
-        network: req.network,
+        scope: req.scope,
         method: req.method,
         url: req.path,
         params: req.params,
@@ -97,7 +98,7 @@ export const defaultTransport: CardTransport = {
                 isUnauthorized(error) &&
                 refreshHandler
             ) {
-                const refreshed = await refreshHandler()
+                const refreshed = await refreshHandler(req.scope)
                 if (refreshed) {
                     try {
                         return await dispatch<TData, TVars>(req)

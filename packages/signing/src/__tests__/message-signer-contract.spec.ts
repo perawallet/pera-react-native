@@ -14,10 +14,11 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainId,
-    MessageRequest,
-    Signature,
+import {
+    i18nKey,
+    type ChainId,
+    type MessageRequest,
+    type Signature,
 } from '@perawallet/wallet-core-chain-contract'
 import type { MessageSignerChainAdapter } from '../message-signer'
 import { fakeMessageSignerAdapter } from './fakeMessageSignerAdapter'
@@ -56,7 +57,7 @@ const fixtureAdapter: MessageSignerChainAdapter = {
     chainId: FIXTURE_CHAIN_ID,
     supports: method => method === METHOD,
     describe: request => {
-        const title = { key: 'fixture.message' }
+        const title = { key: i18nKey('fixture.message') }
         try {
             return { kind: 'text', title, preview: readText(request) }
         } catch {

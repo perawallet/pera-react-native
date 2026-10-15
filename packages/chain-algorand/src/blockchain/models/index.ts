@@ -11,14 +11,11 @@
  */
 
 import type {
-    PeraSignedTransaction,
     PeraSignedTransactionGroup,
     PeraTransactionGroup,
 } from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from '@perawallet/wallet-core-kms'
-
-export const MAX_TX_NOTE_BYTES = 1024
 
 export type BlockchainStore = BaseStoreState
 
@@ -41,10 +38,8 @@ export type PQSignature = {
  * Drops the `null` padding slots a signing result may carry (the ARC-0001
  * slot-order contract pads unsignable positions with `null`).
  */
-export const compactSignedResults = (
-    signed: Nullable<PeraSignedTransaction>[],
-): PeraSignedTransaction[] =>
-    signed.filter((tx): tx is PeraSignedTransaction => tx !== null)
+export const compactSignedResults = <T>(signed: Nullable<T>[]): T[] =>
+    signed.filter((tx): tx is T => tx !== null)
 
 export type PeraTransactionSigner = (
     txnGroup: PeraTransactionGroup,

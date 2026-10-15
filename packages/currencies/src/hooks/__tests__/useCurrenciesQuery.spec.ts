@@ -16,12 +16,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useCurrenciesQuery } from '../useCurrenciesQuery'
 import React from 'react'
 
-const mockUseSelectedScope = vi.hoisted(() => vi.fn())
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const DESCRIPTORS = {
+    algorand: { displayName: 'Algorand', nativeAsset: { symbol: 'ALGO' } },
+    ethereum: { displayName: 'Ethereum', nativeAsset: { symbol: 'ETH' } },
+} as const
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mockUseSelectedScope,
+    getChainDescriptor: (chainId: keyof typeof DESCRIPTORS) =>
+        DESCRIPTORS[chainId],
+    useWalletDeployment: () => 'live',
 }))
 
-// Mock the fetch function
 const mockFetchCurrenciesList = vi.hoisted(() => vi.fn())
 vi.mock('../../api/currencies', () => ({
     fetchCurrenciesList: mockFetchCurrenciesList,
@@ -39,10 +47,6 @@ describe('useCurrenciesQuery', () => {
             },
         })
         vi.clearAllMocks()
-        mockUseSelectedScope.mockReturnValue({
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -52,45 +56,38 @@ describe('useCurrenciesQuery', () => {
             children,
         )
 
-    it('fetches and transforms currencies list', async () => {
-        const mockData = [
-            { id: 'USD', name: 'US Dollar', symbol: '$' },
-            { id: 'EUR', name: 'Euro', symbol: '€' },
-        ]
+    it.each([
+        [ALGORAND_TESTNET, { id: 'ALGO', name: 'Algorand', symbol: 'ALGO' }],
+        [ETHEREUM_SEPOLIA, { id: 'ETH', name: 'Ethereum', symbol: 'ETH' }],
+    ])(
+        'requests the deployment list and prepends the scope native currency (%o)',
+        async (scope, nativeCurrency) => {
+            const mockData = [
+                { id: 'USD', name: 'US Dollar', symbol: '$' },
+                { id: 'EUR', name: 'Euro', symbol: '€' },
+            ]
+            mockFetchCurrenciesList.mockResolvedValue(mockData)
 
-        mockFetchCurrenciesList.mockResolvedValue(mockData)
+            const { result } = renderHook(() => useCurrenciesQuery(scope), {
+                wrapper,
+            })
 
-        const { result } = renderHook(() => useCurrenciesQuery(), { wrapper })
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        expect(result.current.data).toEqual([
-            { id: 'ALGO', name: 'Algorand', symbol: 'ALGO' },
-            { id: 'USD', name: 'US Dollar', symbol: '$' },
-            { id: 'EUR', name: 'Euro', symbol: '€' },
-        ])
-    })
-
-    it('uses the legacy network of the selected scope', async () => {
-        mockUseSelectedScope.mockReturnValue({
-            chainId: 'algorand',
-            networkId: 'testnet',
-        })
-        mockFetchCurrenciesList.mockResolvedValue([])
-
-        renderHook(() => useCurrenciesQuery(), { wrapper })
-
-        await waitFor(() =>
             expect(mockFetchCurrenciesList).toHaveBeenCalledWith(
-                expect.objectContaining({ network: 'testnet' }),
-            ),
-        )
-    })
+                expect.objectContaining({ deployment: 'live' }),
+            )
+            expect(result.current.data).toEqual([nativeCurrency, ...mockData])
+        },
+    )
 
     it('handles empty response', async () => {
         mockFetchCurrenciesList.mockResolvedValue([])
 
-        const { result } = renderHook(() => useCurrenciesQuery(), { wrapper })
+        const { result } = renderHook(
+            () => useCurrenciesQuery(ALGORAND_TESTNET),
+            { wrapper },
+        )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
@@ -102,7 +99,10 @@ describe('useCurrenciesQuery', () => {
     it('handles loading state', () => {
         mockFetchCurrenciesList.mockImplementation(() => new Promise(() => {}))
 
-        const { result } = renderHook(() => useCurrenciesQuery(), { wrapper })
+        const { result } = renderHook(
+            () => useCurrenciesQuery(ALGORAND_TESTNET),
+            { wrapper },
+        )
 
         expect(result.current.isPending).toBe(true)
     })

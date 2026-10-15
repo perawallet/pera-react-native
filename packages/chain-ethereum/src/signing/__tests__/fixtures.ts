@@ -12,6 +12,7 @@
 
 import { bytesToHex, hexToBytes } from 'viem'
 import type { Hex, TransactionSerializableEIP1559 } from 'viem'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainKeyStore } from '@perawallet/wallet-core-chain-contract'
 
 /** Hardhat #0, the key the vectors below were made with. */
@@ -84,6 +85,30 @@ export const VIEM_TRANSFER_NONCE_0 =
     '0x02f8730180843b9aca008504a817c8008252089470997970c51812dc3a010c7d01b50e0d17dc79c8880de0b6b3a764000080c001a00a3a2646d4ad968bb56317fdb15e17fb4d9deec0d03e8b6cb05e7125bda3006da026618ad17cc63cf1979ca75f850c536a073ec88ab1ab7c8db8b8eb129499d9ae'
 export const VIEM_TRANSFER_NONCE_2 =
     '0x02f8730102843b9aca008504a817c8008252089470997970c51812dc3a010c7d01b50e0d17dc79c8880de0b6b3a764000080c080a0082e76302cca13d703850329a812776dd29a70054c6f17ee6a5dff9cfad917cda06bb6ba4e6095246f7cbb722eec394bc5d8b4617bb1d9cb2a9dbdf953d95bd28b'
+
+// viem's own `signMessage` and `signTypedData` output under the same key as the
+// transaction vectors above; never derived from them.
+export const VIEM_HELLO_WORLD =
+    '0xa461f509887bd19e312c0c58467ce8ff8e300d3c1a90b608a760c5b80318eaf15fe57c96f9175d6cd4daad4663763baa7e78836e067d0163e9a2ccf2ff753f5b1b'
+export const VIEM_PERA =
+    '0xe04588d881d59ef43990fd1bdd2e05bce76c3052620432089e1d632b6d4bc3884930cf24da1dda4ff05d7dffee6605f6ab807db2cfe2ff01dd73054883b6e8161c'
+export const VIEM_MAIL =
+    '0x6ea8bb309a3401225701f3565e32519f94a0ea91a5910ce9229fe488e773584c0390416a2190d9560219dab757ecca2029e63fa9d1c2aebf676cc25b9f03126a1b'
+
+export const SIGNER_KEY_PAIR_ID = 'kms-entry-1'
+
+export const ETHEREUM_SIGNER_ACCOUNT: WalletAccount = {
+    id: 'eth-signer',
+    custody: { kind: 'local', seed: null },
+    chains: { ethereum: { address: SENDER, keyPairId: SIGNER_KEY_PAIR_ID } },
+}
+
+/** The key store's `r‖s‖recovery` signature over `digest`, synchronously. */
+export const vectorSignature = (digest: Uint8Array): Uint8Array => {
+    const signature = KMS_SIGNATURES[bytesToHex(digest)]
+    if (!signature) throw new Error(`no vector for ${bytesToHex(digest)}`)
+    return hexToBytes(signature)
+}
 
 export type SignCall = {
     keyPairId: string

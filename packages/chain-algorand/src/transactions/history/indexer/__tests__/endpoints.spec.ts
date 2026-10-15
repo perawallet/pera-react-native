@@ -14,18 +14,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Networks } from '@perawallet/wallet-core-shared'
 
-const mockQueryClient = vi.hoisted(() => vi.fn())
+const mockFetchNodeJson = vi.hoisted(() => vi.fn())
 const mockFetchOnChainAsset = vi.hoisted(() => vi.fn())
 
-vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-shared')
-    >('@perawallet/wallet-core-shared')
-    return {
-        ...actual,
-        queryClient: mockQueryClient,
-    }
-})
+vi.mock('../../../../blockchain/utils/nodeHttp', () => ({
+    fetchNodeJson: mockFetchNodeJson,
+}))
 
 // Fully replaced (no `importActual`): the real `@perawallet/wallet-core-assets`
 // barrel re-exports Zustand stores backed by react-native-mmkv, which cannot
@@ -42,33 +36,25 @@ const { fetchIndexerTransactionHistory, fetchMoreIndexerTransactions } =
 // Real indexer responses omit `next-token` entirely at the tail of
 // pagination rather than sending it as `null` (verified against the live
 // fnet indexer) — the schema requires that key be a string or absent.
-const emptyPage = {
-    data: { 'current-round': 10, transactions: [] },
-    status: 200,
-    statusText: 'OK',
-}
+const emptyPage = { 'current-round': 10, transactions: [] }
 
 const pageWithAsset = {
-    data: {
-        'current-round': 10,
-        transactions: [
-            {
-                id: 'TX1',
-                'tx-type': 'axfer',
-                sender: 'ABC123',
-                fee: 1000,
-                'confirmed-round': 5,
-                'round-time': 1700000000,
-                'asset-transfer-transaction': {
-                    'asset-id': 888,
-                    amount: 10,
-                    receiver: 'OTHER',
-                },
+    'current-round': 10,
+    transactions: [
+        {
+            id: 'TX1',
+            'tx-type': 'axfer',
+            sender: 'ABC123',
+            fee: 1000,
+            'confirmed-round': 5,
+            'round-time': 1700000000,
+            'asset-transfer-transaction': {
+                'asset-id': 888,
+                amount: 10,
+                receiver: 'OTHER',
             },
-        ],
-    },
-    status: 200,
-    statusText: 'OK',
+        },
+    ],
 }
 
 // `fetchOnChainAsset` is mocked opaquely here: only its output shape matters
@@ -88,26 +74,25 @@ describe('fetchIndexerTransactionHistory', () => {
     })
 
     it('requests the account-transactions endpoint on the indexer backend', async () => {
-        mockQueryClient.mockResolvedValue(emptyPage)
+        mockFetchNodeJson.mockResolvedValue(emptyPage)
 
         await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
             network: Networks.betanet,
         })
 
-        expect(mockQueryClient).toHaveBeenCalledWith(
+        expect(mockFetchNodeJson).toHaveBeenCalledWith(
+            Networks.betanet,
+            'indexer',
+            '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
-                backend: 'indexer',
-                network: Networks.betanet,
-                method: 'GET',
-                url: '/v2/accounts/ABC123/transactions',
                 params: expect.objectContaining({ limit: 25 }),
             }),
         )
     })
 
     it('enriches results with asset facts resolved from the indexer', async () => {
-        mockQueryClient.mockResolvedValue(pageWithAsset)
+        mockFetchNodeJson.mockResolvedValue(pageWithAsset)
         mockFetchOnChainAsset.mockResolvedValue(mockPeraAsset)
 
         const result = await fetchIndexerTransactionHistory({
@@ -128,7 +113,7 @@ describe('fetchIndexerTransactionHistory', () => {
     })
 
     it('still returns the page when an asset lookup fails', async () => {
-        mockQueryClient.mockResolvedValue(pageWithAsset)
+        mockFetchNodeJson.mockResolvedValue(pageWithAsset)
         mockFetchOnChainAsset.mockRejectedValue(
             new Error('indexer unreachable'),
         )
@@ -154,7 +139,7 @@ describe('fetchMoreIndexerTransactions', () => {
     })
 
     it('sends the stored cursor as the `next` param, not a replayable URL', async () => {
-        mockQueryClient.mockResolvedValue(emptyPage)
+        mockFetchNodeJson.mockResolvedValue(emptyPage)
 
         await fetchMoreIndexerTransactions({
             accountAddress: 'ABC123',
@@ -162,11 +147,11 @@ describe('fetchMoreIndexerTransactions', () => {
             network: Networks.betanet,
         })
 
-        expect(mockQueryClient).toHaveBeenCalledWith(
+        expect(mockFetchNodeJson).toHaveBeenCalledWith(
+            Networks.betanet,
+            'indexer',
+            '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
-                backend: 'indexer',
-                network: Networks.betanet,
-                url: '/v2/accounts/ABC123/transactions',
                 params: expect.objectContaining({ next: 'CURSOR1' }),
             }),
         )
@@ -178,7 +163,7 @@ describe('fetchMoreIndexerTransactions', () => {
         // (verified live — the same token with and without `asset-id`
         // returns different rows), so omitting these here would silently
         // widen a filtered list back to everything from page 2 onward.
-        mockQueryClient.mockResolvedValue(emptyPage)
+        mockFetchNodeJson.mockResolvedValue(emptyPage)
 
         await fetchMoreIndexerTransactions({
             accountAddress: 'ABC123',
@@ -190,11 +175,11 @@ describe('fetchMoreIndexerTransactions', () => {
             limit: 50,
         })
 
-        expect(mockQueryClient).toHaveBeenCalledWith(
+        expect(mockFetchNodeJson).toHaveBeenCalledWith(
+            Networks.betanet,
+            'indexer',
+            '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
-                backend: 'indexer',
-                network: Networks.betanet,
-                url: '/v2/accounts/ABC123/transactions',
                 params: {
                     limit: 50,
                     next: 'CURSOR1',

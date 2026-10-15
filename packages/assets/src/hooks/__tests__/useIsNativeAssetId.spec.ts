@@ -11,33 +11,38 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
     FAKE_NATIVE_ASSET,
     registerFakeAssetsAdapter,
 } from '../../__tests__/fakeAssetsChain'
 import { useIsNativeAssetId } from '../useIsNativeAssetId'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('useIsNativeAssetId', () => {
     beforeEach(() => {
         registerFakeAssetsAdapter()
     })
 
-    it('matches the native id in every shape an id arrives in', () => {
-        const { result } = renderHook(() => useIsNativeAssetId())
-        const native = FAKE_NATIVE_ASSET.assetId
+    it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
+        'matches the native id in every shape an id arrives in ($chainId)',
+        scope => {
+            registerFakeAssetsAdapter({ chainId: scope.chainId })
+            const { result } = renderHook(() => useIsNativeAssetId(scope))
+            const native = FAKE_NATIVE_ASSET.assetId
 
-        expect(result.current(native)).toBe(true)
-        expect(result.current(Number(native))).toBe(true)
-        expect(result.current(BigInt(native))).toBe(true)
-    })
+            expect(result.current(native)).toBe(true)
+            expect(result.current(Number(native))).toBe(true)
+            expect(result.current(BigInt(native))).toBe(true)
+        },
+    )
 
     it('rejects other ids and a missing id', () => {
-        const { result } = renderHook(() => useIsNativeAssetId())
+        const { result } = renderHook(() =>
+            useIsNativeAssetId(ALGORAND_MAINNET),
+        )
 
         expect(result.current('31566704')).toBe(false)
         expect(result.current(31566704n)).toBe(false)
@@ -46,7 +51,9 @@ describe('useIsNativeAssetId', () => {
     })
 
     it('returns the same predicate across renders', () => {
-        const { result, rerender } = renderHook(() => useIsNativeAssetId())
+        const { result, rerender } = renderHook(() =>
+            useIsNativeAssetId(ALGORAND_MAINNET),
+        )
         const first = result.current
 
         rerender()

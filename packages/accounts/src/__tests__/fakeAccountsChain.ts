@@ -13,13 +13,18 @@ import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     addressCodecs,
+    CHAIN_CAPABILITIES,
     keyDerivations,
     type AddressCodec,
+    type ChainCapabilities,
+    type ChainDescriptor,
     type ChainId,
     type ChainScope,
     type KeyDerivation,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     accountKindId,
     accountsChainAdapters,
@@ -109,9 +114,9 @@ export const fakeKindIdOf = (account: WalletAccount): AccountKindId =>
     accountKindId(`fake.${fakeKindOf(account)}`)
 
 const fakePresentationOfKind = (kindId: string): AccountKindPresentation => ({
-    labelKey: `${kindId}.label`,
-    infoTitleKey: `${kindId}.info_title`,
-    infoBodyKey: `${kindId}.info_body`,
+    labelKey: i18nKey(`${kindId}.label`),
+    infoTitleKey: i18nKey(`${kindId}.info_title`),
+    infoBodyKey: i18nKey(`${kindId}.info_body`),
     glyph: `fake-glyph-${kindId.slice('fake.'.length)}`,
 })
 
@@ -313,9 +318,11 @@ const createFakePresentation = (): AccountPresentationChainAdapter => ({
         kindId.startsWith('fake.') ? fakePresentationOfKind(kindId) : undefined,
     ),
     transitionLabel: vi.fn((from: string, to: string) => ({
-        labelKey: 'fake.transition.label',
-        signerKey: `${to}.signer`,
-        descriptionKey: `fake.transition.${from.slice('fake.'.length)}_to_${to.slice('fake.'.length)}`,
+        labelKey: i18nKey('fake.transition.label'),
+        signerKey: i18nKey(`${to}.signer`),
+        descriptionKey: i18nKey(
+            `fake.transition.${from.slice('fake.'.length)}_to_${to.slice('fake.'.length)}`,
+        ),
     })),
 })
 
@@ -340,6 +347,23 @@ export const registerFakeAccountsChain = (
     addressCodecs.register(current.codec)
     keyDerivations.register(current.derivation)
     return current
+}
+
+/** Registers a descriptor with the native asset's decimals and the two tiers' networks, so network selection resolves as it does before any chain registers. */
+export const registerFakeNativeAsset = (decimals = 6): void => {
+    getProvider().chains.register(
+        {
+            id: FAKE_CHAIN_ID,
+            networks: [
+                { id: 'mainnet', tier: 'mainnet', isDefaultForTier: true },
+                { id: 'testnet', tier: 'testnet', isDefaultForTier: true },
+            ],
+            nativeAsset: { decimals },
+        } as unknown as ChainDescriptor,
+        Object.fromEntries(
+            CHAIN_CAPABILITIES.map(capability => [capability, false]),
+        ) as ChainCapabilities,
+    )
 }
 
 export const fakeAccountsChain = (): FakeAccountsChain => {

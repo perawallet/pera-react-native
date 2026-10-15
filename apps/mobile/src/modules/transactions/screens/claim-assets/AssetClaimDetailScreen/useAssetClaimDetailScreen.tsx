@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-chain-algorand/asa-inbox'
+import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
 import {
     findAccountByAddressOn,
     useAllAccounts,
@@ -37,9 +37,10 @@ import {
     type Nullable,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseAssetClaimDetailScreenResult = {
-    request: Nullable<Arc59AssetRequest>
+    request: Nullable<AssetInboxRequest>
     receiverAccount: Nullable<WalletAccount>
     amount: Decimal
     isClaimBlocked: boolean
@@ -53,7 +54,8 @@ type UseAssetClaimDetailScreenResult = {
 
 export const useAssetClaimDetailScreen =
     (): UseAssetClaimDetailScreenResult => {
-        const nativeAsset = useNativeAsset()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const nativeAsset = useNativeAsset(scope)
         const { push, navigate } = useAppNavigation()
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()

@@ -13,10 +13,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
-    nativeAssetDecimals,
     type AccountState,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
@@ -71,7 +71,8 @@ export const useAccountStateQuery = (
                 nativeBalance: row
                     ? baseUnitsToDisplayUnits(
                           row.nativeBalance,
-                          nativeAssetDecimals(scope.chainId),
+                          getChainDescriptor(scope.chainId).nativeAsset
+                              .decimals,
                       )
                     : new Decimal(0),
                 ...adapter.summarizeChainState(chainState),

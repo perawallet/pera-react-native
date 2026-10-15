@@ -17,7 +17,6 @@ const mocks = vi.hoisted(() => ({
     registerErrorTransformer: vi.fn(),
     getAlgorandChainConfig: vi.fn(),
     registerCustomNetworkSource: vi.fn(() => () => undefined),
-    resetNodeClients: vi.fn(),
     toAlgodError: vi.fn((e: unknown) => e),
     Algodv2: vi.fn(),
     Indexer: vi.fn(),
@@ -47,26 +46,16 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         // header assertions below would observe THESE values and fail.
         algodApiKey: 'ALGOD_KEY',
         indexerApiKey: 'INDEXER_KEY',
-        algodReadTimeout: 10_000,
-        algodSubmitTimeout: 30_000,
     },
     getAlgorandChainConfig: mocks.getAlgorandChainConfig,
     registerCustomNetworkSource: mocks.registerCustomNetworkSource,
 }))
 
-// Only resetNodeClients is swapped out; everything else (registerStore,
-// logger, etc., which the real '../../store' barrel needs at import time)
-// stays real via importOriginal, or the store import below would crash.
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-shared')
-    >()),
-    resetNodeClients: mocks.resetNodeClients,
-}))
-
 vi.mock('../../errors', () => ({ toAlgodError: mocks.toAlgodError }))
 
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { setAlgorandChainContext } from '../../../chain-context'
+import { testChainContext } from '../../../__tests__/context'
 import { getAlgorandClient } from '../algorandClient'
 
 beforeEach(() => {
@@ -95,28 +84,14 @@ beforeEach(() => {
     mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
     useNetworkStore.getState().resetState()
     useNetworkStore.getState().setNetwork('mainnet')
-    mocks.resetNodeClients.mockClear()
-})
-
-describe('node client reset', () => {
-    it('drops the cached node clients when a custom node is saved', () => {
-        useNetworkStore.getState().setCustomNetwork('algorand', {
-            id: 'custom',
-            algodUrl: 'https://node.example',
-        })
-
-        expect(mocks.resetNodeClients).toHaveBeenCalledTimes(1)
-    })
-
-    it('keeps them on a plain network switch', () => {
-        useNetworkStore.getState().setNetwork('testnet')
-
-        expect(mocks.resetNodeClients).not.toHaveBeenCalled()
+    setAlgorandChainContext({
+        ...testChainContext(),
+        timeouts: { readMs: 1_234, submitMs: 5_678 },
     })
 })
 
 describe('getAlgorandClient', () => {
-    it('builds algod and indexer via TimeoutHttpClient seeded with the configured timeouts', () => {
+    it("builds algod and indexer via TimeoutHttpClient seeded with the registered context's timeouts", () => {
         getAlgorandClient()
 
         expect(mocks.getAlgorandChainConfig).toHaveBeenCalledWith({
@@ -124,22 +99,22 @@ describe('getAlgorandClient', () => {
             networkId: 'mainnet',
         })
 
-        // algod transport: read + submit ceilings from config, token from
+        // algod transport: read + submit ceilings from ctx.timeouts, token from
         // the per-network chain config (not the legacy config.algodApiKey).
         expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
             { 'X-Algo-API-Token': 'algod-token-mainnet' },
             'https://algod.mainnet',
             undefined,
-            10_000,
-            30_000,
+            1_234,
+            5_678,
         )
         // indexer transport.
         expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
             { 'X-Indexer-API-Token': 'indexer-token-mainnet' },
             'https://indexer.mainnet',
             undefined,
-            10_000,
-            30_000,
+            1_234,
+            5_678,
         )
     })
 
@@ -175,8 +150,8 @@ describe('getAlgorandClient', () => {
             { 'X-Algo-API-Token': 'algod-token-testnet' },
             'https://algod.testnet',
             undefined,
-            10_000,
-            30_000,
+            1_234,
+            5_678,
         )
     })
 
@@ -229,15 +204,15 @@ describe('getAlgorandClient', () => {
             {},
             'https://algod.betanet',
             undefined,
-            10_000,
-            30_000,
+            1_234,
+            5_678,
         )
         expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
             {},
             'https://indexer.betanet',
             undefined,
-            10_000,
-            30_000,
+            1_234,
+            5_678,
         )
     })
 })

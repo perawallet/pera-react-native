@@ -13,12 +13,8 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-    nativeAssetDecimals,
-} from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     RemoteConfigKeys,
     useRemoteConfig,
@@ -87,10 +83,11 @@ const mapProjects = (
  * `getActiveLocale()`, which is correct on first render but will not update.
  */
 export const useStakingProjectsQuery = (
+    scope: ChainScope,
     locale?: string,
 ): UseStakingProjectsQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeDecimals = nativeAssetDecimals(scope.chainId)
+    const nativeDecimals = getChainDescriptor(scope.chainId).nativeAsset
+        .decimals
     const remoteConfigService = useRemoteConfig()
 
     const remoteProjectsI18nConfig = remoteConfigService.getStringValue(
@@ -126,7 +123,7 @@ export const useStakingProjectsQuery = (
     // result would be discarded by mapProjects anyway.
     const query = useQuery({
         queryKey: getStakingProjectsQueryKey(scope),
-        queryFn: () => fetchStakingProjectsInfo(legacyNetworkOf(scope)),
+        queryFn: () => fetchStakingProjectsInfo(scope),
         enabled: !parsedConfig.error,
     })
 

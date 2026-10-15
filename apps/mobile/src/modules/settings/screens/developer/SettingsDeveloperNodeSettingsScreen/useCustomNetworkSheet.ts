@@ -12,16 +12,13 @@
 
 import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import {
-    fetchGenesisFromNode,
-    getCustomNetworkConfig,
-    setCustomNetwork,
-    type CustomNetworkConfig,
-} from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     clearCustomNetworkCache,
     shouldClearCustomCache,
+    useCustomNode,
 } from '@perawallet/wallet-core-chain-shared'
+import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
@@ -99,8 +96,9 @@ export type UseCustomNetworkSheetResult = {
  * persist-before-switch means `custom` is never ACTIVE while unconfigured.
  */
 export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
+    const customNode = useCustomNode(LEGACY_CHAIN_ID)
     const [draft, setDraft] = useState<CustomNetworkDraft>(() =>
-        toDraft(getCustomNetworkConfig()),
+        toDraft(customNode?.read()),
     )
     const [errors, setErrors] = useState<CustomNetworkSheetErrors>({})
     const [isFetching, setIsFetching] = useState(false)
@@ -128,10 +126,15 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             return
         }
 
+        if (!customNode) {
+            setErrors(prev => ({ ...prev, fetch: true }))
+            return
+        }
+
         setIsFetching(true)
         setErrors(prev => ({ ...prev, fetch: false }))
         try {
-            const fetched = await fetchGenesisFromNode(
+            const fetched = await customNode.fetchGenesis(
                 draft.algodUrl,
                 draft.algodToken || undefined,
             )
@@ -151,9 +154,13 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
         } finally {
             setIsFetching(false)
         }
-    }, [draft.algodUrl, draft.algodToken])
+    }, [customNode, draft.algodUrl, draft.algodToken])
 
     const handleSave = useCallback(async (): Promise<boolean> => {
+        if (!customNode) {
+            return false
+        }
+
         const validationErrors: CustomNetworkSheetErrors = {
             algodUrl: !isValidEndpoint(draft.algodUrl),
             indexerUrl: !isValidEndpoint(draft.indexerUrl),
@@ -179,7 +186,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             genesisHash: draft.genesisHash,
             genesisId: draft.genesisId,
         }
-        const previous = getCustomNetworkConfig()
+        const previous = customNode.read()
         const shouldClear = shouldClearCustomCache(previous, next)
 
         // Clear BEFORE the store write: `setCustomNetwork` synchronously
@@ -192,7 +199,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             await clearCustomNetworkCache(queryClient)
         }
 
-        setCustomNetwork(next)
+        customNode.save(next)
 
         await switchNetwork(Networks.custom)
         try {
@@ -208,7 +215,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
         }
 
         return true
-    }, [draft, queryClient, switchNetwork])
+    }, [customNode, draft, queryClient, switchNetwork])
 
     const handleReset = useCallback(() => {
         setDraft({ ...BLANK_DRAFT })

@@ -11,7 +11,6 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { nativeAssetDecimals } from '@perawallet/wallet-core-chain-contract'
 import { descriptorContractTests } from '@perawallet/wallet-core-chain-contract/testing'
 import { ethereumModule } from '..'
 
@@ -54,10 +53,7 @@ describe('ethereum descriptor', () => {
         )
     })
 
-    it('agrees with the contract on the native asset decimals', () => {
-        expect(nativeAssetDecimals('ethereum')).toBe(
-            descriptor.nativeAsset.decimals,
-        )
+    it('has an 18-decimal native asset', () => {
         expect(descriptor.nativeAsset.decimals).toBe(18)
     })
 
@@ -65,14 +61,10 @@ describe('ethereum descriptor', () => {
         expect(descriptor.protocol).toEqual({
             feeModel: 'gas',
             hasAccountNonce: true,
-            requiresAssetOptIn: false,
-            hasMinimumBalance: false,
-            supportsAtomicGroups: false,
             supportsReplacement: true,
             supportsNativeMultisig: false,
             supportsRekey: false,
             hasTokenApproval: true,
-            multipleAddressesPerAccount: false,
         })
     })
 

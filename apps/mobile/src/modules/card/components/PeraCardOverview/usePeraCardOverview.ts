@@ -86,7 +86,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // Reaches both the Home tab's card screens and the root-stack money flows,
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
     const isAutoFunding = useIsCardAutoFundingActive()
     const fundingTypeLabel = isAutoFunding

@@ -11,7 +11,11 @@
  */
 
 import { microAlgo } from '@algorandfoundation/algokit-utils'
-import { createWalletAlgorandClient } from '../blockchain'
+import {
+    createWalletAlgorandClient,
+    decodeTransaction,
+    encodeTransaction,
+} from '../blockchain'
 
 import type {
     ChainScope,
@@ -164,6 +168,15 @@ export const buildRekeyTx = async ({
         : draft
 }
 
+// Encode-then-decode to normalize: algokit returns a sender as an `Address`
+// instance, but the signing pipeline is built around `decodeTransaction(bytes)`'s
+// shape (plain string sender, Uint8Array byte fields) and otherwise crashes with
+// `Buffer.from(...) received type object`.
+const normalized = async (
+    built: Promise<PeraTransaction>,
+): Promise<PeraTransaction> =>
+    decodeTransaction(encodeTransaction(await built)) as PeraTransaction
+
 export const buildKeyRegistrationTx = (
     params: KeyRegistrationTxParams,
 ): Promise<PeraTransaction> => {
@@ -173,15 +186,17 @@ export const buildKeyRegistrationTx = (
         note: params.note,
         staticFee: params.fee === undefined ? undefined : microAlgo(params.fee),
     }
-    return params.kind === 'offline'
-        ? createTransaction.offlineKeyRegistration(common)
-        : createTransaction.onlineKeyRegistration({
-              ...common,
-              voteKey: params.voteKey,
-              selectionKey: params.selectionKey,
-              stateProofKey: params.stateProofKey,
-              voteFirst: params.voteFirst,
-              voteLast: params.voteLast,
-              voteKeyDilution: params.voteKeyDilution,
-          })
+    return normalized(
+        params.kind === 'offline'
+            ? createTransaction.offlineKeyRegistration(common)
+            : createTransaction.onlineKeyRegistration({
+                  ...common,
+                  voteKey: params.voteKey,
+                  selectionKey: params.selectionKey,
+                  stateProofKey: params.stateProofKey,
+                  voteFirst: params.voteFirst,
+                  voteLast: params.voteLast,
+                  voteKeyDilution: params.voteKeyDilution,
+              }),
+    )
 }

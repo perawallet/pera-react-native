@@ -66,6 +66,15 @@ describe('Algorand custom network', () => {
         expect(isCustomNetworkConfigured()).toBe(false)
     })
 
+    test('the adapter saves and reads the node for the Algorand chain', async () => {
+        const { algorandCustomNode } = await load()
+
+        algorandCustomNode.save(CONFIG)
+
+        expect(algorandCustomNode.chainId).toBe('algorand')
+        expect(algorandCustomNode.read()).toEqual({ ...CONFIG, id: 'custom' })
+    })
+
     test('clearCustomNetwork returns to unconfigured', async () => {
         const {
             setCustomNetwork,

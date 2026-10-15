@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     chainAccountOf,
     findAccountByAddressOn,
@@ -23,7 +23,7 @@ import {
     useMultisigAccountDetailQuery,
     useDeleteImportInboxMutation,
 } from '@perawallet/wallet-core-multisig'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useExitAccountFlow } from '@modules/onboarding'
 import type { MultisigStackParamList } from '../../routes/types'
@@ -53,17 +53,17 @@ export const useImportSharedAccountScreen =
             useRoute<RouteProp<MultisigStackParamList, 'ImportSharedAccount'>>()
         const { address } = route.params
 
-        const { network } = useNetwork()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const accounts = useAllAccounts()
         const { exitAccountFlow } = useExitAccountFlow()
-        const deviceId = useDeviceID(network) ?? ''
+        const deviceId = useScopedDeviceID(scope) ?? ''
         const deleteImportInboxMutation = useDeleteImportInboxMutation({
-            network,
+            scope,
             deviceId,
         })
 
         const { data, isLoading, isError, refetch } =
-            useMultisigAccountDetailQuery({ network, address })
+            useMultisigAccountDetailQuery({ scope, address })
 
         const participantAddresses = useMemo(
             () => data?.participantAddresses ?? [],

@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     verifyEmail,
     type VerifyEmailParams,
@@ -23,7 +20,7 @@ import {
 import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
-export type VerifyEmailVariables = Omit<VerifyEmailParams, 'network' | 'signal'>
+export type VerifyEmailVariables = Omit<VerifyEmailParams, 'scope' | 'signal'>
 
 export type UseVerifyEmailMutationResult = CardMutationResult<
     VerifyEmailVariables,
@@ -33,14 +30,12 @@ export type UseVerifyEmailMutationResult = CardMutationResult<
 export const useVerifyEmailMutation = (
     scope: ChainScope,
 ): UseVerifyEmailMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<
         VerifyEmailResult,
         Error,
         VerifyEmailVariables
     >({
-        mutationFn: variables => verifyEmail({ ...variables, network }),
+        mutationFn: variables => verifyEmail({ ...variables, scope }),
         // Store the onboarding id every later step requires. The step isn't
         // advanced here — this runs on the password screen (right after email
         // verification, before the phone steps); the phone/send and phone/verify

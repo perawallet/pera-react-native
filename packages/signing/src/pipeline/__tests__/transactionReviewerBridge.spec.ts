@@ -23,6 +23,7 @@ import {
     type ReviewWarning,
     type TransactionReviewer,
     type UnsignedTransaction,
+    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { fakeReviewerAdapter } from '../../__tests__/fakeReviewerAdapter'
@@ -55,7 +56,7 @@ const TRANSACTION: UnsignedTransaction = {
     payload: { opaque: true },
     summary: {
         kind: 'transfer',
-        title: { key: 'test' },
+        title: { key: i18nKey('test') },
         direction: 'out',
         icon: 'send',
     },
@@ -65,7 +66,7 @@ const TRANSACTION: UnsignedTransaction = {
 const REVIEWED: ReviewedTransaction = {
     summary: {
         kind: 'contract-call',
-        title: { key: 'transactions.list_item.contract_call' },
+        title: { key: i18nKey('transactions.list_item.contract_call') },
         direction: 'none',
         icon: 'contract-call',
     },

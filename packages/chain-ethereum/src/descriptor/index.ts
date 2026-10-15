@@ -79,14 +79,10 @@ export const ethereumDescriptor: ChainDescriptor = {
     protocol: {
         feeModel: 'gas',
         hasAccountNonce: true,
-        requiresAssetOptIn: false,
-        hasMinimumBalance: false,
-        supportsAtomicGroups: false,
         supportsReplacement: true,
         supportsNativeMultisig: false,
         supportsRekey: false,
         hasTokenApproval: true,
-        multipleAddressesPerAccount: false,
     },
     explorer: {
         accountUrl: explorerLink('address'),

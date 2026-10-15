@@ -37,6 +37,8 @@ const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const TESTNET = scopeForLegacyNetwork('testnet')
 
+const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
+
 // Fake signed-transaction node. The transport reads only `txn` (passed to the
 // mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
 // to algosdk's SignedTransaction class without needing a real instance.
@@ -49,14 +51,9 @@ const fakeSigned = (tag: string, sig?: Uint8Array): PeraSignedTransaction =>
 const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
     addSignature: vi.fn(),
-    useNetwork: vi.fn(),
     encodeUnsignedTransaction: vi.fn(),
     useAllAccounts: vi.fn(),
-    useDeviceID: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => mocks.useNetwork(),
+    deviceIdForScope: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -67,7 +64,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: (network: string) => mocks.useDeviceID(network),
+    deviceIdForScope: (_state: unknown, scope: ChainScope) =>
+        mocks.deviceIdForScope(scope),
+    useDeviceStore: { getState: () => ({}) },
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
@@ -149,7 +148,6 @@ const buildTxnSigningResult = (): {
 describe('useMultisigTransportAdapters', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
         registerTestMultisigAdapter()
         mocks.useAllAccounts.mockReturnValue([
             multisigAccount('MSIG', {
@@ -158,7 +156,7 @@ describe('useMultisigTransportAdapters', () => {
                 addresses: ['A', 'B'],
             }),
         ])
-        mocks.useDeviceID.mockReturnValue('device-1')
+        mocks.deviceIdForScope.mockReturnValue('device-1')
         // Encode each txn to a deterministic, distinguishable byte sequence
         mocks.encodeUnsignedTransaction.mockImplementation(
             (txn: { tag: string }) =>
@@ -199,6 +197,41 @@ describe('useMultisigTransportAdapters', () => {
         })
     })
 
+    describe('on an Ethereum scope', () => {
+        test('reads the device id registered for that scope', () => {
+            mocks.deviceIdForScope.mockReturnValue('eth-device')
+            const { result } = renderTransportFns()
+
+            expect(result.current.adaptersFor(ETHEREUM).getDeviceId()).toBe(
+                'eth-device',
+            )
+            expect(mocks.deviceIdForScope).toHaveBeenCalledWith(ETHEREUM)
+        })
+
+        test("proposes through the scope's planner adapter and backend", async () => {
+            registerFakePlannerAdapter({
+                chainId: ETHEREUM.chainId,
+                encodeUnsignedTransaction: mocks.encodeUnsignedTransaction,
+            })
+            mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
+            const { result } = renderTransportFns()
+
+            await result.current.adaptersFor(ETHEREUM).proposeSignRequest({
+                multisigAddress: 'MSIG',
+                signedData: {
+                    type: 'transactions',
+                    signed: [fakeSigned('TXN_1', new Uint8Array([1]))],
+                },
+                signers: [
+                    { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
+                ],
+                type: 'async',
+            })
+
+            expect(mocks.proposeSignRequest.mock.calls[0][0]).toEqual(ETHEREUM)
+        })
+    })
+
     describe('proposeSignRequest', () => {
         test('with a single local signer: only the propose call fires, with proposer in responses', async () => {
             mocks.proposeSignRequest.mockResolvedValue(baseSignRequestResponse)
@@ -221,8 +254,8 @@ describe('useMultisigTransportAdapters', () => {
             expect(mocks.proposeSignRequest).toHaveBeenCalledTimes(1)
             expect(mocks.addSignature).not.toHaveBeenCalled()
 
-            const [network, params] = mocks.proposeSignRequest.mock.calls[0]
-            expect(network).toBe('testnet')
+            const [scope, params] = mocks.proposeSignRequest.mock.calls[0]
+            expect(scope).toEqual(SCOPE)
             expect(params).toEqual({
                 joint_account_address: 'MSIG',
                 proposer_address: 'PARTICIPANT_A',
@@ -568,7 +601,7 @@ describe('useMultisigTransportAdapters', () => {
     describe('addSignatures draft bootstrap', () => {
         const createDraft = (proposeType: 'sync' | 'async' = 'sync') =>
             useDraftSignRequestStore.getState().createDraft({
-                network: 'testnet',
+                scope: SCOPE,
                 multisigAddress: 'MSIG',
                 multisigDetails: {
                     threshold: 2,

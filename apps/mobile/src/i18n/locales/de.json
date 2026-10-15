@@ -3125,7 +3125,6 @@
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
             "pending": "Ausstehend",
-            "pending_verifying": "Ausstehend — wird überprüft",
             "raw_transaction": "Rohtransaktion"
         },
         "notice": {

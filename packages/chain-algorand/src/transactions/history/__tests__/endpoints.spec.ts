@@ -15,6 +15,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 
 // Mock the queryClient using vi.hoisted to avoid hoisting issues
 const mockQueryClient = vi.hoisted(() => vi.fn())
+const mockFetchNodeJson = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
@@ -25,6 +26,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         queryClient: mockQueryClient,
     }
 })
+
+vi.mock('../../../blockchain/utils/nodeHttp', () => ({
+    fetchNodeJson: mockFetchNodeJson,
+}))
 
 // Fully replaced (no `importActual`): the real `@perawallet/wallet-core-assets`
 // barrel transitively pulls in react-native-mmkv, which cannot resolve under
@@ -364,11 +369,7 @@ describe('routing by network', () => {
     // exhausted (verified against the live fnet indexer) rather than sending
     // `null` — the indexer envelope schema requires that key be a string or
     // absent.
-    const indexerPage = {
-        data: { 'current-round': 1, transactions: [] },
-        status: 200,
-        statusText: 'OK',
-    }
+    const indexerPage = { 'current-round': 1, transactions: [] }
 
     const peraPage = {
         data: { results: [], next: null, previous: null },
@@ -390,19 +391,18 @@ describe('routing by network', () => {
     })
 
     it('uses the real chain indexer on a fallback network', async () => {
-        mockQueryClient.mockResolvedValue(indexerPage)
+        mockFetchNodeJson.mockResolvedValue(indexerPage)
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123',
             network: Networks.betanet,
         })
 
-        expect(mockQueryClient).toHaveBeenCalledWith(
-            expect.objectContaining({
-                backend: 'indexer',
-                network: Networks.betanet,
-                url: '/v2/accounts/ABC123/transactions',
-            }),
+        expect(mockFetchNodeJson).toHaveBeenCalledWith(
+            Networks.betanet,
+            'indexer',
+            '/v2/accounts/ABC123/transactions',
+            expect.anything(),
         )
     })
 
@@ -420,7 +420,7 @@ describe('routing by network', () => {
     })
 
     it('fetchMoreTransactions sends the stored cursor as `next` on a fallback network', async () => {
-        mockQueryClient.mockResolvedValue(indexerPage)
+        mockFetchNodeJson.mockResolvedValue(indexerPage)
 
         await fetchMoreTransactions({
             url: 'CURSOR1',
@@ -428,11 +428,11 @@ describe('routing by network', () => {
             accountAddress: 'ABC123',
         })
 
-        expect(mockQueryClient).toHaveBeenCalledWith(
+        expect(mockFetchNodeJson).toHaveBeenCalledWith(
+            Networks.betanet,
+            'indexer',
+            '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
-                backend: 'indexer',
-                network: Networks.betanet,
-                url: '/v2/accounts/ABC123/transactions',
                 params: expect.objectContaining({ next: 'CURSOR1' }),
             }),
         )
@@ -446,7 +446,7 @@ describe('routing by network', () => {
             }),
         ).rejects.toThrow(/accountAddress/)
 
-        expect(mockQueryClient).not.toHaveBeenCalled()
+        expect(mockFetchNodeJson).not.toHaveBeenCalled()
     })
 
     it('fetchMoreTransactions carries the same asset-id / time filters as the first page on a fallback network', async () => {
@@ -455,7 +455,7 @@ describe('routing by network', () => {
         // asset-filtered or date-filtered list must have those filters
         // re-sent on every page or the list silently widens back to
         // everything from page 2 onward.
-        mockQueryClient.mockResolvedValue(indexerPage)
+        mockFetchNodeJson.mockResolvedValue(indexerPage)
 
         await fetchMoreTransactions({
             url: 'CURSOR1',
@@ -467,11 +467,11 @@ describe('routing by network', () => {
             limit: 50,
         })
 
-        expect(mockQueryClient).toHaveBeenCalledWith(
+        expect(mockFetchNodeJson).toHaveBeenCalledWith(
+            Networks.betanet,
+            'indexer',
+            '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
-                backend: 'indexer',
-                network: Networks.betanet,
-                url: '/v2/accounts/ABC123/transactions',
                 params: {
                     limit: 50,
                     next: 'CURSOR1',

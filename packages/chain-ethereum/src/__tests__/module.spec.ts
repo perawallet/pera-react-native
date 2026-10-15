@@ -14,7 +14,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import {
     historyChainAdapters,
-    TRANSACTION_STATUS_NOTICE_KEYS,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -29,13 +28,9 @@ import {
 import { ethereumModule } from '..'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
-import {
-    ETHEREUM_HISTORY_SUMMARY_KEYS,
-    ethereumHistoryAdapter,
-} from '../history'
+import { ethereumHistoryAdapter } from '../history'
 import { ethereumPlannerAdapter } from '../signing/adapter'
 import { ethereumReviewerAdapter } from '../signing/review'
-import { ETHEREUM_TRANSFER_TITLE_KEYS } from '../transfer'
 
 const context: ChainContext = {
     getScope: vi.fn(),
@@ -99,32 +94,5 @@ describe('ethereumModule', () => {
             chainId: 'ethereum',
             network: { id: 'sepolia' },
         })
-    })
-
-    it('declares the error keys its adapters emit as data', () => {
-        expect(ethereumModule.i18nKeys()).toContain(
-            'errors.evm.insufficient_funds.body',
-        )
-        expect(ethereumModule.i18nKeys()).toContain(
-            'errors.evm.invalid_private_key',
-        )
-        expect(ethereumModule.i18nKeys()).toEqual(
-            expect.arrayContaining([
-                ...ETHEREUM_TRANSFER_TITLE_KEYS,
-                ...ETHEREUM_HISTORY_SUMMARY_KEYS,
-                ...TRANSACTION_STATUS_NOTICE_KEYS,
-            ]),
-        )
-        const keys = ethereumModule.i18nKeys()
-        expect(new Set(keys).size).toBe(keys.length)
-    })
-
-    it('declares the titles its reviewer gives transactions', () => {
-        expect(ethereumModule.i18nKeys()).toEqual(
-            expect.arrayContaining([
-                'transactions.list_item.send',
-                'transactions.list_item.contract_call',
-            ]),
-        )
     })
 })
