@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     multisigAdapterFor,
+    type MultisigParameters,
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import type { UnsignedTransactionSignRequest } from '@perawallet/wallet-core-signing'
@@ -31,9 +32,11 @@ type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
     scope: ChainScope
+    /** `multisig` is the joint account the transaction is signed for. */
     decodeTransaction: (
         bytes: Uint8Array,
         scope: ChainScope,
+        multisig: MultisigParameters,
     ) => UnsignedTransaction
     /** Used to recognise senders the joint account authorizes via a rekey. */
     localAccounts: WalletAccount[]
@@ -60,8 +63,11 @@ export const buildMultisigCosignRequest = ({
     }
 
     const rawTransactionsBase64 = transactionList.rawTransactions
+    const { version, threshold, participantAddresses } =
+        signRequest.multisigAccount
+    const multisig = { version, threshold, addresses: participantAddresses }
     const txs = rawTransactionsBase64.map(base64 =>
-        decodeTransaction(decodeFromBase64(base64), scope),
+        decodeTransaction(decodeFromBase64(base64), scope, multisig),
     )
 
     // The backend is a relay, not a trust anchor, for what we sign.

@@ -14,15 +14,16 @@ import { afterEach, describe, expect, it } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { Decimal } from 'decimal.js'
 import {
+    Address,
     Transaction,
     TransactionType,
     generateAccount,
-    type Address,
 } from 'algosdk'
 import {
     useAccountChainStateStore,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { SigningResult } from '@perawallet/wallet-core-signing'
 import { TransportError } from '@perawallet/wallet-core-signing'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
@@ -36,9 +37,12 @@ import { standaloneAccount } from '../../__tests__/algorandAccounts'
 import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { readAlgorandTransaction } from '../planner'
+import { algorandSignedForAddresses } from '../algorandRequest'
+import { generateMultisigAddress } from '../../multisig/address'
 import {
     algorandSignedTransactionsOf,
     decodeUnsignedAlgorandTransaction,
+    withAlgorandAuthorizer,
     signedAlgorandTransactionFromBytes,
     summarizeAlgorandTransaction,
     toSignedAlgorandTransaction,
@@ -156,6 +160,54 @@ describe('toUnsignedAlgorandTransaction', () => {
         expect(readAlgorandTransaction(unsigned).transaction.txID()).toBe(
             transaction.txID(),
         )
+    })
+})
+
+describe('a request whose signer is named for a slot', () => {
+    const PARTICIPANT = makeTestAddress(4).toString()
+    const OTHER = makeTestAddress(5).toString()
+    const requestOf = (txs: UnsignedTransaction[], signer: string) => ({
+        id: 'request',
+        type: 'transactions' as const,
+        transport: 'callback' as const,
+        txs,
+        chainData: { algorand: { signerOverrides: new Map([[0, signer]]) } },
+    })
+
+    it("signs a dApp's named authority for a sender the wallet holds no record of", () => {
+        const unsigned = withAlgorandAuthorizer(
+            toUnsignedAlgorandTransaction(payment(), SCOPE),
+            OTHER,
+        )
+
+        expect(readAlgorandTransaction(unsigned).signer).toBe(OTHER)
+        expect(
+            algorandSignedForAddresses(requestOf([unsigned], OTHER)),
+        ).toEqual([OTHER])
+    })
+
+    it('signs a cosign for a participant of the joint account it decodes for', () => {
+        const multisig = {
+            version: 1,
+            threshold: 2,
+            addresses: [PARTICIPANT, OTHER],
+        }
+        const joint = generateMultisigAddress(1, 2, multisig.addresses)
+        const transaction = makeTestPaymentTx(
+            Address.fromString(joint),
+            { receiver: RECEIVER, genesisHash: MAINNET_GENESIS_HASH },
+        )
+
+        const unsigned = decodeUnsignedAlgorandTransaction(
+            encodeTransactionRaw(transaction),
+            SCOPE,
+            multisig,
+        )
+
+        expect(readAlgorandTransaction(unsigned).multisig).toEqual(multisig)
+        expect(
+            algorandSignedForAddresses(requestOf([unsigned], PARTICIPANT)),
+        ).toEqual([PARTICIPANT])
     })
 })
 

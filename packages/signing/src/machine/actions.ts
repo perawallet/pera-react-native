@@ -538,7 +538,7 @@ export const resolveInitialContext = (
 ): SigningMachineContext => {
     const { request, allAccounts } = input
 
-    const signableGroups = buildSignableGroups(
+    let signableGroups = buildSignableGroups(
         request,
         allAccounts,
         input.scope,
@@ -559,7 +559,9 @@ export const resolveInitialContext = (
     )
 
     // A planner-signed group and one the chain's own signer signs have no
-    // common signed shape to deliver in, so refuse before anything is signed.
+    // common signed shape to deliver in. A chain that groups by the account
+    // signed for (Algorand) signs every group its own way instead, as it does
+    // the same request in its own shape; any other chain refuses up front.
     const chainNeutral = signableGroups.filter(isChainNeutralTransactions)
     const planned = chainNeutral.filter(group =>
         isPlannerSigned(
@@ -569,10 +571,19 @@ export const resolveInitialContext = (
         ),
     )
     if (planned.length > 0 && planned.length < chainNeutral.length) {
-        throw new SigningError(
-            'This request needs signers that sign in different ways, so it cannot be delivered as one group',
-            undefined,
-            { retryable: false },
+        if (chainNeutral.some(group => isKeyedByPlanner(group.data))) {
+            throw new SigningError(
+                'This request needs signers that sign in different ways, so it cannot be delivered as one group',
+                undefined,
+                { retryable: false },
+            )
+        }
+        const adapter = plannerAdapterForScope(input.scope)
+        signableGroups = signableGroups.map(group =>
+            group.data.type === 'transactions' &&
+            isUnsignedTransactionsData(group.data)
+                ? { ...group, data: adapter.readTransactionsData(group.data) }
+                : group,
         )
     }
 

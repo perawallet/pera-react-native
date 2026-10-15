@@ -26,5 +26,6 @@ export {
     toSignedAlgorandTransaction,
     toUnsignedAlgorandTransaction,
     toUnsignedAlgorandTransactions,
+    withAlgorandAuthorizer,
     withAlgorandTransaction,
 } from './unsignedTransaction'

@@ -30,6 +30,7 @@ import {
     TransportError,
     type SigningResult,
 } from '@perawallet/wallet-core-signing'
+import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import {
     decodeSignedTransaction,
     decodeTransaction,
@@ -48,6 +49,8 @@ import {
     SEND_TITLE_KEY,
     assetRefOf,
 } from '../transactions/summarize'
+import { generateMultisigAddress } from '../multisig/address'
+import type { AlgorandTransactionPayload } from './planner'
 
 const chainSpecific = (
     titleKey: string,
@@ -173,8 +176,7 @@ export const toUnsignedAlgorandTransaction = (
     scope: ChainScope,
 ): UnsignedTransaction => {
     const authorizer = authorizerOf(transaction, scope)
-    // `AlgorandTransactionPayload`'s shape; `readAlgorandTransaction` reads it.
-    const payload: { transaction: PeraTransaction; authorizer?: string } = {
+    const payload: AlgorandTransactionPayload = {
         transaction,
         ...(authorizer !== undefined && { authorizer }),
     }
@@ -197,10 +199,8 @@ export const toUnsignedAlgorandTransactions = (
 // Only chain-algorand builds these payloads, so the record is the one
 // `toUnsignedAlgorandTransaction` wrote; `readAlgorandTransaction` stays the
 // check for payloads from anywhere else.
-const payloadOf = (
-    unsigned: UnsignedTransaction,
-): { transaction: PeraTransaction } =>
-    unsigned.payload as { transaction: PeraTransaction }
+const payloadOf = (unsigned: UnsignedTransaction): AlgorandTransactionPayload =>
+    unsigned.payload as AlgorandTransactionPayload
 
 /** The transaction of a payload chain-algorand built itself, with no network check. */
 export const algorandTransactionOf = (
@@ -221,11 +221,46 @@ export const withAlgorandTransaction = (
     }
 }
 
+/**
+ * `multisig`, when given, is the joint account the transaction is signed for:
+ * its participants sign, so a cosign is for one of them.
+ */
 export const decodeUnsignedAlgorandTransaction = (
     bytes: Uint8Array,
     scope: ChainScope,
-): UnsignedTransaction =>
-    toUnsignedAlgorandTransaction(decodeTransaction(bytes), scope)
+    multisig?: MultisigParameters,
+): UnsignedTransaction => {
+    const unsigned = toUnsignedAlgorandTransaction(
+        decodeTransaction(bytes),
+        scope,
+    )
+    if (!multisig) return unsigned
+    const payload = payloadOf(unsigned)
+    const joint = generateMultisigAddress(
+        multisig.version,
+        multisig.threshold,
+        multisig.addresses,
+    )
+    return {
+        ...unsigned,
+        payload: {
+            ...payload,
+            multisig,
+            ...(joint !== payload.transaction.sender.toString() && {
+                authorizer: joint,
+            }),
+        },
+    }
+}
+
+/** `unsigned`, signed for by `authorizer` (an ARC-0001 `authAddr`) instead of its sender. */
+export const withAlgorandAuthorizer = (
+    unsigned: UnsignedTransaction,
+    authorizer: string,
+): UnsignedTransaction => ({
+    ...unsigned,
+    payload: { ...payloadOf(unsigned), authorizer },
+})
 
 export const toSignedAlgorandTransaction = (
     signed: PeraSignedTransaction,

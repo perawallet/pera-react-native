@@ -298,6 +298,19 @@ describe('enqueueArc0001SignRequest', () => {
         expect(algorandDataOf().signerOverrides).toBe(resolved.signerOverrides)
     })
 
+    it("names an overridden slot's authority as the signer its payload carries", async () => {
+        const resolved = resolvedWithSlots(3, [0, 2])
+        resolved.signerOverrides.set(1, 'override-addr')
+
+        await enqueue(resolved, makeTransport())
+
+        const { groupContext } = algorandDataOf()
+        expect(groupContext[2].payload).toEqual(
+            expect.objectContaining({ authorizer: 'override-addr' }),
+        )
+        expect(groupContext[0].payload).not.toHaveProperty('authorizer')
+    })
+
     it('omits signerOverrides when the map is empty', async () => {
         await enqueue(makeResolved(1, 1), makeTransport())
 

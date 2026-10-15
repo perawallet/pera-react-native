@@ -38,6 +38,7 @@ import { buildWalletConnectSignResult } from './multisig/buildWalletConnectSignR
 import {
     algorandTransactionOf,
     toUnsignedAlgorandTransactions,
+    withAlgorandAuthorizer,
 } from './unsignedTransaction'
 
 // Bridges an ARC-0001 resolver result to the signing pipeline: builds the
@@ -66,10 +67,19 @@ export const enqueueArc0001SignRequest = async (
     }
 
     const indicesToSign = toSign.map(t => t.index)
+    // An overridden slot is signed by the dApp's named authority, which the
+    // payload must carry for the planner to sign as it.
     const decodedGroup = toUnsignedAlgorandTransactions(
         allDecoded,
         getSelectedScope(ALGORAND_CHAIN_ID),
     )
+    signerOverrides.forEach((authorizer, subsetIndex) => {
+        const index = indicesToSign[subsetIndex]
+        decodedGroup[index] = withAlgorandAuthorizer(
+            decodedGroup[index],
+            authorizer,
+        )
+    })
 
     let assigned: Awaited<ReturnType<typeof assignFeeToGroup>>
     try {

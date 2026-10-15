@@ -122,10 +122,12 @@ describe('buildMultisigCosignRequest', () => {
         })
 
         expect(decodeTransaction).toHaveBeenCalledTimes(2)
-        expect(decodeTransaction).toHaveBeenCalledWith(expect.any(Uint8Array), {
-            chainId: 'algorand',
-            networkId: 'testnet',
-        })
+        // Decoded as signed for the joint account, so a participant cosigns.
+        expect(decodeTransaction).toHaveBeenCalledWith(
+            expect.any(Uint8Array),
+            { chainId: 'algorand', networkId: 'testnet' },
+            { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
+        )
         expect(result.txs).toHaveLength(2)
         expect(result.chainData?.algorand?.rawTransactionsBase64).toEqual([
             'dHgx',
