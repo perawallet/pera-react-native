@@ -69,12 +69,12 @@ describe('useAssetTransferRequestsScreen', () => {
         expect(result.current.assetRequests).toEqual([])
     })
 
-    it("reads the selected account's requests on the legacy chain", () => {
+    it("reads the selected account's requests on the legacy chain's scope", () => {
         renderHook(() => useAssetTransferRequestsScreen())
 
         expect(useAssetInboxRequestsQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: LEGACY_CHAIN_ID }),
             'ACCOUNT_ADDR',
-            LEGACY_CHAIN_ID,
         )
     })
 
