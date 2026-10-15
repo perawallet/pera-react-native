@@ -37,44 +37,36 @@ import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 
 export const SEND_TITLE_KEY = 'transactions.list_item.send'
-const SEND = SEND_TITLE_KEY
 const RECEIVE = 'transactions.list_item.receive'
 const SWAP = 'transactions.list_item.swap'
 export const OPT_IN_TITLE_KEY = 'transactions.list_item.opt_in'
-const OPT_IN = OPT_IN_TITLE_KEY
 export const OPT_OUT_TITLE_KEY = 'transactions.list_item.opt_out'
-const OPT_OUT = OPT_OUT_TITLE_KEY
 export const ASSET_CONFIG_TITLE_KEY = 'transactions.list_item.asset_config'
-const ASSET_CONFIG = ASSET_CONFIG_TITLE_KEY
 export const ASSET_FREEZE_TITLE_KEY = 'transactions.list_item.asset_freeze'
-const ASSET_FREEZE = ASSET_FREEZE_TITLE_KEY
 export const APP_CALL_TITLE_KEY = 'transactions.list_item.app_call'
-const APP_CALL = APP_CALL_TITLE_KEY
 export const KEY_REGISTRATION_TITLE_KEY =
     'transactions.list_item.key_registration'
-const KEY_REGISTRATION = KEY_REGISTRATION_TITLE_KEY
 const HEARTBEAT = 'transactions.list_item.heartbeat'
 const STATE_PROOF = 'transactions.list_item.state_proof'
 export const DEFAULT_TITLE_KEY = 'transactions.list_item.default'
-const DEFAULT = DEFAULT_TITLE_KEY
 const INTERPRETED_TITLE = 'transactions.list_item.interpreted_title'
 const SWAP_SUBTITLE = 'transactions.list_item.swap_subtitle'
 const INNER_TRANSACTION_COUNT = 'transactions.list_item.inner_transaction_count'
 
 /** Every i18n key a history summary can carry. */
 export const ALGORAND_HISTORY_SUMMARY_KEYS = [
-    SEND,
+    SEND_TITLE_KEY,
     RECEIVE,
     SWAP,
-    OPT_IN,
-    OPT_OUT,
-    ASSET_CONFIG,
-    ASSET_FREEZE,
-    APP_CALL,
-    KEY_REGISTRATION,
+    OPT_IN_TITLE_KEY,
+    OPT_OUT_TITLE_KEY,
+    ASSET_CONFIG_TITLE_KEY,
+    ASSET_FREEZE_TITLE_KEY,
+    APP_CALL_TITLE_KEY,
+    KEY_REGISTRATION_TITLE_KEY,
     HEARTBEAT,
     STATE_PROOF,
-    DEFAULT,
+    DEFAULT_TITLE_KEY,
     INTERPRETED_TITLE,
     SWAP_SUBTITLE,
     INNER_TRANSACTION_COUNT,
@@ -244,7 +236,7 @@ const classifiedSummary = (
           )
         : {}
     const sendOrReceive = {
-        title: text(isOut ? SEND : RECEIVE),
+        title: text(isOut ? SEND_TITLE_KEY : RECEIVE),
         icon: isOut ? 'send' : 'receive',
         direction: isOut ? 'out' : 'in',
         counterparty,
@@ -273,27 +265,27 @@ const classifiedSummary = (
         }
         case 'asset-opt-in': {
             return {
-                ...chainSpecific(OPT_IN, 'opt-in'),
+                ...chainSpecific(OPT_IN_TITLE_KEY, 'opt-in'),
                 counterparty,
                 ...assetAmount,
             }
         }
         case 'asset-opt-out': {
             return {
-                ...chainSpecific(OPT_OUT, 'opt-out'),
+                ...chainSpecific(OPT_OUT_TITLE_KEY, 'opt-out'),
                 direction: isOut ? 'out' : 'in',
                 counterparty,
                 ...assetAmount,
             }
         }
         case 'asset-config': {
-            return chainSpecific(ASSET_CONFIG, 'asset-config')
+            return chainSpecific(ASSET_CONFIG_TITLE_KEY, 'asset-config')
         }
         case 'asset-freeze': {
-            return chainSpecific(ASSET_FREEZE, 'asset-freeze')
+            return chainSpecific(ASSET_FREEZE_TITLE_KEY, 'asset-freeze')
         }
         case 'key-registration': {
-            return chainSpecific(KEY_REGISTRATION, 'consensus')
+            return chainSpecific(KEY_REGISTRATION_TITLE_KEY, 'consensus')
         }
         case 'heartbeat': {
             return chainSpecific(HEARTBEAT, 'consensus')
@@ -301,7 +293,7 @@ const classifiedSummary = (
         case 'app-call': {
             return {
                 kind: 'contract-call',
-                title: text(APP_CALL),
+                title: text(APP_CALL_TITLE_KEY),
                 icon: 'contract-call',
                 direction: 'none',
                 balanceChanges: item.balanceImpacts.map(impact => ({
@@ -323,7 +315,7 @@ const classifiedSummary = (
             return chainSpecific(STATE_PROOF, 'unknown')
         }
         default: {
-            return chainSpecific(DEFAULT, 'unknown')
+            return chainSpecific(DEFAULT_TITLE_KEY, 'unknown')
         }
     }
 }

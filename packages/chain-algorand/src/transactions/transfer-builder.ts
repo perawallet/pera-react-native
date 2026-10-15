@@ -27,10 +27,8 @@ import { assignFeeToGroup } from '../signing/assignMinimumFeesToGroup'
 import { toUnsignedAlgorandTransaction } from '../signing/unsignedTransaction'
 import { buildOptInTxs, buildTransferTxs } from './builders'
 import { fetchSuggestedMinFee, resolveAlgorandSenderFee } from './transfer-fees'
+import { OPT_IN_TITLE_KEY, SEND_TITLE_KEY } from './summarize'
 import { assertBuildableIntent } from './transfer-validation'
-
-const SEND_TITLE_KEY = 'transactions.list_item.send'
-const OPT_IN_TITLE_KEY = 'transactions.list_item.opt_in'
 
 /** Every i18n key a built transaction's summary can carry. */
 export const ALGORAND_TRANSFER_TITLE_KEYS = [

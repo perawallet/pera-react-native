@@ -13,12 +13,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import '../../__tests__/registerAlgorandAccounts'
 import { Decimal } from 'decimal.js'
-import {
-    Address,
-    Transaction,
-    TransactionType,
-    generateAccount,
-} from 'algosdk'
+import { Address, Transaction, TransactionType, generateAccount } from 'algosdk'
 import {
     useAccountChainStateStore,
     useAccountsStore,
@@ -193,10 +188,10 @@ describe('a request whose signer is named for a slot', () => {
             addresses: [PARTICIPANT, OTHER],
         }
         const joint = generateMultisigAddress(1, 2, multisig.addresses)
-        const transaction = makeTestPaymentTx(
-            Address.fromString(joint),
-            { receiver: RECEIVER, genesisHash: MAINNET_GENESIS_HASH },
-        )
+        const transaction = makeTestPaymentTx(Address.fromString(joint), {
+            receiver: RECEIVER,
+            genesisHash: MAINNET_GENESIS_HASH,
+        })
 
         const unsigned = decodeUnsignedAlgorandTransaction(
             encodeTransactionRaw(transaction),

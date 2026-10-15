@@ -104,16 +104,8 @@ export const buildGroupSignerMap = (
     return map
 }
 
-/**
- * Dispatches on the tagged fields (`sourceType`, `transport`), NOT on whether an
- * `approve` callback happens to be present, so the selector stays predictable
- * as new caller shapes appear.
- *
- * Delivery needs no quantum special-casing: a PQ signature is a `pqsig` field
- * on the same `PeraSignedTransaction`, not a separate carrier, so it reaches
- * the request's `approve` unchanged. Whether the dApp's node accepts a Falcon
- * signature is network-gated, not a wallet concern.
- */
+// A chain-neutral request's `approve` gets its chain's wire-encoded signed
+// transactions, whichever signer produced them.
 const transactionApproveOf = (
     request: TransactionSignRequest,
     scope: ChainScope,
@@ -162,6 +154,11 @@ const handoffDeliveryOf = (
     }
 }
 
+/**
+ * Dispatches on the tagged fields (`sourceType`, `transport`), NOT on whether an
+ * `approve` callback happens to be present, so the selector stays predictable
+ * as new caller shapes appear.
+ */
 const buildSourceMetadata = (
     request: SignRequest,
     scope: ChainScope,
@@ -538,11 +535,7 @@ export const resolveInitialContext = (
 ): SigningMachineContext => {
     const { request, allAccounts } = input
 
-    let signableGroups = buildSignableGroups(
-        request,
-        allAccounts,
-        input.scope,
-    )
+    let signableGroups = buildSignableGroups(request, allAccounts, input.scope)
 
     if (signableGroups.length === 0) {
         throw new CannotSignError(

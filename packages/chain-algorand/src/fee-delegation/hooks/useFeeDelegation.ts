@@ -138,6 +138,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
     const {
         encodeTransaction,
         encodeTransactionRaw,
+        encodeSignedTransaction,
         decodeTransaction,
         decodeSignedTransaction,
     } = useTransactionEncoder()
@@ -182,12 +183,17 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
 
             for (const entry of txnGroup) {
                 if (entry.stxn) {
-                    // The sponsor's bytes go to the node as it signed them.
-                    const bytes = decodeFromBase64(entry.stxn)
-                    const signed = decodeSignedTransaction(bytes)
+                    // Re-encoded, as the sponsor's slot always has been on submit.
+                    const signed = decodeSignedTransaction(
+                        decodeFromBase64(entry.stxn),
+                    )
                     slots.push({
                         kind: 'preSigned',
-                        signed: { scope, id: signed.txn.txID(), bytes },
+                        signed: {
+                            scope,
+                            id: signed.txn.txID(),
+                            bytes: encodeSignedTransaction(signed),
+                        },
                     })
                     groupContext.push(signed.txn)
                 } else {
@@ -257,6 +263,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             addSignRequest,
             encodeTransaction,
             encodeTransactionRaw,
+            encodeSignedTransaction,
             decodeTransaction,
             decodeSignedTransaction,
         ],

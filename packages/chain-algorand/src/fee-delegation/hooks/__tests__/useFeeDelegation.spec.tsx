@@ -46,6 +46,8 @@ vi.mock('../../../blockchain', () => ({
             new Uint8Array([...`TX${txn.id}`].map(c => c.charCodeAt(0))),
         encodeTransactionRaw: (txn: { id: string }) =>
             new Uint8Array([...txn.id].map(c => c.charCodeAt(0))),
+        encodeSignedTransaction: (signed: { txn: { id: string } }) =>
+            new Uint8Array([...`S${signed.txn.id}`].map(c => c.charCodeAt(0))),
         // Decoders turn the base64-decoded bytes back into readable ids so
         // assertions can track slots through the flow. Decoded wallet slots
         // carry the requesting account as sender so the trust-anchor check
@@ -215,12 +217,14 @@ describe('fee-delegation/useFeeDelegation', () => {
         expect(submitAndAutoRefreshMock).toHaveBeenCalledTimes(1)
         const [scope, orderedSigned] = submitAndAutoRefreshMock.mock.calls[0]!
         expect(scope).toEqual({ chainId: 'algorand', networkId: 'mainnet' })
-        // The sponsor's slot keeps the bytes it signed.
+        // The sponsor's slot is re-encoded from its decoded envelope.
         expect(orderedSigned).toEqual([
             {
                 scope: SCOPE,
                 id: 'sponsor-id',
-                bytes: new Uint8Array([...'sponsor'].map(c => c.charCodeAt(0))),
+                bytes: new Uint8Array(
+                    [...'Ssponsor'].map(c => c.charCodeAt(0)),
+                ),
             },
             walletSigned,
         ])

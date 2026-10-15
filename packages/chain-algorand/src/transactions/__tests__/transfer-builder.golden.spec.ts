@@ -38,7 +38,10 @@ import {
     type TransactionIntent,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import { encodeTransactionRaw } from '../../blockchain'
+import {
+    createWalletAlgorandClient,
+    encodeTransactionRaw,
+} from '../../blockchain'
 import { assignMinimumFeesToGroup } from '../../signing/assignMinimumFeesToGroup'
 import { resolveMinFeeForSender } from '../../signing/minFeeResolver'
 import { mockAlgodTransactionParams } from '../../test-handlers'
@@ -196,6 +199,54 @@ describe('buildAlgorandTransfer golden bytes', () => {
                 expected.map(transaction =>
                     encodeToBase64(encodeTransactionRaw(transaction)),
                 ),
+            )
+        },
+    )
+})
+
+// The gift-card checkout composed its payment in place with the wallet's
+// AlgoKit client before it built through the send flow's adapter.
+describe('the gift-card payment', () => {
+    beforeEach(() => {
+        server.use(mockAlgodTransactionParams())
+    })
+
+    it.each([
+        { asset: 'ALGO', assetId: '0' },
+        { asset: 'USDC', assetId: '31566704' },
+    ])(
+        'builds a $asset payment byte for byte as its own composer did',
+        async ({ assetId }) => {
+            const composer = createWalletAlgorandClient('testnet').newGroup()
+            if (assetId === '0') {
+                composer.addPayment({
+                    sender: ED25519,
+                    receiver: RECEIVER,
+                    amount: 1_500_000n.microAlgo(),
+                    note: 'charge-1',
+                })
+            } else {
+                composer.addAssetTransfer({
+                    sender: ED25519,
+                    receiver: RECEIVER,
+                    assetId: BigInt(assetId),
+                    amount: 1_500_000n,
+                    note: 'charge-1',
+                })
+            }
+            const { transactions: before } = await composer.buildTransactions()
+
+            const built = await buildTransferTxs({
+                scope,
+                sender: ED25519,
+                receiver: RECEIVER,
+                assetId,
+                amount: 1_500_000n,
+                note: 'charge-1',
+            })
+
+            expect(built.map(encodeTransactionRaw)).toEqual(
+                before.map(encodeTransactionRaw),
             )
         },
     )

@@ -102,7 +102,9 @@ describe('Flow: one group signed by a standard and a quantum account', () => {
         confirm()
         // A quantum signer asks once more before signing a dApp's request.
         await waitFor(() => {
-            expect(screen.getByText('quantum.dapp_warning.confirm')).toBeTruthy()
+            expect(
+                screen.getByText('quantum.dapp_warning.confirm'),
+            ).toBeTruthy()
         })
         fireEvent.click(screen.getByText('quantum.dapp_warning.confirm'))
 
