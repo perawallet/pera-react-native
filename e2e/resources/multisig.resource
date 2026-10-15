@@ -51,6 +51,8 @@ ${REKEY_OPTION_LEDGER}                  accessibility_id=rekey_option_ledger
 ${IMPORT_ADD_BUTTON}                    accessibility_id=import-shared-account-add-button
 ${IMPORT_IGNORE_BUTTON}                 accessibility_id=import-shared-account-ignore-button
 ${IMPORT_RETRY_BUTTON}                  accessibility_id=import-shared-account-retry
+# The import screen once its lookup has answered: the account, or the error state.
+${IMPORT_LOADED}                        xpath=//*[@name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button' or @name='import-shared-account-retry' or @content-desc='import-shared-account-retry']
 
 ${CREATION_BLOCKED}                     The build cannot register its device (the app showed 'An error occurred': POST /api/v3/devices returned 401, so no deviceId). Rebuild with BACKEND_API_KEY set.
 
@@ -299,7 +301,10 @@ Ensure Watch Account
 Open Import Link
     [Arguments]    ${address}
     Open Deeplink    ${IMPORT_LINK}${address}
-    Wait Until Page Contains Element    ${IMPORT_IGNORE_BUTTON}    timeout=20s
+    Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    ${known}=    Run Keyword And Return Status    Page Should Contain Element    ${IMPORT_IGNORE_BUTTON}
+    Skip If    not ${known}
+    ...    The backend returned no shared account for ${address}: the import screen shows its error state, so there is nothing to import.
 
 Add Imported Account
     [Documentation]    From the import screen.

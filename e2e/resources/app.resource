@@ -118,6 +118,8 @@ Wait Clear Of Startup Prompts
 Load Fixture
     [Documentation]    Requires a build bundled with E2E_FIXTURES=1; any other build ignores the link.
     [Arguments]    ${name}
+    # A snapshot from an earlier load can land late; drain first so only this load's line counts.
+    Drain Nav Log
     Open Deeplink    ${FIXTURE_URL}?name=${name}
     # The driver returns before the app has handled the link, so an anchor checked right away can
     # match the previous test's screen. The tracer logs a snapshot once the reset has settled; wait

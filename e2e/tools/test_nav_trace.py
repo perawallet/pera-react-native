@@ -33,3 +33,11 @@ def test_diff_reports_platform_divergence():
     other = {"flow": ["A", "C"], "flags": [], "status": "PASS"}
     assert diff({"x": same}, {"x": same}) == []
     assert diff({"x": same}, {"x": other})[0][1].startswith("flow differs")
+
+
+def test_leak_check_allows_each_fixtures_own_landing():
+    landing = {"event": "snapshot", "label": "fixture:contacts-one", "t": 1,
+               "screens": ["TabBar", "TabBar/Home", "Contacts", "Contacts/ContactsList"]}
+    deeper = dict(landing, screens=["TabBar", "Contacts", "Contacts/ViewContact"])
+    assert red_flags([landing]) == []
+    assert red_flags([deeper])

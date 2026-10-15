@@ -19,6 +19,12 @@ from robot.libraries.BuiltIn import BuiltIn
 
 TAG = "[E2E-NAV]"
 BOUNCE_MS = 400
+# Screens outside the tab shell that each fixture opens on purpose; anything else mounted
+# right after it is a leak.
+FIXTURE_LANDING = {
+    "fixture:contacts-empty": {"Contacts", "Contacts/ContactsList"},
+    "fixture:contacts-one": {"Contacts", "Contacts/ContactsList"},
+}
 
 
 def parse(lines):
@@ -41,7 +47,8 @@ def red_flags(events):
         if e.get("event") == "double-open":
             flags.append(f"double-open: {e['screen']}")
         if e.get("event") == "snapshot":
-            leaked = [s for s in e.get("screens", []) if not s.startswith("TabBar")]
+            landing = FIXTURE_LANDING.get(e.get("label"), set())
+            leaked = [s for s in e.get("screens", []) if not s.startswith("TabBar") and s not in landing]
             if leaked:
                 flags.append(f"leak after {e.get('label')}: {', '.join(sorted(set(leaked)))}")
     for a, b, c in zip(focus, focus[1:], focus[2:]):
@@ -87,6 +94,10 @@ class NavTrace:
             return [entry.get("message", "") for entry in driver.get_log(log_type)]
         except Exception:
             return []
+
+    def drain_nav_log(self):
+        """Keeps everything logged so far for the test's flow, so a later wait sees only new lines."""
+        self.pending.extend(self._read())
 
     def wait_for_nav_snapshot(self, label, timeout=5.0):
         """Waits until the app logs the snapshot that follows a fixture reset.

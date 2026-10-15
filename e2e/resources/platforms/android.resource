@@ -137,4 +137,6 @@ Enroll Biometrics
 
 Match Biometric
     [Documentation]    Emulator only: touches with fingerprint 1. A touch with no prompt up is ignored.
+    Skip If    not $ANDROID_UDID.startswith('emulator-')
+    ...    A physical Android device cannot be fed a fingerprint from the host.
     Adb    emu    finger    touch    1
