@@ -247,6 +247,38 @@ describe('useSigningActorLifecycle', () => {
         expect(actor.subscribe).toHaveBeenCalled()
     })
 
+    test('starts the next request after one the machine refuses as it starts', async () => {
+        const refused = makeMockActor('tx-1')
+        const request = makeTxRequest({ sourceType: 'local' })
+        // A refusal at machine start fails before `start` returns.
+        refused.start.mockImplementation(() =>
+            refused.emit({
+                value: 'failed',
+                request,
+                error: new AppError('refused', {}),
+            }),
+        )
+        const next = makeMockActor('tx-2')
+        vi.mocked(createSigningMachine)
+            .mockReturnValueOnce(refused as never)
+            .mockReturnValueOnce(next as never)
+
+        const { result } = renderHook(() => useSigningActorLifecycle())
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+        act(() => {
+            useSigningStore
+                .getState()
+                .addSignRequest(makeTxRequest({ id: 'tx-2' }))
+        })
+        await flushQueue()
+
+        expect(result.current.getActorRef('tx-1')).toBeUndefined()
+        expect(next.start).toHaveBeenCalled()
+    })
+
     test("captures the request chain's selected scope for the machine and its transports", async () => {
         const actor = makeMockActor('tx-1')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
