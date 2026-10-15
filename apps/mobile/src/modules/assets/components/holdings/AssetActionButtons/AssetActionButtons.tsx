@@ -16,6 +16,7 @@ import { RoundButton } from '@components/RoundButton'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
+import { nativeAssetFor, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFunds } from '@modules/transactions'
@@ -32,9 +33,7 @@ import {
     type AssetWithAccountBalance,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
@@ -53,7 +52,6 @@ export const AssetActionButtons = ({
     chainId,
     isCollectible,
 }: AssetActionButtonsProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
@@ -65,8 +63,7 @@ export const AssetActionButtons = ({
     const { showToast } = useToast()
     const isFrozen =
         assetHolding?.restriction === HoldingRestrictions.transferBlocked
-    const nativeAsset = useNativeAsset(scope)
-    const { canSwap, canBuy } = useAssetActionButtons(account)
+    const { canSwap, canBuy } = useAssetActionButtons(account, chainId)
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)

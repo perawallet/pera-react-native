@@ -20,8 +20,7 @@ import {
     type PeraAsset,
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 export type AssetPriceChartProps = {
     asset: PeraAsset
@@ -42,7 +41,6 @@ export const AssetPriceChart = memo(function AssetPriceChart({
     scope,
     period,
 }: AssetPriceChartProps) {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const themeStyle = useStyles()
     const { t } = useLanguage()
 

@@ -196,9 +196,10 @@ describe('useTransactionListItem', () => {
                 ['USDC', '+'],
             ])
             expect(row.amountsOverflowCount).toBe(1)
-            expect(useAssetsQuery).toHaveBeenCalledWith(['0', '31566704'], {
-                scope: expect.objectContaining({ chainId: 'algorand' }),
-            })
+            expect(useAssetsQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ chainId: 'algorand' }),
+                ['0', '31566704'],
+            )
         })
 
         it('survives decimals the backend could not resolve', () => {

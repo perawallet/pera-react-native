@@ -24,9 +24,6 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNativeAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -36,11 +33,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
-import { RecipientBelowMbrWarning } from '../RecipientBelowMbrWarning/RecipientBelowMbrWarning'
+import { RecipientWarning } from '../RecipientWarning/RecipientWarning'
 
 export const TransactionConfirmationScreen = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
     const {

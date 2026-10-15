@@ -258,4 +258,33 @@ describe('usePreferredAmount', () => {
             false,
         )
     })
+
+    it('prices the asset on the scope it is given', () => {
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        mockUseCurrency.mockReturnValue({
+            preferredCurrency: 'EUR',
+            fallbackCurrency: 'USD',
+            usdToPreferred: (v: Decimal) => v,
+        })
+        mockUseAssetPricesQuery.mockReturnValue({
+            data: new Map(),
+            isPending: false,
+        })
+
+        renderHook(() =>
+            usePreferredAmount(
+                new Decimal(1),
+                '0xabc',
+                false,
+                undefined,
+                scope,
+            ),
+        )
+
+        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith(
+            scope,
+            ['0xabc'],
+            true,
+        )
+    })
 })

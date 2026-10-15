@@ -20,7 +20,6 @@ import {
     PeraServiceUnavailableError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useErrorToast } from '@hooks/useErrorToast'
 
 export const useAssetFavoriteButton = (

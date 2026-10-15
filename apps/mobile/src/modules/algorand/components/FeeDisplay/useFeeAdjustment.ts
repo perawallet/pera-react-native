@@ -16,6 +16,7 @@ import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algo
 import {
     LEGACY_CHAIN_ID,
     type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'

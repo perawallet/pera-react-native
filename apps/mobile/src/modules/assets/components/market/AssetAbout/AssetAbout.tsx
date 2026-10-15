@@ -15,25 +15,21 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import {
-    useIsNativeAssetId,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { useClipboard } from '@hooks/useClipboard'
+import type { AssetAboutDisplay } from '../../../types/asset-details-display'
+import { extractDomain } from '../../../utils/extractDomain'
 
 export type AssetAboutProps = {
     assetDetails: PeraAsset
     about: AssetAboutDisplay
 }
 
-export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
+    const { explorerLink } = about
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId(scope)
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { copyToClipboard } = useClipboard()

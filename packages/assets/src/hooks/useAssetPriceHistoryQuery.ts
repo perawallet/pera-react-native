@@ -41,7 +41,6 @@ export const useAssetPriceHistoryQuery = (
     scope: ChainScope,
     assetID: string,
     period: HistoryPeriod,
-    scope: ChainScope,
 ): UseAssetPriceHistoryQueryResult => {
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,

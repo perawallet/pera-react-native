@@ -765,9 +765,9 @@ export interface PlannerChainAdapter {
     needsSimulation(transactions: TransactionNative[]): boolean
     /** The transactions a simulated run of `groupTxs` reveals beyond its top level. */
     simulateGroup(
-        groupTxs: PeraTransaction[],
+        groupTxs: PeraTransaction[] | UnsignedTransaction[],
         scope: ChainScope,
-    ): Promise<PeraDisplayableTransaction[]>
+    ): Promise<TransactionNative[]>
 
     /** The bytes a program signature must cover. */
     programPayload(program: Uint8Array): Uint8Array
