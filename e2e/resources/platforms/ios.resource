@@ -143,6 +143,10 @@ Set Network Online
     No Operation
 
 Enroll Biometrics
+    [Documentation]    The app binds biometric unlock to a Secure Enclave key, which a simulator cannot
+    ...                create (SecKeyCreateRandomKey fails with -25293), so turning it on always fails there.
+    Skip If    not $IOS_UDID or $IOS_UDID.count('-') == 4
+    ...    A simulator has no Secure Enclave for the app's biometric key; biometric unlock needs a real device.
     Execute Script    mobile: enrollBiometric    isEnabled=${True}
 
 Match Biometric

@@ -58,8 +58,17 @@ ${WATCH_INFO_CREATE_BUTTON}         xpath=//*[@text='Create a Watch Account' or 
 *** Keywords ***
 Open Account Switcher
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
-    Tap    ${ACCOUNT_SELECTION_BUTTON}
+    # Home re-renders after an account is added or removed, and a tap during that is lost.
+    Wait Until Keyword Succeeds    20s    0.5s    Tap Until Switcher Open
     Wait Until Settled    ${ACCOUNT_MENU_ADD_BUTTON}
+
+Tap Until Switcher Open
+    # The sliver exists only while the drawer is open (Android keeps the closed panel's buttons in
+    # the tree). An open drawer covers the selection button; tapping it again would hit the drawer.
+    ${open}=    Run Keyword And Return Status    Page Should Contain Element    ${ACCOUNT_DRAWER_SLIVER}
+    IF    ${open}    RETURN
+    Tap    ${ACCOUNT_SELECTION_BUTTON}
+    Wait Until Page Contains Element    ${ACCOUNT_DRAWER_SLIVER}    timeout=3s
 
 Close Account Switcher
     [Documentation]    The switcher is a drawer with no close control; tapping the content it
@@ -117,8 +126,17 @@ Ensure Two Accounts
 
 Open Account Options
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
-    Tap    ${MORE_BUTTON}
+    # While the overview loads (a new account, or Home just remounted), a skeleton overlay with no
+    # testID covers the button panel and takes taps without effect, so tap until the sheet opens.
+    Wait Until Keyword Succeeds    30s    0.5s    Tap More Until Options Open
     Wait Until Settled    ${OPTION_COPY_ADDRESS}
+
+Tap More Until Options Open
+    # A sheet that opened late must not be tapped again: the tap would land on its backdrop.
+    ${open}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_COPY_ADDRESS}
+    IF    ${open}    RETURN
+    Tap    ${MORE_BUTTON}
+    Wait Until Page Contains Element    ${OPTION_COPY_ADDRESS}    timeout=3s
 
 Scroll Until Tappable
     [Documentation]    Swipes up until the element's centre, where a tap lands, is inside the window.

@@ -31,7 +31,9 @@ ${SEND_NEXT}                    accessibility_id=send_input_next_button
 ${SEND_CONFIRM}                 accessibility_id=send_confirm_button
 # The send-info sheet over the numpad has no testID on its button.
 ${SEND_INFO_UNDERSTAND}         xpath=//*[@text='I Understand' or @label='I Understand']
-${INSUFFICIENT_BALANCE}         xpath=//*[@text='Insufficient Balance' or @label='Insufficient Balance']
+# iOS merges the toast's title and body into one label, and keeps earlier toasts in the tree
+# parked off screen, so only a visible one counts there.
+${INSUFFICIENT_BALANCE}         xpath=//*[@text='Insufficient Balance' or (starts-with(@label,'Insufficient Balance') and @visible='true')]
 ${OPT_IN_ACCOUNT_ROW}           xpath=(//*[starts-with(@resource-id,'opt_in_account-') or starts-with(@name,'opt_in_account-')])[1]
 ${OPT_IN_CONFIRM}               accessibility_id=opt_in_confirm
 ${OPT_IN_COPY_ID}               accessibility_id=opt_in_copy_id
@@ -43,6 +45,8 @@ Start On Settings
     Go Home
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
+    # The tab switch is still animating when the gear appears; a tap then is lost.
+    Wait Until Settled    ${MENU_SETTINGS_BUTTON}
     Tap    ${MENU_SETTINGS_BUTTON}
     Wait Until Page Contains Element    ${SETTINGS_ITEM_SECURITY}    timeout=15s
     # Inactive tabs leave the tree; if Home stayed, landing on it would prove nothing.
@@ -58,7 +62,8 @@ Suite Account Address
 Should Be On Home
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=15s
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
-    Page Should Not Contain Element    ${SETTINGS_ITEM_SECURITY}
+    # On iOS Home enters the tree before the Settings screen it replaces has left it.
+    Wait Until Page Does Not Contain Element    ${SETTINGS_ITEM_SECURITY}    timeout=5s
 
 Input Should Hold
     [Documentation]    Android reports a field's text as @text, iOS as @value.

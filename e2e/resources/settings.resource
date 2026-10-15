@@ -40,6 +40,7 @@ ${THEME_DARK_RADIO}                     accessibility_id=settings_theme_dark_rad
 ${CURRENCY_SEARCH_INPUT}                accessibility_id=settings_currency_search_input
 ${CURRENCY_ITEM_USD}                    accessibility_id=settings_currency_item_usd
 ${CURRENCY_ITEM_EUR}                    accessibility_id=settings_currency_item_eur
+${CURRENCY_ITEM_ALGO}                   accessibility_id=settings_currency_item_algo
 
 ${DEVELOPER_NODE_ITEM}                  accessibility_id=developer_settings_node_item
 ${DEVELOPER_DEBUG_TOOLS_ITEM}           accessibility_id=developer_settings_debug_tools_item
@@ -66,6 +67,8 @@ Open Settings
     Go Home
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
+    # The tab switch is still animating when the gear appears; a tap then is lost.
+    Wait Until Settled    ${MENU_SETTINGS_BUTTON}
     Tap    ${MENU_SETTINGS_BUTTON}
     # Settings slides in; a row tapped mid-slide is missed.
     Wait Until Settled    ${SETTINGS_ITEM_SECURITY}
@@ -141,6 +144,9 @@ Open Theme Settings
 
 Open Currency Settings
     Open From Settings    ${SETTINGS_ITEM_CURRENCY}    ${CURRENCY_SEARCH_INPUT}
+    # The list, ALGO row included, stays empty until the backend's currency list answers.
+    Wait Until Page Contains Element    ${CURRENCY_ITEM_ALGO}    timeout=30s
+    ...    error=Currency list did not load in 30s: the Pera backend's /v1/currencies/ did not answer (network or backend), so there is nothing to pick.
 
 Search Currency
     [Arguments]    ${term}

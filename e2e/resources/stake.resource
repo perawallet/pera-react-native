@@ -61,12 +61,13 @@ Open Disclaimer
 Accept Should Be Disabled Before Scrolling
     [Documentation]    The button sits below the fold, and Android lists it only once on screen. Short
     ...                steps bring it in before the end of the text unlocks it: about 160px separate the
-    ...                two on a phone, and each step scrolls about 120px.
+    ...                two on a phone, and each step scrolls about 120px. Large system text (1.5x on
+    ...                the Pixel) makes the text about 30 steps long.
     Wait Until Settled    ${STAKING_DISCLAIMER_TITLE}
     ${w}=    Get Window Width
     ${h}=    Get Window Height
     VAR    ${x}    ${{ int(${w} / 2) }}
-    FOR    ${i}    IN RANGE    20
+    FOR    ${i}    IN RANGE    45
         ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_ACCEPT}
         IF    ${present}
             Element Should Be Disabled    ${STAKING_DISCLAIMER_ACCEPT}

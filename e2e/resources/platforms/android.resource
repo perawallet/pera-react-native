@@ -133,7 +133,9 @@ Set Network Online
 Enroll Biometrics
     [Documentation]    An emulator enrols a fingerprint only through the Settings screen-lock flow, which
     ...                this harness does not drive; a device enrolled beforehand still runs biometric cases.
-    No Operation
+    # Skip before the case raises the system prompt, which would cover the app for its teardown.
+    Skip If    not $ANDROID_UDID.startswith('emulator-')
+    ...    A physical Android device cannot be fed a fingerprint from the host.
 
 Match Biometric
     [Documentation]    Emulator only: touches with fingerprint 1. A touch with no prompt up is ignored.
