@@ -51,6 +51,16 @@ describe('Deeplink Parser - Old Format', () => {
                 expect(result.note).toBe('HELLO WORLD NOTE')
             }
         })
+
+        it('parses ALGO transfer with xnote', () => {
+            const result = parseDeeplink(
+                `perawallet://${TEST_ADDRESS}?amount=100000&xnote=HELLO%20WORLD%20XNOTE`,
+            )
+            expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
+            if (result?.type === DeeplinkType.ALGO_TRANSFER) {
+                expect(result.xnote).toBe('HELLO WORLD XNOTE')
+            }
+        })
     })
 
     describe('Asset transfer', () => {
