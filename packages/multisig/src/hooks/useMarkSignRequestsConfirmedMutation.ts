@@ -36,7 +36,7 @@ type UseMarkSignRequestsConfirmedMutationResult = {
  * dApp, so the backend skips its own broadcast for `type: 'sync'` requests.
  *
  * `scope` is part of the mutation input rather than a hook parameter so a
- * single mutation instance can serve handoffs on different networks.
+ * single mutation instance can serve handoffs on different scopes.
  */
 export const useMarkSignRequestsConfirmedMutation =
     (): UseMarkSignRequestsConfirmedMutationResult => {

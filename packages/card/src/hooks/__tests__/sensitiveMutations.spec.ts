@@ -26,17 +26,23 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/card-sensitive', () => api)
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardPinViewMutation } from '../useCardPinViewMutation'
 import { useSetCardPinMutation } from '../useSetCardPinMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
-describe('sensitive mutation hooks', () => {
+describe.each(SCOPES)('sensitive mutation hooks ($chainId)', SCOPE => {
     beforeEach(() => {
         queryClient = new QueryClient({
             defaultOptions: {
@@ -98,7 +104,7 @@ describe('sensitive mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.data?.hostedPageUrl).toContain('pin-direct/set')
         expect(api.createSetPinSession).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
         })
     })
 

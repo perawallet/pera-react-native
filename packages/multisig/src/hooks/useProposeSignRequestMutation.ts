@@ -11,7 +11,8 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import type { Nullable, Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { proposeSignRequest } from '../api/endpoints'
 import type {
     ProposeSignRequest,
@@ -19,7 +20,7 @@ import type {
 } from '../api/schema'
 
 type UseProposeSignRequestMutationParams = {
-    network: Network
+    scope: ChainScope
 }
 
 export type UseProposeSignRequestMutationResult = {
@@ -35,11 +36,11 @@ export type UseProposeSignRequestMutationResult = {
 }
 
 export const useProposeSignRequestMutation = ({
-    network,
+    scope,
 }: UseProposeSignRequestMutationParams): UseProposeSignRequestMutationResult => {
     const mutation = useMutation({
         mutationFn: (params: ProposeSignRequest) =>
-            proposeSignRequest(network, params),
+            proposeSignRequest(scope, params),
     })
 
     return {

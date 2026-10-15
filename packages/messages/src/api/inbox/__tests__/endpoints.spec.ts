@@ -14,6 +14,9 @@ import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { fetchInbox } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-shared')
@@ -41,11 +44,11 @@ describe('fetchInbox', () => {
     test('calls queryClient with correct params', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        await fetchInbox('testnet', DEVICE_ID, ADDRESSES)
+        await fetchInbox(ALGORAND_TESTNET, DEVICE_ID, ADDRESSES)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'POST',
             url: `/v1/inbox/${DEVICE_ID}/`,
             data: { addresses: ADDRESSES },
@@ -55,7 +58,7 @@ describe('fetchInbox', () => {
     test('returns parsed response on success', async () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
-        const result = await fetchInbox('mainnet', DEVICE_ID, ADDRESSES)
+        const result = await fetchInbox(ALGORAND_MAINNET, DEVICE_ID, ADDRESSES)
         expect(result).toEqual(validResponse)
     })
 
@@ -64,7 +67,7 @@ describe('fetchInbox', () => {
         ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
 
         await expect(
-            fetchInbox('testnet', DEVICE_ID, ADDRESSES),
+            fetchInbox(ALGORAND_TESTNET, DEVICE_ID, ADDRESSES),
         ).rejects.toThrow()
     })
 
@@ -72,7 +75,7 @@ describe('fetchInbox', () => {
         ;(queryClient as Mock).mockRejectedValue(new Error('Network error'))
 
         await expect(
-            fetchInbox('testnet', DEVICE_ID, ADDRESSES),
+            fetchInbox(ALGORAND_TESTNET, DEVICE_ID, ADDRESSES),
         ).rejects.toThrow('Network error')
     })
 
@@ -80,7 +83,7 @@ describe('fetchInbox', () => {
         ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
 
         const addresses = ['ADDR1', 'ADDR2', 'ADDR3']
-        await fetchInbox('testnet', DEVICE_ID, addresses)
+        await fetchInbox(ALGORAND_TESTNET, DEVICE_ID, addresses)
 
         expect(queryClient).toHaveBeenCalledWith(
             expect.objectContaining({

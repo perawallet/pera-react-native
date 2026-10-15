@@ -11,7 +11,7 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { assetsChainAdapters } from '../../chain-adapter'
 import {
@@ -20,33 +20,29 @@ import {
 } from '../../__tests__/fakeAssetsChain'
 import { useNativeAsset } from '../useNativeAsset'
 
-const mocks = vi.hoisted(() => ({ useNetwork: vi.fn() }))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: mocks.useNetwork,
-}))
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('useNativeAsset', () => {
-    beforeEach(() => {
-        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-    })
+    it.each([ALGORAND_MAINNET, ETHEREUM_SEPOLIA])(
+        "returns the scope's chain native asset, with the same reference across renders ($chainId)",
+        scope => {
+            registerFakeAssetsAdapter({ chainId: scope.chainId })
 
-    it("returns the registered chain's native asset, with the same reference across renders", () => {
-        registerFakeAssetsAdapter()
+            const { result, rerender } = renderHook(() => useNativeAsset(scope))
+            const first = result.current
+            rerender()
 
-        const { result, rerender } = renderHook(() => useNativeAsset())
-        const first = result.current
-        rerender()
-
-        expect(first).toBe(FAKE_NATIVE_ASSET)
-        expect(result.current).toBe(first)
-    })
+            expect(first).toBe(FAKE_NATIVE_ASSET)
+            expect(result.current).toBe(first)
+        },
+    )
 
     it('throws when the chain has no adapter', () => {
         assetsChainAdapters.reset()
 
-        expect(() => renderHook(() => useNativeAsset())).toThrow(
-            ChainAdapterNotRegisteredError,
-        )
+        expect(() =>
+            renderHook(() => useNativeAsset(ALGORAND_MAINNET)),
+        ).toThrow(ChainAdapterNotRegisteredError)
     })
 })

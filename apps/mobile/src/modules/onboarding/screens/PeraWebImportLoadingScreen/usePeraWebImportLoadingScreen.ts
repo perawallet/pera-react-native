@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -46,7 +46,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
     const navigation = useAppNavigation()
     const { errorToast } = useToast()
     const { t } = useLanguage()
-    const { network } = useNetwork()
+    const deployment = useWalletDeployment()
     const canImportPeraWeb = useCapability({ anyChain: 'peraWebImport' })
     const { importAccount } = usePeraWebAccountImport(LEGACY_CHAIN_ID)
     const setPayload = usePeraWebImportFlowStore(state => state.setPayload)
@@ -96,7 +96,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
             // 1. Fetch the encrypted backup from the Pera mobile API.
             let response
             try {
-                response = await fetchPeraWebBackup(network, qr.backupId)
+                response = await fetchPeraWebBackup(deployment, qr.backupId)
             } catch (error) {
                 if (cancelled) return
                 logger.error('Pera Web backup fetch failed', { error })
@@ -225,5 +225,5 @@ export const usePeraWebImportLoadingScreen = (): void => {
             resetRef.current()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [network])
+    }, [deployment])
 }

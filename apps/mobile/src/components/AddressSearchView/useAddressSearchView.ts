@@ -129,6 +129,7 @@ export const useAddressSearchView = ({
     const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)
     const shouldSearchNfd = debouncedValue.includes('.') && !addressIsValid
     const { data: nfdData, isLoading: isNfdLoading } = useNfdSearchQuery(
+        scope,
         debouncedValue,
         { enabled: shouldSearchNfd },
     )

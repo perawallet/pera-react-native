@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAppIntegrityRegistration,
@@ -38,7 +38,7 @@ export type UseSettingsDeveloperAppIntegrityResult = {
 
 export const useSettingsDeveloperAppIntegrity =
     (): UseSettingsDeveloperAppIntegrityResult => {
-        const { network } = useNetwork()
+        const deployment = useWalletDeployment()
         const { deviceInfo, appIntegrity } = getProvider()
         const { register, isRegistering } = useAppIntegrityRegistration()
 
@@ -83,7 +83,7 @@ export const useSettingsDeveloperAppIntegrity =
                 setVerifyResult(
                     await verifyIntegrityToken({
                         integrityToken: token,
-                        network,
+                        deployment,
                     }),
                 )
             } catch (error) {
@@ -93,7 +93,7 @@ export const useSettingsDeveloperAppIntegrity =
             } finally {
                 setIsVerifying(false)
             }
-        }, [network])
+        }, [deployment])
 
         const onClear = useCallback(() => {
             setVerifyResult(null)

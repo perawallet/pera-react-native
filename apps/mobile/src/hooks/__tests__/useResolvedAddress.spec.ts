@@ -22,6 +22,11 @@ const mockCodecs = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-chain-contract', () => ({
     addressCodecs: mockCodecs,
+    LEGACY_CHAIN_ID: 'algorand',
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
@@ -121,8 +126,10 @@ describe('useResolvedAddress', () => {
 
         renderHook(() => useResolvedAddress(VALID_ADDRESS, { enabled: false }))
 
-        expect(mockUseNfdForAddress).toHaveBeenCalledWith(VALID_ADDRESS, {
-            enabled: false,
-        })
+        expect(mockUseNfdForAddress).toHaveBeenCalledWith(
+            { chainId: 'algorand', networkId: 'mainnet' },
+            VALID_ADDRESS,
+            { enabled: false },
+        )
     })
 })

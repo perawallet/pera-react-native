@@ -14,10 +14,10 @@ import { useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SuggestedParams } from 'algosdk'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getSuggestedParametersQueryKey } from './querykeys'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 // Suggested params carry a validity window, so a cached copy is only
 // trustworthy for a few seconds — never long enough to build from minutes
@@ -38,7 +38,7 @@ export type UseSuggestedParametersQueryResult = {
 export const useSuggestedParametersQuery =
     (): UseSuggestedParametersQueryResult => {
         const algokit = useAlgorandClient()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
         const query = useQuery({
             queryKey: getSuggestedParametersQueryKey(scope),
@@ -75,7 +75,7 @@ export type FetchSuggestedParameters = () => Promise<SuggestedParams>
  */
 export const useFetchSuggestedParameters = (): FetchSuggestedParameters => {
     const algokit = useAlgorandClient()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const queryClient = useQueryClient()
 
     return useCallback(

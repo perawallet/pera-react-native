@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAssetPricesQuery } from './useAssetPricesQuery'
 import { useAssetsQuery } from './useAssetsQuery'
 
@@ -25,12 +26,16 @@ export type UseAssetUsdRateResult = {
  * Live USD price and decimals for a single asset — the two inputs fiat↔asset
  * conversions need. Null while either is still loading (or unknown).
  */
-export const useAssetUsdRate = (assetId: string): UseAssetUsdRateResult => {
+export const useAssetUsdRate = (
+    scope: ChainScope,
+    assetId: string,
+): UseAssetUsdRateResult => {
     const { data: assetPrices } = useAssetPricesQuery(
+        scope,
         [assetId],
         Boolean(assetId),
     )
-    const { data: assets } = useAssetsQuery([assetId])
+    const { data: assets } = useAssetsQuery(scope, [assetId])
 
     return {
         assetUsdPrice: assetPrices?.get(assetId)?.usdPrice ?? null,

@@ -13,55 +13,67 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useSpotBannersQuery } from '../useSpotBannersQuery'
 import { fetchSpotBanners } from '../../api/spot-banners'
-import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/spot-banners', () => ({
     fetchSpotBanners: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn().mockReturnValue('device-1'),
+    useDeploymentDeviceID: vi.fn().mockReturnValue('device-1'),
 }))
 
+const network = vi.hoisted(() => ({ mode: 'live' }))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useWalletDeployment: () => network.mode,
 }))
 
 beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useDeviceID).mockReturnValue('device-1')
+    network.mode = 'live'
+    vi.mocked(useDeploymentDeviceID).mockReturnValue('device-1')
 })
 
 describe('useSpotBannersQuery', () => {
-    it('maps server response into SpotBanner domain objects', async () => {
-        vi.mocked(fetchSpotBanners).mockResolvedValue([
-            {
-                id: 1,
-                text: 'Hi',
-                image: 'https://cdn.test/x.png',
-                url: 'pera://x',
-                button_url_is_external: false,
-            },
-        ])
+    it.each(['live', 'developer'])(
+        'maps server response into SpotBanner domain objects for the %s deployment',
+        async deployment => {
+            network.mode = deployment
+            vi.mocked(fetchSpotBanners).mockResolvedValue([
+                {
+                    id: 1,
+                    text: 'Hi',
+                    image: 'https://cdn.test/x.png',
+                    url: 'pera://x',
+                    button_url_is_external: false,
+                },
+            ])
 
-        const { result } = renderHook(() => useSpotBannersQuery(), {
-            wrapper: createWrapper(),
-        })
+            const { result } = renderHook(() => useSpotBannersQuery(), {
+                wrapper: createWrapper(),
+            })
 
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(result.current.spotBanners).toEqual([
-            {
-                id: 1,
-                text: 'Hi',
-                imageUrl: 'https://cdn.test/x.png',
-                url: 'pera://x',
-                isUrlExternal: false,
-            },
-        ])
-    })
+            expect(useDeploymentDeviceID).toHaveBeenCalledWith(deployment)
+            expect(fetchSpotBanners).toHaveBeenCalledWith(
+                deployment,
+                'device-1',
+            )
+            expect(result.current.spotBanners).toEqual([
+                {
+                    id: 1,
+                    text: 'Hi',
+                    imageUrl: 'https://cdn.test/x.png',
+                    url: 'pera://x',
+                    isUrlExternal: false,
+                },
+            ])
+        },
+    )
 
     it('returns an empty array on error', async () => {
         vi.mocked(fetchSpotBanners).mockRejectedValue(new Error('boom'))
@@ -75,7 +87,7 @@ describe('useSpotBannersQuery', () => {
     })
 
     it('stays disabled and returns empty when deviceID is null', async () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
 
         const { result } = renderHook(() => useSpotBannersQuery(), {
             wrapper: createWrapper(),

@@ -11,21 +11,21 @@
  */
 
 import { useDeleteImportInboxMutation } from '@perawallet/wallet-core-multisig'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useInboxInvalidator } from './useInboxInvalidator'
 
 type UseDeleteMultisigInvitationMutationParams = {
-    network: Network
+    scope: ChainScope
     deviceId: string
 }
 
 export const useDeleteMultisigInvitationMutation = ({
-    network,
+    scope,
     deviceId,
 }: UseDeleteMultisigInvitationMutationParams) => {
     const { invalidate } = useInboxInvalidator()
     return useDeleteImportInboxMutation({
-        network,
+        scope,
         deviceId,
         onSuccess: invalidate,
     })

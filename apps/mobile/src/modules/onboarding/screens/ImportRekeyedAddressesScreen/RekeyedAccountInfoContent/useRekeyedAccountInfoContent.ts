@@ -48,7 +48,7 @@ export function useRekeyedAccountInfoContent({
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
         useAccountBalancesQuery([account], scope, true)
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const address = chainAccountOf(account, scope.chainId)?.address
     const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
 

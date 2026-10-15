@@ -63,7 +63,8 @@ type UseARC59SendSummaryScreenResult = {
 
 export const useARC59SendSummaryScreen =
     (): UseARC59SendSummaryScreenResult => {
-        const nativeAsset = useNativeAsset()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const nativeAsset = useNativeAsset(scope)
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const { selectedAssetId, destination, amount, setArc59Summary } =
@@ -80,16 +81,11 @@ export const useARC59SendSummaryScreen =
             data: summaryData,
             isLoading: summaryLoading,
             isUnavailableOnNetwork,
-        } = useAssetInboxSendSummaryQuery(
-            receiverAddress,
-            assetId,
-            LEGACY_CHAIN_ID,
-        )
+        } = useAssetInboxSendSummaryQuery(scope, receiverAddress, assetId)
         // Query data is Maybe<T> (null while unavailable); this screen only
         // distinguishes "have a summary" from "don't", so collapse to undefined.
         const summary = summaryData ?? undefined
 
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { data: asset, isLoading: assetLoading } =
             useSingleAssetDetailsQuery(assetId, scope)
 

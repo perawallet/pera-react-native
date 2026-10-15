@@ -10,20 +10,17 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { HTTPError } from 'ky'
 import { ZodError } from 'zod'
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
 import { CardType, type Card } from '../../models'
 import { cardStatusResponseSchema } from './schema'
 import { transformCard } from './transformers'
 
 export type FetchCardStatusParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -31,11 +28,11 @@ export type FetchCardStatusParams = {
 export const fetchCardStatus = async (
     params: FetchCardStatusParams,
 ): Promise<Nullable<Card>> => {
-    const { network, signal } = params
+    const { scope, signal } = params
 
     try {
         const response = await getCardTransport().request({
-            network,
+            scope,
             method: 'GET',
             path: '/v1/card/status',
             authenticated: true,
@@ -58,15 +55,15 @@ export const fetchCardStatus = async (
 
 export type OrderCardParams = {
     type?: CardType
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const orderCard = async (params: OrderCardParams): Promise<void> => {
-    const { type = CardType.Virtual, network, signal } = params
+    const { type = CardType.Virtual, scope, signal } = params
 
     await getCardTransport().request({
-        network,
+        scope,
         method: 'POST',
         path: '/v1/card/order',
         authenticated: true,
@@ -76,7 +73,7 @@ export const orderCard = async (params: OrderCardParams): Promise<void> => {
 }
 
 export type CardLifecycleParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -84,7 +81,7 @@ export const freezeCard = async (
     params: CardLifecycleParams,
 ): Promise<void> => {
     await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/card/freeze',
         authenticated: true,
@@ -96,7 +93,7 @@ export const unfreezeCard = async (
     params: CardLifecycleParams,
 ): Promise<void> => {
     await getCardTransport().request({
-        network: params.network,
+        scope: params.scope,
         method: 'POST',
         path: '/v1/card/unfreeze',
         authenticated: true,

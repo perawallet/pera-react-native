@@ -14,6 +14,9 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { fetchApplication } from '../endpoints'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mockQueryClient = vi.fn()
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
@@ -50,7 +53,7 @@ describe('fetchApplication', () => {
 
         const result = await fetchApplication({
             applicationId: '123',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual({
@@ -79,7 +82,7 @@ describe('fetchApplication', () => {
 
         const result = await fetchApplication({
             applicationId: '999',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toBeNull()
@@ -92,7 +95,7 @@ describe('fetchApplication', () => {
 
         const result = await fetchApplication({
             applicationId: '123',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toBeNull()
@@ -106,7 +109,7 @@ describe('fetchApplication', () => {
         await expect(
             fetchApplication({
                 applicationId: '123',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             }),
         ).rejects.toThrow(PeraNetworkError)
     })
@@ -114,10 +117,10 @@ describe('fetchApplication', () => {
     describe('non-Pera-backed networks', () => {
         test.each(['betanet', 'custom'] as const)(
             'returns null on %s without calling the client',
-            async network => {
+            async networkId => {
                 const result = await fetchApplication({
                     applicationId: '123',
-                    network,
+                    scope: { chainId: 'algorand', networkId },
                 })
 
                 expect(result).toBeNull()
@@ -148,7 +151,7 @@ describe('fetchApplication', () => {
 
             const result = await fetchApplication({
                 applicationId: '123',
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
             })
 
             expect(result).not.toBeNull()

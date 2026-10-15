@@ -11,7 +11,7 @@
  */
 
 export * from './querykeys'
-export * from './useAlgoUsdPriceQuery'
+export * from './useNativeUsdPriceQuery'
 export * from './useCurrenciesQuery'
 export * from './useCurrency'
 export * from './useLocalCurrency'

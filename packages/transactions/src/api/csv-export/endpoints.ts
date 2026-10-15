@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
     isRawPlatformNetworkError,
-    type Network,
     queryClient,
 } from '@perawallet/wallet-core-shared'
 import type { ExportCsvParams, CsvExportResult } from './types'
@@ -44,8 +44,7 @@ export class CsvExportError extends AppError {
  * Parameters for the fetch CSV endpoint.
  */
 export type FetchCsvParams = ExportCsvParams & {
-    /** The network to fetch from (mainnet or testnet) */
-    network: Network
+    scope: ChainScope
     /** Optional: AbortSignal for cancellation */
     signal?: AbortSignal
 }
@@ -56,14 +55,14 @@ export type FetchCsvParams = ExportCsvParams & {
  * This function uses queryClient for networking.
  * Returns the raw CSV content along with metadata.
  *
- * @param params - Export parameters including address, network, date range
+ * @param params - Export parameters including address, scope, date range
  * @returns CsvExportResult with the CSV data and metadata
  * @throws CsvExportError if the export fails
  */
 export const fetchTransactionsCsv = async (
     params: FetchCsvParams,
 ): Promise<CsvExportResult> => {
-    const { accountAddress, network, dateRange, filename, signal, assetId } =
+    const { accountAddress, scope, dateRange, filename, signal, assetId } =
         params
 
     // Validate address format (Algorand addresses are 58 characters)
@@ -82,7 +81,7 @@ export const fetchTransactionsCsv = async (
     try {
         const response = await queryClient<string>({
             backend: 'pera',
-            network,
+            scope,
             method: 'GET',
             url: endpoint,
             params: queryParams,

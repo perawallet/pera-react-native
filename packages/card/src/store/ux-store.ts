@@ -16,6 +16,11 @@ import {
     registerStore,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
+import {
+    scopeFromNetworkColumn,
+    toScopeKey,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { OnboardingStep, type CardUxState } from '../models'
 
@@ -51,13 +56,43 @@ const initialState = {
     cardUserId: null,
     escrowCardAddress: null,
     escrowCardOwner: null,
-    escrowCardNetwork: null,
+    escrowCardScopeKey: null,
     escrowCardTxId: null,
     escrowCardApproved: false,
     cardId: null,
     lastKnownStatus: null,
     lastKnownPanLast4: null,
     transactionFilters: {},
+}
+
+const scopeKeyOrNull = (value: unknown): ChainScopeKey | null => {
+    if (typeof value !== 'string') return null
+    try {
+        return toScopeKey(scopeFromNetworkColumn(value))
+    } catch {
+        // A throw inside a store migration discards the whole store.
+        return null
+    }
+}
+
+/**
+ * v0 recorded the escrow card's bare legacy network; v1 records its scope key.
+ * Dropping the card on an unreadable value would make the next card setup
+ * create a second one, so only that field degrades to null.
+ */
+export const migrateCardUxState = (
+    persistedState: unknown,
+    version: number,
+): Record<string, unknown> => {
+    const state = { ...((persistedState ?? {}) as Record<string, unknown>) }
+    if (version < 1) {
+        const { escrowCardNetwork, ...rest } = state
+        return {
+            ...rest,
+            escrowCardScopeKey: scopeKeyOrNull(escrowCardNetwork),
+        }
+    }
+    return state
 }
 
 export const useCardStore: UseBoundStore<
@@ -86,17 +121,17 @@ export const useCardStore: UseBoundStore<
                 set({
                     escrowCardAddress: card?.cardAddress ?? null,
                     escrowCardOwner: card?.ownerAddress ?? null,
-                    escrowCardNetwork: card?.network ?? null,
+                    escrowCardScopeKey: card ? toScopeKey(card.scope) : null,
                     escrowCardTxId: card?.txId ?? null,
                     // A newly-set (or cleared) card always starts unapproved —
                     // approval is recorded separately once the AB call succeeds.
                     escrowCardApproved: false,
                 }),
-            restoreEscrowCard: ({ cardAddress, ownerAddress, network }) =>
+            restoreEscrowCard: ({ cardAddress, ownerAddress, scope }) =>
                 set({
                     escrowCardAddress: cardAddress,
                     escrowCardOwner: ownerAddress,
-                    escrowCardNetwork: network,
+                    escrowCardScopeKey: toScopeKey(scope),
                     escrowCardTxId: null,
                     escrowCardApproved: true,
                     connectedFundingSourceAddress: ownerAddress,
@@ -122,7 +157,7 @@ export const useCardStore: UseBoundStore<
                         selectedFundingType: initialState.selectedFundingType,
                         escrowCardAddress: initialState.escrowCardAddress,
                         escrowCardOwner: initialState.escrowCardOwner,
-                        escrowCardNetwork: initialState.escrowCardNetwork,
+                        escrowCardScopeKey: initialState.escrowCardScopeKey,
                         escrowCardTxId: initialState.escrowCardTxId,
                         escrowCardApproved: initialState.escrowCardApproved,
                     }
@@ -152,6 +187,8 @@ export const useCardStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
+            version: 1,
+            migrate: migrateCardUxState,
             // `verificationCode` is intentionally omitted — a transient OTP
             // that should never be written to disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
@@ -173,7 +210,7 @@ export const useCardStore: UseBoundStore<
                 cardUserId: state.cardUserId,
                 escrowCardAddress: state.escrowCardAddress,
                 escrowCardOwner: state.escrowCardOwner,
-                escrowCardNetwork: state.escrowCardNetwork,
+                escrowCardScopeKey: state.escrowCardScopeKey,
                 escrowCardTxId: state.escrowCardTxId,
                 escrowCardApproved: state.escrowCardApproved,
                 cardId: state.cardId,

@@ -18,6 +18,7 @@ import { Notifier } from 'react-native-notifier'
 
 import { useCardStore } from '@perawallet/wallet-core-card'
 import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -89,7 +90,7 @@ describe('Flow: Card sign in', () => {
         useCardStore.getState().setEscrowCard({
             cardAddress: 'ESCROW_CARD_ADDR',
             ownerAddress: 'FUNDING_ADDR',
-            network: 'testnet',
+            scope: scopeForLegacyNetwork('testnet'),
             txId: 'TX',
         })
     })

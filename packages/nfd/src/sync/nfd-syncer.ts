@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import {
-    mapWithConcurrency,
-    partition,
-    type Network,
-} from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { mapWithConcurrency, partition } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { fetchNfdBulkRead } from '../api'
 import { nameServiceAdapterFor } from '../chain-adapter'
 import {
@@ -37,14 +33,13 @@ import {
  */
 export async function fetchAndPersistNfds(
     addresses: string[],
-    network: Network,
+    scope: ChainScope,
 ): Promise<void> {
     if (addresses.length === 0) return
-    // No Pera backend on betanet/custom: skip before any DB work, otherwise
+    // No Pera backend for the scope (betanet, custom): skip before any DB work, otherwise
     // every requested address commits as a fresh negative-cache row for no reason.
-    if (!isPeraBackedNetwork(network)) return
+    if (!hasPeraBackend(scope)) return
 
-    const scope = scopeForLegacyNetwork(network)
     const adapter = nameServiceAdapterFor(scope)
     const dedup = Array.from(
         new Set(addresses.filter(addr => adapter.isValidAddress(addr))),
@@ -66,7 +61,7 @@ export async function fetchAndPersistNfds(
     await mapWithConcurrency(batches, NFD_BULK_CONCURRENCY, async batch => {
         const results = await fetchNfdBulkRead({
             addresses: batch,
-            network,
+            scope,
         })
 
         // Build a map of hits keyed by address; we need to emit one row

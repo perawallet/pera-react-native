@@ -44,12 +44,12 @@ describe('currencies endpoints', () => {
             ],
         })
 
-        const result = await fetchCurrenciesList({ network: 'mainnet' })
+        const result = await fetchCurrenciesList({ deployment: 'live' })
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                network: 'mainnet',
+                deployment: 'live',
                 method: 'GET',
                 url: '/v1/currencies/',
             }),
@@ -65,13 +65,13 @@ describe('currencies endpoints', () => {
         const controller = new AbortController()
 
         await fetchCurrenciesList({
-            network: 'testnet',
+            deployment: 'developer',
             signal: controller.signal,
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                network: 'testnet',
+                deployment: 'developer',
                 signal: controller.signal,
             }),
         )
@@ -83,7 +83,7 @@ describe('currencies endpoints', () => {
         })
 
         await expect(
-            fetchCurrenciesList({ network: 'mainnet' }),
+            fetchCurrenciesList({ deployment: 'live' }),
         ).rejects.toThrow()
     })
 
@@ -99,7 +99,7 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'EUR',
-            network: 'mainnet',
+            deployment: 'live',
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -122,7 +122,7 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'EUR',
-            network: 'mainnet',
+            deployment: 'live',
         })
 
         expect(result.usdPrice.toString()).toBe('12345678.123456789')
@@ -140,7 +140,7 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'EUR',
-            network: 'mainnet',
+            deployment: 'live',
         })
 
         expect(result.usdPrice).toBeInstanceOf(Decimal)
@@ -154,35 +154,9 @@ describe('currencies endpoints', () => {
 
         const result = await fetchCurrency({
             currencyId: 'USD',
-            network: 'mainnet',
+            deployment: 'live',
         })
 
         expect(result.usdPrice.toString()).toBe('0')
-    })
-
-    test('fetchCurrenciesList returns [] on non-Pera-backed networks without calling the client', async () => {
-        for (const network of ['betanet', 'custom'] as const) {
-            const result = await fetchCurrenciesList({ network })
-
-            expect(result).toEqual([])
-            expect(queryClientMock).not.toHaveBeenCalled()
-            queryClientMock.mockClear()
-        }
-    })
-
-    test('fetchCurrency returns a zero rate on non-Pera-backed networks without calling the client', async () => {
-        for (const network of ['betanet', 'custom'] as const) {
-            const result = await fetchCurrency({
-                currencyId: 'EUR',
-                network,
-            })
-
-            expect(result).toEqual({
-                id: 'EUR',
-                usdPrice: new Decimal(0),
-            })
-            expect(queryClientMock).not.toHaveBeenCalled()
-            queryClientMock.mockClear()
-        }
     })
 })

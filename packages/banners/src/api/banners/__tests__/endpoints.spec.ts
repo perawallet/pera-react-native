@@ -30,11 +30,11 @@ describe('fetchBanners', () => {
         const valid = { count: 0, results: [] }
         ;(queryClient as Mock).mockResolvedValue({ data: valid })
 
-        await fetchBanners('testnet', DEVICE_ID)
+        await fetchBanners('developer', DEVICE_ID)
 
         expect(queryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            network: 'testnet',
+            deployment: 'developer',
             method: 'GET',
             url: `/v1/devices/${DEVICE_ID}/banners/`,
         })
@@ -58,7 +58,7 @@ describe('fetchBanners', () => {
         }
         ;(queryClient as Mock).mockResolvedValue({ data: valid })
 
-        const result = await fetchBanners('mainnet', DEVICE_ID)
+        const result = await fetchBanners('live', DEVICE_ID)
 
         expect(result.count).toBe(1)
         expect(result.results[0].id).toBe('1')
@@ -72,7 +72,7 @@ describe('fetchBanners', () => {
             data: { count: 1, results: [{ id: bigId, type: 'generic' }] },
         })
 
-        const result = await fetchBanners('mainnet', DEVICE_ID)
+        const result = await fetchBanners('live', DEVICE_ID)
 
         expect(result.results[0].id).toBe(bigId)
     })
@@ -90,7 +90,7 @@ describe('fetchBanners', () => {
         }
         ;(queryClient as Mock).mockResolvedValue({ data })
 
-        const result = await fetchBanners('mainnet', DEVICE_ID)
+        const result = await fetchBanners('live', DEVICE_ID)
         expect(result.results[0].type).toBe('generic')
     })
 
@@ -99,11 +99,13 @@ describe('fetchBanners', () => {
             data: { results: 'not-an-array' },
         })
 
-        await expect(fetchBanners('testnet', DEVICE_ID)).rejects.toThrow()
+        await expect(fetchBanners('developer', DEVICE_ID)).rejects.toThrow()
     })
 
     test('propagates queryClient errors', async () => {
         ;(queryClient as Mock).mockRejectedValue(new Error('boom'))
-        await expect(fetchBanners('testnet', DEVICE_ID)).rejects.toThrow('boom')
+        await expect(fetchBanners('developer', DEVICE_ID)).rejects.toThrow(
+            'boom',
+        )
     })
 })

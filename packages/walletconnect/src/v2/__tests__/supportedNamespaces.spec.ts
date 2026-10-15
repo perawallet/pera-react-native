@@ -26,6 +26,7 @@ import {
     type AddressCodec,
 } from '@perawallet/wallet-core-chain-contract'
 import { Networks } from '@perawallet/wallet-core-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import type { WalletKitFactory } from '../client'
 import { createWalletConnectV2Handler } from '../handler'
@@ -67,7 +68,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-const algorandAdapter = dappRequestAdapterFor(Networks.mainnet)
+const algorandAdapter = dappRequestAdapterFor(
+    scopeForLegacyNetwork(Networks.mainnet),
+)
 if (!algorandAdapter) {
     throw new Error('the package setup file registers the Algorand adapter')
 }

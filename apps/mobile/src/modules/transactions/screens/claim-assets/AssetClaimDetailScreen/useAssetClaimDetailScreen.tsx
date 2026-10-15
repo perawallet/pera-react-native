@@ -37,6 +37,7 @@ import {
     type Nullable,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseAssetClaimDetailScreenResult = {
     request: Nullable<AssetInboxRequest>
@@ -53,7 +54,8 @@ type UseAssetClaimDetailScreenResult = {
 
 export const useAssetClaimDetailScreen =
     (): UseAssetClaimDetailScreenResult => {
-        const nativeAsset = useNativeAsset()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const nativeAsset = useNativeAsset(scope)
         const { push, navigate } = useAppNavigation()
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()

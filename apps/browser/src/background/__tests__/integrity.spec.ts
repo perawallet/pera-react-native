@@ -190,6 +190,30 @@ describe('ensureIntegrityToken', () => {
         expect(stored?.mintedAt).toBe(new Date(NOW).toISOString())
     })
 
+    it("mints against the wallet mode's deployment, whatever the Algorand override", async () => {
+        fake.local.set(
+            'kv:network-store',
+            JSON.stringify({
+                state: {
+                    mode: 'developer',
+                    network: 'betanet',
+                    selectedNetworkByChain: { algorand: 'betanet' },
+                },
+                version: 3,
+            }),
+        )
+        const { ensureIntegrityToken } = await import('../integrity')
+
+        await ensureIntegrityToken()
+
+        expect(mockRequestChallenge).toHaveBeenCalledWith(
+            expect.objectContaining({ deployment: 'developer' }),
+        )
+        expect(mockAttestDevice).toHaveBeenCalledWith(
+            expect.objectContaining({ deployment: 'developer' }),
+        )
+    })
+
     it('does nothing when a fresh token is already present', async () => {
         const { ensureIntegrityToken } = await import('../integrity')
         await ensureIntegrityToken()
@@ -318,7 +342,7 @@ describe('ensureIntegrityToken', () => {
         await ensureIntegrityToken()
 
         expect(mockClearInstallKey).not.toHaveBeenCalled()
-        expect(mockClearEnrolmentMarker).toHaveBeenCalledWith('mainnet')
+        expect(mockClearEnrolmentMarker).toHaveBeenCalledWith('live')
         expect(fake.session.has('integrity:enrol-needed')).toBe(true)
         expect(fake.session.has('integrity:backoff')).toBe(true)
     })
@@ -335,9 +359,9 @@ describe('ensureIntegrityToken', () => {
 
         await ensureIntegrityToken()
 
-        expect(mockGetEnrolmentMarker).toHaveBeenCalledWith('mainnet')
+        expect(mockGetEnrolmentMarker).toHaveBeenCalledWith('live')
         expect(fake.session.has('integrity:enrol-backoff')).toBe(true)
-        expect(mockClearEnrolmentMarker).toHaveBeenCalledWith('mainnet')
+        expect(mockClearEnrolmentMarker).toHaveBeenCalledWith('live')
         expect(fake.session.has('integrity:enrol-needed')).toBe(true)
     })
 

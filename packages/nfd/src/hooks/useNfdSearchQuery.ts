@@ -11,14 +11,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { fetchNfdSearch } from '../api'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdSearchResult } from '../models'
@@ -32,15 +26,14 @@ export type UseNfdSearchQueryResult = {
 const NO_RESULTS: NfdSearchResult[] = []
 
 export const useNfdSearchQuery = (
+    scope: ChainScope,
     name: string,
     options?: { enabled?: boolean },
 ): UseNfdSearchQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
     // NFD names are case-insensitive; normalize so "BruNo.aLgo" matches "bruno.algo".
     const normalizedName = name.toLowerCase()
     const isNameServiceEnabled = useChainCapability(
-        LEGACY_CHAIN_ID,
+        scope.chainId,
         'nameService',
     )
     const enabled =
@@ -51,7 +44,7 @@ export const useNfdSearchQuery = (
     const query = useQuery({
         queryKey: nfdQueryKeys.search(normalizedName, scope),
         queryFn: ({ signal }) =>
-            fetchNfdSearch({ name: normalizedName, network, signal }),
+            fetchNfdSearch({ name: normalizedName, scope, signal }),
         enabled,
     })
 

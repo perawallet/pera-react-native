@@ -16,6 +16,7 @@ import type {
     ChainMode,
     ChainScope,
     NetworkId,
+    WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainMode,
@@ -33,3 +34,8 @@ export const useSelectedScope = (chainId: ChainId): ChainScope => {
     const networkId = useSelectedNetworkId(chainId)
     return useMemo(() => ({ chainId, networkId }), [chainId, networkId])
 }
+
+// Chain-agnostic Pera endpoints (banners, inbox, currencies, integrity) route by
+// this deployment, never by a scope: one deployment serves every chain of its tier.
+export const useWalletDeployment = (): WalletMode =>
+    useNetworkStore(state => state.mode)

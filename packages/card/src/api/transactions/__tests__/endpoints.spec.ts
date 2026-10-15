@@ -18,6 +18,8 @@ vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 import { fetchCardTransactions, exportCardStatement } from '../endpoints'
 import { StatementFormat } from '../../../models'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('transactions endpoints', () => {
     beforeEach(() => vi.clearAllMocks())
 
@@ -25,7 +27,7 @@ describe('transactions endpoints', () => {
         request.mockResolvedValue({ data: [] })
 
         await fetchCardTransactions({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             page: 2,
             filters: {
                 dateFrom: '2026-01-01',
@@ -49,7 +51,7 @@ describe('transactions endpoints', () => {
     it('reports hasMore=false for an empty page', async () => {
         request.mockResolvedValue({ data: [] })
 
-        const page = await fetchCardTransactions({ network: 'mainnet' })
+        const page = await fetchCardTransactions({ scope: ALGORAND_MAINNET })
 
         expect(page.items).toEqual([])
         expect(page.hasMore).toBe(false)
@@ -58,7 +60,7 @@ describe('transactions endpoints', () => {
     it('reports hasMore=true for a non-empty page', async () => {
         request.mockResolvedValue({ data: [{ id: 'tx_1' }] })
 
-        const page = await fetchCardTransactions({ network: 'mainnet' })
+        const page = await fetchCardTransactions({ scope: ALGORAND_MAINNET })
 
         expect(page.page).toBe(0)
         expect(page.hasMore).toBe(true)
@@ -70,7 +72,7 @@ describe('transactions endpoints', () => {
         })
 
         const result = await exportCardStatement({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             format: StatementFormat.Csv,
             filters: { dateFrom: '2026-01-01', dateTo: '2026-02-01' },
         })
@@ -94,7 +96,7 @@ describe('transactions endpoints', () => {
         })
 
         await exportCardStatement({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             format: StatementFormat.Pdf,
         })
 

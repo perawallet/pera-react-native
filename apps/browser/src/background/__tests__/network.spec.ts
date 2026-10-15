@@ -13,57 +13,23 @@
 import { describe, it, expect } from 'vitest'
 
 import { createLocalChromeFake } from './chrome-fake'
-import { parseActiveNetwork, readActiveNetwork } from '../network'
+import { parseActiveDeployment, readActiveDeployment } from '../network'
 
-describe('parseActiveNetwork', () => {
-    it('reads testnet from the persisted zustand envelope string', () => {
-        const raw = '{"state":{"network":"testnet"},"version":1}'
-        expect(parseActiveNetwork(raw)).toBe('testnet')
+describe('parseActiveDeployment', () => {
+    it('defaults to live when the entry is missing (undefined)', () => {
+        expect(parseActiveDeployment(undefined)).toBe('live')
     })
 
-    it('reads mainnet from the persisted zustand envelope string', () => {
-        const raw = '{"state":{"network":"mainnet"},"version":1}'
-        expect(parseActiveNetwork(raw)).toBe('mainnet')
+    it('defaults to live on malformed JSON', () => {
+        expect(parseActiveDeployment('{not json')).toBe('live')
     })
 
-    it('defaults to mainnet when the entry is missing (undefined)', () => {
-        expect(parseActiveNetwork(undefined)).toBe('mainnet')
-    })
-
-    it('defaults to mainnet on malformed JSON', () => {
-        expect(parseActiveNetwork('{not json')).toBe('mainnet')
-    })
-
-    it('defaults to mainnet when state/network is absent from an otherwise valid envelope', () => {
-        expect(parseActiveNetwork('{"version":1}')).toBe('mainnet')
-    })
-
-    it('accepts every supported network', () => {
-        for (const network of ['mainnet', 'testnet', 'betanet', 'custom']) {
-            const raw = `{"state":{"network":"${network}"},"version":1}`
-            expect(parseActiveNetwork(raw)).toBe(network)
-        }
-    })
-
-    it('still falls back to mainnet for an unknown value', () => {
-        expect(
-            parseActiveNetwork('{"state":{"network":"nope"},"version":1}'),
-        ).toBe('mainnet')
-    })
-
-    it('falls back to mainnet for a value no longer in the union', () => {
-        // Regression coverage for the custom-network rework: a device that
-        // persisted 'fnet' (or 'localnet') under the old five-network union
-        // must not crash or silently accept a value SUPPORTED no longer
-        // contains — it degrades to the same safe mainnet default as any
-        // other unrecognized string.
-        expect(
-            parseActiveNetwork('{"state":{"network":"fnet"},"version":1}'),
-        ).toBe('mainnet')
+    it('defaults to live when the state is absent from an otherwise valid envelope', () => {
+        expect(parseActiveDeployment('{"version":1}')).toBe('live')
     })
 })
 
-describe('parseActiveNetwork across store versions', () => {
+describe('parseActiveDeployment across store versions', () => {
     const v1 = (network: string) =>
         JSON.stringify({ state: { network }, version: 1 })
     const v2 = (network: string) =>
@@ -74,30 +40,6 @@ describe('parseActiveNetwork across store versions', () => {
             },
             version: 2,
         })
-
-    it.each([
-        ['mainnet', 'mainnet'],
-        ['testnet', 'testnet'],
-        ['betanet', 'betanet'],
-        ['custom', 'custom'],
-        ['fnet', 'mainnet'],
-        ['nope', 'mainnet'],
-    ])('%s resolves to %s from either shape', (persisted, expected) => {
-        expect(parseActiveNetwork(v1(persisted))).toBe(expected)
-        expect(parseActiveNetwork(v2(persisted))).toBe(expected)
-    })
-
-    it('falls back to state.network when the v2 map is missing', () => {
-        const raw = JSON.stringify({
-            state: { network: 'testnet', customNetworksByChain: {} },
-            version: 2,
-        })
-
-        expect(parseActiveNetwork(raw)).toBe('testnet')
-    })
-})
-
-describe('parseActiveNetwork across v2 and v3', () => {
     const v3 = (
         mode: string,
         network: string,
@@ -112,87 +54,54 @@ describe('parseActiveNetwork across v2 and v3', () => {
             },
             version: 3,
         })
-    const v2 = (globalNetwork: string, entry: string) =>
-        JSON.stringify({
-            state: {
-                globalNetwork,
-                selectedNetworkByChain: {
-                    algorand: entry,
-                    ethereum: 'sepolia',
-                },
-                customNetworksByChain: { algorand: [] },
-            },
-            version: 2,
-        })
+
+    // Only MainNet was live before the mode existed; an unknown value, such as
+    // 'fnet' from the old five-network union, degrades to live like any other.
+    it.each([
+        ['mainnet', 'live'],
+        ['testnet', 'developer'],
+        ['betanet', 'developer'],
+        ['custom', 'developer'],
+        ['fnet', 'live'],
+        ['nope', 'live'],
+    ])('v1 and v2: %s resolves to %s', (persisted, expected) => {
+        expect(parseActiveDeployment(v1(persisted))).toBe(expected)
+        expect(parseActiveDeployment(v2(persisted))).toBe(expected)
+    })
 
     it.each([
         [
             'live mode ignores a stored Algorand override',
             v3('live', 'mainnet', { algorand: 'betanet' }),
-            'mainnet',
+            'live',
         ],
-        ['developer with no override', v3('developer', 'testnet'), 'testnet'],
+        ['developer with no override', v3('developer', 'testnet'), 'developer'],
         [
-            'developer with a betanet override',
+            'developer with a betanet override still reaches the developer deployment',
             v3('developer', 'betanet', { algorand: 'betanet' }),
-            'betanet',
-        ],
-        [
-            'developer with custom',
-            v3('developer', 'custom', { algorand: 'custom' }),
-            'custom',
+            'developer',
         ],
     ])('v3: %s', (_label, raw, expected) => {
-        expect(parseActiveNetwork(raw)).toBe(expected)
+        expect(parseActiveDeployment(raw)).toBe(expected)
     })
-
-    // Each v2 blob paired with the v3 blob the store migrates it to.
-    it.each([
-        [v2('mainnet', 'mainnet'), v3('live', 'mainnet')],
-        [v2('testnet', 'testnet'), v3('developer', 'testnet')],
-        [
-            v2('testnet', 'betanet'),
-            v3('developer', 'betanet', { algorand: 'betanet' }),
-        ],
-        [
-            v2('custom', 'custom'),
-            v3('developer', 'custom', { algorand: 'custom' }),
-        ],
-    ])(
-        'a v2 blob and its v3 migration advertise the same network',
-        (before, after) => {
-            expect(parseActiveNetwork(after)).toBe(parseActiveNetwork(before))
-        },
-    )
 })
 
-describe('readActiveNetwork', () => {
-    it('reads a v2 envelope from chrome.storage.local', async () => {
+describe('readActiveDeployment', () => {
+    it('reads the deployment from chrome.storage.local', async () => {
         const fake = createLocalChromeFake()
         globalThis.chrome = fake.chrome
         fake.local.set(
             'kv:network-store',
-            '{"state":{"selectedNetworkByChain":{"algorand":"betanet"}},"version":2}',
+            '{"state":{"mode":"developer","network":"betanet"},"version":3}',
         )
 
-        expect(await readActiveNetwork()).toBe('betanet')
+        expect(await readActiveDeployment()).toBe('developer')
     })
 
-    it('reads the active network from chrome.storage.local', async () => {
-        const fake = createLocalChromeFake()
-        globalThis.chrome = fake.chrome
-        fake.local.set(
-            'kv:network-store',
-            '{"state":{"network":"testnet"},"version":1}',
-        )
-
-        expect(await readActiveNetwork()).toBe('testnet')
-    })
-
-    it('defaults to mainnet when nothing is stored', async () => {
+    it('defaults to live when nothing is stored', async () => {
         const fake = createLocalChromeFake()
         globalThis.chrome = fake.chrome
 
-        expect(await readActiveNetwork()).toBe('mainnet')
+        expect(await readActiveDeployment()).toBe('live')
     })
 })

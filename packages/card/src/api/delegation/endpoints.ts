@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    legacyNetworkOf,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getCardApiError, isAlreadyCreatedError } from '../errors'
 import { getCardTransport } from '../transport'
 import {
@@ -32,7 +28,7 @@ import { transformExternalWallet } from './transformers'
 import { AutoDrawDelegationRejectedError } from './errors'
 
 export type DelegationRequestParams = {
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
@@ -40,10 +36,10 @@ export type DelegationRequestParams = {
 export const fetchDelegationToken = async (
     params: DelegationRequestParams,
 ): Promise<CardDelegationToken> => {
-    const { network, signal } = params
+    const { scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'GET',
         path: '/v1/delegation/token',
         authenticated: true,
@@ -56,10 +52,10 @@ export const fetchDelegationToken = async (
 export const fetchExternalWallets = async (
     params: DelegationRequestParams,
 ): Promise<CardExternalWallet[]> => {
-    const { network, signal } = params
+    const { scope, signal } = params
 
     const response = await getCardTransport().request({
-        network,
+        scope,
         method: 'GET',
         path: '/v1/wallet/external',
         authenticated: true,
@@ -94,7 +90,7 @@ export const postCardDelegation = async (
     signal?: AbortSignal,
 ): Promise<void> => {
     const response = await getCardTransport().request({
-        network: legacyNetworkOf(scope),
+        scope,
         method: 'POST',
         path: request.path,
         authenticated: true,

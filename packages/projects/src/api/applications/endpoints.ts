@@ -10,14 +10,14 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
     logger,
     isNotFoundError,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { ZodError } from 'zod'
 import {
     applicationResponseSchema,
@@ -28,23 +28,23 @@ import type { PeraApplication } from '../../models/types'
 
 export type FetchApplicationParams = {
     applicationId: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const fetchApplication = async (
     params: FetchApplicationParams,
 ): Promise<Nullable<PeraApplication>> => {
-    const { applicationId, network, signal } = params
+    const { applicationId, scope, signal } = params
 
     // No Pera backend on betanet/custom: fall back to null, so the
     // application display falls back to showing the raw app ID.
-    if (!isPeraBackedNetwork(network)) return null
+    if (!hasPeraBackend(scope)) return null
 
     try {
         const response = await queryClient<ApplicationApiResponse>({
             backend: 'pera',
-            network,
+            scope,
             method: 'GET',
             url: `/v1/applications/${encodeURIComponent(String(applicationId))}/`,
             signal,

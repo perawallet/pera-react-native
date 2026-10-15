@@ -16,6 +16,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useNfdSearchQuery } from '../useNfdSearchQuery'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+
 const mockFetchNfdSearch = vi.hoisted(() => vi.fn())
 const nameService = vi.hoisted(() => ({ isEnabled: true }))
 
@@ -25,10 +28,6 @@ vi.mock('../../api', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: () => nameService.isEnabled,
-    useSelectedScope: (chainId: string) => ({
-        chainId,
-        networkId: 'mainnet',
-    }),
 }))
 
 describe('useNfdSearchQuery', () => {
@@ -53,36 +52,52 @@ describe('useNfdSearchQuery', () => {
             children,
         )
 
-    it('lowercases a mixed-case search term before fetching', async () => {
-        mockFetchNfdSearch.mockResolvedValue([])
+    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'lowercases a mixed-case search term and passes the scope for $chainId',
+        async scope => {
+            mockFetchNfdSearch.mockResolvedValue([])
 
-        renderHook(() => useNfdSearchQuery('BruNo.aLgo'), { wrapper })
+            renderHook(() => useNfdSearchQuery(scope, 'BruNo.aLgo'), {
+                wrapper,
+            })
 
-        await waitFor(() => expect(mockFetchNfdSearch).toHaveBeenCalled())
+            await waitFor(() => expect(mockFetchNfdSearch).toHaveBeenCalled())
 
-        expect(mockFetchNfdSearch).toHaveBeenCalledWith(
-            expect.objectContaining({ name: 'bruno.algo' }),
-        )
-    })
+            expect(mockFetchNfdSearch).toHaveBeenCalledWith(
+                expect.objectContaining({ name: 'bruno.algo', scope }),
+            )
+        },
+    )
 
     it('does not fetch while the nameService capability is off', () => {
         nameService.isEnabled = false
 
-        renderHook(() => useNfdSearchQuery('bruno.algo'), { wrapper })
-
-        expect(mockFetchNfdSearch).not.toHaveBeenCalled()
-    })
-
-    it('does not fetch when disabled', () => {
-        renderHook(() => useNfdSearchQuery('BruNo.aLgo', { enabled: false }), {
+        renderHook(() => useNfdSearchQuery(ALGORAND_TESTNET, 'bruno.algo'), {
             wrapper,
         })
 
         expect(mockFetchNfdSearch).not.toHaveBeenCalled()
     })
+
+    it('does not fetch when disabled', () => {
+        renderHook(
+            () =>
+                useNfdSearchQuery(ALGORAND_TESTNET, 'BruNo.aLgo', {
+                    enabled: false,
+                }),
+            {
+                wrapper,
+            },
+        )
+
+        expect(mockFetchNfdSearch).not.toHaveBeenCalled()
+    })
     it('returns one stable empty array while disabled', () => {
         const { result, rerender } = renderHook(
-            () => useNfdSearchQuery('bruno.algo', { enabled: false }),
+            () =>
+                useNfdSearchQuery(ALGORAND_TESTNET, 'bruno.algo', {
+                    enabled: false,
+                }),
             { wrapper },
         )
         const initialData = result.current.data

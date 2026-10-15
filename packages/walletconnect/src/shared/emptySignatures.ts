@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { dappRequestAdapterFor } from './chainSupport'
 
 /**
@@ -33,14 +34,14 @@ const requestedChainId = (params: unknown): unknown => {
 export const emptySignaturesResult = (
     params: unknown,
     accounts: readonly string[],
-    network: Network,
+    scope: ChainScope,
 ): Nullable<Record<string, string>> => {
-    const adapter = dappRequestAdapterFor(network)
+    const adapter = dappRequestAdapterFor(scope)
     if (!adapter) return null
     const chainId = requestedChainId(params)
     if (
         chainId !== undefined &&
-        chainId !== adapter.walletConnect.caip2ChainIdFor(network)
+        chainId !== adapter.walletConnect.caip2ChainIdFor(scope.networkId)
     ) {
         return null
     }

@@ -17,7 +17,7 @@ import {
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { setRefreshHandler, setSessionLostHandler } from '../api/transport'
 import { refreshTokenRequest } from '../api/auth'
@@ -85,13 +85,12 @@ export const clearCardSession = async (): Promise<void> => {
  * predates the OAuth exchange) it clears the session so the UI routes the
  * user back to login.
  */
-export const refreshSession = async (): Promise<boolean> => {
+export const refreshSession = async (scope: ChainScope): Promise<boolean> => {
     try {
-        const { network } = useNetworkStore.getState()
         const tokens = await withSecret(REFRESH_TOKEN_SECRET_ID, bytes =>
             refreshTokenRequest({
                 refreshToken: textDecoder.decode(bytes),
-                network,
+                scope,
             }),
         )
         if (!tokens) {

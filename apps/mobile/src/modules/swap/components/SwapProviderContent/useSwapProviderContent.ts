@@ -52,7 +52,7 @@ export const useSwapProviderContent = ({
     quotes,
     selectedProviderName,
 }: UseSwapProviderContentParams): UseSwapProviderContentResult => {
-    const { preferredCurrency, usdToPreferred } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency(scope)
     const { data: providers } = useProvidersQuery(scope)
 
     const [userSelection, setUserSelection] =

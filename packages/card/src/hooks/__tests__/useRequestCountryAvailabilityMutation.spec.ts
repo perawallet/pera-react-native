@@ -20,40 +20,49 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/waitlist', () => api)
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useRequestCountryAvailabilityMutation } from '../useRequestCountryAvailabilityMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    scopeForLegacyNetwork('mainnet'),
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
-describe('useRequestCountryAvailabilityMutation', () => {
-    beforeEach(() => {
-        queryClient = new QueryClient({
-            defaultOptions: {
-                queries: { retry: false },
-                mutations: { retry: false },
-            },
+describe.each(SCOPES)(
+    'useRequestCountryAvailabilityMutation ($chainId)',
+    SCOPE => {
+        beforeEach(() => {
+            queryClient = new QueryClient({
+                defaultOptions: {
+                    queries: { retry: false },
+                    mutations: { retry: false },
+                },
+            })
+            vi.clearAllMocks()
+            api.requestCountryAvailability.mockResolvedValue(undefined)
         })
-        vi.clearAllMocks()
-        api.requestCountryAvailability.mockResolvedValue(undefined)
-    })
 
-    it('joins the waitlist with the resolved network plus the supplied country and device', async () => {
-        const { result } = renderHook(
-            () => useRequestCountryAvailabilityMutation(SCOPE),
-            { wrapper },
-        )
+        it('joins the waitlist with the resolved network plus the supplied country and device', async () => {
+            const { result } = renderHook(
+                () => useRequestCountryAvailabilityMutation(SCOPE),
+                { wrapper },
+            )
 
-        result.current.mutate({ countryCode: 'RU', deviceId: 'device-1' })
+            result.current.mutate({ countryCode: 'RU', deviceId: 'device-1' })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(api.requestCountryAvailability).toHaveBeenCalledWith({
-            countryCode: 'RU',
-            deviceId: 'device-1',
-            network: 'mainnet',
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            expect(api.requestCountryAvailability).toHaveBeenCalledWith({
+                countryCode: 'RU',
+                deviceId: 'device-1',
+                scope: SCOPE,
+            })
         })
-    })
-})
+    },
+)

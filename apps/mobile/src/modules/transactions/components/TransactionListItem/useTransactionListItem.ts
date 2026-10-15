@@ -100,8 +100,8 @@ export const useTransactionListItem = ({
         [allAmounts],
     )
     const { data: storedAssets } = useAssetsQuery(
+        scope,
         visibleAmounts.map(amount => amount.assetRef.assetId),
-        { scope },
     )
     const amounts = useMemo(
         () =>

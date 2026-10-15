@@ -51,16 +51,22 @@ describe('useCardStatusQuery', () => {
             children,
         )
 
-    it('exposes the fetched card', async () => {
-        fetchCardStatus.mockResolvedValue(card)
+    it.each([SCOPE, { chainId: 'ethereum', networkId: 'sepolia' } as const])(
+        'requests the card for the given scope ($chainId)',
+        async scope => {
+            fetchCardStatus.mockResolvedValue(card)
 
-        const { result } = renderHook(() => useCardStatusQuery(SCOPE), {
-            wrapper,
-        })
+            const { result } = renderHook(() => useCardStatusQuery(scope), {
+                wrapper,
+            })
 
-        await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(result.current.data).toEqual(card)
-    })
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+            expect(fetchCardStatus).toHaveBeenCalledWith(
+                expect.objectContaining({ scope }),
+            )
+            expect(result.current.data).toEqual(card)
+        },
+    )
 
     it('exposes null when the user has no card', async () => {
         fetchCardStatus.mockResolvedValue(null)

@@ -10,30 +10,31 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { projectListResponseSchema, type ProjectApiResponse } from './schema'
 import { transformProjectList } from './transformers'
 import type { PeraProject } from '../../models/types'
 
 export type FetchProjectByUrlParams = {
     sourceUrl: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 export const fetchProjectByUrl = async (
     params: FetchProjectByUrlParams,
 ): Promise<PeraProject[]> => {
-    const { sourceUrl, network, signal } = params
+    const { sourceUrl, scope, signal } = params
 
     // No Pera backend on betanet/custom: fall back to no projects, so the
     // trust badge simply renders nothing instead of throwing.
-    if (!isPeraBackedNetwork(network)) return []
+    if (!hasPeraBackend(scope)) return []
 
     const response = await queryClient<ProjectApiResponse[]>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: '/v1/projects/',
         params: { url: sourceUrl },
