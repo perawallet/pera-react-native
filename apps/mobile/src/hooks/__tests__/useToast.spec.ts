@@ -90,6 +90,9 @@ describe('useToast', () => {
             expect.objectContaining({
                 title: 'Error',
                 description: 'Operation failed',
+                containerProps: expect.objectContaining({
+                    testID: 'toast_error',
+                }),
                 componentProps: expect.objectContaining({
                     containerStyle: expect.arrayContaining([
                         { backgroundColor: 'red' },

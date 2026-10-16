@@ -46,6 +46,9 @@ type UseSettingsCurrencyScreenResult = {
      * preferred currency is a local persisted value.
      */
     isRateUnavailableOffline: boolean
+    isOffline: boolean
+    isError: boolean
+    refetch: () => void
 }
 
 export const useSettingsCurrencyScreen =
@@ -61,10 +64,14 @@ export const useSettingsCurrencyScreen =
         const [search, setSearch] = useState<string>()
         const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-        const { data } = useCurrenciesQuery(scope)
+        const { data, isPaused, isError, refetch } = useCurrenciesQuery(scope)
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
         const { hasInternet } = useNetworkStatus()
         const queryClient = useQueryClient()
+
+        // docs/OFFLINE_PAUSED_STATE.md: an error while offline is the offline
+        // state, not a fault to retry.
+        const isOffline = isPaused || (isError && !hasInternet)
 
         const isRateUnavailableOffline = useMemo(() => {
             if (hasInternet) return false
@@ -119,5 +126,8 @@ export const useSettingsCurrencyScreen =
             preferredCurrency,
             fallbackCurrency,
             isRateUnavailableOffline,
+            isOffline,
+            isError,
+            refetch: () => void refetch(),
         }
     }

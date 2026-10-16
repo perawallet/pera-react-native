@@ -115,7 +115,11 @@ const AssetSelectorById = ({
     ...rest
 }: AssetSelectorByIdProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { data: assets } = useAssetsQuery(scope, [assetId])
+    // The selected asset is often one the account doesn't hold (e.g. the
+    // default swap receive asset), so it may not be in the local DB yet.
+    const { data: assets } = useAssetsQuery(scope, [assetId], {
+        fetchMissing: true,
+    })
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     return (

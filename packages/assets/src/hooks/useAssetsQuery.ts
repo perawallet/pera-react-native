@@ -52,12 +52,7 @@ export const useAssetsQuery = (
     const stableIds = useStableIdList(ids)
 
     const query = useQuery({
-        // fetchMissing reads through the network, so it gets its own cache
-        // entry — a DB-only caller must never satisfy it from cache (with
-        // staleTime Infinity that would strand the missing assets).
-        queryKey: fetchMissing
-            ? [...getAssetsQueryKey(stableIds, scope), { fetchMissing: true }]
-            : getAssetsQueryKey(stableIds, scope),
+        queryKey: getAssetsQueryKey(stableIds, scope, { fetchMissing }),
         staleTime: Infinity,
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and

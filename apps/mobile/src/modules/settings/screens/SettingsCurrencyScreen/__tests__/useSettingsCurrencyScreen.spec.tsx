@@ -88,7 +88,12 @@ describe('useSettingsCurrencyScreen', () => {
         })
         useNetworkStatusStore.getState().setHasInternet(true)
         setPreferredCurrency('USD')
-        mockUseCurrenciesQuery.mockReturnValue({ data: [] })
+        mockUseCurrenciesQuery.mockReturnValue({
+            data: [],
+            isPaused: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
     })
 
     afterEach(() => {
@@ -177,5 +182,37 @@ describe('useSettingsCurrencyScreen', () => {
         result.current.setCurrency({ id: 'AED', name: 'Dirham' } as never)
 
         expect(mockInvalidateAssetPrices).toHaveBeenCalledTimes(1)
+    })
+
+    describe('currency list failure', () => {
+        const mockFailedQuery = (refetch = vi.fn()) => {
+            mockUseCurrenciesQuery.mockReturnValue({
+                data: undefined,
+                isPaused: false,
+                isError: true,
+                refetch,
+            })
+            return refetch
+        }
+
+        it('reports an error while online and retries via refetch', () => {
+            const refetch = mockFailedQuery()
+
+            const { result } = renderScreenHook()
+            result.current.refetch()
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.isOffline).toBe(false)
+            expect(refetch).toHaveBeenCalledTimes(1)
+        })
+
+        it('reports offline when the failure happens without internet', () => {
+            mockFailedQuery()
+            useNetworkStatusStore.getState().setHasInternet(false)
+
+            const { result } = renderScreenHook()
+
+            expect(result.current.isOffline).toBe(true)
+        })
     })
 })

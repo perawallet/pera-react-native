@@ -279,12 +279,16 @@ describe('useSwapToAssetSelectionList', () => {
             })
 
             expect(mockSetQueryData).toHaveBeenCalledOnce()
+            expect(mockGetAssetsQueryKey).toHaveBeenCalledWith(
+                ['31566704'],
+                defaultParams.scope,
+                { fetchMissing: true },
+            )
         })
 
         it('seeds the query cache when the cached entry is an empty array', () => {
-            // A DB-only useAssetsQuery for an unheld asset caches [] with
-            // staleTime Infinity; treating that as "already cached" made the
-            // default USDC receive asset permanently unselectable.
+            // An [] entry never refetches (staleTime Infinity); treating it as
+            // "already cached" left the selection permanently unrendered.
             mockGetQueryData.mockReturnValue([])
 
             const { result } = renderHook(() =>

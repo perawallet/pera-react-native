@@ -45,6 +45,8 @@ export const PWRadioButton = ({
             disabled={isDisabled}
             style={[styles.row, isDisabled && styles.disabled, containerStyle]}
             {...getTestProps(testID)}
+            accessibilityRole='radio'
+            accessibilityState={{ checked: isSelected, disabled: isDisabled }}
         >
             <PWView style={styles.content}>
                 {children ?? <PWText>{title}</PWText>}

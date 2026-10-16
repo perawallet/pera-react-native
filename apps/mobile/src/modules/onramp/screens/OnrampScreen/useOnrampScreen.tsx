@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type RouteProp, useRoute } from '@react-navigation/native'
+import {
+    type RouteProp,
+    useIsFocused,
+    useRoute,
+} from '@react-navigation/native'
 import {
     useRampPairsQuery,
     useRampRegionQuery,
@@ -80,6 +84,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         useRoute<RouteProp<{ Fund: Optional<OnrampScreenParams> }, 'Fund'>>()
     const params = route.params
 
+    const isFocused = useIsFocused()
     const { request: requestBottomSheet } = useBottomSheet()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
     const trackOnrampEvent = useTrackOnrampEvent()
@@ -146,9 +151,10 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     // the persisted flag the single guard, so the effect can't re-open it (and
     // strict-mode's double-invoke is harmless). Dismissing without Continue
     // therefore won't reshow — acceptable for an intro.
-    // Waits for a scope so the analytics event can name the chain.
+    // Waits for a scope so the analytics event can name the chain, and for
+    // focus because tab screens stay mounted behind whichever tab is active.
     useEffect(() => {
-        if (isIntroductionSeen || scope === null) return
+        if (isIntroductionSeen || scope === null || !isFocused) return
         markIntroductionSeen()
         void requestBottomSheet<'start'>({
             contents: <OnrampIntroductionContent />,
@@ -163,6 +169,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
             }
         })
     }, [
+        isFocused,
         isIntroductionSeen,
         markIntroductionSeen,
         requestBottomSheet,

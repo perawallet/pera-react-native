@@ -102,11 +102,12 @@ const answerQuizCorrectly = async (): Promise<void> => {
         // being asked for — the item testID is just the array index.
         const label = within(item).getByText(/^Select word #\d+$/)
         const position = Number(/#(\d+)/.exec(label.textContent ?? '')![1]) - 1
-        fireEvent.click(
-            within(item).getByTestId(
-                `cloud_backup_verify_item_${index}_option_${PHRASE[position]}`,
-            ),
-        )
+        const correctOption = within(item)
+            .getAllByTestId(
+                new RegExp(`^cloud_backup_verify_item_${index}_option_`),
+            )
+            .find(option => option.textContent === PHRASE[position])
+        fireEvent.click(correctOption!)
     }
 }
 

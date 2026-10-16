@@ -34,6 +34,7 @@ import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
 import { AccountOverviewHeaderSkeleton } from './AccountOverviewHeaderSkeleton'
+import { getContainerTestProps } from '@utils/test-id-helper'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount
@@ -239,7 +240,10 @@ export const AccountOverviewHeader = ({
             {renderContent()}
 
             {isLoading && (
-                <PWView style={styles.skeletonOverlay}>
+                <PWView
+                    style={styles.skeletonOverlay}
+                    {...getContainerTestProps('account_overview_skeleton')}
+                >
                     <AccountOverviewHeaderSkeleton
                         chartVisible={isChartShown}
                     />

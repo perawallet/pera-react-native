@@ -85,7 +85,11 @@ export const useSwapAmountSection = ({
     fiatToAsset,
     assetToFiat,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
-    const { data: assets } = useAssetsQuery(scope, [assetId])
+    // Same cache entry as the section's AssetSelector, which may show an
+    // asset the account doesn't hold.
+    const { data: assets } = useAssetsQuery(scope, [assetId], {
+        fetchMissing: true,
+    })
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.

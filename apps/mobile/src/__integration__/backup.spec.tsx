@@ -196,17 +196,21 @@ const renderBackupStack = (
     })
 }
 
-// Extract the option testIDs inside a quiz item and return them in render
-// order so the wrong-path test can pick something that is provably not the
-// correct word.
+// Option testIDs carry the index, not the word, so the seed never lands in an
+// automation ID; resolve options by their visible text instead.
+const quizOptions = (item: HTMLElement): HTMLElement[] =>
+    within(item).getAllByTestId(/^backup_verification_item_\d+_option_\d+$/)
+
 const optionWords = (item: HTMLElement): string[] =>
-    within(item)
-        .getAllByTestId(/^backup_verification_item_\d+_option_/)
-        .map(btn => {
-            const testId = btn.getAttribute('data-testid') ?? ''
-            const match = /_option_(.+)$/.exec(testId)
-            return match ? match[1] : ''
-        })
+    quizOptions(item).map(option => option.textContent ?? '')
+
+const optionFor = (item: HTMLElement, word: string): HTMLElement => {
+    const option = quizOptions(item).find(o => o.textContent === word)
+    if (!option) {
+        throw new Error(`No option rendered for word: ${word}`)
+    }
+    return option
+}
 
 // Read the position label (`Select word #N`) inside one quiz item. The
 // label is the only piece of state on screen that tells us *which* word
@@ -246,11 +250,7 @@ const completeVerificationQuiz = async (
     for (let i = 0; i < 3; i++) {
         const item = screen.getByTestId(`backup_verification_item_${i}`)
         const correctWord = mnemonicWords[positionOf(item)]
-        fireEvent.click(
-            within(item).getByTestId(
-                `backup_verification_item_${i}_option_${correctWord}`,
-            ),
-        )
+        fireEvent.click(optionFor(item, correctWord))
     }
 
     fireEvent.click(screen.getByTestId('backup_verification_next'))
@@ -425,11 +425,7 @@ describe('Flow: Account backup', () => {
                     `No incorrect option offered for item ${i}; quiz only generated the correct word`,
                 )
             }
-            fireEvent.click(
-                within(item).getByTestId(
-                    `backup_verification_item_${i}_option_${wrong}`,
-                ),
-            )
+            fireEvent.click(optionFor(item, wrong))
         }
 
         fireEvent.click(screen.getByTestId('backup_verification_next'))

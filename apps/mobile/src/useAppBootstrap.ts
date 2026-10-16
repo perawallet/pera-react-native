@@ -79,6 +79,10 @@ export type UseAppBootstrapResult = {
 // enough that a foreground start always hides on the frame path instead.
 const SPLASH_HIDE_BACKSTOP_MS = 1000
 
+// Armed when bootstrap starts, so an init step that never settles still drops
+// the splash onto the loading view instead of leaving the user on it forever.
+const SPLASH_HARD_BACKSTOP_MS = 10_000
+
 // Ceiling on the wait for store rehydration; see waitForStoreHydration for why
 // an unguarded wait can hang forever.
 const STORE_HYDRATION_TIMEOUT_MS = 2000
@@ -112,8 +116,8 @@ const resolveEffectiveLocale = (): string => {
 // Runs after rehydration, behind the bootstrapped splash gate, so switching
 // language never causes a visible flash (design doc §4.4). Unlike
 // i18n/index.ts's import-time BASE_LOCALE default, Remote Config has
-// already been fetched by the time this runs (provider.initialize() above
-// awaits it) — so this is the one place real locale resolution happens, for
+// already been fetched, or its bounded fetch has fallen back to cached values,
+// by the time this runs (provider.initialize() above awaits it) — so this is the one place real locale resolution happens, for
 // every user, not just ones with a saved override. A saved override that
 // falls outside the currently-effective set (Remote Config rolled back, or
 // that locale deactivated) correctly falls through resolveLocale's chain
@@ -156,6 +160,14 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
         }
 
         const runBootstrap = async () => {
+            let splashHidden = false
+            const hideSplash = () => {
+                if (splashHidden) return
+                splashHidden = true
+                void SplashScreen.hideAsync()
+            }
+            setTimeout(hideSplash, SPLASH_HARD_BACKSTOP_MS)
+
             try {
                 // Awaits crash reporting, remote config, analytics and SSL
                 // pinning — which the calls below genuinely depend on — but not
@@ -291,13 +303,6 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // it. `setTimeout` fires regardless, which is the one property
                 // the old code had and this must not lose. Whichever runs first
                 // wins; `hideSplash` is idempotent.
-                let splashHidden = false
-                const hideSplash = () => {
-                    if (splashHidden) return
-                    splashHidden = true
-                    void SplashScreen.hideAsync()
-                }
-
                 requestAnimationFrame(() => {
                     requestAnimationFrame(hideSplash)
                 })
