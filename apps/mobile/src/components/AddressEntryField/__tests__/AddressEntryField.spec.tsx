@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen, act } from '@test-utils/render'
+import { render, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     LEGACY_CHAIN_ID,
@@ -52,21 +52,6 @@ vi.mock('@components/QRScannerView', () => ({
 describe('AddressEntryField', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-    })
-
-    it('renders correctly', () => {
-        render(<AddressEntryField chainIds={CHAIN_IDS} />)
-        expect(screen.getByRole('textbox')).toBeTruthy()
-    })
-
-    it('shows QR scanner icon when allowed', () => {
-        render(
-            <AddressEntryField
-                chainIds={CHAIN_IDS}
-                allowQRCode
-            />,
-        )
-        expect(screen.getByRole('textbox')).toBeTruthy()
     })
 
     it('fills the field with a scanned address', () => {

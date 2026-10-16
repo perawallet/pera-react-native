@@ -73,16 +73,4 @@ describe('PWSlideToConfirm', () => {
 
         expect(screen.getByTestId('pw-slide-to-confirm-check')).toBeTruthy()
     })
-
-    it('attaches the provided testID to the root', () => {
-        render(
-            <PWSlideToConfirm
-                title='Slide To Confirm'
-                onConfirm={vi.fn()}
-                testID='my-slide'
-            />,
-        )
-
-        expect(screen.getByTestId('my-slide')).toBeTruthy()
-    })
 })

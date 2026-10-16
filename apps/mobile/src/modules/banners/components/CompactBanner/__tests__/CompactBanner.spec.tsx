@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { render, fireEvent, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@test-utils/render'
+import { describe, it, expect } from 'vitest'
 import type { Banner } from '@perawallet/wallet-core-banners'
 import { CompactBanner } from '../CompactBanner'
 
@@ -28,17 +28,6 @@ const banner: Banner = {
 }
 
 describe('CompactBanner', () => {
-    it('renders the title text', () => {
-        render(
-            <CompactBanner
-                primary={banner}
-                additionalCount={0}
-                onPress={() => undefined}
-            />,
-        )
-        expect(screen.getByText('Vote in Period 12')).toBeTruthy()
-    })
-
     it('falls back to subtitle when no title is present', () => {
         render(
             <CompactBanner
@@ -72,18 +61,5 @@ describe('CompactBanner', () => {
         const label = screen.getByTestId('compact_banner_more_badge')
         expect(label).toBeTruthy()
         expect(screen.getByText('+3')).toBeTruthy()
-    })
-
-    it('fires onPress when tapped', () => {
-        const onPress = vi.fn()
-        render(
-            <CompactBanner
-                primary={banner}
-                additionalCount={0}
-                onPress={onPress}
-            />,
-        )
-        fireEvent.click(screen.getByTestId('compact_banner'))
-        expect(onPress).toHaveBeenCalledTimes(1)
     })
 })

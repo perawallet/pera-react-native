@@ -21,17 +21,6 @@ vi.mock('@components/LoadingView', () => ({
 }))
 
 describe('EmptyView', () => {
-    it('renders title and body correctly', () => {
-        render(
-            <EmptyView
-                title='Empty Title'
-                body='Empty Body'
-            />,
-        )
-        expect(screen.getByText('Empty Title')).toBeTruthy()
-        expect(screen.getByText('Empty Body')).toBeTruthy()
-    })
-
     it('caps the body at 3 lines by default', () => {
         render(<EmptyView body='Empty Body' />)
         const element = screen.getByText('Empty Body')

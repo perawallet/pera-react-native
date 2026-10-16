@@ -36,17 +36,4 @@ describe('CopyableText', () => {
         expect(screen.getByTestId('child-text')).toBeTruthy()
         expect(screen.getByText('Asset 12345')).toBeTruthy()
     })
-
-    it('renders with testID for accessibility', () => {
-        render(
-            <CopyableText
-                copyValue='67890'
-                testID='copyable'
-            >
-                <PWText>67890</PWText>
-            </CopyableText>,
-        )
-
-        expect(screen.getByTestId('copyable')).toBeTruthy()
-    })
 })

@@ -17,23 +17,25 @@ import { render, screen } from '@test-utils/render'
 import { ContactAvatar } from '../ContactAvatar'
 
 describe('ContactAvatar', () => {
-    it('renders the person placeholder icon when no contact is provided', () => {
-        render(<ContactAvatar size='sm' />)
-        expect(screen.getByTestId('icon-person')).toBeTruthy()
-    })
-
-    it('renders the person placeholder icon when the contact has no image', () => {
-        const contact: Contact = {
-            id: 'contact-id',
-            name: 'John',
-            addresses: { algorand: 'addr' },
-        }
-        render(
-            <ContactAvatar
-                size='md'
-                contact={contact}
-            />,
-        )
+    it.each<[string, React.ComponentProps<typeof ContactAvatar>]>([
+        ['no contact is provided', { size: 'sm' }],
+        [
+            'the contact has no image',
+            {
+                size: 'md',
+                contact: {
+                    id: 'contact-id',
+                    name: 'John',
+                    addresses: { algorand: 'addr' },
+                },
+            },
+        ],
+        [
+            'the highlighted variant is set without a contact',
+            { size: 'md', variant: 'highlighted' },
+        ],
+    ])('renders the person placeholder icon when %s', (_, props) => {
+        render(<ContactAvatar {...props} />)
         expect(screen.getByTestId('icon-person')).toBeTruthy()
     })
 
@@ -53,19 +55,5 @@ describe('ContactAvatar', () => {
         // When a valid image source is supplied we should NOT fall through to
         // the placeholder.
         expect(screen.queryByTestId('icon-person')).toBeNull()
-    })
-
-    it('renders the person placeholder when the highlighted variant is set without a contact', () => {
-        // `variant` only changes the container background colour and the
-        // placeholder icon's colour variant — both are styling, which the
-        // PWIcon test mock drops and CLAUDE.md excludes from assertions.
-        // A render smoke test is the meaningful coverage here.
-        render(
-            <ContactAvatar
-                size='md'
-                variant='highlighted'
-            />,
-        )
-        expect(screen.getByTestId('icon-person')).toBeTruthy()
     })
 })

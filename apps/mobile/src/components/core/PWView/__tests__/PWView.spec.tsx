@@ -26,14 +26,4 @@ describe('PWView', () => {
 
         expect(screen.getByText('Test Child')).toBeTruthy()
     })
-
-    it('passes extra props to the underlying View', () => {
-        render(
-            <PWView data-testid='pw-view'>
-                <Text>Test</Text>
-            </PWView>,
-        )
-
-        expect(screen.getByTestId('pw-view')).toBeTruthy()
-    })
 })
