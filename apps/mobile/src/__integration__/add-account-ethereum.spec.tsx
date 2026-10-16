@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import React, { useEffect } from 'react'
+import React, { Children, isValidElement, useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
-import { createNavigationContainerRef } from '@react-navigation/native'
 
 import {
     chainAccountOf,
@@ -92,7 +91,9 @@ const seedHdWallet = async (): Promise<WalletAccount> => {
     return account
 }
 
-const additionalScreens = [{ name: 'NameAccount', component: NameAccountScreen }]
+const additionalScreens = [
+    { name: 'NameAccount', component: NameAccountScreen },
+]
 
 const renderImportPrivateKey = () =>
     renderWithNavigation(ImportPrivateKeyScreen, 'ImportPrivateKey', {
@@ -105,11 +106,23 @@ const renderWatchAccount = () =>
         additionalScreens,
     })
 
-const addAccountRouteNames = async (): Promise<string[]> => {
-    const navigationRef = createNavigationContainerRef()
-    render(<AddAccountStackNavigator />, { navigationProps: { ref: navigationRef } })
-    await waitFor(() => expect(navigationRef.isReady()).toBe(true))
-    return navigationRef.getRootState().routeNames
+const screenNamesIn = (node: React.ReactNode): string[] =>
+    Children.toArray(node).flatMap(child => {
+        if (!isValidElement(child)) return []
+        const props = child.props as {
+            name?: string
+            children?: React.ReactNode
+        }
+        return props.name ? [props.name] : screenNamesIn(props.children)
+    })
+
+// The harness swaps in an in-memory navigator, so read the registered screens
+// off the element tree the stack navigator returns.
+const addAccountRouteNames = (): string[] => {
+    const { result } = renderHook(() => AddAccountStackNavigator())
+    return screenNamesIn(
+        (result.current.props as { children: React.ReactNode }).children,
+    )
 }
 
 const importKey = async (key: string): Promise<void> => {
@@ -245,14 +258,14 @@ describe('Flow: Add an Ethereum account', () => {
         expect(ethereumAddressOf(watched[0])).toBe(WATCH_ADDRESS)
     })
 
-    it('Given private keys are on for Ethereum, then the add-account stack registers the private-key import', async () => {
-        expect(await addAccountRouteNames()).toContain('ImportPrivateKey')
+    it('Given private keys are on for Ethereum, then the add-account stack registers the private-key import', () => {
+        expect(addAccountRouteNames()).toContain('ImportPrivateKey')
     })
 
-    it('Given private keys are off for Ethereum, then the add-account stack has no private-key import', async () => {
+    it('Given private keys are off for Ethereum, then the add-account stack has no private-key import', () => {
         setCapabilityOverrides({ privateKeys: false }, ETHEREUM)
 
-        const routeNames = await addAccountRouteNames()
+        const routeNames = addAccountRouteNames()
 
         expect(routeNames).not.toContain('ImportPrivateKey')
         expect(routeNames).toContain('AddAccountHome')
