@@ -86,12 +86,12 @@ describe('pera/no-chain-package-imports', () => {
     it('reports every chain-package import from an app file', async () => {
         const found = await runRule(RULE, FIXTURES)
 
-        expect(inFile(found, 'chain-imports.transitional.ts')).toEqual([
-            'chain-imports.transitional.ts:6',
-            'chain-imports.transitional.ts:7',
-            'chain-imports.transitional.ts:8',
-            'chain-imports.transitional.ts:9',
-            'chain-imports.transitional.ts:10',
+        expect(inFile(found, 'chain-imports.app.ts')).toEqual([
+            'chain-imports.app.ts:6',
+            'chain-imports.app.ts:7',
+            'chain-imports.app.ts:8',
+            'chain-imports.app.ts:9',
+            'chain-imports.app.ts:10',
         ])
     })
 
