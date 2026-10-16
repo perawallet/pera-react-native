@@ -11,7 +11,7 @@
  */
 
 import {
-    useAccountChainId,
+    chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -34,12 +34,13 @@ export const useAssetActionButtons = (
     // only belongs on this screen when it runs on the asset's own chain.
     const swapChainId = useSwapScope(account ?? null)?.chainId
     const onrampChainId = useOnrampScope(account?.chains ?? null)?.chainId
-    // Send runs on the account's own chain, which must also be the asset's.
+    // A send runs on the asset's chain, whichever of the account's chains that is.
     const canSendOnChain = useChainCapability(chainId, 'send')
-    const accountChainId = useAccountChainId(account, chainId)
     return {
         canSwap: swapChainId === chainId,
         canBuy: onrampChainId === chainId,
-        canSend: canSendOnChain && accountChainId === chainId,
+        canSend:
+            canSendOnChain &&
+            (!account || chainAccountOf(account, chainId) !== undefined),
     }
 }

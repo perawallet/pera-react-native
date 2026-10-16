@@ -634,11 +634,31 @@ describe('resolveInitialContext: chain-neutral transaction requests', () => {
             expect(approve).toHaveBeenCalledWith([signed], submission)
         })
 
-        it('wires approve on a local self-submit that waits on the submitted ids', async () => {
+        it('carries no callbacks on a local algod request, whatever callbacks it holds', () => {
             const base = input([makeUnsignedTransaction(OURS)])
             const source = resolveInitialContext({
                 ...base,
-                request: { ...base.request, sourceType: 'local', approve },
+                request: {
+                    ...base.request,
+                    sourceType: 'local',
+                    transport: 'algod',
+                    approve,
+                },
+            }).signableGroups![0].source
+
+            expect(source).toEqual({ type: 'local' })
+        })
+
+        it('wires approve on a local submit-and-answer request', async () => {
+            const base = input([makeUnsignedTransaction(OURS)])
+            const source = resolveInitialContext({
+                ...base,
+                request: {
+                    ...base.request,
+                    sourceType: 'local',
+                    transport: 'submit-and-answer',
+                    approve,
+                },
             }).signableGroups![0].source
             const submission = { txIds: ['tx-id'] }
 

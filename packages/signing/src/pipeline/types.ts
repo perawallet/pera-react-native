@@ -21,7 +21,7 @@ import type {
     SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { PeraArbitraryDataMessage } from '../models'
+import type { PeraArbitraryDataMessage, SignRequestTransport } from '../models'
 import type { SubmissionHistoryEntry } from '../db/types'
 
 /** Algorand transactions in the shape Algorand's sources build and decode. */
@@ -183,12 +183,11 @@ export interface SourceMetadata {
     type: SourceType
 
     /**
-     * `'algod'` (implicit default for local requests) submits to the network;
-     * `'callback'` hands signed bytes back via `callbacks.approve`. External
-     * sources always deliver via their own transport regardless — the selector
-     * dispatches on `type` first.
+     * See {@link SignRequestTransport}; `'algod'` is the implicit default for
+     * local requests. External sources always deliver via their own transport
+     * regardless — the selector dispatches on `type` first.
      */
-    transport?: 'algod' | 'callback'
+    transport?: SignRequestTransport
 
     peerMetadata?: { name?: string; url?: string; icons?: string[] }
 

@@ -12,13 +12,17 @@
 
 import { create } from 'zustand'
 import type { Decimal } from 'decimal.js'
-import type { FeePreset } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AssetRef,
+    FeePreset,
+} from '@perawallet/wallet-core-chain-contract'
 import { registerStore } from '@perawallet/wallet-core-shared'
 
 type SendMode = 'normal' | 'express' | 'sendArc59'
 
 type SendFundsState = {
-    selectedAssetId?: string
+    /** The asset sent; its chain is the chain the whole send runs on. */
+    selectedAsset?: AssetRef
     canSelectAsset: boolean
     amount?: Decimal
     /**
@@ -45,7 +49,7 @@ type SendFundsState = {
 }
 
 type SendFundsActions = {
-    setSelectedAssetId: (id?: string) => void
+    setSelectedAsset: (asset?: AssetRef) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
     setPendingAmountBaseUnits: (raw?: string) => void
@@ -64,7 +68,7 @@ type SendFundsActions = {
 type SendFundsStore = SendFundsState & SendFundsActions
 
 const initialState: SendFundsState = {
-    selectedAssetId: undefined,
+    selectedAsset: undefined,
     canSelectAsset: true,
     amount: undefined,
     pendingAmountBaseUnits: undefined,
@@ -80,7 +84,7 @@ const initialState: SendFundsState = {
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
     ...initialState,
-    setSelectedAssetId: id => set({ selectedAssetId: id }),
+    setSelectedAsset: asset => set({ selectedAsset: asset }),
     setCanSelectAsset: canSelect => set({ canSelectAsset: canSelect }),
     setAmount: amount => set({ amount }),
     setPendingAmountBaseUnits: raw => set({ pendingAmountBaseUnits: raw }),
@@ -107,6 +111,7 @@ registerStore({
 // Explicit return types for decoupled access
 
 type UseSendFundsResult = {
+    selectedAsset?: AssetRef
     selectedAssetId?: string
     canSelectAsset: boolean
     amount?: Decimal
@@ -119,7 +124,7 @@ type UseSendFundsResult = {
     isCloseAccount: boolean
     shouldContinueToConfirm: boolean
     feePreset: FeePreset
-    setSelectedAssetId: (id?: string) => void
+    setSelectedAsset: (asset?: AssetRef) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
     setPendingAmountBaseUnits: (raw?: string) => void
@@ -135,7 +140,7 @@ type UseSendFundsResult = {
 }
 
 export const useSendFunds = (): UseSendFundsResult => {
-    const selectedAssetId = useSendFundsStore(state => state.selectedAssetId)
+    const selectedAsset = useSendFundsStore(state => state.selectedAsset)
     const canSelectAsset = useSendFundsStore(state => state.canSelectAsset)
     const amount = useSendFundsStore(state => state.amount)
     const pendingAmountBaseUnits = useSendFundsStore(
@@ -146,9 +151,7 @@ export const useSendFunds = (): UseSendFundsResult => {
     const onFinished = useSendFundsStore(state => state.onFinished)
     const sendMode = useSendFundsStore(state => state.sendMode)
     const arc59Summary = useSendFundsStore(state => state.arc59Summary)
-    const setSelectedAssetId = useSendFundsStore(
-        state => state.setSelectedAssetId,
-    )
+    const setSelectedAsset = useSendFundsStore(state => state.setSelectedAsset)
     const setCanSelectAsset = useSendFundsStore(
         state => state.setCanSelectAsset,
     )
@@ -176,7 +179,8 @@ export const useSendFunds = (): UseSendFundsResult => {
     const reset = useSendFundsStore(state => state.reset)
 
     return {
-        selectedAssetId,
+        selectedAsset,
+        selectedAssetId: selectedAsset?.assetId,
         canSelectAsset,
         amount,
         pendingAmountBaseUnits,
@@ -188,7 +192,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         isCloseAccount,
         shouldContinueToConfirm,
         feePreset,
-        setSelectedAssetId,
+        setSelectedAsset,
         setCanSelectAsset,
         setAmount,
         setPendingAmountBaseUnits,

@@ -277,7 +277,7 @@ describe('useSignAndSubmitGroup', () => {
         await captured?.approve?.([], { txIds: ['0xhash'] })
 
         await expect(promise).resolves.toEqual({ txIds: ['0xhash'] })
-        expect(captured?.transport).toBe('algod')
+        expect(captured?.transport).toBe('submit-and-answer')
         expect(captured?.sourceType).toBe('local')
         expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })

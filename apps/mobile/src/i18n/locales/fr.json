@@ -2728,6 +2728,14 @@
             "recipient_below_mbr": {
                 "title": "Montant inférieur au minimum du destinataire",
                 "body": "Le destinataire doit disposer d’au moins {{min}} ALGO après cette transaction pour respecter le solde minimum requis par Algorand."
+            },
+            "fee_shortfall": {
+                "title": "Pas assez de {{symbol}} pour les frais",
+                "body": "Cet envoi peut coûter jusqu’à {{fee}} de frais. Réduisez le montant ou choisissez des frais plus lents."
+            },
+            "fee_unavailable": {
+                "title": "Impossible d’estimer les frais",
+                "body": "Vérifiez votre connexion et réessayez."
             }
         },
         "processing": {

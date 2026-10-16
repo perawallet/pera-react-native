@@ -14,19 +14,20 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    plannerChainAdapters,
-    useMinFeeForSender,
-} from '@perawallet/wallet-core-signing'
-import { useTransferFeeEstimateQuery } from '@perawallet/wallet-core-transactions'
-import { useSendFee } from '../useSendFee'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
+import { sendFlowChainAdapters } from '../../chain-adapter'
+import { useTransferFeeEstimateQuery } from '../useTransferFeeEstimateQuery'
+import { useSendFeeQuery } from '../useSendFeeQuery'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    plannerChainAdapters: { has: vi.fn() },
     useMinFeeForSender: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-transactions', () => ({
+vi.mock('../../chain-adapter', () => ({
+    sendFlowChainAdapters: { has: vi.fn() },
+}))
+
+vi.mock('../useTransferFeeEstimateQuery', () => ({
     useTransferFeeEstimateQuery: vi.fn(),
 }))
 
@@ -39,10 +40,10 @@ const PRESETS = {
     fast: { amount: new Decimal(50), maxAmount: new Decimal(60) },
 }
 
-describe('useSendFee', () => {
+describe('useSendFeeQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(plannerChainAdapters.has as Mock).mockImplementation(
+        ;(sendFlowChainAdapters.has as Mock).mockImplementation(
             (chainId: string) => chainId === 'algorand',
         )
         ;(useMinFeeForSender as Mock).mockReturnValue({
@@ -56,14 +57,14 @@ describe('useSendFee', () => {
         })
     })
 
-    it("keeps the planner's sender fee on a chain with a planner", () => {
+    it('keeps the PQ-aware sender fee on a chain with a send-flow adapter', () => {
         ;(useMinFeeForSender as Mock).mockReturnValue({
             minFee: 3000n,
             isPending: false,
         })
 
         const { result } = renderHook(() =>
-            useSendFee({
+            useSendFeeQuery({
                 scope: ALGORAND,
                 senderAddress: 'SENDER',
                 assetId: '0',
@@ -78,12 +79,13 @@ describe('useSendFee', () => {
             maxFeeAmount: new Decimal(3000),
             presets: undefined,
             isPending: false,
+            isError: false,
         })
     })
 
-    it('prices the transfer through the transfer adapter on a chain without one', () => {
+    it('prices the transfer through the transfer adapter on a chain without a send-flow adapter', () => {
         renderHook(() =>
-            useSendFee({
+            useSendFeeQuery({
                 scope: ETHEREUM,
                 senderAddress: '0xSENDER',
                 assetId: 'native',
@@ -107,7 +109,7 @@ describe('useSendFee', () => {
 
     it('prices against the sender before a receiver and amount are chosen', () => {
         renderHook(() =>
-            useSendFee({
+            useSendFeeQuery({
                 scope: ETHEREUM,
                 senderAddress: '0xSENDER',
                 assetId: 'native',
@@ -137,7 +139,7 @@ describe('useSendFee', () => {
         })
 
         const { result } = renderHook(() =>
-            useSendFee({
+            useSendFeeQuery({
                 scope: ETHEREUM,
                 senderAddress: '0xSENDER',
                 assetId: 'native',
@@ -152,7 +154,7 @@ describe('useSendFee', () => {
 
     it('estimates nothing until the sender and asset are known', () => {
         const { result } = renderHook(() =>
-            useSendFee({
+            useSendFeeQuery({
                 scope: ETHEREUM,
                 senderAddress: undefined,
                 assetId: 'native',
@@ -161,6 +163,26 @@ describe('useSendFee', () => {
         )
 
         expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith(undefined)
+        expect(result.current.maxFeeAmount).toBeUndefined()
+    })
+
+    it('reports a failed estimate as an error rather than a zero fee', () => {
+        ;(useTransferFeeEstimateQuery as Mock).mockReturnValue({
+            data: undefined,
+            isPending: false,
+            isError: true,
+        })
+
+        const { result } = renderHook(() =>
+            useSendFeeQuery({
+                scope: ETHEREUM,
+                senderAddress: '0xSENDER',
+                assetId: 'native',
+                feePreset: 'normal',
+            }),
+        )
+
+        expect(result.current.isError).toBe(true)
         expect(result.current.maxFeeAmount).toBeUndefined()
     })
 })

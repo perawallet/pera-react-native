@@ -168,12 +168,9 @@ const buildSourceMetadata = (
     scope: ChainScope,
 ): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
-    const isLocalAlgod =
-        sourceType === 'local' && request.transport !== 'callback'
+    const isLocalAlgod = sourceType === 'local' && request.transport === 'algod'
 
-    // A self-submitted local request carries callbacks only when its caller
-    // waits on the submitted ids, which the chain's submit transport answers.
-    if (isLocalAlgod && !request.approve) {
+    if (isLocalAlgod) {
         return { type: 'local' }
     }
 

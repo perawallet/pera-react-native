@@ -2728,6 +2728,14 @@
             "recipient_below_mbr": {
                 "title": "Miktar alıcının minimumunun altında",
                 "body": "Algorand’ın minimum bakiye gereksinimini karşılamak için alıcının bu işlemden sonra en az {{min}} ALGO’ya sahip olması gerekiyor."
+            },
+            "fee_shortfall": {
+                "title": "Ücret için yeterli {{symbol}} yok",
+                "body": "Bu gönderim en fazla {{fee}} ücret tutabilir. Miktarı azalt veya daha yavaş bir ücret seç."
+            },
+            "fee_unavailable": {
+                "title": "Ücret tahmin edilemedi",
+                "body": "Bağlantını kontrol et ve tekrar dene."
             }
         },
         "processing": {

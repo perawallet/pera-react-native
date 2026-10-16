@@ -17,14 +17,12 @@ import type {
     FeeEstimate,
     FeePreset,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    plannerChainAdapters,
-    useMinFeeForSender,
-} from '@perawallet/wallet-core-signing'
-import { useTransferFeeEstimateQuery } from '@perawallet/wallet-core-transactions'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { sendFlowChainAdapters } from '../chain-adapter'
+import { useTransferFeeEstimateQuery } from './useTransferFeeEstimateQuery'
 
-type UseSendFeeParams = {
+export type SendFeeQueryInput = {
     scope: ChainScope
     senderAddress: Optional<string>
     assetId: Optional<string>
@@ -35,7 +33,7 @@ type UseSendFeeParams = {
     feePreset: FeePreset
 }
 
-export type UseSendFeeResult = {
+export type UseSendFeeQueryResult = {
     /** Base units of the native asset: the expected cost at `feePreset`. */
     feeAmount: Optional<Decimal>
     /** Base units of the native asset: the most the send can be charged, which balances must cover. */
@@ -43,23 +41,27 @@ export type UseSendFeeResult = {
     /** Set on a chain that prices speeds. */
     presets: FeeEstimate['presets']
     isPending: boolean
+    /** The estimate failed: the fee is unknown, never zero. */
+    isError: boolean
 }
 
 const ZERO = new Decimal(0)
 
 /**
- * A chain with a fee planner keeps its PQ-aware minimum fee, the one its send
- * build applies; any other chain is priced by its transfer adapter.
+ * The fee a send will be built with. It picks its path with the same check
+ * `useTransactionSendFlow` builds with: a chain with a send-flow adapter keeps
+ * its PQ-aware minimum fee, and any other chain is priced by its transfer
+ * adapter.
  */
-export const useSendFee = ({
+export const useSendFeeQuery = ({
     scope,
     senderAddress,
     assetId,
     recipient,
     amount,
     feePreset,
-}: UseSendFeeParams): UseSendFeeResult => {
-    const hasPlanner = plannerChainAdapters.has(scope.chainId)
+}: SendFeeQueryInput): UseSendFeeQueryResult => {
+    const hasSendFlow = sendFlowChainAdapters.has(scope.chainId)
     const { minFee, isPending: isMinFeePending } = useMinFeeForSender(
         senderAddress,
         scope.chainId,
@@ -67,7 +69,7 @@ export const useSendFee = ({
 
     const estimateInput = useMemo(
         () =>
-            !hasPlanner && senderAddress && assetId
+            !hasSendFlow && senderAddress && assetId
                 ? {
                       intent: {
                           kind: 'transfer' as const,
@@ -79,13 +81,16 @@ export const useSendFee = ({
                       scope,
                   }
                 : undefined,
-        [hasPlanner, senderAddress, assetId, recipient, amount, scope],
+        [hasSendFlow, senderAddress, assetId, recipient, amount, scope],
     )
-    const { data: estimate, isPending: isEstimatePending } =
-        useTransferFeeEstimateQuery(estimateInput)
+    const {
+        data: estimate,
+        isPending: isEstimatePending,
+        isError: isEstimateError,
+    } = useTransferFeeEstimateQuery(estimateInput)
 
     return useMemo(() => {
-        if (hasPlanner) {
+        if (hasSendFlow) {
             const fee =
                 minFee !== undefined
                     ? new Decimal(minFee.toString())
@@ -95,6 +100,7 @@ export const useSendFee = ({
                 maxFeeAmount: fee,
                 presets: undefined,
                 isPending: isMinFeePending,
+                isError: false,
             }
         }
         const preset = estimate?.presets?.[feePreset]
@@ -103,13 +109,15 @@ export const useSendFee = ({
             maxFeeAmount: preset?.maxAmount ?? estimate?.amount,
             presets: estimate?.presets,
             isPending: isEstimatePending,
+            isError: isEstimateError,
         }
     }, [
-        hasPlanner,
+        hasSendFlow,
         minFee,
         isMinFeePending,
         estimate,
         feePreset,
         isEstimatePending,
+        isEstimateError,
     ])
 }

@@ -29,6 +29,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import {
+    upsertAccountChainState,
     useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
@@ -160,6 +161,15 @@ const seedEthereumAssets = async () => {
     })
 }
 
+// The confirm step checks the synced native balance covers the worst-case fee.
+const seedSenderEther = (wei: string) =>
+    upsertAccountChainState({
+        accountAddress: SENDER,
+        scope: ETH_SCOPE,
+        nativeBalance: new Decimal(wei),
+        chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
+    })
+
 const renderSendConfirmationStack = () =>
     renderWithNavigation(TransactionConfirmationScreen, 'ConfirmTransaction', {
         additionalScreens: [
@@ -202,6 +212,7 @@ describe('Flow: send from an Ethereum account', () => {
     beforeEach(async () => {
         await resetTestDatabase()
         await seedEthereumAssets()
+        await seedSenderEther('10000000000000000000')
         useAccountsStore.getState().setAccounts([])
         useAccountChainStateStore.getState().resetState()
         useSendFundsStore.getState().reset()
@@ -231,7 +242,9 @@ describe('Flow: send from an Ethereum account', () => {
 
     it('Given an ether send, when the user confirms, then an EIP-1559 transfer to the receiver reaches the node', async () => {
         selectSender(ETHEREUM_SENDER)
-        useSendFundsStore.getState().setSelectedAssetId('native')
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
         useSendFundsStore.getState().setAmount(new Decimal('0.5'))
         useSendFundsStore.getState().setDestination(RECEIVER)
         useSendFundsStore.getState().setSendMode('normal')
@@ -251,9 +264,69 @@ describe('Flow: send from an Ethereum account', () => {
         })
     })
 
+    it("Given an account on Algorand and Ethereum, when it sends ether, then the send runs on the asset's chain", async () => {
+        selectSender({
+            ...ETHEREUM_SENDER,
+            chains: {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: 'algo-key',
+                },
+                ...ETHEREUM_SENDER.chains,
+            },
+        })
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+        await confirmSend()
+
+        expect(sentRawTransactions).toHaveLength(1)
+        expect((await sentRecord())?.summary).toMatchObject({
+            kind: 'transfer',
+            counterparty: RECEIVER,
+            amount: { assetRef: { chainId: 'ethereum', assetId: 'native' } },
+        })
+    })
+
+    it("Given an ether send the balance can't cover with its worst-case fee, when the user confirms, then nothing reaches the node", async () => {
+        await seedSenderEther('500000000000000000')
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+        const confirmButton = await screen.findByTestId(
+            'send_confirm_button',
+            {},
+            { timeout: 5000 },
+        )
+        await waitFor(() =>
+            expect(isElementDisabled(confirmButton)).toBe(false),
+        )
+
+        // Confirm waits on the balance and fee reads; press until it answers.
+        await waitFor(() => {
+            fireEvent.click(confirmButton)
+            expect(Notifier.showNotification).toHaveBeenCalled()
+        })
+        expect(screen.queryByTestId('send_success')).toBeNull()
+        expect(sentRawTransactions).toHaveLength(0)
+    })
+
     it('Given an ERC-20 send, when the user confirms, then a token transfer call reaches the node', async () => {
         selectSender(ETHEREUM_SENDER)
-        useSendFundsStore.getState().setSelectedAssetId(TOKEN)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: TOKEN })
         useSendFundsStore.getState().setAmount(new Decimal('12.5'))
         useSendFundsStore.getState().setDestination(RECEIVER)
         useSendFundsStore.getState().setSendMode('normal')
@@ -274,7 +347,9 @@ describe('Flow: send from an Ethereum account', () => {
 
     it('Given an Ethereum account, when an Algorand address is the receiver, then the send refuses it', async () => {
         selectSender(ETHEREUM_SENDER)
-        useSendFundsStore.getState().setSelectedAssetId('native')
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
         useSendFundsStore.getState().setAmount(new Decimal('0.5'))
         useSendFundsStore.getState().setDestination(ALGO25_TEST_ADDRESS)
 
@@ -294,7 +369,9 @@ describe('Flow: send from an Ethereum account', () => {
     it('Given an Algorand account, when a 0x address is the receiver, then the send refuses it', async () => {
         await seedAlgoAsset('mainnet')
         selectSender(ALGORAND_SENDER)
-        useSendFundsStore.getState().setSelectedAssetId('0')
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: '0' })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER)
 

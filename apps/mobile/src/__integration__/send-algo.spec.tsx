@@ -157,7 +157,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given a pre-filled send-funds store, when the user taps the confirm button, then the pipeline signs locally, POSTs to algod, and the success screen renders', async () => {
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -213,7 +215,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given the recipient-info lookup is still in flight, when the confirmation screen mounts, then the confirm button is disabled but not in the loading state', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -261,7 +265,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
     it('Given the confirmation screen is mounted with no destination, when the user taps confirm, then an error toast is raised and submission does not happen', async () => {
         await seedAlgo25Sender()
         // Intentionally no destination.
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setSendMode('normal')
 
@@ -333,7 +339,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         useAccountsStore.getState().setAccounts([rekeyedAccount, authAccount])
         useAccountsStore.getState().setSelectedAccountId(rekeyedAccount.id)
 
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(ALGO25_TEST_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -415,7 +423,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when algod rejects the submission, then the processing screen surfaces an error toast, navigates back to confirmation, and never reaches success', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -480,7 +490,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces an error toast and returns to confirmation without reaching success', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -538,7 +550,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -593,7 +607,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given valid send params, when algod answers "transaction already in ledger", then the send resolves as success', async () => {
         await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -643,7 +659,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given the keystore reports the signing key missing, when the user confirms the send, then the toast carries the KMS copy, nothing is submitted, and the flow returns to Confirm', async () => {
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -705,7 +723,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
     it('Given the keystore throws an untyped error while signing, when the user confirms the send, then the toast carries the signing-specific copy rather than the generic banner', async () => {
         const sender = await seedAlgo25Sender()
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
@@ -781,7 +801,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         useAccountsStore.getState().setAccounts([rekeyedAccount])
         useAccountsStore.getState().setSelectedAccountId(rekeyedAccount.id)
 
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(ALGO25_TEST_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

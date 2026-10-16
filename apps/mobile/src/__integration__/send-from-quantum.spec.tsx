@@ -169,7 +169,9 @@ describe('send from quantum account', () => {
     it('Given a real quantum sender, when the send confirmation screen settles, then it shows the 0.003 ALGO quantum fee and the quantum-fee explainer', async () => {
         await seedQuantumSender()
 
-        useSendFundsStore.getState().setSelectedAssetId(NATIVE_ASSET_ID)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')

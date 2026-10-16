@@ -39,6 +39,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     displayUnitsToBaseUnits,
+    displayUnitsToBaseUnitsBigInt,
     logger,
     type Nullable,
     toBigInt,
@@ -279,13 +280,7 @@ export const useTransactionSendFlow = (
                 throw new AssetFrozenError(params.asset.assetId)
             }
 
-            const assetDecimals = params.asset?.decimals ?? 0
-            const amountInBaseUnits = BigInt(
-                displayUnitsToBaseUnits(
-                    params.amount,
-                    assetDecimals,
-                ).toString(),
-            )
+            const assetDecimals = params.asset.decimals ?? 0
 
             switch (params.sendMode) {
                 case 'express': {
@@ -293,7 +288,10 @@ export const useTransactionSendFlow = (
                         sender: senderAddress,
                         receiver: params.receiver,
                         assetId: BigInt(params.asset.assetId),
-                        amount: amountInBaseUnits,
+                        amount: displayUnitsToBaseUnitsBigInt(
+                            params.amount,
+                            assetDecimals,
+                        ),
                     })
                     const result = await submit({
                         scope,
@@ -320,7 +318,10 @@ export const useTransactionSendFlow = (
                         sender: senderAddress,
                         receiver: params.receiver,
                         assetId: BigInt(params.asset.assetId),
-                        amount: amountInBaseUnits,
+                        amount: displayUnitsToBaseUnitsBigInt(
+                            params.amount,
+                            assetDecimals,
+                        ),
                         summary: params.arc59Summary,
                         senderMinFee,
                     })

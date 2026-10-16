@@ -15,14 +15,24 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    useAccountScope,
+    useAccountChainId,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useSendFundsStore } from './useSendFunds'
 
 /**
- * The chain a send runs on: the selected account's own, at that chain's
- * selected network. There is no chain picker, so switching the selected
- * account is what moves the flow to another chain.
+ * The chain a send runs on: the selected asset's, at that chain's selected
+ * network. An account can hold addresses on several chains, so only before an
+ * asset is picked does it fall back to the account's first chain.
  */
-export const useSendScope = (): ChainScope =>
-    useAccountScope(useSelectedAccount(), LEGACY_CHAIN_ID)
+export const useSendScope = (): ChainScope => {
+    const selectedChainId = useSendFundsStore(
+        state => state.selectedAsset?.chainId,
+    )
+    const accountChainId = useAccountChainId(
+        useSelectedAccount(),
+        LEGACY_CHAIN_ID,
+    )
+    return useSelectedScope(selectedChainId ?? accountChainId)
+}

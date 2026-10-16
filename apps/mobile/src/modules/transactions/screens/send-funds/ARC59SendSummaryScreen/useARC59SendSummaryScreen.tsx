@@ -26,6 +26,8 @@ import {
     toWholeUnits,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     ALGO_ASSET_NAME,
     formatCurrency,
@@ -35,7 +37,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { ARC59WarningContent } from '@modules/transactions/components/send-funds/ARC59WarningContent'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
@@ -61,7 +63,7 @@ type UseARC59SendSummaryScreenResult = {
 
 export const useARC59SendSummaryScreen =
     (): UseARC59SendSummaryScreenResult => {
-        const scope = useSendScope()
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const nativeAsset = useNativeAsset(scope)
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()

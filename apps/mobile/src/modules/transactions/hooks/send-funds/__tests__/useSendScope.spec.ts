@@ -10,33 +10,55 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    useAccountScope,
+    useAccountChainId,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useSendFundsStore } from '../useSendFunds'
 import { useSendScope } from '../useSendScope'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
-    useAccountScope: vi.fn(),
+    useAccountChainId: vi.fn(),
 }))
 
+const TWO_CHAIN_ACCOUNT = {
+    id: 'two-chain',
+    custody: { kind: 'local', seed: null },
+    chains: {
+        algorand: { address: 'ALGO' },
+        ethereum: { address: '0xabc' },
+    },
+}
+
 describe('useSendScope', () => {
-    it("runs the send on the selected account's own chain", () => {
-        const account = {
-            id: 'eth',
-            custody: { kind: 'local', seed: null },
-            chains: { ethereum: { address: '0xabc' } },
-        }
-        const scope = { chainId: 'ethereum', networkId: 'sepolia' } as const
-        vi.mocked(useSelectedAccount).mockReturnValue(account as never)
-        vi.mocked(useAccountScope).mockReturnValue(scope)
+    beforeEach(() => {
+        useSendFundsStore.getState().reset()
+        vi.mocked(useSelectedAccount).mockReturnValue(
+            TWO_CHAIN_ACCOUNT as never,
+        )
+        vi.mocked(useAccountChainId).mockReturnValue('algorand')
+    })
+
+    it("runs the send on the selected asset's chain, not the account's first", () => {
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
 
         const { result } = renderHook(() => useSendScope())
 
-        expect(useAccountScope).toHaveBeenCalledWith(account, 'algorand')
-        expect(result.current).toBe(scope)
+        expect(result.current.chainId).toBe('ethereum')
+    })
+
+    it("falls back to the account's chain before an asset is picked", () => {
+        const { result } = renderHook(() => useSendScope())
+
+        expect(useAccountChainId).toHaveBeenCalledWith(
+            TWO_CHAIN_ACCOUNT,
+            'algorand',
+        )
+        expect(result.current.chainId).toBe('algorand')
     })
 })

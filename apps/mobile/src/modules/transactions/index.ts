@@ -16,6 +16,10 @@ export { QuantumFeeExplainer } from './components/QuantumFeeExplainer'
 export { TransactionDateHeader } from './components/TransactionDateHeader'
 export { TransactionListItem } from './components/TransactionListItem'
 export { useReceiveFunds, useSendFunds, useSendFundsStore } from './hooks'
+export type {
+    SendConfirmationDisplay,
+    SendTrailingSectionProps,
+} from './types/send-confirmation-display'
 export {
     buildTransactionListRows,
     getTransactionRowKey,

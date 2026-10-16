@@ -16,6 +16,7 @@ import type { ChainUi } from '@modules/chain-ui'
 import { AlgorandTransactionDetailBody } from './components/AlgorandTransactionDetailBody'
 import { AlgorandTransactionPreviewRow } from './components/AlgorandTransactionPreviewRow'
 import { AlgorandTransactionReviewBody } from './components/AlgorandTransactionReviewBody'
+import { AlgorandSendNoteSection } from './components/AlgorandSendNoteSection'
 import { AssetSecurityTags } from './components/AssetSecurityTags'
 import { AssetVerificationCard } from './components/AssetVerificationCard'
 
@@ -51,5 +52,8 @@ export const algorandChainUi: ChainUi = {
         VerificationSection: AssetVerificationCard,
         IssuerControlsSection: AssetSecurityTags,
         resolveAbout: resolveAlgorandAssetAbout,
+    },
+    sendConfirmation: {
+        TrailingSection: AlgorandSendNoteSection,
     },
 }

@@ -10,9 +10,19 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import {
+    describe,
+    it,
+    expect,
+    beforeEach,
+    afterEach,
+    vi,
+    type Mock,
+} from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { chainUiFor } from '@modules/chain-ui'
 import { useTransactionConfirmationScreen } from '../useTransactionConfirmationScreen'
+import { NeutralSendFeeSection } from '../NeutralSendFeeSection'
 import { Decimal } from 'decimal.js'
 import {
     useSelectedAccount,
@@ -27,7 +37,10 @@ import {
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
+    sendFlowChainAdapters,
     useRecipientWarningQuery,
+    useSendFeeQuery,
+    useSpendableBalanceQuery,
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -36,7 +49,7 @@ import {
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useToast } from '@hooks/useToast'
-import { useSendFee, useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { capabilityState } from '@test-utils/capability-mock'
 
 const mockNavigate = vi.fn()
@@ -104,7 +117,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useMinFeeForSender: vi.fn(),
 }))
 
-const NATIVE_ASSET = vi.hoisted(() => ({ id: '0', decimals: 6 }))
+const NATIVE_ASSET = vi.hoisted(() => ({
+    id: '0',
+    assetId: '0',
+    decimals: 6,
+    unitName: 'ALGO',
+}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
@@ -133,7 +151,11 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useSelectedScope: vi.fn(),
-    getChainDescriptor: vi.fn(() => ({ protocol: { maxNoteBytes: 1024 } })),
+    getChainDescriptor: vi.fn(() => ({ family: 'algorand' })),
+}))
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: vi.fn(() => ({})),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -141,9 +163,12 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         await vi.importActual<
             typeof import('@packages/shared/src/utils/unit-conversion')
         >('@packages/shared/src/utils/unit-conversion')
+    const { Decimal: ActualDecimal } = await import('decimal.js')
     return {
         DEFAULT_PRECISION: 2,
+        ZERO_DECIMAL: new ActualDecimal(0),
         formatCurrency: vi.fn(() => '10.00'),
+        formatNumber: (amount: Decimal) => amount.toFixed(),
         displayUnitsToBaseUnits,
         displayUnitsToBaseUnitsBigInt,
         toBigInt,
@@ -156,17 +181,28 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-// useSendFee's own branching is pinned in its spec; here it stands on the
-// planner fee, as it does on Algorand.
 vi.mock('@modules/transactions/hooks', async () => {
-    const { useMinFeeForSender } =
-        await import('@perawallet/wallet-core-signing')
     const { useSelectedScope } =
         await import('@perawallet/wallet-core-chain-shared')
     return {
         useSendFunds: vi.fn(),
         useSendScope: () => useSelectedScope('algorand'),
-        useSendFee: vi.fn(
+    }
+})
+
+// useSendFeeQuery's own branching is pinned in its spec; here it stands on the
+// planner fee, as it does on Algorand.
+vi.mock('@perawallet/wallet-core-transactions', async () => {
+    const { useMinFeeForSender } =
+        await import('@perawallet/wallet-core-signing')
+    return {
+        useRecipientWarningQuery: vi.fn(),
+        sendFlowChainAdapters: { has: vi.fn(() => true) },
+        useSpendableBalanceQuery: vi.fn(() => ({
+            data: undefined,
+            isPending: false,
+        })),
+        useSendFeeQuery: vi.fn(
             ({
                 senderAddress,
                 scope,
@@ -187,15 +223,12 @@ vi.mock('@modules/transactions/hooks', async () => {
                     maxFeeAmount: fee,
                     presets: undefined,
                     isPending,
+                    isError: false,
                 }
             },
         ),
     }
 })
-
-vi.mock('@perawallet/wallet-core-transactions', () => ({
-    useRecipientWarningQuery: vi.fn(),
-}))
 
 const RECIPIENT_WARNING: ChainNotice = {
     title: {
@@ -433,6 +466,138 @@ describe('useTransactionConfirmationScreen', () => {
         })
     })
 
+    describe('fee coverage on a chain priced by its transfer adapter', () => {
+        const ETH_FEE = {
+            feeAmount: new Decimal(300),
+            maxFeeAmount: new Decimal(500),
+            presets: undefined,
+            isPending: false,
+            isError: false,
+        }
+
+        const confirmNativeSend = (amount: Decimal) => {
+            ;(sendFlowChainAdapters.has as Mock).mockReturnValue(false)
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: '0',
+                amount,
+                destination: 'DEST_ADDRESS',
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['0', { ...NATIVE_ASSET, decimals: 0 }]]),
+            })
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+            act(() => {
+                result.current.handleConfirm()
+            })
+        }
+
+        // clearAllMocks keeps a mockReturnValue, so put the planner-fee
+        // default back for the suites after this one.
+        const plannerFee = (useSendFeeQuery as Mock).getMockImplementation()
+
+        beforeEach(() => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(ETH_FEE)
+        })
+
+        afterEach(() => {
+            ;(sendFlowChainAdapters.has as Mock).mockReturnValue(true)
+            ;(useSendFeeQuery as Mock).mockImplementation(plannerFee!)
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: undefined,
+                isPending: false,
+            })
+        })
+
+        it("blocks a send whose amount plus the preset's worst-case fee exceeds the native balance", () => {
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(1000), max: new Decimal(1000) },
+                isPending: false,
+            })
+
+            confirmNativeSend(new Decimal(600))
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.confirmation.fee_shortfall.title',
+                }),
+                expect.anything(),
+            )
+        })
+
+        it('confirms a send the native balance covers at the worst-case fee', () => {
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(1000), max: new Decimal(1000) },
+                isPending: false,
+            })
+
+            confirmNativeSend(new Decimal(500))
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
+        })
+
+        it('blocks a token send when the native balance cannot pay the fee', () => {
+            ;(sendFlowChainAdapters.has as Mock).mockReturnValue(false)
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(100), max: new Decimal(100) },
+                isPending: false,
+            })
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: mockSelectedAssetId,
+                amount: new Decimal(10),
+                destination: 'DEST_ADDRESS',
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['123', mockAsset]]),
+            })
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            act(() => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.confirmation.fee_shortfall.title',
+                }),
+                expect.anything(),
+            )
+        })
+
+        it('blocks the send when the fee could not be estimated', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue({
+                ...ETH_FEE,
+                maxFeeAmount: undefined,
+                isError: true,
+            })
+
+            confirmNativeSend(new Decimal(1))
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'send_funds.confirmation.fee_unavailable.title',
+                }),
+                expect.anything(),
+            )
+        })
+
+        it('reads no native balance on a chain with a send-flow adapter', () => {
+            renderHook(() => useTransactionConfirmationScreen())
+
+            expect(useSpendableBalanceQuery).toHaveBeenCalledWith(undefined)
+        })
+    })
+
     describe('recipient warning', () => {
         const setupAlgoSend = (amount: Decimal) => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
@@ -549,25 +714,35 @@ describe('useTransactionConfirmationScreen', () => {
         })
     })
 
-    describe('note state', () => {
-        it('offers a note on a chain whose transactions carry one', () => {
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.canAddNote).toBe(true)
-        })
-
-        it('offers no note on a chain without a note field', () => {
-            ;(getChainDescriptor as Mock).mockReturnValueOnce({
-                protocol: {},
+    describe("the chain's send-confirmation sections", () => {
+        it("renders the sections from the send chain's family", () => {
+            const FeeSection = () => null
+            const TrailingSection = () => null
+            ;(getChainDescriptor as Mock).mockReturnValue({ family: 'evm' })
+            ;(chainUiFor as Mock).mockReturnValue({
+                sendConfirmation: { FeeSection, TrailingSection },
             })
 
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.canAddNote).toBe(false)
+            expect(chainUiFor).toHaveBeenCalledWith('evm')
+            expect(result.current.FeeSection).toBe(FeeSection)
+            expect(result.current.TrailingSection).toBe(TrailingSection)
+            ;(getChainDescriptor as Mock).mockReturnValue({
+                family: 'algorand',
+            })
+            ;(chainUiFor as Mock).mockReturnValue({})
+        })
+
+        it('shows the fee alone, with nothing after the balance, for a chain without sections', () => {
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.FeeSection).toBe(NeutralSendFeeSection)
+            expect(result.current.TrailingSection).toBeUndefined()
         })
 
         it('opens the note sheet when openNote is called', () => {
@@ -770,7 +945,7 @@ describe('useTransactionConfirmationScreen', () => {
 
             renderHook(() => useTransactionConfirmationScreen())
 
-            expect(useSendFee).toHaveBeenLastCalledWith({
+            expect(useSendFeeQuery).toHaveBeenLastCalledWith({
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
                 senderAddress: 'TEST_ADDRESS',
                 assetId: mockSelectedAssetId,
@@ -786,7 +961,7 @@ describe('useTransactionConfirmationScreen', () => {
                 normal: { amount: new Decimal(3), maxAmount: new Decimal(4) },
                 fast: { amount: new Decimal(5), maxAmount: new Decimal(6) },
             }
-            ;(useSendFee as Mock).mockReturnValueOnce({
+            ;(useSendFeeQuery as Mock).mockReturnValueOnce({
                 feeAmount: new Decimal(3),
                 maxFeeAmount: new Decimal(4),
                 presets,

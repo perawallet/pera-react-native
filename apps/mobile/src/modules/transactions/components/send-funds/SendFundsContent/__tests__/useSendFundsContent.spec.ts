@@ -25,7 +25,7 @@ const mockDismiss = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({ address: 'SENDERADDR' })),
-    useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+    useAccountChainId: () => 'algorand',
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -42,6 +42,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 const ASA_ID = '123'
+const ASA = { chainId: 'algorand', assetId: ASA_ID } as const
 const OLD_RECIPIENT = 'OLDRECIPIENTADDR'
 
 describe('useSendFundsContent — state carried between sheet sessions', () => {
@@ -52,12 +53,12 @@ describe('useSendFundsContent — state carried between sheet sessions', () => {
 
     it('clears the previous send when the sheet is torn down without onFinished', () => {
         // Arrange: a send started from asset details, part-filled by the user.
-        const first = renderHook(() => useSendFundsContent(ASA_ID))
+        const first = renderHook(() => useSendFundsContent(ASA))
         useSendFundsStore.getState().setDestination(OLD_RECIPIENT)
         useSendFundsStore.getState().setAmount(new Decimal(42))
 
         expect(useSendFundsStore.getState().canSelectAsset).toBe(false)
-        expect(useSendFundsStore.getState().selectedAssetId).toBe(ASA_ID)
+        expect(useSendFundsStore.getState().selectedAsset).toEqual(ASA)
 
         // Act: the sheet goes away without `onFinished` running — this is what a
         // backdrop press does (dismiss -> remove -> unmount), and `onFinished`
@@ -71,7 +72,7 @@ describe('useSendFundsContent — state carried between sheet sessions', () => {
         // Assert: they should land on asset selection with nothing carried over.
         const state = useSendFundsStore.getState()
         expect(state.canSelectAsset).toBe(true)
-        expect(state.selectedAssetId).toBeUndefined()
+        expect(state.selectedAsset).toBeUndefined()
         expect(state.destination).toBeUndefined()
         expect(state.amount).toBeUndefined()
     })
@@ -121,16 +122,14 @@ describe('useSendFundsContent — deterministic initial route', () => {
             isFetched: false,
         })
 
-        const { result, rerender } = renderHook(() =>
-            useSendFundsContent(ASA_ID),
-        )
+        const { result, rerender } = renderHook(() => useSendFundsContent(ASA))
 
         // Holding closed so SendFundsRoutes doesn't mount its navigator (and lock
         // in an initial route) off an unresolved asset.
         expect(result.current.isReady).toBe(false)
         // The asset-scoped store setup still runs deterministically.
         expect(useSendFundsStore.getState().canSelectAsset).toBe(false)
-        expect(useSendFundsStore.getState().selectedAssetId).toBe(ASA_ID)
+        expect(useSendFundsStore.getState().selectedAsset).toEqual(ASA)
 
         // Query settles.
         ;(useAssetsQuery as Mock).mockReturnValue({
@@ -146,16 +145,28 @@ describe('useSendFundsContent — deterministic initial route', () => {
         ;(isCollectible as Mock).mockReturnValue(true)
         ;(isPureNft as Mock).mockReturnValue(true)
 
-        const { result } = renderHook(() => useSendFundsContent(ASA_ID))
+        const { result } = renderHook(() => useSendFundsContent(ASA))
 
         expect(result.current.isReady).toBe(true)
         expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
     })
 
     it('does not prefill an amount for a non-collectible asset', () => {
-        const { result } = renderHook(() => useSendFundsContent(ASA_ID))
+        const { result } = renderHook(() => useSendFundsContent(ASA))
 
         expect(result.current.isReady).toBe(true)
         expect(useSendFundsStore.getState().amount).toBeUndefined()
+    })
+
+    it('reads the asset on its own chain and puts the send on it', () => {
+        const token = { chainId: 'ethereum', assetId: '0xTOKEN' } as const
+
+        renderHook(() => useSendFundsContent(token))
+
+        expect(useAssetsQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'ethereum' }),
+            ['0xTOKEN'],
+        )
+        expect(useSendFundsStore.getState().selectedAsset).toEqual(token)
     })
 })

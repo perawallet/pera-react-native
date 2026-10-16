@@ -769,6 +769,44 @@ describe('useTransactionSendFlow', () => {
             expect(mockBuildTransfer).not.toHaveBeenCalled()
         })
 
+        it('sends 1,000 of an 18-decimal asset, whose base units print in exponent form', async () => {
+            sendFlowChainAdapters.reset()
+            const build = vi.fn().mockResolvedValue([TXN])
+            transferChainAdapters.reset()
+            transferChainAdapters.register({
+                chainId: 'ethereum',
+                build,
+                getFeeEstimate: vi.fn(),
+                spendableBalance: vi.fn(),
+            })
+            const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+            const { result } = renderHook(() => useTransactionSendFlow(scope))
+
+            await act(async () => {
+                await result.current.execute({
+                    params: {
+                        sendMode: 'normal',
+                        sender: {
+                            ...SENDER_ACCOUNT,
+                            chains: {
+                                ethereum: { address: '0xA', keyPairId: 'k' },
+                            },
+                        },
+                        receiver: '0xB',
+                        asset: { assetId: 'native', decimals: 18 } as any,
+                        amount: new Decimal('1000'),
+                    },
+                })
+            })
+
+            expect(build).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    amount: new Decimal('1000000000000000000000'),
+                }),
+                expect.anything(),
+            )
+        })
+
         it('refuses a normal send when the chain has neither adapter', async () => {
             sendFlowChainAdapters.reset()
             transferChainAdapters.reset()

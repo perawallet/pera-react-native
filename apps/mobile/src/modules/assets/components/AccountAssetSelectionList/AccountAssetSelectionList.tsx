@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import {
     HoldingRestrictions,
     type AssetWithAccountBalance,
+    type ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
@@ -22,7 +23,7 @@ import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
 
 export type AccountAssetSelectionListProps = {
-    onAssetSelected: (asset: AssetWithAccountBalance) => void
+    onAssetSelected: (asset: ChainAssetBalance) => void
     isVisible?: boolean
     inBottomSheet?: boolean
     hasPadding?: boolean
@@ -31,6 +32,8 @@ export type AccountAssetSelectionListProps = {
     searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
+    /** See `useAccountAssetSelectionList`'s `isAcrossChains`. */
+    isAcrossChains?: boolean
 }
 
 export const AccountAssetSelectionList = ({
@@ -43,6 +46,7 @@ export const AccountAssetSelectionList = ({
     searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
+    isAcrossChains,
 }: AccountAssetSelectionListProps) => {
     const styles = useStyles({ hasPadding })
     const {
@@ -51,10 +55,15 @@ export const AccountAssetSelectionList = ({
         setSearchFilter,
         debouncedSearchFilter,
         isLoading,
-    } = useAccountAssetSelectionList({ isVisible, excludeAssetId, filterAsset })
+    } = useAccountAssetSelectionList({
+        isVisible,
+        excludeAssetId,
+        filterAsset,
+        isAcrossChains,
+    })
 
     const renderItem = useCallback(
-        ({ item }: { item: AssetWithAccountBalance }) => {
+        ({ item }: { item: ChainAssetBalance }) => {
             const isTransferBlocked =
                 item.restriction === HoldingRestrictions.transferBlocked
             return (
@@ -62,6 +71,7 @@ export const AccountAssetSelectionList = ({
                     onPress={() => onAssetSelected(item)}
                     style={styles.item}
                     accountBalance={item}
+                    scope={item.scope}
                     // Every consumer of this list moves funds (send, swap,
                     // card), and a restricted holding can't be transferred —
                     // keep it visible so the user knows it exists, but not
@@ -79,7 +89,7 @@ export const AccountAssetSelectionList = ({
         <AssetSelectionList
             data={filteredBalanceData}
             renderItem={renderItem}
-            keyExtractor={item => item.assetId}
+            keyExtractor={item => `${item.scope.chainId}:${item.assetId}`}
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}

@@ -54,10 +54,21 @@ export type SignRequestSource = {
     icons?: string[]
 }
 
+/**
+ * `'algod'` submits through the chain's broadcaster; `'callback'` hands the
+ * signed bytes back to `approve`; `'submit-and-answer'` submits through the
+ * broadcaster and then answers `approve` with the submitted ids.
+ */
+export type SignRequestTransport = 'algod' | 'callback' | 'submit-and-answer'
+
+/** A request whose caller holds in-memory callbacks, which can't be persisted and must hear a rejection. */
+export const answersCaller = (transport: SignRequestTransport): boolean =>
+    transport !== 'algod'
+
 type BaseSignRequest = {
     id: string
     type: 'transactions' | 'arbitrary-data' | 'auth-data'
-    transport: 'algod' | 'callback'
+    transport: SignRequestTransport
     transportId?: string
     /** Origin of the request. Defaults to 'local' when not specified. */
     sourceType?: SourceType

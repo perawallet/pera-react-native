@@ -2728,6 +2728,14 @@
             "recipient_below_mbr": {
                 "title": "Amount Below Recipient Minimum",
                 "body": "The recipient needs at least {{min}} ALGO after this transaction to meet the Algorand minimum balance requirement."
+            },
+            "fee_shortfall": {
+                "title": "Not enough {{symbol}} for the fee",
+                "body": "This send can be charged up to {{fee}} in fees. Lower the amount or pick a slower fee."
+            },
+            "fee_unavailable": {
+                "title": "Couldn't estimate the fee",
+                "body": "Check your connection and try again."
             }
         },
         "processing": {

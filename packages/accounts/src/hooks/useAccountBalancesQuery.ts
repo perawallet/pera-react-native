@@ -13,11 +13,15 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
-import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     pow10,
     useStableIdList,
+    type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type {
@@ -27,6 +31,10 @@ import type {
     WalletAccount,
 } from '../models'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import {
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
     getAccountChainStateRow,
@@ -35,7 +43,10 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
-import { useOtherRegisteredChainIds } from './accountChainEntries'
+import {
+    useOtherRegisteredChainIds,
+    useRegisteredChainIds,
+} from './accountChainEntries'
 import { chainAccountOf } from '../credentials/accessors'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
@@ -81,6 +92,98 @@ async function readAccountFromDb(
     })
 
     return { holdings }
+}
+
+type HoldingsSummary = {
+    assetBalances: AssetWithAccountBalance[]
+    nativeValue: Decimal
+    usdValue: Decimal
+    hasUnconvertible: boolean
+    isNativeUnpriced: boolean
+}
+
+/**
+ * One account's holdings on one chain as display-unit balances, with their
+ * totals in that chain's native asset and in USD.
+ */
+export const summarizeHoldings = (
+    holdings: AccountHoldingsPageRow[],
+    chainId: ChainId,
+): HoldingsSummary => {
+    const nativeAsset = nativeAssetFor(chainId)
+    // The native asset is itself a holding row; its joined price is the
+    // rate used to express every holding's value in native terms.
+    const nativeHolding = holdings.find(h => h.assetId === nativeAsset.assetId)
+    const nativeUsdPrice = nativeHolding?.usdPrice ?? new Decimal(0)
+
+    let nativeValue = new Decimal(0)
+    let hasUnconvertible = false
+    // Accumulated in the same pass as `nativeValue`: the portfolio
+    // roll-up used to re-walk every account's holdings to derive this,
+    // doubling the accounts×holdings Decimal work on every price poll.
+    let usdValue = new Decimal(0)
+    const assetBalances: AssetWithAccountBalance[] = holdings.map(holding => {
+        const isNative = holding.assetId === nativeAsset.assetId
+        const { restriction } = describeHolding(chainId, holding.native)
+        // Native asset metadata is seeded, but fall back defensively
+        // so the native balance always renders even mid-sync.
+        const asset = holding.asset ?? (isNative ? nativeAsset : null)
+        // Without asset metadata we can't scale base units to
+        // display units, so emit zeros until the metadata syncs —
+        // otherwise the sort-by-value key is inflated by 10^decimals.
+        if (!asset) {
+            return {
+                assetId: holding.assetId,
+                asset: undefined,
+                amount: new Decimal(0),
+                nativeValue: null,
+                usdPrice: holding.usdPrice ?? undefined,
+                fiatValue: null,
+                restriction,
+            }
+        }
+        const usdAssetPrice = holding.usdPrice ?? new Decimal(0)
+        const assetAmount = holding.amount.div(pow10(asset.decimals))
+        // The native asset's value in native terms is just its amount
+        // (1:1), independent of price. Others convert via its rate,
+        // and are unknown while either price is.
+        const nativeAssetValue = isNative
+            ? assetAmount
+            : nativeUsdPrice.isZero() || holding.usdPrice === null
+              ? null
+              : assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
+        if (nativeAssetValue) {
+            nativeValue = nativeValue.plus(nativeAssetValue)
+        } else if (!usdAssetPrice.isZero()) {
+            hasUnconvertible = true
+        }
+        usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
+        return {
+            assetId: holding.assetId,
+            asset,
+            amount: assetAmount,
+            nativeValue: nativeAssetValue,
+            usdPrice: usdAssetPrice,
+            fiatValue:
+                holding.usdPrice === null
+                    ? null
+                    : assetAmount.times(holding.usdPrice),
+            restriction,
+        }
+    })
+
+    const isNativeUnpriced =
+        !!nativeHolding &&
+        nativeHolding.usdPrice === null &&
+        !nativeHolding.amount.isZero()
+
+    return {
+        assetBalances,
+        nativeValue,
+        usdValue,
+        hasUnconvertible,
+        isNativeUnpriced,
+    }
 }
 
 export const useAccountBalancesQuery = (
@@ -179,82 +282,13 @@ export const useAccountBalancesQuery = (
         }
 
         const accountBalanceList = results.map(r => {
-            const holdings = r.data?.holdings ?? []
-            // The native asset is itself a holding row; its joined price is the
-            // rate used to express every holding's value in native terms.
-            const nativeHolding = holdings.find(
-                h => h.assetId === nativeAsset.assetId,
-            )
-            const nativeUsdPrice = nativeHolding?.usdPrice ?? new Decimal(0)
-
-            let nativeValue = new Decimal(0)
-            let hasUnconvertible = false
-            // Accumulated in the same pass as `nativeValue`: the portfolio
-            // roll-up used to re-walk every account's holdings to derive this,
-            // doubling the accounts×holdings Decimal work on every price poll.
-            let usdValue = new Decimal(0)
-            const assetBalances: AssetWithAccountBalance[] = holdings.map(
-                holding => {
-                    const isNative = holding.assetId === nativeAsset.assetId
-                    const { restriction } = describeHolding(
-                        scope.chainId,
-                        holding.native,
-                    )
-                    // Native asset metadata is seeded, but fall back defensively
-                    // so the native balance always renders even mid-sync.
-                    const asset =
-                        holding.asset ?? (isNative ? nativeAsset : null)
-                    // Without asset metadata we can't scale base units to
-                    // display units, so emit zeros until the metadata syncs —
-                    // otherwise the sort-by-value key is inflated by 10^decimals.
-                    if (!asset) {
-                        return {
-                            assetId: holding.assetId,
-                            asset: undefined,
-                            amount: new Decimal(0),
-                            nativeValue: null,
-                            usdPrice: holding.usdPrice ?? undefined,
-                            fiatValue: null,
-                            restriction,
-                        }
-                    }
-                    const usdAssetPrice = holding.usdPrice ?? new Decimal(0)
-                    const assetAmount = holding.amount.div(
-                        pow10(asset.decimals),
-                    )
-                    // The native asset's value in native terms is just its amount
-                    // (1:1), independent of price. Others convert via its rate,
-                    // and are unknown while either price is.
-                    const nativeAssetValue = isNative
-                        ? assetAmount
-                        : nativeUsdPrice.isZero() || holding.usdPrice === null
-                          ? null
-                          : assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
-                    if (nativeAssetValue) {
-                        nativeValue = nativeValue.plus(nativeAssetValue)
-                    } else if (!usdAssetPrice.isZero()) {
-                        hasUnconvertible = true
-                    }
-                    usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
-                    return {
-                        assetId: holding.assetId,
-                        asset,
-                        amount: assetAmount,
-                        nativeValue: nativeAssetValue,
-                        usdPrice: usdAssetPrice,
-                        fiatValue:
-                            holding.usdPrice === null
-                                ? null
-                                : assetAmount.times(holding.usdPrice),
-                        restriction,
-                    }
-                },
-            )
-
-            const isNativeUnpriced =
-                !!nativeHolding &&
-                nativeHolding.usdPrice === null &&
-                !nativeHolding.amount.isZero()
+            const {
+                assetBalances,
+                nativeValue,
+                usdValue,
+                hasUnconvertible,
+                isNativeUnpriced,
+            } = summarizeHoldings(r.data?.holdings ?? [], scope.chainId)
 
             return {
                 assetBalances,
@@ -321,6 +355,96 @@ export const useAccountBalancesQuery = (
         isError,
         isPaused,
     }
+}
+
+export type ChainAssetBalance = AssetWithAccountBalance & {
+    /** The chain the holding is on, at that chain's selected network. */
+    scope: ChainScope
+}
+
+export type UseAccountHoldingsAcrossChainsQueryResult = {
+    assetBalances: ChainAssetBalance[]
+    isPending: boolean
+}
+
+/**
+ * Every holding the account has, on each registered chain it has an address
+ * on. Each chain is read under `useAccountBalancesQuery`'s query key, so the
+ * two share their cache.
+ */
+export const useAccountHoldingsAcrossChainsQuery = (
+    account: Maybe<WalletAccount>,
+): UseAccountHoldingsAcrossChainsQueryResult => {
+    const registeredChainIds = useRegisteredChainIds()
+    // A primitive, so only a network switch re-keys the reads.
+    const networksKey = useNetworkStore(state =>
+        registeredChainIds
+            .map(
+                chainId => `${chainId}:${selectChainNetworkId(state, chainId)}`,
+            )
+            .join(),
+    )
+    const heldOn = useStableIdList(
+        account
+            ? registeredChainIds.flatMap(chainId => {
+                  const address = chainAccountOf(account, chainId)?.address
+                  return address ? [`${chainId}|${address}`] : []
+              })
+            : [],
+    )
+
+    const entries = useMemo(() => {
+        const networks = useNetworkStore.getState()
+        return heldOn.map(id => {
+            const [chainId, address] = id.split('|') as [ChainId, string]
+            return {
+                address,
+                scope: {
+                    chainId,
+                    networkId: selectChainNetworkId(networks, chainId),
+                },
+            }
+        })
+        // `networksKey` stands in for the network store read above.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [heldOn, networksKey])
+
+    const results = useQueries({
+        queries: entries.map(({ address, scope }) => ({
+            queryKey: getAccountBalancesQueryKey(address, scope),
+            staleTime: Infinity,
+            gcTime: HOLDINGS_ROWS_GC_TIME_MS,
+            networkMode: 'always' as const,
+            notifyOnChangeProps: 'all' as const,
+            queryFn: () => readAccountFromDb(address, scope),
+        })),
+    })
+
+    const resultsSig = results
+        .map(
+            (r, i) =>
+                `${heldOn[i] ?? ''}|${r.dataUpdatedAt}|${r.isPending ? 1 : 0}`,
+        )
+        .join('||')
+
+    return useMemo(
+        () => ({
+            assetBalances: results.flatMap((r, i) => {
+                const scope = entries[i]?.scope
+                return scope
+                    ? summarizeHoldings(
+                          r.data?.holdings ?? [],
+                          scope.chainId,
+                      ).assetBalances.map(balance => ({ ...balance, scope }))
+                    : []
+            }),
+            isPending: results.some(r => r.isPending),
+        }),
+        // `resultsSig` is the stable stand-in for `results`; see
+        // useAccountBalancesQuery.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [resultsSig, entries],
+    )
 }
 
 export const useAccountAssetBalanceQuery = (

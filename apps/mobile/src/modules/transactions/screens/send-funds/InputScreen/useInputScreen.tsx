@@ -26,14 +26,11 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import {
+    useSendFeeQuery,
     useSpendableBalanceQuery,
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
-import {
-    useSendFee,
-    useSendFunds,
-    useSendScope,
-} from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -146,7 +143,7 @@ export const useInputScreen = () => {
 
     // The same fee the confirmation screen prices from, so any amount derived
     // here reserves what the transaction can actually be charged.
-    const { maxFeeAmount } = useSendFee({
+    const { maxFeeAmount } = useSendFeeQuery({
         scope,
         senderAddress: selectedAddress,
         assetId: selectedAssetId,
@@ -209,11 +206,22 @@ export const useInputScreen = () => {
     const isReserveReleasable =
         !!emptyAccount || (!!reserveNotice && !reserveNotice.isFirm)
 
+    // Until the fee is known the spendable balance holds nothing back for it,
+    // so MAX would offer an amount the send can't pay for.
+    const isMaxReady = maxFeeAmount !== undefined && !isSpendablePending
+
     const setMax = useCallback(() => {
+        if (!isMaxReady) return
         setValueAndRef(
             (isReserveReleasable ? totalBalance : maxAmount).toString(),
         )
-    }, [isReserveReleasable, maxAmount, totalBalance, setValueAndRef])
+    }, [
+        isMaxReady,
+        isReserveReleasable,
+        maxAmount,
+        totalBalance,
+        setValueAndRef,
+    ])
 
     const translateParagraphs = useCallback(
         (notice: ChainNotice) =>
@@ -496,6 +504,7 @@ export const useInputScreen = () => {
         accountAssetBalance,
         isBalanceReady,
         cryptoValue: value,
+        isMaxReady,
         setMax,
         handleNext,
         handleKey,

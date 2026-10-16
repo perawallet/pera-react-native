@@ -65,10 +65,11 @@ export type SignAndSubmitGroupResult = {
 
 /**
  * Push a pre-built unsigned transaction group through the XState signing
- * pipeline as a headless, `transport: 'callback'` request (`sourceType:
- * 'local'` falls outside `INTERACTIVE_SOURCES`, so no review or completion
- * sheet is surfaced).
- * Resolves with the algod txIds once signing and submission succeed.
+ * pipeline as a headless request (`sourceType: 'local'` falls outside
+ * `INTERACTIVE_SOURCES`, so no review or completion sheet is surfaced). An
+ * Algorand group comes back as signed bytes this hook submits itself; any
+ * other chain's is submitted by its broadcaster, which answers with the ids.
+ * Resolves with the submitted txIds once signing and submission succeed.
  *
  * Local-key accounts run validating → signing → completed without showing
  * any sheet (headless skips the review state). Hardware-wallet accounts
@@ -104,7 +105,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     addSignRequest({
                         id: generateOrderedUniqueId(),
                         type: 'transactions',
-                        transport: 'algod',
+                        transport: 'submit-and-answer',
                         sourceType: 'local',
                         txs: unsignedTxs,
                         sourceMetadata: source,

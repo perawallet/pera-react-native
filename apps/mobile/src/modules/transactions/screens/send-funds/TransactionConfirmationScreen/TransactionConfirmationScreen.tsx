@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWDivider,
-    PWIcon,
-    PWScreen,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWDivider, PWScreen, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -27,7 +20,6 @@ import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { FeeRow } from '@components/FeeRow'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
@@ -54,7 +46,8 @@ export const TransactionConfirmationScreen = () => {
         currentBalance,
         currentBalancePending,
         note,
-        canAddNote,
+        FeeSection,
+        TrailingSection,
         openNote,
         handleConfirm,
         isCollectible,
@@ -128,7 +121,7 @@ export const TransactionConfirmationScreen = () => {
                         />
                     </KeyValueRow>
                 )}
-                <FeeRow
+                <FeeSection
                     chainId={scope.chainId}
                     amount={feeAmount}
                     presets={feePresets}
@@ -161,33 +154,11 @@ export const TransactionConfirmationScreen = () => {
                         )}
                     </KeyValueRow>
                 )}
-                {canAddNote && <PWDivider />}
-                {canAddNote && (
-                    <KeyValueRow title={t('send_funds.confirmation.note')}>
-                        {!!note && <PWText>{note}</PWText>}
-                        {!!note && (
-                            <PWTouchableOpacity
-                                onPress={openNote}
-                                style={styles.linkContainer}
-                            >
-                                <PWIcon
-                                    name='edit-pen'
-                                    variant='link'
-                                    size='sm'
-                                />
-                                <PWText style={styles.link}>
-                                    {t('send_funds.confirmation.edit')}
-                                </PWText>
-                            </PWTouchableOpacity>
-                        )}
-                        {!note && (
-                            <PWTouchableOpacity onPress={openNote}>
-                                <PWText style={styles.link}>
-                                    {t('send_funds.add_note.button')}
-                                </PWText>
-                            </PWTouchableOpacity>
-                        )}
-                    </KeyValueRow>
+                {TrailingSection && (
+                    <TrailingSection
+                        note={note}
+                        onEditNote={openNote}
+                    />
                 )}
             </PWView>
         </PWScreen>

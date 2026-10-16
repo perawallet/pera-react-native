@@ -50,7 +50,7 @@ const {
     mockAddSignRequest,
     mockSetSelectedAccountId,
     mockSetDestination,
-    mockSetSelectedAssetId,
+    mockSetSelectedAsset,
     mockSetCanSelectAsset,
     mockSetNote,
     mockSetAmount,
@@ -73,7 +73,7 @@ const {
     mockAddSignRequest: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
     mockSetDestination: vi.fn(),
-    mockSetSelectedAssetId: vi.fn(),
+    mockSetSelectedAsset: vi.fn(),
     mockSetCanSelectAsset: vi.fn(),
     mockSetNote: vi.fn(),
     mockSetAmount: vi.fn(),
@@ -315,7 +315,7 @@ vi.mock('@modules/transactions', () => ({
         getState: () => ({
             reset: mockSendFundsReset,
             setDestination: mockSetDestination,
-            setSelectedAssetId: mockSetSelectedAssetId,
+            setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
             setNote: mockSetNote,
             setAmount: mockSetAmount,
@@ -325,6 +325,11 @@ vi.mock('@modules/transactions', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: (chainId: string) => ({
+        nativeAsset: {
+            ref: { chainId, assetId: chainId === 'algorand' ? '0' : 'native' },
+        },
+    }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useNetwork: () => ({ network: 'mainnet' }),
@@ -516,7 +521,10 @@ const cases: Case[] = [
         `asset-transfer/?assetId=0&receiverAddress=${RECEIVER}&amount=${AMOUNT}&note=${NOTE_ENC}&xnote=${XNOTE_ENC}&label=${LABEL_ENC}`,
         { kind: 'sendFunds' },
         () => {
-            expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+                chainId: 'algorand',
+                assetId: '0',
+            })
             expect(mockSetDestination).toHaveBeenCalledWith(RECEIVER)
             expect(mockSetNote).toHaveBeenCalledWith(NOTE)
             // Base units for every asset; the input step converts once the
@@ -532,7 +540,10 @@ const cases: Case[] = [
         `asset-transfer/?assetId=${ASSET_ID}&receiverAddress=${RECEIVER}&amount=${AMOUNT}&note=${NOTE_ENC}&xnote=${XNOTE_ENC}&label=${LABEL_ENC}`,
         { kind: 'sendFunds' },
         () => {
-            expect(mockSetSelectedAssetId).toHaveBeenCalledWith(ASSET_ID)
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+                chainId: 'algorand',
+                assetId: ASSET_ID,
+            })
             expect(mockSetDestination).toHaveBeenCalledWith(RECEIVER)
             expect(mockSetNote).toHaveBeenCalledWith(NOTE)
             // Asset amount stays in base units; conversion is deferred.
@@ -813,7 +824,10 @@ const cases: Case[] = [
         url: `algorand://${RECEIVER}?amount=${AMOUNT}&note=${NOTE_ENC}`,
         expect: { kind: 'sendFunds' },
         extra: () => {
-            expect(mockSetSelectedAssetId).toHaveBeenCalledWith('0')
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+                chainId: 'algorand',
+                assetId: '0',
+            })
             expect(mockSetDestination).toHaveBeenCalledWith(RECEIVER)
             expect(mockSetNote).toHaveBeenCalledWith(NOTE)
             expect(mockSetPendingAmountBaseUnits).toHaveBeenCalledWith(AMOUNT)
@@ -824,7 +838,10 @@ const cases: Case[] = [
         url: `algorand://${RECEIVER}?amount=${AMOUNT}&asset=${ASSET_ID}&xnote=${XNOTE_ENC}`,
         expect: { kind: 'sendFunds' },
         extra: () => {
-            expect(mockSetSelectedAssetId).toHaveBeenCalledWith(ASSET_ID)
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith({
+                chainId: 'algorand',
+                assetId: ASSET_ID,
+            })
             expect(mockSetDestination).toHaveBeenCalledWith(RECEIVER)
             expect(mockSetNote).toHaveBeenCalledWith(XNOTE)
             expect(mockSetPendingAmountBaseUnits).toHaveBeenCalledWith(AMOUNT)

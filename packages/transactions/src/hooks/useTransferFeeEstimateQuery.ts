@@ -46,7 +46,7 @@ export const useTransferFeeEstimateQuery = (
                   input.intent.to,
                   input.intent.assetRef,
                   input.scope,
-                  input.intent.amount.toString(),
+                  input.intent.amount,
               )
             : [MODULE_PREFIX, 'transfer-fee-estimate'],
         queryFn: input

@@ -88,18 +88,24 @@ export const transactionQueryKeys = {
             { recipient, asset, scope, amount: amount.toFixed() },
         ] as const,
 
-    /** `amount` is the base-unit amount as a string. */
+    /** `amount` is in base units, carried as plain text like `fee` above. */
     transferFeeEstimate: (
         from: string,
         to: string,
         asset: AssetRef,
         scope: ChainScope,
-        amount: string,
+        amount: Decimal,
     ) =>
         [
             MODULE_PREFIX,
             'transfer-fee-estimate',
-            { accountAddress: from, to, asset, scope, amount },
+            {
+                accountAddress: from,
+                to,
+                asset,
+                scope,
+                amount: amount.toFixed(),
+            },
         ] as const,
 }
 

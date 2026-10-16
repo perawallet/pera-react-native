@@ -17,10 +17,13 @@ import { useAccountAssetSelectionList } from '../useAccountAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
+const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
+    useAccountHoldingsAcrossChainsQuery:
+        mockUseAccountHoldingsAcrossChainsQuery,
     useAccountScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
@@ -29,8 +32,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
-    isNativeAssetId: (_chainId: string, id: string) => id === '0',
+    nativeAssetFor: (chainId: string) => ({
+        assetId: chainId === 'algorand' ? '0' : 'native',
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -71,6 +75,10 @@ describe('useAccountAssetSelectionList', () => {
             accountBalances: new Map([
                 ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
             ]),
+        })
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+            assetBalances: [],
+            isPending: false,
         })
     })
 
@@ -165,5 +173,61 @@ describe('useAccountAssetSelectionList', () => {
 
         expect(result.current.searchFilter).toBe('')
         expect(result.current.filteredBalanceData).toHaveLength(3)
+    })
+
+    it("tags each of the account's own-chain holdings with that chain's scope", () => {
+        const { result } = renderHook(() => useAccountAssetSelectionList({}))
+
+        expect(
+            result.current.filteredBalanceData.every(
+                item => item.scope.chainId === 'algorand',
+            ),
+        ).toBe(true)
+        expect(mockUseAccountHoldingsAcrossChainsQuery).toHaveBeenCalledWith(
+            null,
+        )
+    })
+
+    it("lists holdings on every chain when asked, each chain's native asset first", () => {
+        const account = {
+            chains: {
+                algorand: { address: 'TEST_ADDRESS' },
+                ethereum: { address: '0xabc' },
+            },
+        }
+        mockUseSelectedAccount.mockReturnValue(account)
+        const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' }
+        const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' }
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+            assetBalances: [
+                { assetId: '0xTOKEN', amount: '5', scope: ETHEREUM },
+                { assetId: '31566704', amount: '500', scope: ALGORAND },
+                { assetId: 'native', amount: '1', scope: ETHEREUM },
+                { assetId: '0', amount: '1000000', scope: ALGORAND },
+            ],
+            isPending: false,
+        })
+
+        const { result } = renderHook(() =>
+            useAccountAssetSelectionList({ isAcrossChains: true }),
+        )
+
+        expect(mockUseAccountHoldingsAcrossChainsQuery).toHaveBeenCalledWith(
+            account,
+        )
+        expect(mockUseAccountBalancesQuery).toHaveBeenCalledWith(
+            [],
+            expect.anything(),
+        )
+        expect(
+            result.current.filteredBalanceData.map(
+                item => `${item.scope.chainId}:${item.assetId}`,
+            ),
+        ).toEqual([
+            'ethereum:native',
+            'algorand:0',
+            'ethereum:0xTOKEN',
+            'algorand:31566704',
+        ])
     })
 })

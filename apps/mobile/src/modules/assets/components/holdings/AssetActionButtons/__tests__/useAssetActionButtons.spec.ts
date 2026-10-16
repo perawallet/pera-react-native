@@ -78,7 +78,7 @@ describe('useAssetActionButtons', () => {
         },
     )
 
-    it("offers neither action on an asset off the account's swap and onramp chain", () => {
+    it("offers neither swap nor buy on an asset off the account's swap and onramp chain, but sends on the asset's chain", () => {
         const { result } = renderHook(() =>
             useAssetActionButtons(
                 {
@@ -95,7 +95,7 @@ describe('useAssetActionButtons', () => {
         expect(result.current).toEqual({
             canSwap: false,
             canBuy: false,
-            canSend: false,
+            canSend: true,
         })
     })
 
@@ -107,7 +107,7 @@ describe('useAssetActionButtons', () => {
         expect(result.current.canSend).toBe(true)
     })
 
-    it('drops send when the asset is on another chain than the account', () => {
+    it("drops send when the account has no address on the asset's chain", () => {
         const { result } = renderHook(() =>
             useAssetActionButtons(onEthereumOnly, 'algorand'),
         )

@@ -118,11 +118,40 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useMinFeeForSender: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-transactions', () => ({
-    useSpendableBalanceQuery: vi.fn(),
-    // Algorand routes opt-in sends through its send-flow adapter.
-    sendFlowChainAdapters: { has: () => true },
-}))
+// useSendFeeQuery's own branching is pinned in its spec; here it stands on the
+// planner fee, as it does on Algorand.
+vi.mock('@perawallet/wallet-core-transactions', async () => {
+    const { useMinFeeForSender } =
+        await import('@perawallet/wallet-core-signing')
+    return {
+        useSpendableBalanceQuery: vi.fn(),
+        // Algorand routes opt-in sends through its send-flow adapter.
+        sendFlowChainAdapters: { has: () => true },
+        useSendFeeQuery: ({
+            senderAddress,
+            scope,
+        }: {
+            senderAddress?: string
+            scope: { chainId: 'algorand' }
+        }) => {
+            const { minFee, isPending } = useMinFeeForSender(
+                senderAddress,
+                scope.chainId,
+            )
+            const fee =
+                minFee !== undefined
+                    ? new Decimal(minFee.toString())
+                    : undefined
+            return {
+                feeAmount: fee,
+                maxFeeAmount: fee,
+                presets: undefined,
+                isPending,
+                isError: false,
+            }
+        },
+    }
+})
 
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(() => ({ showToast: vi.fn() })),
@@ -145,7 +174,7 @@ const mockSendFundsState = {
     destination: undefined as string | undefined,
     shouldContinueToConfirm: false,
     setShouldContinueToConfirm: mockSetShouldContinueToConfirm,
-    setSelectedAssetId: vi.fn(),
+    setSelectedAsset: vi.fn(),
     setCanSelectAsset: vi.fn(),
     setAmount: mockSetAmount,
     setNote: mockSetNote,
@@ -155,38 +184,10 @@ const mockSendFundsState = {
     reset: vi.fn(),
 }
 
-// useSendFee's own branching is pinned in its spec; here it stands on the
-// planner fee, as it does on Algorand.
-vi.mock('@modules/transactions/hooks', async () => {
-    const { useMinFeeForSender } =
-        await import('@perawallet/wallet-core-signing')
-    return {
-        useSendFunds: vi.fn(() => mockSendFundsState),
-        useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-        useSendFee: ({
-            senderAddress,
-            scope,
-        }: {
-            senderAddress?: string
-            scope: { chainId: 'algorand' }
-        }) => {
-            const { minFee, isPending } = useMinFeeForSender(
-                senderAddress,
-                scope.chainId,
-            )
-            const fee =
-                minFee !== undefined
-                    ? new Decimal(minFee.toString())
-                    : undefined
-            return {
-                feeAmount: fee,
-                maxFeeAmount: fee,
-                presets: undefined,
-                isPending,
-            }
-        },
-    }
-})
+vi.mock('@modules/transactions/hooks', () => ({
+    useSendFunds: vi.fn(() => mockSendFundsState),
+    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
 
 const RESERVE_NOTICE: ChainNotice = {
     title: { key: i18nKey('send_funds.input.min_balance_title') },
@@ -351,6 +352,21 @@ describe('useInputScreen', () => {
         expect(result.current.isBalanceReady).toBe(true)
     })
 
+    it('holds MAX until the fee is known, so it never offers the fee away', () => {
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: undefined,
+            isPending: true,
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setMax()
+        })
+
+        expect(result.current.isMaxReady).toBe(false)
+        expect(result.current.cryptoValue).toBeFalsy()
+    })
+
     it('is not ready until the spendable balance loads', () => {
         ;(useSpendableBalanceQuery as Mock).mockReturnValue({
             data: undefined,
@@ -383,7 +399,7 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.handleKey()
         })
-        expect(result.current.cryptoValue).toBeNull()
+        expect(result.current.cryptoValue).toBeFalsy()
     })
 
     it('validates input on next (error if empty)', async () => {

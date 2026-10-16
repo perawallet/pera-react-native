@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+    type ComponentType,
+} from 'react'
 import type { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
@@ -23,7 +29,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     isCollectible,
+    toWholeUnits,
     useAssetsQuery,
+    useIsNativeAssetId,
+    useNativeAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -31,6 +40,8 @@ import {
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
+    formatNumber,
+    ZERO_DECIMAL,
 } from '@perawallet/wallet-core-shared'
 import type {
     ChainScope,
@@ -39,23 +50,26 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
+    sendFlowChainAdapters,
     useRecipientWarningQuery,
+    useSendFeeQuery,
+    useSpendableBalanceQuery,
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
 import { bottomSheetNotifier } from '@components/core'
+import type { FeeRowProps } from '@components/FeeRow'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
-import {
-    useSendFee,
-    useSendFunds,
-    useSendScope,
-} from '@modules/transactions/hooks'
+import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { chainUiFor } from '@modules/chain-ui'
+import type { SendTrailingSectionProps } from '../../../types/send-confirmation-display'
 import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
+import { NeutralSendFeeSection } from './NeutralSendFeeSection'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
@@ -74,8 +88,8 @@ type useTransactionConfirmationScreenResult = {
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
     note: Optional<string>
-    /** False on a chain whose transactions have no note field. */
-    canAddNote: boolean
+    FeeSection: ComponentType<FeeRowProps>
+    TrailingSection: Optional<ComponentType<SendTrailingSectionProps>>
     openNote: () => void
     handleConfirm: () => void
     isCollectible: boolean
@@ -128,9 +142,11 @@ export const useTransactionConfirmationScreen =
         )
         const {
             feeAmount,
+            maxFeeAmount,
             presets: feePresets,
             isPending: isFeePending,
-        } = useSendFee({
+            isError: isFeeError,
+        } = useSendFeeQuery({
             scope,
             senderAddress: selectedAddress,
             assetId: selectedAssetId,
@@ -138,9 +154,9 @@ export const useTransactionConfirmationScreen =
             amount: baseUnitAmount,
             feePreset,
         })
-        const canAddNote =
-            getChainDescriptor(scope.chainId).protocol.maxNoteBytes !==
-            undefined
+        const sendConfirmation = chainUiFor(
+            getChainDescriptor(scope.chainId).family,
+        ).sendConfirmation
 
         // The quantum fee premium is driven by the effective signer (resolving
         // one rekey hop), matching the fee-multiplier logic — not the raw sender.
@@ -189,6 +205,30 @@ export const useTransactionConfirmationScreen =
         const { data: recipientWarning, isPending: isRecipientInfoPending } =
             useRecipientWarningQuery(recipientInput)
 
+        // A node refuses a send its native balance can't cover at the selected
+        // preset's worst-case fee, so check that before signing. Algorand's
+        // amount step already sizes the send against its reserve and close-out.
+        const isFeeCoverageChecked = !sendFlowChainAdapters.has(scope.chainId)
+        const nativeAsset = useNativeAsset(scope)
+        const isNativeAssetId = useIsNativeAssetId(scope)
+        const nativeSpendableInput = useMemo(
+            () =>
+                isFeeCoverageChecked && selectedAccount
+                    ? {
+                          account: selectedAccount,
+                          asset: {
+                              chainId: scope.chainId,
+                              assetId: nativeAsset.assetId,
+                          },
+                          scope,
+                          fee: ZERO_DECIMAL,
+                      }
+                    : undefined,
+            [isFeeCoverageChecked, selectedAccount, nativeAsset.assetId, scope],
+        )
+        const { data: nativeSpendable } =
+            useSpendableBalanceQuery(nativeSpendableInput)
+
         const [isSigning, setIsSigning] = useState(false)
         const isFocused = useIsFocused()
         // Regaining focus after failed signing resets slide-to-confirm.
@@ -221,6 +261,58 @@ export const useTransactionConfirmationScreen =
                     },
                 )
                 return
+            }
+
+            if (isFeeCoverageChecked) {
+                if (isFeeError) {
+                    showToast(
+                        {
+                            title: t(
+                                'send_funds.confirmation.fee_unavailable.title',
+                            ),
+                            body: t(
+                                'send_funds.confirmation.fee_unavailable.body',
+                            ),
+                            type: 'error',
+                        },
+                        {
+                            notifier: bottomSheetNotifier.current ?? undefined,
+                        },
+                    )
+                    return
+                }
+                if (!maxFeeAmount || !nativeSpendable || !baseUnitAmount) {
+                    return
+                }
+                const nativeNeeded = isNativeAssetId(selectedAssetId)
+                    ? baseUnitAmount.plus(maxFeeAmount)
+                    : maxFeeAmount
+                if (nativeSpendable.max.lt(nativeNeeded)) {
+                    showToast(
+                        {
+                            title: t(
+                                'send_funds.confirmation.fee_shortfall.title',
+                                {
+                                    symbol: nativeAsset.unitName,
+                                },
+                            ),
+                            body: t(
+                                'send_funds.confirmation.fee_shortfall.body',
+                                {
+                                    fee: `${formatNumber(
+                                        toWholeUnits(maxFeeAmount, nativeAsset),
+                                        nativeAsset.decimals,
+                                    )} ${nativeAsset.unitName}`,
+                                },
+                            ),
+                            type: 'error',
+                        },
+                        {
+                            notifier: bottomSheetNotifier.current ?? undefined,
+                        },
+                    )
+                    return
+                }
             }
 
             if (recipientWarning) {
@@ -273,7 +365,8 @@ export const useTransactionConfirmationScreen =
             currentBalance,
             currentBalancePending,
             note,
-            canAddNote,
+            FeeSection: sendConfirmation?.FeeSection ?? NeutralSendFeeSection,
+            TrailingSection: sendConfirmation?.TrailingSection,
             openNote,
             handleConfirm,
             isCollectible: isCollectibleAsset,

@@ -16,7 +16,7 @@ import { useSigningStore } from '../store'
 import { useScopedSignRequestId } from './SigningRequestScope'
 import { useSigningActorLifecycle } from './useSigningActorLifecycle'
 import { approvalGate } from '../pipeline/approvalGate'
-import type { SignRequest } from '../models'
+import { answersCaller, type SignRequest } from '../models'
 import {
     AppError,
     ErrorCategory,
@@ -150,7 +150,7 @@ export const useSigningRequest = (): UseSigningRequestResult => {
                 approvalGate.reject(request.id)
                 return
             }
-            if (request.transport === 'callback') {
+            if (answersCaller(request.transport)) {
                 ;(request as { reject?: () => void }).reject?.()
             }
             removeSignRequestFromStore(request)
