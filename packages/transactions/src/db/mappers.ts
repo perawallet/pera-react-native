@@ -76,7 +76,7 @@ function deserializeBalanceImpacts(
 /**
  * Rehydrates a persisted asset summary. The syncer only fetches transactions
  * newer than the newest cached one, so a row that captured the backend's
- * `asset(<id>)` placeholder is never revisited — ALGO's real facts have to be
+ * `asset(<id>)` placeholder is never revisited — the chain's real facts have to be
  * restored on the way out instead.
  */
 function deserializeAsset(

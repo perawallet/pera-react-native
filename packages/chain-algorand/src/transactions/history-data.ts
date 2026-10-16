@@ -51,15 +51,16 @@ export interface AlgorandHistoryData {
     swapGroupDetail: Nullable<AlgorandSwapGroupDetail>
 }
 
-export const EMPTY_ALGORAND_HISTORY_DATA: AlgorandHistoryData = {
-    family: 'algorand',
-    groupId: null,
-    closeTo: null,
-    closeAmount: null,
-    applicationId: null,
-    innerTransactionCount: null,
-    swapGroupDetail: null,
-}
+export const EMPTY_ALGORAND_HISTORY_DATA: Readonly<AlgorandHistoryData> =
+    Object.freeze({
+        family: 'algorand',
+        groupId: null,
+        closeTo: null,
+        closeAmount: null,
+        applicationId: null,
+        innerTransactionCount: null,
+        swapGroupDetail: null,
+    })
 
 const isAlgorandHistoryData = (value: unknown): value is AlgorandHistoryData =>
     typeof value === 'object' &&

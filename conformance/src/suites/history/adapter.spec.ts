@@ -141,6 +141,7 @@ describe('history adapter conformance', () => {
             accountAddress: closer.address,
         })
         const closeRow = transactions.find(txn => txn.id === close.txId)
+        expect(closeRow).toBeDefined()
         const closeData = algorandHistoryDataOf(closeRow!)
         expect(closeData.closeTo).toBe(receiver.address)
         expect(closeRow?.amount).toEqual(new Decimal(0))

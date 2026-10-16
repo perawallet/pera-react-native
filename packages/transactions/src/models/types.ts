@@ -59,10 +59,7 @@ export interface TransactionHistoryItem {
     /** The chain's own type tag, interpreted only by that chain; empty until the chain lists the transaction. */
     txType: string
     sender: string
-    /**
-     * The account debited by an asset transfer (`asnd`); null unless the
-     * transfer is a clawback, where `sender` is the authority instead.
-     */
+    /** The holder an asset transfer debits, when that isn't `sender`; null otherwise. */
     assetSender: Nullable<string>
     /** Null for transaction types that have no receiver. */
     receiver: Nullable<string>
