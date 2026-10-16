@@ -107,6 +107,7 @@ export const useLedgerFetchAccountsScreen =
                 const result = await connectAndDiscoverAccounts({
                     provider,
                     deviceId,
+                    chainId: LEGACY_CHAIN_ID,
                     onProgress: (index: number) => {
                         // First progress callback doubles as "connected":
                         // discovery only probes once the transport is open,

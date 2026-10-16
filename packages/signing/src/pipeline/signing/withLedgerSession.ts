@@ -11,6 +11,7 @@
  */
 
 import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     HardwareWalletRegistry,
     HardwareWalletTransport,
@@ -103,12 +104,13 @@ export const throwIfAborted = (signal: Optional<AbortSignal>): void => {
 const connectAndVerify = async (
     transportProvider: HardwareWalletTransportProvider,
     deviceId: string,
+    chainId: ChainId,
     accountIndex: number,
     expectedAddress: string,
     callbacks?: SigningCallbacks,
 ): Promise<HardwareWalletTransport> => {
     callbacks?.onPhaseChange?.('connecting')
-    const connectPromise = transportProvider.connect(deviceId)
+    const connectPromise = transportProvider.connect(deviceId, chainId)
     let transport: HardwareWalletTransport
     try {
         transport = await withTimeout(
@@ -176,6 +178,8 @@ export type LedgerSession = {
 export type LedgerSessionOptions = {
     registry?: HardwareWalletRegistry
     callbacks?: SigningCallbacks
+    /** The chain whose device app the session speaks. */
+    chainId: ChainId
 }
 
 /**
@@ -190,7 +194,7 @@ export const withLedgerSession = async <T>(
     options: LedgerSessionOptions,
     operation: (session: LedgerSession) => Promise<T>,
 ): Promise<T> => {
-    const { registry, callbacks } = options
+    const { registry, callbacks, chainId } = options
     const { device, accountIndex } = hwAccount.custody
 
     const transportProvider = registry?.getProvider(
@@ -219,6 +223,7 @@ export const withLedgerSession = async <T>(
         transport = await connectAndVerify(
             transportProvider,
             deviceId,
+            chainId,
             accountIndex,
             address,
             callbacks,

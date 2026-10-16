@@ -212,7 +212,7 @@ describe('useLedgerConnection', () => {
 
         let returned: Optional<HardwareWalletTransport>
         await act(async () => {
-            returned = await result.current.connect(device)
+            returned = await result.current.connect(device, 'algorand')
         })
 
         expect(returned).toBe(transport)
@@ -243,7 +243,7 @@ describe('useLedgerConnection', () => {
         let caught: Nullable<Error> = null
         await act(async () => {
             try {
-                await result.current.connect(device)
+                await result.current.connect(device, 'algorand')
             } catch (err) {
                 caught = err as Error
             }
@@ -277,7 +277,7 @@ describe('useLedgerConnection', () => {
         act(() => onDevice(device))
 
         await act(async () => {
-            await result.current.connect(device)
+            await result.current.connect(device, 'algorand')
         })
 
         await act(async () => {
@@ -384,10 +384,10 @@ describe('useLedgerConnection', () => {
         act(() => bleOnDevice(bleDevice))
 
         await act(async () => {
-            await result.current.connect(bleDevice)
+            await result.current.connect(bleDevice, 'algorand')
         })
 
-        expect(bleProvider.connect).toHaveBeenCalledWith('b1')
+        expect(bleProvider.connect).toHaveBeenCalledWith('b1', 'algorand')
         expect(usbProvider.connect).not.toHaveBeenCalled()
     })
 
@@ -402,14 +402,17 @@ describe('useLedgerConnection', () => {
         const { result } = renderHook(() => useLedgerConnection([provider]))
 
         await expect(
-            result.current.connect({
-                id: 'unknown',
-                name: 'Nano X',
-                manufacturer: 'ledger',
-                transportType: 'ble',
-                model: 'nanoX',
-                rssi: null,
-            }),
+            result.current.connect(
+                {
+                    id: 'unknown',
+                    name: 'Nano X',
+                    manufacturer: 'ledger',
+                    transportType: 'ble',
+                    model: 'nanoX',
+                    rssi: null,
+                },
+                'algorand',
+            ),
         ).rejects.toThrow(/No provider tracked/)
     })
 
@@ -467,10 +470,10 @@ describe('useLedgerConnection', () => {
         })
 
         await act(async () => {
-            await result.current.connect(bleDevice)
+            await result.current.connect(bleDevice, 'algorand')
         })
 
-        expect(bleProvider.connect).toHaveBeenCalledWith('shared')
+        expect(bleProvider.connect).toHaveBeenCalledWith('shared', 'algorand')
         expect(usbProvider.connect).not.toHaveBeenCalled()
     })
 })

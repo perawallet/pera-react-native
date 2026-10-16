@@ -51,9 +51,13 @@ describe('connectAndDiscoverAccounts', () => {
         const result = await connectAndDiscoverAccounts({
             provider,
             deviceId: 'test-device-id',
+            chainId: 'algorand',
         })
 
-        expect(provider.connect).toHaveBeenCalledWith('test-device-id')
+        expect(provider.connect).toHaveBeenCalledWith(
+            'test-device-id',
+            'algorand',
+        )
         expect(result.transport).toBe(transport)
         expect(result.accounts.length).toBeGreaterThan(0)
         expect(result.accounts[0].address).toBe('ADDR_0')
@@ -67,6 +71,7 @@ describe('connectAndDiscoverAccounts', () => {
         await connectAndDiscoverAccounts({
             provider,
             deviceId: 'test-device-id',
+            chainId: 'algorand',
             onProgress,
         })
 
@@ -87,6 +92,7 @@ describe('connectAndDiscoverAccounts', () => {
             connectAndDiscoverAccounts({
                 provider,
                 deviceId: 'test-device-id',
+                chainId: 'algorand',
             }),
         ).rejects.toThrow('Connection failed')
     })
@@ -102,6 +108,7 @@ describe('connectAndDiscoverAccounts', () => {
             connectAndDiscoverAccounts({
                 provider,
                 deviceId: 'test-device-id',
+                chainId: 'algorand',
             }),
         ).rejects.toThrow('app closed on device')
 
@@ -127,6 +134,7 @@ describe('connectAndDiscoverAccounts', () => {
             const promise = connectAndDiscoverAccounts({
                 provider,
                 deviceId: 'test-device-id',
+                chainId: 'algorand',
             })
             const assertion = expect(promise).rejects.toThrow(
                 LedgerDeviceNotFoundError,
@@ -154,6 +162,7 @@ describe('connectAndDiscoverAccounts', () => {
             const promise = connectAndDiscoverAccounts({
                 provider,
                 deviceId: 'test-device-id',
+                chainId: 'algorand',
             })
             const assertion = expect(promise).rejects.toThrow(
                 LedgerDeviceNotFoundError,

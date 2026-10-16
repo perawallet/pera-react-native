@@ -296,7 +296,10 @@ export const useLedgerSelectAccountsScreen =
                             `No Ledger provider registered for transport "${transportType}"`,
                         )
                     }
-                    const connectPromise = provider.connect(deviceId)
+                    const connectPromise = provider.connect(
+                        deviceId,
+                        scope.chainId,
+                    )
                     try {
                         transportRef.current =
                             await withLedgerConnectionTimeout(
@@ -350,7 +353,7 @@ export const useLedgerSelectAccountsScreen =
                     setIsFetchingMore(false)
                 }
             }
-        }, [deviceId, transportType, errorToast, t, isMounted])
+        }, [deviceId, transportType, scope.chainId, errorToast, t, isMounted])
 
         const handleInfoPress = useCallback(
             (address: string, accountIndex: number) => {

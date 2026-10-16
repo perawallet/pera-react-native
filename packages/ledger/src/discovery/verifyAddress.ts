@@ -20,8 +20,8 @@ import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-shared'
 /**
  * Verify a Ledger account address on the device.
  *
- * Sends the address to the Ledger device with the verify flag set (P1=0x80),
- * which displays the address on the device screen for the user to visually confirm.
+ * Asks the device to display the address on its screen for the user to
+ * visually confirm.
  * The user must approve on the device before this resolves.
  *
  * @param transport - Connected Ledger transport
