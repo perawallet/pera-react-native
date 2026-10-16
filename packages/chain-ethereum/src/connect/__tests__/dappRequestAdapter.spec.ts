@@ -92,7 +92,7 @@ describe('ethereumDappRequestAdapter', () => {
     describe('sendTransaction.validate', () => {
         const sending = adapter.sendTransaction
         if (!sending) throw new Error('Ethereum sends transactions for dApps')
-        const [from] = [watch.chains.ethereum?.address ?? '']
+        const from = watch.chains.ethereum?.address ?? ''
         const to = '0x2c7536E3605D9C16a7a3D7b1898e529396a65c23'
 
         it('reads the active network from the context, which a request must name', () => {

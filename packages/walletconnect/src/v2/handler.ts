@@ -652,7 +652,7 @@ export const createWalletConnectV2Handler = (
 
     /**
      * The SDK's refusal, unless the namespace maps `wire.failure` to a code of
-     * its own: an eip155 dApp only recognises EIP-1193 numbers.
+     * its own: a namespace's dApps may read only the codes their standard names.
      */
     const refusalResponse = (
         id: number,

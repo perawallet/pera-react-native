@@ -16,7 +16,9 @@ managing N connections; the `ConnectionRegistry` (`src/registry.ts`) owns the ha
 every inbound payload before a subscriber can see it, and reconciles the store from each handler's
 `restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
 message belongs to. That chain's dApp request adapter (`src/dappRequest.ts`) validates the
-transaction payload and supplies the signing hook, and a message for a chain with no registered
+transaction payload and supplies the signing hook, and can build a send-transaction itself. A namespace
+maps the chain-neutral `DappRequestFailure` to its own wire codes, and the handler sends its defaults
+when it defines none. A message for a chain with no registered
 adapter is refused. `src/signing-adapter.ts` is the single bridge from those operations into the
 signing pipeline, so a new protocol needs a handler and a new chain needs an adapter, nothing else.
 The bridge runs both ways: a handler

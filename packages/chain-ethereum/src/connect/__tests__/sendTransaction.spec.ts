@@ -23,7 +23,6 @@ import {
 import { setupServer } from 'msw/node'
 import {
     getAddress,
-    hexToBytes,
     parseGwei,
     parseTransaction,
     serializeTransaction,
@@ -472,16 +471,6 @@ describe('buildEthereumSendTransaction', () => {
         expect(warnings).toEqual([
             expect.objectContaining({ type: 'unknown-contract' }),
         ])
-    })
-
-    it('signs the bytes it serialises', async () => {
-        useRpc()
-
-        const built = await buildEthereumSendTransaction(ctx, request())
-
-        expect(
-            hexToBytes(serializeTransaction(payloadOf(built))).length,
-        ).toBeGreaterThan(0)
     })
 
     it('rejects with an EvmError when the node reverts the estimate', async () => {

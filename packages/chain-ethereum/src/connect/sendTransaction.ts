@@ -52,7 +52,6 @@ const invalid = (message: string): Validation => ({
     message,
 })
 
-// Sent by a dApp that signs for a type the wallet rebuilds as EIP-1559.
 const REBUILT_AS_EIP1559_TYPES: readonly bigint[] = [0n, 1n, 2n]
 
 // EIP-4844 blobs are for rollups posting data, and a signed EIP-7702
