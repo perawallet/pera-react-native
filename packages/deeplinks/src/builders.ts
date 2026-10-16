@@ -11,7 +11,7 @@
  */
 
 import { PERAWALLET_SCHEME } from './constants'
-import { DeeplinkType } from './types'
+import { DeeplinkType } from './links'
 
 export type BuildDeeplinkInput = {
     type: typeof DeeplinkType.SHARED_ACCOUNT_IMPORT

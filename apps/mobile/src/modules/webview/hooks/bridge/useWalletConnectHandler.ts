@@ -12,6 +12,7 @@
 
 import { useCallback, useRef } from 'react'
 import type WebView from 'react-native-webview'
+import { walletConnectUriOf } from '@perawallet/wallet-core-deeplinks'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { parseWalletConnectUri } from '@perawallet/wallet-core-walletconnect'
 import { useCapability } from '@hooks/useCapability'
@@ -59,7 +60,11 @@ export const useWalletConnectHandler = (
             }
 
             const rawUri = message.params!.uri as string
-            const parsed = parseWalletConnectUri(rawUri)
+            // A chain's wrapper scheme (e.g. its `-wc:` form) is unwrapped by
+            // its deeplink adapter before the WalletConnect layer reads it.
+            const parsed = parseWalletConnectUri(
+                walletConnectUriOf(rawUri) ?? rawUri,
+            )
             if (!parsed) {
                 sendErrorToWebview(
                     message.id,

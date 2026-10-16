@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Pegar del portapapeles",
         "invalid_qr_title": "Código QR no válido",
         "invalid_qr_body": "Este código QR no contiene una dirección de wallet",
+        "other_chain_qr_body": "Esta es una dirección de {{chain}}.",
         "address": "Dirección",
         "contacts": "Contactos",
         "my_accounts": "Cuentas",

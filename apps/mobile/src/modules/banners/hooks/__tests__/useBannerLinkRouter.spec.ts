@@ -14,9 +14,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Linking } from 'react-native'
 import { parseDeeplink } from '@modules/deeplink/parser'
-import { DeeplinkType } from '@modules/deeplink/types'
+import {
+    DeeplinkType,
+    deeplinkAdapters,
+} from '@perawallet/wallet-core-deeplinks'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 
 const mockHandleDeepLink = vi.fn()
 const mockParseDeeplink = vi.fn()
@@ -37,6 +41,7 @@ const WC_URI = encodeURIComponent('wc:abc@2?relay-protocol=irn&symKey=x')
 
 beforeEach(() => {
     registerLegacyAddressCodec()
+    registerDeeplinkAdapters()
     mockHandleDeepLink.mockReset()
     mockParseDeeplink.mockReset()
     mockParseDeeplink.mockReturnValue(null)
@@ -47,6 +52,7 @@ beforeEach(() => {
 
 afterEach(() => {
     addressCodecs.reset()
+    deeplinkAdapters.reset()
 })
 
 describe('useBannerLinkRouter', () => {
@@ -86,7 +92,7 @@ describe('useBannerLinkRouter', () => {
     })
 
     it('refuses a deeplink the notification policy does not admit', () => {
-        mockParseDeeplink.mockReturnValue({ type: DeeplinkType.KEYREG })
+        mockParseDeeplink.mockReturnValue({ type: DeeplinkType.CHAIN_ACTION })
         const { result } = renderHook(() => useBannerLinkRouter())
         act(() =>
             result.current.route({

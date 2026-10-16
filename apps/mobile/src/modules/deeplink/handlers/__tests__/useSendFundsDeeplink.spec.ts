@@ -70,6 +70,21 @@ describe('useSendFundsDeeplink', () => {
         )
     })
 
+    it('stores a base-units amount as digits for the input step to convert', () => {
+        const { result } = renderHook(() => useSendFundsDeeplink())
+
+        result.current({
+            assetId: '31566704',
+            destination: 'RECEIVER',
+            amountBaseUnits: new Decimal('18446744073709551616'),
+        })
+
+        expect(
+            sendFundsStore.setPendingAmountBaseUnits,
+        ).toHaveBeenCalledExactlyOnceWith('18446744073709551616')
+        expect(sendFundsStore.setAmount).not.toHaveBeenCalled()
+    })
+
     it('asks the amount step to continue to confirmation for an already-confirmed send', () => {
         const { result } = renderHook(() => useSendFundsDeeplink())
 

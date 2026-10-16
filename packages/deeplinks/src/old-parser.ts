@@ -10,17 +10,12 @@
  limitations under the License
  */
 
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AnyParsedDeeplink,
     DeeplinkType,
     type AddressActionsDeeplink,
-    type AlgoTransferDeeplink,
-    type AssetTransferDeeplink,
-    type KeyregDeeplink,
-    type KeyregParticipationFields,
+    type TransferDeeplink,
+    type ChainActionDeeplink,
     type AssetOptInDeeplink,
     type AssetTransactionsDeeplink,
     type AssetInboxDeeplink,
@@ -29,23 +24,26 @@ import {
     type CardsDeeplink,
     type StakingDeeplink,
     type HomeDeeplink,
-} from './types'
+} from './links'
+import {
+    isPeraLinkAddress,
+    peraLinkTarget,
+    toPeraKeyregAction,
+    toPeraLinkAssetRef,
+    toPeraPaymentData,
+} from './pera-link-chain'
 import {
     decodeBase64Param,
-    inferKeyregType,
-    isLegacyChainAddress,
-    isValidAssetId,
     normalizeUrl,
     parseQueryParams,
+    readBaseUnits,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
 
 /**
  * Parse Perawallet old-style URIs: perawallet://ADDRESS?params
  */
-export const parsePerawalletUri = (
-    url: string,
-): Nullable<AnyParsedDeeplink> => {
+export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
     const normalizedUrl = normalizeUrl(url)
 
     if (!normalizedUrl.startsWith(`${PERAWALLET_SCHEME}://`)) {
@@ -54,11 +52,13 @@ export const parsePerawalletUri = (
 
     const params = parseQueryParams(normalizedUrl)
 
-    // ARC-90: assetid = 1*DIGIT. `asset` feeds every asset-bearing branch
-    // below; reject a present-but-non-numeric id once, here, so the link
-    // reads as unrecognized instead of forming an opt-in/transfer that
-    // fails later at BigInt(assetId).
-    if (params.asset && !isValidAssetId(params.asset)) return null
+    // `asset` feeds every asset-bearing branch below; reject a present id the
+    // chain can't spell once, here, so the link reads as unrecognized instead
+    // of forming an opt-in/transfer that fails later.
+    const assetRef = params.asset ? toPeraLinkAssetRef(params.asset) : undefined
+    if (params.asset && !assetRef) return null
+
+    const target = peraLinkTarget()
 
     const schemeEnd = normalizedUrl.indexOf('://') + 3
     const queryStart = normalizedUrl.indexOf('?')
@@ -68,10 +68,13 @@ export const parsePerawalletUri = (
             : normalizedUrl.slice(schemeEnd)
 
     if (pathPart === 'asset/opt-in' || pathPart.includes('asset/opt-in')) {
+        // A missing asset id leaves nothing to opt in to.
+        if (!assetRef) return null
         return {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
-            assetId: params.asset,
+            target,
+            assetRef,
             address: params.account,
         } as AssetOptInDeeplink
     }
@@ -80,8 +83,9 @@ export const parsePerawalletUri = (
         return {
             type: DeeplinkType.ASSET_TRANSACTIONS,
             sourceUrl: url,
+            target,
             address: params.account || '',
-            assetId: params.asset || nativeAssetFor(LEGACY_CHAIN_ID).assetId,
+            assetRef,
         } as AssetTransactionsDeeplink
     }
 
@@ -113,19 +117,21 @@ export const parsePerawalletUri = (
         return {
             type: DeeplinkType.ASSET_INBOX,
             sourceUrl: url,
+            target,
             address: params.account,
         } as AssetInboxDeeplink
     }
 
-    if (!pathPart && params.amount === '0' && params.asset) {
+    if (!pathPart && params.amount === '0' && assetRef) {
         return {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
-            assetId: params.asset,
+            target,
+            assetRef,
         } as AssetOptInDeeplink
     }
 
-    if (params.url && !isLegacyChainAddress(pathPart)) {
+    if (params.url && !isPeraLinkAddress(pathPart)) {
         const decodedUrl = decodeBase64Param(params.url)
         return {
             type: DeeplinkType.DISCOVER_BROWSER,
@@ -136,21 +142,23 @@ export const parsePerawalletUri = (
 
     const address = pathPart
 
-    if (params.type === 'asset/opt-in' && params.asset) {
+    if (params.type === 'asset/opt-in' && assetRef) {
         return {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
-            assetId: params.asset,
+            target,
+            assetRef,
             address: params.account || address,
         } as AssetOptInDeeplink
     }
 
-    if (params.type === 'asset/transactions' && params.asset) {
+    if (params.type === 'asset/transactions' && assetRef) {
         return {
             type: DeeplinkType.ASSET_TRANSACTIONS,
             sourceUrl: url,
+            target,
             address: params.account || address,
-            assetId: params.asset,
+            assetRef,
         } as AssetTransactionsDeeplink
     }
 
@@ -158,11 +166,12 @@ export const parsePerawalletUri = (
         return {
             type: DeeplinkType.ASSET_INBOX,
             sourceUrl: url,
+            target,
             address: params.account || address,
         } as AssetInboxDeeplink
     }
 
-    if (!pathPart || !isLegacyChainAddress(pathPart)) {
+    if (!pathPart || !isPeraLinkAddress(pathPart)) {
         return {
             type: DeeplinkType.HOME,
             sourceUrl: url,
@@ -170,61 +179,59 @@ export const parsePerawalletUri = (
     }
 
     if (params.type === 'keyreg') {
-        const participation: KeyregParticipationFields = {
+        const chainData = toPeraKeyregAction({
+            sender: address,
             voteKey: params.votekey,
-            selkey: params.selkey,
-            sprfkey: params.sprfkey,
-            votefst: params.votefst,
-            votelst: params.votelst,
-            votekd: params.votekd,
-        }
-
-        return {
-            type: DeeplinkType.KEYREG,
-            sourceUrl: url,
-            senderAddress: address,
-            keyregType: inferKeyregType(participation),
-            ...participation,
+            selectionKey: params.selkey,
+            stateProofKey: params.sprfkey,
+            voteFirst: params.votefst,
+            voteLast: params.votelst,
+            voteKeyDilution: params.votekd,
             fee: params.fee,
             note: params.note,
-        } as KeyregDeeplink
+        })
+        if (!chainData) return null
+
+        return {
+            type: DeeplinkType.CHAIN_ACTION,
+            sourceUrl: url,
+            target,
+            chainData,
+        } as ChainActionDeeplink
     }
 
-    if (params.amount === '0' && params.asset) {
+    if (params.amount === '0' && assetRef) {
         return {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
-            assetId: params.asset,
+            target,
+            assetRef,
             address,
         } as AssetOptInDeeplink
     }
 
-    if (params.asset && params.amount && params.amount !== '0') {
+    if (
+        (assetRef && params.amount && params.amount !== '0') ||
+        (params.amount && !assetRef)
+    ) {
+        const amount = readBaseUnits(params.amount)
+        if (!amount) return null
         return {
-            type: DeeplinkType.ASSET_TRANSFER,
+            type: DeeplinkType.TRANSFER,
             sourceUrl: url,
-            assetId: params.asset,
+            target,
             receiverAddress: address,
-            amount: params.amount,
+            assetRef,
+            amount,
             note: params.note,
-            xnote: params.xnote,
-        } as AssetTransferDeeplink
-    }
-
-    if (params.amount && !params.asset) {
-        return {
-            type: DeeplinkType.ALGO_TRANSFER,
-            sourceUrl: url,
-            receiverAddress: address,
-            amount: params.amount,
-            note: params.note,
-            xnote: params.xnote,
-        } as AlgoTransferDeeplink
+            chainData: toPeraPaymentData(params.xnote),
+        } as TransferDeeplink
     }
 
     return {
         type: DeeplinkType.ADDRESS_ACTIONS,
         sourceUrl: url,
+        target,
         address,
     } as AddressActionsDeeplink
 }

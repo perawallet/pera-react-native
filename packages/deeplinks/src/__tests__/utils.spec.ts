@@ -12,40 +12,19 @@
 
 // @vitest-environment node
 
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { describe, expect, it } from 'vitest'
 import {
-    isLegacyChainAddress,
     parseQueryParams,
     decodeBase64Param,
     normalizeUrl,
     extractPath,
-    isValidAssetId,
+    readBaseUnits,
+    readPeraAppLink,
     isPeraOwnedDeeplink,
     getUniversalLinkPath,
 } from '../utils'
 
 describe('Deeplink Parser - Helper Functions', () => {
-    describe('isLegacyChainAddress', () => {
-        beforeEach(() => {
-            registerLegacyAddressCodec(address => address === 'VALID')
-        })
-
-        afterEach(() => {
-            addressCodecs.reset()
-        })
-
-        it('accepts what the legacy chain codec accepts', () => {
-            expect(isLegacyChainAddress('VALID')).toBe(true)
-            expect(isLegacyChainAddress('INVALID')).toBe(false)
-        })
-
-        it('treats a missing or empty param as not an address', () => {
-            expect(isLegacyChainAddress(undefined)).toBe(false)
-            expect(isLegacyChainAddress('')).toBe(false)
-        })
-    })
-
     describe('parseQueryParams', () => {
         it('parses basic query parameters', () => {
             const params = parseQueryParams(
@@ -168,18 +147,43 @@ describe('Deeplink Parser - Helper Functions', () => {
         })
     })
 
-    describe('isValidAssetId', () => {
-        it('accepts digits-only ids, including 0', () => {
-            expect(isValidAssetId('0')).toBe(true)
-            expect(isValidAssetId('31566704')).toBe(true)
+    describe('readBaseUnits', () => {
+        it('accepts digits only', () => {
+            expect(readBaseUnits('0')?.toFixed()).toBe('0')
+            expect(readBaseUnits('18446744073709551616')?.toFixed()).toBe(
+                '18446744073709551616',
+            )
         })
 
-        it('rejects non-numeric, negative, and empty ids', () => {
-            expect(isValidAssetId('abc')).toBe(false)
-            expect(isValidAssetId('-1')).toBe(false)
-            expect(isValidAssetId('1.5')).toBe(false)
-            expect(isValidAssetId('12x')).toBe(false)
-            expect(isValidAssetId('')).toBe(false)
+        it('rejects anything else', () => {
+            for (const raw of ['', '-1', '1.5', '1e3', ' 1', '12x']) {
+                expect(readBaseUnits(raw)).toBeUndefined()
+            }
+        })
+    })
+
+    describe('readPeraAppLink', () => {
+        it('reads the action and params of the scheme form', () => {
+            expect(
+                readPeraAppLink('perawallet://app/web-import/?a=1&b=x'),
+            ).toEqual({ action: 'web-import', params: { a: '1', b: 'x' } })
+        })
+
+        it('reads the universal-link form', () => {
+            expect(
+                readPeraAppLink(
+                    'https://perawallet.app/qr/perawallet/app/swap?assetInId=0',
+                ),
+            ).toEqual({ action: 'swap', params: { assetInId: '0' } })
+        })
+
+        it('is null for any other link', () => {
+            expect(readPeraAppLink('perawallet://app')).toBeNull()
+            expect(readPeraAppLink('perawallet://ADDR?amount=1')).toBeNull()
+            expect(
+                readPeraAppLink('https://perawallet.app/qr/perawallet/ADDR'),
+            ).toBeNull()
+            expect(readPeraAppLink('https://example.com/app/swap')).toBeNull()
         })
     })
 

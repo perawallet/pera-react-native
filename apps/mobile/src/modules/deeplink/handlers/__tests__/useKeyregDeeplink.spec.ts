@@ -13,9 +13,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { Decimal } from 'decimal.js'
+import {
+    addressCodecs,
+    type ChainActionData,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    DeeplinkType,
+    type ChainActionDeeplink,
+    type ChainLinkTarget,
+} from '@perawallet/wallet-core-deeplinks'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
-import { DeeplinkType, type KeyregDeeplink } from '../../types'
 
 const {
     mockAddSignRequest,
@@ -47,20 +55,7 @@ const {
     mockAssignFeeToGroup: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-config')
-    >()),
-    getChainConfig: (scope: { networkId: string }) => ({
-        genesisHash: `hash-${scope.networkId}`,
-    }),
-}))
-
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({
-        network: mockNetwork.current,
-        networkConfig: { genesisId: `${mockNetwork.current}-v1.0` },
-    }),
     useSelectedScope: (chainId: string) => ({
         chainId,
         networkId: mockNetwork.current,
@@ -90,6 +85,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
     generateOrderedUniqueId: () => 'test-sign-request-id',
     decodeFromBase64: (s: string) => Uint8Array.from(Buffer.from(s, 'base64')),
+    toBigInt: (d: Decimal) => BigInt(d.toFixed(0)),
 }))
 
 vi.mock('../useDeeplinkErrorHandler', () => ({
@@ -109,27 +105,33 @@ const VALID_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 const baseOfflineDeeplink = (
-    overrides: Partial<KeyregDeeplink> = {},
-): KeyregDeeplink => ({
-    type: DeeplinkType.KEYREG,
+    chainData: Partial<ChainActionData> = {},
+    target: ChainLinkTarget = { chainId: 'algorand' },
+): ChainActionDeeplink => ({
+    type: DeeplinkType.CHAIN_ACTION,
     sourceUrl: 'perawallet://app/keyreg/?senderAddress=...',
-    senderAddress: VALID_ADDRESS,
-    keyregType: 'offline',
-    ...overrides,
+    target,
+    chainData: {
+        family: 'algorand',
+        action: 'keyreg',
+        sender: VALID_ADDRESS,
+        keyregType: 'offline',
+        ...chainData,
+    },
 })
 
 const baseOnlineDeeplink = (
-    overrides: Partial<KeyregDeeplink> = {},
-): KeyregDeeplink =>
+    chainData: Partial<ChainActionData> = {},
+): ChainActionDeeplink =>
     baseOfflineDeeplink({
         keyregType: 'online',
         voteKey: 'AAA',
-        selkey: 'AAA',
-        sprfkey: 'AAA',
-        votefst: '100',
-        votelst: '200',
-        votekd: '10',
-        ...overrides,
+        selectionKey: 'AAA',
+        stateProofKey: 'AAA',
+        voteFirst: '100',
+        voteLast: '200',
+        voteKeyDilution: '10',
+        ...chainData,
     })
 
 const seedSenderInWallet = () => {
@@ -181,7 +183,7 @@ describe('useKeyregDeeplink', () => {
 
             await act(async () => {
                 await result.current(
-                    baseOfflineDeeplink({ senderAddress: 'NOT-AN-ADDRESS' }),
+                    baseOfflineDeeplink({ sender: 'NOT-AN-ADDRESS' }),
                 )
             })
 
@@ -223,7 +225,10 @@ describe('useKeyregDeeplink', () => {
 
             await act(async () => {
                 await result.current(
-                    baseOfflineDeeplink({ targetNetwork: 'testnet-v1.0' }),
+                    baseOfflineDeeplink(
+                        {},
+                        { chainId: 'algorand', networkId: 'testnet' },
+                    ),
                 )
             })
 
@@ -236,31 +241,17 @@ describe('useKeyregDeeplink', () => {
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
 
-        it('accepts a target naming the active network by genesis id', async () => {
+        it('accepts a target naming the active network', async () => {
             seedSenderInWallet()
 
             const { result } = renderHook(() => useKeyregDeeplink())
 
             await act(async () => {
                 await result.current(
-                    baseOfflineDeeplink({ targetNetwork: 'mainnet-v1.0' }),
-                )
-            })
-
-            expect(mockShowError).not.toHaveBeenCalled()
-            expect(mockOfflineKeyRegistration).toHaveBeenCalled()
-        })
-
-        // A `gh:` qualifier arrives as a base64 genesis hash, so match that
-        // too — read through getChainConfig, which folds in a saved custom node.
-        it('accepts a target naming the active network by genesis hash', async () => {
-            seedSenderInWallet()
-
-            const { result } = renderHook(() => useKeyregDeeplink())
-
-            await act(async () => {
-                await result.current(
-                    baseOfflineDeeplink({ targetNetwork: 'hash-mainnet' }),
+                    baseOfflineDeeplink(
+                        {},
+                        { chainId: 'algorand', networkId: 'mainnet' },
+                    ),
                 )
             })
 
@@ -337,7 +328,9 @@ describe('useKeyregDeeplink', () => {
 
             // sprfkey omitted → online keyreg requires every key field.
             await act(async () => {
-                await result.current(baseOnlineDeeplink({ sprfkey: undefined }))
+                await result.current(
+                    baseOnlineDeeplink({ stateProofKey: undefined }),
+                )
             })
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
@@ -359,7 +352,10 @@ describe('useKeyregDeeplink', () => {
 
             await act(async () => {
                 await result.current(
-                    baseOfflineDeeplink({ note: 'going offline', fee: '2000' }),
+                    baseOfflineDeeplink({
+                        note: 'going offline',
+                        fee: new Decimal(2000),
+                    }),
                 )
             })
 
@@ -391,9 +387,9 @@ describe('useKeyregDeeplink', () => {
             await act(async () => {
                 await result.current(
                     baseOnlineDeeplink({
-                        votefst: '1300',
-                        votelst: '11300',
-                        votekd: '100',
+                        voteFirst: '1300',
+                        voteLast: '11300',
+                        voteKeyDilution: '100',
                     }),
                 )
             })
@@ -467,7 +463,9 @@ describe('useKeyregDeeplink', () => {
             const { result } = renderHook(() => useKeyregDeeplink())
 
             await act(async () => {
-                await result.current(baseOfflineDeeplink({ fee: '1000' }))
+                await result.current(
+                    baseOfflineDeeplink({ fee: new Decimal(1000) }),
+                )
             })
 
             // The dApp fee reaches the builder untouched; the raise happens
@@ -522,7 +520,9 @@ describe('useKeyregDeeplink', () => {
             const { result } = renderHook(() => useKeyregDeeplink())
 
             await act(async () => {
-                await result.current(baseOfflineDeeplink({ fee: '1000' }))
+                await result.current(
+                    baseOfflineDeeplink({ fee: new Decimal(1000) }),
+                )
             })
 
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(

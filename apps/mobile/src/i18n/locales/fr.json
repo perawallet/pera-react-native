@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Coller depuis le presse-papiers",
         "invalid_qr_title": "QR code non valide",
         "invalid_qr_body": "Ce QR code ne contient pas d’adresse de wallet",
+        "other_chain_qr_body": "Il s’agit d’une adresse sur {{chain}}.",
         "address": "Adresse",
         "contacts": "Contacts",
         "my_accounts": "Comptes",

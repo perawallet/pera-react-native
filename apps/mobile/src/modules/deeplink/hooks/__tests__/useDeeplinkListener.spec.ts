@@ -12,6 +12,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    deeplinkAdapters,
+    uriSchemeOf,
+    type DeeplinkChainAdapter,
+} from '@perawallet/wallet-core-deeplinks'
 
 const {
     mockHandleDeepLink,
@@ -59,6 +64,23 @@ import {
     useDeeplinkListener,
     resetDeeplinkListenerStateForTesting,
 } from '../useDeeplinkListener'
+
+// Unwraps the chain's `-wc:` and legacy `://wc?` wrapper forms to `wc:` the way
+// the real adapter does; the listener only needs that one behavior.
+const wrapperAdapter: DeeplinkChainAdapter = {
+    chainId: 'algorand',
+    schemes: ['algorand', 'algorand-wc'],
+    canParse: input =>
+        ['algorand', 'algorand-wc'].includes(uriSchemeOf(input) ?? ''),
+    parse: input => ({
+        ok: true,
+        intent: {
+            kind: 'wallet-connect',
+            uri: `wc:${input.slice(input.indexOf(':') + 1)}`,
+        },
+    }),
+    toAssetRef: () => undefined,
+}
 
 const OPT_IN_URL = 'perawallet://app/asset-opt-in/?assetId=31566704'
 
@@ -172,6 +194,39 @@ describe('useDeeplinkListener', () => {
             await vi.runAllTimersAsync()
 
             expect(mockShowError).toHaveBeenCalledTimes(1)
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('chain-wrapped WalletConnect links', () => {
+        beforeEach(() => {
+            mockIsValidDeepLink.mockReturnValue(false)
+            deeplinkAdapters.register(wrapperAdapter)
+        })
+
+        afterEach(() => {
+            deeplinkAdapters.reset()
+        })
+
+        it('toasts for an algorand-wc: link whose wrapped uri is mangled', () => {
+            renderHook(() => useDeeplinkListener())
+
+            urlListeners[0]({ url: 'algorand-wc://wc?uri=%E0%A4%A' })
+
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    variant: 'walletconnect_unsupported',
+                }),
+            )
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('stays silent for the legacy wrapper that only foregrounds the wallet', () => {
+            renderHook(() => useDeeplinkListener())
+
+            urlListeners[0]({ url: 'algorand://wc?browser=x' })
+
+            expect(mockShowError).not.toHaveBeenCalled()
             expect(mockHandleDeepLink).not.toHaveBeenCalled()
         })
     })

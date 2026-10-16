@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
+import { DeeplinkType } from './links'
 
 /**
  * Whether server-chosen content (a push, an in-app notification or a banner
@@ -22,13 +22,10 @@ import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
  * transfer, signs, pairs, or writes wallet state is refused.
  *
  * Exhaustive `Record` for the same reason as `DEEPLINK_PAGE_POLICY`: a new
- * `DeeplinkType` fails to compile until it is classified here. The locale tour
- * is excluded and therefore denied (see page-initiated-policy.ts).
+ * `DeeplinkType` fails to compile until it is classified here. The lookup takes
+ * any string, so a type nothing here classifies is refused too.
  */
-export const DEEPLINK_NOTIFICATION_POLICY: Record<
-    Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
-    boolean
-> = {
+export const DEEPLINK_NOTIFICATION_POLICY: Record<DeeplinkType, boolean> = {
     [DeeplinkType.HOME]: true,
     [DeeplinkType.ACCOUNT_DETAIL]: true,
     [DeeplinkType.ASSET_DETAIL]: true,
@@ -49,10 +46,9 @@ export const DEEPLINK_NOTIFICATION_POLICY: Record<
     // Opens the on-ramp section; carries no address or amount.
     [DeeplinkType.BUY]: true,
 
-    [DeeplinkType.ALGO_TRANSFER]: false,
-    [DeeplinkType.ASSET_TRANSFER]: false,
+    [DeeplinkType.TRANSFER]: false,
     [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: false,
-    [DeeplinkType.KEYREG]: false,
+    [DeeplinkType.CHAIN_ACTION]: false,
     [DeeplinkType.WALLET_CONNECT]: false,
     [DeeplinkType.LIQUID_AUTH]: false,
     [DeeplinkType.RECOVER_ADDRESS]: false,
@@ -66,9 +62,8 @@ export const DEEPLINK_NOTIFICATION_POLICY: Record<
     [DeeplinkType.SELL]: false,
 }
 
-const POLICY_BY_TYPE: Partial<Record<DeeplinkType, boolean>> =
+const POLICY_BY_TYPE: Partial<Record<string, boolean>> =
     DEEPLINK_NOTIFICATION_POLICY
 
-export const isNotificationAllowedDeeplinkType = (
-    type: DeeplinkType,
-): boolean => POLICY_BY_TYPE[type] === true
+export const isNotificationAllowedDeeplinkType = (type: string): boolean =>
+    POLICY_BY_TYPE[type] === true

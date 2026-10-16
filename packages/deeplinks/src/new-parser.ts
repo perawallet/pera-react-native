@@ -10,10 +10,6 @@
  limitations under the License
  */
 
-import { parsePeraWebImportFields } from '@perawallet/wallet-core-backup'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AnyParsedDeeplink,
     DeeplinkType,
@@ -22,12 +18,9 @@ import {
     type AddWatchAccountDeeplink,
     type ReceiverAccountSelectionDeeplink,
     type AddressActionsDeeplink,
-    type AlgoTransferDeeplink,
-    type AssetTransferDeeplink,
-    type KeyregDeeplink,
-    type KeyregParticipationFields,
+    type TransferDeeplink,
+    type ChainActionDeeplink,
     type RecoverAddressDeeplink,
-    type PeraWebImportDeeplink,
     type WalletConnectDeeplink,
     type AssetOptInDeeplink,
     type AssetDetailDeeplink,
@@ -44,23 +37,26 @@ import {
     type SharedAccountImportDeeplink,
     type SignRequestDeeplink,
     type HomeDeeplink,
-} from './types'
+} from './links'
+import {
+    peraLinkTarget,
+    toPeraKeyregAction,
+    toPeraLinkAssetRef,
+    toPeraPaymentData,
+} from './pera-link-chain'
 import {
     decodeBase64Param,
     extractPath,
-    inferKeyregType,
-    isValidAssetId,
     normalizeUrl,
     parseQueryParams,
+    readBaseUnits,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
 
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params
  */
-export function parsePerawalletAppUri(
-    url: string,
-): Nullable<AnyParsedDeeplink> {
+export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
     const normalizedUrl = normalizeUrl(url)
 
     if (
@@ -87,6 +83,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.ADD_CONTACT,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
             label: params.label,
         } as AddContactDeeplink
@@ -97,6 +94,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.EDIT_CONTACT,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
             label: params.label,
         } as EditContactDeeplink
@@ -113,6 +111,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.ADD_WATCH_ACCOUNT,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
             label: params.label,
         } as AddWatchAccountDeeplink
@@ -123,6 +122,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
         } as ReceiverAccountSelectionDeeplink
     }
@@ -132,6 +132,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.ADDRESS_ACTIONS,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
             label: params.label,
         } as AddressActionsDeeplink
@@ -139,64 +140,56 @@ export function parsePerawalletAppUri(
 
     if (cleanPath === 'asset-transfer') {
         if (!params.receiverAddress) return null
-        // An absent asset id defaults to ALGO below; a present one must be
-        // numeric (ARC-90 uint64) or the link is unrecognized.
-        if (params.assetId && !isValidAssetId(params.assetId)) return null
+        // An absent asset id means the native asset; a present one the chain
+        // can't spell makes the link unrecognized.
+        const assetRef = params.assetId
+            ? toPeraLinkAssetRef(params.assetId)
+            : undefined
+        if (params.assetId && !assetRef) return null
 
-        const nativeAssetId = nativeAssetFor(LEGACY_CHAIN_ID).assetId
-        const assetId = params.assetId || nativeAssetId
-
-        if (assetId === nativeAssetId) {
-            return {
-                type: DeeplinkType.ALGO_TRANSFER,
-                sourceUrl: url,
-                receiverAddress: params.receiverAddress,
-                amount: params.amount,
-                note: params.note,
-                xnote: params.xnote,
-                label: params.label,
-            } as AlgoTransferDeeplink
-        }
+        const amount = params.amount ? readBaseUnits(params.amount) : undefined
+        if (params.amount && !amount) return null
 
         return {
-            type: DeeplinkType.ASSET_TRANSFER,
+            type: DeeplinkType.TRANSFER,
             sourceUrl: url,
-            assetId,
+            target: peraLinkTarget(),
             receiverAddress: params.receiverAddress,
-            amount: params.amount,
+            assetRef,
+            amount,
             note: params.note,
-            xnote: params.xnote,
             label: params.label,
-        } as AssetTransferDeeplink
+            chainData: toPeraPaymentData(params.xnote),
+        } as TransferDeeplink
     }
 
     if (cleanPath === 'keyreg') {
         if (!params.senderAddress && !params.address) return null
 
-        const participation: KeyregParticipationFields = {
-            voteKey: params.voteKey || params.votekey,
-            selkey: params.selkey,
-            sprfkey: params.sprfkey,
-            votefst: params.votefst,
-            votelst: params.votelst,
-            votekd: params.votekd,
-        }
-
-        return {
-            type: DeeplinkType.KEYREG,
-            sourceUrl: url,
-            senderAddress: params.senderAddress || params.address,
-            // Pera's own links may state the intent outright; anything else
-            // (including ARC-78's `type=keyreg`) is inferred from the keys.
+        const chainData = toPeraKeyregAction({
+            sender: params.senderAddress || params.address,
             keyregType:
                 params.type === 'online' || params.type === 'offline'
                     ? params.type
-                    : inferKeyregType(participation),
-            ...participation,
+                    : undefined,
+            voteKey: params.voteKey || params.votekey,
+            selectionKey: params.selkey,
+            stateProofKey: params.sprfkey,
+            voteFirst: params.votefst,
+            voteLast: params.votelst,
+            voteKeyDilution: params.votekd,
             fee: params.fee,
             note: params.note,
             xnote: params.xnote,
-        } as KeyregDeeplink
+        })
+        if (!chainData) return null
+
+        return {
+            type: DeeplinkType.CHAIN_ACTION,
+            sourceUrl: url,
+            target: peraLinkTarget(),
+            chainData,
+        } as ChainActionDeeplink
     }
 
     if (cleanPath === 'recover-address') {
@@ -208,33 +201,6 @@ export function parsePerawalletAppUri(
             sourceUrl: '',
             mnemonic: params.mnemonic,
         } as RecoverAddressDeeplink
-    }
-
-    if (cleanPath === 'web-import') {
-        // Pera Web "Transfer Accounts" app-action form (spec sheet; native
-        // iOS/Android parse it too). Dispatch stays QR-only via
-        // usePeraWebImportDeeplink's source gate, so a tapped link parses
-        // but never stages an import.
-        try {
-            const parsed = parsePeraWebImportFields({
-                backupId: params.backupId,
-                encryptionKey: params.encryptionKey,
-                version: params.version,
-                action: params.action,
-            })
-            return {
-                type: DeeplinkType.PERA_WEB_IMPORT,
-                // `url` embeds the secretbox key; drop it so the secret never
-                // rides on the parsed deeplink. Mirrors recover-address.
-                sourceUrl: '',
-                backupId: parsed.backupId,
-                encryptionKey: parsed.encryptionKey,
-            } as PeraWebImportDeeplink
-        } catch {
-            // Malformed or unsupported payload: treat as unrecognized, same
-            // silent outcome as any other unknown Pera-owned link.
-            return null
-        }
     }
 
     if (cleanPath === 'wallet-connect') {
@@ -251,27 +217,30 @@ export function parsePerawalletAppUri(
     }
 
     if (cleanPath === 'asset-opt-in') {
-        if (!params.assetId || !isValidAssetId(params.assetId)) return null
+        const assetRef = params.assetId
+            ? toPeraLinkAssetRef(params.assetId)
+            : undefined
+        if (!assetRef) return null
         return {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
-            assetId: params.assetId,
+            target: peraLinkTarget(),
+            assetRef,
             address: params.address,
         } as AssetOptInDeeplink
     }
 
     if (cleanPath === 'asset-detail') {
-        if (
-            !params.address ||
-            !params.assetId ||
-            !isValidAssetId(params.assetId)
-        )
-            return null
+        const assetRef = params.assetId
+            ? toPeraLinkAssetRef(params.assetId)
+            : undefined
+        if (!params.address || !assetRef) return null
         return {
             type: DeeplinkType.ASSET_DETAIL,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
-            assetId: params.assetId,
+            assetRef,
         } as AssetDetailDeeplink
     }
 
@@ -280,6 +249,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.ASSET_INBOX,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
         } as AssetInboxDeeplink
     }
@@ -322,9 +292,14 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.SWAP,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
-            assetInId: params.assetInId,
-            assetOutId: params.assetOutId,
+            assetInRef: params.assetInId
+                ? toPeraLinkAssetRef(params.assetInId)
+                : undefined,
+            assetOutRef: params.assetOutId
+                ? toPeraLinkAssetRef(params.assetOutId)
+                : undefined,
         } as SwapDeeplink
     }
 
@@ -332,6 +307,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.BUY,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
         } as BuyDeeplink
     }
@@ -340,6 +316,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.SELL,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
         } as SellDeeplink
     }
@@ -349,6 +326,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.ACCOUNT_DETAIL,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
         } as AccountDetailDeeplink
     }
@@ -361,6 +339,7 @@ export function parsePerawalletAppUri(
         return {
             type: DeeplinkType.SHARED_ACCOUNT_IMPORT,
             sourceUrl: url,
+            target: peraLinkTarget(),
             address: params.address,
         } as SharedAccountImportDeeplink
     }

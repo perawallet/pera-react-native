@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Colar da área de transferência",
         "invalid_qr_title": "Código QR inválido",
         "invalid_qr_body": "Este código QR não contém um endereço de wallet",
+        "other_chain_qr_body": "Este é um endereço de {{chain}}.",
         "address": "Endereço",
         "contacts": "Contatos",
         "my_accounts": "Contas",

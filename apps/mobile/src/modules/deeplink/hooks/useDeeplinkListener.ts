@@ -13,10 +13,8 @@
 import { useEffect } from 'react'
 import { Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    isWalletConnectFocusHint,
-    isWalletConnectScheme,
-} from '@perawallet/wallet-core-walletconnect'
+import { walletConnectUriOf } from '@perawallet/wallet-core-deeplinks'
+import { isWalletConnectFocusHint } from '@perawallet/wallet-core-walletconnect'
 import { useDeepLink } from './useDeepLink'
 import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
 
@@ -56,12 +54,13 @@ export const useDeeplinkListener = () => {
         const shouldDispatch = (url: string): boolean => {
             if (isDuplicateUrl(url)) return false
             if (isValidDeepLink(url)) return true
-            // A wc-schemed link the parser refuses is a mangled wrapper (bad
+            // A WalletConnect link the parser refuses is a mangled wrapper (bad
             // percent-encoding, a non-wc payload): a toast, not silence. A
             // pairing URI no handler claims is refused further in, by the
             // registry. Focus hints only exist to foreground the wallet, so
             // they stay silent.
-            if (isWalletConnectScheme(url) && !isWalletConnectFocusHint(url)) {
+            const wcUri = walletConnectUriOf(url)
+            if (wcUri !== undefined && !isWalletConnectFocusHint(wcUri)) {
                 logger.warn('Deeplink: unsupported WalletConnect URI dropped')
                 showError({
                     variant: 'walletconnect_unsupported',
