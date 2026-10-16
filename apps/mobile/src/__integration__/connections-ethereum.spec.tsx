@@ -851,7 +851,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
         })
     })
 
-    describe('with Ethereum dappConnect off, its default', () => {
+    describe('with Ethereum dappConnect switched off', () => {
+        beforeEach(() => {
+            setCapabilityOverrides({ dappConnect: false }, 'ethereum')
+        })
+
         it('Given a proposal requiring eip155, when it arrives, then it is rejected and no sheet opens', async () => {
             await mountProvider()
             const walletKit = await propose(

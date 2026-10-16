@@ -116,6 +116,7 @@ describe('capabilityAdapterContractViolations', () => {
             }),
         ).toEqual([
             'chain "algorand" enables "send" but the "broadcaster" registry has no adapter for it',
+            'chain "algorand" enables "dappConnect" but the "broadcaster" registry has no adapter for it',
         ])
     })
 
