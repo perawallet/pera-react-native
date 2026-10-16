@@ -29,6 +29,7 @@ import m0013 from './0013_drop_account_balances.sql?raw'
 import m0014 from './0014_holdings_native.sql?raw'
 import m0015 from './0015_submission_attempts_nonce.sql?raw'
 import m0016 from './0016_submission_attempts_history_entry.sql?raw'
+import m0017 from './0017_submission_attempts_max_fee.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -78,4 +79,6 @@ export const migrations: MigrationConfig = {
     '0015_submission_attempts_nonce': m0015,
     // Nullable: Algorand attempts and attempts recorded before it carry no history entry.
     '0016_submission_attempts_history_entry': m0016,
+    // Nullable: Algorand attempts and attempts recorded before it carry no max fee.
+    '0017_submission_attempts_max_fee': m0017,
 }

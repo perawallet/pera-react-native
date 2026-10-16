@@ -19,7 +19,10 @@ import {
     useAllAccounts,
     findAccountByAddressOn,
 } from '@perawallet/wallet-core-accounts'
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, OnboardingEvent } from '@analytics'
@@ -29,6 +32,8 @@ import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 
 type UseWatchAccountScreenResult = {
     address: string
+    /** The chains an address can be watched on, for the field's scanner. */
+    watchableChainIds: readonly ChainId[]
     resolvedAddress: string
     isValidAddress: boolean
     isDuplicateAddress: boolean
@@ -52,18 +57,20 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
 
     const checkCapability = useCapabilityCheck()
     const { chains } = getProvider()
+    const watchableChainIds = addressCodecs
+        .list()
+        .map(codec => codec.chainId)
+        .filter(
+            chainId =>
+                chains.has(chainId) &&
+                checkCapability({
+                    chain: { chainId, capability: 'watchAccounts' },
+                }),
+        )
     // Registration order decides when several chains accept the same address.
-    const watchChainId = addressCodecs.list().find(
-        codec =>
-            chains.has(codec.chainId) &&
-            checkCapability({
-                chain: {
-                    chainId: codec.chainId,
-                    capability: 'watchAccounts',
-                },
-            }) &&
-            codec.isValid(resolvedAddress),
-    )?.chainId
+    const watchChainId = watchableChainIds.find(chainId =>
+        addressCodecs.get(chainId).isValid(resolvedAddress),
+    )
 
     const isValidAddress = watchChainId !== undefined
     const isDuplicateAddress =
@@ -107,6 +114,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
 
     return {
         address,
+        watchableChainIds,
         resolvedAddress,
         isValidAddress,
         isDuplicateAddress,

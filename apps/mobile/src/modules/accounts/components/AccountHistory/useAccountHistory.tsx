@@ -13,11 +13,16 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    addressOn,
+    useAccountScope,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
+    useChainCapability,
+    useIsCapabilityRestricted,
     useNetwork,
-    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -107,7 +112,7 @@ export type UseAccountHistoryResult = {
  */
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const accountAddress = account ? addressOn(account, scope) : undefined
     const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()
@@ -259,7 +264,15 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // `transactions.length > 0` rather than `!isEmpty` also keeps the button
     // hidden during the initial load (when results may still end up empty),
     // avoiding a brief visible-then-gone flicker.
-    const isCsvExportVisible = transactions.length > 0
+    // A chain whose build has no CSV export hides the action outright; one that
+    // only restricts it on this network (BetaNet, custom) keeps it to explain why.
+    const hasCsvExport = useChainCapability(scope.chainId, 'csvExport')
+    const isCsvExportRestricted = useIsCapabilityRestricted(
+        scope.chainId,
+        'csvExport',
+    )
+    const isCsvExportVisible =
+        transactions.length > 0 && (hasCsvExport || isCsvExportRestricted)
 
     return {
         rows,

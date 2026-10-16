@@ -22,7 +22,7 @@ type SendFundsState = {
     canSelectAsset: boolean
     amount?: Decimal
     /**
-     * Raw base-unit amount carried by an ASSET_TRANSFER deeplink. The
+     * Raw base-unit amount carried by a TRANSFER deeplink. The
      * deeplink can't convert to display units up front because that needs
      * the asset's `decimals` (only known after the asset query resolves).
      * InputScreen reads this once `asset` is loaded, converts to display

@@ -15,7 +15,12 @@ import { renderHook, act } from '@testing-library/react'
 import { useAccountHistory } from '../useAccountHistory'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    useChainCapability,
+    useIsCapabilityRestricted,
+    useNetwork,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
@@ -50,6 +55,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         '@packages/accounts/src/models/accounts',
     )),
     useSelectedAccount: vi.fn(),
+    useAccountScope: (account: { chains: Record<string, unknown> } | null) => ({
+        chainId: Object.keys(account?.chains ?? {})[0] ?? 'algorand',
+        networkId: 'mainnet',
+    }),
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
 }))
@@ -63,12 +72,20 @@ vi.mock(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(),
-}))
+// The capability hooks stay real unless a case overrides them, so a chain's
+// own build decides what the history offers.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-shared')
+        >()
+    return {
+        ...actual,
+        useNetwork: vi.fn(),
+        useChainCapability: vi.fn(actual.useChainCapability),
+        useIsCapabilityRestricted: vi.fn(actual.useIsCapabilityRestricted),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     CSV_MIME_TYPE: 'text/csv',
@@ -138,6 +155,8 @@ describe('useAccountHistory', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.mocked(useChainCapability).mockReset()
+        vi.mocked(useIsCapabilityRestricted).mockReset()
         mockNavigate.mockReset()
         mockUseNetworkStatus.mockReturnValue({ hasInternet: true })
         mockRefreshAccounts.mockResolvedValue(undefined)
@@ -617,6 +636,8 @@ describe('useAccountHistory', () => {
             isUnavailableOnNetwork: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
+        vi.mocked(useChainCapability).mockReturnValue(false)
+        vi.mocked(useIsCapabilityRestricted).mockReturnValue(true)
     }
 
     describe('CSV export visibility', () => {
@@ -630,6 +651,25 @@ describe('useAccountHistory', () => {
             const { result } = renderHook(() => useAccountHistory())
 
             expect(result.current.isCsvExportVisible).toBe(true)
+        })
+
+        it('hides the export action on an Ethereum account, whose chain has no CSV export', () => {
+            registerEthereumChain()
+            vi.mocked(useSelectedAccount).mockReturnValue({
+                id: 'eth',
+                custody: { kind: 'watch' },
+                chains: { ethereum: { address: `0x${'c'.repeat(40)}` } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isCsvExportVisible).toBe(false)
         })
 
         it.each([Networks.betanet, Networks.custom])(

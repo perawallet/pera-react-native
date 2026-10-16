@@ -67,6 +67,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         portfolioNativeValue,
         portfolioPreferredValue,
         hasFiatTotal,
+        hasBalanceHistory,
         isPending,
     } = usePortfolioView()
     const nativeAsset = useNativeAsset(scope)
@@ -77,7 +78,8 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()
 
-    const isChartShown = !!getPreference(UserPreferences.chartVisible)
+    const isChartShown =
+        hasBalanceHistory && !!getPreference(UserPreferences.chartVisible)
     const toggleChartVisible = () => {
         trackEvent(HomeEvent.Chart)
         setPreference(UserPreferences.chartVisible, !isChartShown)
@@ -178,6 +180,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                     </PWView>
                     {basis === 'fiat' ? (
                         <PreferredAmount
+                            testID='portfolio_total_value'
                             variant='h2'
                             style={styles.primaryCurrency}
                             value={
@@ -222,7 +225,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
 
                 {/* Stays mounted while the chart is hidden so it can fade in
                     sync with the panel collapse rather than unmount abruptly. */}
-                {hasFiatTotal && !selectedPoint && (
+                {hasFiatTotal && hasBalanceHistory && !selectedPoint && (
                     <Animated.View
                         style={[
                             styles.rightColumn,
@@ -283,41 +286,45 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                 )}
             </PWView>
 
-            <PWDivider style={styles.divider} />
+            {hasBalanceHistory && (
+                <>
+                    <PWDivider style={styles.divider} />
 
-            <PWTouchableOpacity
-                style={styles.chartToggle}
-                onPress={toggleChartVisible}
-            >
-                <PWText
-                    style={styles.chartToggleText}
-                    truncate
-                >
-                    {isChartShown
-                        ? t('portfolio.hide_chart')
-                        : t('portfolio.show_chart')}
-                </PWText>
-                <Animated.View style={chevronStyle}>
-                    <PWIcon
-                        name='chevron-down'
-                        variant='secondary'
-                        size='xs'
-                    />
-                </Animated.View>
-            </PWTouchableOpacity>
+                    <PWTouchableOpacity
+                        style={styles.chartToggle}
+                        onPress={toggleChartVisible}
+                    >
+                        <PWText
+                            style={styles.chartToggleText}
+                            truncate
+                        >
+                            {isChartShown
+                                ? t('portfolio.hide_chart')
+                                : t('portfolio.show_chart')}
+                        </PWText>
+                        <Animated.View style={chevronStyle}>
+                            <PWIcon
+                                name='chevron-down'
+                                variant='secondary'
+                                size='xs'
+                            />
+                        </Animated.View>
+                    </PWTouchableOpacity>
 
-            <ExpandablePanel isExpanded={isChartShown}>
-                <PWView style={styles.chartContainer}>
-                    <WealthChart
-                        period={period}
-                        onSelectionChanged={chartSelectionChanged}
-                    />
-                    <ChartPeriodSelection
-                        value={period}
-                        onChange={setPeriod}
-                    />
-                </PWView>
-            </ExpandablePanel>
+                    <ExpandablePanel isExpanded={isChartShown}>
+                        <PWView style={styles.chartContainer}>
+                            <WealthChart
+                                period={period}
+                                onSelectionChanged={chartSelectionChanged}
+                            />
+                            <ChartPeriodSelection
+                                value={period}
+                                onChange={setPeriod}
+                            />
+                        </PWView>
+                    </ExpandablePanel>
+                </>
+            )}
         </PWView>
     )
 }

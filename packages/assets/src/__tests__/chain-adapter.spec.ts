@@ -24,6 +24,7 @@ import {
     fetchAssetAuthorities,
     fetchAssetMetadata,
     fetchOnChainAsset,
+    findNativeAsset,
     isNativeAssetId,
     nativeAssetFor,
     searchAssets,
@@ -37,6 +38,7 @@ describe('assetsAdapterFor / nativeAssetFor', () => {
 
         expect(assetsAdapterFor(scopeForLegacyNetwork('testnet'))).toBe(adapter)
         expect(nativeAssetFor('algorand')).toBe(FAKE_NATIVE_ASSET)
+        expect(findNativeAsset('algorand')).toBe(FAKE_NATIVE_ASSET)
     })
 
     it('isNativeAssetId matches only the registered chain native id', () => {
@@ -184,6 +186,12 @@ describe('with no adapter registered', () => {
         expect(() => nativeAssetFor('algorand')).toThrow(
             'No assets adapter is registered for chain "algorand"',
         )
+    })
+
+    it('finds no native asset rather than throwing', () => {
+        assetsChainAdapters.reset()
+
+        expect(findNativeAsset('algorand')).toBeUndefined()
     })
 
     it('rejects each wrapper instead of throwing synchronously', async () => {

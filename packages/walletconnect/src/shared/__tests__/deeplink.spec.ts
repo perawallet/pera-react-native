@@ -96,67 +96,15 @@ describe('WalletConnect deep-link parser', () => {
                 parseWalletConnectUri('wc:test@1?bridge=&key=test')?.uri,
             ).toBe('wc:test@1?bridge=&key=test')
         })
-
-        it('parses and normalizes algorand-wc: URI', () => {
-            expect(
-                parseWalletConnectUri('algorand-wc:test@1?bridge=test&key=test')
-                    ?.uri,
-            ).toBe('wc:test@1?bridge=test&key=test')
-        })
-
-        it('unwraps a valid encoded wc: URI in an algorand-wc wrapper', () => {
-            const inner = 'wc:test@1?bridge=test&key=test'
-            const wrapped = 'algorand-wc://wc?uri=' + encodeURIComponent(inner)
-
-            expect(parseWalletConnectUri(wrapped)?.uri).toBe(inner)
-        })
-
-        it('unwraps a valid encoded wc: URI in the legacy algorand://wc wrapper', () => {
-            const inner = 'wc:test@1?bridge=test&key=test'
-
-            expect(
-                parseWalletConnectUri(
-                    'algorand://wc?uri=' + encodeURIComponent(inner),
-                )?.uri,
-            ).toBe(inner)
-        })
-
-        it('rejects an algorand://wc wrapper that unwraps to a non-wc scheme', () => {
-            expect(
-                parseWalletConnectUri(
-                    'algorand://wc?uri=' +
-                        encodeURIComponent('javascript:alert(1)'),
-                ),
-            ).toBeNull()
-        })
-
-        it('returns null for a plain algorand:// link with no uri param', () => {
-            expect(
-                parseWalletConnectUri('algorand://wc?browser=chrome'),
-            ).toBeNull()
-        })
-
-        it('returns null for an ARC-90 algorand:// payment link', () => {
-            expect(
-                parseWalletConnectUri(
-                    'algorand://GYBK7O4DIDJKR2G5PCSTQDNI2NUIC7DXNZ25M2UN4WBMJH77QSFHU7IVPU?amount=1000000',
-                ),
-            ).toBeNull()
-        })
-
-        it('normalizes a bridge-less algorand-wc: URI instead of dropping it', () => {
-            expect(
-                parseWalletConnectUri('algorand-wc:test@1?key=test')?.uri,
-            ).toBe('wc:test@1?key=test')
-        })
     })
 
     describe('classification helpers', () => {
         it('isWalletConnectScheme recognizes every WC scheme and nothing else', () => {
             expect(isWalletConnectScheme('wc:t@1?bridge=x&key=y')).toBe(true)
             expect(isWalletConnectScheme('perawallet-wc://wc?uri=x')).toBe(true)
-            expect(isWalletConnectScheme('algorand-wc:t@1?key=y')).toBe(true)
-            expect(isWalletConnectScheme('algorand://wc?uri=x')).toBe(true)
+            // A chain's wrapper schemes belong to its deeplink adapter.
+            expect(isWalletConnectScheme('algorand-wc:t@1?key=y')).toBe(false)
+            expect(isWalletConnectScheme('algorand://wc?uri=x')).toBe(false)
             expect(isWalletConnectScheme('algorand://ADDR?amount=1')).toBe(
                 false,
             )

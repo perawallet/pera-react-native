@@ -60,3 +60,14 @@ export const setCapabilityOverrides = (
             JSON.stringify({ capabilities }),
         )
 }
+
+/** Flips a chain's kill switch through the developer-override layer. */
+export const setChainEnabled = (chainId: ChainId, isEnabled: boolean): void => {
+    installOverrideReader()
+    useRemoteConfigStore
+        .getState()
+        .setConfigOverride(
+            chainOverridesKey(chainId),
+            JSON.stringify({ enabled: isEnabled }),
+        )
+}

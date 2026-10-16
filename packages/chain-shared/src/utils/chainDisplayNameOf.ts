@@ -10,19 +10,16 @@
  limitations under the License
  */
 
-import { PERAWALLET_SCHEME } from './constants'
-import { DeeplinkType } from './types'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
-export type BuildDeeplinkInput = {
-    type: typeof DeeplinkType.SHARED_ACCOUNT_IMPORT
-    address: string
-}
-
-export const buildDeeplink = (input: BuildDeeplinkInput): string => {
-    switch (input.type) {
-        case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
-            const encodedAddress = encodeURIComponent(input.address)
-            return `${PERAWALLET_SCHEME}://app/shared-account-import/?address=${encodedAddress}`
-        }
-    }
+/**
+ * The chain's user-facing name; undefined for a chain this build doesn't
+ * register, which has no name to show (its id isn't copy).
+ */
+export const chainDisplayNameOf = (chainId: ChainId): string | undefined => {
+    const { chains } = getProvider()
+    return chains.has(chainId)
+        ? chains.get(chainId).descriptor.displayName
+        : undefined
 }

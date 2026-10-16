@@ -10,18 +10,14 @@
  limitations under the License
  */
 
+export {
+    PERAWALLET_WC_SCHEME,
+    WC_SCHEME,
+} from '@perawallet/wallet-core-walletconnect/shared/deeplink'
+
 /** Scheme names only — call sites append `://` (hierarchical) or `:` (opaque). */
 export const PERAWALLET_SCHEME = 'perawallet'
-export const PERAWALLET_WC_SCHEME = 'perawallet-wc'
-export const WC_SCHEME = 'wc'
 
-/**
- * Registered by the native iOS app. The parser rewrites `algorand-wc:` -> `wc:`
- * so existing links keep routing after the RN migration.
- */
-export const ALGORAND_WC_SCHEME = 'algorand-wc'
-export const ALGORAND_SCHEME = 'algorand'
-export const ALGO_SCHEME = 'algo'
 /**
  * The OS routes `fido://…` opens to the registered credential provider
  * extension, so we only recognize the scheme and hand the URL back.

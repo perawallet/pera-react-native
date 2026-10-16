@@ -28,9 +28,7 @@ import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
-import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { assetRefKey } from '@perawallet/wallet-core-chain-contract'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -47,12 +45,13 @@ export const AccountAssetList = ({
     isLoading = false,
     refreshControl,
 }: AccountAssetListProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId(scope)
     const { t } = useLanguage()
 
     const {
+        chainId,
+        nativeAssetId,
+        isChainSwitchedOff,
         holdings,
         convertFiat,
         isPending,
@@ -70,15 +69,18 @@ export const AccountAssetList = ({
 
     const renderItem = useCallback(
         ({ item }: { item: AccountHoldingsLiteRow }) => {
+            const isNativeAsset = item.assetId === nativeAssetId
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
                 renderItemProps.canManageAssets &&
-                !isNativeAssetId(item.assetId) &&
+                !isNativeAsset &&
                 item.amount.isZero()
 
             return (
                 <SwipeableAssetItem
                     item={item}
+                    chainId={chainId}
+                    isNativeAsset={isNativeAsset}
                     isSwipeEnabled={isSwipeable}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
@@ -86,7 +88,7 @@ export const AccountAssetList = ({
                 />
             )
         },
-        [isNativeAssetId, renderItemProps, convertFiat],
+        [nativeAssetId, chainId, renderItemProps, convertFiat],
     )
 
     const listHeader = (
@@ -148,7 +150,9 @@ export const AccountAssetList = ({
                 renderItem={renderItem}
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
-                keyExtractor={item => item.assetId}
+                keyExtractor={item =>
+                    assetRefKey({ chainId, assetId: item.assetId })
+                }
                 // Same anchoring hazard as the NFT gallery: FlashList
                 // v2 re-anchors on the previously-first-visible row after every
                 // data change, and a re-sort moves every row, so the anchor drags
@@ -167,7 +171,7 @@ export const AccountAssetList = ({
                 )}
                 onSearchChange={setSearchFilter}
                 ListEmptyComponent={
-                    isPending ? (
+                    isChainSwitchedOff ? null : isPending ? (
                         <AssetRowSkeleton count={8} />
                     ) : (
                         <EmptyView

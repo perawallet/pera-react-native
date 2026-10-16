@@ -12,14 +12,13 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    chainAccountOf,
     LaunchAccountModes,
+    ownAddressOf,
     useAccountsStore,
     useAllAccounts,
     type LaunchAccountMode,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseSettingsLaunchScreenResult = {
@@ -39,9 +38,7 @@ export const useSettingsLaunchScreen = (): UseSettingsLaunchScreenResult => {
     const launchAccountId = useAccountsStore(state => state.launchAccountId)
     const launchAccountAddress = useMemo(() => {
         const pinned = accounts.find(account => account.id === launchAccountId)
-        return pinned
-            ? (chainAccountOf(pinned, LEGACY_CHAIN_ID)?.address ?? null)
-            : null
+        return pinned ? (ownAddressOf(pinned) ?? null) : null
     }, [accounts, launchAccountId])
     const setLaunchAccountPreference = useAccountsStore(
         state => state.setLaunchAccountPreference,

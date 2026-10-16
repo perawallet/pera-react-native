@@ -11,15 +11,13 @@
  */
 
 import { useCallback } from 'react'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
-import {
+    addressCodecs,
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { ChainActionDeeplink } from '@perawallet/wallet-core-deeplinks'
 import {
     useMinimumFeeCalculator,
     useSigningRequest,
@@ -35,14 +33,12 @@ import {
     decodeFromBase64,
     generateOrderedUniqueId,
     logger,
+    toBigInt,
 } from '@perawallet/wallet-core-shared'
-import { getChainConfig, type Network } from '@perawallet/wallet-core-config'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import { withTimeout } from './timeout'
-import type { KeyregDeeplink } from '../types'
-import { isLegacyChainAddress, requireBaseUnits } from '../utils'
 
-export type KeyregDeeplinkHandler = (data: KeyregDeeplink) => Promise<void>
+export type KeyregDeeplinkHandler = (data: ChainActionDeeplink) => Promise<void>
 
 /**
  * Building the transaction fetches `suggestedParams()` internally, which hangs
@@ -111,34 +107,16 @@ const checkSigningEligibility = (
     }
 }
 
-/**
- * ARC-90 lets a URI name its chain as a `net:` genesis id or a `gh:` genesis
- * hash, so accept either spelling — plus the bare network name, which is what
- * the assetquery/appquery branches already compare against.
- *
- * `getChainConfig` folds in a saved custom node, so a Custom network matches
- * its stored hash instead of an empty one.
- */
-const namesActiveNetwork = (
-    target: string,
-    network: Network,
-    genesisId: string,
-): boolean =>
-    target === network ||
-    (!!genesisId && target === genesisId) ||
-    target === getChainConfig(scopeForLegacyNetwork(network)).genesisHash
-
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { network, networkConfig } = useNetwork()
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
     const { assignFeeToGroup } = useMinimumFeeCalculator(scope.chainId)
 
     return useCallback(
-        async (data: KeyregDeeplink) => {
-            if (!isLegacyChainAddress(data.senderAddress)) {
+        async ({ chainData, target }: ChainActionDeeplink) => {
+            if (!addressCodecs.get(target.chainId).isValid(chainData.sender)) {
                 showError({
                     variant: 'keyreg',
                     parsedType: 'KEYREG',
@@ -152,7 +130,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             // error ("No signable transactions found", "Rekey target not
             // found in local accounts") and has to dismiss multiple times.
             const ineligible = checkSigningEligibility(
-                data.senderAddress,
+                chainData.sender,
                 allAccounts,
                 scope.chainId,
             )
@@ -169,18 +147,11 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             // cross-chain scan produces a valid-looking txn for the wrong
             // chain that no downstream genesis-hash check can catch. Fail
             // closed on anything that doesn't name the active network.
-            if (
-                data.targetNetwork &&
-                !namesActiveNetwork(
-                    data.targetNetwork,
-                    network,
-                    networkConfig.genesisId,
-                )
-            ) {
+            if (target.networkId && target.networkId !== scope.networkId) {
                 showError({
                     variant: 'keyreg-network-mismatch',
                     parsedType: 'KEYREG',
-                    error: `Deeplink targets ${data.targetNetwork}, wallet is on ${network}`,
+                    error: `Deeplink targets ${target.networkId}, wallet is on ${scope.networkId}`,
                 })
                 return
             }
@@ -189,40 +160,39 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // Editable note + locked xnote both end up in the txn note.
                 // Native shows xnote read-only in its review UI; the signing
                 // modal here just displays the resulting note string.
-                const note = data.note ?? data.xnote
+                const note = chainData.note ?? chainData.xnote
                 const noteBytes = note
                     ? new TextEncoder().encode(note)
                     : undefined
-                // A malformed fee throws here, inside the try, so a bad
-                // deeplink reaches the error sheet rather than throwing out of
-                // the handler. An out-of-range fee is caught at review time by
-                // the high-fee warning.
-                const dAppFee =
-                    data.fee === undefined
-                        ? undefined
-                        : requireBaseUnits(data.fee)
+                // `BigInt()` throws on a malformed round or dilution, so keep the
+                // coercion inside the try — a bad deeplink should reach the error
+                // sheet, not throw out of the handler. An out-of-range fee is
+                // caught at review time by the high-fee warning.
+                const dAppFee = chainData.fee
+                    ? toBigInt(chainData.fee)
+                    : undefined
 
                 let tx
-                if (data.keyregType === 'offline') {
+                if (chainData.keyregType === 'offline') {
                     tx = await withTimeout(
                         'offlineKeyRegistration',
                         KEYREG_BUILD_TIMEOUT_MS,
                         buildKeyRegistrationTx({
                             kind: 'offline',
                             scope,
-                            sender: data.senderAddress,
+                            sender: chainData.sender,
                             note: noteBytes,
                             fee: dAppFee,
                         }),
                     )
                 } else {
                     if (
-                        !data.voteKey ||
-                        !data.selkey ||
-                        !data.sprfkey ||
-                        !data.votefst ||
-                        !data.votelst ||
-                        !data.votekd
+                        !chainData.voteKey ||
+                        !chainData.selectionKey ||
+                        !chainData.stateProofKey ||
+                        !chainData.voteFirst ||
+                        !chainData.voteLast ||
+                        !chainData.voteKeyDilution
                     ) {
                         showError({
                             variant: 'keyreg',
@@ -237,13 +207,17 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                         buildKeyRegistrationTx({
                             kind: 'online',
                             scope,
-                            sender: data.senderAddress,
-                            voteKey: decodeKeyregBase64(data.voteKey),
-                            selectionKey: decodeKeyregBase64(data.selkey),
-                            stateProofKey: decodeKeyregBase64(data.sprfkey),
-                            voteFirst: BigInt(data.votefst),
-                            voteLast: BigInt(data.votelst),
-                            voteKeyDilution: BigInt(data.votekd),
+                            sender: chainData.sender,
+                            voteKey: decodeKeyregBase64(chainData.voteKey),
+                            selectionKey: decodeKeyregBase64(
+                                chainData.selectionKey,
+                            ),
+                            stateProofKey: decodeKeyregBase64(
+                                chainData.stateProofKey,
+                            ),
+                            voteFirst: BigInt(chainData.voteFirst),
+                            voteLast: BigInt(chainData.voteLast),
+                            voteKeyDilution: BigInt(chainData.voteKeyDilution),
                             note: noteBytes,
                             fee: dAppFee,
                         }),
@@ -288,14 +262,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 })
             }
         },
-        [
-            addSignRequest,
-            allAccounts,
-            assignFeeToGroup,
-            network,
-            networkConfig,
-            showError,
-            scope,
-        ],
+        [addSignRequest, allAccounts, assignFeeToGroup, showError, scope],
     )
 }

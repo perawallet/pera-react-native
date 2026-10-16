@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Aus Zwischenablage einfügen",
         "invalid_qr_title": "Ungültiger QR-Code",
         "invalid_qr_body": "Dieser QR-Code enthält keine Wallet-Adresse",
+        "other_chain_qr_body": "Das ist eine Adresse auf {{chain}}.",
         "address": "Adresse",
         "contacts": "Kontakte",
         "my_accounts": "Konten",
@@ -293,7 +294,9 @@
             "bodyWithDependents": "Wir haben leider ein Problem in Version 7.1.0 festgestellt: die Art, wie die Adresse für Quantum-Konten aus deinen 25 Wörtern abgeleitet wird, sodass sie nicht mit anderen Tools übereinstimmt.\n\nDein Guthaben ist sicher und dein Konto funktioniert normal.\n\nEin anderes Konto ist derzeit auf dieses Konto rekeyed, verlasse es also noch nicht – es ist im Moment dessen einziger Signaturgeber. Um Kompatibilitätsprobleme zu vermeiden, empfehlen wir dennoch, ein neues Quantum-Konto zu erstellen und dein Guthaben zu verschieben, sobald das andere Konto rekeyed wurde, damit deine Wiederherstellungsphrase überall funktioniert.\n\nWir entschuldigen uns für die Unannehmlichkeiten und danken dir für dein Verständnis.",
             "markerLabel": "Über dieses Quantum-Konto",
             "dismiss": "Verstanden"
-        }
+        },
+        "chain_unavailable": "{{chain}} ist derzeit nicht verfügbar",
+        "chain_unavailable_unnamed": "Diese Blockchain ist derzeit nicht verfügbar"
     },
     "account_details": {
         "assets": {

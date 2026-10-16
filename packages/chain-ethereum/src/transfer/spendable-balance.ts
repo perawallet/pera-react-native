@@ -16,24 +16,61 @@ import {
     getAccountChainStateRow,
     getAccountHoldings,
 } from '@perawallet/wallet-core-accounts'
-import { isNativeAsset } from '@perawallet/wallet-core-chain-contract'
+import {
+    isNativeAsset,
+    type AssetRef,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     InvalidSendParamsError,
+    type InFlightSpend,
     type SpendableBalance,
     type SpendableBalanceInput,
 } from '@perawallet/wallet-core-transactions'
+import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 
 const ZERO = new Decimal(0)
 
-// Ethereum holds nothing back and has no close-out: only the gas, paid in
-// ether, stands between the balance and MAX.
+const sumOf = (values: Decimal[]): Decimal =>
+    values.reduce((total, value) => total.add(value), ZERO)
+
+// The synced nonce, read at the same block as the balance, is what says a
+// send is already off it, not the attempt's status: an attempt can still be
+// open after its block is synced, and confirmed before it is.
+const unsynced = (
+    inFlight: readonly InFlightSpend[],
+    latestNonce: Optional<number>,
+): readonly InFlightSpend[] =>
+    latestNonce === undefined
+        ? inFlight
+        : inFlight.filter(
+              spend => spend.nonce === undefined || spend.nonce >= latestNonce,
+          )
+
+const isSameAsset = (a: AssetRef, b: AssetRef): boolean =>
+    a.chainId === b.chainId &&
+    ethereumAddressCodec.areEqual(a.assetId, b.assetId)
+
+const outflowOf = (inFlight: readonly InFlightSpend[], asset: AssetRef) =>
+    sumOf(
+        inFlight.flatMap(spend =>
+            spend.outflows
+                .filter(outflow => isSameAsset(outflow.assetRef, asset))
+                .map(outflow => outflow.value),
+        ),
+    )
+
+// Ethereum has no reserve and no close-out. What stands between the balance
+// and MAX is the gas, paid in ether, and what earlier sends already spend: the
+// node queues the next send behind them and prices it against the same balance.
 export const readEthereumSpendableBalance = async ({
     account,
     asset,
     scope,
     fee,
+    inFlight = [],
 }: SpendableBalanceInput): Promise<SpendableBalance> => {
     const address = addressOn(account, scope)
     if (
@@ -44,25 +81,41 @@ export const readEthereumSpendableBalance = async ({
         throw new InvalidSendParamsError()
     }
 
+    // Read before the holdings: the sync writes the chain state first, so a
+    // read straddling a sync pairs an older nonce with newer holdings, which
+    // keeps a mined send held back for a tick rather than freeing an unmined one.
+    const row = await getAccountChainStateRow({
+        accountAddress: address,
+        scope,
+    })
+    const latestNonce =
+        row?.chainData.family === 'evm' ? row.chainData.nonce.latest : undefined
+    const pending = unsynced(inFlight, latestNonce)
+
     if (!isNativeAsset(asset, ethereumDescriptor)) {
         const holdings = await getAccountHoldings({
             accountAddress: address,
             scope,
         })
         const balance =
-            holdings.find(holding => holding.assetId === asset.assetId)
-                ?.amount ?? ZERO
-        return { balance, max: balance, reserved: ZERO }
+            holdings.find(holding =>
+                ethereumAddressCodec.areEqual(holding.assetId, asset.assetId),
+            )?.amount ?? ZERO
+        const reserved = outflowOf(pending, asset)
+        return {
+            balance,
+            max: Decimal.max(balance.sub(reserved), ZERO),
+            reserved,
+        }
     }
 
-    const row = await getAccountChainStateRow({
-        accountAddress: address,
-        scope,
-    })
     const balance = row?.nativeBalance ?? ZERO
+    const reserved = outflowOf(pending, asset).add(
+        sumOf(pending.map(spend => spend.maxFee ?? ZERO)),
+    )
     return {
         balance,
-        max: Decimal.max(balance.sub(fee), ZERO),
-        reserved: ZERO,
+        max: Decimal.max(balance.sub(reserved).sub(fee), ZERO),
+        reserved,
     }
 }

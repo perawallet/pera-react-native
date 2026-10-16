@@ -95,6 +95,14 @@ export function invalidateTransactionQueries(queryClient: QueryClient): void {
     })
 }
 
+export function invalidateSpendableBalanceQueries(
+    queryClient: QueryClient,
+): void {
+    void queryClient.invalidateQueries({
+        queryKey: [MODULE_PREFIX, 'spendable-balance'],
+    })
+}
+
 /**
  * Scoped variant of {@link invalidateTransactionQueries}: invalidates only the
  * transaction queries whose key payload targets one of the given addresses.

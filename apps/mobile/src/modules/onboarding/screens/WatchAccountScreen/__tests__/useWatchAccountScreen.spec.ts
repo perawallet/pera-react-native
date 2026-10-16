@@ -415,6 +415,24 @@ describe('useWatchAccountScreen', () => {
             expect(mockSetAccounts).not.toHaveBeenCalled()
         })
 
+        it('offers every registered chain that can watch accounts to the scanner', () => {
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            expect(result.current.watchableChainIds).toEqual(
+                expect.arrayContaining(['algorand', FIXTURE_CHAIN_ID]),
+            )
+        })
+
+        it('leaves a chain that cannot watch accounts out of the scanner chains', () => {
+            watchAccountsOff.add(FIXTURE_CHAIN_ID)
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            expect(result.current.watchableChainIds).toContain('algorand')
+            expect(result.current.watchableChainIds).not.toContain(
+                FIXTURE_CHAIN_ID,
+            )
+        })
+
         it('ignores a codec whose chain is not registered', () => {
             const unregisteredChainId = 'fixtureorphan' as ChainId
             const orphanAddress = `orphan-${'1'.repeat(8)}`
