@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'

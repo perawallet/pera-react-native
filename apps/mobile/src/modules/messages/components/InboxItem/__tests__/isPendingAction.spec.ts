@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, it, expect } from 'vitest'
 import type { InboxItem } from '@perawallet/wallet-core-messages'
 import { isPendingAction } from '../isPendingAction'

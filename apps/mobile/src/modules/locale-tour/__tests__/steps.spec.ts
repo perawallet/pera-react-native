@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect } from 'vitest'
 import { getTourSteps, getTourStep } from '../utils/steps'
 import type { TourCategory } from '../types'

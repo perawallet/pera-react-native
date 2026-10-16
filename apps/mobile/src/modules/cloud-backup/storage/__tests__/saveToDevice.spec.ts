@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { Platform } from 'react-native'
 import { shareFile } from '@utils/shareFile'

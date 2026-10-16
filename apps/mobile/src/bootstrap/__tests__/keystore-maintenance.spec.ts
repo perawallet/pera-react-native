@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it, vi } from 'vitest'
 import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { keystoreMaintenanceDependencies } from '../keystore-maintenance'

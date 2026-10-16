@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { algorandChainUi } from '@modules/algorand/chain-ui'

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 
 // Literal specifiers: the workspace source aliases only rewrite static strings.
