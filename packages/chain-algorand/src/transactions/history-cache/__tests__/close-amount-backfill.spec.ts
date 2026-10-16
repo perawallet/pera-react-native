@@ -154,6 +154,34 @@ describe('backfillMissingCloseAmounts', () => {
         expect(fetchCloseAmount).not.toHaveBeenCalled()
     })
 
+    it('settles a row the indexer has no amount for, so it is not asked again', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx({ id: 'TXSTALE' })],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        const fetchCloseAmount = vi.fn().mockResolvedValue(null)
+        const run = () =>
+            backfillMissingCloseAmounts({
+                db,
+                scope: scopeForLegacyNetwork('mainnet'),
+                accountAddress: 'ACCT1',
+                fetchCloseAmount,
+            })
+
+        await run()
+        await run()
+
+        expect(fetchCloseAmount).toHaveBeenCalledTimes(1)
+        const [row] = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        expect(row.closeAmount).toBeNull()
+    })
+
     it('only heals the rows linked to the syncing account', async () => {
         await upsertTransactions({
             db,

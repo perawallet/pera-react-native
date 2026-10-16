@@ -19,7 +19,11 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { algorandNetworkOf } from '../../legacy-network'
 import { fetchIndexerCloseAmount } from '../history/indexer/endpoints'
-import { CLOSE_AMOUNT_PATH, CLOSE_TO_PATH } from './chain-data'
+import {
+    CLOSE_AMOUNT_PATH,
+    CLOSE_AMOUNT_SETTLED_PATH,
+    CLOSE_TO_PATH,
+} from './chain-data'
 
 type BackfillParams = {
     db?: Database
@@ -60,7 +64,7 @@ export async function backfillMissingCloseAmounts({
             scope,
             accountAddress,
             present: [CLOSE_TO_PATH],
-            missing: [CLOSE_AMOUNT_PATH],
+            missing: [CLOSE_AMOUNT_PATH, CLOSE_AMOUNT_SETTLED_PATH],
         })
     } catch (error) {
         logger.warn('close-amount backfill: work-list query failed', { error })
@@ -70,13 +74,15 @@ export async function backfillMissingCloseAmounts({
     for (const { id } of rows) {
         try {
             const closeAmount = await fetchCloseAmount(id, scope)
-            if (closeAmount === null) continue
+            // The indexer answered and has no amount to give, so asking again
+            // can't help; settle the row instead of leaving it on the list.
             await setChainDataValue({
                 db,
                 scope,
                 id,
-                path: CLOSE_AMOUNT_PATH,
-                value: closeAmount,
+                ...(closeAmount === null
+                    ? { path: CLOSE_AMOUNT_SETTLED_PATH, value: true }
+                    : { path: CLOSE_AMOUNT_PATH, value: closeAmount }),
             })
         } catch (error) {
             logger.warn('close-amount backfill: lookup failed; will retry', {

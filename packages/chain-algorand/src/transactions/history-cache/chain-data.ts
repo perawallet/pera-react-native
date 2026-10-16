@@ -21,6 +21,8 @@ import { resolveAlgorandAssetFacts } from '../history/assetFacts'
 
 export const CLOSE_TO_PATH = '$.algorand.closeTo'
 export const CLOSE_AMOUNT_PATH = '$.algorand.closeAmount'
+/** Set by the close-amount backfill when the indexer has no amount; never read back into the item. */
+export const CLOSE_AMOUNT_SETTLED_PATH = '$.algorand.closeAmountSettled'
 export const SWAP_GROUP_DETAIL_PATH = '$.algorand.swapGroupDetail'
 export const SWAP_ASSET_IN_DECIMALS_PATH =
     '$.algorand.swapGroupDetail.assetInDecimals'

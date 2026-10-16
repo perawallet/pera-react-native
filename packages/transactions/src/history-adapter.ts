@@ -24,6 +24,7 @@ import {
 import {
     AppError,
     ErrorCategory,
+    logger,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -178,8 +179,7 @@ export interface HistoryChainAdapter {
     chainData?: HistoryChainDataCodec
     /**
      * Repairs the account's cached rows after each sync, for facts the
-     * backend left out that no later fetch revisits. Must never throw: the
-     * sync that calls it must not fail on a repair.
+     * backend left out that no later fetch revisits.
      */
     healCachedRows?(params: {
         scope: ChainScope
@@ -239,14 +239,19 @@ export const chainDataCodecFor = (chainId: ChainId): HistoryChainDataCodec => {
     return codec
 }
 
-/** No-op on a chain with no repair. */
+/** No-op on a chain with no repair. Never throws: a failed repair must not fail the sync that already stored its page. */
 export const healCachedRows = async (
     accountAddress: string,
     scope: ChainScope,
-): Promise<void> =>
-    historyChainAdapters
-        .get(scope.chainId)
-        .healCachedRows?.({ scope, accountAddress })
+): Promise<void> => {
+    try {
+        await historyChainAdapters
+            .get(scope.chainId)
+            .healCachedRows?.({ scope, accountAddress })
+    } catch (error) {
+        logger.warn('history repair failed', { error, chainId: scope.chainId })
+    }
+}
 
 /**
  * Throws {@link TransactionHistoryRowsUnsupportedError} on a chain with no

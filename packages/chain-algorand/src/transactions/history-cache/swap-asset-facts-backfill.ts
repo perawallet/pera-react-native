@@ -12,6 +12,7 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
     fetchTransactionHistory,
@@ -47,8 +48,6 @@ type BackfillParams = {
     fetchHistory?: FetchHistoryPage
 }
 
-const ONE_DAY_SECONDS = 86_400
-
 /** Well above a day's transactions for all but the busiest accounts. */
 const PAGE_LIMIT = 200
 
@@ -68,7 +67,7 @@ const groupIntoWindows = (
 ): Window[] => {
     const windows = new Map<string, Window>()
     for (const row of rows) {
-        const afterTime = toDay(row.roundTime - ONE_DAY_SECONDS)
+        const afterTime = toDay(row.roundTime - SECONDS_PER_DAY)
         const existing = windows.get(afterTime)
         if (existing) {
             existing.ids.push(row.id)
@@ -76,7 +75,7 @@ const groupIntoWindows = (
         }
         windows.set(afterTime, {
             afterTime,
-            beforeTime: toDay(row.roundTime + ONE_DAY_SECONDS),
+            beforeTime: toDay(row.roundTime + SECONDS_PER_DAY),
             ids: [row.id],
         })
     }

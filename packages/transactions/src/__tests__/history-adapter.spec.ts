@@ -120,6 +120,18 @@ describe('history adapter wrappers', () => {
         })
     })
 
+    it('keeps a failed repair from failing the sync', async () => {
+        historyChainAdapters.register(
+            makeAdapter({
+                healCachedRows: vi.fn().mockRejectedValue(new Error('boom')),
+            }),
+        )
+
+        await expect(
+            healCachedRows('ADDR', scopeForLegacyNetwork('mainnet')),
+        ).resolves.toBeUndefined()
+    })
+
     it('repairs nothing on a chain with no repair', async () => {
         historyChainAdapters.register(makeAdapter())
 

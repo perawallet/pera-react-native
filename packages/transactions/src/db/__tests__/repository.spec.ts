@@ -581,6 +581,31 @@ describe('transaction repository', () => {
         ])
     })
 
+    it('skips a row that will not parse and serves the rest of the page', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({ id: 'TX_GOOD', roundTime: 1_700_000_100 }),
+                makeTx({ id: 'TX_BROKEN', roundTime: 1_700_000_000 }),
+            ],
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+        await db
+            .update(TransactionsSchema)
+            .set({ chainData: '{not json' })
+            .where(eq(TransactionsSchema.id, 'TX_BROKEN'))
+            .run()
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            scope: scopeForLegacyNetwork('mainnet'),
+        })
+
+        expect(result.map(tx => tx.id)).toEqual(['TX_GOOD'])
+    })
+
     it('keeps the asset filter working when a cached row holds malformed JSON', async () => {
         await upsertTransactions({
             db,
@@ -1078,6 +1103,35 @@ describe('transaction repository', () => {
                     path: FIXTURE_PATHS.swapAssetInDecimals,
                 }),
             ).toBe('6')
+        })
+
+        // One draw of `limit` rows from a fixed order would serve the same
+        // rows on every pass, so failures there would starve the rest.
+        it('rotates which matching rows a bounded pass returns', async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'A', swapGroupDetail: legacySwapDetail }),
+                    makeTx({ id: 'B', swapGroupDetail: legacySwapDetail }),
+                ],
+                accountAddress: 'ACCT1',
+                scope: scopeForLegacyNetwork('mainnet'),
+            })
+
+            const seen = new Set<string>()
+            for (let pass = 0; pass < 50 && seen.size < 2; pass++) {
+                const [row] = await getRowsByChainData({
+                    db,
+                    scope: scopeForLegacyNetwork('mainnet'),
+                    accountAddress: 'ACCT1',
+                    present: [FIXTURE_PATHS.swapGroupDetail],
+                    missing: [FIXTURE_PATHS.swapAssetInDecimals],
+                    limit: 1,
+                })
+                seen.add(row.id)
+            }
+
+            expect(seen).toEqual(new Set(['A', 'B']))
         })
 
         it('ignores non-swap rows', async () => {

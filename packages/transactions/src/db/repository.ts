@@ -27,6 +27,7 @@ import {
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     isoDateToUnixSeconds,
+    logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
@@ -278,7 +279,19 @@ export async function getTransactionHistory({
     if (rows.length === 0) return []
     const resolveAssetFacts = assetFactsResolverFor(scope.chainId)
     const codec = chainDataCodecFor(scope.chainId)
-    return rows.map(row => fromDb(row, resolveAssetFacts, codec))
+    // Every writer goes through JSON.stringify or json_set, so this is a guard,
+    // not an expected path: one unparseable row must not fail the whole page.
+    return rows.flatMap(row => {
+        try {
+            return [fromDb(row, resolveAssetFacts, codec)]
+        } catch (error) {
+            logger.warn('history: skipped a cached row that would not parse', {
+                error,
+                id: row.id,
+            })
+            return []
+        }
+    })
 }
 
 type GetRowsByChainDataParams = {
@@ -299,6 +312,9 @@ type GetRowsByChainDataParams = {
  * matching rows; filtering afterwards would keep re-selecting the same healthy
  * oldest rows and a repair would never finish. A row whose chain_data isn't
  * valid JSON never matches, and neither does one with no time.
+ *
+ * Rows come back in random order, so rows a repair keeps failing on can't hold
+ * the first `limit` slots on every pass.
  */
 export async function getRowsByChainData({
     db = getDatabase(),
@@ -311,44 +327,55 @@ export async function getRowsByChainData({
     Array<{ id: string; roundTime: number }>
 > {
     const network = toScopeKey(scope)
-    return db
-        .select({
-            id: TransactionsSchema.id,
-            // The NOT NULL filter below makes the narrowed type true.
-            roundTime: sql<number>`${AccountTransactionsSchema.roundTime}`,
-        })
-        .from(TransactionsSchema)
-        .innerJoin(
-            AccountTransactionsSchema,
-            and(
-                eq(
-                    AccountTransactionsSchema.transactionId,
-                    TransactionsSchema.id,
-                ),
-                eq(
-                    AccountTransactionsSchema.network,
-                    TransactionsSchema.network,
-                ),
-            ),
-        )
-        .where(
-            and(
-                eq(TransactionsSchema.network, network),
-                eq(AccountTransactionsSchema.accountAddress, accountAddress),
-                isNotNull(AccountTransactionsSchema.roundTime),
-                sql`json_valid(${TransactionsSchema.chainData})`,
-                ...present.map(path =>
-                    isNotNull(
-                        jsonPathAsText(TransactionsSchema.chainData, path),
+    return (
+        db
+            .select({
+                id: TransactionsSchema.id,
+                // The NOT NULL filter below makes the narrowed type true.
+                roundTime: sql<number>`${AccountTransactionsSchema.roundTime}`,
+            })
+            .from(TransactionsSchema)
+            .innerJoin(
+                AccountTransactionsSchema,
+                and(
+                    eq(
+                        AccountTransactionsSchema.transactionId,
+                        TransactionsSchema.id,
+                    ),
+                    eq(
+                        AccountTransactionsSchema.network,
+                        TransactionsSchema.network,
                     ),
                 ),
-                ...missing.map(path =>
-                    isNull(jsonPathAsText(TransactionsSchema.chainData, path)),
+            )
+            .where(
+                and(
+                    eq(TransactionsSchema.network, network),
+                    eq(
+                        AccountTransactionsSchema.accountAddress,
+                        accountAddress,
+                    ),
+                    isNotNull(AccountTransactionsSchema.roundTime),
+                    sql`json_valid(${TransactionsSchema.chainData})`,
+                    ...present.map(path =>
+                        isNotNull(
+                            jsonPathAsText(TransactionsSchema.chainData, path),
+                        ),
+                    ),
+                    ...missing.map(path =>
+                        isNull(
+                            jsonPathAsText(TransactionsSchema.chainData, path),
+                        ),
+                    ),
                 ),
-            ),
-        )
-        .limit(limit)
-        .all()
+            )
+            // ponytail: random rotation, not backoff; a persistently failing row
+            // still costs one request each time it's drawn. Add a per-row attempt
+            // count if those requests start to matter.
+            .orderBy(sql`random()`)
+            .limit(limit)
+            .all()
+    )
 }
 
 type ChainDataValueParams = {
