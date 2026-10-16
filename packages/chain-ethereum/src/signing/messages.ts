@@ -48,6 +48,7 @@ import {
     typedDataDigest,
     type TaggedDigest,
 } from './digests'
+import { spendApprovalOf } from './permits'
 import { toViemSignature } from './sign'
 
 /** The `MessageRequest.payload` for `personal_sign`. */
@@ -259,11 +260,13 @@ const describeTypedData = (payload: unknown): MessageSummary => {
     } catch {
         return { kind: 'raw', title }
     }
+    const spendApproval = spendApprovalOf(typedData, Date.now())
     return {
         kind: 'typed-data',
         title,
         preview: typedData.primaryType as string,
         tree,
+        ...(spendApproval && { spendApproval }),
     }
 }
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { bytesToHex, hexToBytes } from 'viem'
+import { bytesToHex, hexToBytes, maxUint160 } from 'viem'
 import type { Hex, TransactionSerializableEIP1559 } from 'viem'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainKeyStore } from '@perawallet/wallet-core-chain-contract'
@@ -61,6 +61,212 @@ export const MAIL_TYPED_DATA = {
         contents: 'Hello, Bob!',
     },
 } as const
+
+// 2026-01-01T00:00:00Z. The permit fixtures' deadlines are relative to it.
+export const PERMIT_NOW_MS = 1_767_225_600_000
+
+// Addresses are lowercase and uints are decimal strings, the way a dApp's JSON
+// arrives, so every vector also exercises checksumming and string parsing.
+export const PERMIT_SPENDER = '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'
+export const PERMIT_USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+export const PERMIT_WETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+export const PERMIT2_ADDRESS = '0x000000000022d473030f116ddee9f6b43ac78ba3'
+/** 30 and 60 days after `PERMIT_NOW_MS`, in Unix seconds. */
+export const PERMIT_DEADLINE_30D = '1769817600'
+export const PERMIT_DEADLINE_60D = '1772409600'
+
+const PERMIT2_DOMAIN = {
+    name: 'Permit2',
+    chainId: 1,
+    verifyingContract: PERMIT2_ADDRESS,
+}
+const PERMIT_DETAILS_TYPE = [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint160' },
+    { name: 'expiration', type: 'uint48' },
+    { name: 'nonce', type: 'uint48' },
+]
+const TOKEN_PERMISSIONS_TYPE = [
+    { name: 'token', type: 'address' },
+    { name: 'amount', type: 'uint256' },
+]
+const permitDetails = (token: string, expiration = PERMIT_DEADLINE_30D) => ({
+    token,
+    amount: '1000000',
+    expiration,
+    nonce: '0',
+})
+const tokenPermissions = (token: string) => ({ token, amount: '1000000' })
+
+export const EIP2612_PERMIT_TYPED_DATA = {
+    domain: {
+        name: 'USD Coin',
+        version: '2',
+        chainId: 1,
+        verifyingContract: PERMIT_USDC,
+    },
+    types: {
+        Permit: [
+            { name: 'owner', type: 'address' },
+            { name: 'spender', type: 'address' },
+            { name: 'value', type: 'uint256' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'deadline', type: 'uint256' },
+        ],
+    },
+    primaryType: 'Permit',
+    message: {
+        owner: SENDER,
+        spender: PERMIT_SPENDER,
+        value: '1000000',
+        nonce: '0',
+        deadline: PERMIT_DEADLINE_30D,
+    },
+}
+
+export const PERMIT2_SINGLE_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitSingle: [
+            { name: 'details', type: 'PermitDetails' },
+            { name: 'spender', type: 'address' },
+            { name: 'sigDeadline', type: 'uint256' },
+        ],
+        PermitDetails: PERMIT_DETAILS_TYPE,
+    },
+    primaryType: 'PermitSingle',
+    message: {
+        details: permitDetails(PERMIT_USDC),
+        spender: PERMIT_SPENDER,
+        sigDeadline: PERMIT_DEADLINE_30D,
+    },
+}
+
+export const PERMIT2_SINGLE_UNLIMITED_TYPED_DATA = {
+    ...PERMIT2_SINGLE_TYPED_DATA,
+    message: {
+        ...PERMIT2_SINGLE_TYPED_DATA.message,
+        details: {
+            ...PERMIT2_SINGLE_TYPED_DATA.message.details,
+            amount: maxUint160.toString(),
+        },
+    },
+}
+
+export const PERMIT2_BATCH_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitBatch: [
+            { name: 'details', type: 'PermitDetails[]' },
+            { name: 'spender', type: 'address' },
+            { name: 'sigDeadline', type: 'uint256' },
+        ],
+        PermitDetails: PERMIT_DETAILS_TYPE,
+    },
+    primaryType: 'PermitBatch',
+    message: {
+        details: [
+            permitDetails(PERMIT_USDC),
+            permitDetails(PERMIT_WETH, PERMIT_DEADLINE_60D),
+        ],
+        spender: PERMIT_SPENDER,
+        sigDeadline: PERMIT_DEADLINE_60D,
+    },
+}
+
+const transferFromTail = [
+    { name: 'spender', type: 'address' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+]
+const transferFromMessage = {
+    spender: PERMIT_SPENDER,
+    nonce: '0',
+    deadline: PERMIT_DEADLINE_30D,
+}
+// Permit2's own test witness.
+const WITNESS_TYPE = [
+    { name: 'value', type: 'uint256' },
+    { name: 'person', type: 'address' },
+    { name: 'test', type: 'bool' },
+]
+const witness = { value: '42', person: PERMIT_SPENDER, test: true }
+
+export const PERMIT2_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions' },
+            ...transferFromTail,
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+    },
+    primaryType: 'PermitTransferFrom',
+    message: {
+        permitted: tokenPermissions(PERMIT_USDC),
+        ...transferFromMessage,
+    },
+}
+
+export const PERMIT2_BATCH_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitBatchTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions[]' },
+            ...transferFromTail,
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+    },
+    primaryType: 'PermitBatchTransferFrom',
+    message: {
+        permitted: [
+            tokenPermissions(PERMIT_USDC),
+            tokenPermissions(PERMIT_WETH),
+        ],
+        ...transferFromMessage,
+    },
+}
+
+export const PERMIT2_WITNESS_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitWitnessTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions' },
+            ...transferFromTail,
+            { name: 'witness', type: 'MockWitness' },
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+        MockWitness: WITNESS_TYPE,
+    },
+    primaryType: 'PermitWitnessTransferFrom',
+    message: {
+        permitted: tokenPermissions(PERMIT_USDC),
+        ...transferFromMessage,
+        witness,
+    },
+}
+
+export const PERMIT2_BATCH_WITNESS_TRANSFER_FROM_TYPED_DATA = {
+    domain: PERMIT2_DOMAIN,
+    types: {
+        PermitBatchWitnessTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions[]' },
+            ...transferFromTail,
+            { name: 'witness', type: 'MockWitness' },
+        ],
+        TokenPermissions: TOKEN_PERMISSIONS_TYPE,
+        MockWitness: WITNESS_TYPE,
+    },
+    primaryType: 'PermitBatchWitnessTransferFrom',
+    message: {
+        permitted: [
+            tokenPermissions(PERMIT_USDC),
+            tokenPermissions(PERMIT_WETH),
+        ],
+        ...transferFromMessage,
+        witness,
+    },
+}
 
 // Hardhat account #0 (`m/44'/60'/0'/0/0` of `test test test test test test
 // test test test test test junk`). This package's tests may not hold a

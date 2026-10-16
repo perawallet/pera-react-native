@@ -3033,6 +3033,18 @@
             "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
             "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
+        "spend_approval": {
+            "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
+            "spend_warning_bold": "Ne signez que si vous faites confiance à cette application.",
+            "spender_caption": "Adresse autorisée : {{address}}",
+            "unlimited_warning": "Le montant est illimité : l’adresse autorisée peut prendre tous les tokens de ce type que vous détenez.",
+            "long_deadline_warning": "Cette autorisation dure plus d’un an.",
+            "no_deadline_warning": "Cette autorisation n’expire jamais.",
+            "spender_label": "Adresse autorisée",
+            "unlimited": "Illimité",
+            "deadline_label": "Date limite",
+            "never": "Jamais"
+        },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",
             "description": "Une demande de signature de données est une demande de signature de données arbitraires. Elle est couramment utilisée par les services pour vérifier la propriété d’un compte et n’entraîne aucuns frais.",

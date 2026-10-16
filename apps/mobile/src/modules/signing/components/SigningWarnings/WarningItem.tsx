@@ -23,10 +23,8 @@ import {
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
+import { WarningRow } from './WarningRow'
 
 type WarningItemProps = {
     warning: TransactionWarning
@@ -91,44 +89,23 @@ export const WarningItem = ({
 }: WarningItemProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
-    const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
-
-    const divider = showDivider && (
-        <PWDivider
-            style={styles.divider}
-            color={theme.colors.layerGray}
-        />
-    )
 
     if (warning.type === 'high-fee') {
         return (
-            <>
-                {divider}
-                <PWView style={styles.warningSection}>
-                    <PWView style={styles.warningSectionIconContainer}>
-                        <PWRoundIcon
-                            icon='info'
-                            size='md'
-                            variant='secondary'
-                        />
-                        <PWView style={styles.warningMessageContainer}>
-                            <PWText style={styles.warningMessage}>
-                                {t('transactions.warning.high_fee_warning', {
-                                    fee: formatNumber(
-                                        baseUnitsToDisplayUnits(
-                                            warning.totalFee,
-                                            nativeAsset.decimals,
-                                        ),
-                                        nativeAsset.decimals,
-                                    ),
-                                })}
-                            </PWText>
-                        </PWView>
-                    </PWView>
-                </PWView>
-            </>
+            <WarningRow
+                icon='info'
+                showDivider={showDivider}
+                message={t('transactions.warning.high_fee_warning', {
+                    fee: formatNumber(
+                        baseUnitsToDisplayUnits(
+                            warning.totalFee,
+                            nativeAsset.decimals,
+                        ),
+                        nativeAsset.decimals,
+                    ),
+                })}
+            />
         )
     }
 
@@ -138,39 +115,22 @@ export const WarningItem = ({
     )
 
     return (
-        <>
-            {divider}
-            <PWView style={styles.warningSection}>
-                <PWView style={styles.warningSectionIconContainer}>
-                    <PWRoundIcon
-                        icon={icon}
-                        size='md'
-                        variant='secondary'
-                    />
-                    <PWView style={styles.warningMessageContainer}>
-                        <PWText style={styles.warningMessage}>
-                            {t(messageKey, {
-                                address: truncateAlgorandAddress(
-                                    warning.targetAddress,
-                                    LONG_ADDRESS_LENGTH,
-                                ),
-                            })}
-                        </PWText>
-                        {boldKey && <PWText variant='h4'>{t(boldKey)}</PWText>}
-                        <PWText
-                            variant='caption'
-                            style={styles.senderText}
-                        >
-                            {t('transactions.warning.from_account', {
-                                address: truncateAlgorandAddress(
-                                    warning.senderAddress,
-                                    LONG_ADDRESS_LENGTH,
-                                ),
-                            })}
-                        </PWText>
-                    </PWView>
-                </PWView>
-            </PWView>
-        </>
+        <WarningRow
+            icon={icon}
+            showDivider={showDivider}
+            message={t(messageKey, {
+                address: truncateAlgorandAddress(
+                    warning.targetAddress,
+                    LONG_ADDRESS_LENGTH,
+                ),
+            })}
+            emphasis={boldKey ? t(boldKey) : undefined}
+            caption={t('transactions.warning.from_account', {
+                address: truncateAlgorandAddress(
+                    warning.senderAddress,
+                    LONG_ADDRESS_LENGTH,
+                ),
+            })}
+        />
     )
 }

@@ -3049,6 +3049,18 @@
             "typed_data_warning_title": "Esta assinatura pode movimentar seus tokens",
             "typed_data_warning_body": "Assinar dados estruturados pode autorizar um aplicativo a gastar ou negociar seus tokens sem pedir sua confirmação de novo. Aprove somente se você confia neste aplicativo."
         },
+        "spend_approval": {
+            "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
+            "spend_warning_bold": "Assine somente se você confia neste aplicativo.",
+            "spender_caption": "Endereço autorizado: {{address}}",
+            "unlimited_warning": "O valor é ilimitado, então o endereço autorizado pode pegar todos os seus tokens deste tipo.",
+            "long_deadline_warning": "Esta permissão dura mais de um ano.",
+            "no_deadline_warning": "Esta permissão nunca expira.",
+            "spender_label": "Endereço autorizado",
+            "unlimited": "Ilimitado",
+            "deadline_label": "Prazo",
+            "never": "Nunca"
+        },
         "arbitrary_data_details": {
             "unnamed": "Alguém",
             "description": "Uma solicitação de assinatura de dados pede que você assine dados arbitrários. Serviços costumam usar isso para verificar a propriedade de uma conta, e não gera taxas.",

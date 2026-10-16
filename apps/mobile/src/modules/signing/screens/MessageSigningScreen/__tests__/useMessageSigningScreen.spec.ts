@@ -49,6 +49,7 @@ const SUMMARY = {
 }
 const SIGNER_ACCOUNT = { id: 'account-1' }
 const SOURCE = { name: 'Fixture dApp' }
+const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' }
 
 describe('useMessageSigningScreen', () => {
     beforeEach(() => {
@@ -58,6 +59,7 @@ describe('useMessageSigningScreen', () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
             type: 'message',
+            message: { scope: SCOPE },
             sourceMetadata: SOURCE,
             verifiedOrigin: 'https://dapp.example',
         }
@@ -72,6 +74,20 @@ describe('useMessageSigningScreen', () => {
 
         expect(result.current.summary).toBe(SUMMARY)
         expect(result.current.signerAccount).toBe(SIGNER_ACCOUNT)
+    })
+
+    it("reads the message request's scope", () => {
+        const { result } = renderHook(() => useMessageSigningScreen())
+
+        expect(result.current.scope).toBe(SCOPE)
+    })
+
+    it('has no scope for a request that is not a message', () => {
+        mockPipeline.currentRequest = { id: 'req-2', type: 'arbitrary-data' }
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+
+        expect(result.current.scope).toBeNull()
     })
 
     it('carries the requesting source and its verified origin', () => {
