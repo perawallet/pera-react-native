@@ -17,6 +17,7 @@ import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import { SignedDataWarning } from '@modules/signing/components/SignedDataWarning'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
+import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
 import { MessageTreeView } from './MessageTreeView'
 import { useStyles } from './styles'
 import { useMessageSigningScreen } from './useMessageSigningScreen'
@@ -26,6 +27,7 @@ export const MessageSigningScreen = () => {
     const { t } = useLanguage()
     const {
         summary,
+        scope,
         signerAccount,
         sourceMetadata,
         verifiedOrigin,
@@ -34,7 +36,7 @@ export const MessageSigningScreen = () => {
         handleReject,
     } = useMessageSigningScreen()
 
-    if (!summary) return null
+    if (!summary || !scope) return null
 
     return (
         <PWScreen
@@ -80,20 +82,27 @@ export const MessageSigningScreen = () => {
                         </PWView>
                     )}
                     {summary.kind === 'raw' && <SignedDataWarning />}
-                    {summary.kind === 'typed-data' && (
-                        <InfoCallout
-                            icon='warning'
-                            iconSize='sm'
-                            titleVariant='bodySemibold'
-                            title={t(
-                                'signing.arbitrary_data_view.typed_data_warning_title',
-                            )}
-                            body={t(
-                                'signing.arbitrary_data_view.typed_data_warning_body',
-                            )}
-                            testID='message-signing-typed-data-warning'
+                    {summary.spendApproval && (
+                        <SpendApprovalWarning
+                            approval={summary.spendApproval}
+                            scope={scope}
                         />
                     )}
+                    {summary.kind === 'typed-data' &&
+                        !summary.spendApproval && (
+                            <InfoCallout
+                                icon='warning'
+                                iconSize='sm'
+                                titleVariant='bodySemibold'
+                                title={t(
+                                    'signing.arbitrary_data_view.typed_data_warning_title',
+                                )}
+                                body={t(
+                                    'signing.arbitrary_data_view.typed_data_warning_body',
+                                )}
+                                testID='message-signing-typed-data-warning'
+                            />
+                        )}
                     {!!summary.tree && <MessageTreeView nodes={summary.tree} />}
                 </PWView>
 

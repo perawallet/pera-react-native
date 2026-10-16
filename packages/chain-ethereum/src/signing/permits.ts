@@ -215,7 +215,8 @@ const parseTypedData = (typedData: TypedDataDefinition): Parsed | undefined => {
     ) {
         return undefined
     }
-    const struct = shape.key === 'details' ? 'PermitDetails' : 'TokenPermissions'
+    const struct =
+        shape.key === 'details' ? 'PermitDetails' : 'TokenPermissions'
     const head: Field = [shape.key, shape.isBatch ? `${struct}[]` : struct]
     const tail = shape.key === 'details' ? SIGNED_TAIL : TRANSFER_TAIL
     return matches(

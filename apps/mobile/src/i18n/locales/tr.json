@@ -3033,6 +3033,18 @@
             "typed_data_warning_title": "Bu imza token’larını hareket ettirebilir",
             "typed_data_warning_body": "Yapılandırılmış veriyi imzalamak, bir uygulamaya token’larını sana tekrar sormadan harcama veya takas etme yetkisi verebilir. Yalnızca bu uygulamaya güveniyorsan onayla."
         },
+        "spend_approval": {
+            "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
+            "spend_warning_bold": "Yalnızca bu uygulamaya güveniyorsan imzala.",
+            "spender_caption": "Yetkili adres: {{address}}",
+            "unlimited_warning": "Tutar sınırsız, bu yüzden yetkili adres bu tokenden sahip olduğun her şeyi alabilir.",
+            "long_deadline_warning": "Bu izin bir yıldan uzun sürer.",
+            "no_deadline_warning": "Bu izin hiçbir zaman sona ermez.",
+            "spender_label": "Yetkili adres",
+            "unlimited": "Sınırsız",
+            "deadline_label": "Son tarih",
+            "never": "Hiçbir zaman"
+        },
         "arbitrary_data_details": {
             "unnamed": "Birisi",
             "description": "Veri imzalama isteği, serbest verinin imzalanması için yapılan bir istektir. Servisler bunu genellikle bir hesabın sahipliğini doğrulamak için kullanır ve herhangi bir ücret oluşturmaz.",

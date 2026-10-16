@@ -202,7 +202,10 @@ export const PERMIT2_TRANSFER_FROM_TYPED_DATA = {
         TokenPermissions: TOKEN_PERMISSIONS_TYPE,
     },
     primaryType: 'PermitTransferFrom',
-    message: { permitted: tokenPermissions(PERMIT_USDC), ...transferFromMessage },
+    message: {
+        permitted: tokenPermissions(PERMIT_USDC),
+        ...transferFromMessage,
+    },
 }
 
 export const PERMIT2_BATCH_TRANSFER_FROM_TYPED_DATA = {

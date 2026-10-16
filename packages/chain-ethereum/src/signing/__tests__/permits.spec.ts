@@ -96,9 +96,7 @@ describe('spend approval recognition', () => {
             copy.message.sigDeadline = '1767312000'
         })
 
-        expect(describeTyped(typed).spendApproval?.deadline).toBe(
-            1767312000000,
-        )
+        expect(describeTyped(typed).spendApproval?.deadline).toBe(1767312000000)
     })
 
     it('lists a PermitBatch in message order, ending at the latest expiration', () => {
@@ -131,13 +129,14 @@ describe('spend approval recognition', () => {
             copy.message.permitted.amount = maxUint256.toString()
         })
 
-        expect(describeTyped(PERMIT2_TRANSFER_FROM_TYPED_DATA).spendApproval)
-            .toEqual({
-                spender: getAddress(PERMIT_SPENDER),
-                allowances: [asset(USDC, '1000000')],
-                deadline: 1769817600000,
-                isLongLived: false,
-            })
+        expect(
+            describeTyped(PERMIT2_TRANSFER_FROM_TYPED_DATA).spendApproval,
+        ).toEqual({
+            spender: getAddress(PERMIT_SPENDER),
+            allowances: [asset(USDC, '1000000')],
+            deadline: 1769817600000,
+            isLongLived: false,
+        })
         expect(describeTyped(hex).spendApproval?.allowances).toEqual([
             asset(USDC, '1000000'),
         ])
@@ -265,7 +264,8 @@ describe('spend approval recognition', () => {
             [
                 'a PermitSingle on another contract',
                 edit(PERMIT2_SINGLE_TYPED_DATA, copy => {
-                    copy.domain.verifyingContract = MAIL_TYPED_DATA.domain.verifyingContract
+                    copy.domain.verifyingContract =
+                        MAIL_TYPED_DATA.domain.verifyingContract
                 }),
             ],
             [
@@ -318,16 +318,22 @@ describe('spend approval recognition', () => {
             ],
             [
                 'Mail on the Permit2 domain',
-                { ...MAIL_TYPED_DATA, domain: PERMIT2_SINGLE_TYPED_DATA.domain },
+                {
+                    ...MAIL_TYPED_DATA,
+                    domain: PERMIT2_SINGLE_TYPED_DATA.domain,
+                },
             ],
         ]
 
-        it.each(lookalikes)('%s gets the plain tree and no approval', (_n, typed) => {
-            const summary = describeTyped(typed)
+        it.each(lookalikes)(
+            '%s gets the plain tree and no approval',
+            (_n, typed) => {
+                const summary = describeTyped(typed)
 
-            expect(summary.kind).toBe('typed-data')
-            expect(summary).not.toHaveProperty('spendApproval')
-        })
+                expect(summary.kind).toBe('typed-data')
+                expect(summary).not.toHaveProperty('spendApproval')
+            },
+        )
     })
 
     it('adds nothing to typed data that is not a permit', () => {

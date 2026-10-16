@@ -3033,6 +3033,18 @@
             "typed_data_warning_title": "This signature can move your tokens",
             "typed_data_warning_body": "Signing structured data can authorize an app to spend or trade your tokens without asking you again. Only approve if you trust this application."
         },
+        "spend_approval": {
+            "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
+            "spend_warning_bold": "Only sign if you trust this application.",
+            "spender_caption": "Spender: {{address}}",
+            "unlimited_warning": "The amount is unlimited, so the spender can take all of this token you hold.",
+            "long_deadline_warning": "This permission lasts more than a year.",
+            "no_deadline_warning": "This permission never expires.",
+            "spender_label": "Spender",
+            "unlimited": "Unlimited",
+            "deadline_label": "Deadline",
+            "never": "Never"
+        },
         "arbitrary_data_details": {
             "unnamed": "Someone",
             "description": "A data signing request is a request to sign arbitrary data. This is a commonly used by services to verify ownership of an account, but it does not incur any fees.",

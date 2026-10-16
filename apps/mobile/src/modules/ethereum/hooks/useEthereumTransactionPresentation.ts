@@ -16,10 +16,7 @@ import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    useSingleAssetDetailsQuery,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type {
     ChainScope,
     TransactionNative,
@@ -37,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { transactionIconName } from '@components/TransactionIcon'
+import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
 
 export type EthereumAmount = {
     /** Null only when a token's record can't be read; `value` is then in base units. */
@@ -90,32 +88,27 @@ export const useEthereumTransactionPresentation = (
 ): UseEthereumTransactionPresentationResult => {
     const view = useMemo(() => readView(transaction), [transaction])
     const scope = useSelectedScope(ETHEREUM_CHAIN_ID)
-    // An empty id disables the query.
-    const { data: tokenRecord, isPending: isTokenPending } =
-        useSingleAssetDetailsQuery(view?.token?.contract ?? '', scope)
+    const {
+        asset: tokenAsset,
+        value: tokenValue,
+        isLoading: isTokenLoading,
+    } = useBaseUnitsAmount(
+        view?.token?.contract ?? '',
+        view?.token?.amount,
+        scope,
+    )
     const signingAccount = useFindAccountByAddress(view?.from ?? '', scope)
 
     return useMemo(() => {
         if (!view) return null
 
-        const { token } = view
-        // A disabled query is pending too, so only a token transfer waits on it.
-        const isAmountLoading =
-            view.kind === 'token-transfer' && !!token && isTokenPending
+        const isAmountLoading = view.kind === 'token-transfer' && isTokenLoading
 
         let amount: EthereumAmount | undefined
         if (view.kind === 'transfer') {
             amount = toEther(view.value)
-        } else if (token && !isAmountLoading) {
-            amount = tokenRecord
-                ? {
-                      asset: tokenRecord,
-                      value: baseUnitsToDisplayUnits(
-                          token.amount,
-                          tokenRecord.decimals,
-                      ),
-                  }
-                : { asset: null, value: token.amount }
+        } else if (tokenValue) {
+            amount = { asset: tokenAsset, value: tokenValue }
         }
 
         return {
@@ -128,12 +121,12 @@ export const useEthereumTransactionPresentation = (
             iconName: transactionIconName(
                 view.kind === 'contract-call' ? 'contract-call' : 'send',
             ),
-            counterparty: token?.to ?? view.to,
+            counterparty: view.token?.to ?? view.to,
             amount,
             isAmountLoading,
             value: toEther(view.value),
             maxFee: toEther(view.fee.maxFee),
             signingAccount,
         }
-    }, [view, scope, tokenRecord, isTokenPending, signingAccount])
+    }, [view, scope, tokenAsset, tokenValue, isTokenLoading, signingAccount])
 }
