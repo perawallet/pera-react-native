@@ -17,7 +17,8 @@ import {
     Arc0001ErrorCode,
 } from '../../blockchain'
 import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {
     CannotSignError,
     MAX_TRANSACTION_SIGN_REQUESTS,
@@ -364,21 +365,5 @@ describe('walletConnect.v2', () => {
 
         expect(route.answer(['A'], 'mainnet')).toEqual({ A: 'gA==' })
         expect(emptySignaturesFor).toHaveBeenCalledWith(['A'])
-    })
-})
-
-describe('switchChain', () => {
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
-
-    it("selects the network for Algorand's chain", () => {
-        const selectNetwork = vi
-            .spyOn(useNetworkStore.getState(), 'selectNetwork')
-            .mockImplementation(() => {})
-
-        adapter.switchChain?.('betanet')
-
-        expect(selectNetwork).toHaveBeenCalledWith(ALGORAND_CHAIN_ID, 'betanet')
     })
 })

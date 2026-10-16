@@ -71,7 +71,7 @@ export type WalletOperation =
           request: unknown
       }
     | { type: MessageOperationType; request: DappMessageRequest }
-    /** Points the chain's network selection at `networkId`, once the user agrees. */
+    /** Adds `networkId` to the connection, once the user agrees; the wallet's selection never moves. */
     | { type: 'switch-network'; networkId: NetworkId }
 
 /** Signing results, before the handler envelopes them for its wire. */
@@ -82,7 +82,7 @@ export type WalletOperationResult =
     | { type: 'send-transaction'; txId: string }
     /** The signature as the chain's message signer assembled it. */
     | { type: MessageOperationType; signature: Uint8Array }
-    /** The selection moved; the wire answer is the chain's. */
+    /** The connection now holds the network; the wire answer is the chain's. */
     | { type: 'switch-network' }
 
 /** Wallet-initiated push. Only handlers implementing `notify` receive these. */

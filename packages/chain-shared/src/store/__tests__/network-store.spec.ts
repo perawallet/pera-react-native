@@ -719,46 +719,6 @@ describe('chain-shared network-store', () => {
         })
     })
 
-    describe('canSelectChainNetwork', () => {
-        const selection = (
-            mode: 'live' | 'developer',
-            customIds: string[] = [],
-        ) => ({
-            mode,
-            selectedNetworkByChain: {},
-            customNetworksByChain: {
-                algorand: customIds.map(id => ({ ...CONFIG, id })),
-            },
-        })
-
-        // [mode, chain, network, custom networks saved, selectable]
-        const table = [
-            ['live', ETHEREUM, 'mainnet', [], true],
-            ['live', ETHEREUM, 'sepolia', [], false],
-            ['developer', ETHEREUM, 'sepolia', [], true],
-            ['developer', ETHEREUM, 'goerli', [], true],
-            ['developer', ETHEREUM, 'mainnet', [], false],
-            ['developer', ALGORAND, 'custom', ['custom'], true],
-            ['developer', ALGORAND, 'custom', [], false],
-        ] as const
-
-        test.each(table)(
-            '%s mode, %s on %s with %j saved',
-            async (mode, chainId, networkId, customIds, expected) => {
-                const { canSelectChainNetwork } = await loadStore()
-                registerAlgorand()
-                registerEthereum()
-
-                expect(
-                    canSelectChainNetwork(selection(mode, [...customIds]), {
-                        chainId,
-                        networkId,
-                    }),
-                ).toBe(expected)
-            },
-        )
-    })
-
     describe('selectChainMode', () => {
         const state = (
             mode: 'live' | 'developer',

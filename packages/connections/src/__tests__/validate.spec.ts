@@ -107,7 +107,6 @@ describe('validateRawMessage', () => {
                         ? 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
                         : null,
             },
-            switchChain: vi.fn(),
         }
 
         beforeEach(() => {
@@ -115,7 +114,7 @@ describe('validateRawMessage', () => {
             dappRequestChainAdapters.register(switchable)
         })
 
-        it('accepts a network the chain can switch to', () => {
+        it('accepts a network the chain declares', () => {
             const result = validateRawMessage(
                 request('switch-network', { networkId: 'mainnet' }),
             )
@@ -135,23 +134,6 @@ describe('validateRawMessage', () => {
             ['a non-id value', { networkId: 7 }],
         ])('refuses %s as an invalid payload', (_name, params) => {
             const result = validateRawMessage(request('switch-network', params))
-
-            expect(result.ok).toBe(false)
-            if (!result.ok) {
-                expect(result.error).toMatchObject({ code: 'invalid-payload' })
-            }
-        })
-
-        it('refuses a chain that declares no switchChain', () => {
-            dappRequestChainAdapters.reset()
-            dappRequestChainAdapters.register({
-                ...switchable,
-                switchChain: undefined,
-            })
-
-            const result = validateRawMessage(
-                request('switch-network', { networkId: 'mainnet' }),
-            )
 
             expect(result.ok).toBe(false)
             if (!result.ok) {

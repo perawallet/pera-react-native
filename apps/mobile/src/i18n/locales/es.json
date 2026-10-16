@@ -3349,9 +3349,9 @@
             "approve_delivery_failed": "No se ha podido contactar con la dApp para confirmar la conexión. Comprueba tu conexión a internet y vuelve a intentarlo."
         },
         "switch_network": {
-            "title": "¿Cambiar de red?",
-            "body": "{{name}} quiere cambiar {{chain}} a {{network}}.",
-            "confirm": "Cambiar"
+            "title": "¿Permitir acceso a la red?",
+            "body": "{{name}} quiere usar tus cuentas de {{chain}} en {{network}}.",
+            "confirm": "Permitir"
         },
         "settings": {
             "empty_title": "No hay sesiones de WalletConnect",

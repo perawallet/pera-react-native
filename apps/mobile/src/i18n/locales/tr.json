@@ -3349,9 +3349,9 @@
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
         },
         "switch_network": {
-            "title": "Ağ değiştirilsin mi?",
-            "body": "{{name}}, {{chain}} ağını {{network}} olarak değiştirmek istiyor.",
-            "confirm": "Değiştir"
+            "title": "Ağ erişimine izin verilsin mi?",
+            "body": "{{name}}, {{network}} ağında {{chain}} hesaplarını kullanmak istiyor.",
+            "confirm": "İzin ver"
         },
         "settings": {
             "empty_title": "WalletConnect oturumu yok",

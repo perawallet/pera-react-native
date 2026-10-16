@@ -158,7 +158,6 @@ export const validateRawMessage = (
                 : undefined
         if (
             !isNetworkId(networkId) ||
-            !adapter.switchChain ||
             adapter.walletConnect.caip2ChainIdFor(networkId) === null
         ) {
             return {

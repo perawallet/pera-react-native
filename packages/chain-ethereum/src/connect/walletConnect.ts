@@ -12,7 +12,6 @@
 
 import { bytesToHex, hexToBigInt, isHex, numberToHex } from 'viem'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
-import { isNetworkSelectable } from '@perawallet/wallet-core-chain-shared'
 import type {
     DappRequestChainAdapter,
     DappRequestFailure,
@@ -20,7 +19,6 @@ import type {
 } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
-import { ETHEREUM_CHAIN_ID } from '../chain-id'
 import { ethereumDescriptor } from '../descriptor'
 
 export const ETHEREUM_CAIP2_NAMESPACE = 'eip155'
@@ -95,17 +93,6 @@ const routeSwitch = (params: unknown): WalletConnectRequestRoute => {
             error: {
                 code: EIP3326_UNRECOGNIZED_CHAIN,
                 message: 'This wallet does not have that chain',
-            },
-        }
-    }
-    // The current mode cannot reach the other tier, and no dApp request may
-    // change the mode.
-    if (!isNetworkSelectable({ chainId: ETHEREUM_CHAIN_ID, networkId })) {
-        return {
-            kind: 'refused',
-            error: {
-                code: EIP_1193_CODE['unselected-chain'],
-                message: 'The wallet cannot switch to that chain right now',
             },
         }
     }

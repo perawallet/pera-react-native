@@ -549,14 +549,17 @@ export const createWalletConnectV2Handler = (
 
         // A session may be approved for several networks at once; only the
         // selected one's may sign, or a mainnet dApp could have a testnet
-        // group signed while the wallet shows mainnet. A switch request is the
-        // exception: the dApp asks from whichever session chain it believes it is on.
+        // group signed while the wallet shows mainnet. A switch is judged by
+        // its target instead: the dApp asks from whichever session chain it
+        // believes it is on, and no dApp moves the wallet's selection.
         const networkId = getNetworkId(chain.chainId)
         const activeChainId = support.caip2ChainIdFor(networkId)
-        if (
-            route.kind !== 'switch-network' &&
-            (activeChainId === null || event.params.chainId !== activeChainId)
-        ) {
+        const isOffSelectedNetwork =
+            route.kind === 'switch-network'
+                ? route.networkId !== networkId
+                : activeChainId === null ||
+                  event.params.chainId !== activeChainId
+        if (isOffSelectedNetwork) {
             refuseRequest(
                 topic,
                 id,
@@ -586,10 +589,14 @@ export const createWalletConnectV2Handler = (
         // in approval order for the life of the session.
         recordActivity(topic)
 
-        if (route.kind === 'switch-network' && route.networkId === networkId) {
-            // Already there: no prompt, but the session must name the chain
-            // for the dApp's follow-up requests on it to be served.
-            await answerSelectedSwitch(record, chain, route.networkId, id)
+        // A chain the session already holds was consented to at approval, so
+        // only a switch that would add one asks the user.
+        if (
+            route.kind === 'switch-network' &&
+            activeChainId !== null &&
+            sessionChainsOf(topic, support).includes(activeChainId)
+        ) {
+            answerSwitch(topic, id, support)
             return
         }
 
@@ -728,45 +735,45 @@ export const createWalletConnectV2Handler = (
         })
     }
 
-    // The wallet is already on the network the dApp asked for.
-    const answerSelectedSwitch = async (
-        record: WalletConnectV2Connection,
-        chain: WalletConnectV2Chain,
-        networkId: NetworkId,
+    const sessionChainsOf = (
+        topic: string,
+        support: WalletConnectSupport,
+    ): string[] => {
+        const session = client?.getActiveSessions()[topic] as
+            | WalletKitSession
+            | undefined
+        return session?.namespaces[support.namespace]?.chains ?? []
+    }
+
+    // Fire and forget, like a refusal: the peer times out if it cannot be delivered.
+    const answerSwitch = (
+        topic: string,
         id: number,
-    ): Promise<void> => {
-        const caip2 = chain.support.caip2ChainIdFor(networkId)
-        try {
-            if (caip2 !== null) {
-                await includeChainInSession(record, chain, caip2)
-            }
-            await requireClient().respondSessionRequest({
-                topic: record.id,
+        support: WalletConnectSupport,
+    ): void => {
+        if (!client) return
+        void client
+            .respondSessionRequest({
+                topic,
                 response: {
                     id,
                     jsonrpc: '2.0',
-                    result: chain.support.toWireResult({
-                        type: 'switch-network',
-                    }),
+                    result: support.toWireResult({ type: 'switch-network' }),
                 },
             })
-        } catch (error) {
-            logger.warn('[WC v2] answering a switch request failed', {
-                connectionId: record.id,
-                correlationId: String(id),
-                error,
+            .catch((error: unknown) => {
+                logger.warn('[WC v2] answering a switch request failed', {
+                    connectionId: topic,
+                    correlationId: String(id),
+                    error,
+                })
             })
-            answerWithError(record.id, id, {
-                code: JSON_RPC_SERVER_ERROR,
-                message: 'The session could not be updated',
-            })
-        }
     }
 
     /**
-     * Runs once the user approves. Throws unless the wallet's selection took
-     * (the mode can change while the prompt is open), so the dApp is declined
-     * rather than told the switch happened.
+     * Runs once the user approves adding the chain. Throws if the selection
+     * moved while the prompt was open, so the dApp is declined rather than
+     * pointed at a network whose requests would be refused.
      */
     const applySwitch = async (
         record: WalletConnectV2Connection,
@@ -774,15 +781,10 @@ export const createWalletConnectV2Handler = (
         networkId: NetworkId,
     ): Promise<void> => {
         const caip2 = chain.support.caip2ChainIdFor(networkId)
-        const { switchChain } = dappRequestChainAdapters.get(chain.chainId)
-        if (caip2 === null || !switchChain) {
+        if (caip2 === null || getNetworkId(chain.chainId) !== networkId) {
             throw new WalletConnectInvalidNetworkError()
         }
         await includeChainInSession(record, chain, caip2)
-        switchChain(networkId)
-        if (getNetworkId(chain.chainId) !== networkId) {
-            throw new WalletConnectInvalidNetworkError()
-        }
     }
 
     // Never surfaced to the user: the dApp asks unprompted, and a refusal
@@ -1434,14 +1436,16 @@ export const createWalletConnectV2Handler = (
             const { networkId } = notice.scope
             const caip2 = chain.support.caip2ChainIdFor(networkId)
             const data = chain.v2.sessionEvents.chainChangedData(networkId)
+            // A session lacking the new network was never granted it; the
+            // dApp's own switch request is what asks the user to add it.
             if (
                 caip2 === null ||
                 data === null ||
-                !events.includes('chainChanged')
+                !events.includes('chainChanged') ||
+                !namespace.chains?.includes(caip2)
             ) {
                 return
             }
-            await includeChainInSession(stored, chain, caip2)
             await walletKit.emitSessionEvent({
                 topic: id,
                 event: { name: 'chainChanged', data },

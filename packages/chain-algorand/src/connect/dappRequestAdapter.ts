@@ -17,8 +17,11 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import {
+    getNetworkConfig,
+    Networks,
+    type Network,
+} from '@perawallet/wallet-core-config'
 import {
     describeZodIssues,
     type DappRequestChainAdapter,
@@ -185,8 +188,4 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     },
 
     useEnqueueTransactionSigning: useAlgorandTransactionSigning,
-
-    switchChain(networkId) {
-        useNetworkStore.getState().selectNetwork(ALGORAND_CHAIN_ID, networkId)
-    },
 }

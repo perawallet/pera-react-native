@@ -125,7 +125,12 @@ requests never read the capability, so turning it off leaves them listed and rev
 
 The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain's network and
 account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
-declares `sessionEvents`.
+declares `sessionEvents`. `chainChanged` goes only to a session that already holds the new network.
+
+A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. A target
+that is not the chain's selected network is refused. The selected network is answered at once if the
+session holds it, since approval was consent to it; otherwise the user is asked before it is added to
+the session.
 
 ## The `dapp` handler
 

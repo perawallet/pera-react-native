@@ -543,12 +543,12 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     walletKit.emit('session_request', makeRequest(request))
                 })
 
-            const settleEthereum = async () => {
+            const settleEthereum = async (chains = [ETH_MAINNET]) => {
                 await mountProvider()
                 const walletKit = await propose({
                     requiredNamespaces: {
                         eip155: {
-                            chains: [ETH_MAINNET],
+                            chains,
                             methods: [
                                 'eth_sendTransaction',
                                 'wallet_switchEthereumChain',
@@ -617,7 +617,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     )
                 })
 
-                it('Given a switch to the network the wallet is already on, when the dApp asks from another chain of its session, then only the Ethereum side moves, the session is extended and the Algorand signature stays pending', async () => {
+                it('Given a switch to the selected network the session lacks, when the user allows it, then the session gains the network, nothing in the wallet moves and the Algorand signature stays pending', async () => {
                     // Resolved from the registered adapter once a test runs.
                     const ALGORAND_TESTNET = TESTNET_CHAIN_ID
                     const signer = await seedAlgo25Signer()
@@ -675,18 +675,22 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         chainId: ETH_MAINNET,
                     })
                     await waitFor(() => {
+                        expect(
+                            findButton('walletconnect.switch_network.confirm'),
+                        ).toBeTruthy()
+                    })
+                    expect(walletKit.updateSession).not.toHaveBeenCalled()
+
+                    fireEvent.click(
+                        findButton('walletconnect.switch_network.confirm')!,
+                    )
+                    await waitFor(() => {
                         expect(answers(walletKit).get(22)).toMatchObject({
                             result: null,
                         })
                     })
 
                     expect(walletKit.updateSession).toHaveBeenCalledTimes(1)
-                    // No sheet: the wallet was already on Sepolia.
-                    expect(
-                        screen.queryByText(
-                            'walletconnect.switch_network.title',
-                        ),
-                    ).toBeNull()
                     expect(getSelectedScope('algorand')).toEqual(algorandBefore)
                     expect(getSelectedScope('ethereum')).toEqual({
                         chainId: 'ethereum',
@@ -754,7 +758,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     )
                 })
 
-                it('Given a switch to the network the wallet is on, when it arrives, then it is answered null without a prompt', async () => {
+                it('Given a switch to the selected network the session holds, when it arrives, then it is answered null without a prompt', async () => {
                     const walletKit = await settleEthereum()
 
                     emitRequest(walletKit, {
@@ -770,6 +774,9 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         })
                     })
                     expect(walletKit.updateSession).not.toHaveBeenCalled()
+                    expect(
+                        findButton('walletconnect.switch_network.confirm'),
+                    ).toBeUndefined()
                 })
             })
 
@@ -806,8 +813,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         ([call]) => call,
                     )
 
-                it('Given the wallet leaves live mode, when its Ethereum network moves, then every eip155 session hears chainChanged and an Algorand-only one hears nothing', async () => {
-                    const walletKit = await settleEthereum()
+                it('Given a session approved for both Ethereum networks, when the wallet leaves live mode, then it hears chainChanged and an Algorand-only one hears nothing', async () => {
+                    const walletKit = await settleEthereum([
+                        ETH_MAINNET,
+                        ETH_SEPOLIA,
+                    ])
                     await openAlgorandOnlySession(walletKit)
 
                     act(() => {
@@ -826,6 +836,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             },
                         ])
                     })
+                    expect(walletKit.updateSession).not.toHaveBeenCalled()
                 })
 
                 it('Given the session holds the only Ethereum account, when the wallet removes it, then the dApp hears accountsChanged with no accounts', async () => {

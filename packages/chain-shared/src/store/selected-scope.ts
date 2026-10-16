@@ -15,21 +15,13 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    canSelectChainNetwork,
-    selectChainNetworkId,
-    useNetworkStore,
-} from './network-store'
+import { selectChainNetworkId, useNetworkStore } from './network-store'
 
 /** The non-reactive `useSelectedScope`, for code that runs outside React. */
 export const getSelectedScope = (chainId: ChainId): ChainScope => ({
     chainId,
     networkId: selectChainNetworkId(useNetworkStore.getState(), chainId),
 })
-
-/** Non-reactive: whether the wallet's current mode can select `scope`'s network. */
-export const isNetworkSelectable = (scope: ChainScope): boolean =>
-    canSelectChainNetwork(useNetworkStore.getState(), scope)
 
 /**
  * @throws ScopeChangedError when `captured`'s own chain has switched network;

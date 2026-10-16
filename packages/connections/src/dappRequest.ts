@@ -140,8 +140,8 @@ export type WalletConnectRequestRoute =
       }
     | { kind: 'unsupported' }
     /**
-     * One of the chain's networks the current mode can select, the selected
-     * one included.
+     * Any of the chain's networks; the handler refuses all but the selected
+     * one, since no dApp moves the wallet's selection.
      */
     | { kind: 'switch-network'; networkId: NetworkId }
     /** Answered with `error` verbatim and never shown to the user. */
@@ -225,12 +225,6 @@ export interface DappRequestChainAdapter {
         /** Omitted by a chain v2 never serves; such a chain gets no v2 namespace. */
         readonly v2?: WalletConnectV2ChainSupport
     }
-    /**
-     * Points this chain's network selection at `networkId`, which the caller
-     * has already resolved through `walletConnect.networkForCaip2ChainId`.
-     * Omitted by a chain whose network a dApp may not switch.
-     */
-    switchChain?(networkId: NetworkId): void
     /**
      * The registry's full validation for a `sign-transactions` payload, for
      * every transport; `message` reaches the peer.

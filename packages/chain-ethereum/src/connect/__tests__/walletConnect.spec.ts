@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-import { ethereumCapabilityDefaults } from '../../capability-defaults'
-import { ethereumDescriptor } from '../../descriptor'
+import { describe, expect, it } from 'vitest'
 import {
     ETHEREUM_CAIP2_NAMESPACE,
     ETHEREUM_WC_V2_METHOD,
@@ -25,15 +21,6 @@ const v2 = support.v2
 if (!v2) throw new Error('Ethereum serves WalletConnect v2')
 
 const ADDRESS = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
-
-// Selectability reads the real network store, which needs the chain registered
-// to tell a network's tier from an unregistered stand-in.
-if (!getProvider().chains.has('ethereum')) {
-    getProvider().chains.register(
-        ethereumDescriptor,
-        ethereumCapabilityDefaults,
-    )
-}
 
 describe('namespace', () => {
     it('is eip155', () => {
@@ -154,33 +141,13 @@ describe('wallet_switchEthereumChain', () => {
     const switchTo = (chainId: unknown) =>
         v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, [{ chainId }])
 
-    beforeEach(() => {
-        useNetworkStore.getState().setMode('live')
-    })
-
-    it('routes the live network, in live mode', () => {
-        expect(switchTo('0x1')).toEqual({
-            kind: 'switch-network',
-            networkId: 'mainnet',
-        })
-    })
-
-    it('routes the test network, in developer mode', () => {
-        useNetworkStore.getState().setMode('developer')
-
-        expect(switchTo('0xaa36a7')).toEqual({
-            kind: 'switch-network',
-            networkId: 'sepolia',
-        })
-    })
-
-    it('reads the chain id case-insensitively', () => {
-        useNetworkStore.getState().setMode('developer')
-
-        expect(switchTo('0xAA36A7')).toEqual({
-            kind: 'switch-network',
-            networkId: 'sepolia',
-        })
+    // Mode-blind: whether the target is the selected network is the handler's call.
+    it.each([
+        ['0x1', 'mainnet'],
+        ['0xaa36a7', 'sepolia'],
+        ['0xAA36A7', 'sepolia'],
+    ])('routes %s to %s', (chainId, networkId) => {
+        expect(switchTo(chainId)).toEqual({ kind: 'switch-network', networkId })
     })
 
     it('refuses a chain the wallet does not declare as unrecognized, 4902', () => {
@@ -189,21 +156,6 @@ describe('wallet_switchEthereumChain', () => {
             error: { code: 4902 },
         })
     })
-
-    it.each([
-        ['live mode', 'live', '0xaa36a7'],
-        ['developer mode', 'developer', '0x1'],
-    ] as const)(
-        'refuses the other tier in %s with the chain-disconnected code, 4901',
-        (_name, mode, chainId) => {
-            useNetworkStore.getState().setMode(mode)
-
-            expect(switchTo(chainId)).toMatchObject({
-                kind: 'refused',
-                error: { code: 4901 },
-            })
-        },
-    )
 
     it.each([
         ['no params', undefined],
