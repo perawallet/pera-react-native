@@ -38,8 +38,8 @@ import type {
     SigningResult,
 } from '../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const HARDWARE_ADDRESS =
     'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH'
@@ -85,7 +85,7 @@ const makeInput = (
 ): HardwareSigningInput => ({
     groups: [makeGroup()],
     allAccounts: [hardwareAccount],
-    scope: scopeForLegacyNetwork('mainnet'),
+    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     hardwareWalletRegistry: {} as never,
     encodeTransaction: vi.fn() as never,
     scope: { chainId: 'algorand', networkId: 'mainnet' },

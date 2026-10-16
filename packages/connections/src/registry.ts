@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-import {
-    logger,
-    Networks,
-    toError,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { configuredScopes } from '@perawallet/wallet-core-config'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
     ConnectionId,
@@ -46,7 +42,7 @@ export interface ConnectionRegistryClient {
     /** Empty when nothing claims the URI. Never contains the URI itself. */
     describeUri(uri: string): Record<string, string | null>
     /** Empty for a kind with no registered handler. */
-    networksFor(connection: Connection): Network[]
+    scopesFor(connection: Connection): ChainScope[]
     /**
      * The methods the connection was approved for, as its handler reads them.
      * Empty for a kind with no registered handler.
@@ -80,10 +76,19 @@ export interface ConnectionRegistry extends ConnectionRegistryClient {
     reportError(error: Error, scope?: ConnectionErrorScope): void
 }
 
+/** The configured scopes the handler accepts the connection on. */
+export const chainScopesServedBy = (
+    handler: ConnectionHandler,
+    connection: Connection,
+): ChainScope[] =>
+    configuredScopes().filter(scope =>
+        handler.matchesChainScope(connection, scope),
+    )
+
 export const createConnectionRegistry = (options: {
     store: ConnectionStoreAPI
 }): ConnectionRegistry => {
-    const { store } = options
+    const { store: persisted } = options
     const handlers = new Map<ConnectionKind, ConnectionHandler>()
     // Which handler issued each pairing id, so `abandonPairing` can route
     // without the id carrying its protocol.
@@ -112,6 +117,40 @@ export const createConnectionRegistry = (options: {
                 })
             }
         }
+    }
+
+    // A throwing subscriber must not abort the fan-out or propagate into the
+    // handler's relay/socket callback.
+    const emitMessage = (message: InboundMessage): void => {
+        for (const listener of messageListeners) {
+            try {
+                listener(message)
+            } catch (listenerError) {
+                logger.warn('[connections] message listener threw', {
+                    error: listenerError,
+                })
+            }
+        }
+    }
+
+    // Every way a record goes (either side disconnecting, a restore
+    // reconciling it away) passes through here, handlers' own writes included.
+    const store: ConnectionStoreAPI = {
+        list: () => persisted.list(),
+        get: id => persisted.get(id),
+        upsert: connection => persisted.upsert(connection),
+        subscribe: listener => persisted.subscribe(listener),
+        remove: async id => {
+            await persisted.remove(id)
+            emitMessage({ kind: 'connection-closed', connectionId: id })
+        },
+        clear: async () => {
+            const closed = await persisted.list()
+            await persisted.clear()
+            for (const { id } of closed) {
+                emitMessage({ kind: 'connection-closed', connectionId: id })
+            }
+        },
     }
 
     // `reject` may reject or throw synchronously; either escaping would blow
@@ -181,15 +220,7 @@ export const createConnectionRegistry = (options: {
                 emitError(unhandled, { connectionId: raw.connectionId })
                 return
             }
-            for (const listener of messageListeners) {
-                try {
-                    listener(validated.message)
-                } catch (listenerError) {
-                    logger.warn('[connections] message listener threw', {
-                        error: listenerError,
-                    })
-                }
-            }
+            emitMessage(validated.message)
         },
         onDisconnected: id => {
             store.remove(id).catch((error: unknown) => {
@@ -204,19 +235,11 @@ export const createConnectionRegistry = (options: {
         // Fanned out on the message channel: the subscriber holding the
         // request open is the one who must let go of it.
         onRequestExpired: (connectionId, correlationId) => {
-            for (const listener of messageListeners) {
-                try {
-                    listener({
-                        kind: 'request-expired',
-                        connectionId,
-                        correlationId,
-                    })
-                } catch (listenerError) {
-                    logger.warn('[connections] message listener threw', {
-                        error: listenerError,
-                    })
-                }
-            }
+            emitMessage({
+                kind: 'request-expired',
+                connectionId,
+                correlationId,
+            })
         },
         onError: emitError,
     })
@@ -362,12 +385,9 @@ export const createConnectionRegistry = (options: {
             handler?.abandonPairing?.(pairingId)
         },
         describeUri: uri => claimingHandler(uri)?.describeUri?.(uri) ?? {},
-        networksFor: connection => {
+        scopesFor: connection => {
             const handler = handlers.get(connection.kind)
-            if (!handler) return []
-            return Object.values(Networks).filter(network =>
-                handler.matchesNetwork(connection, network),
-            )
+            return handler ? chainScopesServedBy(handler, connection) : []
         },
         methodsFor: connection =>
             handlers.get(connection.kind)?.methodsFor(connection) ?? [],

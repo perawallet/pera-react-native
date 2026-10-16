@@ -18,7 +18,8 @@ import type {
     WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const {
     networkMock,
@@ -27,40 +28,45 @@ const {
     createMultisigAccountMock,
     loggerMock,
 } = vi.hoisted(() => ({
-    networkMock: { current: 'testnet' as Network },
+    networkMock: { current: 'testnet' as 'mainnet' | 'testnet' },
     deviceIdMock: { current: 'device-testnet' as Nullable<string> },
     accountsMock: { current: [] as WalletAccount[] },
     createMultisigAccountMock: vi.fn(),
     loggerMock: { warn: vi.fn(), error: vi.fn() },
 }))
 
-// Faithful re-implementation of the real useOnNetworkSwitch (effect-timed,
-// fires once per real switch) driven by the same mocked network value.
+// Faithful re-implementation of the real useOnDeploymentSwitch (effect-timed,
+// fires once per real switch) driven by the same mocked network value: the
+// mainnet network is the live deployment, every other is developer.
 vi.mock('@perawallet/wallet-core-chain-shared', async () => {
     const { useEffect, useRef } = await import('react')
+    const deploymentOf = (): WalletMode =>
+        networkMock.current === 'mainnet' ? 'live' : 'developer'
     return {
-        useNetwork: () => ({ network: networkMock.current }),
+        useWalletDeployment: deploymentOf,
         useSelectedScope: (chainId: string) => ({
             chainId,
             networkId: networkMock.current,
         }),
-        useOnNetworkSwitch: (handler: (from: Network, to: Network) => void) => {
-            const network = networkMock.current
+        useOnDeploymentSwitch: (
+            handler: (from: WalletMode, to: WalletMode) => void,
+        ) => {
+            const deployment = deploymentOf()
             const handlerRef = useRef(handler)
             handlerRef.current = handler
-            const previousNetworkRef = useRef(network)
+            const previousDeploymentRef = useRef(deployment)
             useEffect(() => {
-                const previousNetwork = previousNetworkRef.current
-                if (previousNetwork === network) return
-                previousNetworkRef.current = network
-                handlerRef.current(previousNetwork, network)
-            }, [network])
+                const previousDeployment = previousDeploymentRef.current
+                if (previousDeployment === deployment) return
+                previousDeploymentRef.current = deployment
+                handlerRef.current(previousDeployment, deployment)
+            }, [deployment])
         },
     }
 })
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => deviceIdMock.current,
+    useScopedDeviceID: () => deviceIdMock.current,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -143,12 +149,15 @@ describe('useSyncMultisigAccountsOnNetworkSwitch', () => {
         rerender()
 
         expect(createMultisigAccountMock).toHaveBeenCalledTimes(2)
-        expect(createMultisigAccountMock).toHaveBeenCalledWith('mainnet', {
-            version: 1,
-            threshold: 2,
-            participant_addresses: ['P1', 'P2'],
-            device_id: 'device-mainnet',
-        })
+        expect(createMultisigAccountMock).toHaveBeenCalledWith(
+            { chainId: 'algorand', networkId: 'mainnet' },
+            {
+                version: 1,
+                threshold: 2,
+                participant_addresses: ['P1', 'P2'],
+                device_id: 'device-mainnet',
+            },
+        )
     })
 
     it('waits for the new network device id — registers only once it is available', () => {
@@ -166,7 +175,7 @@ describe('useSyncMultisigAccountsOnNetworkSwitch', () => {
         rerender()
         expect(createMultisigAccountMock).toHaveBeenCalledTimes(1)
         expect(createMultisigAccountMock).toHaveBeenCalledWith(
-            'mainnet',
+            { chainId: 'algorand', networkId: 'mainnet' },
             expect.objectContaining({ device_id: 'device-mainnet' }),
         )
     })

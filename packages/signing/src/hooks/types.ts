@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type {
+    MessageSummary,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Decimal } from 'decimal.js'
 import type { SnapshotFrom } from 'xstate'
 
@@ -136,6 +139,7 @@ export type ResolvedRequestKind =
       }
     | { type: 'arbitrary-data'; isSingle: boolean }
     | { type: 'auth-data'; parsed: ParsedAuthData }
+    | { type: 'message'; summary: MessageSummary }
 
 export type HardwareChildSnapshot = SnapshotFrom<typeof hardwareSigningMachine>
 

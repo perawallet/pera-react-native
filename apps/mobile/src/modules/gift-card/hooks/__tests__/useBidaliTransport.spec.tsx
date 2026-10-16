@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-api-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     },
-    getNetworkConfig: () => ({
+    getPeraServicesConfig: () => ({
         bidaliApiKey: 'test-api-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
@@ -57,7 +57,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         networkId: mockNetwork,
     }),
     useSelectedChainMode: () => mockChainMode,
-    useNetwork: () => ({ network: mockNetwork }),
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -429,6 +428,9 @@ describe('useBidaliTransport', () => {
                 amount: 1_500_000n,
                 note: undefined,
             })
+            expect(mockAddSignRequest).not.toHaveBeenCalledWith(
+                expect.objectContaining({ chainId: expect.anything() }),
+            )
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({
                     type: 'transactions',

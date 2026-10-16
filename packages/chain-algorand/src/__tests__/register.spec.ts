@@ -63,8 +63,6 @@ import {
 } from '../signing'
 import { algorandBackupAdapter, algorandMigrationAdapter } from '../backup'
 import { algorandCardAdapter } from '../card'
-import { nodeBackendAdapters } from '@perawallet/wallet-core-shared'
-import { algorandNodeBackends } from '../blockchain/node-backends'
 import { algorandRampAdapter } from '../onramp'
 import { algorandMultisigAdapter } from '../multisig'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
@@ -100,7 +98,6 @@ describe('registerChain', () => {
         accountPresentationChainAdapters.reset()
         backupChainAdapters.reset()
         migrationChainAdapters.reset()
-        nodeBackendAdapters.reset()
         deviceChainAdapters.reset()
         deeplinkAdapters.reset()
     })
@@ -138,14 +135,6 @@ describe('registerChain', () => {
 
         expect(accountPresentationChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandAccountPresentation,
-        )
-    })
-
-    it('registers the Algorand algod and indexer backends', () => {
-        registerChain()
-
-        expect(nodeBackendAdapters.get(ALGORAND_CHAIN_ID)).toBe(
-            algorandNodeBackends,
         )
     })
 

@@ -14,6 +14,7 @@ import {
     createChainAdapterRegistry,
     type AssetPrice,
     type AssetRef,
+    type ChainAssetData,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -42,6 +43,13 @@ export type AssetSearchParams = {
 export type AssetSearchPage = {
     results: DisplayableAsset[]
     nextCursor: Optional<string>
+}
+
+/** How a chain keeps its own asset data on the cached asset row. */
+export interface AssetChainDataCodec {
+    /** Null when the asset carries nothing the chain keeps. */
+    encode(asset: PeraAsset): Nullable<ChainAssetData>
+    decode(data: ChainAssetData): Pick<PeraAsset, 'creator'>
 }
 
 /**
@@ -103,6 +111,8 @@ export interface AssetsChainAdapter {
      * rejects a ref or a scope on another chain.
      */
     getPrices(refs: AssetRef[], scope: ChainScope): Promise<AssetPrice[]>
+    /** Absent on a chain that keeps no asset data of its own. */
+    chainData?: AssetChainDataCodec
 }
 
 export const assetsChainAdapters =
@@ -114,6 +124,10 @@ export const assetsAdapterFor = (scope: ChainScope): AssetsChainAdapter =>
 /** @throws ChainAdapterNotRegisteredError */
 export const nativeAssetFor = (chainId: ChainId): PeraAsset =>
     assetsChainAdapters.get(chainId).getNativeAsset()
+
+/** {@link nativeAssetFor}, or undefined when this build doesn't ship the chain's assets adapter. */
+export const findNativeAsset = (chainId: ChainId): PeraAsset | undefined =>
+    assetsChainAdapters.has(chainId) ? nativeAssetFor(chainId) : undefined
 
 /** @throws ChainAdapterNotRegisteredError */
 export const isNativeAssetId = (chainId: ChainId, assetId: string): boolean =>
@@ -132,6 +146,26 @@ export const displayCurrencyToAssetId = (
     chainId: ChainId,
 ): Nullable<string> =>
     isAlgoAssetName(code) ? nativeAssetFor(chainId).assetId : null
+
+const chainDataCodecFor = (chainId: ChainId): Optional<AssetChainDataCodec> =>
+    assetsChainAdapters.has(chainId)
+        ? assetsChainAdapters.get(chainId).chainData
+        : undefined
+
+/** Null when the chain's adapter isn't registered or declares no codec. */
+export const encodeAssetChainData = (
+    chainId: ChainId,
+    asset: PeraAsset,
+): Nullable<ChainAssetData> => chainDataCodecFor(chainId)?.encode(asset) ?? null
+
+// Never throws: holdings reads run this for every rendered row.
+export const decodeAssetChainData = (
+    chainId: ChainId,
+    data: Nullable<ChainAssetData>,
+): Pick<PeraAsset, 'creator'> => {
+    const codec = chainDataCodecFor(chainId)
+    return data && codec ? codec.decode(data) : { creator: { address: '' } }
+}
 
 export class AssetSearchUnsupportedError extends AppError {
     readonly chainId: ChainId

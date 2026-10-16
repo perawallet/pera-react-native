@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
+import { createNodeHttpClient } from './nodeHttp'
 
 /**
  * One-shot read of a node's own chain identity, for the custom-network config
@@ -25,18 +25,13 @@ export const fetchGenesisFromNode = async (
 ): Promise<{ genesisHash: string; genesisId: string }> => {
     const base = algodUrl.endsWith('/') ? algodUrl.slice(0, -1) : algodUrl
 
-    const response = await fetch(`${base}/v2/transactions/params`, {
-        headers: token?.length ? { 'X-Algo-API-Token': token } : {},
-        signal: AbortSignal.timeout(config.algodReadTimeout),
-    })
+    const { body: raw } = await createNodeHttpClient({
+        url: base,
+        tokenHeader: 'X-Algo-API-Token',
+        token: token ?? '',
+    }).get('/v2/transactions/params')
 
-    if (!response.ok) {
-        throw new Error(
-            `Node at ${base} returned ${response.status} for /v2/transactions/params`,
-        )
-    }
-
-    const body = (await response.json()) as {
+    const body = JSON.parse(new TextDecoder().decode(raw)) as {
         'genesis-hash'?: unknown
         'genesis-id'?: unknown
     }

@@ -14,14 +14,17 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
+    MessageRequest,
     PeraTransaction,
     PeraSignedTransaction,
     ReviewedTransaction,
+    SignedMessage,
     ReviewWarning,
     SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraArbitraryDataMessage } from '../models'
+import type { SubmissionHistoryEntry } from '../db/types'
 
 /** Algorand transactions in the shape Algorand's sources build and decode. */
 export interface PeraTransactionsSignableData {
@@ -104,10 +107,17 @@ export interface AuthDataSignableData extends AuthDataPayload {
     type: 'auth-data'
 }
 
+/** A chain-neutral message; its chain's message signer plans and signs it. */
+export interface MessageSignableData {
+    type: 'message'
+    request: MessageRequest
+}
+
 export type SignableData =
     | TransactionSignableData
     | ArbitraryDataSignableData
     | AuthDataSignableData
+    | MessageSignableData
 
 /** Shared by SourceMetadata (pipeline) and SignRequest (models). */
 export type SourceType =
@@ -380,6 +390,8 @@ export interface SignedTransactionData {
 export interface SignedChainTransactionsData {
     type: 'signed-transactions'
     signed: SignedTransaction[]
+    /** Index-aligned with `signed`; carries no fee, which only the signed bytes give. */
+    historyEntries: SubmissionHistoryEntry[]
 }
 
 export interface SignedArbitraryData {
@@ -392,11 +404,17 @@ export interface SignedAuthData {
     signature: Uint8Array
 }
 
+export interface SignedMessageData {
+    type: 'message'
+    signed: SignedMessage
+}
+
 export type SignedData =
     | SignedTransactionData
     | SignedChainTransactionsData
     | SignedArbitraryData
     | SignedAuthData
+    | SignedMessageData
 
 export interface SigningResult {
     signedData: SignedData

@@ -10,13 +10,43 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { renderHook } from '@test-utils/render'
+import { describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { DEFAULT_MAX_FRACTION_DIGITS } from '@perawallet/wallet-core-onramp'
+import {
+    DEFAULT_MAX_FRACTION_DIGITS,
+    type RampToken,
+} from '@perawallet/wallet-core-onramp'
 import {
     getFiatBaseAmount,
     sanitizeAmountInput,
+    useOnrampAmountSection,
 } from '../useOnrampAmountSection'
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useNativeAsset: () => ({ unitName: 'ALGO' }),
+}))
+
+vi.mock('@perawallet/wallet-core-currencies', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useCurrency: () => ({ preferredCurrency: 'USD' }),
+}))
+
+vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useRemoteConfig: () => ({ getStringValue: () => '' }),
+}))
+
+const usdToken: RampToken = {
+    id: 'USD',
+    symbol: 'USD',
+    name: 'US Dollar',
+    fractionDecimals: 2,
+    logo: null,
+    network: { id: 'fiat', name: 'Fiat', logo: null },
+    priceInUsd: null,
+}
 
 describe('sanitizeAmountInput', () => {
     it('normalizes a comma decimal separator', () => {
@@ -58,21 +88,74 @@ describe('sanitizeAmountInput', () => {
 })
 
 describe('getFiatBaseAmount', () => {
-    it('parses a raw pay string into a Decimal', () => {
-        expect(getFiatBaseAmount('100').toString()).toBe('100')
-        expect(getFiatBaseAmount('0.5').toString()).toBe('0.5')
-    })
-
-    it('passes a positive receive Decimal through', () => {
+    it('passes a positive amount through', () => {
         expect(getFiatBaseAmount(new Decimal('10.5')).toString()).toBe('10.5')
     })
 
-    it('computes empty, invalid, or non-positive amounts as zero', () => {
-        expect(getFiatBaseAmount('').isZero()).toBe(true)
-        expect(getFiatBaseAmount('1.2.3').isZero()).toBe(true)
-        expect(getFiatBaseAmount('0').isZero()).toBe(true)
+    it('computes a missing or non-positive amount as zero', () => {
+        expect(getFiatBaseAmount(null).isZero()).toBe(true)
         expect(getFiatBaseAmount(new Decimal(0)).isZero()).toBe(true)
         expect(getFiatBaseAmount(new Decimal(-1)).isZero()).toBe(true)
-        expect(getFiatBaseAmount(null).isZero()).toBe(true)
+    })
+})
+
+describe('useOnrampAmountSection', () => {
+    it('binds the pay text and parses it for the fiat row', () => {
+        const { result } = renderHook(() =>
+            useOnrampAmountSection({
+                variant: 'pay',
+                token: usdToken,
+                amountText: '12.',
+                amount: null,
+            }),
+        )
+
+        expect(result.current.inputValue).toBe('12.')
+        expect(result.current.fiatBaseAmount.toString()).toBe('12')
+    })
+
+    it('computes unparseable pay text as zero for the fiat row', () => {
+        const { result } = renderHook(() =>
+            useOnrampAmountSection({
+                variant: 'pay',
+                token: usdToken,
+                amountText: '.',
+                amount: null,
+            }),
+        )
+
+        expect(result.current.fiatBaseAmount.isZero()).toBe(true)
+    })
+
+    it('formats the receive amount and feeds it to the fiat row', () => {
+        const { result } = renderHook(() =>
+            useOnrampAmountSection({
+                variant: 'receive',
+                token: usdToken,
+                amountText: '',
+                amount: new Decimal('10.456'),
+            }),
+        )
+
+        expect(result.current.inputValue).toBe('')
+        expect(result.current.receiveValue).toBe('10.46')
+        expect(result.current.fiatBaseAmount.toString()).toBe('10.456')
+    })
+
+    it('forwards sanitized pay text to onAmountTextChange', () => {
+        const onAmountTextChange = vi.fn()
+        const { result } = renderHook(() =>
+            useOnrampAmountSection({
+                variant: 'pay',
+                token: usdToken,
+                amountText: '',
+                amount: null,
+                onAmountTextChange,
+            }),
+        )
+
+        result.current.handleTextChange('$1,5')
+
+        expect(onAmountTextChange).toHaveBeenCalledWith('1.5')
     })
 })

@@ -24,10 +24,7 @@ import {
     useIsNativeAssetId,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getArc59Config } from '@perawallet/wallet-core-config'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -52,7 +49,7 @@ import { useToast } from '@hooks/useToast'
 export const useSendDestinationRouter = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const accounts = useAllAccounts()
     const { accountBalances, isPending: isBalancesPending } =
         useAccountBalancesQuery(accounts, scope)
@@ -64,7 +61,10 @@ export const useSendDestinationRouter = () => {
         () => (selectedAssetId ? [selectedAssetId] : []),
         [selectedAssetId],
     )
-    const { data: assets, isFetched: isAssetFetched } = useAssetsQuery(assetIDs)
+    const { data: assets, isFetched: isAssetFetched } = useAssetsQuery(
+        scope,
+        assetIDs,
+    )
     const selectedAsset = useMemo(() => {
         if (!selectedAssetId) return undefined
         return assets.get(selectedAssetId)
@@ -83,7 +83,6 @@ export const useSendDestinationRouter = () => {
         useSelectedScope(LEGACY_CHAIN_ID),
     )
 
-    const { network } = useNetwork()
     const canUseAssetInbox = useCapability({
         chain: { chainId: scope.chainId, capability: 'assetInbox' },
     })
@@ -94,7 +93,7 @@ export const useSendDestinationRouter = () => {
     // Pera-backed networks. Block the route up front instead of landing the
     // user on a summary screen that can never load.
     const routeToInbox = useCallback(() => {
-        if (!canUseAssetInbox || getArc59Config(network) === null) {
+        if (!canUseAssetInbox || getArc59Config(scope) === null) {
             showToast({
                 title: t('send_funds.destination.inbox_unavailable_title'),
                 body: t('send_funds.destination.inbox_unavailable_body'),
@@ -104,7 +103,7 @@ export const useSendDestinationRouter = () => {
         }
         setSendMode('sendArc59')
         navigation.navigate('ARC59SendSummary')
-    }, [canUseAssetInbox, network, showToast, t, setSendMode, navigation])
+    }, [canUseAssetInbox, scope, showToast, t, setSendMode, navigation])
 
     useEffect(() => {
         if (!pendingExternalAddress || !selectedAsset) return

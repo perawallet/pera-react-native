@@ -82,7 +82,6 @@ const tracked = (
 })
 
 const baseDeps = () => ({
-    network: 'mainnet' as const,
     backupId: 'did:pera:ADDR',
     deviceId: 'dev',
     encryptionKey: new Uint8Array(32).fill(7),
@@ -113,16 +112,10 @@ const servingPlaintext = (byKey: Record<BackupItemKey, unknown>) =>
     )
 
 const readsFor = (keys: BackupItemKey[]) =>
-    vi.fn(
-        async (
-            _n: unknown,
-            _b: unknown,
-            _d: unknown,
-            requested: BackupItemKey[],
-        ) =>
-            requested
-                .filter(key => keys.includes(key))
-                .map(key => ({ key, ver: 4, hash: 'rh', payload: 'enc' })),
+    vi.fn(async (_b: unknown, _d: unknown, requested: BackupItemKey[]) =>
+        requested
+            .filter(key => keys.includes(key))
+            .map(key => ({ key, ver: 4, hash: 'rh', payload: 'enc' })),
     )
 
 const withReviewed = (address: string): SyncState => {
@@ -220,12 +213,10 @@ describe('importFromBackup', () => {
             deps,
         })
 
-        expect(deps.readItems).toHaveBeenCalledWith(
-            'mainnet',
-            'did:pera:ADDR',
-            'dev',
-            [accountKey('X'), secretsKey('X')],
-        )
+        expect(deps.readItems).toHaveBeenCalledWith('did:pera:ADDR', 'dev', [
+            accountKey('X'),
+            secretsKey('X'),
+        ])
         // `secretsPayload` would be null had the payload failed to parse, which
         // `collect` swallows.
         const [pulled] = deps.importAccounts.mock.calls[0]
@@ -274,7 +265,6 @@ describe('importFromBackup', () => {
 
         expect(deps.readItems).toHaveBeenNthCalledWith(
             2,
-            'mainnet',
             'did:pera:ADDR',
             'dev',
             [secretsKey('SEED')],
@@ -413,7 +403,6 @@ describe('deleteFromBackup', () => {
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
         expect(deps.deleteItem).toHaveBeenCalledWith(
-            'mainnet',
             'did:pera:ADDR',
             'dev',
             accountKey('FIRST'),
@@ -490,7 +479,6 @@ describe('deleteFromBackup', () => {
         })
 
         expect(deps.deleteItem).toHaveBeenCalledWith(
-            'mainnet',
             'did:pera:ADDR',
             'dev',
             secretsKey('FIRST'),
@@ -686,7 +674,6 @@ describe('contact review actions', () => {
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
         expect(deps.deleteItem).toHaveBeenCalledWith(
-            'mainnet',
             'did:pera:ADDR',
             'dev',
             contactKey('A'),
@@ -836,12 +823,9 @@ describe('contact review actions on a record', () => {
             deps,
         })
 
-        expect(deps.readItems).toHaveBeenCalledWith(
-            'mainnet',
-            'did:pera:ADDR',
-            'dev',
-            [REC],
-        )
+        expect(deps.readItems).toHaveBeenCalledWith('did:pera:ADDR', 'dev', [
+            REC,
+        ])
         expect(deps.importContacts).toHaveBeenCalledWith([
             {
                 id: 'id-1',
@@ -1092,7 +1076,7 @@ describe('passkey review actions', () => {
         it('importPasskeyFromBackup reads and imports both halves', async () => {
             const deps = baseDeps()
             deps.readItems.mockImplementation(
-                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                async (_b: unknown, _d: unknown, keys: string[]) =>
                     keys.map(key => ({
                         key,
                         ver: 4,
@@ -1150,7 +1134,7 @@ describe('passkey review actions', () => {
         it('importPasskeyFromBackup reads a secret it never downloaded', async () => {
             const deps = baseDeps()
             deps.readItems.mockImplementation(
-                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                async (_b: unknown, _d: unknown, keys: string[]) =>
                     keys.map(key => ({
                         key,
                         ver: 4,
@@ -1190,7 +1174,7 @@ describe('passkey review actions', () => {
         it('importPasskeyFromBackup still imports when the secret is unreadable', async () => {
             const deps = baseDeps()
             deps.readItems.mockImplementation(
-                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                async (_b: unknown, _d: unknown, keys: string[]) =>
                     keys.map(key => ({
                         key,
                         ver: 4,

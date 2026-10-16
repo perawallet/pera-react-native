@@ -104,14 +104,10 @@ export const algorandDescriptor: ChainDescriptor = {
     protocol: {
         feeModel: 'flat',
         hasAccountNonce: false,
-        requiresAssetOptIn: true,
-        hasMinimumBalance: true,
-        supportsAtomicGroups: true,
         supportsReplacement: false,
         supportsNativeMultisig: true,
         supportsRekey: true,
         hasTokenApproval: false,
-        multipleAddressesPerAccount: false,
         maxNoteBytes: MAX_TX_NOTE_BYTES,
     },
     explorer: {

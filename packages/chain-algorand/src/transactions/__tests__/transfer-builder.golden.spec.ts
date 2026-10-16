@@ -30,14 +30,18 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import {
-    scopeForLegacyNetwork,
     type AssetRef,
     type ChainId,
     type PeraTransaction,
+    type UnsignedTransaction,
     type TransactionIntent,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import { encodeTransactionRaw } from '../../blockchain'
+import {
+    createWalletAlgorandClient,
+    encodeTransactionRaw,
+} from '../../blockchain'
 import { assignMinimumFeesToGroup } from '../../signing/assignMinimumFeesToGroup'
 import { resolveMinFeeForSender } from '../../signing/minFeeResolver'
 import { mockAlgodTransactionParams } from '../../test-handlers'
@@ -58,7 +62,11 @@ import {
     standaloneAccount,
 } from '../../__tests__/algorandAccounts'
 
-const scope = scopeForLegacyNetwork('testnet')
+// The msw node's genesis isn't testnet's, so the payload is read without
+// `readAlgorandTransaction`'s network check.
+const transactionOf = (built: UnsignedTransaction): PeraTransaction =>
+    (built.payload as { transaction: PeraTransaction }).transaction
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 const SUGGESTED_MIN_FEE = 1000n
 const CONFIG = { configMinTxnFee: 1000n, pqMultiplier: 3n }
 
@@ -180,19 +188,65 @@ describe('buildAlgorandTransfer golden bytes', () => {
             const built = await buildAlgorandTransfer(intent, { scope })
             const expected = await today()
 
-            expect(
-                built.map(entry => (entry.payload as PeraTransaction).fee),
-            ).toEqual(expected.map(() => fee))
+            expect(built.map(entry => transactionOf(entry).fee)).toEqual(
+                expected.map(() => fee),
+            )
             expect(
                 built.map(entry =>
-                    encodeToBase64(
-                        encodeTransactionRaw(entry.payload as PeraTransaction),
-                    ),
+                    encodeToBase64(encodeTransactionRaw(transactionOf(entry))),
                 ),
             ).toEqual(
                 expected.map(transaction =>
                     encodeToBase64(encodeTransactionRaw(transaction)),
                 ),
+            )
+        },
+    )
+})
+
+// The gift-card checkout composed its payment in place with the wallet's
+// AlgoKit client before it built through the send flow's adapter.
+describe('the gift-card payment', () => {
+    beforeEach(() => {
+        server.use(mockAlgodTransactionParams())
+    })
+
+    it.each([
+        { asset: 'ALGO', assetId: '0' },
+        { asset: 'USDC', assetId: '31566704' },
+    ])(
+        'builds a $asset payment byte for byte as its own composer did',
+        async ({ assetId }) => {
+            const composer = createWalletAlgorandClient('testnet').newGroup()
+            if (assetId === '0') {
+                composer.addPayment({
+                    sender: ED25519,
+                    receiver: RECEIVER,
+                    amount: 1_500_000n.microAlgo(),
+                    note: 'charge-1',
+                })
+            } else {
+                composer.addAssetTransfer({
+                    sender: ED25519,
+                    receiver: RECEIVER,
+                    assetId: BigInt(assetId),
+                    amount: 1_500_000n,
+                    note: 'charge-1',
+                })
+            }
+            const { transactions: before } = await composer.buildTransactions()
+
+            const built = await buildTransferTxs({
+                scope,
+                sender: ED25519,
+                receiver: RECEIVER,
+                assetId,
+                amount: 1_500_000n,
+                note: 'charge-1',
+            })
+
+            expect(built.map(encodeTransactionRaw)).toEqual(
+                before.map(encodeTransactionRaw),
             )
         },
     )

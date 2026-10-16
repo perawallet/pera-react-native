@@ -155,8 +155,8 @@ describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
         // The propose transport requires a registered device id before it
         // creates the backend sign-request (handoff precondition).
         useDeviceStore.getState().resetState()
-        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
-        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('live', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('developer', 'test-device-id')
         await seedAlgo25Signer()
         useAccountsStore
             .getState()

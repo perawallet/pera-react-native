@@ -49,9 +49,7 @@ const {
     mockShowToast: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
-}))
+vi.mock('@hooks/useLanguage')
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         replace: mockReplace,

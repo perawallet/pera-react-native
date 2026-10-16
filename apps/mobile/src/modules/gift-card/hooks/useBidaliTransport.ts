@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import {
     chainAccountOf,
     type AccountBalances,
@@ -31,14 +31,10 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    useNetwork,
     useSelectedChainMode,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    useSigningRequest,
-    type TransactionSignRequest,
-} from '@perawallet/wallet-core-signing'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
 import {
     generateOrderedUniqueId,
@@ -125,7 +121,10 @@ export const computeBidaliBalances = (
     }
 }
 
-const buildBidaliProviderJS = (apiKey: string, balances: string): string => {
+const buildBidaliProviderJS = (
+    apiKey: string,
+    balancesJson: string,
+): string => {
     return `
         (function() {
             function sendRPC(method, params) {
@@ -142,7 +141,7 @@ const buildBidaliProviderJS = (apiKey: string, balances: string): string => {
                 key: '${apiKey}',
                 name: 'perawallet',
                 paymentCurrencies: ${BIDALI_PAYMENT_CURRENCIES_JSON},
-                balances: ${balances},
+                balances: ${balancesJson},
 
                 onPaymentRequest: function(req) {
                     if (req == null || typeof req !== 'object') return;
@@ -196,9 +195,8 @@ export const useBidaliTransport = (
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { network } = useNetwork()
     const chainMode = useSelectedChainMode(scope.chainId)
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
     const { addSignRequest } = useSigningRequest()
     const webviewRef = useRef<Nullable<WebView>>(null)
@@ -212,10 +210,10 @@ export const useBidaliTransport = (
         )
 
         return buildBidaliProviderJS(
-            getNetworkConfig(network).bidaliApiKey,
+            getPeraServicesConfig(scope).bidaliApiKey,
             JSON.stringify(balanceMap),
         )
-    }, [network, chainMode, account, balances, scope])
+    }, [chainMode, account, balances, scope])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
@@ -290,14 +288,13 @@ export const useBidaliTransport = (
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',
-                    chainId: scope.chainId,
                     transport: 'algod',
                     sourceType: 'gift-card',
                     txs,
                     sourceMetadata: {
                         name: t('giftCard.signing.source_name'),
                         description: t('giftCard.signing.source_description'),
-                        url: getNetworkConfig(network).bidaliBaseUrl,
+                        url: getPeraServicesConfig(scope).bidaliBaseUrl,
                     },
                     approve: async () => {
                         sendBidaliEvent(webviewRef, 'paymentSent')
@@ -308,7 +305,7 @@ export const useBidaliTransport = (
                     error: async () => {
                         sendBidaliEvent(webviewRef, 'paymentCancelled')
                     },
-                } as TransactionSignRequest)
+                })
             } catch (e) {
                 logger.error('Bidali: failed to build transaction', {
                     error: e,
@@ -316,7 +313,7 @@ export const useBidaliTransport = (
                 sendBidaliEvent(webviewRef, 'paymentCancelled')
             }
         },
-        [account, network, nativeAsset, addSignRequest, t, scope],
+        [account, nativeAsset, addSignRequest, t, scope],
     )
 
     const handleOpenUrl = useCallback((params: Record<string, unknown>) => {

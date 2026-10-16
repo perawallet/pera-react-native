@@ -34,7 +34,7 @@ describe('useDelegatedTransition', () => {
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
         registerFakeAccountsChain()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
     })
 
     it('returns null when no address is provided', () => {

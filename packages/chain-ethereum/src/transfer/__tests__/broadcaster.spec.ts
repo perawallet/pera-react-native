@@ -18,17 +18,22 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import { hexToBytes, keccak256, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     getOpenSubmissionAttempts,
+    getUnsyncedSubmissionSpends,
+    getSubmissionAttemptsWithHistoryEntry,
     SubmissionAttemptsSchema,
     TransportError,
     type SigningResult,
     type SourceMetadata,
+    type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
 import {
     initializeDatabase,
@@ -72,9 +77,19 @@ const signed = (data: SigningResult['signedData']): SigningResult => ({
     signedData: data,
     signers: [],
 })
+const HISTORY_ENTRY: SubmissionHistoryEntry = {
+    summary: {
+        kind: 'transfer',
+        title: { key: 'transactions.list_item.send' },
+        direction: 'out',
+        icon: 'send',
+    },
+    chainData: { family: 'evm' },
+}
 const signedTransactions = signed({
     type: 'signed-transactions',
     signed: [{ scope: SCOPE, id: HASH, bytes: BYTES }],
+    historyEntries: [HISTORY_ENTRY],
 })
 
 describe('Ethereum broadcaster adapter', () => {
@@ -113,6 +128,106 @@ describe('Ethereum broadcaster adapter', () => {
                     nonce: 0,
                     sender: SENDER,
                     status: 'submitted',
+                },
+            ])
+        })
+
+        it('answers the source with the submitted ids and reports submitted-and-answered', async () => {
+            useRpc()
+            const approve = vi.fn(async () => undefined)
+
+            const result = await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, {
+                    type: 'walletconnect',
+                    callbacks: { approve },
+                })
+
+            expect(approve).toHaveBeenCalledWith(signedTransactions, {
+                txIds: [HASH],
+            })
+            expect(result).toEqual({
+                type: 'submitted-and-answered',
+                txIds: [HASH],
+            })
+        })
+
+        it('still reports submitted when the source callback throws after the broadcast', async () => {
+            useRpc()
+            const approve = vi.fn(async () => {
+                throw new Error('delivery failed')
+            })
+
+            const result = await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, {
+                    type: 'walletconnect',
+                    callbacks: { approve },
+                })
+
+            expect(result).toEqual({ type: 'submitted', txIds: [HASH] })
+            expect(await rows()).toMatchObject([{ status: 'submitted' }])
+        })
+
+        it('does not call the source callback when the node refuses', async () => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'nonce too low',
+                ),
+            })
+            const approve = vi.fn(async () => undefined)
+
+            await expect(
+                adapter.createSubmitTransport(SCOPE).send(signedTransactions, {
+                    type: 'walletconnect',
+                    callbacks: { approve },
+                }),
+            ).rejects.toMatchObject({ classification: 'rejected-by-node' })
+            expect(approve).not.toHaveBeenCalled()
+        })
+
+        it('records the history entry with the most the transaction can be charged', async () => {
+            useRpc()
+
+            await adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, SOURCE)
+
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: SCOPE,
+            })
+            expect(attempt!.historyEntry).toEqual({
+                ...HISTORY_ENTRY,
+                fee: new Decimal('420000000000000'),
+            })
+        })
+
+        it('records no history entry for a transaction the result lists none for, but still its max fee', async () => {
+            useRpc()
+
+            await adapter.createSubmitTransport(SCOPE).send(
+                signed({
+                    type: 'signed-transactions',
+                    signed: [{ scope: SCOPE, id: HASH, bytes: BYTES }],
+                    historyEntries: [],
+                }),
+                SOURCE,
+            )
+
+            expect(
+                await getSubmissionAttemptsWithHistoryEntry({
+                    db,
+                    scope: SCOPE,
+                }),
+            ).toEqual([])
+            expect(
+                await getUnsyncedSubmissionSpends({ db, scope: SCOPE }),
+            ).toMatchObject([
+                {
+                    historyEntry: null,
+                    maxFee: new Decimal('420000000000000'),
                 },
             ])
         })

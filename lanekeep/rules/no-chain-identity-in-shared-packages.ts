@@ -12,49 +12,6 @@ import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
  */
 export const CHAIN_IDS = ['algorand', 'ethereum'] as const
 
-const SHARED_PACKAGES = [
-    'chain-contract',
-    'chain-shared',
-    'config',
-    'shared',
-    'accounts',
-    'assets',
-    'transactions',
-    'signing',
-    'kms',
-    'background',
-    'connections',
-    'walletconnect',
-    // Product packages that keep their generic code here and reach the chain
-    // through an adapter. asa-inbox and fee-delegation move whole, so they're out.
-    'swaps',
-    'card',
-    'onramp',
-    'nfd',
-    'deeplinks',
-    'staking',
-    'dapp',
-    'multisig',
-    'ledger',
-    'backup',
-    'migrate',
-    'device',
-    'contacts',
-    'hardware-wallet',
-    'passkeys',
-    'search',
-    'currencies',
-    'messages',
-    'banners',
-    'settings',
-    'security',
-    'browser-runtime',
-    'projects',
-    'remote-config',
-    'app-integrity',
-    'database',
-]
-
 // An app pins the legacy chain at its own call sites, so a chain id literal
 // there is fine; branching on one is not.
 const APP_SOURCE = /(^|\/)apps\/[^/]+\/src\//
@@ -81,6 +38,11 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/chain-contract/src/scope.ts',
         text: '(part as Partial<ChainScope>).chainId === scope.chainId',
         reason: "Compares a query key's scope against whichever scope the caller passes, never a named chain.",
+    },
+    {
+        file: 'packages/dapp/src/handler.ts',
+        text: 'scope.chainId === deps.chainId',
+        reason: 'Matches whichever chain the handler was built for, never a named chain.',
     },
     {
         file: 'packages/walletconnect/src/v2/handler.ts',
@@ -118,6 +80,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Checks a ramp token lives on whichever scope the caller passes, never a named chain.',
     },
     {
+        file: 'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
+        text: 'assetScope.chainId === currencyScope.chainId',
+        reason: "Asks whether the asset lives on the currency's chain; compares two passed scopes, never a named chain.",
+    },
+    {
         file: 'packages/config/src/network-config.ts',
         text: 'row.scope.chainId === scope.chainId',
         reason: "Compares a table row's scope against whichever scope the caller passes, never a named chain.",
@@ -148,6 +115,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Checks the account's onramp scope lands on whichever asset chain the caller passes, never a named chain.",
     },
     {
+        file: 'packages/deeplinks/src/pera-link-chain.ts',
+        text: "'algorand'",
+        reason: "Pera links name no chain yet and every one issued so far is Algorand's; this file is their one legacy default.",
+    },
+    {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',
         text: "'algorand'",
         reason: "Bidali's payment-currency code, not a ChainId.",
@@ -156,9 +128,7 @@ const ALLOWED: readonly Allowed[] = [
 
 export default defineRule({
     id: 'pera/no-chain-identity-in-shared-packages',
-    // Existing chain literals in walletconnect and card move to the chain package
-    // before this can block; the spec pins them so nothing new joins them.
-    severity: 'warn',
+    severity: 'error',
     card: {
         message:
             'A chain-independent package must not branch on chain identity or name a chain',
@@ -170,11 +140,9 @@ export default defineRule({
         },
     },
     gates: withoutTests({
-        pathMatches: [
-            `**/packages/{${SHARED_PACKAGES.join(',')}}/src/**`,
-            '**/apps/*/src/**',
-        ],
+        pathMatches: ['**/packages/*/src/**', '**/apps/*/src/**'],
         pathNotMatches: [
+            `**/packages/chain-{${CHAIN_IDS.join(',')}}/**`,
             '**/packages/chain-contract/src/models/identity.ts',
             ...TEST_SUPPORT,
             ...COMPOSITION_ROOTS.map(root => root.glob),

@@ -28,7 +28,7 @@ export const InsufficientBalanceScreen = () => {
     const route =
         useRoute<RouteProp<SendFundsStackParamList, 'InsufficientBalance'>>()
 
-    const { requiredBalance } = route.params
+    const { requiredBalanceLabel } = route.params
 
     const handleDone = useCallback(() => {
         navigation.goBack()
@@ -40,7 +40,7 @@ export const InsufficientBalanceScreen = () => {
             testID='send_insufficient_balance'
             title={t('send_funds.insufficient_balance.title')}
             body={t('send_funds.insufficient_balance.message', {
-                amount: requiredBalance,
+                amount: requiredBalanceLabel,
             })}
             primaryAction={{
                 label: t('send_funds.insufficient_balance.done'),

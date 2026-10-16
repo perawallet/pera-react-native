@@ -15,16 +15,20 @@ import { renderHook, act } from '@testing-library/react'
 import { Linking } from 'react-native'
 import { useWebViewNavigationGuard } from '../useWebViewNavigationGuard'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
+import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 
 const handleDeepLink = vi.fn()
 
 beforeEach(() => {
     registerLegacyAddressCodec()
+    registerDeeplinkAdapters()
 })
 
 afterEach(() => {
     addressCodecs.reset()
+    deeplinkAdapters.reset()
 })
 
 vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
@@ -223,7 +227,7 @@ describe('useWebViewNavigationGuard', () => {
     })
     it('blocks receiver-account-selection, which pre-fills Send via openSendFunds', () => {
         // Regression: the gate was a 5-type denylist, so this sibling of
-        // ALGO_TRANSFER reached `openSendFunds({ destination })` from any page.
+        // TRANSFER reached `openSendFunds({ destination })` from any page.
         const { result } = renderGuard(false)
 
         expect(

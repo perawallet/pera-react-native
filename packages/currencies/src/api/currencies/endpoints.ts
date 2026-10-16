@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { Decimal } from 'decimal.js'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     currenciesListResponseSchema,
     currencyResponseSchema,
@@ -22,22 +21,18 @@ import { transformCurrencyList, transformCurrencyToPrice } from './transformers'
 import type { Currency, CurrencyPrice } from '../../models'
 
 export type FetchCurrenciesListParams = {
-    network: Network
+    deployment: WalletMode
     signal?: AbortSignal
 }
 
 export const fetchCurrenciesList = async (
     params: FetchCurrenciesListParams,
 ): Promise<Currency[]> => {
-    const { network, signal } = params
-
-    // No Pera backend on betanet/custom: the request would throw
-    // PeraServiceUnavailableError. Fall back to the default (empty) list.
-    if (!isPeraBackedNetwork(network)) return []
+    const { deployment, signal } = params
 
     const response = await queryClient<CurrencyApiResponse[]>({
         backend: 'pera',
-        network,
+        deployment,
         method: 'GET',
         url: `/v1/currencies/`,
         signal,
@@ -49,24 +44,18 @@ export const fetchCurrenciesList = async (
 
 export type FetchCurrencyParams = {
     currencyId: string
-    network: Network
+    deployment: WalletMode
     signal?: AbortSignal
 }
 
 export const fetchCurrency = async (
     params: FetchCurrencyParams,
 ): Promise<CurrencyPrice> => {
-    const { currencyId, network, signal } = params
-
-    // No Pera backend on betanet/custom: fall back to a zero rate rather than
-    // throwing, so fiat amounts simply render $0.
-    if (!isPeraBackedNetwork(network)) {
-        return { id: currencyId, usdPrice: new Decimal(0) }
-    }
+    const { currencyId, deployment, signal } = params
 
     const response = await queryClient<CurrencyApiResponse>({
         backend: 'pera',
-        network,
+        deployment,
         method: 'GET',
         url: `/v1/currencies/${currencyId}/`,
         signal,

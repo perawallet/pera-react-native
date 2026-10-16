@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach, afterAll } from 'vitest'
 
-const queryClientMock = vi.hoisted(() => vi.fn())
+const fetchNodeJsonMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
     warn: vi.fn(),
     error: vi.fn(),
@@ -21,8 +21,10 @@ const loggerMock = vi.hoisted(() => ({
     critical: vi.fn(),
 }))
 
+vi.mock('../../blockchain/utils/nodeHttp', () => ({
+    fetchNodeJson: fetchNodeJsonMock,
+}))
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    queryClient: queryClientMock,
     logger: loggerMock,
     decodeFromBase64: (base64: string) =>
         new Uint8Array(Buffer.from(base64, 'base64')),
@@ -60,17 +62,16 @@ const application = (name: string, ownerFill: number) => ({
 })
 
 const algod = (responses: Record<string, unknown>) =>
-    queryClientMock.mockImplementation(
-        async ({
-            url,
-            params,
-        }: {
-            url: string
-            params?: { name?: string }
-        }) => {
+    fetchNodeJsonMock.mockImplementation(
+        async (
+            _scope: unknown,
+            _backend: unknown,
+            url: string,
+            { params }: { params?: { name?: string } },
+        ) => {
             const route = params?.name ? `${url}?name=${params.name}` : url
             if (!(route in responses)) throw new Error(`unexpected ${route}`)
-            return { data: responses[route], status: 200, statusText: 'OK' }
+            return responses[route]
         },
     )
 
@@ -83,7 +84,7 @@ const verify = (address: string, name = 'alice.algo') =>
 
 describe('verifyNfdAddress', () => {
     beforeEach(() => {
-        queryClientMock.mockReset()
+        fetchNodeJsonMock.mockReset()
         fetchMock.mockReset()
         loggerMock.warn.mockReset()
     })
@@ -101,10 +102,11 @@ describe('verifyNfdAddress', () => {
             'https://api.nf.domains/nfd/alice.algo?view=brief',
             expect.anything(),
         )
-        expect(queryClientMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
-            }),
+        expect(fetchNodeJsonMock).toHaveBeenCalledWith(
+            { chainId: 'algorand', networkId: 'mainnet' },
+            'algod',
+            '/v2/applications/7',
+            expect.anything(),
         )
     })
 
@@ -122,7 +124,10 @@ describe('verifyNfdAddress', () => {
         })
 
         expect(await verify('ADDR(3)')).toBe('verified')
-        expect(queryClientMock).not.toHaveBeenCalledWith(
+        expect(fetchNodeJsonMock).not.toHaveBeenCalledWith(
+            expect.anything(),
+            'algod',
+            '/v2/applications/7/box',
             expect.objectContaining({
                 params: { name: `b64:${b64('v.avatar')}` },
             }),
@@ -155,7 +160,7 @@ describe('verifyNfdAddress', () => {
 
         registry(400)
         expect(await verify('ADDR(1)')).toBe('mismatch')
-        expect(queryClientMock).not.toHaveBeenCalled()
+        expect(fetchNodeJsonMock).not.toHaveBeenCalled()
     })
 
     test('normalizes the name before asking the registry and comparing on chain', async () => {
@@ -174,7 +179,7 @@ describe('verifyNfdAddress', () => {
         expect(await verify('ADDR(1)')).toBe('unavailable')
 
         registry(200, { appID: 7 })
-        queryClientMock.mockRejectedValue(new Error('algod down'))
+        fetchNodeJsonMock.mockRejectedValue(new Error('algod down'))
         expect(await verify('ADDR(1)')).toBe('unavailable')
         expect(loggerMock.warn).toHaveBeenCalled()
     })

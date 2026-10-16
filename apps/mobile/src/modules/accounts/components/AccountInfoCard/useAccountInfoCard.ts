@@ -85,7 +85,7 @@ export const useAccountInfoCard = ({
         setIsExpanded(prev => !prev)
     }, [])
 
-    const { decimals: nativeDecimals } = useNativeAsset()
+    const { decimals: nativeDecimals } = useNativeAsset(scope)
     const minBalanceBaseUnits = accountState?.reserveBalance
     const minBalanceAlgos = useMemo(
         () =>

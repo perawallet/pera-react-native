@@ -12,16 +12,21 @@
 
 import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
-import { decimalColumn } from '@perawallet/wallet-core-database'
+import type {
+    ChainAssetData,
+    ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    decimalColumn,
+    decimalJsonColumn,
+} from '@perawallet/wallet-core-database'
 
 export const AssetsNodeSchema = sqliteTable(
     'assets_node',
     {
         assetId: text('asset_id').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         decimals: integer('decimals').notNull().default(0),
-        creatorAddress: text('creator_address').notNull().default(''),
         totalSupply: decimalColumn('total_supply')
             .notNull()
             .default(new Decimal(0)),
@@ -29,16 +34,18 @@ export const AssetsNodeSchema = sqliteTable(
         unitName: text('unit_name'),
         url: text('url'),
         metadata: text('metadata'),
+        /** The chain's own data about the asset; null when it keeps none. */
+        chainData: decimalJsonColumn<ChainAssetData>('chain_data'),
         updatedAt: integer('updated_at').notNull(),
     },
-    table => [primaryKey({ columns: [table.assetId, table.network] })],
+    table => [primaryKey({ columns: [table.assetId, table.scope] })],
 )
 
 export const AssetsPeraSchema = sqliteTable(
     'assets_pera',
     {
         assetId: text('asset_id').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         verificationTier: text('verification_tier')
             .notNull()
             .default('unverified'),
@@ -60,18 +67,18 @@ export const AssetsPeraSchema = sqliteTable(
         // getStaleOrMissingAssetIds. NULL on rows cached before the column.
         firstSeenAt: integer('first_seen_at'),
     },
-    table => [primaryKey({ columns: [table.assetId, table.network] })],
+    table => [primaryKey({ columns: [table.assetId, table.scope] })],
 )
 
 export const AssetPricesSchema = sqliteTable(
     'asset_prices',
     {
         assetId: text('asset_id').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         usdPrice: decimalColumn('usd_price').notNull(),
         updatedAt: integer('updated_at').notNull(),
     },
-    table => [primaryKey({ columns: [table.assetId, table.network] })],
+    table => [primaryKey({ columns: [table.assetId, table.scope] })],
 )
 
 // Ids the bulk price endpoint returned nothing for. Kept out of asset_prices
@@ -81,8 +88,8 @@ export const AssetPriceMissesSchema = sqliteTable(
     'asset_price_misses',
     {
         assetId: text('asset_id').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         attemptedAt: integer('attempted_at').notNull(),
     },
-    table => [primaryKey({ columns: [table.assetId, table.network] })],
+    table => [primaryKey({ columns: [table.assetId, table.scope] })],
 )

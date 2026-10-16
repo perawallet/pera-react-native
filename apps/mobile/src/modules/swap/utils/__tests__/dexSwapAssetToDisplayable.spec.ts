@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, it, expect } from 'vitest'
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import { dexSwapAssetToDisplayable } from '../dexSwapAssetToDisplayable'

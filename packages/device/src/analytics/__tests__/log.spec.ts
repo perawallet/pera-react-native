@@ -13,7 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const providerLogEvent = vi.fn()
-let currentNetwork = 'mainnet'
+let currentMode: 'live' | 'developer' = 'live'
 let throwOnGetProvider = false
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -27,44 +27,38 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {
-        getState: () => ({ network: currentNetwork }),
+        getState: () => ({ mode: currentMode }),
     },
-}))
-
-vi.mock('@perawallet/wallet-core-config', () => ({
-    isMainnet: (network: string) => network === 'mainnet',
 }))
 
 import { logEvent, createBaseLogger, resolveEventName } from '../log'
 
 describe('resolveEventName', () => {
     beforeEach(() => {
-        currentNetwork = 'mainnet'
+        currentMode = 'live'
     })
 
-    it('leaves mainnet event names untouched', () => {
-        currentNetwork = 'mainnet'
+    it('leaves live event names untouched', () => {
+        currentMode = 'live'
 
         expect(resolveEventName('screen_view')).toBe('screen_view')
     })
 
-    it('prefixes every non-mainnet network', () => {
-        for (const network of ['testnet', 'betanet', 'custom']) {
-            currentNetwork = network
+    it('prefixes developer mode, whichever network it is on', () => {
+        currentMode = 'developer'
 
-            expect(resolveEventName('screen_view')).toBe('t_screen_view')
-        }
+        expect(resolveEventName('screen_view')).toBe('t_screen_view')
     })
 })
 
 describe('logEvent (base)', () => {
     beforeEach(() => {
         providerLogEvent.mockClear()
-        currentNetwork = 'mainnet'
+        currentMode = 'live'
         throwOnGetProvider = false
     })
 
-    it('forwards the raw name and payload unchanged on mainnet', () => {
+    it('forwards the raw name and payload unchanged in live mode', () => {
         logEvent('some_event', { foo: 'bar' })
 
         expect(providerLogEvent).toHaveBeenCalledWith('some_event', {
@@ -72,8 +66,8 @@ describe('logEvent (base)', () => {
         })
     })
 
-    it('prepends the testnet prefix when the active network is testnet', () => {
-        currentNetwork = 'testnet'
+    it('prepends the testnet prefix in developer mode', () => {
+        currentMode = 'developer'
 
         logEvent('some_event')
 
@@ -106,12 +100,12 @@ describe('logEvent (base)', () => {
 
 describe('createBaseLogger', () => {
     beforeEach(() => {
-        currentNetwork = 'mainnet'
+        currentMode = 'live'
     })
 
     it('binds to the provided analytics instance and applies the testnet prefix', () => {
         const analytics = { initializeAnalytics: vi.fn(), logEvent: vi.fn() }
-        currentNetwork = 'testnet'
+        currentMode = 'developer'
 
         const log = createBaseLogger(analytics)
         log('bound_event', { a: 1 })

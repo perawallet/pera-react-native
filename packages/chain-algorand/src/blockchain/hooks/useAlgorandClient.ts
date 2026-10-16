@@ -12,15 +12,17 @@
 
 import { useMemo } from 'react'
 import {
-    useNetwork,
     useNetworkStore,
+    useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { algorandNetworkOf } from '../../network-id'
 import type { PeraTransactionSigner } from '../models'
 import { selectAlgorandCustomNetwork } from '../store'
 import { createWalletAlgorandClient } from '../utils/createWalletAlgorandClient'
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
-    const { network } = useNetwork()
+    const network = algorandNetworkOf(useSelectedScope(ALGORAND_CHAIN_ID))
     const customNetwork = useNetworkStore(selectAlgorandCustomNetwork)
 
     return useMemo(() => {

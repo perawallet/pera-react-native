@@ -87,11 +87,7 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 describe('useTransactionProcessingScreen', () => {
     const mockShowError = vi.fn()

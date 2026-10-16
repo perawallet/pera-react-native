@@ -43,9 +43,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchOnChainAsset: (...args: unknown[]) => mockFetchOnChainAsset(...args),
@@ -79,6 +77,7 @@ describe('useAssetOptOutMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
+            transactionFee: vi.fn(),
             assetHolding: {
                 buildOptInTxs: vi.fn(),
                 buildOptOutTxs: mockBuild,

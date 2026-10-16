@@ -56,7 +56,6 @@ import {
     mockIndexerSearchForAccounts,
     mockPublicAssetDetails,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -66,8 +65,12 @@ import {
 } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // The detail screen passes `useDB: false`, so metadata comes from REST every
 // time — hence mocks for all three endpoints it merges, with minimal bodies
@@ -146,7 +149,7 @@ describe('Flow: View NFT collectible detail', () => {
             accountAddress: addressOf(NFT_HOLDER_PLACEHOLDER),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
         await seedAlgorandAccountState({
             accountAddress: addressOf(NFT_HOLDER_PLACEHOLDER),
@@ -266,7 +269,7 @@ describe('Flow: View NFT collectible detail', () => {
             accountAddress: addressOf(holder),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         // The bottom-sheet entry on CollectibleDetailScreen pushes

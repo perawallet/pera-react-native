@@ -10,12 +10,16 @@
  limitations under the License
  */
 
-import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 import {
     type Optional,
     useDebouncedValue,
 } from '@perawallet/wallet-core-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseNfdResolveResult = {
@@ -35,6 +39,7 @@ export const useNfdResolve = (
     input: string,
     options?: { enabled?: boolean },
 ): UseNfdResolveResult => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const enabled = options?.enabled ?? true
     const debouncedInput = useDebouncedValue(input, SEARCH_DEBOUNCE_TIME)
     const isDirectAddress = addressCodecs
@@ -44,6 +49,7 @@ export const useNfdResolve = (
         enabled && debouncedInput.includes('.') && !isDirectAddress
 
     const { data: nfdResults, isLoading: isNfdResolving } = useNfdSearchQuery(
+        scope,
         debouncedInput,
         { enabled: shouldSearchNfd },
     )

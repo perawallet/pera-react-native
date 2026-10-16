@@ -12,8 +12,8 @@
 
 import { vi } from 'vitest'
 import {
-    scopeForLegacyNetwork,
     type TransactionNative,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     reviewerChainAdapters,
@@ -23,7 +23,7 @@ import {
 export const fakeReviewerAdapter = (
     overrides: Partial<ReviewerChainAdapter> = {},
 ): ReviewerChainAdapter => ({
-    chainId: scopeForLegacyNetwork('mainnet').chainId,
+    chainId: LEGACY_CHAIN_ID,
     decoder: {
         decode: vi.fn(async () => ({
             totalFees: 0n,

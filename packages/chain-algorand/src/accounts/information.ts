@@ -11,11 +11,11 @@
  */
 
 import { getAlgorandClient } from '../blockchain'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { fetchAccountAssetOptInRounds } from './endpoints'
+import { type AlgorandNetworkId } from '../network-id'
 
 export const fetchAssetOptInRounds = (
     address: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<Map<string, number>> =>
     fetchAccountAssetOptInRounds(getAlgorandClient(network), address)

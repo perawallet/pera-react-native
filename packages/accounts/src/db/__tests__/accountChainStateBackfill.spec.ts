@@ -20,7 +20,6 @@ import {
     type MigrationConfig,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import {
     authorityAddressOf,
@@ -29,10 +28,14 @@ import {
 } from '../../store/accountChainState'
 import { hydrateAccountChainStates } from '../../store/hydrateAccountChainStates'
 import { useAccountsStore } from '../../store/store'
-import { getAccountChainStateRow, upsertAccountChainState } from '../index'
+import { getAccountChainStateRow } from '../index'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const TAG = '0013_drop_account_balances'
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
@@ -167,13 +170,11 @@ describe('account_balances backfill into account_chain_state', () => {
 
     it('keeps a row the dual-write already made', async () => {
         await seedLegacy({ address: 'A', algoBalance: '1' })
-        await upsertAccountChainState({
-            db,
-            accountAddress: 'A',
-            scope: MAINNET_SCOPE,
-            nativeBalance: new Decimal(7_000_000),
-            chainData: { family: 'evm', nonce: { latest: 1, pending: 1 } },
-        })
+        // Raw SQL: the repository writes the column's later name.
+        await db.run(sql`
+            INSERT INTO account_chain_state (account_address, network, native_balance, chain_data, updated_at)
+            VALUES ('A', 'algorand/mainnet', '7000000', '{"family":"evm","nonce":{"latest":1,"pending":1}}', 1)
+        `)
 
         await migrate()
 

@@ -33,10 +33,9 @@ export default defineConfig({
         conditions: ['default'],
         alias: {
             // Source, not `dist`, so tests cannot pass against a stale build
-            // artifact. Both aliases are load-bearing: `Networks`
-            // (betanet/custom) lives in packages/config and shared only
-            // re-exports it, so aliasing shared alone still resolves that
-            // re-export through config's own dist.
+            // artifact. Both aliases are load-bearing: shared
+            // imports packages/config, so aliasing shared alone still resolves
+            // config through its own dist.
             // Before the barrel key: aliases prefix-match, so the barrel entry
             // would rewrite `/queue` (imported by assets' dist) to a bad path.
             '@perawallet/wallet-core-shared/queue': path.resolve(
@@ -133,6 +132,17 @@ export default defineConfig({
                 __dirname,
                 '../chain-algorand/src/connect/index.ts',
             ),
+            // chain-algorand's source imports deeplinks, which builds after
+            // walletconnect (deeplinks → walletconnect), so its dist doesn't
+            // exist yet when this suite runs on a cold turbo cache.
+            '@perawallet/wallet-core-deeplinks': path.resolve(
+                __dirname,
+                '../deeplinks/src/index.ts',
+            ),
+            // deeplinks' source imports this subpath; walletconnect's own dist
+            // isn't built while its tests run.
+            '@perawallet/wallet-core-walletconnect/shared/deeplink':
+                path.resolve(__dirname, 'src/shared/deeplink.ts'),
         },
     },
 })

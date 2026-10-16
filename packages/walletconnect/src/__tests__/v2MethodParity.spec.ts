@@ -18,7 +18,10 @@ import { AlgorandPermission } from '../models'
 // chain-algorand keeps its own copy of the v2 method names (it cannot import
 // this package), so this pins them to the names v1 serves under.
 describe('v2 method parity with the registered adapter', () => {
-    const v2 = walletConnectSupportFor('mainnet')?.v2
+    const v2 = walletConnectSupportFor({
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    })?.v2
     if (!v2) {
         throw new Error(
             'no v2 support registered — registerDappRequestAdapter.ts should have run',

@@ -22,8 +22,11 @@ import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import i18nKeyExists from './lanekeep/rules/i18n-key-exists.js'
 import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-suppressions.js'
 import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
+import noLegacyNetworkBridge from './lanekeep/rules/no-legacy-network-bridge.js'
+import noModuleComponentSpecs from './lanekeep/rules/no-module-component-specs.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
+import noPrimitiveRetest from './lanekeep/rules/no-primitive-retest.js'
 import noReactNativeImportsInPackages from './lanekeep/rules/no-react-native-imports-in-packages.js'
 import noRetiredQuantumCustody from './lanekeep/rules/no-retired-quantum-custody.js'
 import noSecretInLogs from './lanekeep/rules/no-secret-in-logs.js'
@@ -84,6 +87,7 @@ export default defineConfig({
         noWcImportsInConnectionsModule,
         noChainIdentityInSharedPackages,
         noChainPackageImports,
+        noLegacyNetworkBridge,
         noAlgorandAccountVocabulary,
         noAlgorandTermsInChainNeutralPackages,
         noDeepModuleImports,
@@ -109,6 +113,8 @@ export default defineConfig({
         localePlaceholderSuffix,
         noSnapshotTests,
         noAssertionlessTest,
+        noModuleComponentSpecs,
+        noPrimitiveRetest,
         amountTypes,
         noSecretInLogs,
         secretBufferZeroed,

@@ -12,7 +12,10 @@
 
 import { beforeEach, describe, it, expect, vi, type Mock } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    getSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -43,6 +46,7 @@ vi.mock('@routes/capabilities', () => ({
 }))
 
 import { useAccountHeaderMenu } from '../useAccountHeaderMenu'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const enableDebugTools = () => {
     ;(usePreferences as Mock).mockReturnValue({
@@ -171,12 +175,12 @@ describe('useAccountHeaderMenu', () => {
 
             const live = useNetworkStore.getState()
             expect(live.mode).toBe('live')
-            expect(live.network).toBe('mainnet')
+            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('mainnet')
             expect(live.selectedNetworkByChain.algorand).toBe('betanet')
 
             act(() => developerModeItem(result.current.items)?.onPress())
 
-            expect(useNetworkStore.getState().network).toBe('betanet')
+            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('betanet')
         })
 
         it('still toggles when the sync service is not initialized', () => {

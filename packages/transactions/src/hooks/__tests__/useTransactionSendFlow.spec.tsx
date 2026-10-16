@@ -15,7 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import {
     ChainAdapterNotRegisteredError,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
@@ -82,6 +82,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 const fakeSendFlowAdapter: SendFlowChainAdapter = {
     chainId: 'algorand',
     buildTransferTxs: mockBuildTransfer,
+    transactionFee: vi.fn(),
     express: { buildTxs: mockBuildExpress },
     assetInbox: {
         buildSendTxs: mockBuildSendViaInbox,
@@ -90,9 +91,7 @@ const fakeSendFlowAdapter: SendFlowChainAdapter = {
     },
 }
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 const NATIVE_ASSET = vi.hoisted(() => ({
     assetId: '0',
@@ -170,7 +169,10 @@ describe('useTransactionSendFlow', () => {
 
     it('normal ALGO send: builds through the chain adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             const id = await result.current.execute({
@@ -185,7 +187,7 @@ describe('useTransactionSendFlow', () => {
             expect(id).toBe('tx1')
         })
         expect(mockBuildTransfer).toHaveBeenCalledWith({
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             sender: 'A',
             receiver: 'B',
             assetId: '0',
@@ -207,7 +209,10 @@ describe('useTransactionSendFlow', () => {
 
     it('normal ASA send: passes the asset id on + submits via pipeline', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await result.current.execute({
@@ -237,7 +242,10 @@ describe('useTransactionSendFlow', () => {
     it('express send: sizes the receiver funding from its account state', async () => {
         mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await result.current.execute({
@@ -250,13 +258,13 @@ describe('useTransactionSendFlow', () => {
                 },
             })
         })
-        expect(mockAccountState).toHaveBeenCalledWith(
-            'B',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        expect(mockAccountState).toHaveBeenCalledWith('B', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
         // mbrAfterOptIn (200000) + receiverFee (1000) - balance (0).
         expect(mockBuildExpress).toHaveBeenCalledWith({
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             sender: 'A',
             receiver: 'B',
             assetId: 99n,
@@ -280,7 +288,10 @@ describe('useTransactionSendFlow', () => {
         it('normal ALGO send: quantum sender gets a fee override', async () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({
@@ -311,7 +322,10 @@ describe('useTransactionSendFlow', () => {
         it('normal ALGO send: algo25 sender passes no fee (regression)', async () => {
             // Default beforeEach resolves 1000n === suggestedMinFee.
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({
@@ -330,7 +344,10 @@ describe('useTransactionSendFlow', () => {
         it('close-account send: quantum sender gets a fee override and the close flag is preserved', async () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({
@@ -359,7 +376,10 @@ describe('useTransactionSendFlow', () => {
                 ) => (senderAddress === 'A' ? 3000n : 1000n),
             )
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({
@@ -400,7 +420,10 @@ describe('useTransactionSendFlow', () => {
                 ) => (senderAddress === 'B' ? 3000n : 1000n),
             )
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({
@@ -426,7 +449,10 @@ describe('useTransactionSendFlow', () => {
             mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
             // Default beforeEach resolves 1000n for every sender/receiver.
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({
@@ -453,7 +479,10 @@ describe('useTransactionSendFlow', () => {
             mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
             mockHoldingReserve.mockReturnValue(new Decimal(200000))
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({
@@ -474,7 +503,10 @@ describe('useTransactionSendFlow', () => {
 
     it('sendArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await result.current.execute({
@@ -511,7 +543,10 @@ describe('useTransactionSendFlow', () => {
     it('sendArc59: passes the PQ-aware sender fee to the builder', async () => {
         mockResolveMinFeeForSender.mockReturnValue(3000n)
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await result.current.execute({
@@ -544,7 +579,10 @@ describe('useTransactionSendFlow', () => {
 
     it('claimArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await result.current.execute({
@@ -577,7 +615,10 @@ describe('useTransactionSendFlow', () => {
 
     it('claimArc59 with amount: optimistically credits the holding after submit', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             const id = await result.current.execute({
@@ -606,7 +647,10 @@ describe('useTransactionSendFlow', () => {
 
     it('claimArc59 without amount: skips the optimistic credit', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await result.current.execute({
@@ -626,7 +670,10 @@ describe('useTransactionSendFlow', () => {
     it('claimArc59: a failed optimistic credit does not fail the claim', async () => {
         mockAddToAssetHolding.mockRejectedValueOnce(new Error('db locked'))
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             const id = await result.current.execute({
@@ -645,7 +692,10 @@ describe('useTransactionSendFlow', () => {
 
     it('rejectArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await result.current.execute({
@@ -702,13 +752,19 @@ describe('useTransactionSendFlow', () => {
 
         it("hands the inbox send to the network's adapter with the summary untouched", async () => {
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({ params: arc59Params })
             })
             expect(mockBuildSendViaInbox).toHaveBeenCalledWith({
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
                 sender: 'A',
                 receiver: 'B',
                 assetId: 99n,
@@ -721,7 +777,10 @@ describe('useTransactionSendFlow', () => {
         it('refuses a normal send when no adapter is registered for the chain', async () => {
             sendFlowChainAdapters.reset()
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await expect(
@@ -736,7 +795,10 @@ describe('useTransactionSendFlow', () => {
         it('refuses an inbox send when no adapter is registered for the chain', async () => {
             sendFlowChainAdapters.reset()
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await expect(
@@ -751,9 +813,13 @@ describe('useTransactionSendFlow', () => {
             sendFlowChainAdapters.register({
                 chainId: 'algorand',
                 buildTransferTxs: mockBuildTransfer,
+                transactionFee: vi.fn(),
             })
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await expect(
@@ -777,7 +843,10 @@ describe('useTransactionSendFlow', () => {
             freezeHoldings('99')
 
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await expect(
@@ -791,7 +860,10 @@ describe('useTransactionSendFlow', () => {
             freezeHoldings()
 
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({ params: baseParams })
@@ -803,7 +875,10 @@ describe('useTransactionSendFlow', () => {
             freezeHoldings('99')
 
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await expect(
@@ -822,7 +897,10 @@ describe('useTransactionSendFlow', () => {
             freezeHoldings()
 
             const { result } = renderHook(() =>
-                useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+                useTransactionSendFlow({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             )
             await act(async () => {
                 await result.current.execute({ params: baseParams })
@@ -833,7 +911,10 @@ describe('useTransactionSendFlow', () => {
 
     it('throws InvalidSendParamsError for an empty assetId string', async () => {
         const { result } = renderHook(() =>
-            useTransactionSendFlow(scopeForLegacyNetwork('mainnet')),
+            useTransactionSendFlow({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         )
         await act(async () => {
             await expect(

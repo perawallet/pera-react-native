@@ -24,7 +24,7 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { getAssetsByIds } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const NATIVE_ASSET_ID = '0'
 
@@ -38,7 +38,7 @@ describe('Integration test plumbing: SQLite database', () => {
 
         const rows = await getAssetsByIds({
             assetIds: [NATIVE_ASSET_ID],
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         expect(rows).toHaveLength(1)
@@ -51,7 +51,7 @@ describe('Integration test plumbing: SQLite database', () => {
         // No seed call here — assert empty.
         const rows = await getAssetsByIds({
             assetIds: [NATIVE_ASSET_ID],
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         expect(rows).toHaveLength(0)
     })

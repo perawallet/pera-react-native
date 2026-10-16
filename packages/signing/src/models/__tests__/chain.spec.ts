@@ -41,4 +41,19 @@ describe('chainIdOfSignRequest', () => {
 
         expect(chainIdOfSignRequest(request)).toBe('ethereum')
     })
+
+    it('resolves a message request to the chain of its scope', () => {
+        const request = {
+            ...base,
+            type: 'message',
+            message: {
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                method: 'plain',
+                signer: '0xFROM',
+                payload: {},
+            },
+        } as unknown as SignRequest
+
+        expect(chainIdOfSignRequest(request)).toBe('ethereum')
+    })
 })

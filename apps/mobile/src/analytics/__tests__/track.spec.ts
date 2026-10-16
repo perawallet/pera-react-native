@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const logEvent = vi.fn()
@@ -31,12 +33,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         networkId: currentNetwork,
     }),
     useNetworkStore: {
-        getState: () => ({ network: currentNetwork }),
+        getState: () => ({
+            mode: currentNetwork === 'mainnet' ? 'live' : 'developer',
+        }),
     },
-}))
-
-vi.mock('@perawallet/wallet-core-config', () => ({
-    isMainnet: (network: string) => network === 'mainnet',
 }))
 
 import { trackEvent, trackScreen } from '../track'

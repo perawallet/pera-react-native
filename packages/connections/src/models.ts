@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    ChainId,
+    ChainScope,
+    MessageRequest,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AuthDataSignableData,
     PeraArbitraryDataMessage,
@@ -31,8 +36,9 @@ import type {
 export type { SourceType }
 
 /**
- * The last four are routed by a chain's WalletConnect support and refused by
- * the registry until each gains a `WalletOperation` variant and a validator.
+ * `send-transaction` and `switch-network` are routed by a chain's WalletConnect
+ * support and refused by the registry until each gains a `WalletOperation`
+ * variant and a validator.
  */
 export const WALLET_OPERATION_TYPES = [
     'sign-transactions',
@@ -45,6 +51,14 @@ export const WALLET_OPERATION_TYPES = [
 
 export type WalletOperationType = (typeof WALLET_OPERATION_TYPES)[number]
 
+export type MessageOperationType = Extract<
+    WalletOperationType,
+    'sign-message' | 'sign-typed-data'
+>
+
+/** What a dApp asks to sign, before the wallet stamps the network it signs on. */
+export type DappMessageRequest = Omit<MessageRequest, 'scope'>
+
 /**
  * Closed union: a handler that cannot map an inbound message declines at its
  * own envelope boundary rather than emitting an `unknown` variant.
@@ -55,16 +69,26 @@ export type WalletOperation =
           type: 'sign-data'
           payload: AuthDataSignableData | PeraArbitraryDataMessage[]
       }
+    | {
+          type: 'send-transaction'
+          /** Opaque here: only the chain whose `sendTransaction.validate` produced it reads it. */
+          request: unknown
+      }
+    | { type: MessageOperationType; request: DappMessageRequest }
 
 /** Signing results, before the handler envelopes them for its wire. */
 export type WalletOperationResult =
     | { type: 'sign-transactions'; signed: Nullable<string>[] }
     | { type: 'sign-data'; signatures: Uint8Array[] }
+    /** `txId` is the submitted transaction's chain-native id. */
+    | { type: 'send-transaction'; txId: string }
+    /** The signature as the chain's message signer assembled it. */
+    | { type: MessageOperationType; signature: Uint8Array }
 
 /** Wallet-initiated push. Only handlers implementing `notify` receive these. */
 export type WalletNotice =
     | { type: 'accounts-changed'; accounts: string[] }
-    | { type: 'network-changed'; network: Network }
+    | { type: 'network-changed'; scope: ChainScope }
 
 export type ConnectionEvent =
     | { type: 'session-expiring'; expiresAt: number }
@@ -152,6 +176,11 @@ export type InboundMessage =
           connectionId: ConnectionId
           correlationId: string
       }
+    /**
+     * The connection's record is gone, whichever side ended it; every request
+     * it still has open must be let go of, as for `request-expired`.
+     */
+    | { kind: 'connection-closed'; connectionId: ConnectionId }
 
 /**
  * Envelope decoded and operation type known, payload unvalidated; the registry

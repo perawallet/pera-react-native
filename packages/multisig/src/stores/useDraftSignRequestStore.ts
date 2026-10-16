@@ -11,10 +11,8 @@
  */
 
 import { create } from 'zustand'
-import {
-    generateOrderedUniqueId,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import type { MultiSigAccount, MultisigProposeMode } from '../models'
 
 /**
@@ -40,7 +38,7 @@ export type DraftMultisigDetails = Pick<
 
 export type DraftSignRequest = {
     localId: string
-    network: Network
+    scope: ChainScope
     multisigAddress: string
     multisigDetails: DraftMultisigDetails
     /** Raw transaction bytes base64-encoded (msgpack, NO "TX" domain prefix). */

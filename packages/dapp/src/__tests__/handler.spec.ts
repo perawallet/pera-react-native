@@ -19,7 +19,7 @@ import {
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import { JsonRpcErrorCode, type JsonRpcResponse } from '../codec'
 import { createDappConnectionHandler } from '../handler'
@@ -86,7 +86,7 @@ const fakeChainAdapter = (
 const setup = (
     seed: Connection[] = [],
     overrides: {
-        network?: Network
+        network?: NetworkId
         customGenesisHash?: string
         adapter?: DappRequestChainAdapter | null
     } = {},
@@ -102,7 +102,7 @@ const setup = (
     const handler = createDappConnectionHandler({
         transport,
         chainId: 'algorand',
-        getNetwork: () => overrides.network ?? 'mainnet',
+        getNetworkId: () => overrides.network ?? 'mainnet',
         getCustomNetworkGenesisHash: () => overrides.customGenesisHash,
         getAccounts: () => [
             { address: ADDR_A, name: 'Main' },
@@ -715,6 +715,26 @@ describe('DappConnectionHandler', () => {
         })
     })
 
+    describe('matchesChainScope', () => {
+        it('matches every network of its own chain and no other chain', () => {
+            const { handler } = setup()
+            const connection = connected()
+
+            expect(
+                handler.matchesChainScope(connection, {
+                    chainId: 'algorand',
+                    networkId: 'testnet',
+                }),
+            ).toBe(true)
+            expect(
+                handler.matchesChainScope(connection, {
+                    chainId: 'ethereum',
+                    networkId: 'mainnet',
+                }),
+            ).toBe(false)
+        })
+    })
+
     describe('getAddresses / disconnect / unknown', () => {
         it('returns the approved accounts with names, or Unauthorized when not connected', async () => {
             const { transport, registry } = setup([connected()])
@@ -776,7 +796,7 @@ describe('DappConnectionHandler', () => {
             await registry.initialize()
             await handler.notify?.(ORIGIN, {
                 type: 'network-changed',
-                network: 'testnet',
+                scope: { chainId: 'algorand', networkId: 'testnet' },
             })
             await handler.notify?.(ORIGIN, {
                 type: 'accounts-changed',

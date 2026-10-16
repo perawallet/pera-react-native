@@ -105,12 +105,12 @@ describe('accounts repositories take a ChainScope', () => {
         void getAllHeldAssetIdsForNetwork({ network: 'mainnet' })
     })
 
-    it('brands both network columns as scope keys', () => {
+    it('brands both scope columns as scope keys', () => {
         expectTypeOf(
-            AccountAssetHoldingsSchema.network._.data,
+            AccountAssetHoldingsSchema.scope._.data,
         ).toEqualTypeOf<ChainScopeKey>()
         expectTypeOf(
-            AccountChainStateSchema.network._.data,
+            AccountChainStateSchema.scope._.data,
         ).toEqualTypeOf<ChainScopeKey>()
     })
 })

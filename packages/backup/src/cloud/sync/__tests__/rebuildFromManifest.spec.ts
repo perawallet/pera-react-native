@@ -36,7 +36,7 @@ import {
     unreadAccountDeltas,
 } from '../rebuildFromManifest'
 
-const deps = { network: 'mainnet' as const, backupId: 'b', deviceId: 'dev' }
+const deps = { backupId: 'b', deviceId: 'dev' }
 
 const manifest = (items: Manifest['items'], lastSeq = 100): Manifest => ({
     backupId: 'b',
@@ -144,7 +144,7 @@ describe('fetchDeltaOrRebuild', () => {
             getManifest,
         )
 
-        expect(fetchDelta).toHaveBeenCalledWith('mainnet', 'b', 'dev', 3)
+        expect(fetchDelta).toHaveBeenCalledWith('b', 'dev', 3)
         expect(result).toEqual({ deltas: entries, rebuiltThroughSeq: 0 })
         expect(getManifest).not.toHaveBeenCalled()
     })

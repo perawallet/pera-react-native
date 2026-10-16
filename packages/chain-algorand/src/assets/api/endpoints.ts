@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    queryClient,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
+import { fetchNodeJson } from '../../blockchain/utils/nodeHttp'
 import {
     assetResponseSchema,
     assetsResponseSchema,
@@ -22,18 +19,18 @@ import {
     publicAssetResponseSchema,
     type AssetResponse,
     type AssetsResponse,
-    type IndexerAssetResponse,
     type PublicAssetResponse,
 } from './schema'
+import { type AlgorandNetworkId, algorandScope } from '../../network-id'
 
 const fetchAssetsForDevice = (
     assetIDs: string[],
-    network: Network,
+    network: AlgorandNetworkId,
     deviceId: string,
 ) =>
     queryClient<AssetsResponse, string>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'POST',
         url: `/v2/assets/`,
         body: `{"device_id":${deviceId},"asset_ids":${JSON.stringify(
@@ -41,10 +38,10 @@ const fetchAssetsForDevice = (
         )},"include_deleted":true}`,
     })
 
-const fetchAssetsUnscoped = (assetIDs: string[], network: Network) =>
+const fetchAssetsUnscoped = (assetIDs: string[], network: AlgorandNetworkId) =>
     queryClient<AssetsResponse, string[]>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'GET',
         url: `/v1/assets/`,
         params: {
@@ -55,7 +52,7 @@ const fetchAssetsUnscoped = (assetIDs: string[], network: Network) =>
 
 export const fetchAssets = async (
     assetIDs: string[],
-    network: Network,
+    network: AlgorandNetworkId,
     deviceId?: Nullable<string>,
 ) => {
     const response = deviceId
@@ -65,10 +62,13 @@ export const fetchAssets = async (
     return assetsResponseSchema.parse(response.data)
 }
 
-export const fetchAssetDetails = async (assetID: string, network: Network) => {
+export const fetchAssetDetails = async (
+    assetID: string,
+    network: AlgorandNetworkId,
+) => {
     const response = await queryClient<AssetResponse, string>({
         backend: 'pera',
-        network: network,
+        scope: algorandScope(network),
         method: 'GET',
         url: `/v1/assets/${assetID}/`,
     })
@@ -78,11 +78,11 @@ export const fetchAssetDetails = async (assetID: string, network: Network) => {
 
 export const fetchPublicAssetDetails = async (
     assetID: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ) => {
     const response = await queryClient<PublicAssetResponse, string>({
         backend: 'pera',
-        network: network,
+        scope: algorandScope(network),
         method: 'GET',
         url: `/v1/public/assets/${assetID}/`,
     })
@@ -92,14 +92,13 @@ export const fetchPublicAssetDetails = async (
 
 export const fetchIndexerAssetDetails = async (
     assetID: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ) => {
-    const response = await queryClient<IndexerAssetResponse, string>({
-        backend: 'indexer',
-        network: network,
-        method: 'GET',
-        url: `/v2/assets/${assetID}`,
-    })
+    const response = await fetchNodeJson(
+        network,
+        'indexer',
+        `/v2/assets/${assetID}`,
+    )
 
-    return indexerAssetResponseSchema.parse(response.data)
+    return indexerAssetResponseSchema.parse(response)
 }

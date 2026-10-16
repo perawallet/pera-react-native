@@ -12,20 +12,6 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({
-    resetNodeClients: vi.fn(),
-}))
-
-// Partial mock: only resetNodeClients is swapped out. Everything else
-// (registerStore, logger, etc., which the network store needs at import time)
-// stays real via importOriginal, or the store import below would crash.
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-shared')
-    >()),
-    resetNodeClients: mocks.resetNodeClients,
-}))
-
 // Spy on createTimeoutBoundedAlgorandClient while still delegating to the
 // real implementation, so getAlgorandClient's assertions below can inspect
 // what it was called with without breaking the real chain through to it.
@@ -40,19 +26,17 @@ vi.mock('../createAlgorandClient', async importOriginal => {
     }
 })
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
-    Networks,
+    getAlgorandChainConfig,
     getChainConfig,
-    getNetworkConfig,
 } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { setCustomNetwork, clearCustomNetwork } from '../../store'
 import { getAlgorandClient } from '../algorandClient'
 import { createTimeoutBoundedAlgorandClient } from '../createAlgorandClient'
-import { algorandNodeBackends } from '../../node-backends'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const CUSTOM_SCOPE = scopeForLegacyNetwork(Networks.custom)
+const CUSTOM_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const
 
 describe('getChainConfig for the custom network (real store, end-to-end)', () => {
     beforeEach(() => {
@@ -114,7 +98,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
         })
     })
 
-    test('getNetworkConfig serves the saved node for custom', () => {
+    test('getAlgorandChainConfig serves the saved node for custom', () => {
         setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
@@ -122,7 +106,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
             genesisId: 'dockernet-v1',
         })
 
-        expect(getNetworkConfig(Networks.custom)).toMatchObject({
+        expect(getAlgorandChainConfig(CUSTOM_SCOPE)).toMatchObject({
             algodUrl: 'http://10.0.0.5:4001',
             indexerUrl: 'http://10.0.0.5:8980',
             genesisHash: 'HASH',
@@ -133,13 +117,12 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
     })
 
     test('the baked networks ignore the saved node', () => {
-        const bakedNetworks = [
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-        ] as const
+        const bakedNetworks = ['mainnet', 'testnet', 'betanet'] as const
         const before = bakedNetworks.map(network =>
-            getChainConfig(scopeForLegacyNetwork(network)),
+            getChainConfig({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: network,
+            } as const),
         )
 
         setCustomNetwork({
@@ -151,7 +134,10 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
 
         expect(
             bakedNetworks.map(network =>
-                getChainConfig(scopeForLegacyNetwork(network)),
+                getChainConfig({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const),
             ),
         ).toStrictEqual(before)
     })
@@ -177,7 +163,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
             genesisId: 'dockernet-v1',
         })
 
-        getAlgorandClient(Networks.custom)
+        getAlgorandClient('custom')
 
         expect(createTimeoutBoundedAlgorandClient).toHaveBeenLastCalledWith(
             expect.objectContaining({
@@ -188,58 +174,10 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
     })
 })
 
-describe('custom-network store subscription (real store, end-to-end)', () => {
-    beforeEach(() => {
-        useNetworkStore.getState().resetState()
-        mocks.resetNodeClients.mockClear()
-    })
-
-    test('saving a custom config drops the cached node clients, and the custom backends read the saved node', () => {
-        setCustomNetwork({
-            algodUrl: 'http://10.0.0.5:4001',
-            indexerUrl: 'http://10.0.0.5:8980',
-            genesisHash: 'HASH',
-            genesisId: 'dockernet-v1',
-        })
-
-        expect(mocks.resetNodeClients).toHaveBeenCalled()
-        expect(algorandNodeBackends.backendsFor(CUSTOM_SCOPE)).toEqual({
-            algod: {
-                url: 'http://10.0.0.5:4001',
-                tokenHeader: 'X-Algo-API-Token',
-                // No token saved, so the store's source reports none.
-                token: '',
-            },
-            indexer: {
-                url: 'http://10.0.0.5:8980',
-                tokenHeader: 'X-Indexer-API-Token',
-                token: '',
-            },
-        })
-    })
-
-    test('clearing the custom config drops them again, back to the empty baked placeholder', () => {
-        setCustomNetwork({
-            algodUrl: 'http://10.0.0.5:4001',
-            indexerUrl: 'http://10.0.0.5:8980',
-            genesisHash: 'HASH',
-            genesisId: 'dockernet-v1',
-        })
-        mocks.resetNodeClients.mockClear()
-
-        clearCustomNetwork()
-
-        expect(mocks.resetNodeClients).toHaveBeenCalled()
-        expect(algorandNodeBackends.backendsFor(CUSTOM_SCOPE).algod?.url).toBe(
-            getNetworkConfig(Networks.custom).algodUrl,
-        )
-    })
-})
-
 describe('a persisted custom config on module load', () => {
     // Last in this file: it calls vi.resetModules() and re-imports, which the
     // describe blocks above must not see.
-    test('reaches the node backends with no store write in this test', async () => {
+    test('reaches the node reads with no store write in this test', async () => {
         vi.resetModules()
 
         const { getProvider } =
@@ -260,14 +198,27 @@ describe('a persisted custom config on module load', () => {
                 version: 1,
             }),
         )
-
-        // algorandClient registers the saved-node reader node-backends reads.
-        await import('../algorandClient')
-        const { algorandNodeBackends: fresh } =
-            await import('../../node-backends')
-
-        expect(fresh.backendsFor(CUSTOM_SCOPE).algod?.url).toBe(
-            'http://10.0.0.9:4001',
+        const { setAlgorandChainContext } =
+            await import('../../../chain-context')
+        const { testChainContext } = await import('../../../__tests__/context')
+        setAlgorandChainContext(testChainContext())
+        const fetchMock = vi.fn(
+            async () =>
+                new Response('{}', {
+                    headers: { 'content-type': 'application/json' },
+                }),
         )
+        vi.stubGlobal('fetch', fetchMock)
+
+        // algorandClient registers the saved-node reader the node reads use.
+        await import('../algorandClient')
+        const { fetchNodeJson } = await import('../nodeHttp')
+        await fetchNodeJson('custom', 'algod', '/v2/status')
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            'http://10.0.0.9:4001/v2/status',
+            expect.anything(),
+        )
+        vi.unstubAllGlobals()
     })
 })

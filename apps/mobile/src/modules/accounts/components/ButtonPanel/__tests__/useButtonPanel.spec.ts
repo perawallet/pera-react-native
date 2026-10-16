@@ -15,6 +15,7 @@ import { renderHook } from '@test-utils/render'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { useButtonPanel } from '../useButtonPanel'
 
 const overview = vi.hoisted(() => ({ account: null as unknown }))
@@ -73,10 +74,28 @@ describe('useButtonPanel', () => {
     })
 
     it('removes swapping for an account with no address on a swap chain', () => {
+        registerEthereumChain()
         overview.account = onEthereumOnly
 
         const { result } = renderHook(() => useButtonPanel())
 
         expect(result.current.canSwap).toBe(false)
+    })
+
+    it('offers send and receive on an Algorand account', () => {
+        const { result } = renderHook(() => useButtonPanel())
+
+        expect(result.current.canSend).toBe(true)
+        expect(result.current.canReceive).toBe(true)
+    })
+
+    it("offers only the actions an Ethereum account's chain has", () => {
+        registerEthereumChain()
+        overview.account = onEthereumOnly
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        expect(result.current.canSend).toBe(false)
+        expect(result.current.canReceive).toBe(true)
     })
 })

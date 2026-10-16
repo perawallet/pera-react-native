@@ -15,6 +15,7 @@ import type { SigningMachineContext } from '../machine/context'
 import {
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isMessageRequest,
     isTransactionRequest,
     reviewGroupOf,
 } from '../models'
@@ -66,14 +67,28 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
     }
 
     if (isAuthDataRequest(req)) {
+        const chainId = chainIdOfSignRequest(req)
+        const authData = messageSignerChainAdapters.get(chainId).authData
         return {
             type: 'auth-data',
-            parsed: messageSignerChainAdapters
+            parsed: authData
+                ? authData.parseAuthDataForDisplay(
+                      req.authData.data,
+                      req.metadata.encoding,
+                  )
+                : {
+                      type: 'error',
+                      message: `chain ${chainId} has no auth-data signer`,
+                  },
+        }
+    }
+
+    if (isMessageRequest(req)) {
+        return {
+            type: 'message',
+            summary: messageSignerChainAdapters
                 .get(chainIdOfSignRequest(req))
-                .parseAuthDataForDisplay(
-                    req.authData.data,
-                    req.metadata.encoding,
-                ),
+                .describe(req.message),
         }
     }
 

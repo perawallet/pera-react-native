@@ -14,20 +14,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { Decimal } from 'decimal.js'
 
 const { withdrawWalletBalance } = vi.hoisted(() => ({
     withdrawWalletBalance: vi.fn(),
 }))
 vi.mock('../../api/wallet-balance', () => ({ withdrawWalletBalance }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useWithdrawWalletBalanceMutation } from '../useWithdrawWalletBalanceMutation'
 import { cardQueryKeys } from '../querykeys'
 import { CardWalletKind } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useWithdrawWalletBalanceMutation', () => {
+describe.each(SCOPES)('useWithdrawWalletBalanceMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -61,13 +68,14 @@ describe('useWithdrawWalletBalanceMutation', () => {
                 () => useWithdrawWalletBalanceMutation(SCOPE, kind),
                 { wrapper },
             )
-            result.current.mutate({ amount: '10.5' })
+            const amount = new Decimal('10.5')
+            result.current.mutate({ amount })
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
             expect(withdrawWalletBalance).toHaveBeenCalledWith({
                 kind,
-                amount: '10.5',
-                network: 'mainnet',
+                amount,
+                scope: SCOPE,
             })
             expect(invalidateSpy).toHaveBeenCalledWith({
                 queryKey: cardQueryKeys.walletBalance(SCOPE, kind),
@@ -87,7 +95,7 @@ describe('useWithdrawWalletBalanceMutation', () => {
                 useWithdrawWalletBalanceMutation(SCOPE, CardWalletKind.Reward),
             { wrapper },
         )
-        result.current.mutate({ amount: '1' })
+        result.current.mutate({ amount: new Decimal('1') })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
     })

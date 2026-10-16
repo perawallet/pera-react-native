@@ -30,8 +30,8 @@ import {
     fakeAssetsAdapter,
 } from '@perawallet/wallet-core-assets/testing'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { refreshAccountHoldings } from '../holdingsRepository'
 import {
@@ -39,8 +39,14 @@ import {
     getAccountFundedNetworks,
 } from '../portfolioQueries'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 // ChainId is a closed union, so the second native asset rides on Ethereum's id.
 const FIXTURE_CHAIN_ID = 'ethereum'
 const FIXTURE_SCOPE: ChainScope = {

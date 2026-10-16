@@ -79,8 +79,8 @@ const toastTitles = (): string[] =>
 
 beforeEach(async () => {
     resetTestKeystore()
-    useDeviceStore.getState().setDeviceID('mainnet', 'device-integration')
-    useDeviceStore.getState().setDeviceID('testnet', 'device-integration')
+    useDeviceStore.getState().setDeviceID('live', 'device-integration')
+    useDeviceStore.getState().setDeviceID('developer', 'device-integration')
     useCloudBackupStore.getState().resetState()
     await persistBackupKeys({
         encryptionKey: new Uint8Array(32).fill(1),

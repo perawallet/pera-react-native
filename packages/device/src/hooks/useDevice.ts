@@ -15,14 +15,21 @@ import {
     isAlgoAssetName,
     isNotFoundError,
     isPeraNetworkError,
-    type Network,
 } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    networkTierForMode,
+    type WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
 import { usePushToken } from './usePushToken'
-import { deviceIdFor, deviceIdOriginFor, useDeviceStore } from '../store'
+import {
+    deviceIdForDeployment,
+    deviceIdOriginFor,
+    useDeviceStore,
+} from '../store'
 import { logEvent } from '../analytics'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
 import type {
@@ -53,13 +60,13 @@ type RegisterDeviceResult = { createdNew: boolean }
 // Module scope, deliberately NOT a `useRef`: every `useDevice()` call site —
 // the mount-time registration, a notification-preference toggle mounted from
 // a completely different screen, any future caller — must share ONE queue per
-// network. A per-hook-instance queue only serializes calls made through that
+// deployment. A per-hook-instance queue only serializes calls made through that
 // same mounted instance; two different components calling `registerDevice`
 // concurrently would each get their own empty map and still fire two
 // independent POSTs.
 //
 // This queue is the *only* thing that guarantees one id-less create per
-// network: an id-less call and any call that follows it are chained through
+// deployment: an id-less call and any call that follows it are chained through
 // one promise, so the second always observes the id the first persisted and
 // takes the update branch instead of minting a second device row. Do not
 // weaken it into a per-call-path lock — `registerDevice` has more than one
@@ -74,35 +81,35 @@ type RegisterDeviceResult = { createdNew: boolean }
 // corrective call can lose a race against the second (stale, pre-rollback)
 // one still in flight, leaving the server on a flag the persisted local
 // store no longer holds. Chaining every call through one promise per
-// network instead guarantees strict arrival order, so the corrective call
+// deployment instead guarantees strict arrival order, so the corrective call
 // always resolves last.
-const registrationQueues = new Map<Network, Promise<void>>()
+const registrationQueues = new Map<WalletMode, Promise<void>>()
 
 /**
  * Tests only — never call from production code. The map above is module
  * state, so without this a leaked, never-settled entry from one test (e.g.
  * one that fails before resolving its own mocked in-flight promise) silently
  * wedges every later test in the same file that registers on the same
- * network.
+ * deployment.
  */
 export const clearRegistrationQueuesForTests = (): void => {
     registrationQueues.clear()
 }
 
 const enqueueRegistration = (
-    targetNetwork: Network,
+    targetDeployment: WalletMode,
     task: () => Promise<RegisterDeviceResult>,
 ): Promise<RegisterDeviceResult> => {
-    const previous = registrationQueues.get(targetNetwork)
+    const previous = registrationQueues.get(targetDeployment)
     // Run synchronously (no queue in front of it) when nothing is pending —
     // matches the pre-existing behaviour callers rely on, where the create
     // POST fires within the same tick as the call rather than one microtask
     // later. Only an actual pending predecessor defers this call.
     const result = previous ? previous.then(task) : task()
     // Always-resolving tail: one call's rejection must not wedge every
-    // later call for this network behind a promise that will never settle.
+    // later call for this deployment behind a promise that will never settle.
     registrationQueues.set(
-        targetNetwork,
+        targetDeployment,
         result.then(
             () => undefined,
             () => undefined,
@@ -113,7 +120,7 @@ const enqueueRegistration = (
 
 export const useDevice = () => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
-    const { network } = useNetwork()
+    const deployment = useWalletDeployment()
     const { pushToken } = usePushToken()
     const setDeviceID = useDeviceStore(state => state.setDeviceID)
     const setDeviceIdOrigin = useDeviceStore(state => state.setDeviceIdOrigin)
@@ -155,42 +162,48 @@ export const useDevice = () => {
      * token) and without the retry there is no self-heal, only the same 400
      * on every reconnect and foreground for the life of the install.
      *
-     * `targetNetwork` is passed explicitly rather than left to the mutation's
-     * own `useNetwork()`: this runs inside a queued task that may start long
+     * `targetDeployment` is passed explicitly rather than left to the mutation's
+     * own `useWalletDeployment()`: this runs inside a queued task that may start long
      * after the call was enqueued, by which point the user may have switched
-     * networks. See `registerDevice`.
+     * deployments. See `registerDevice`.
      *
      * Exactly one replay, and only for 400. Anything else — 404, 422, 5xx, a
      * dropped connection — propagates on the first failure.
      */
     const submitRegistration = useCallback(
         async (
-            targetNetwork: Network,
+            targetDeployment: WalletMode,
             payload: DeviceRegistration,
         ): Promise<DeviceResponse> => {
             try {
-                return await register({ network: targetNetwork, data: payload })
+                return await register({
+                    deployment: targetDeployment,
+                    data: payload,
+                })
             } catch (error) {
                 if (!isPushTokenClaimedError(error)) throw error
-                return register({ network: targetNetwork, data: payload })
+                return register({
+                    deployment: targetDeployment,
+                    data: payload,
+                })
             }
         },
         [register],
     )
 
     // The one place that ever issues an id-less POST. Persists the id it gets
-    // back immediately. Only one of these can be in flight per network at a
+    // back immediately. Only one of these can be in flight per deployment at a
     // time — not because of any lock here, but because every caller reaches
     // this through `enqueueRegistration` (see `registerDevice`), which chains
-    // one task at a time per network. A late-arriving write here can only
+    // one task at a time per deployment. A late-arriving write here can only
     // ever land in its own, still-current slot.
-    const createDeviceForNetwork = useCallback(
+    const createDeviceForDeployment = useCallback(
         async (
-            targetNetwork: Network,
+            targetDeployment: WalletMode,
             accounts: DeviceAccountRegistration[],
         ): Promise<string> => {
             const result = await submitRegistration(
-                targetNetwork,
+                targetDeployment,
                 buildPayload(accounts),
             )
             if (!result.id) {
@@ -199,7 +212,7 @@ export const useDevice = () => {
                 // attempt instead so the reconnect/foreground retry re-runs it.
                 throw new Error('Device create response carried no id')
             }
-            setDeviceID(targetNetwork, result.id)
+            setDeviceID(targetDeployment, result.id)
             return result.id
         },
         [buildPayload, submitRegistration, setDeviceID],
@@ -208,12 +221,12 @@ export const useDevice = () => {
     /** Registers `accounts` against a known device id. */
     const registerWithId = useCallback(
         async (
-            targetNetwork: Network,
+            targetDeployment: WalletMode,
             id: string,
             accounts: DeviceAccountRegistration[],
         ): Promise<RegisterDeviceResult> => {
             try {
-                await submitRegistration(targetNetwork, {
+                await submitRegistration(targetDeployment, {
                     ...buildPayload(accounts),
                     id,
                 })
@@ -230,16 +243,16 @@ export const useDevice = () => {
                 const isReplacingMigratedId =
                     deviceIdOriginFor(
                         useDeviceStore.getState(),
-                        targetNetwork,
+                        targetDeployment,
                     ) === 'migrated'
-                await createDeviceForNetwork(targetNetwork, accounts)
+                await createDeviceForDeployment(targetDeployment, accounts)
                 // Replacing a migrated id orphans its device-keyed server
                 // state (Discover favorites, price alerts, banner
                 // dismissals) — no reconciliation endpoint exists yet,
                 // so the loss is only made observable here.
                 //
                 // No in-flight guard is needed: every registration is chained
-                // through `enqueueRegistration`, so only one task per network
+                // through `enqueueRegistration`, so only one task per deployment
                 // runs at a time and this recreate cannot be superseded while
                 // it is in flight (see `registerDevice`).
                 //
@@ -249,9 +262,9 @@ export const useDevice = () => {
                 // (see `isPushTokenClaimedError`). A 400 therefore never
                 // reaches this branch and never replaces an id.
                 if (isReplacingMigratedId) {
-                    setDeviceIdOrigin(targetNetwork, 'recreated')
+                    setDeviceIdOrigin(targetDeployment, 'recreated')
                     logEvent(MIGRATED_DEVICE_ID_REPLACED_EVENT, {
-                        network: targetNetwork,
+                        network: networkTierForMode(targetDeployment),
                         reason: 'not_found',
                     })
                 }
@@ -261,7 +274,7 @@ export const useDevice = () => {
         [
             buildPayload,
             submitRegistration,
-            createDeviceForNetwork,
+            createDeviceForDeployment,
             setDeviceIdOrigin,
         ],
     )
@@ -275,7 +288,7 @@ export const useDevice = () => {
      * every id-less call carrying an empty push token, so the only id-less
      * call is the first registration on a device whose FCM token hasn't
      * arrived (or was denied) — and the returned id is persisted immediately,
-     * which bounds that to one *per network*, even under concurrent callers
+     * which bounds that to one *per deployment*, even under concurrent callers
      * from different components.
      *
      * Reads the device id from the store directly at call time rather than
@@ -297,59 +310,66 @@ export const useDevice = () => {
      * retry a 400 for any method anyway.
      *
      * The whole attempt — id read included — runs inside `enqueueRegistration`
-     * (module scope, above), so two calls for the same network never run
+     * (module scope, above), so two calls for the same deployment never run
      * concurrently: the second always sees whatever the first left behind,
      * whether that's a freshly minted id or a corrective write superseding an
      * earlier one still in flight.
      *
-     * `targetNetwork` is captured at *enqueue* time and threaded all the way
+     * `targetDeployment` is captured at *enqueue* time and threaded all the way
      * to the transport. The queued task can start up to one request timeout
-     * after the call was made, and the user may have switched networks in
-     * between: re-reading the network inside the task would read this
-     * network's device id, POST it to the *other* network's backend (unknown
-     * id → 404 → re-create) and then write that foreign id back into this
-     * network's store slot, pointing both networks at one device row.
+     * after the call was made, and the user may have switched deployments in
+     * between: re-reading the deployment inside the task would read this
+     * deployment's device id, POST it to the *other* deployment's backend
+     * (unknown id → 404 → re-create) and then write that foreign id back into
+     * this deployment's store slot, pointing both at one device row.
      */
     const registerDevice = useCallback(
         (
             accounts: DeviceAccountRegistration[],
         ): Promise<RegisterDeviceResult> => {
-            const targetNetwork = network
-            return enqueueRegistration(targetNetwork, async () => {
-                const currentDeviceId = deviceIdFor(
+            const targetDeployment = deployment
+            return enqueueRegistration(targetDeployment, async () => {
+                const currentDeviceId = deviceIdForDeployment(
                     useDeviceStore.getState(),
-                    targetNetwork,
+                    targetDeployment,
                 )
 
                 if (!currentDeviceId) {
-                    await createDeviceForNetwork(targetNetwork, accounts)
+                    await createDeviceForDeployment(targetDeployment, accounts)
                     return { createdNew: true }
                 }
 
-                return registerWithId(targetNetwork, currentDeviceId, accounts)
+                return registerWithId(
+                    targetDeployment,
+                    currentDeviceId,
+                    accounts,
+                )
             })
         },
-        [network, createDeviceForNetwork, registerWithId],
+        [deployment, createDeviceForDeployment, registerWithId],
     )
 
     /**
-     * Detach the push token from the device record on a specific network so
-     * the server stops pushing to a node we've moved away from. Best-effort:
+     * Detach the push token from the device record on a specific deployment so
+     * the server stops pushing to one we've moved away from. Best-effort:
      * any failure is swallowed (incl. 404 when the device was already deleted
      * server-side).
      *
-     * Routed via the raw endpoint so we hit the *target* network's URL rather
-     * than `useNetwork()`'s current value, which has already advanced by the
+     * Routed via the raw endpoint so we hit the *target* deployment's URL rather
+     * than `useWalletDeployment()`'s current value, which has already advanced by the
      * time this fires. Carrying `id` is what makes `pushToken: ''` clear that
      * device instead of minting a new one. `accounts` is `[]` so this can't
-     * overwrite the old network's account list with the new network's.
+     * overwrite the old deployment's account list with the new one's.
      */
     const clearDevicePushToken = useCallback(
-        async (targetNetwork: Network) => {
-            const targetDeviceId = deviceIdFor({ deviceIDs }, targetNetwork)
+        async (targetDeployment: WalletMode) => {
+            const targetDeviceId = deviceIdForDeployment(
+                { deviceIDs },
+                targetDeployment,
+            )
             if (!targetDeviceId) return
             try {
-                await registerDeviceEndpoint(targetNetwork, {
+                await registerDeviceEndpoint(targetDeployment, {
                     ...buildPayload([]),
                     id: targetDeviceId,
                     pushToken: '',

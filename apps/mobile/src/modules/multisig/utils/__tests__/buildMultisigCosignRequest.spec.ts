@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let mockIdCounter = 0
@@ -35,7 +37,7 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     return { ...actual, multisigAdapterFor: mocks.multisigAdapterFor }
 })
 
-import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
+import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import {
     authorityOf,
     type WalletAccount,
@@ -43,8 +45,10 @@ import {
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
-const txFrom = (sender = 'MULTISIG'): PeraTransaction =>
-    ({ sender: { toString: () => sender } }) as unknown as PeraTransaction
+const txFrom = (sender = 'MULTISIG'): UnsignedTransaction =>
+    ({
+        payload: { transaction: { sender: { toString: () => sender } } },
+    }) as unknown as UnsignedTransaction
 
 const buildSignRequest = (
     overrides: Partial<MultisigSignRequest> = {},
@@ -99,7 +103,7 @@ describe('buildMultisigCosignRequest', () => {
         })
 
         expect(result.type).toBe('transactions')
-        expect(result.chainId).toBe('algorand')
+        expect(result).not.toHaveProperty('chainId')
         expect(result.transport).toBe('callback')
         expect(result.sourceType).toBe('multisig-cosign')
         expect(result.signRequestId).toBe('sr-42')
@@ -114,8 +118,17 @@ describe('buildMultisigCosignRequest', () => {
         })
 
         expect(mocks.decodeTransaction).toHaveBeenCalledTimes(2)
+        // Decoded as signed for the joint account, so a participant cosigns.
+        expect(mocks.decodeTransaction).toHaveBeenCalledWith(
+            expect.any(Uint8Array),
+            { chainId: 'algorand', networkId: 'testnet' },
+            { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
+        )
         expect(result.txs).toHaveLength(2)
-        expect(result.rawTransactionsBase64).toEqual(['dHgx', 'dHgy'])
+        expect(result.chainData?.algorand?.rawTransactionsBase64).toEqual([
+            'dHgx',
+            'dHgy',
+        ])
     })
 
     it('routes every tx to the same signer via signerOverrides', () => {
@@ -126,9 +139,9 @@ describe('buildMultisigCosignRequest', () => {
             localAccounts: [],
         })
 
-        expect(result.signerOverrides).toBeDefined()
-        expect(result.signerOverrides!.get(0)).toBe('B')
-        expect(result.signerOverrides!.get(1)).toBe('B')
+        const signerOverrides = result.chainData?.algorand?.signerOverrides
+        expect(signerOverrides?.get(0)).toBe('B')
+        expect(signerOverrides?.get(1)).toBe('B')
     })
 
     it('assigns a deterministic id per (signRequestId, signer) so distinct signers stay distinct', () => {
@@ -199,7 +212,7 @@ describe('buildMultisigCosignRequest', () => {
         return mocks.validateSignRequest.mock.calls[0][1] as Set<string>
     }
 
-    it('validates through the adapter of the given network', () => {
+    it('validates through the adapter of the given scope', () => {
         const signRequest = buildSignRequest()
 
         buildMultisigCosignRequest({
@@ -209,9 +222,10 @@ describe('buildMultisigCosignRequest', () => {
             localAccounts: [],
         })
 
-        expect(mocks.multisigAdapterFor).toHaveBeenCalledExactlyOnceWith(
-            'testnet',
-        )
+        expect(mocks.multisigAdapterFor).toHaveBeenCalledExactlyOnceWith({
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         expect(mocks.validateSignRequest).toHaveBeenCalledWith(
             signRequest,
             new Set(['MULTISIG']),

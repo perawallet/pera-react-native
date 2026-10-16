@@ -11,15 +11,17 @@
  */
 
 import React from 'react'
+import { Decimal } from 'decimal.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockBuildRekeyTx = vi.fn()
-const mockCallerScope = vi.fn(() => scopeForLegacyNetwork('mainnet'))
+const mockCallerScope = vi.fn(
+    () => ({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }) as const,
+)
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
 const mockUseSuggestedMinFeeQuery = vi.fn()
@@ -45,6 +47,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 import { sendFlowChainAdapters } from '../../chain-adapter'
 import { useRekeyTransactionFeeQuery } from '../useRekeyTransactionFeeQuery'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const quantum = (
     address = 'QADDR',
@@ -83,11 +86,16 @@ const buildWrapper = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockCallerScope.mockReturnValue(scopeForLegacyNetwork('mainnet'))
+    mockCallerScope.mockReturnValue({
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'mainnet',
+    } as const)
     sendFlowChainAdapters.reset()
     sendFlowChainAdapters.register({
         chainId: 'algorand',
         buildTransferTxs: vi.fn(),
+        transactionFee: tx =>
+            new Decimal(String((tx as unknown as { fee: bigint }).fee)),
         rekey: { buildTx: mockBuildRekeyTx },
     })
     mockUseSuggestedMinFeeQuery.mockReturnValue({
@@ -186,42 +194,6 @@ describe('useRekeyTransactionFeeQuery', () => {
         )
     })
 
-    it('falls back to the resolved minimum fee when the built transaction has no fee', async () => {
-        // Some constructs leave `fee` undefined (1000 microAlgo → 0.001 ALGO).
-        mockBuildRekeyTx.mockResolvedValueOnce({ fee: undefined })
-        const { wrapper } = buildWrapper()
-
-        const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
-            { wrapper },
-        )
-
-        await waitFor(() => {
-            expect(result.current.isPending).toBe(false)
-        })
-        expect(result.current.feeAlgos?.toString()).toBe('0.001')
-    })
-
-    it('follows the resolved minimum fee when the built transaction has no fee', async () => {
-        // Non-default config: the resolver floors at the 2000 µAlgo config
-        // minimum, so the displayed fee is 0.002 ALGO.
-        mockUseFeeConfig.mockReturnValue({
-            minTxnFee: 2000n,
-            pqMultiplier: 3n,
-        })
-        mockResolveMinFeeForSender.mockReturnValue(2000n)
-        mockBuildRekeyTx.mockResolvedValueOnce({ fee: undefined })
-        const { wrapper } = buildWrapper()
-
-        const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.feeAlgos?.toString()).toBe('0.002')
-    })
-
     it('does not run the query when sourceAddress is empty', async () => {
         const { wrapper } = buildWrapper()
         const { result } = renderHook(
@@ -260,7 +232,10 @@ describe('useRekeyTransactionFeeQuery', () => {
         await waitFor(() => expect(mainnet.current.isPending).toBe(false))
         expect(mainnet.current.feeAlgos?.toString()).toBe('0.001')
 
-        mockCallerScope.mockReturnValue(scopeForLegacyNetwork('testnet'))
+        mockCallerScope.mockReturnValue({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const { result: testnet } = renderHook(
             () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
             { wrapper },

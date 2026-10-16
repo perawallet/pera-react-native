@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export { algorandSubmissionChainData, lastValidOf } from './chain-data'
 export { deriveSubmissionAttemptFromBytes, toRound } from './derive'
 export {
     reconcileOpenSubmissions,

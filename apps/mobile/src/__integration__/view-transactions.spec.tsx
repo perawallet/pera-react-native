@@ -53,7 +53,6 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
@@ -62,8 +61,12 @@ import { useAccountHistory } from '@modules/accounts/components/AccountHistory/u
 import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
@@ -181,7 +184,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_PAYMENT, TX_ASSET_TRANSFER],
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
     })
 
@@ -408,7 +411,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [closeOutTx],
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         const lookupSpy = vi.fn(() =>
@@ -529,7 +532,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: fullPage,
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         // Pera transaction-history endpoint. The endpoint URL is
@@ -632,7 +635,7 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_STATE_PROOF],
             accountAddress: addressOf(ACCOUNT),
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         const lookupSpy = vi.fn(() =>

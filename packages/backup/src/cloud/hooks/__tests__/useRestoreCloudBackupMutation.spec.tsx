@@ -73,11 +73,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useWalletDeployment: () => 'live',
 }))
 vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
     ...(await importOriginal<object>()),
-    useDeviceID: () => deviceIdMock.value,
+    useDeploymentDeviceID: () => deviceIdMock.value,
 }))
 
 import { applyBackupSettings } from '../../sync/backupSettingsStores'
@@ -139,7 +139,6 @@ describe('useRestoreCloudBackupMutation', () => {
             mnemonic: MNEMONIC,
             salt: SALT,
             deviceId: 'device-123',
-            network: 'mainnet',
             importAccounts: importAccountsMock,
             importContacts: expect.any(Function),
             importPasskeys: importPasskeysMock,

@@ -10,19 +10,14 @@
  limitations under the License
  */
 
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    getAlgorandChainConfig,
-    type Network,
-} from '@perawallet/wallet-core-config'
-import { resetNodeClients } from '@perawallet/wallet-core-shared'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 // Side-effect import: registers the saved-node reader getChainConfig uses for `custom`.
 import '../store/custom-network'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 /**
  * Returns an instance of AlgorandClient for a specific network or scope.
@@ -33,18 +28,10 @@ import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
  * GET/DELETE, submit ceiling for POST) and no call site can hang indefinitely.
  * @returns {AlgorandClient}
  */
-export const getAlgorandClient = (target?: ChainScope | Network) => {
+export const getAlgorandClient = (target?: ChainScope | AlgorandNetworkId) => {
     const scope =
         typeof target === 'string'
-            ? scopeForLegacyNetwork(target)
-            : (target ??
-              scopeForLegacyNetwork(useNetworkStore.getState().network))
+            ? algorandScope(target)
+            : (target ?? getSelectedScope(ALGORAND_CHAIN_ID))
     return createTimeoutBoundedAlgorandClient(getAlgorandChainConfig(scope))
 }
-
-// Only a custom-network edit changes endpoints; a plain switch must not rebuild every client.
-useNetworkStore.subscribe((state, previous) => {
-    if (state.customNetworksByChain !== previous.customNetworksByChain) {
-        resetNodeClients()
-    }
-})

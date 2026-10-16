@@ -12,7 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useDeviceIdHandler } from '../useDeviceIdHandler'
 import {
     TRUSTED,
@@ -27,17 +27,17 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useWalletDeployment: () => 'live',
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: vi.fn(),
+    useDeploymentDeviceID: vi.fn(),
 }))
 
 describe('useDeviceIdHandler', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(useDeviceID).mockReturnValue('device-id')
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('device-id')
     })
 
     it('answers getDeviceId with the action message the Discover web app listens for', () => {
@@ -53,7 +53,7 @@ describe('useDeviceIdHandler', () => {
     })
 
     it('stays silent on getDeviceId while the id is unavailable', () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
         const webview = createMockWebview()
         const { result } = renderHook(() => useDeviceIdHandler(webview, true))
 
@@ -63,12 +63,12 @@ describe('useDeviceIdHandler', () => {
     })
 
     it('pushes a device id that lands after mount', () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
         const webview = createMockWebview()
         const { rerender } = renderHook(() => useDeviceIdHandler(webview, true))
         expect(webview.injectJavaScript).not.toHaveBeenCalled()
 
-        vi.mocked(useDeviceID).mockReturnValue('device-id')
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('device-id')
         act(() => rerender())
 
         expect(lastAction(webview)).toEqual({
@@ -86,20 +86,20 @@ describe('useDeviceIdHandler', () => {
     })
 
     it('does not push when the connection is insecure', () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
         const webview = createMockWebview()
         const { rerender } = renderHook(() =>
             useDeviceIdHandler(webview, false),
         )
 
-        vi.mocked(useDeviceID).mockReturnValue('device-id')
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('device-id')
         act(() => rerender())
 
         expect(webview.injectJavaScript).not.toHaveBeenCalled()
     })
 
     it('does not push while the id remains unavailable', () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
         const webview = createMockWebview()
         const { rerender } = renderHook(() => useDeviceIdHandler(webview, true))
 

@@ -38,8 +38,8 @@ export const OnrampForm = ({
     const { t } = useLanguage()
     const styles = useStyles()
     const {
-        sourceAmount,
-        setSourceAmount,
+        sourceAmountText,
+        setSourceAmountText,
         destinationAmount,
         selectedQuote,
         isQuoting,
@@ -57,7 +57,7 @@ export const OnrampForm = ({
         handleConfirm,
     } = useOnrampForm(selectedPair, onNavigateToHistory)
 
-    const hasValidQuote = selectedQuote !== null && sourceAmount !== ''
+    const hasValidQuote = selectedQuote !== null && sourceAmountText !== ''
     const canConfirm =
         hasValidQuote &&
         destinationAmount !== null &&
@@ -81,12 +81,12 @@ export const OnrampForm = ({
             <OnrampAmountFields
                 sourceToken={sourceToken}
                 destinationToken={destinationToken}
-                sourceAmount={sourceAmount}
+                sourceAmountText={sourceAmountText}
                 destinationAmount={destinationAmount}
                 limits={limits}
                 isReceiveLoading={isQuoting}
-                onSourceAmountChange={setSourceAmount}
-                onSetSourceAmount={setSourceAmount}
+                onSourceAmountTextChange={setSourceAmountText}
+                onSetSourceAmountText={setSourceAmountText}
                 onOpenSource={handleOpenSource}
                 onOpenDestination={handleOpenDestination}
             />

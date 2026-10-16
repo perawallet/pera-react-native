@@ -12,13 +12,9 @@
 
 import { memo, useCallback } from 'react'
 import {
-    chainAccountOf,
+    ownAddressOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
 import { PWFlatList } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SelectableAccountRow } from '@components/SelectableAccountRow'
@@ -30,10 +26,16 @@ export type AccountPickerProps = {
     /** Body text for the empty state; omit to render no empty state. */
     emptyBody?: string
     rowTestIDPrefix?: string
+    /**
+     * Lays the list out inside a parent scroll (e.g. `PWSheetLayout`) instead
+     * of scrolling itself. A second sheet scrollable would overwrite the
+     * sheet's measured height with the list's alone, cutting off the parent's
+     * header and safe-area padding.
+     */
+    isEmbedded?: boolean
 }
 
-const addressOf = (account: WalletAccount, chainId: ChainId) =>
-    chainAccountOf(account, chainId)?.address
+const keyExtractor = (account: WalletAccount) => account.id
 
 const AccountPickerComponent = ({
     accounts,
@@ -41,12 +43,8 @@ const AccountPickerComponent = ({
     highlightedAddress,
     emptyBody,
     rowTestIDPrefix,
+    isEmbedded = false,
 }: AccountPickerProps) => {
-    const keyExtractor = useCallback(
-        (account: WalletAccount) =>
-            addressOf(account, LEGACY_CHAIN_ID) ?? account.id,
-        [],
-    )
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
             <SelectableAccountRow
@@ -54,11 +52,11 @@ const AccountPickerComponent = ({
                 onSelect={onSelect}
                 isHighlighted={
                     highlightedAddress != null &&
-                    addressOf(item, LEGACY_CHAIN_ID) === highlightedAddress
+                    ownAddressOf(item) === highlightedAddress
                 }
                 testID={
                     rowTestIDPrefix
-                        ? `${rowTestIDPrefix}-${addressOf(item, LEGACY_CHAIN_ID)}`
+                        ? `${rowTestIDPrefix}-${ownAddressOf(item)}`
                         : undefined
                 }
             />
@@ -78,6 +76,8 @@ const AccountPickerComponent = ({
             renderItem={renderItem}
             keyExtractor={keyExtractor}
             ListEmptyComponent={emptyBody != null ? renderEmpty : undefined}
+            inBottomSheet={isEmbedded ? false : undefined}
+            scrollEnabled={!isEmbedded}
         />
     )
 }

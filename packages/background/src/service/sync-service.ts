@@ -21,6 +21,7 @@ import {
     invalidateAssetQueries,
 } from '@perawallet/wallet-core-assets'
 import {
+    invalidateSpendableBalanceQueries,
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
 } from '@perawallet/wallet-core-transactions'
@@ -28,11 +29,9 @@ import {
     logger,
     calculateBackoff,
     isPeraNetworkError,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -40,6 +39,7 @@ import {
 import {
     broadcasterChainAdapters,
     reconcileOpenSubmissions,
+    subscribeToSubmissionLedger,
 } from '@perawallet/wallet-core-signing'
 import type { AssetSyncKind } from '../polling'
 import type { SyncServiceDeps } from '../models'
@@ -133,6 +133,7 @@ export class SyncService {
     // while running so an offline→online transition can trigger an immediate
     // tick. Cleared on stop() so the subscription lifecycle tracks running.
     private onlineUnsubscribe: Nullable<() => void> = null
+    private ledgerUnsubscribe: Nullable<() => void> = null
     private readonly baseInterval: number
 
     constructor(private readonly deps: SyncServiceDeps) {
@@ -165,6 +166,14 @@ export class SyncService {
         this.onlineUnsubscribe ??= onlineManager.subscribe(isOnline => {
             if (isOnline) this.handleReconnect()
         })
+        // The spendable balance reads the ledger's open attempts, so a
+        // broadcast must drop MAX and a settle bring it back. Debounced, since
+        // a reconcile pass settles its rows in parallel.
+        this.ledgerUnsubscribe ??= subscribeToSubmissionLedger(() =>
+            this.debouncedInvalidate('spendable-balance', () =>
+                invalidateSpendableBalanceQueries(this.deps.queryClient),
+            ),
+        )
         this.authRefusedScopes.clear()
         void this.tick()
     }
@@ -174,6 +183,10 @@ export class SyncService {
         if (this.onlineUnsubscribe !== null) {
             this.onlineUnsubscribe()
             this.onlineUnsubscribe = null
+        }
+        if (this.ledgerUnsubscribe !== null) {
+            this.ledgerUnsubscribe()
+            this.ledgerUnsubscribe = null
         }
         if (this.timer !== null) {
             clearTimeout(this.timer)
@@ -396,10 +409,9 @@ export class SyncService {
             settled += summary.confirmed + summary.failed
         }
         if (settled > 0) {
-            // A settled row changes the "pending — verifying" badge set and
-            // must drop the pending history entry (history queries are
-            // DB-cached with staleTime: Infinity, so a settle on a no-work
-            // tick would otherwise leave a resolved row showing).
+            // A settled row changes the pending history row's status, and
+            // history queries are DB-cached with staleTime: Infinity, so a
+            // settle on a no-work tick would otherwise leave a stale row.
             invalidateTransactionQueries(this.deps.queryClient)
         }
     }
@@ -626,11 +638,10 @@ export class SyncService {
      */
     async refreshAccounts(
         addresses: string[],
-        network: Network,
+        scope: ChainScope,
     ): Promise<void> {
         if (addresses.length === 0) return
 
-        const scope = scopeForLegacyNetwork(network)
         const accountPass = await syncAccountsPhase(
             addresses,
             scope,
@@ -657,7 +668,7 @@ export class SyncService {
                 }
             } catch (error) {
                 logger.warn('Refresh asset enrichment failed', {
-                    network,
+                    scope,
                     error:
                         error instanceof Error
                             ? { message: error.message, stack: error.stack }

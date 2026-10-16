@@ -22,9 +22,9 @@ import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 describe('Flow: Asset discovery (search)', () => {
     it('Given the search endpoint returns mixed-tier results, when the hook resolves, then all three verification tiers (verified, unverified, suspicious) round-trip onto the results so the UI can decorate them', async () => {

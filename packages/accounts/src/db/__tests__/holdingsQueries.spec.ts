@@ -25,7 +25,6 @@ import {
     PeraAssetType,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     refreshAccountHoldings,
     insertAssetHolding,
@@ -35,8 +34,12 @@ import {
     getAccountCollectiblesLite,
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 describe('account holdings queries', () => {
     let db: Database
@@ -290,7 +293,7 @@ describe('account holdings queries', () => {
                 accountAddress: 'ADDR1',
                 assetId: '999',
                 scope: MAINNET_SCOPE,
-                amount: '1',
+                amount: new Decimal(1),
             })
 
             const rows = await getAccountCollectiblesLite({
@@ -476,7 +479,7 @@ describe('account holdings queries', () => {
         const unsyncedRow = (assetId: string) => ({
             assetId,
             decimals: null,
-            creatorAddress: null,
+            chainData: null,
             totalSupply: null,
             name: null,
             unitName: null,

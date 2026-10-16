@@ -36,6 +36,9 @@ import {
     setSessionLostHandler,
 } from '../default-transport'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const ok = { data: { ok: true }, status: 200, statusText: 'OK' }
 const unauthorized = { response: { status: 401 } }
 
@@ -51,7 +54,7 @@ describe('defaultTransport', () => {
         baanxDirectRequest.mockResolvedValue(ok)
 
         const res = await defaultTransport.request({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/status',
         })
@@ -66,7 +69,7 @@ describe('defaultTransport', () => {
 
         await defaultTransport.request({
             route: 'proxy',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'POST',
             path: '/v1/auth/oauth/token',
             data: { grant_type: 'refresh_token' },
@@ -75,6 +78,7 @@ describe('defaultTransport', () => {
         expect(queryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
+                scope: ALGORAND_TESTNET,
                 url: '/v1/auth/oauth/token',
                 method: 'POST',
             }),
@@ -87,7 +91,7 @@ describe('defaultTransport', () => {
 
         await defaultTransport.request({
             route: 'proxy',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'POST',
             path: '/api/v3/baanx/escrow-card',
             timeoutMs: 60_000,
@@ -106,7 +110,7 @@ describe('defaultTransport', () => {
 
         await defaultTransport.request({
             route: 'proxy',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'GET',
             path: '/api/v3/baanx/oauth/initiate',
         })
@@ -125,7 +129,7 @@ describe('defaultTransport', () => {
         })
 
         await defaultTransport.request({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/status',
         })
@@ -144,7 +148,7 @@ describe('defaultTransport', () => {
 
         await defaultTransport.request({
             route: 'proxy',
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
             method: 'GET',
             path: '/api/v3/baanx/oauth/initiate',
             headers: { 'x-app-integrity-token': 'explicit-token' },
@@ -165,7 +169,7 @@ describe('defaultTransport', () => {
         setRefreshHandler(refresh)
 
         const res = await defaultTransport.request({
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
             method: 'GET',
             path: '/v1/card/status',
             authenticated: true,
@@ -173,6 +177,7 @@ describe('defaultTransport', () => {
 
         expect(res).toEqual(ok)
         expect(refresh).toHaveBeenCalledTimes(1)
+        expect(refresh).toHaveBeenCalledWith(ALGORAND_MAINNET)
         expect(baanxDirectRequest).toHaveBeenCalledTimes(2)
     })
 
@@ -183,7 +188,7 @@ describe('defaultTransport', () => {
 
         await expect(
             defaultTransport.request({
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 method: 'GET',
                 path: '/v1/card/status',
                 authenticated: true,
@@ -201,7 +206,7 @@ describe('defaultTransport', () => {
 
         await expect(
             defaultTransport.request({
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 method: 'GET',
                 path: '/v1/user',
                 authenticated: true,
@@ -222,7 +227,7 @@ describe('defaultTransport', () => {
 
         await expect(
             defaultTransport.request({
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 method: 'GET',
                 path: '/v1/user',
                 authenticated: true,
@@ -241,7 +246,7 @@ describe('defaultTransport', () => {
 
         await expect(
             defaultTransport.request({
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 method: 'POST',
                 path: '/v1/auth/oauth/token',
                 data: { grant_type: 'refresh_token' },
@@ -259,7 +264,7 @@ describe('defaultTransport', () => {
         await expect(
             defaultTransport.request({
                 route: 'proxy',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 method: 'POST',
                 path: '/v1/auth/oauth/token',
             }),
@@ -272,7 +277,7 @@ describe('defaultTransport', () => {
 
         await expect(
             defaultTransport.request({
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 method: 'GET',
                 path: '/v1/card/status',
                 authenticated: true,

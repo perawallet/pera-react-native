@@ -11,16 +11,16 @@
  */
 
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandClient } from '../../blockchain/utils/algorandClient'
 import { algorandMultisigAdapter } from '../adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('../../blockchain/utils/algorandClient', () => ({
     getAlgorandClient: vi.fn(),
 }))
 
 const ADDRESS = 'A'.repeat(58)
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('algorandMultisigAdapter.classifyParticipant', () => {
     let mockLookupAccountByID: Mock

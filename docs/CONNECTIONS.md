@@ -16,7 +16,9 @@ managing N connections; the `ConnectionRegistry` (`src/registry.ts`) owns the ha
 every inbound payload before a subscriber can see it, and reconciles the store from each handler's
 `restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s and declare the chain each
 message belongs to. That chain's dApp request adapter (`src/dappRequest.ts`) validates the
-transaction payload and supplies the signing hook, and a message for a chain with no registered
+transaction payload and supplies the signing hook, and can build a send-transaction itself. A namespace
+maps the chain-neutral `DappRequestFailure` to its own wire codes, and the handler sends its defaults
+when it defines none. A message for a chain with no registered
 adapter is refused. `src/signing-adapter.ts` is the single bridge from those operations into the
 signing pipeline, so a new protocol needs a handler and a new chain needs an adapter, nothing else.
 The bridge runs both ways: a handler
@@ -107,7 +109,7 @@ addresses before approving, because any extension page can send on the control s
   pairs.
 
 A handler added on web must be constructed in both `useConnectionsProvider.web.ts` (so URI claims
-and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
+and `scopesFor` are answered) and `runOffscreenApp.ts` (so it is live).
 
 WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
 <!-- doc-hygiene-ignore-next-line stale-path reason: build output dir, produced by CI before the grep -->
@@ -126,7 +128,7 @@ requests never read the capability, so turning it off leaves them listed and rev
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
 origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
 the per-origin approval cap in `packages/browser-runtime/src/dapp/approval-bridge.ts` and
-`disconnect` all key on one value. It is network-agnostic (`matchesNetwork` is always true) and
+`disconnect` all key on one value. It matches every network of its own chain (`matchesChainScope`) and
 reports the active network at connect time instead.
 
 The handler is transport-agnostic through `DappTransport`: the extension supplies one over
@@ -173,6 +175,13 @@ that was never imported from one the user has since disconnected.
 The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes the store too,
 through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
 `buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
+
+## WalletConnect v2 refusal codes
+
+A chain answers refusals in its namespace's codes through `walletConnect.toWireErrorCode`; a chain
+that omits it answers -32000 and WalletConnect's SDK errors. Whether a request's signer is a session
+account is the chain's call, made in `sendTransaction.validate` or `validateMessagePayload`, which
+both receive the connection's authorized accounts.
 
 ## WalletConnect v2 key material
 

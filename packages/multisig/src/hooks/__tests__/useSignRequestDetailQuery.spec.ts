@@ -16,6 +16,11 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useSignRequestDetailQuery } from '../useSignRequestDetailQuery'
 
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mocks = vi.hoisted(() => ({
     getSignRequestDetail: vi.fn(),
 }))
@@ -91,7 +96,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
@@ -115,7 +120,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
@@ -145,7 +150,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
@@ -172,29 +177,32 @@ describe('useSignRequestDetailQuery', () => {
         ).toBeInstanceOf(Date)
     })
 
-    test('calls endpoint with correct network, deviceId and signRequestId', async () => {
-        mocks.getSignRequestDetail.mockResolvedValue(
-            createSignRequestResponse('pending'),
-        )
+    test.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'calls endpoint with correct network, deviceId and signRequestId for $chainId',
+        async scope => {
+            mocks.getSignRequestDetail.mockResolvedValue(
+                createSignRequestResponse('pending'),
+            )
 
-        renderHook(
-            () =>
-                useSignRequestDetailQuery({
-                    network: 'testnet',
-                    deviceId: 'device-9',
-                    signRequestId: 'sr-456',
-                }),
-            { wrapper },
-        )
+            renderHook(
+                () =>
+                    useSignRequestDetailQuery({
+                        scope,
+                        deviceId: 'device-9',
+                        signRequestId: 'sr-456',
+                    }),
+                { wrapper },
+            )
 
-        await waitFor(() =>
-            expect(mocks.getSignRequestDetail).toHaveBeenCalledWith(
-                'testnet',
-                'device-9',
-                'sr-456',
-            ),
-        )
-    })
+            await waitFor(() =>
+                expect(mocks.getSignRequestDetail).toHaveBeenCalledWith(
+                    scope,
+                    'device-9',
+                    'sr-456',
+                ),
+            )
+        },
+    )
 
     test('does not fetch when deviceId is empty', () => {
         mocks.getSignRequestDetail.mockResolvedValue(
@@ -204,7 +212,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: '',
                     signRequestId: 'sr-123',
                 }),
@@ -223,7 +231,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
@@ -241,7 +249,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                     enabled: false,
@@ -261,7 +269,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: '',
                 }),
@@ -280,7 +288,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                     pollWhilePending: false,
@@ -312,7 +320,7 @@ describe('useSignRequestDetailQuery', () => {
             const { result } = renderHook(
                 () =>
                     useSignRequestDetailQuery({
-                        network: 'mainnet',
+                        scope: ALGORAND_MAINNET,
                         deviceId: 'device-1',
                         signRequestId: 'sr-123',
                         pollWhilePending: true,
@@ -365,7 +373,7 @@ describe('useSignRequestDetailQuery', () => {
             const { result } = renderHook(
                 () =>
                     useSignRequestDetailQuery({
-                        network: 'mainnet',
+                        scope: ALGORAND_MAINNET,
                         deviceId: 'device-1',
                         signRequestId: 'sr-123',
                         pollWhilePending: true,
@@ -407,7 +415,7 @@ describe('useSignRequestDetailQuery', () => {
             const { result } = renderHook(
                 () =>
                     useSignRequestDetailQuery({
-                        network: 'mainnet',
+                        scope: ALGORAND_MAINNET,
                         deviceId: 'device-1',
                         signRequestId: 'sr-123',
                         pollWhilePending: true,
@@ -454,7 +462,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
@@ -476,7 +484,7 @@ describe('useSignRequestDetailQuery', () => {
         const { result } = renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),
@@ -498,7 +506,7 @@ describe('useSignRequestDetailQuery', () => {
         renderHook(
             () =>
                 useSignRequestDetailQuery({
-                    network: 'mainnet',
+                    scope: ALGORAND_MAINNET,
                     deviceId: 'device-1',
                     signRequestId: 'sr-123',
                 }),

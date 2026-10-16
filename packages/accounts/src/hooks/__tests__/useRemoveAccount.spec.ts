@@ -14,7 +14,6 @@ import { createElement, type ReactNode } from 'react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useRemoveAccount } from '../useRemoveAccount'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
@@ -25,6 +24,7 @@ import {
     TEST_CUSTODY,
     testAccount,
 } from '../../__tests__/accountFactory'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -256,13 +256,24 @@ describe('useRemoveAccount', () => {
             matches([
                 'accounts',
                 'owned-asset-ids',
-                { scope: scopeForLegacyNetwork('mainnet') },
+                {
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
+                },
             ]),
         ).toBe(true)
         expect(
             matches([
                 'assets',
-                { assetIDs: [], scope: scopeForLegacyNetwork('mainnet') },
+                {
+                    assetIDs: [],
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
+                },
             ]),
         ).toBe(true)
 
@@ -305,7 +316,10 @@ describe('useRemoveAccount', () => {
                 'balance',
                 {
                     address: 'LEDGER2',
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 },
             ]),
         ).toBe(true)
@@ -315,7 +329,10 @@ describe('useRemoveAccount', () => {
                 'balance',
                 {
                     address: 'LEDGER1',
-                    scope: scopeForLegacyNetwork('mainnet'),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 },
             ]),
         ).toBe(false)

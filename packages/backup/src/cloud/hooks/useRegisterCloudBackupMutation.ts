@@ -11,8 +11,8 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
+import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     BackupDeviceIdUnavailableError,
     BackupDraftMissingError,
@@ -40,8 +40,8 @@ export const useRegisterCloudBackupMutation = (
         void
     >,
 ) => {
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
+    const deployment = useWalletDeployment()
+    const deviceId = useDeploymentDeviceID(deployment)
     const setRegistration = useCloudBackupDraftStore(
         state => state.setRegistration,
     )
@@ -65,7 +65,6 @@ export const useRegisterCloudBackupMutation = (
                     mnemonic,
                     salt,
                     deviceId,
-                    network,
                 })
             const isRetained = setRegistration(
                 { backupId, deviceId, encryptionKey, authSecretKey, itemKey },

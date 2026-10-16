@@ -83,24 +83,27 @@ describe('parseRampAmount', () => {
 describe('quoteDestinationAmount', () => {
     it('reads the Meld destination amount straight off the quote', () => {
         const quote = buildMeldQuote('meld-1', 500)
-        expect(quoteDestinationAmount(quote, '100').toString()).toBe('500')
+        expect(quoteDestinationAmount(quote, new Decimal(100)).toString()).toBe(
+            '500',
+        )
     })
 
     it('computes XO as sourceAmount * rate - minerFee', () => {
         const quote = buildXoQuote('xo-1', 5, 1)
-        expect(quoteDestinationAmount(quote, '10').toString()).toBe('49')
+        expect(quoteDestinationAmount(quote, new Decimal(10)).toString()).toBe(
+            '49',
+        )
     })
 
-    it('treats an unparseable XO source amount as zero', () => {
+    it('treats a missing XO source amount as zero', () => {
         const quote = buildXoQuote('xo-1', 5, 1)
-        expect(quoteDestinationAmount(quote, '').toString()).toBe('-1')
-        expect(quoteDestinationAmount(quote, '1.2.3').toString()).toBe('-1')
+        expect(quoteDestinationAmount(quote, null).toString()).toBe('-1')
     })
 })
 
 describe('pickBestQuote', () => {
     it('returns null for an empty list', () => {
-        expect(pickBestQuote([], '10')).toBeNull()
+        expect(pickBestQuote([], new Decimal(10))).toBeNull()
     })
 
     it('picks the highest fee-adjusted destination amount across kinds', () => {
@@ -110,7 +113,7 @@ describe('pickBestQuote', () => {
             buildMeldQuote('meld-1', 49.5),
             buildXoQuote('xo-high', 5, 0.1),
         ]
-        expect(pickBestQuote(quotes, '10')?.quoteId).toBe('xo-high')
+        expect(pickBestQuote(quotes, new Decimal(10))?.quoteId).toBe('xo-high')
     })
 })
 
@@ -121,7 +124,7 @@ describe('sortQuotesByDestinationDesc', () => {
             buildMeldQuote('meld-high', 30),
             buildMeldQuote('meld-mid', 20),
         ]
-        const sorted = sortQuotesByDestinationDesc(quotes, '100')
+        const sorted = sortQuotesByDestinationDesc(quotes, new Decimal(100))
         expect(sorted.map(quote => quote.quoteId)).toEqual([
             'meld-high',
             'meld-mid',
@@ -166,7 +169,7 @@ describe('quoteDestinationValueInUsd', () => {
 
         const value = quoteDestinationValueInUsd(
             quote,
-            '100',
+            new Decimal(100),
             new Decimal('0.0861775004'),
         )
 
@@ -178,13 +181,19 @@ describe('quoteDestinationValueInUsd', () => {
         const quote = buildXoQuote('xo-1', 5, 1)
 
         expect(
-            quoteDestinationValueInUsd(quote, '10', new Decimal(2))?.toString(),
+            quoteDestinationValueInUsd(
+                quote,
+                new Decimal(10),
+                new Decimal(2),
+            )?.toString(),
         ).toBe('98')
     })
 
     it('returns null when the destination token has no known price', () => {
         const quote = buildMeldQuote('meld-1', 500)
 
-        expect(quoteDestinationValueInUsd(quote, '100', null)).toBeNull()
+        expect(
+            quoteDestinationValueInUsd(quote, new Decimal(100), null),
+        ).toBeNull()
     })
 })

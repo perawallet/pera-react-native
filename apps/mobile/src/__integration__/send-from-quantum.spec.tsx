@@ -47,6 +47,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { algorandQuantumDerivation } from '@perawallet/wallet-core-chain-algorand/accounts'
+import { decodeSignedTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
@@ -139,7 +141,7 @@ describe('send from quantum account', () => {
 
     beforeEach(async () => {
         await resetTestDatabase()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         await seedAlgoAsset('mainnet')
 
         resetTestKeystore()
@@ -232,7 +234,7 @@ describe('send from quantum account', () => {
         // The machine signs the group through the ordinary local-key
         // strategy (`useLocalKeyTransactionSigner` resolves the account's
         // key scheme via `getPQSigningInfo`), and the callback delivery
-        // step hands the resulting pqsig-bearing `SignedTransaction`
+        // step hands the resulting pqsig-bearing signed bytes
         // straight to the request's approve() — no dedicated quantum
         // strategy or carrier gate in the path anymore.
         await waitFor(
@@ -248,12 +250,14 @@ describe('send from quantum account', () => {
         // load-bearing proof that the quantum account signed the payment
         // end-to-end through the machine — not just that some result was
         // delivered.
-        const delivered = approveSpy.mock.calls[0]?.[0] as {
-            pqsig?: { sig?: Uint8Array }
-        }[]
-        expect(delivered.some(tx => tx?.pqsig?.sig instanceof Uint8Array)).toBe(
-            true,
-        )
+        const delivered = approveSpy.mock.calls[0]?.[0] as SignedTransaction[]
+        expect(
+            delivered.some(
+                tx =>
+                    decodeSignedTransaction(tx.bytes).pqsig?.sig instanceof
+                    Uint8Array,
+            ),
+        ).toBe(true)
 
         // No node ever saw the Falcon-signed group: callback delivery,
         // never algod submission.

@@ -32,6 +32,8 @@ export type {
 } from './useAssetOptInDeeplink'
 export { useLocaleTourDeeplink } from './useLocaleTourDeeplink'
 export type { LocaleTourDeeplinkHandler } from '@modules/locale-tour'
+export { useE2eFixtureDeeplink } from './useE2eFixtureDeeplink'
+export type { E2eFixtureDeeplinkHandler } from './useE2eFixtureDeeplink'
 export { useWalletConnectDeeplink } from './useWalletConnectDeeplink'
 export type {
     WalletConnectDeeplinkHandler,

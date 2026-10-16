@@ -42,6 +42,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 import { HTTPError } from 'ky'
 import { fetchCardStatus, orderCard, freezeCard } from '../endpoints'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const validCard = {
     id: 'card_1',
     holderName: 'JANE DOE',
@@ -58,7 +60,7 @@ describe('card endpoints', () => {
     it('fetches and transforms the card status', async () => {
         request.mockResolvedValue({ data: validCard })
 
-        const card = await fetchCardStatus({ network: 'mainnet' })
+        const card = await fetchCardStatus({ scope: ALGORAND_MAINNET })
 
         expect(card?.id).toBe('card_1')
         expect(request).toHaveBeenCalledWith(
@@ -81,7 +83,7 @@ describe('card endpoints', () => {
             },
         })
 
-        const card = await fetchCardStatus({ network: 'mainnet' })
+        const card = await fetchCardStatus({ scope: ALGORAND_MAINNET })
 
         expect(card?.status).toBe('FROZEN')
         expect(card?.panLast4).toBe('8533')
@@ -90,27 +92,27 @@ describe('card endpoints', () => {
     it('returns null when no card exists (404)', async () => {
         request.mockRejectedValue(new HTTPError(404))
 
-        expect(await fetchCardStatus({ network: 'mainnet' })).toBeNull()
+        expect(await fetchCardStatus({ scope: ALGORAND_MAINNET })).toBeNull()
     })
 
     it('returns null on a response validation error', async () => {
         request.mockResolvedValue({ data: { id: 123 } })
 
-        expect(await fetchCardStatus({ network: 'mainnet' })).toBeNull()
+        expect(await fetchCardStatus({ scope: ALGORAND_MAINNET })).toBeNull()
     })
 
     it('rethrows non-404 HTTP errors', async () => {
         request.mockRejectedValue(new HTTPError(500))
 
         await expect(
-            fetchCardStatus({ network: 'mainnet' }),
+            fetchCardStatus({ scope: ALGORAND_MAINNET }),
         ).rejects.toBeInstanceOf(HTTPError)
     })
 
     it('orders a VIRTUAL card by default', async () => {
         request.mockResolvedValue({ data: { success: true } })
 
-        await orderCard({ network: 'mainnet' })
+        await orderCard({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -124,7 +126,7 @@ describe('card endpoints', () => {
     it('freezes the card', async () => {
         request.mockResolvedValue({ data: { success: true } })
 
-        await freezeCard({ network: 'mainnet' })
+        await freezeCard({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({

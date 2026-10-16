@@ -17,7 +17,7 @@ import type {
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isAlgorandNativeAssetId } from '../descriptor'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 
 // `BigInt('')` and `BigInt('0x0')` are both 0n, so anything but a canonical
 // decimal id could quietly become ALGO at the builder.

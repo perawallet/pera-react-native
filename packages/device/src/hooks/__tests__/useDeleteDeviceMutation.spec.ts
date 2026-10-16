@@ -17,8 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useDeleteDeviceMutation } from '../useDeleteDeviceMutation'
 import { deleteDevice } from '../endpoints'
 import { useDeviceStore } from '../../store'
-import { useDeviceID } from '../useDeviceID'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { useDeploymentDeviceID } from '../useDeviceID'
 
 vi.mock('../endpoints', () => ({
     deleteDevice: vi.fn(),
@@ -33,7 +32,7 @@ vi.mock('../../store', async importOriginal => {
 })
 
 vi.mock('../useDeviceID', () => ({
-    useDeviceID: vi.fn(),
+    useDeploymentDeviceID: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -66,8 +65,8 @@ const mockDefaultDeviceStore = () => {
         const state = {
             pushToken: 'test-push-token',
             deviceIDs: new Map([
-                ['algorand/testnet', 'testnet-device-id'],
-                ['algorand/mainnet', 'mainnet-device-id'],
+                ['algorand/testnet', 'developer-device-id'],
+                ['algorand/mainnet', 'live-device-id'],
             ]),
         }
         return selector(state as never)
@@ -75,11 +74,13 @@ const mockDefaultDeviceStore = () => {
 }
 
 const mockDefaultDeviceID = () => {
-    vi.mocked(useDeviceID).mockImplementation((network: string) => {
-        if (network === 'testnet') return 'testnet-device-id'
-        if (network === 'mainnet') return 'mainnet-device-id'
-        return null
-    })
+    vi.mocked(useDeploymentDeviceID).mockImplementation(
+        (deployment: string) => {
+            if (deployment === 'developer') return 'developer-device-id'
+            if (deployment === 'live') return 'live-device-id'
+            return null
+        },
+    )
 }
 
 describe('useDeleteDeviceMutation', () => {
@@ -89,7 +90,7 @@ describe('useDeleteDeviceMutation', () => {
         mockDefaultDeviceID()
     })
 
-    it('deletes devices on both testnet and mainnet when both are registered', async () => {
+    it('deletes devices on both deployments when both are registered', async () => {
         vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
@@ -103,17 +104,17 @@ describe('useDeleteDeviceMutation', () => {
         })
 
         expect(deleteDevice).toHaveBeenCalledTimes(2)
-        expect(deleteDevice).toHaveBeenCalledWith(Networks.testnet, {
-            id: 'testnet-device-id',
+        expect(deleteDevice).toHaveBeenCalledWith('developer', {
+            id: 'developer-device-id',
         })
-        expect(deleteDevice).toHaveBeenCalledWith(Networks.mainnet, {
-            id: 'mainnet-device-id',
+        expect(deleteDevice).toHaveBeenCalledWith('live', {
+            id: 'live-device-id',
         })
         expect(result.current.data).toBeUndefined()
     })
 
     it('returns undefined when no devices are registered', async () => {
-        vi.mocked(useDeviceID).mockReturnValue(null)
+        vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -129,13 +130,13 @@ describe('useDeleteDeviceMutation', () => {
         expect(result.current.data).toBeUndefined()
     })
 
-    it('deletes a network whose device id exists even without a push token', async () => {
+    it('deletes a deployment whose device id exists even without a push token', async () => {
         vi.mocked(useDeviceStore).mockImplementation(selector => {
             const state = {
                 pushToken: null,
                 deviceIDs: new Map([
-                    ['algorand/testnet', 'testnet-device-id'],
-                    ['algorand/mainnet', 'mainnet-device-id'],
+                    ['algorand/testnet', 'developer-device-id'],
+                    ['algorand/mainnet', 'live-device-id'],
                 ]),
             }
             return selector(state as never)
@@ -154,13 +155,13 @@ describe('useDeleteDeviceMutation', () => {
 
         // v1 required both id and push token, so a device whose push
         // permission was never granted could not be deleted at all. v3
-        // accepts `id` alone, so both networks now get deleted properly.
+        // accepts `id` alone, so both deployments now get deleted properly.
         expect(deleteDevice).toHaveBeenCalledTimes(2)
-        expect(deleteDevice).toHaveBeenCalledWith(Networks.testnet, {
-            id: 'testnet-device-id',
+        expect(deleteDevice).toHaveBeenCalledWith('developer', {
+            id: 'developer-device-id',
         })
-        expect(deleteDevice).toHaveBeenCalledWith(Networks.mainnet, {
-            id: 'mainnet-device-id',
+        expect(deleteDevice).toHaveBeenCalledWith('live', {
+            id: 'live-device-id',
         })
         expect(result.current.data).toBeUndefined()
     })
@@ -182,11 +183,13 @@ describe('useDeleteDeviceMutation', () => {
         expect(result.current.error).toBe(mockError)
     })
 
-    it('deletes only testnet device when mainnet is not registered', async () => {
-        vi.mocked(useDeviceID).mockImplementation((network: string) => {
-            if (network === 'testnet') return 'testnet-device-id'
-            return null
-        })
+    it('deletes only the developer device when live is not registered', async () => {
+        vi.mocked(useDeploymentDeviceID).mockImplementation(
+            (deployment: string) => {
+                if (deployment === 'developer') return 'developer-device-id'
+                return null
+            },
+        )
 
         vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
@@ -201,17 +204,19 @@ describe('useDeleteDeviceMutation', () => {
         })
 
         expect(deleteDevice).toHaveBeenCalledTimes(1)
-        expect(deleteDevice).toHaveBeenCalledWith(Networks.testnet, {
-            id: 'testnet-device-id',
+        expect(deleteDevice).toHaveBeenCalledWith('developer', {
+            id: 'developer-device-id',
         })
         expect(result.current.data).toBeUndefined()
     })
 
-    it('deletes only mainnet device when testnet is not registered', async () => {
-        vi.mocked(useDeviceID).mockImplementation((network: string) => {
-            if (network === 'mainnet') return 'mainnet-device-id'
-            return null
-        })
+    it('deletes only the live device when developer is not registered', async () => {
+        vi.mocked(useDeploymentDeviceID).mockImplementation(
+            (deployment: string) => {
+                if (deployment === 'live') return 'live-device-id'
+                return null
+            },
+        )
 
         vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
@@ -226,8 +231,8 @@ describe('useDeleteDeviceMutation', () => {
         })
 
         expect(deleteDevice).toHaveBeenCalledTimes(1)
-        expect(deleteDevice).toHaveBeenCalledWith(Networks.mainnet, {
-            id: 'mainnet-device-id',
+        expect(deleteDevice).toHaveBeenCalledWith('live', {
+            id: 'live-device-id',
         })
         expect(result.current.data).toBeUndefined()
     })

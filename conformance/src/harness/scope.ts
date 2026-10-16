@@ -12,10 +12,10 @@
 
 import { setCustomNetwork } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
-    scopeForLegacyNetwork,
+    CUSTOM_NETWORK_ID,
+    LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
 
 import {
     assertLocalNetReachable,
@@ -33,9 +33,8 @@ let registered: Promise<ChainScope> | undefined
  * this is what lets a suite call them unmodified.
  *
  * Saved through the store, not `registerCustomNetworkSource`: the store is
- * that source, and its subscription in `blockchain` is what rebuilds
- * `queryClient`'s indexer client, which importing `blockchain` has already
- * built with the empty `custom` endpoints.
+ * that source, and chain-algorand builds every algod and indexer client from
+ * it per request, so nothing has to be rebuilt after the save.
  */
 export const localNetScope = (): Promise<ChainScope> => {
     registered ??= assertLocalNetReachable().then(
@@ -48,7 +47,7 @@ export const localNetScope = (): Promise<ChainScope> => {
                 genesisId,
                 genesisHash,
             })
-            return scopeForLegacyNetwork(Networks.custom)
+            return { chainId: LEGACY_CHAIN_ID, networkId: CUSTOM_NETWORK_ID }
         },
     )
     return registered

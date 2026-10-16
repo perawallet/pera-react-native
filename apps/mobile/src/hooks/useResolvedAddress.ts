@@ -16,10 +16,12 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
+    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useMemo } from 'react'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AddressFormat = 'short' | 'long' | 'full'
 
@@ -41,9 +43,14 @@ export const useResolvedAddress = (
         chainId?: ChainId
     },
 ): UseResolvedAddressResult => {
-    const { data: nfdNames, isPending } = useNfdForAddressQuery(address, {
-        enabled: options?.enabled,
-    })
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { data: nfdNames, isPending } = useNfdForAddressQuery(
+        scope,
+        address,
+        {
+            enabled: options?.enabled,
+        },
+    )
 
     const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 

@@ -15,7 +15,6 @@ import {
     Address,
     makeKeyRegistrationTxnWithSuggestedParamsFromObject,
 } from 'algosdk'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => {
     const calls: Array<[string, Record<string, unknown>]> = []
@@ -50,8 +49,9 @@ import {
 } from '../builders'
 
 import { encodeTransaction } from '../../blockchain'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const scope = scopeForLegacyNetwork('testnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 const TXNS = [{ id: 'one' }, { id: 'two' }]
 
 // Every composer call is recorded in order so group layout can be asserted.

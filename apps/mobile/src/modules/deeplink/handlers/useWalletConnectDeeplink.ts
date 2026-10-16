@@ -18,7 +18,10 @@ import { useConnectionPairing } from '@modules/connections'
 import { usePairingProgressStore } from '@modules/walletconnect'
 import { useToast } from '@hooks/useToast'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
-import type { LinkSource, WalletConnectDeeplink } from '../types'
+import type {
+    LinkSource,
+    WalletConnectDeeplink,
+} from '@perawallet/wallet-core-deeplinks'
 
 export type WalletConnectDeeplinkParams = {
     data: WalletConnectDeeplink

@@ -71,7 +71,7 @@ export const SwapConfirmationContent = ({
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
-    } = useSwapConfirmation({ quote, swapStatus })
+    } = useSwapConfirmation({ scope, quote, swapStatus })
 
     const onClosePress = useCallback(
         () => handleClose(isCommitted, isCancellable),

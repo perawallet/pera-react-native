@@ -75,7 +75,7 @@ export const useTransactionProcessingScreen =
             () => (selectedAssetId ? [selectedAssetId] : []),
             [selectedAssetId],
         )
-        const { data: assets } = useAssetsQuery(assetIDs)
+        const { data: assets } = useAssetsQuery(scope, assetIDs)
         const selectedAsset = useMemo(() => {
             if (!selectedAssetId) return undefined
             return assets.get(selectedAssetId)

@@ -42,9 +42,6 @@ export const useZoomableImage = (): UseZoomableImageResult => {
             )
         })
         .onEnd(() => {
-            if (scale.value < MIN_SCALE) {
-                scale.value = withTiming(MIN_SCALE)
-            }
             savedScale.value = scale.value
         })
 

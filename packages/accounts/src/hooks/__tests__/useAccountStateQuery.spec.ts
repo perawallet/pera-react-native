@@ -20,6 +20,7 @@ import {
     fakeAccountsChain,
     MAINNET_SCOPE,
     TESTNET_SCOPE,
+    registerFakeNativeAsset,
 } from '../../__tests__/fakeAccountsChain'
 import { useAccountStateQuery } from '../useAccountStateQuery'
 
@@ -50,6 +51,7 @@ describe('useAccountStateQuery', () => {
 
     beforeEach(() => {
         mockGetAccountChainStateRow.mockReset()
+        registerFakeNativeAsset()
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })

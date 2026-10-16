@@ -13,13 +13,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const {
-    getNetworkConfig,
+    getAlgorandChainConfig,
     algorandCardConfig,
     getAlgorandClient,
     appEnvironment,
     templateHash,
 } = vi.hoisted(() => ({
-    getNetworkConfig: vi.fn(),
+    getAlgorandChainConfig: vi.fn(),
     algorandCardConfig: vi.fn(),
     getAlgorandClient: vi.fn(),
     appEnvironment: { value: 'development' as string },
@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-config', async () => ({
             cardAutoDrawTemplateHash: templateHash.value,
         }
     },
-    getNetworkConfig,
+    getAlgorandChainConfig,
 }))
 vi.mock('../../config', () => ({ algorandCardConfig }))
 vi.mock('../../../blockchain', async () => ({
@@ -47,7 +47,7 @@ import {
     AutoDrawProgramUnverifiedError,
     AutoDrawTealUnverifiedError,
 } from '@perawallet/wallet-core-card'
-import { bytesToHex, type Network } from '@perawallet/wallet-core-shared'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 import { algorandDescriptor } from '../../../descriptor'
 import {
     renderAutoDrawTeal,
@@ -56,6 +56,7 @@ import {
     verifyAutoDrawProgram,
 } from '../lsig'
 import { computeAutoDrawTemplateHash } from '../verify-teal'
+import { type AlgorandNetworkId } from '../../../network-id'
 
 const pinFor = (program: Uint8Array) => bytesToHex(sha256(program))
 
@@ -139,7 +140,7 @@ describe('compileAutoDrawProgram', () => {
     // unpinned template never even gets compiled, let alone signed.
     it('rejects before compiling when the template pin does not match', async () => {
         templateHash.value = 'deadbeef'
-        getNetworkConfig.mockReturnValue({ genesisHash: TESTNET_GENESIS })
+        getAlgorandChainConfig.mockReturnValue({ genesisHash: TESTNET_GENESIS })
         algorandCardConfig.mockReturnValue({
             mainAppId: '111',
             killswitchAppId: '222',
@@ -158,7 +159,7 @@ describe('compileAutoDrawProgram', () => {
     // so an unpinned/attacker program ('BoEB' = `int 1`, approve-anything) must
     // be rejected even though the substituted TEAL is compiled correctly.
     it('compiles the substituted template but rejects an unpinned/int-1 program', async () => {
-        getNetworkConfig.mockReturnValue({ genesisHash: TESTNET_GENESIS })
+        getAlgorandChainConfig.mockReturnValue({ genesisHash: TESTNET_GENESIS })
         algorandCardConfig.mockReturnValue({
             mainAppId: '111',
             killswitchAppId: '222',
@@ -261,7 +262,7 @@ describe('verifyAutoDrawProgram', () => {
             }))
 
             expect(() =>
-                verifyAutoDrawProgram(program, networkId as Network),
+                verifyAutoDrawProgram(program, networkId as AlgorandNetworkId),
             ).not.toThrow()
             expect(algorandCardConfig).toHaveBeenCalledWith(networkId)
         },

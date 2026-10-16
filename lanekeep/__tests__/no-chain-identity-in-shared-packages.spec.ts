@@ -11,12 +11,6 @@ const RULE = 'lanekeep/rules/no-chain-identity-in-shared-packages.ts'
 const FIXTURES =
     'lanekeep/__tests__/fixtures/{packages/*/src,apps/mobile/src/**}/chain-identity.*.ts'
 
-// Debt the chain-split moves out of shared packages. Remove an entry when its
-// line goes; flip the rule to `error` when the list is empty.
-const KNOWN_OFFENDERS: readonly string[] = [
-    "packages/walletconnect/src/shared/deeplink.ts: `'algorand'` is a chain id literal in a shared package",
-]
-
 describe('pera/no-chain-identity-in-shared-packages', () => {
     it('reports branches on chainId/family and chain id literals', async () => {
         const found = await runRule(RULE, FIXTURES)
@@ -68,7 +62,22 @@ describe('pera/no-chain-identity-in-shared-packages', () => {
         ])
     })
 
-    it('leaves packages outside the shared list alone', async () => {
+    it('scans every package without a list, banners and one no list names', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v =>
+                    /chain-identity\.(banners|unlisted)\.ts$/.test(v.file),
+                ),
+            ),
+        ).toEqual([
+            'chain-identity.banners.ts:5',
+            'chain-identity.unlisted.ts:5',
+        ])
+    })
+
+    it('leaves the chain packages alone', async () => {
         const found = await runRule(RULE, FIXTURES)
 
         expect(
@@ -95,11 +104,9 @@ describe('pera/no-chain-identity-in-shared-packages', () => {
         expect(RULE_CHAIN_IDS).toEqual(CHAIN_IDS)
     })
 
-    it('reports exactly the known offenders across the real packages and apps', async () => {
+    it('reports nothing across the real packages and apps', async () => {
         const found = await runRule(RULE, '{packages,apps}/*/src/**/*.{ts,tsx}')
 
-        expect(found.map(v => `${v.file}: ${v.message}`)).toEqual(
-            KNOWN_OFFENDERS,
-        )
+        expect(found.map(v => `${v.file}: ${v.message}`)).toEqual([])
     })
 })

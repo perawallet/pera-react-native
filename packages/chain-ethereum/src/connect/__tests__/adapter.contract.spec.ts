@@ -11,13 +11,17 @@
  */
 
 import { dappRequestContractTests } from '@perawallet/wallet-core-connections/testing'
-import { ethereumDappRequestAdapter } from '../dappRequestAdapter'
+import { testChainContext } from '../../__tests__/context'
+import { createEthereumDappRequestAdapter } from '../dappRequestAdapter'
 
-dappRequestContractTests(() => ethereumDappRequestAdapter, {
-    disclosed: {
-        scope: { chainId: 'ethereum', networkId: 'sepolia' },
-        reportedAs: 'sepolia',
+dappRequestContractTests(
+    () => createEthereumDappRequestAdapter(testChainContext()),
+    {
+        disclosed: {
+            scope: { chainId: 'ethereum', networkId: 'sepolia' },
+            reportedAs: 'sepolia',
+        },
+        undisclosed: { scope: { chainId: 'ethereum', networkId: 'custom' } },
+        walletConnect: { networkWithCaip2: 'mainnet' },
     },
-    undisclosed: { scope: { chainId: 'ethereum', networkId: 'custom' } },
-    walletConnect: { networkWithCaip2: 'mainnet' },
-})
+)

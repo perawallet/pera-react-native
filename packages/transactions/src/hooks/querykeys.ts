@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
+import type { Decimal } from 'decimal.js'
 import type {
     AssetRef,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'transactions'
 
@@ -59,43 +60,46 @@ export const transactionQueryKeys = {
         ] as const,
 
     /**
-     * Txids with an open submission-ledger row — the "pending —
-     * verifying" badge set. Kept under the module prefix so
-     * `invalidateTransactionQueries` also refreshes it.
+     * `fee` is in base units. The key carries it as plain text so it stays
+     * serialisable; `toFixed` because `toString` switches to exponent form.
      */
-    openSubmissionTxIds: (scope: ChainScope) =>
-        [MODULE_PREFIX, 'open-submission-txids', { scope }] as const,
-
-    /** `fee` is the base-unit fee as a string, so the key stays serialisable. */
     spendableBalance: (
         address: string,
         asset: AssetRef,
         scope: ChainScope,
-        fee: string,
+        fee: Decimal,
     ) =>
         [
             MODULE_PREFIX,
             'spendable-balance',
-            { accountAddress: address, asset, scope, fee },
+            { accountAddress: address, asset, scope, fee: fee.toFixed() },
         ] as const,
 
-    /** `amount` is the base-unit amount as a string. */
+    /** `amount` is in base units, carried as plain text like `fee` above. */
     recipientWarning: (
         recipient: string,
         asset: AssetRef,
         scope: ChainScope,
-        amount: string,
+        amount: Decimal,
     ) =>
         [
             MODULE_PREFIX,
             'recipient-warning',
-            { recipient, asset, scope, amount },
+            { recipient, asset, scope, amount: amount.toFixed() },
         ] as const,
 }
 
 export function invalidateTransactionQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
+}
+
+export function invalidateSpendableBalanceQueries(
+    queryClient: QueryClient,
+): void {
+    void queryClient.invalidateQueries({
+        queryKey: [MODULE_PREFIX, 'spendable-balance'],
     })
 }
 

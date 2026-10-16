@@ -14,12 +14,8 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
-import {
-    scopeForLegacyNetwork,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useStableIdList } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAssetsByIds } from '../db'
 import { fetchAndPersistAssets, nativeAssetFor } from '../chain-adapter'
 
@@ -41,16 +37,13 @@ type UseAssetsQueryOptions = {
      * resolve to real names/units instead of falling back to the raw id.
      */
     fetchMissing?: boolean
-    /** The chain and network to read; defaults to the selected Algorand network. */
-    scope?: ChainScope
 }
 
 export const useAssetsQuery = (
+    scope: ChainScope,
     ids: string[],
-    { fetchMissing = false, scope: requestedScope }: UseAssetsQueryOptions = {},
+    { fetchMissing = false }: UseAssetsQueryOptions = {},
 ): UseAssetsQueryResult => {
-    const { network } = useNetwork()
-    const scope = requestedScope ?? scopeForLegacyNetwork(network)
     const nativeAsset = nativeAssetFor(scope.chainId)
 
     // Keep a stable reference to ids — only update when the actual content
@@ -59,12 +52,7 @@ export const useAssetsQuery = (
     const stableIds = useStableIdList(ids)
 
     const query = useQuery({
-        // fetchMissing reads through the network, so it gets its own cache
-        // entry — a DB-only caller must never satisfy it from cache (with
-        // staleTime Infinity that would strand the missing assets).
-        queryKey: fetchMissing
-            ? [...getAssetsQueryKey(stableIds, scope), { fetchMissing: true }]
-            : getAssetsQueryKey(stableIds, scope),
+        queryKey: getAssetsQueryKey(stableIds, scope, { fetchMissing }),
         staleTime: Infinity,
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and

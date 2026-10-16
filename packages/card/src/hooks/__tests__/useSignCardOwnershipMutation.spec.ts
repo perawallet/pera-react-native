@@ -23,14 +23,20 @@ vi.mock('../../api/delegation', async () => ({
     fetchDelegationToken,
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     messageSignerChainAdapters,
     type MessageSignerChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import { useSignCardOwnershipMutation } from '../useSignCardOwnershipMutation'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -40,15 +46,15 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 // builder is a spy so the test pins what the mutation asks it for.
 const buildSiwxAuthData = vi.fn()
 
-const registerFakeMessageSigner = () => {
+const registerFakeMessageSigner = (chainId: ChainScope['chainId']) => {
     messageSignerChainAdapters.reset()
     messageSignerChainAdapters.register({
-        chainId: 'algorand',
-        buildSiwxAuthData,
+        chainId,
+        authData: { buildSiwxAuthData },
     } as unknown as MessageSignerChainAdapter)
 }
 
-describe('useSignCardOwnershipMutation', () => {
+describe.each(SCOPES)('useSignCardOwnershipMutation ($chainId)', SCOPE => {
     beforeEach(() => {
         queryClient = new QueryClient({
             defaultOptions: { mutations: { retry: false } },
@@ -67,7 +73,7 @@ describe('useSignCardOwnershipMutation', () => {
             },
             metadata: { scope: 1, encoding: 'base64' },
         }))
-        registerFakeMessageSigner()
+        registerFakeMessageSigner(SCOPE.chainId)
     })
 
     it('signs the chain-built sign-in request, base64-encoding the result', async () => {
@@ -113,7 +119,7 @@ describe('useSignCardOwnershipMutation', () => {
         })
 
         expect(fetchDelegationToken).toHaveBeenCalledWith(
-            expect.objectContaining({ network: 'testnet' }),
+            expect.objectContaining({ scope: SCOPE }),
         )
         expect(buildSiwxAuthData).toHaveBeenCalledWith(
             expect.objectContaining({

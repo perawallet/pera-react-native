@@ -30,7 +30,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { QueryClient } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { Decimal } from 'decimal.js'
+import {
+    type AssetRef,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     MODULE_PREFIX,
@@ -41,8 +45,9 @@ import {
     invalidateTransactionQueriesForAddresses,
 } from '../querykeys'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
-const TESTNET = scopeForLegacyNetwork('testnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const ALGO: AssetRef = { chainId: MAINNET.chainId, assetId: '0' }
 
 describe('transactionQueryKeys', () => {
     describe('all', () => {
@@ -169,13 +174,69 @@ describe('transactionQueryKeys', () => {
         })
     })
 
-    describe('openSubmissionTxIds', () => {
-        test('carries the scope object', () => {
-            expect(transactionQueryKeys.openSubmissionTxIds(MAINNET)).toEqual([
+    describe('spendableBalance', () => {
+        test('carries the base-unit fee as plain text', () => {
+            const key = transactionQueryKeys.spendableBalance(
+                'ADDR123',
+                ALGO,
+                MAINNET,
+                new Decimal(1000),
+            )
+
+            expect(key).toEqual([
                 'transactions',
-                'open-submission-txids',
-                { scope: { chainId: 'algorand', networkId: 'mainnet' } },
+                'spendable-balance',
+                {
+                    accountAddress: 'ADDR123',
+                    asset: ALGO,
+                    scope: MAINNET,
+                    fee: '1000',
+                },
             ])
+        })
+
+        test('never writes the fee in exponent form', () => {
+            const key = transactionQueryKeys.spendableBalance(
+                'ADDR123',
+                ALGO,
+                MAINNET,
+                new Decimal('1e21'),
+            )
+
+            expect(key[2].fee).toBe('1000000000000000000000')
+        })
+    })
+
+    describe('recipientWarning', () => {
+        test('carries the base-unit amount as plain text', () => {
+            const key = transactionQueryKeys.recipientWarning(
+                'RECEIVER',
+                ALGO,
+                MAINNET,
+                new Decimal(50_000),
+            )
+
+            expect(key).toEqual([
+                'transactions',
+                'recipient-warning',
+                {
+                    recipient: 'RECEIVER',
+                    asset: ALGO,
+                    scope: MAINNET,
+                    amount: '50000',
+                },
+            ])
+        })
+
+        test('never writes the amount in exponent form', () => {
+            const key = transactionQueryKeys.recipientWarning(
+                'RECEIVER',
+                ALGO,
+                MAINNET,
+                new Decimal('1e21'),
+            )
+
+            expect(key[2].amount).toBe('1000000000000000000000')
         })
     })
 })

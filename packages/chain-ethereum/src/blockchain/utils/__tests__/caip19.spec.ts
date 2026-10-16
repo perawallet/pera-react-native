@@ -14,8 +14,10 @@ import { describe, expect, it } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     eip155ChainIdOf,
+    eip155ChainIdOfNetwork,
     fromCaip19,
     InvalidCaip19Error,
+    networkIdOfEip155ChainId,
     toCaip19,
     UnknownEvmNetworkError,
 } from '../caip19'
@@ -41,6 +43,27 @@ describe('eip155ChainIdOf', () => {
         expect(() =>
             eip155ChainIdOf({ chainId: 'algorand', networkId: 'mainnet' }),
         ).toThrow(UnknownEvmNetworkError)
+    })
+})
+
+describe('eip155ChainIdOfNetwork', () => {
+    it.each([
+        ['mainnet', 1],
+        ['sepolia', 11_155_111],
+        ['holesky', undefined],
+        [undefined, undefined],
+    ])('maps %s to %s', (networkId, expected) => {
+        expect(eip155ChainIdOfNetwork(networkId)).toBe(expected)
+    })
+})
+
+describe('networkIdOfEip155ChainId', () => {
+    it.each([
+        [1, 'mainnet'],
+        [11_155_111, 'sepolia'],
+        [137, undefined],
+    ])('maps %s to %s', (eip155ChainId, expected) => {
+        expect(networkIdOfEip155ChainId(eip155ChainId)).toBe(expected)
     })
 })
 

@@ -19,19 +19,27 @@ import {
     useAccountAssetsQuery,
     useCanSignWith,
     assetFromHoldingLiteRow,
+    useAccountScope,
     type WalletAccount,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import {
+    findNativeAsset,
     useAssetPreferencesStore,
     isCollectible,
 } from '@perawallet/wallet-core-assets'
-import { useDebouncedValue } from '@perawallet/wallet-core-shared'
+import {
+    useDebouncedValue,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import { useIsChainSwitchedOff } from '@perawallet/wallet-core-chain-shared'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
@@ -52,6 +60,11 @@ import {
 } from './useAssetListFiat'
 
 type UseAccountAssetListResult = {
+    chainId: ChainId
+    /** Undefined when this build doesn't ship the chain's assets adapter. */
+    nativeAssetId: Optional<string>
+    /** The header shows the unavailable notice; the list shows no holdings under it. */
+    isChainSwitchedOff: boolean
     holdings: AccountHoldingsLiteRow[]
     convertFiat: AssetFiatConverter
     isPending: boolean
@@ -77,6 +90,8 @@ type UseAccountAssetListResult = {
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
 
+const EMPTY_HOLDINGS: AccountHoldingsLiteRow[] = []
+
 type UseAccountAssetListParams = {
     account: WalletAccount
     t: (key: string) => string
@@ -87,11 +102,17 @@ export const useAccountAssetList = ({
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const nativeAssetId = useMemo(
+        () => findNativeAsset(scope.chainId)?.assetId,
+        [scope.chainId],
+    )
     const accountAddress = addressOn(account, scope) ?? ''
-    const canManageAssets = useCapability({
-        chain: { chainId: scope.chainId, capability: 'manageAssets' },
-    })
+    const isChainSwitchedOff = useIsChainSwitchedOff(scope.chainId)
+    const canManageAssets =
+        useCapability({
+            chain: { chainId: scope.chainId, capability: 'manageAssets' },
+        }) && !isChainSwitchedOff
     const { request: requestBottomSheet } = useBottomSheet()
 
     // Search is debounced locally and pushed into the DB query so pagination
@@ -324,7 +345,10 @@ export const useAccountAssetList = ({
     )
 
     return {
-        holdings,
+        chainId: scope.chainId,
+        nativeAssetId,
+        isChainSwitchedOff,
+        holdings: isChainSwitchedOff ? EMPTY_HOLDINGS : holdings,
         convertFiat,
         isPending,
         isReadOnly,

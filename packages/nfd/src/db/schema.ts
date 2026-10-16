@@ -17,12 +17,12 @@ export const NfdCacheSchema = sqliteTable(
     'nfd_cache',
     {
         address: text('address').notNull(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         /** NULL = looked up, no NFD found (negative cache) */
         name: text('name'),
         image: text('image'),
         source: text('source'),
         updatedAt: integer('updated_at').notNull(),
     },
-    table => [primaryKey({ columns: [table.address, table.network] })],
+    table => [primaryKey({ columns: [table.address, table.scope] })],
 )

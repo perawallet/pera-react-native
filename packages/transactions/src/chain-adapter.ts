@@ -16,7 +16,7 @@ import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
-    type PeraTransaction,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
 import {
@@ -110,9 +110,9 @@ export interface AssetInboxSendFlow {
         receiver: string
         assetId: string
     }): Promise<AssetInboxSendSummary>
-    buildSendTxs(params: InboxSendTxsParams): Promise<PeraTransaction[]>
-    buildClaimTxs(params: InboxClaimTxsParams): Promise<PeraTransaction[]>
-    buildRejectTxs(params: InboxRejectTxsParams): Promise<PeraTransaction[]>
+    buildSendTxs(params: InboxSendTxsParams): Promise<UnsignedTransaction[]>
+    buildClaimTxs(params: InboxClaimTxsParams): Promise<UnsignedTransaction[]>
+    buildRejectTxs(params: InboxRejectTxsParams): Promise<UnsignedTransaction[]>
 }
 
 export type TransferTxsParams = {
@@ -193,20 +193,28 @@ export type KeyRegistrationTxParams = {
  */
 export interface SendFlowChainAdapter {
     chainId: ChainId
-    buildTransferTxs(params: TransferTxsParams): Promise<PeraTransaction[]>
+    buildTransferTxs(params: TransferTxsParams): Promise<UnsignedTransaction[]>
     /** Fund the receiver, opt it in, then transfer, in one group. */
     express?: {
-        buildTxs(params: ExpressTransferTxsParams): Promise<PeraTransaction[]>
+        buildTxs(
+            params: ExpressTransferTxsParams,
+        ): Promise<UnsignedTransaction[]>
     }
     assetInbox?: AssetInboxSendFlow
     assetHolding?: {
-        buildOptInTxs(params: AssetOptInTxsParams): Promise<PeraTransaction[]>
-        buildOptOutTxs(params: AssetOptOutTxsParams): Promise<PeraTransaction[]>
+        buildOptInTxs(
+            params: AssetOptInTxsParams,
+        ): Promise<UnsignedTransaction[]>
+        buildOptOutTxs(
+            params: AssetOptOutTxsParams,
+        ): Promise<UnsignedTransaction[]>
     }
-    rekey?: { buildTx(params: RekeyTxParams): Promise<PeraTransaction> }
+    rekey?: { buildTx(params: RekeyTxParams): Promise<UnsignedTransaction> }
     keyRegistration?: {
-        buildTx(params: KeyRegistrationTxParams): Promise<PeraTransaction>
+        buildTx(params: KeyRegistrationTxParams): Promise<UnsignedTransaction>
     }
+    /** The fee `transaction` pays as built, in base units of the native asset. */
+    transactionFee(transaction: UnsignedTransaction): Decimal
 }
 
 export const sendFlowChainAdapters =
@@ -232,5 +240,5 @@ export const sendFlowFeatureFor = <K extends SendFlowFeature>(
 
 export const buildKeyRegistrationTx = async (
     params: KeyRegistrationTxParams,
-): Promise<PeraTransaction> =>
+): Promise<UnsignedTransaction> =>
     sendFlowFeatureFor(params.scope, 'keyRegistration').buildTx(params)

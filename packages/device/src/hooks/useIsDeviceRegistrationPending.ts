@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useDeviceStore } from '../store'
-import { useDeviceID } from './useDeviceID'
+import { useDeploymentDeviceID } from './useDeviceID'
 
 /**
- * True while the current network has no usable backend device registration:
+ * True while the current deployment has no usable backend device registration:
  * either no device id exists yet or the last registration attempt failed and
  * awaits the reconnect/foreground retry. Consumers should render a loading
  * state instead of an empty state for device-keyed data (inbox, badge).
  */
 export const useIsDeviceRegistrationPending = (): boolean => {
-    const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
+    const deployment = useWalletDeployment()
+    const deviceID = useDeploymentDeviceID(deployment)
     const isRetryPending = useDeviceStore(state =>
-        state.pendingRegistrationNetworks.includes(network),
+        state.pendingRegistrationDeployments.includes(deployment),
     )
     return !deviceID || isRetryPending
 }

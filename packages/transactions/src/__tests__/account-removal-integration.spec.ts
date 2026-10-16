@@ -25,7 +25,9 @@ import { TransactionsSchema } from '../db/schema'
 // Side-effect import: registers the real transactions cleanup handler with the
 // shared registry, exactly as loading the package does at runtime.
 import '../register-account-cleanup'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { historyChainAdapters } from '../history-adapter'
+import { fixtureHistoryAdapter } from './fixture-chain-data'
 
 const makeTx = (id: string): TransactionHistoryItem => ({
     id,
@@ -73,10 +75,12 @@ describe('account removal prunes transactions end to end', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrations)
+        historyChainAdapters.register(fixtureHistoryAdapter())
     })
 
     afterEach(() => {
         teardown()
+        historyChainAdapters.reset()
     })
 
     it('deletes the removed account transactions and prunes now-orphaned rows', async () => {
@@ -84,13 +88,13 @@ describe('account removal prunes transactions end to end', () => {
             db,
             items: [makeTx('TX_A_ONLY'), makeTx('TX_SHARED')],
             accountAddress: 'ACCT_A',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         await upsertTransactions({
             db,
             items: [makeTx('TX_SHARED'), makeTx('TX_B_ONLY')],
             accountAddress: 'ACCT_B',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         await runAccountCleanups({ db, accountAddress: 'ACCT_A' })
@@ -100,7 +104,10 @@ describe('account removal prunes transactions end to end', () => {
             await getTransactionHistory({
                 db,
                 accountAddress: 'ACCT_A',
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             }),
         ).toEqual([])
 
@@ -108,7 +115,7 @@ describe('account removal prunes transactions end to end', () => {
         const remaining = await getTransactionHistory({
             db,
             accountAddress: 'ACCT_B',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         expect(remaining.map(tx => tx.id).sort()).toEqual([
             'TX_B_ONLY',

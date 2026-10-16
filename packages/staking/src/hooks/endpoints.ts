@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 
 import { stakingProjectsApiResponseSchema } from '../models/schema'
 import type { StakingProjectsApiResponse } from '../models'
@@ -18,10 +19,10 @@ import type { StakingProjectsApiResponse } from '../models'
 const STAKING_PROJECTS_INFORMATION_ENDPOINT =
     '/v1/staking/projects-information/'
 
-export const fetchStakingProjectsInfo = async (network: Network) => {
+export const fetchStakingProjectsInfo = async (scope: ChainScope) => {
     const response = await queryClient<StakingProjectsApiResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: STAKING_PROJECTS_INFORMATION_ENDPOINT,
     })

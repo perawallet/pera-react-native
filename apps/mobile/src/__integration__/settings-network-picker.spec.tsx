@@ -21,6 +21,7 @@ import {
 import {
     selectChainNetworkId,
     useNetworkStore,
+    getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -31,6 +32,7 @@ import {
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { registerChainAdapters } from '../bootstrap/chain-adapters'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const renderScreen = () =>
     renderWithNavigation(SettingsDeveloperNodeSettingsScreen, 'NodeSettings')
@@ -84,7 +86,7 @@ describe('Flow: Settings → Developer Mode', () => {
             ).toBeTruthy()
         })
         expect(resolvedNetwork('algorand')).toBe('testnet')
-        expect(useNetworkStore.getState().network).toBe('testnet')
+        expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('testnet')
         expect(isRadioSelected('node_settings_algorand_testnet_radio')).toBe(
             true,
         )

@@ -59,7 +59,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     FundingType,
     useCardSessionStore,
@@ -70,6 +70,7 @@ import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ACCOUNT: WalletAccount = {
     id: 'funding-account',
@@ -118,7 +119,10 @@ describe('Flow: Card funding type switch', () => {
         store.setEscrowCard({
             cardAddress: CARD_ADDRESS,
             ownerAddress: addressOf(ACCOUNT),
-            network: useNetworkStore.getState().network,
+            scope: {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: getSelectedScope(LEGACY_CHAIN_ID).networkId,
+            } as const,
             txId: 'CARD_TX_ID',
         })
         useCardSessionStore.getState().setAuthenticated(true)

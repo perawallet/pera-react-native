@@ -12,12 +12,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform } from 'react-native'
+import { Decimal } from 'decimal.js'
 import {
     useCreateRampQuoteMutation,
     toOnrampUserMessage,
     filterQuotesByPaymentMethod,
     isSourceAmountTooLowError,
-    parseRampAmount,
     pickBestQuote,
     resolveRampQuoteLimits,
     type RampQuote,
@@ -35,7 +35,8 @@ import { getExcludedPaymentMethodIds } from './onrampFormHelpers'
 type UseOnrampQuotesParams = {
     pairId: Nullable<string>
     isMeld: boolean
-    sourceAmount: string
+    /** Display units; null when no valid amount is entered. */
+    sourceAmount: Nullable<Decimal>
 }
 
 type UseOnrampQuotesResult = {
@@ -92,19 +93,20 @@ export const useOnrampQuotes = ({
     // Meld re-quotes on every amount change; XO quotes once per pair with a
     // null source amount (the provider returns a fixed rate + limits), so the
     // XO branch never reacts to amount edits.
-    const meldAmountTrigger = isMeld ? sourceAmount : ''
+    // Keyed on the amount's value, not the Decimal's identity: a caller that
+    // re-parsed every render would otherwise refetch in a loop.
+    const meldAmountKey = isMeld ? (sourceAmount?.toFixed() ?? null) : null
     useEffect(() => {
         if (!pairId || !selectedAccountAddress || scope === null) {
             return
         }
         // Empty or malformed (e.g. pasted) amount → no quote to fetch.
-        const parsedMeldAmount = isMeld
-            ? parseRampAmount(meldAmountTrigger)
-            : null
-        if (isMeld && parsedMeldAmount === null) {
+        if (isMeld && meldAmountKey === null) {
             setQuotes([])
             return
         }
+        const meldAmount =
+            meldAmountKey === null ? null : new Decimal(meldAmountKey)
 
         const requestId = ++requestIdRef.current
         setIsQuoting(true)
@@ -117,7 +119,7 @@ export const useOnrampQuotes = ({
                         scope,
                         pair: pairId,
                         destinationAddress: selectedAccountAddress,
-                        sourceAmount: parsedMeldAmount?.toNumber() ?? null,
+                        sourceAmount: meldAmount?.toNumber() ?? null,
                     })
                     if (requestId !== requestIdRef.current) return
 
@@ -158,7 +160,7 @@ export const useOnrampQuotes = ({
         selectedAccountAddress,
         scope,
         isMeld,
-        meldAmountTrigger,
+        meldAmountKey,
         createQuote,
         t,
     ])

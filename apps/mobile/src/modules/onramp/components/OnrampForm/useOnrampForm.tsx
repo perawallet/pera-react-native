@@ -29,8 +29,9 @@ import { useOnrampConfirm } from './useOnrampConfirm'
 import { useOnrampSheets } from './useOnrampSheets'
 
 type UseOnrampFormResult = {
-    sourceAmount: string
-    setSourceAmount: (value: string) => void
+    /** Raw text of the pay field. */
+    sourceAmountText: string
+    setSourceAmountText: (text: string) => void
     destinationAmount: Nullable<Decimal>
     quotes: RampQuote[]
     selectedQuote: Nullable<RampQuote>
@@ -83,13 +84,19 @@ export const useOnrampForm = (
     const isMeld = isMeldPair(selectedPair)
     const pairId = selectedPair?.id ?? null
 
-    const [sourceAmount, setSourceAmount] = useState('')
+    const [sourceAmountText, setSourceAmountText] = useState('')
     const [limitError, setLimitError] = useState<Nullable<string>>(null)
+
+    // Display units; null while the text is empty or not a plain decimal.
+    const sourceAmount = useMemo(
+        () => parseRampAmount(sourceAmountText),
+        [sourceAmountText],
+    )
 
     // Reset the amount when the pair changes. Meld (fiat) pairs default to 100
     // so a quote fetches immediately; XO pairs stay empty.
     useEffect(() => {
-        setSourceAmount(isMeld ? '100' : '')
+        setSourceAmountText(isMeld ? '100' : '')
     }, [pairId, isMeld])
 
     const {
@@ -109,7 +116,7 @@ export const useOnrampForm = (
         if (!selectedQuote) return null
         if (selectedQuote.kind === 'meld')
             return selectedQuote.destinationAmount
-        if (parseRampAmount(sourceAmount) === null) return null
+        if (sourceAmount === null) return null
         return quoteDestinationAmount(selectedQuote, sourceAmount)
     }, [selectedQuote, sourceAmount])
 
@@ -179,8 +186,8 @@ export const useOnrampForm = (
     })
 
     return {
-        sourceAmount,
-        setSourceAmount,
+        sourceAmountText,
+        setSourceAmountText,
         destinationAmount,
         quotes,
         selectedQuote,

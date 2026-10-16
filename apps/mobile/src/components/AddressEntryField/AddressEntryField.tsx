@@ -16,14 +16,18 @@ import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useScannedAddress } from '@hooks/useScannedAddress'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export type AddressEntryFieldProps = {
+    /** The chains whose addresses the field takes; a scan of any other chain's address is refused. */
+    chainIds: readonly ChainId[]
     allowQRCode?: boolean
     onScanned?: (address: string) => void
     testID?: string
 } & PWInputProps
 
 export const AddressEntryField = ({
+    chainIds,
     allowQRCode,
     onScanned,
     testID,
@@ -31,7 +35,7 @@ export const AddressEntryField = ({
 }: AddressEntryFieldProps) => {
     const [scannerVisible, setScannerVisible] = useState(false)
     const { t } = useLanguage()
-    const resolveScannedAddress = useScannedAddress()
+    const resolveScannedAddress = useScannedAddress(chainIds)
 
     const addressScanned = (url: string) => {
         setScannerVisible(false)

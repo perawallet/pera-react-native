@@ -15,14 +15,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountWithBalance } from '../AccountWithBalance'
 
-const mockHookResult = { nativeValue: undefined, isTestTier: false }
+const mockHookResult = {
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    chainName: 'Algorand',
+    availability: { isAvailable: true, nativeAsset: { assetId: '0' } } as
+        | { isAvailable: true; nativeAsset: { assetId: string } }
+        | { isAvailable: false },
+    nativeValue: undefined,
+    isMultiChain: false,
+    isTestTier: false,
+}
+const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
+const mockAccountDisplay = vi.fn((_props: unknown) => null)
+const mockPreferredAmount = vi.fn((_props: unknown) => null)
 
 vi.mock('../useAccountWithBalance', () => ({
-    useAccountWithBalance: () => mockHookResult,
+    useAccountWithBalance: (...args: unknown[]) =>
+        (mockUseAccountWithBalance as (...a: unknown[]) => unknown)(...args),
 }))
 
 vi.mock('@components/AccountDisplay', () => ({
-    AccountDisplay: () => null,
+    AccountDisplay: (props: unknown) => mockAccountDisplay(props),
 }))
 
 vi.mock('@components/AssetAmount', () => ({
@@ -30,7 +43,7 @@ vi.mock('@components/AssetAmount', () => ({
 }))
 
 vi.mock('@components/PreferredAmount', () => ({
-    PreferredAmount: () => null,
+    PreferredAmount: (props: unknown) => mockPreferredAmount(props),
 }))
 
 const ACCOUNT: WalletAccount = {
@@ -42,6 +55,11 @@ const ACCOUNT: WalletAccount = {
 describe('AccountWithBalance', () => {
     beforeEach(() => {
         mockHookResult.isTestTier = false
+        mockHookResult.isMultiChain = false
+        mockHookResult.availability = {
+            isAvailable: true,
+            nativeAsset: { assetId: '0' },
+        }
     })
 
     it('marks an account holding test funds with the tier badge', () => {
@@ -56,5 +74,50 @@ describe('AccountWithBalance', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(screen.queryByText('common.network_label.testnet')).toBeNull()
+    })
+
+    it('shows no chain badge while every account is on one chain', () => {
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(screen.queryByText('Algorand')).toBeNull()
+    })
+
+    it("shows the account's chain once the wallet spans chains", () => {
+        mockHookResult.isMultiChain = true
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(screen.getByText('Algorand')).toBeTruthy()
+    })
+
+    it("replaces the balances with a notice when the chain's kill switch is off", () => {
+        mockHookResult.availability = { isAvailable: false }
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(screen.getByTestId('account_chain_unavailable')).toBeTruthy()
+    })
+
+    it('hands its chain to the hook and the account display, and the hook scope to the fiat amount', () => {
+        render(
+            <AccountWithBalance
+                account={ACCOUNT}
+                chainId='ethereum'
+            />,
+        )
+
+        expect(mockUseAccountWithBalance).toHaveBeenCalledWith(
+            ACCOUNT,
+            'ethereum',
+        )
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+        expect(mockPreferredAmount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: mockHookResult.scope,
+                sourceAssetId: '0',
+            }),
+        )
     })
 })

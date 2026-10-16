@@ -12,15 +12,18 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     ETHEREUM_CHAIN_ID,
     registerEthereumChain,
 } from '@test-utils/chain-fixtures'
 import { useAssetFavoriteButton } from '../useAssetFavoriteButton'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 const ETHEREUM_SCOPE = { chainId: ETHEREUM_CHAIN_ID, networkId: 'mainnet' }
 
 const mocks = vi.hoisted(() => ({
@@ -36,13 +39,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountHoldingsInvalidator: () => ({ invalidate: mocks.invalidate }),
 }))
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => mocks.deviceId,
+    useScopedDeviceID: () => mocks.deviceId,
 }))
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'betanet' }),
+    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'betanet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useToggleAssetFavoriteMutation: () => ({
@@ -75,7 +78,6 @@ describe('useAssetFavoriteButton', () => {
             assetID: '123',
             deviceId: 'device-1',
             enabled: true,
-            network: 'betanet',
         })
         expect(mocks.showError).not.toHaveBeenCalled()
     })

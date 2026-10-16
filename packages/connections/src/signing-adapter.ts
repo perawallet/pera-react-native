@@ -27,15 +27,21 @@ import {
     MAX_DATA_SIGN_REQUESTS,
     canSignMessage,
     isFeeAdjustmentDeliveryError,
+    isSignRequestPastApproval,
+    isSignRequestPending,
+    messageSignerChainAdapters,
     useSigningRequest,
     type AuthDataSignRequest,
     type AuthDataSignableData,
     type ArbitraryDataSignRequest,
+    type MessageSignRequest,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type RejectReason,
     type SignRequest,
+    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
+import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import {
     authorityOf,
     chainAccountOf,
@@ -44,10 +50,19 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    DappRequestRejectedError,
+    PendingRequestCapacityError,
     dappRequestChainAdapters,
     type EnqueueTransactionSigning,
 } from './dappRequest'
-import type { ConnectionErrorScope, InboundMessage } from './models'
+import { pendingCapacityBreach } from './capacity'
+import { ConnectionsError } from './errors'
+import type {
+    ConnectionErrorScope,
+    DappMessageRequest,
+    InboundMessage,
+    MessageOperationType,
+} from './models'
 import type { ConnectionRegistry } from './registry'
 
 /**
@@ -64,11 +79,15 @@ type RequestMessage = Extract<InboundMessage, { kind: 'request' }>
 type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
 
 /**
- * One request the pipeline is holding open for the user. `withdraw` is null
- * while the chain's signing enqueue is still pending; an expiry landing in
- * that window marks the entry and the enqueue's continuation withdraws.
+ * One request the pipeline is holding open for the user. `request` is null
+ * while the chain's signing enqueue is still pending; an expiry or close
+ * landing in that window marks the entry and the enqueue's continuation withdraws.
  */
-type PendingRequest = { withdraw: Nullable<() => void>; isExpired: boolean }
+type PendingRequest = {
+    connectionId: ConnectionId
+    request: Nullable<SignRequest>
+    isWithdrawn: boolean
+}
 
 export type PendingRequestLedger = Map<string, PendingRequest>
 
@@ -80,11 +99,12 @@ const requestKey = (message: {
 const trackRequest = (
     deps: EnqueueInboundRequestDeps,
     message: RequestMessage,
-    withdraw: Nullable<() => void>,
+    request: Nullable<SignRequest>,
 ): void => {
     deps.pendingRequests.set(requestKey(message), {
-        withdraw,
-        isExpired: false,
+        connectionId: message.connectionId,
+        request,
+        isWithdrawn: false,
     })
 }
 
@@ -95,24 +115,40 @@ const forgetRequest = (
     deps.pendingRequests.delete(requestKey(message))
 }
 
-/** The async enqueue settled: hand over the withdrawal, or honour an expiry that beat it. */
+/** The async enqueue settled: hand over the request, or honour an expiry or close that beat it. */
 const settleTrackedRequest = (
     deps: EnqueueInboundRequestDeps,
     message: RequestMessage,
-    withdraw: Nullable<() => void>,
+    request: Nullable<SignRequest>,
 ): void => {
     const key = requestKey(message)
     const entry = deps.pendingRequests.get(key)
-    if (!withdraw || !entry) {
+    if (!request || !entry) {
         deps.pendingRequests.delete(key)
         return
     }
-    if (entry.isExpired) {
+    if (entry.isWithdrawn) {
         deps.pendingRequests.delete(key)
-        withdraw()
+        deps.removeSignRequest(request)
         return
     }
-    entry.withdraw = withdraw
+    entry.request = request
+}
+
+// An approved request is left to finish: a send-transaction broadcast goes out
+// regardless, and its answer simply fails against the gone peer.
+const withdrawTrackedRequest = (
+    deps: EnqueueInboundRequestDeps,
+    key: string,
+    entry: PendingRequest,
+): void => {
+    if (!entry.request) {
+        entry.isWithdrawn = true
+        return
+    }
+    if (deps.isSignRequestPastApproval(entry.request.id)) return
+    deps.pendingRequests.delete(key)
+    deps.removeSignRequest(entry.request)
 }
 
 // Not reported here: the handler that saw the expiry owns the user-facing
@@ -123,13 +159,32 @@ const withdrawExpiredRequest = (
 ): void => {
     const key = requestKey(message)
     const entry = deps.pendingRequests.get(key)
-    if (!entry) return
-    if (!entry.withdraw) {
-        entry.isExpired = true
-        return
+    if (entry) withdrawTrackedRequest(deps, key, entry)
+}
+
+const withdrawClosedConnection = (
+    connectionId: ConnectionId,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    for (const [key, entry] of deps.pendingRequests) {
+        if (entry.connectionId === connectionId) {
+            withdrawTrackedRequest(deps, key, entry)
+        }
     }
-    deps.pendingRequests.delete(key)
-    entry.withdraw()
+}
+
+/**
+ * The connection of every request still open. A request can leave the queue
+ * without an answer (the sheet's dismiss removes it directly), so its entry is
+ * dropped here rather than held against its connection's cap for good.
+ */
+const openRequestConnections = (deps: EnqueueInboundRequestDeps): string[] => {
+    for (const [key, entry] of deps.pendingRequests) {
+        if (entry.request && !deps.isSignRequestPending(entry.request.id)) {
+            deps.pendingRequests.delete(key)
+        }
+    }
+    return [...deps.pendingRequests.values()].map(entry => entry.connectionId)
 }
 
 /** Where a failure the user should hear about goes; the registry's channel on mobile. */
@@ -208,13 +263,35 @@ type DataSignPayload =
     | Pick<AuthDataSignRequest, 'type' | 'authData' | 'metadata'>
     | Pick<ArbitraryDataSignRequest, 'type' | 'data'>
 
+const requestLifecycle = (
+    message: RequestMessage,
+    deps: EnqueueInboundRequestDeps,
+    getSignRequest: () => SignRequest,
+): Pick<MessageSignRequest, 'reject' | 'error'> => ({
+    reject: async (reason: RejectReason = { kind: 'user' }) => {
+        forgetRequest(deps, message)
+        if (reason.kind === 'softReject') {
+            await message.reject(reason.error)
+            deps.removeSignRequest(getSignRequest())
+            return
+        }
+        rejectInBackground(message, new DappRequestRejectedError())
+    },
+    error: async (error: Error) => {
+        if (failRequest(message, error, deps.onError)) {
+            forgetRequest(deps, message)
+            deps.removeSignRequest(getSignRequest())
+        }
+    },
+})
+
 // ARC-60 and legacy arbitrary-data requests share one wire answer.
 const enqueueDataSignRequest = (
     message: RequestMessage,
     payload: DataSignPayload,
     deps: EnqueueInboundRequestDeps,
 ): void => {
-    const { addSignRequest, removeSignRequest, onError } = deps
+    const { addSignRequest } = deps
     const signRequest: AuthDataSignRequest | ArbitraryDataSignRequest = {
         ...payload,
         id: generateOrderedUniqueId(),
@@ -231,24 +308,88 @@ const enqueueDataSignRequest = (
             })
             forgetRequest(deps, message)
         },
-        reject: async (reason: RejectReason = { kind: 'user' }) => {
-            forgetRequest(deps, message)
-            if (reason.kind === 'softReject') {
-                await message.reject(reason.error)
-                removeSignRequest(signRequest)
-                return
-            }
-            rejectInBackground(message, new Error('User rejected'))
-        },
-        error: async (error: Error) => {
-            if (failRequest(message, error, onError)) {
-                forgetRequest(deps, message)
-                removeSignRequest(signRequest)
-            }
-        },
+        ...requestLifecycle(message, deps, () => signRequest),
     }
     addSignRequest(signRequest)
-    trackRequest(deps, message, () => removeSignRequest(signRequest))
+    trackRequest(deps, message, signRequest)
+}
+
+// The chain's `plan` runs once here so a payload it refuses (a malformed
+// document, one bound to another network) never reaches a review.
+const enqueueMessageRequest = (
+    message: RequestMessage,
+    type: MessageOperationType,
+    request: DappMessageRequest,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { accounts, addSignRequest, onError } = deps
+    const { chainId } = message
+    const scope = getSelectedScope(chainId)
+    const kind = type === 'sign-typed-data' ? 'typedData' : 'message'
+
+    // A session account can leave the wallet after the session was approved.
+    const account = findAccountByAddressOn(accounts, chainId, request.signer)
+    if (!account) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'unauthorized-account',
+                'The signer is not an account of this wallet',
+            ),
+            onError,
+        )
+        return
+    }
+    if (!canSignMessage(chainId, account, kind)) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'unsupported-operation',
+                'The signer cannot sign messages',
+            ),
+            onError,
+        )
+        return
+    }
+
+    const messageRequest = { ...request, scope }
+    try {
+        messageSignerChainAdapters
+            .get(chainId)
+            .plan(messageRequest, { account, accounts })
+    } catch (error) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'invalid-payload',
+                toError(error).message,
+                toError(error),
+            ),
+            onError,
+        )
+        return
+    }
+
+    const signRequest: MessageSignRequest = {
+        id: generateOrderedUniqueId(),
+        type: 'message',
+        message: messageRequest,
+        transport: 'callback',
+        sourceType: message.sourceType,
+        transportId: message.connectionId,
+        sourceMetadata: message.peer,
+        verifiedOrigin: message.verifiedOrigin,
+        approve: async signed => {
+            await message.respond({
+                type,
+                signature: signed.signature.bytes,
+            })
+            forgetRequest(deps, message)
+        },
+        ...requestLifecycle(message, deps, () => signRequest),
+    }
+    addSignRequest(signRequest)
+    trackRequest(deps, message, signRequest)
 }
 
 /**
@@ -388,10 +529,81 @@ const enqueueSignDataRequest = (
     enqueueArc60Request(message, payload, deps)
 }
 
+// The wallet builds the transaction from the dApp's request, so the user is
+// shown the wallet's own priced transaction rather than the dApp's claim.
+const enqueueSendTransactionRequest = (
+    message: RequestMessage,
+    request: unknown,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { addSignRequest, onError } = deps
+    const sending = dappRequestChainAdapters.get(
+        message.chainId,
+    ).sendTransaction
+    if (!sending) {
+        declineRequest(
+            message,
+            new Error(`${message.chainId} sends no transaction for a dApp`),
+            onError,
+        )
+        return
+    }
+
+    trackRequest(deps, message, null)
+    Promise.resolve()
+        .then(() => sending.build(request))
+        .then(
+            transaction => {
+                // An expiry or close while the chain built the transaction: the peer no longer takes an answer.
+                if (
+                    deps.pendingRequests.get(requestKey(message))?.isWithdrawn
+                ) {
+                    forgetRequest(deps, message)
+                    return
+                }
+                const signRequest: UnsignedTransactionSignRequest = {
+                    id: generateOrderedUniqueId(),
+                    type: 'transactions',
+                    // Routes an external source to the chain's broadcaster, which
+                    // answers through `approve` once the transaction is submitted.
+                    transport: 'algod',
+                    sourceType: message.sourceType,
+                    transportId: message.connectionId,
+                    sourceMetadata: message.peer,
+                    verifiedOrigin: message.verifiedOrigin,
+                    txs: [transaction],
+                    approve: async (_signed, submission) => {
+                        const txId = submission?.txIds[0]
+                        if (txId === undefined) {
+                            throw new Error(
+                                'The transaction was approved without being submitted',
+                            )
+                        }
+                        await message.respond({
+                            type: 'send-transaction',
+                            txId,
+                        })
+                        forgetRequest(deps, message)
+                    },
+                    ...requestLifecycle(message, deps, () => signRequest),
+                }
+                addSignRequest(signRequest)
+                settleTrackedRequest(deps, message, signRequest)
+            },
+            (error: unknown) => {
+                forgetRequest(deps, message)
+                declineRequest(message, toError(error), onError)
+            },
+        )
+}
+
 export type EnqueueInboundRequestDeps = {
     transactionSigning: ChainTransactionSigning
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
+    /** Read live: requests arrive in bursts between renders. */
+    isSignRequestPending: (id: string) => boolean
+    isSignRequestPastApproval: (id: string) => boolean
     accounts: WalletAccount[]
     /**
      * Every request still open for the user, so a `request-expired` message
@@ -419,7 +631,25 @@ export const enqueueInboundRequest = (
         withdrawExpiredRequest(message, deps)
         return
     }
+    if (message.kind === 'connection-closed') {
+        withdrawClosedConnection(message.connectionId, deps)
+        return
+    }
     if (message.kind !== 'request') return
+
+    const breach = pendingCapacityBreach(
+        openRequestConnections(deps),
+        message.connectionId,
+    )
+    if (breach) {
+        // Not toasted: a peer flooding requests would flood the user too.
+        logger.warn('[connections] refused a request over the pending cap', {
+            connectionId: message.connectionId,
+            breach,
+        })
+        rejectInBackground(message, new PendingRequestCapacityError())
+        return
+    }
 
     if (message.operation.type === 'sign-transactions') {
         // `useChainTransactionSigning` resolves one chain's hook per mount, so
@@ -468,7 +698,10 @@ export const enqueueInboundRequest = (
                     },
                     respondWithReject: () => {
                         forgetRequest(deps, message)
-                        rejectInBackground(message, new Error('User rejected'))
+                        rejectInBackground(
+                            message,
+                            new DappRequestRejectedError(),
+                        )
                     },
                     respondWithSoftReject: async error => {
                         await message.reject(error)
@@ -493,12 +726,7 @@ export const enqueueInboundRequest = (
         // `enqueue` can still reject past its own handling (re-encoding a
         // fee-adjusted group); un-caught that is an unanswered peer.
         enqueued.then(
-            request =>
-                settleTrackedRequest(
-                    deps,
-                    message,
-                    request ? () => deps.removeSignRequest(request) : null,
-                ),
+            request => settleTrackedRequest(deps, message, request ?? null),
             (error: unknown) => {
                 forgetRequest(deps, message)
                 declineRequest(message, toError(error), deps.onError)
@@ -507,7 +735,22 @@ export const enqueueInboundRequest = (
         return
     }
 
+    if (message.operation.type === 'send-transaction') {
+        enqueueSendTransactionRequest(message, message.operation.request, deps)
+        return
+    }
+
     // The operation union is closed; the only remaining case is 'sign-data'.
+    if (message.operation.type !== 'sign-data') {
+        enqueueMessageRequest(
+            message,
+            message.operation.type,
+            message.operation.request,
+            deps,
+        )
+        return
+    }
+
     enqueueSignDataRequest(message, message.operation.payload, deps)
 }
 
@@ -549,6 +792,8 @@ export const useConnectionSigningAdapter = (
         transactionSigning,
         addSignRequest,
         removeSignRequest,
+        isSignRequestPending,
+        isSignRequestPastApproval,
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,
@@ -557,6 +802,8 @@ export const useConnectionSigningAdapter = (
         transactionSigning,
         addSignRequest,
         removeSignRequest,
+        isSignRequestPending,
+        isSignRequestPastApproval,
         accounts,
         pendingRequests: pendingRequestsRef.current,
         onError,

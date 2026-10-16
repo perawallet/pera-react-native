@@ -23,6 +23,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { ETHEREUM_CHAIN_ID } from '../../chain-id'
 import { ethereumDescriptor } from '../../descriptor'
+import { eip155ChainIdOfNetwork } from './caip19'
 import { evmHttpTransport } from './evmHttpTransport'
 
 export class UnconfiguredEvmRpcError extends Error {
@@ -73,15 +74,17 @@ const viemChainFor = (scope: ChainScope, rpcUrl: string): Chain => {
     const network = ethereumDescriptor.networks.find(
         n => n.id === scope.networkId,
     )
+    const eip155ChainId = eip155ChainIdOfNetwork(scope.networkId)
     if (
         scope.chainId !== ETHEREUM_CHAIN_ID ||
-        network?.nativeRef.kind !== 'evm'
+        !network ||
+        eip155ChainId === undefined
     ) {
         throw new UnconfiguredEvmRpcError(scope)
     }
     const { symbol, name, decimals } = ethereumDescriptor.nativeAsset
     return defineChain({
-        id: network.nativeRef.eip155ChainId,
+        id: eip155ChainId,
         name: `${ethereumDescriptor.displayName} ${network.displayName}`,
         nativeCurrency: { symbol, name, decimals },
         rpcUrls: { default: { http: [rpcUrl] } },

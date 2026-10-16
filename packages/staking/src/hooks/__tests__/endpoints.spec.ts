@@ -20,6 +20,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 import { fetchStakingProjectsInfo } from '../endpoints'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('fetchStakingProjectsInfo', () => {
     beforeEach(() => {
         mockQueryClient.mockReset()
@@ -34,7 +36,7 @@ describe('fetchStakingProjectsInfo', () => {
             status: 200,
         })
 
-        const result = await fetchStakingProjectsInfo('mainnet')
+        const result = await fetchStakingProjectsInfo(ALGORAND_MAINNET)
 
         expect(Object.keys(result)).toEqual(['folks', 'pact'])
         expect(result.folks?.tvl_in_algo).toBe('1000')
@@ -43,7 +45,7 @@ describe('fetchStakingProjectsInfo', () => {
     it('treats an empty-body response (data: undefined) as no TVL data', async () => {
         mockQueryClient.mockResolvedValue({ data: undefined, status: 200 })
 
-        const result = await fetchStakingProjectsInfo('mainnet')
+        const result = await fetchStakingProjectsInfo(ALGORAND_MAINNET)
 
         expect(result).toEqual({})
     })
@@ -51,7 +53,7 @@ describe('fetchStakingProjectsInfo', () => {
     it('treats a null response as no TVL data', async () => {
         mockQueryClient.mockResolvedValue({ data: null, status: 200 })
 
-        const result = await fetchStakingProjectsInfo('mainnet')
+        const result = await fetchStakingProjectsInfo(ALGORAND_MAINNET)
 
         expect(result).toEqual({})
     })
@@ -62,6 +64,8 @@ describe('fetchStakingProjectsInfo', () => {
             status: 200,
         })
 
-        await expect(fetchStakingProjectsInfo('mainnet')).rejects.toThrow()
+        await expect(
+            fetchStakingProjectsInfo(ALGORAND_MAINNET),
+        ).rejects.toThrow()
     })
 })

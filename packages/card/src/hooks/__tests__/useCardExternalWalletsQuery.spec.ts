@@ -26,11 +26,17 @@ vi.mock('../useCardSession', () => ({
     useCardSession: () => ({ isAuthenticated: mockSession.isAuthenticated }),
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardExternalWalletsQuery } from '../useCardExternalWalletsQuery'
 import type { CardExternalWallet } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 const wallet = (
     overrides: Partial<CardExternalWallet>,
@@ -43,7 +49,7 @@ const wallet = (
     ...overrides,
 })
 
-describe('useCardExternalWalletsQuery', () => {
+describe.each(SCOPES)('useCardExternalWalletsQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

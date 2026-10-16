@@ -19,9 +19,9 @@ import {
     type Signature,
     type SigningRequest,
     type UnsignedTransaction,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { transactionPlannerContractTests } from '@perawallet/wallet-core-chain-contract/testing'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     decodeFromBase64,
     encodeToBase64,
@@ -36,9 +36,13 @@ import {
     type AlgorandTransactionPayload,
 } from '../planner'
 import { makeTestPaymentTx } from './transactions'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 
 const MAINNET_GENESIS = decodeFromBase64(
-    getNetworkConfig('mainnet').genesisHash,
+    getAlgorandChainConfig({
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'mainnet',
+    } as const).genesisHash,
 )
 
 const keyPairOf = (byte: number): nacl.SignKeyPair =>

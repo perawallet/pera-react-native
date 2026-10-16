@@ -24,9 +24,20 @@ const DEVELOPER_GALLERY_MODULES = [
     'src/modules/settings/routes/developer-gallery',
 ]
 
-// The Ethereum chain module's only entry point: chain-adapters.ts reaches the
-// chain-ethereum package solely through it, so swapping it drops viem.
-const ETHEREUM_CHAIN_MODULES = ['src/bootstrap/ethereum-chain-module']
+// Every app entry into the chain-ethereum package: the bootstrap module, which
+// chain-adapters.ts reaches it through, and Ethereum's chain UI, which the
+// chain-UI registry reaches it through. Swapping them drops viem.
+const ETHEREUM_CHAIN_MODULES = [
+    'src/bootstrap/ethereum-chain-module',
+    'src/modules/ethereum/chain-ui',
+]
+
+// The E2E fixture deeplink's only entry points. It rewrites wallet state on
+// command, so it ships only in a bundle built for a device test run.
+const E2E_FIXTURE_MODULES = [
+    'src/modules/deeplink/dev-e2e-fixture-parser',
+    'src/modules/deeplink/handlers/useE2eFixtureDeeplink',
+]
 
 /**
  * The `appEnvironment` baked into packages/config/src/generated-env.ts, which
@@ -72,6 +83,24 @@ const isDeveloperGalleryIncluded = ({ bakedAppEnvironment, appEnv }) =>
     bakedAppEnvironment !== 'production' && appEnv !== 'production'
 
 /**
+ * Opt-in only: `E2E_FIXTURES` must EQUAL '1', so an unset or mistyped value
+ * stubs. A production bundle that asks for it throws instead of quietly
+ * stubbing, so a misconfigured release pipeline fails loudly.
+ *
+ * @param {{ e2eFixtures?: string, bakedAppEnvironment?: string, appEnv?: string }} sources
+ * @returns {boolean}
+ */
+const isE2eFixturesIncluded = ({ e2eFixtures, bakedAppEnvironment, appEnv }) => {
+    if (e2eFixtures !== '1') return false
+    if (bakedAppEnvironment === 'production' || appEnv === 'production') {
+        throw new Error(
+            'E2E_FIXTURES=1 is refused for a production bundle: the fixture deeplink rewrites wallet state.',
+        )
+    }
+    return true
+}
+
+/**
  * Maps each module's resolved `.ts` path to its sibling `.stub.ts`.
  *
  * @param {string} projectRoot
@@ -88,8 +117,10 @@ const toStubMap = (projectRoot, modulePaths) =>
 
 module.exports = {
     DEVELOPER_GALLERY_MODULES,
+    E2E_FIXTURE_MODULES,
     ETHEREUM_CHAIN_MODULES,
     isDeveloperGalleryIncluded,
+    isE2eFixturesIncluded,
     readBakedAppEnvironment,
     readBakedChainIds,
     toStubMap,

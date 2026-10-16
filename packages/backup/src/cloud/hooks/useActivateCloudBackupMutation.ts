@@ -23,7 +23,7 @@ import { useCloudBackupStore } from '../store/store'
  * Turns a registered backup on: writes the retained keys to the device and
  * records the backup, which is what starts the sync manager.
  *
- * The device id comes from the registration rather than `useDeviceID`, so the
+ * The device id comes from the registration rather than `useDeploymentDeviceID`, so the
  * device the backup was registered under is the one recorded.
  */
 export const useActivateCloudBackupMutation = (

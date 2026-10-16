@@ -53,16 +53,21 @@ import {
     useCollectiblePreferencesStore,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
 
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    getAlgorandChainConfig,
+    getPeraServicesConfig,
+} from '@perawallet/wallet-core-config'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // The asset as the backend describes it BEFORE its crawler has run: NFT
 // shaped, but not yet typed as a collectible.
@@ -119,7 +124,10 @@ const AccountViewHost = () => {
     )
 }
 
-const PERA_BACKEND = getNetworkConfig(Networks.mainnet).backendUrl
+const PERA_BACKEND = getPeraServicesConfig({
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const).backendUrl
 
 const HOUR_MS = 60 * 60 * 1000
 
@@ -173,7 +181,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
             accountAddress: addressOf(account),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         useAccountsStore.getState().setAccounts([account])
@@ -189,7 +197,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
                 HttpResponse.json(CLASSIFIED_RESPONSE, { status: 200 }),
             ),
             http.get(
-                `${getNetworkConfig(Networks.mainnet).indexerUrl}/v2/accounts/:address/assets`,
+                `${getAlgorandChainConfig({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
                 () =>
                     HttpResponse.json({
                         'current-round': 30_000,

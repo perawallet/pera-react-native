@@ -88,7 +88,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -304,7 +303,7 @@ describe('useARC59SendSummaryScreen', () => {
         renderHook(() => useARC59SendSummaryScreen())
 
         expect(mockReplace).toHaveBeenCalledWith('InsufficientBalance', {
-            requiredBalance: '0.300000 ALGO',
+            requiredBalanceLabel: '0.300000 ALGO',
         })
     })
 

@@ -204,7 +204,14 @@ decision at startup (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend
 
-Each chain scope's configuration in `packages/config/src/network-config.ts` lists the Pera services
+There are two Pera deployments, one per `WalletMode`: `live` (the MainNet host) and `developer` (the
+TestNet host). A deployment is a host, not a chain, so every chain of a tier shares it. A
+chain-agnostic request (integrity, banners, notifications, fiat rates, Pera Web backups) names the
+wallet mode's deployment with `queryClient({ backend: 'pera', deployment })` and reaches it whatever
+network a chain is on. Device ids belong to a deployment too.
+
+A request for a chain's data names its scope instead, and reaches the deployment holding that
+chain's data (`peraDeploymentOf(scope)`). Each chain scope's configuration in `packages/config/src/network-config.ts` lists the Pera services
 its deployment serves (`peraServicesFor(scope)`, `hasPeraService(scope, service)`): Algorand MainNet
 and TestNet list every service, betanet and a custom node list none. A request declaring
 `backend: 'pera'` throws `PeraServiceUnavailableError` in `packages/shared/src/api/query-client.ts`
@@ -212,7 +219,7 @@ before a socket opens when its scope has no Pera deployment, or when it names a 
 scope does not list, so the failure is structural and instant rather than a timeout.
 
 Reads whose answer is obtainable from algod or the indexer must therefore branch on
-`isPeraBackedNetwork(network)` and take the public path, rather than swallowing the error as an empty
+`hasPeraBackend(scope)` and take the public path, rather than swallowing the error as an empty
 result. Swallowing it is indistinguishable from a genuine empty result in the UI, which is how a
 dead probe once reported "no addresses found" during account discovery. Pera-proprietary reads have
 no fallback and should surface as unavailable.
@@ -226,12 +233,15 @@ the integrity token only as the web build's Bearer, so a call to an integrity-gu
 card, fee-delegation and EVM routes) also passes `headers: buildIntegrityHeaders()` from
 `@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
 
-A chain's ky-based node backends (`algod`, `indexer`) come from the `NodeBackendsAdapter` it
-registers (`packages/shared/src/api/node-backends.ts`): URL, token header and token. `queryClient`
-builds and caches each client on first use and never adds the Pera headers to it, so a Pera
-credential cannot reach a third-party node. A chain whose endpoints change at runtime calls
-`resetNodeClients()`; Algorand does so when a custom node is saved or cleared. Ethereum's JSON-RPC
-is a viem client the chain builds from `ctx.getEndpoints()`, outside `queryClient`.
+`queryClient` serves the Pera and backup backends only, never a chain's nodes, so a Pera credential
+cannot reach a third-party node. Each chain builds its own node clients from the `ChainContext` it
+registered with: its endpoints, and the request ceilings in `ctx.timeouts`, which come from the
+chain's row in config's `chainRequestTimeouts`. Algorand is the exception for endpoints: its record
+is empty, and its node URLs come from `getAlgorandChainConfig` on every request so a saved custom
+node applies. Algorand keeps the context in
+`packages/chain-algorand/src/chain-context.ts` and builds every algod and indexer client, for algosdk
+and for raw JSON reads alike, through `createNodeHttpClient` (`blockchain/utils/nodeHttp.ts`).
+Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`.
 
 ## Account types share one signing path
 

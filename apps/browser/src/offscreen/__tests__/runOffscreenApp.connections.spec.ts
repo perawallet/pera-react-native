@@ -168,6 +168,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         getState: networkGetState,
         persist: { rehydrate: vi.fn() },
     },
+    getSelectedScope: (chainId: string) => ({
+        chainId,
+        networkId: networkGetState().mode === 'live' ? 'mainnet' : 'testnet',
+    }),
 }))
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
@@ -206,7 +210,7 @@ describe('runOffscreenApp connections wiring', () => {
                 },
             ],
         })
-        networkGetState.mockReturnValue({ network: 'mainnet' })
+        networkGetState.mockReturnValue({ mode: 'live' })
         getCustomNetworkConfig.mockReturnValue({
             genesisHash: 'custom-genesis',
         })
@@ -242,7 +246,8 @@ describe('runOffscreenApp connections wiring', () => {
             keyValueStorage,
         )
         expect(createWalletConnectV1Handler).toHaveBeenCalledWith({
-            getNetwork: expect.any(Function),
+            chainId: 'algorand',
+            getNetworkId: expect.any(Function),
             sessionKeys,
         })
         expect(registry.register).toHaveBeenCalledWith(v1Handler)
@@ -255,12 +260,12 @@ describe('runOffscreenApp connections wiring', () => {
         const options = createDappConnectionHandler.mock.calls[0]?.[0] as {
             transport: unknown
             chainId: string
-            getNetwork: () => string
+            getNetworkId: (chainId: string) => string
             getCustomNetworkGenesisHash: () => string | undefined
         }
         expect(options.transport).toBe(dappTransport)
         expect(options.chainId).toBe('algorand')
-        expect(options.getNetwork()).toBe('mainnet')
+        expect(options.getNetworkId('algorand')).toBe('mainnet')
         expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
     })
 
@@ -300,13 +305,14 @@ describe('runOffscreenApp connections wiring', () => {
         ])
     })
 
-    it('reads the handler network off the network store', async () => {
+    it("reads the v1 handler's network id off the network store", async () => {
         await boot()
 
         const options = createWalletConnectV1Handler.mock.calls[0]?.[0] as {
-            getNetwork: () => string
+            chainId: string
+            getNetworkId: (chainId: string) => string
         }
-        expect(options.getNetwork()).toBe('mainnet')
+        expect(options.getNetworkId(options.chainId)).toBe('mainnet')
     })
 
     it('starts the host with the browser-runtime senders and subscribes the control handler', async () => {
@@ -323,12 +329,12 @@ describe('runOffscreenApp connections wiring', () => {
         )
     })
 
-    it('wires network and knownAddresses to the real store accessors', async () => {
+    it('wires the active network id and knownAddresses to the real store accessors', async () => {
         await boot()
 
         const deps = startConnectionsHost.mock
             .calls[0]?.[0] as ConnectionsHostDeps
-        expect(deps.network()).toBe('mainnet')
+        expect(deps.activeNetworkId()).toBe('mainnet')
         expect(deps.knownAddresses()).toEqual(['ADDR1', 'ADDR2'])
     })
 

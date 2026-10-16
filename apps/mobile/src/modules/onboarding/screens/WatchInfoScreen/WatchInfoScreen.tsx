@@ -50,6 +50,7 @@ export const WatchInfoScreen = () => {
                         </PWText>
                     </PWView>
                     <PWButton
+                        testID='watch_info_create_button'
                         variant='primary'
                         title={t('onboarding.watch_account.info_button')}
                         onPress={handleCreateWatchAccount}

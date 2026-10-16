@@ -23,10 +23,11 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     submitAndAutoRefresh,
+    submitSignedAndAutoRefresh,
     type AlgokitClientInterface,
     type EncodeSignedTransactionsFn,
 } from '../submission'
-import { algorandNetworkOf } from '../../legacy-network'
+import { algorandNetworkOf } from '../../network-id'
 
 /**
  * Creates a transport that submits transactions directly to algod.
@@ -47,8 +48,11 @@ export const createAlgodTransport = (
             source: SourceMetadata,
             _multisigAddress?: string,
         ): Promise<TransportResult> => {
-            // Only handle transaction data
-            if (result.signedData.type !== 'transactions') {
+            const { signedData } = result
+            if (
+                signedData.type !== 'transactions' &&
+                signedData.type !== 'signed-transactions'
+            ) {
                 throw new TransportError(
                     'Algod transport only supports transaction data',
                 )
@@ -56,17 +60,24 @@ export const createAlgodTransport = (
 
             assertScopeUnchanged(capturedScope)
 
-            const { signed } = result.signedData
-
+            const network = algorandNetworkOf(capturedScope)
             let txIds: string[]
             try {
-                txIds = await submitAndAutoRefresh(
-                    algorandNetworkOf(capturedScope),
-                    algokit,
-                    encodeSignedTransactions,
-                    signed,
-                    { flow: 'pipeline' },
-                )
+                txIds =
+                    signedData.type === 'transactions'
+                        ? await submitAndAutoRefresh(
+                              network,
+                              algokit,
+                              encodeSignedTransactions,
+                              signedData.signed,
+                              { flow: 'pipeline' },
+                          )
+                        : await submitSignedAndAutoRefresh(
+                              network,
+                              algokit,
+                              signedData.signed,
+                              { flow: 'pipeline' },
+                          )
             } catch (error) {
                 // A classified submit failure keeps its txIds, classification
                 // and retryability — wrapping it in TransportError would

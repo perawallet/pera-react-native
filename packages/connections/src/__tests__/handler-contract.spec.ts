@@ -11,7 +11,7 @@
  */
 
 import { beforeEach } from 'vitest'
-import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
     ConnectionStoreAPI,
@@ -93,7 +93,7 @@ const createOriginHandler = (): ConnectionHandler => {
                         proposalId: `${PAGE}#1`,
                         peer: { name: 'Page dApp', url: PAGE },
                         requested: {
-                            networks: [Networks.mainnet],
+                            networks: ['mainnet'],
                             chains: ['algorand'],
                             methods: ['algo_signTxn'],
                         },
@@ -163,7 +163,7 @@ const createOriginHandler = (): ConnectionHandler => {
             ((await store?.list()) ?? []).filter(
                 (record: Connection) => record.kind === ORIGIN_KIND,
             ),
-        matchesNetwork: () => true,
+        matchesChainScope: () => true,
         // Off the record, like the real handlers: the key is this kind's own
         // choice, and the neutral layer never reads it.
         methodsFor: connection => {

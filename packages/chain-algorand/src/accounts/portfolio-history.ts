@@ -19,8 +19,8 @@ import {
     CHART_QUERY_TIMEOUT_MS,
     queryClient,
     type HistoryPeriod,
-    type Network,
 } from '@perawallet/wallet-core-shared'
+import { type AlgorandNetworkId, algorandScope } from '../network-id'
 
 export type PortfolioHistoryResponseItem = {
     datetime: string
@@ -59,11 +59,11 @@ export const getHoldingBalanceHistoryEndpointPath = (
 export const fetchAlgorandPortfolioHistory = async (
     addresses: string[],
     period: HistoryPeriod,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<PortfolioHistoryPoint[]> => {
     const response = await queryClient<PortfolioHistoryResponse>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'GET',
         url: getPortfolioHistoryEndpointPath(),
         params: {
@@ -86,11 +86,11 @@ export const fetchAlgorandHoldingBalanceHistory = async (
     assetId: string,
     period: HistoryPeriod,
     currency: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<HoldingBalanceHistoryPoint[]> => {
     const response = await queryClient<HoldingBalanceHistoryResponse>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'GET',
         url: getHoldingBalanceHistoryEndpointPath(address, assetId),
         params: {

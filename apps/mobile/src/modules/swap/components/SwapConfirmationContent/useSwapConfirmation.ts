@@ -18,6 +18,7 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
@@ -35,6 +36,7 @@ import { useStyles } from './styles'
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
 
 type UseSwapConfirmationParams = {
+    scope: ChainScope
     quote: Nullable<SwapQuote>
     swapStatus: SwapExecutionStatus
 }
@@ -62,17 +64,24 @@ type UseSwapConfirmationResult = {
 }
 
 export const useSwapConfirmation = ({
+    scope,
     quote,
     swapStatus,
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { preferredCurrency, usdToPreferred } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency(scope)
 
     const assetInId = quote?.assetIn.assetId
     const assetOutId = quote?.assetOut.assetId
-    const { data: inAssets } = useAssetsQuery(assetInId ? [assetInId] : [])
-    const { data: outAssets } = useAssetsQuery(assetOutId ? [assetOutId] : [])
+    const { data: inAssets } = useAssetsQuery(
+        scope,
+        assetInId ? [assetInId] : [],
+    )
+    const { data: outAssets } = useAssetsQuery(
+        scope,
+        assetOutId ? [assetOutId] : [],
+    )
     const inAsset = assetInId ? inAssets?.get(assetInId) : undefined
     const outAsset = assetOutId ? outAssets?.get(assetOutId) : undefined
 

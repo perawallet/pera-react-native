@@ -54,6 +54,32 @@ afterEach(() => {
     useBottomSheetStore.getState().resetState()
 })
 
+// No flow may hand the pipeline a sign request in the Algorand-transaction
+// shape: every source builds chain-neutral transactions. Loaded lazily, like
+// the chain adapters above, so the signing package loads after any vi.unmock.
+// Loading it pulls in the signing package, which a file that never signs
+// hasn't loaded yet, so it gets its own timeout rather than a test hook's.
+let watchSignRequests:
+    | (typeof import('./src/test-utils/peraTransactionSignRequestGuard'))['watchPeraTransactionSignRequests']
+    | undefined
+let stopWatchingSignRequests: (() => string[]) | undefined
+beforeAll(async () => {
+    ;({ watchPeraTransactionSignRequests: watchSignRequests } =
+        await import('./src/test-utils/peraTransactionSignRequestGuard'))
+}, 60_000)
+beforeEach(() => {
+    stopWatchingSignRequests = watchSignRequests?.().stop
+})
+afterEach(() => {
+    const offenders = stopWatchingSignRequests?.() ?? []
+    stopWatchingSignRequests = undefined
+    if (offenders.length > 0) {
+        throw new Error(
+            `Sign requests built from Algorand transactions instead of chain-neutral ones: ${offenders.join(', ')}`,
+        )
+    }
+})
+
 // jsdom installs its own `Uint8Array`, but node's `Buffer` extends node's — a
 // different constructor — so `buffer instanceof globalThis.Uint8Array` is false
 // and any `isBytes()` check (e.g. in xhd-wallet-api's derivation) throws.

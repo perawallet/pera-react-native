@@ -16,37 +16,22 @@ import type {
     ResponseConfiguration,
     ResponseErrorConfiguration,
 } from '../queries'
-import { Networks } from '../base-types'
 
 describe('RequestConfiguration', () => {
-    test('accepts algod backend configuration', () => {
+    test('accepts backup backend configuration', () => {
         const config: RequestConfiguration = {
-            backend: 'algod',
-            network: Networks.mainnet,
-            method: 'GET',
-        }
-
-        expect(config.backend).toBe('algod')
-        expect(config.network).toBe('mainnet')
-        expect(config.method).toBe('GET')
-    })
-
-    test('accepts indexer backend configuration', () => {
-        const config: RequestConfiguration = {
-            backend: 'indexer',
-            network: Networks.testnet,
+            backend: 'backup',
             method: 'POST',
         }
 
-        expect(config.backend).toBe('indexer')
-        expect(config.network).toBe('testnet')
+        expect(config.backend).toBe('backup')
         expect(config.method).toBe('POST')
     })
 
     test('accepts pera backend configuration', () => {
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'PUT',
         }
 
@@ -65,8 +50,8 @@ describe('RequestConfiguration', () => {
 
         methods.forEach(method => {
             const config: RequestConfiguration = {
-                backend: 'algod',
-                network: Networks.mainnet,
+                backend: 'pera',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 method,
             }
 
@@ -76,8 +61,8 @@ describe('RequestConfiguration', () => {
 
     test('accepts optional url', () => {
         const config: RequestConfiguration = {
-            backend: 'algod',
-            network: Networks.mainnet,
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/accounts',
         }
@@ -87,8 +72,8 @@ describe('RequestConfiguration', () => {
 
     test('accepts optional params', () => {
         const config: RequestConfiguration = {
-            backend: 'algod',
-            network: Networks.mainnet,
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             params: { limit: 10, offset: 0 },
         }
@@ -98,8 +83,8 @@ describe('RequestConfiguration', () => {
 
     test('accepts optional data', () => {
         const config: RequestConfiguration = {
-            backend: 'algod',
-            network: Networks.mainnet,
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'POST',
             data: { name: 'test', value: 123 },
         }
@@ -112,8 +97,8 @@ describe('RequestConfiguration', () => {
         formData.append('key', 'value')
 
         const config: RequestConfiguration = {
-            backend: 'algod',
-            network: Networks.mainnet,
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'POST',
             data: formData,
         }
@@ -133,8 +118,8 @@ describe('RequestConfiguration', () => {
 
         responseTypes.forEach(responseType => {
             const config: RequestConfiguration = {
-                backend: 'algod',
-                network: Networks.mainnet,
+                backend: 'pera',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 method: 'GET',
                 responseType,
             }
@@ -146,8 +131,8 @@ describe('RequestConfiguration', () => {
     test('accepts abort signal', () => {
         const controller = new AbortController()
         const config: RequestConfiguration = {
-            backend: 'algod',
-            network: Networks.mainnet,
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             signal: controller.signal,
         }
@@ -157,8 +142,8 @@ describe('RequestConfiguration', () => {
 
     test('accepts custom headers', () => {
         const config: RequestConfiguration = {
-            backend: 'algod',
-            network: Networks.mainnet,
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             headers: {
                 'X-Custom-Header': 'value',
@@ -179,8 +164,8 @@ describe('RequestConfiguration', () => {
         }
 
         const config: RequestConfiguration<CustomData> = {
-            backend: 'algod',
-            network: Networks.mainnet,
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'POST',
             data: { id: 1, name: 'test' },
         }

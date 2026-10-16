@@ -11,6 +11,7 @@
  */
 
 import {
+    isRestrictedIn,
     resolveCapability,
     type CapabilityLayers,
 } from './capabilities/resolve'
@@ -65,6 +66,12 @@ export interface ChainRegistry {
      * sync can stop a chain the registry doesn't list yet.
      */
     isSwitchedOff(chainId: ChainId): boolean
+    /**
+     * True while the chain's current mode (BetaNet, a custom node) restricts
+     * `capability`: off for this network rather than absent from the build.
+     * @throws ChainAdapterNotRegisteredError
+     */
+    isRestricted(chainId: ChainId, capability: ChainCapability): boolean
     byCaip2(
         caip2: string,
     ): { chainId: ChainId; network: ChainNetwork } | undefined
@@ -158,6 +165,12 @@ export const createChainRegistry = (): ChainRegistry => {
         },
         isSwitchedOff: chainId =>
             readOverrides().chainEnabled?.[chainId] === false,
+        isRestricted: (chainId, capability) =>
+            isRestrictedIn(
+                entryFor(chainId).restrictions,
+                capability,
+                readOverrides().chainMode?.[chainId] ?? 'live',
+            ),
         byCaip2: caip2 => {
             for (const {
                 chain: { descriptor },
@@ -206,6 +219,7 @@ export const registerChainSetup = (
 export const buildChainSetup = (
     chains: ChainSetupConfig,
     modules: Partial<Record<ChainId, ChainModule>>,
+    endpointsFor: (chainId: ChainId) => ChainEndpoints,
 ): ChainSetupEntry[] => {
     for (const chainId of chains.enabled) {
         if (!modules[chainId]) {
@@ -222,7 +236,7 @@ export const buildChainSetup = (
                 chainId,
                 enabled: chains.enabled.includes(chainId),
                 module,
-                endpoints: {},
+                endpoints: endpointsFor(chainId),
                 ...(listed && {
                     capabilities: Object.fromEntries(
                         CHAIN_CAPABILITIES.map(capability => [

@@ -12,13 +12,10 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
+    toScopeKey,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapability,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { nameServiceAdapterFor } from '../chain-adapter'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
@@ -47,13 +44,12 @@ const NO_RESULTS: NfdName[] = []
  * re-read, so the hook gets the right value either way.
  */
 export const useNfdForAddressQuery = (
+    scope: ChainScope,
     address: string,
     options?: { enabled?: boolean },
 ): UseNfdForAddressQueryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
     const isNameServiceEnabled = useChainCapability(
-        LEGACY_CHAIN_ID,
+        scope.chainId,
         'nameService',
     )
     const enabled =
@@ -64,7 +60,10 @@ export const useNfdForAddressQuery = (
     const query = useQuery({
         queryKey: nfdQueryKeys.forAddress(address, scope),
         queryFn: () => {
-            const valuePromise = nfdBatchQueue.enqueue(address, network)
+            const valuePromise = nfdBatchQueue.enqueue(
+                address,
+                toScopeKey(scope),
+            )
             return valuePromise.then(value => (value ? [value] : []))
         },
         enabled,

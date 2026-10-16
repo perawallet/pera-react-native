@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     ScopeChangedError,
+    toScopeKey,
     transactionPlanners,
     type ChainId,
     type ChainScope,
@@ -29,11 +30,11 @@ import {
     type SignableGroup,
     type SigningResult,
     type SourceCallbacks,
-    type SubmissionReceipt,
     type SourceMetadata,
 } from '../pipeline/types'
 import {
     CannotSignError,
+    GenesisHashMismatchError,
     HardwareWalletError,
     InvalidSignableDataError,
     SigningError,
@@ -48,11 +49,16 @@ import type {
     SigningMachineDeps,
     SigningMachineInput,
 } from './context'
-import type { SignRequest, UnsignedTransactionSignRequest } from '../models'
+import type {
+    SignRequest,
+    TransactionSignRequest,
+    UnsignedTransactionSignRequest,
+} from '../models'
 import {
     isTransactionRequest,
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isMessageRequest,
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
 } from '../models'
@@ -100,17 +106,69 @@ export const buildGroupSignerMap = (
     return map
 }
 
+// A chain-neutral request's `approve` gets its chain's wire-encoded signed
+// transactions, whichever signer produced them.
+const transactionApproveOf = (
+    request: TransactionSignRequest,
+    scope: ChainScope,
+): SourceCallbacks['approve'] => {
+    if (isUnsignedTransactionRequest(request)) {
+        const approve = request.approve
+        return (
+            approve &&
+            (async (result, submission) => {
+                // Already in the chain's wire form, and a chain with no
+                // planner adapter has no `signedTransactionsOf` to ask.
+                await approve(
+                    result.signedData.type === 'signed-transactions'
+                        ? result.signedData.signed
+                        : plannerAdapterForScope(scope).signedTransactionsOf(
+                              result,
+                              scope,
+                          ),
+                    submission,
+                )
+            })
+        )
+    }
+    const approve = request.approve
+    return (
+        approve &&
+        (async (result, submission) => {
+            if (result.signedData.type === 'transactions') {
+                await approve(result.signedData.signed, submission)
+            }
+        })
+    )
+}
+
+// WalletConnect-only: a serializable delivery context so the multisig
+// sync-flow handoff can answer the dApp after an app kill. Gated on
+// `payloadId`, which only the WalletConnect handler sets.
+const handoffDeliveryOf = (
+    request: TransactionSignRequest,
+): SourceMetadata['handoffDelivery'] => {
+    const facts = isUnsignedTransactionRequest(request)
+        ? request.chainData?.algorand
+        : request
+    if (facts?.payloadId === undefined) return undefined
+    return {
+        clientId: request.transportId ?? '',
+        payloadId: facts.payloadId,
+        indicesToSign: facts.signableIndices ?? [],
+        totalLength: facts.totalLength ?? 0,
+    }
+}
+
 /**
  * Dispatches on the tagged fields (`sourceType`, `transport`), NOT on whether an
  * `approve` callback happens to be present, so the selector stays predictable
  * as new caller shapes appear.
- *
- * Delivery needs no quantum special-casing: a PQ signature is a `pqsig` field
- * on the same `PeraSignedTransaction`, not a separate carrier, so it reaches
- * the request's `approve` unchanged. Whether the dApp's node accepts a Falcon
- * signature is network-gated, not a wallet concern.
  */
-const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
+const buildSourceMetadata = (
+    request: SignRequest,
+    scope: ChainScope,
+): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
     const isLocalAlgod =
         sourceType === 'local' && request.transport !== 'callback'
@@ -136,16 +194,8 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     // Wrap the typed request callback into the generic SourceCallbacks shape.
     let approveCallback: SourceCallbacks['approve']
 
-    if (isTransactionRequest(request) && request.approve) {
-        const txApprove = request.approve
-        approveCallback = async (
-            result: SigningResult,
-            submission?: SubmissionReceipt,
-        ) => {
-            if (result.signedData.type === 'transactions') {
-                await txApprove(result.signedData.signed, submission)
-            }
-        }
+    if (isTransactionRequest(request)) {
+        approveCallback = transactionApproveOf(request, scope)
     } else if (
         (isArbitraryDataRequest(request) || isAuthDataRequest(request)) &&
         request.approve
@@ -177,6 +227,13 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                 ])
             }
         }
+    } else if (isMessageRequest(request) && request.approve) {
+        const messageApprove = request.approve
+        approveCallback = async (result: SigningResult) => {
+            if (result.signedData.type === 'message') {
+                await messageApprove(result.signedData.signed)
+            }
+        }
     }
 
     return {
@@ -202,18 +259,9 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                 ? request.onProposed
                 : undefined,
         },
-        // WalletConnect-only: a serializable delivery context so the multisig
-        // sync-flow handoff can answer the dApp after an app kill. Gated on
-        // `payloadId`, which only the WalletConnect handler sets.
-        handoffDelivery:
-            isTransactionRequest(request) && request.payloadId !== undefined
-                ? {
-                      clientId: request.transportId ?? '',
-                      payloadId: request.payloadId,
-                      indicesToSign: request.signableIndices ?? [],
-                      totalLength: request.totalLength ?? 0,
-                  }
-                : undefined,
+        handoffDelivery: isTransactionRequest(request)
+            ? handoffDeliveryOf(request)
+            : undefined,
     }
 }
 
@@ -330,7 +378,8 @@ const signedForAddresses = (
     )
 }
 
-// A payload the chain can't read is untrusted data, not an internal fault.
+// A payload the chain can't read is untrusted data, not an internal fault; a
+// wrong network keeps its own user-facing error.
 const planSigners = (
     planner: TransactionPlanner,
     transaction: UnsignedTransaction,
@@ -338,6 +387,7 @@ const planSigners = (
     try {
         return planner.plan(transaction).map(entry => entry.signer)
     } catch (error) {
+        if (error instanceof GenesisHashMismatchError) throw error
         throw new InvalidSignableDataError(
             error instanceof Error ? error.message : String(error),
         )
@@ -357,7 +407,7 @@ const buildSignableGroups = (
     allAccounts: WalletAccount[],
     scope: SigningMachineInput['scope'],
 ): SignableGroup[] => {
-    const source = buildSourceMetadata(request)
+    const source = buildSourceMetadata(request, scope)
 
     if (
         isTransactionRequest(request) &&
@@ -470,6 +520,22 @@ const buildSignableGroups = (
         ]
     }
 
+    if (isMessageRequest(request)) {
+        const { message } = request
+        // Stamped when the request was queued; the user may have switched
+        // network while it waited behind another.
+        if (toScopeKey(message.scope) !== toScopeKey(scope)) {
+            throw new ScopeChangedError(message.scope, scope)
+        }
+        return [
+            {
+                data: { type: 'message', request: message },
+                source,
+                signerAddress: message.signer,
+            },
+        ]
+    }
+
     const exhaustiveCheck: never = request
     throw new Error(
         `Unsupported request type: ${(exhaustiveCheck as { type: string }).type}`,
@@ -498,11 +564,7 @@ export const resolveInitialContext = (
 ): SigningMachineContext => {
     const { request, allAccounts } = input
 
-    const signableGroups = buildSignableGroups(
-        request,
-        allAccounts,
-        input.scope,
-    )
+    let signableGroups = buildSignableGroups(request, allAccounts, input.scope)
 
     if (signableGroups.length === 0) {
         throw new CannotSignError(
@@ -519,7 +581,9 @@ export const resolveInitialContext = (
     )
 
     // A planner-signed group and one the chain's own signer signs have no
-    // common signed shape to deliver in, so refuse before anything is signed.
+    // common signed shape to deliver in. A chain that groups by the account
+    // signed for (Algorand) signs every group its own way instead, as it does
+    // the same request in its own shape; any other chain refuses up front.
     const chainNeutral = signableGroups.filter(isChainNeutralTransactions)
     const planned = chainNeutral.filter(group =>
         isPlannerSigned(
@@ -529,10 +593,19 @@ export const resolveInitialContext = (
         ),
     )
     if (planned.length > 0 && planned.length < chainNeutral.length) {
-        throw new SigningError(
-            'This request needs signers that sign in different ways, so it cannot be delivered as one group',
-            undefined,
-            { retryable: false },
+        if (chainNeutral.some(group => isKeyedByPlanner(group.data))) {
+            throw new SigningError(
+                'This request needs signers that sign in different ways, so it cannot be delivered as one group',
+                undefined,
+                { retryable: false },
+            )
+        }
+        const adapter = plannerAdapterForScope(input.scope)
+        signableGroups = signableGroups.map(group =>
+            group.data.type === 'transactions' &&
+            isUnsignedTransactionsData(group.data)
+                ? { ...group, data: adapter.readTransactionsData(group.data) }
+                : group,
         )
     }
 

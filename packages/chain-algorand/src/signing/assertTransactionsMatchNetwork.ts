@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { encodeToBase64, type Network } from '@perawallet/wallet-core-shared'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 
 import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
+import { type AlgorandNetworkId } from '../network-id'
 
 /**
  * Asserts that every transaction's `genesisHash` matches the active network's
@@ -38,7 +39,7 @@ import { GenesisHashMismatchError } from '@perawallet/wallet-core-signing'
  */
 export const assertTransactionsMatchNetwork = (
     transactions: PeraTransaction[],
-    network: Network,
+    network: AlgorandNetworkId,
     expectedGenesisHash: string,
 ): void => {
     if (!expectedGenesisHash) {

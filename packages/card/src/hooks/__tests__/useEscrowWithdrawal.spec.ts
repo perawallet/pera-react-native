@@ -12,23 +12,29 @@
 
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import type { CardChainAdapter } from '../../chain-adapter'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 import { useEscrowWithdrawal } from '../useEscrowWithdrawal'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 const CARD = 'CARD'
 const OWNER = 'OWNER'
 
 let adapter: CardChainAdapter
 
-beforeEach(() => {
-    vi.clearAllMocks()
-    adapter = registerFakeCardAdapter()
-})
+describe.each(SCOPES)('useEscrowWithdrawal ($chainId)', SCOPE => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        adapter = registerFakeCardAdapter({ chainId: SCOPE.chainId })
+    })
 
-describe('useEscrowWithdrawal', () => {
     it("builds each withdrawal step through the scope's chain adapter", async () => {
         const txns = [{ id: 'txn-1' }]
         vi.mocked(adapter.withdrawal.buildRequest).mockResolvedValue(

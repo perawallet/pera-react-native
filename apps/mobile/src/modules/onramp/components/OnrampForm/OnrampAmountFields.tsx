@@ -21,12 +21,12 @@ import { useStyles } from './styles'
 export type OnrampAmountFieldsProps = {
     sourceToken: Nullable<RampToken>
     destinationToken: Nullable<RampToken>
-    sourceAmount: string
+    sourceAmountText: string
     destinationAmount: Nullable<Decimal>
     limits: Nullable<RampQuoteLimits>
     isReceiveLoading: boolean
-    onSourceAmountChange: (amount: string) => void
-    onSetSourceAmount: (amount: string) => void
+    onSourceAmountTextChange: (text: string) => void
+    onSetSourceAmountText: (text: string) => void
     onOpenSource: () => void
     onOpenDestination: () => void
 }
@@ -34,12 +34,12 @@ export type OnrampAmountFieldsProps = {
 export const OnrampAmountFields = ({
     sourceToken,
     destinationToken,
-    sourceAmount,
+    sourceAmountText,
     destinationAmount,
     limits,
     isReceiveLoading,
-    onSourceAmountChange,
-    onSetSourceAmount,
+    onSourceAmountTextChange,
+    onSetSourceAmountText,
     onOpenSource,
     onOpenDestination,
 }: OnrampAmountFieldsProps) => {
@@ -54,8 +54,8 @@ export const OnrampAmountFields = ({
             <OnrampAmountSection
                 variant='pay'
                 token={sourceToken}
-                amount={sourceAmount}
-                onAmountChange={onSourceAmountChange}
+                amountText={sourceAmountText}
+                onAmountTextChange={onSourceAmountTextChange}
                 onAssetPress={onOpenSource}
             />
 
@@ -65,12 +65,14 @@ export const OnrampAmountFields = ({
                         <OnrampMinMaxPill
                             onMin={
                                 min
-                                    ? () => onSetSourceAmount(min.toString())
+                                    ? () =>
+                                          onSetSourceAmountText(min.toString())
                                     : undefined
                             }
                             onMax={
                                 max
-                                    ? () => onSetSourceAmount(max.toString())
+                                    ? () =>
+                                          onSetSourceAmountText(max.toString())
                                     : undefined
                             }
                         />

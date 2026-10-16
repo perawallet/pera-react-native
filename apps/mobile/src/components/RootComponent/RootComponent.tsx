@@ -14,8 +14,8 @@ import { useCallback, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import {
-    useNetwork,
     useSelectedScope,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { MainRoutes } from '@routes/index'
@@ -73,7 +73,8 @@ const handleOverlayError = (error: string | Error) => {
 }
 
 const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
-    const { isMainnet, network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const isLive = useWalletDeployment() === 'live'
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { showError } = useErrorToast()
@@ -97,10 +98,10 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     return (
         <ErrorBoundary onError={handleBoundaryError}>
             <PWView style={styles.container}>
-                {!isMainnet && (
+                {!isLive && (
                     <PWView style={styles.testnetBar}>
                         <PWText style={styles.testnetText}>
-                            {networkLabel(network)}
+                            {networkLabel(scope.networkId)}
                         </PWText>
                     </PWView>
                 )}

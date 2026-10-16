@@ -18,7 +18,6 @@ import {
     TransactionType,
 } from 'algosdk'
 import { standaloneAccount } from '../../__tests__/algorandAccounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     AnalysisError,
@@ -57,6 +56,7 @@ import {
     makeTestAssetTransferTx,
     makeTestPaymentTx,
 } from './transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const WALLET = makeTestAddress(1)
 const SECOND = makeTestAddress(3)
@@ -64,7 +64,7 @@ const OTHER = makeTestAddress(2)
 const TARGET = makeTestAddress(9)
 
 const context: AnalysisContext = {
-    scope: scopeForLegacyNetwork('mainnet'),
+    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     accounts: [WALLET, SECOND].map(address =>
         standaloneAccount(address.toString()),
     ),

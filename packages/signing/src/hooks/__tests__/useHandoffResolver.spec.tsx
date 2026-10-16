@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
     useHandoffResolver,
     type HandoffPollDescriptor,
@@ -21,7 +21,7 @@ import {
 const mocks = vi.hoisted(() => ({ useQueries: vi.fn() }))
 vi.mock('@tanstack/react-query', () => ({ useQueries: mocks.useQueries }))
 
-type Item = { signRequestId: string; network: Network }
+type Item = { signRequestId: string; network: NetworkId }
 type Detail = { id: string }
 
 type CapturedQuery = HandoffPollDescriptor<Detail[], Detail> & {
@@ -107,7 +107,7 @@ describe('useHandoffResolver', () => {
         expect(lastQueries[0].gcTime).toBe(0)
     })
 
-    it('drives every handoff on its own network when no active-network filter is set', () => {
+    it('drives every handoff on its own captured network', () => {
         render({
             handoffs: [
                 makeItem({ signRequestId: 'a', network: 'mainnet' }),
@@ -116,28 +116,6 @@ describe('useHandoffResolver', () => {
         })
 
         expect(lastQueries).toHaveLength(2)
-    })
-
-    it('drives only active-network handoffs when the filter is opted into', async () => {
-        nextResults = [{ data: { id: 'a' } }]
-        classify.mockReturnValue({ kind: 'soft-reject', reason: 'declined' })
-
-        render({
-            handoffs: [
-                makeItem({ signRequestId: 'a', network: 'mainnet' }),
-                makeItem({ signRequestId: 'b', network: 'testnet' }),
-            ],
-            activeNetwork: 'mainnet',
-            networkOf: item => item.network,
-        })
-
-        // Only the mainnet handoff produces a query and gets resolved.
-        expect(lastQueries).toHaveLength(1)
-        expect(lastQueries[0].queryKey).toEqual(['msig', 'mainnet', 'a'])
-        await waitFor(() => {
-            expect(resolve).toHaveBeenCalledTimes(1)
-        })
-        expect(resolve.mock.calls[0][1]).toMatchObject({ signRequestId: 'a' })
     })
 
     it('resolves a terminal outcome once, passing the item and the poll detail', async () => {

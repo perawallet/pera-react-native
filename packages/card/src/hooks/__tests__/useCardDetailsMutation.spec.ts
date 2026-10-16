@@ -25,12 +25,18 @@ const { fetchCardDetailsToken } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/card-sensitive', () => ({ fetchCardDetailsToken }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardDetailsMutation } from '../useCardDetailsMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useCardDetailsMutation', () => {
+describe.each(SCOPES)('useCardDetailsMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -70,7 +76,7 @@ describe('useCardDetailsMutation', () => {
         // The sensitive result must never enter the query cache.
         expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
         expect(fetchCardDetailsToken).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             customCss: undefined,
         })
     })
@@ -92,7 +98,7 @@ describe('useCardDetailsMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(fetchCardDetailsToken).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             customCss,
         })
     })

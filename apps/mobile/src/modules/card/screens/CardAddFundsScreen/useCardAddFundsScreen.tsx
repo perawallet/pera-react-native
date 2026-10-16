@@ -92,7 +92,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         () => [usdcAssetId, sourceAssetId].filter(id => id !== null),
         [usdcAssetId, sourceAssetId],
     )
-    const { data: assets } = useAssetsQuery(assetIds)
+    const { data: assets } = useAssetsQuery(scope, assetIds)
     const usdcAsset = useMemo(
         () => (usdcAssetId === null ? undefined : assets.get(usdcAssetId)),
         [assets, usdcAssetId],

@@ -13,7 +13,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSettingsLaunchScreen } from '../useSettingsLaunchScreen'
 
 const alice: WalletAccount = {
@@ -41,8 +40,8 @@ const mockAccounts = vi.hoisted(() => ({ current: [] as WalletAccount[] }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     LaunchAccountModes: { lastUsed: 'lastUsed', specific: 'specific' },
     useAllAccounts: () => mockAccounts.current,
-    chainAccountOf: (account: WalletAccount, chainId: ChainId) =>
-        account.chains[chainId],
+    ownAddressOf: (account: WalletAccount) =>
+        Object.values(account.chains)[0]?.address,
     useAccountsStore: (selector: (state: unknown) => unknown) =>
         selector(storeState.current),
 }))

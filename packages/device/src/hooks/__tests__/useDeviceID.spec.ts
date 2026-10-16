@@ -14,16 +14,17 @@ import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 import { useDeviceStore } from '../../store'
-import { useDeviceID, useScopedDeviceID } from '../useDeviceID'
+import { useDeploymentDeviceID, useScopedDeviceID } from '../useDeviceID'
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         defaultNetwork: 'mainnet',
     },
-    Networks: {
-        testnet: 'testnet',
-        mainnet: 'mainnet',
-    },
+    // Mirrors the real table: a tier's chains share its deployment; betanet has none.
+    peraDeploymentOf: ({ networkId }: { networkId: string }) =>
+        ({ mainnet: 'live', sepolia: 'developer', testnet: 'developer' })[
+            networkId
+        ],
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -47,69 +48,68 @@ describe('device/hooks/useDeviceID', () => {
         useDeviceStore.getState().resetState()
     })
 
-    test('should return null when no device ID is set', () => {
-        const { result } = renderHook(() => useDeviceID('mainnet'))
+    test('returns null when no device ID is set', () => {
+        const { result } = renderHook(() => useDeploymentDeviceID('live'))
 
         expect(result.current).toBeNull()
     })
 
-    test('should return device ID for specific network', () => {
-        // Set device ID using store
-        const storeHook = renderHook(() => useDeviceStore())
+    test('returns null for a deployment without a device ID', () => {
         act(() => {
-            storeHook.result.current.setDeviceID('mainnet', 'device-main-123')
-            storeHook.result.current.setDeviceID('testnet', 'device-test-456')
+            useDeviceStore.getState().setDeviceID('live', 'device-123')
         })
 
-        const mainnetResult = renderHook(() => useDeviceID('mainnet'))
-        const testnetResult = renderHook(() => useDeviceID('testnet'))
+        const developer = renderHook(() => useDeploymentDeviceID('developer'))
 
-        expect(mainnetResult.result.current).toBe('device-main-123')
-        expect(testnetResult.result.current).toBe('device-test-456')
+        expect(developer.result.current).toBeNull()
     })
 
-    test('should return null for network without device ID', () => {
-        // Set device ID only for mainnet
-        const storeHook = renderHook(() => useDeviceStore())
+    test('updates when the device ID changes', () => {
+        const hook = renderHook(() => useDeploymentDeviceID('live'))
+
+        expect(hook.result.current).toBeNull()
+
         act(() => {
-            storeHook.result.current.setDeviceID('mainnet', 'device-123')
+            useDeviceStore.getState().setDeviceID('live', 'device-new-123')
         })
 
-        const testnetResult = renderHook(() => useDeviceID('testnet'))
-
-        expect(testnetResult.result.current).toBeNull()
+        expect(hook.result.current).toBe('device-new-123')
     })
 
-    test('should update when device ID changes', () => {
-        const storeHook = renderHook(() => useDeviceStore())
-        const deviceIDHook = renderHook(() => useDeviceID('mainnet'))
-
-        expect(deviceIDHook.result.current).toBeNull()
-
+    test("reads a scope's device ID from the deployment serving it", () => {
         act(() => {
-            storeHook.result.current.setDeviceID('mainnet', 'device-new-123')
+            useDeviceStore.getState().setDeviceID('live', 'device-main-123')
+            useDeviceStore
+                .getState()
+                .setDeviceID('developer', 'device-test-456')
         })
 
-        deviceIDHook.rerender()
+        const read = (chainId: 'algorand' | 'ethereum', networkId: string) =>
+            renderHook(() => useScopedDeviceID({ chainId, networkId })).result
+                .current
 
-        expect(deviceIDHook.result.current).toBe('device-new-123')
+        expect(read('algorand', 'mainnet')).toBe('device-main-123')
+        expect(read('ethereum', 'mainnet')).toBe('device-main-123')
+        expect(read('ethereum', 'sepolia')).toBe('device-test-456')
+        expect(read('algorand', 'betanet')).toBeNull()
+        expect(
+            renderHook(() => useScopedDeviceID(null)).result.current,
+        ).toBeNull()
     })
 
-    test('reads the device ID by chain scope', () => {
+    test('reads the device ID by deployment', () => {
         act(() => {
-            useDeviceStore.getState().setDeviceID('mainnet', 'device-main-123')
+            useDeviceStore.getState().setDeviceID('live', 'device-main-123')
+            useDeviceStore
+                .getState()
+                .setDeviceID('developer', 'device-test-456')
         })
 
-        const algorand = renderHook(() =>
-            useScopedDeviceID({ chainId: 'algorand', networkId: 'mainnet' }),
-        )
-        const ethereum = renderHook(() =>
-            useScopedDeviceID({ chainId: 'ethereum', networkId: 'mainnet' }),
-        )
-        const none = renderHook(() => useScopedDeviceID(null))
-
-        expect(algorand.result.current).toBe('device-main-123')
-        expect(ethereum.result.current).toBeNull()
-        expect(none.result.current).toBeNull()
+        expect(
+            renderHook(() => useDeploymentDeviceID('live')).result.current,
+        ).toBe('device-main-123')
+        expect(
+            renderHook(() => useDeploymentDeviceID('developer')).result.current,
+        ).toBe('device-test-456')
     })
 })

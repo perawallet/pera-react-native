@@ -11,10 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    type ChainScope,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { exportCardStatement } from '../api/transactions'
 import type {
     CardStatement,
@@ -36,15 +33,13 @@ export type UseExportCardStatementMutationResult = CardMutationResult<
 export const useExportCardStatementMutation = (
     scope: ChainScope,
 ): UseExportCardStatementMutationResult => {
-    const network = legacyNetworkOf(scope)
-
     const mutation = useMutation<
         CardStatement,
         Error,
         ExportStatementVariables
     >({
         mutationFn: ({ format, filters }) =>
-            exportCardStatement({ network, format, filters }),
+            exportCardStatement({ scope, format, filters }),
         throwOnError: false,
     })
 

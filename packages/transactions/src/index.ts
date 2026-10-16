@@ -45,13 +45,14 @@ export {
     type EmptyAccountOffer,
     type SpendableBalance,
     type SpendableBalanceInput,
+    type InFlightSpend,
     type RecipientWarningInput,
 } from './transfer-adapter'
+export { getInFlightSpends } from './in-flight'
 export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
-    fetchCloseAmount,
     mapHistoryItemToDisplayableTransaction,
     summarizeHistoryItem,
     assetFactsResolverFor,
@@ -59,9 +60,16 @@ export {
     type AssetDisplayFacts,
     type AssetFactsResolver,
     type HistoryChainAdapter,
+    type HistoryChainDataCodec,
+    type TransactionHistoryChainFields,
     type FetchTransactionHistoryParams,
     type FetchMoreTransactionsParams,
 } from './history-adapter'
+export {
+    getPendingTransactionRecords,
+    getTransactionHistoryWithPending,
+    type GetPendingTransactionRecordsParams,
+} from './pending-history'
 export * from './utils'
 
 // Export DB functions for sync service and other consumers
@@ -70,6 +78,9 @@ export {
     getTransactionHistory,
     getLatestTransactionRoundTime,
     deleteTransactionsForAccount,
+    getRowsByChainData,
+    getChainDataValue,
+    setChainDataValue,
 } from './db'
 
 // Export syncer for sync service

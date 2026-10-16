@@ -36,6 +36,10 @@ export const analyzerActor = fromPromise<
     SignableAnalysis[],
     AnalyzerActorInput
 >(async ({ input }) => {
+    // A message has no autoApproveLocal verdict: only a person reads it.
+    if (input.isHeadless && input.groups.some(g => g.data.type === 'message')) {
+        throw new ReviewRequiredError([])
+    }
     const reviewer = reviewerFor(input.context.scope.chainId)
     const analyses = await Promise.all(
         input.groups.map(group => reviewGroup(reviewer, group, input.context)),

@@ -18,14 +18,14 @@ import {
 } from '../blockchain'
 import type { BroadcasterChainAdapter } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { createAlgodTransport } from './transports/createAlgodTransport'
 import { findStaleGroupReason } from './staleRequestGuard'
 import {
     CONFIRMATION_ROUNDS_TO_WAIT,
     setOnConfirmedHandler,
-    submitAndAutoRefresh,
     submitRawSignedTransactionGroup,
+    submitSignedAndAutoRefresh,
     waitForAlgodConfirmation,
 } from './submission'
 import {
@@ -57,13 +57,12 @@ export const algorandBroadcasterAdapter: BroadcasterChainAdapter = {
             encodeSignedTransactions,
             scope,
         ),
-    submitAndAutoRefresh: (scope, signedTxns, options) => {
+    submitAndAutoRefresh: (scope, signedTransactions, options) => {
         const network = algorandNetworkOf(scope)
-        return submitAndAutoRefresh(
+        return submitSignedAndAutoRefresh(
             network,
             createWalletAlgorandClient(network),
-            encodeSignedTransactions,
-            signedTxns,
+            signedTransactions,
             options,
         )
     },

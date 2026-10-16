@@ -36,7 +36,7 @@ export const AccountTabNavigator = ({
 }: AccountTabNavigatorProps) => {
     const styles = useStyles()
     const { index, offset, tabs, isPageVisited, handleIndexChange } =
-        useAccountTabNavigator()
+        useAccountTabNavigator(account)
 
     return (
         <PWView style={styles.container}>
@@ -50,18 +50,25 @@ export const AccountTabNavigator = ({
                 onIndexChange={handleIndexChange}
                 offset={offset}
             >
-                <PWView style={styles.page}>
-                    <AccountOverview
-                        account={account}
-                        chartVisible={chartVisible}
-                    />
-                </PWView>
-                <PWView style={styles.page}>
-                    {isPageVisited(1) && <AccountNfts />}
-                </PWView>
-                <PWView style={styles.page}>
-                    {isPageVisited(2) && <AccountHistory />}
-                </PWView>
+                {tabs.map((tab, pageIndex) => (
+                    <PWView
+                        key={tab.key}
+                        style={styles.page}
+                    >
+                        {tab.key === 'Overview' && (
+                            <AccountOverview
+                                account={account}
+                                chartVisible={chartVisible}
+                            />
+                        )}
+                        {tab.key === 'Nfts' && isPageVisited(pageIndex) && (
+                            <AccountNfts />
+                        )}
+                        {tab.key === 'History' && isPageVisited(pageIndex) && (
+                            <AccountHistory />
+                        )}
+                    </PWView>
+                ))}
             </AccountDrawerPager>
         </PWView>
     )

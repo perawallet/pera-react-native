@@ -14,11 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useCsvExportMutation } from '../useCsvExportMutation'
 import { fetchTransactionsCsv, CsvExportError } from '../../api/csv-export'
-import { Networks } from '@perawallet/wallet-core-shared'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() => true),
@@ -58,7 +57,10 @@ describe('useCsvExportMutation', () => {
         vi.clearAllMocks()
     })
 
-    it('successfully exports CSV', async () => {
+    it.each([
+        { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+        { chainId: 'ethereum', networkId: 'sepolia' } as const,
+    ])('successfully exports CSV for $chainId', async scope => {
         const mockResult = {
             csvContent: 'date,amount\n2024-01-01,1000',
             filename: 'export.csv',
@@ -70,7 +72,7 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    scope: scopeForLegacyNetwork(Networks.mainnet),
+                    scope,
                     onSuccess: mockOnSuccess,
                     onError: mockOnError,
                 }),
@@ -88,7 +90,7 @@ describe('useCsvExportMutation', () => {
             accountAddress: VALID_ADDRESS,
             dateRange: undefined,
             filename: undefined,
-            network: Networks.mainnet,
+            scope,
         })
     })
 
@@ -99,7 +101,10 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    scope: scopeForLegacyNetwork(Networks.mainnet),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                     onSuccess: mockOnSuccess,
                     onError: mockOnError,
                 }),
@@ -123,7 +128,10 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    scope: scopeForLegacyNetwork(Networks.mainnet),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                     onSuccess: mockOnSuccess,
                     onError: mockOnError,
                 }),
@@ -149,7 +157,10 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    scope: scopeForLegacyNetwork(Networks.mainnet),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper: createWrapper() },
         )
@@ -168,7 +179,10 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    scope: scopeForLegacyNetwork(Networks.mainnet),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                 }),
             { wrapper: createWrapper() },
         )
@@ -200,7 +214,10 @@ describe('useCsvExportMutation', () => {
         const { result } = renderHook(
             () =>
                 useCsvExportMutation({
-                    scope: scopeForLegacyNetwork(Networks.mainnet),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                     onSuccess: mockOnSuccess,
                 }),
             { wrapper: createWrapper() },
@@ -220,20 +237,23 @@ describe('useCsvExportMutation', () => {
             dateRange: undefined,
             filename: undefined,
             assetId: '12345',
-            network: Networks.mainnet,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
         expect(result.current.result?.assetId).toBe('12345')
     })
 
     describe('non-Pera-backed networks', () => {
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'reports isUnavailableOnNetwork and no-ops exportCsv on %s',
             async network => {
                 vi.mocked(useChainCapability).mockReturnValue(false)
                 const { result, rerender } = renderHook(
                     () =>
                         useCsvExportMutation({
-                            scope: scopeForLegacyNetwork(network),
+                            scope: {
+                                chainId: LEGACY_CHAIN_ID,
+                                networkId: network,
+                            } as const,
                             onSuccess: mockOnSuccess,
                             onError: mockOnError,
                         }),
@@ -260,14 +280,17 @@ describe('useCsvExportMutation', () => {
             },
         )
 
-        it.each([Networks.mainnet, Networks.testnet])(
+        it.each(['mainnet', 'testnet'])(
             'reports isUnavailableOnNetwork as false on %s',
             network => {
                 vi.mocked(useChainCapability).mockReturnValue(true)
                 const { result } = renderHook(
                     () =>
                         useCsvExportMutation({
-                            scope: scopeForLegacyNetwork(network),
+                            scope: {
+                                chainId: LEGACY_CHAIN_ID,
+                                networkId: network,
+                            } as const,
                         }),
                     { wrapper: createWrapper() },
                 )

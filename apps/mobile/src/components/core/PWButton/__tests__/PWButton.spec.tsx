@@ -71,18 +71,18 @@ describe('PWButton', () => {
         ).toBe('2')
     })
 
-    it('forwards accessibilityLabel and testID to the native touchable', () => {
+    it('announces its accessibility label rather than the testID', () => {
         render(
             <PWButton
                 title='Add Account'
                 onPress={vi.fn()}
                 variant='helper'
                 testID='add_account_button'
-                accessibilityLabel='add_account_button'
+                accessibilityLabel='Add a new account'
             />,
         )
 
         expect(screen.getByTestId('add_account_button')).toBeTruthy()
-        expect(screen.getByLabelText('add_account_button')).toBeTruthy()
+        expect(screen.getByLabelText('Add a new account')).toBeTruthy()
     })
 })

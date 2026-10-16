@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { SendFlowChainAdapter } from '../chain-adapter'
 import { sendFlowContractTests } from './adapter-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const isQuote = (summary: unknown): boolean =>
     typeof summary === 'object' && summary !== null && 'fee' in summary
@@ -20,6 +20,7 @@ const isQuote = (summary: unknown): boolean =>
 const adapter: SendFlowChainAdapter = {
     chainId: 'algorand',
     buildTransferTxs: async () => [],
+    transactionFee: vi.fn(),
     assetInbox: {
         buildSendTxs: async ({ summary }) => {
             if (!isQuote(summary)) throw new Error('malformed quote')
@@ -32,7 +33,7 @@ const adapter: SendFlowChainAdapter = {
 
 sendFlowContractTests(() => adapter, {
     inboxSend: {
-        scope: scopeForLegacyNetwork('testnet'),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
         sender: 'SENDER',
         receiver: 'RECEIVER',
         assetId: 1n,

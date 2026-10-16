@@ -15,6 +15,8 @@ import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '../dappRequest'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { configuredScopes } from '@perawallet/wallet-core-config'
 import { createConnectionRegistry } from '../registry'
 import type { ConnectionHandler, ConnectionHandlerContext } from '../handler'
 import type {
@@ -83,7 +85,7 @@ const makeOriginHandler = (
     disconnect: vi.fn(async () => {}),
     disconnectAll: vi.fn(async () => {}),
     restore: vi.fn(async () => []),
-    matchesNetwork: vi.fn(() => true),
+    matchesChainScope: vi.fn(() => true),
     methodsFor: vi.fn(() => []),
     ...overrides,
 })
@@ -447,35 +449,37 @@ describe('createConnectionRegistry', () => {
         })
     })
 
-    describe('networksFor', () => {
-        it('returns exactly the networks the kind handler accepts', () => {
+    describe('scopesFor', () => {
+        it('returns exactly the configured scopes the kind handler accepts', () => {
             const beta = makeHandler('beta', {
-                matchesNetwork: vi.fn(
-                    (_connection: Connection, network: string) =>
-                        network === 'mainnet' || network === 'custom',
+                matchesChainScope: vi.fn(
+                    (_connection: Connection, scope: ChainScope) =>
+                        scope.chainId === 'algorand' &&
+                        (scope.networkId === 'mainnet' ||
+                            scope.networkId === 'custom'),
                 ),
             })
             const registry = createConnectionRegistry({ store })
             registry.register(makeHandler('alpha'))
             registry.register(beta)
 
-            const networks = registry.networksFor(
+            const scopes = registry.scopesFor(
                 makeConnection({ id: 'b1', kind: 'beta' }),
             )
 
-            expect(networks).toEqual(['mainnet', 'custom'])
+            expect(scopes).toEqual([
+                { chainId: 'algorand', networkId: 'mainnet' },
+                { chainId: 'algorand', networkId: 'custom' },
+            ])
         })
 
-        it('yields every network for a handler that accepts them all', () => {
+        it('yields every configured scope for a handler that accepts them all', () => {
             const registry = createConnectionRegistry({ store })
             registry.register(makeHandler('alpha'))
 
-            expect([...registry.networksFor(makeConnection())].sort()).toEqual([
-                'betanet',
-                'custom',
-                'mainnet',
-                'testnet',
-            ])
+            expect(registry.scopesFor(makeConnection())).toEqual(
+                configuredScopes(),
+            )
         })
 
         it('is empty for a kind with no registered handler', () => {
@@ -483,7 +487,7 @@ describe('createConnectionRegistry', () => {
             registry.register(makeHandler('alpha'))
 
             expect(
-                registry.networksFor(makeConnection({ kind: 'beta' })),
+                registry.scopesFor(makeConnection({ kind: 'beta' })),
             ).toEqual([])
         })
     })
@@ -1102,6 +1106,55 @@ describe('createConnectionRegistry', () => {
 
             expect(() => ctx.onRequestExpired('c1', '7')).not.toThrow()
             expect(seen).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('connection-closed', () => {
+        it('announces a record removed through the handler context, whichever side ended it', async () => {
+            const { ctx, registry } = await setupRegistry()
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            await ctx.store.remove('c1')
+            ctx.onDisconnected('c2')
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(seen.mock.calls).toEqual([
+                [{ kind: 'connection-closed', connectionId: 'c1' }],
+                [{ kind: 'connection-closed', connectionId: 'c2' }],
+            ])
+        })
+
+        it('announces every record a clear drops', async () => {
+            const { ctx, registry } = await setupRegistry()
+            await store.upsert(makeConnection({ id: 'c1' }))
+            await store.upsert(makeConnection({ id: 'c2' }))
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            await ctx.store.clear()
+
+            expect(seen).toHaveBeenCalledWith({
+                kind: 'connection-closed',
+                connectionId: 'c1',
+            })
+            expect(seen).toHaveBeenCalledWith({
+                kind: 'connection-closed',
+                connectionId: 'c2',
+            })
+        })
+
+        it('announces nothing when the removal fails', async () => {
+            store.remove = vi.fn(async () => {
+                throw new Error('storage write failed')
+            })
+            const { ctx, registry } = await setupRegistry()
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            await expect(ctx.store.remove('c1')).rejects.toThrow()
+
+            expect(seen).not.toHaveBeenCalled()
         })
     })
 

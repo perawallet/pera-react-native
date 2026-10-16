@@ -12,8 +12,11 @@
 
 import type {
     ChainId,
+    MessageRequest,
     PeraSignedTransaction,
     PeraTransaction,
+    SignedMessage,
+    SignedTransaction,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
@@ -22,6 +25,7 @@ import type {
     RejectReason,
     SignableAnalysis,
     SignRequestTransportOptions,
+    SourceCallbacks,
     SourceType,
     SubmissionReceipt,
     TransportResult,
@@ -54,7 +58,7 @@ export type SignRequestSource = {
 
 type BaseSignRequest = {
     id: string
-    type: 'transactions' | 'arbitrary-data' | 'auth-data'
+    type: 'transactions' | 'arbitrary-data' | 'auth-data' | 'message'
     transport: 'algod' | 'callback'
     transportId?: string
     /** Origin of the request. Defaults to 'local' when not specified. */
@@ -151,7 +155,13 @@ export type AlgorandRequestData = {
     rawTransactionsBase64?: string[]
     /** Indexed in `groupContext` space, as {@link FeeAdjustment.index}. */
     feeAdjustments?: FeeAdjustment[]
+    /** As {@link AlgorandRequestFields.payloadId}. */
+    payloadId?: number
+    /** As {@link AlgorandRequestFields.totalLength}. */
+    totalLength?: number
 }
+
+type DeliveryCallbacks = 'approve' | 'approveSignedBytes' | 'onProposed'
 
 /**
  * Each transaction names its scope, so the request's chain comes from them.
@@ -159,10 +169,25 @@ export type AlgorandRequestData = {
  * one the pipeline would ignore; Algorand's group facts ride in `chainData`.
  */
 export type UnsignedTransactionSignRequest = {
-    [Field in keyof (AlgorandRequestFields & ChainStamp)]?: never
+    [
+        Field in Exclude<
+            keyof (AlgorandRequestFields & ChainStamp),
+            DeliveryCallbacks
+        >
+    ]?: never
 } & TransactionRequestCallbacks & {
         txs: UnsignedTransaction[]
         chainData?: { algorand?: AlgorandRequestData }
+        /**
+         * Entries are `Nullable` for the same reason as
+         * {@link AlgorandRequestFields.approve}'s.
+         */
+        approve?: (
+            signed: Nullable<SignedTransaction>[],
+            submission?: SubmissionReceipt,
+        ) => Promise<void>
+        approveSignedBytes?: SourceCallbacks['approveSignedBytes']
+        onProposed?: SourceCallbacks['onProposed']
     }
 
 export type TransactionSignRequest =
@@ -200,10 +225,19 @@ export type AuthDataSignRequest = AuthDataPayload &
         error?: (error: Error) => Promise<void>
     } & BaseSignRequest
 
+/** The chain is `message.scope.chainId`, so there is no separate stamp to disagree with it. */
+export type MessageSignRequest = BaseSignRequest & {
+    message: MessageRequest
+    approve?: (signed: SignedMessage) => Promise<void>
+    reject?: (reason?: RejectReason) => Promise<void>
+    error?: (error: Error) => Promise<void>
+}
+
 export type SignRequest =
     | TransactionSignRequest
     | ArbitraryDataSignRequest
     | AuthDataSignRequest
+    | MessageSignRequest
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
@@ -270,6 +304,7 @@ export {
     isTransactionRequest,
     isArbitraryDataRequest,
     isAuthDataRequest,
+    isMessageRequest,
     isUnsignedTransaction,
     isUnsignedTransactionRequest,
 } from './guards'

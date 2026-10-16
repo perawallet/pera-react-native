@@ -10,43 +10,45 @@
  limitations under the License
  */
 
-import { type Network, Networks } from '@perawallet/wallet-core-config'
-
-export type ActiveNetwork = Network
-
-const SUPPORTED = new Set<string>(Object.values(Networks))
+import {
+    isLegacyNetwork,
+    isWalletMode,
+    type WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 
 // The service worker never hydrates the network zustand store, so it reads the persisted envelope
 // straight from chrome.storage.local. That value is a JSON string, not an object, because the store
 // persists through ChromeKeyValueStorageService, which stringifies the whole envelope.
-export const parseActiveNetwork = (raw: string | undefined): ActiveNetwork => {
-    if (raw === undefined) return Networks.mainnet
+export const parseActiveDeployment = (raw: string | undefined): WalletMode => {
+    if (raw === undefined) return 'live'
     let envelope: unknown
     try {
         envelope = JSON.parse(raw)
     } catch {
-        return Networks.mainnet
+        return 'live'
     }
     const state = (
         envelope as {
             state?: {
+                mode?: unknown
                 selectedNetworkByChain?: { algorand?: unknown }
                 network?: unknown
             }
         } | null
     )?.state
-    // The mirror wins: v3 derives it from the mode, so a live wallet's stored Algorand override must not be read. v1 has only the mirror and v2 only the entry, and either may survive until a UI or offscreen context rewrites it.
+    if (isWalletMode(state?.mode)) return state.mode
+    // v1 and v2 predate the mode, and either may survive until a UI or offscreen context rewrites it: only MainNet was live then.
     const network = state?.network ?? state?.selectedNetworkByChain?.algorand
-    return typeof network === 'string' && SUPPORTED.has(network)
-        ? (network as ActiveNetwork)
-        : Networks.mainnet
+    return isLegacyNetwork(network) && network !== 'mainnet'
+        ? 'developer'
+        : 'live'
 }
 
 // The network store persists under this key; there is no shared export for it.
 const NETWORK_STORAGE_KEY = 'kv:network-store'
 
-export const readActiveNetwork = async (): Promise<ActiveNetwork> => {
+export const readActiveDeployment = async (): Promise<WalletMode> => {
     const stored = await chrome.storage.local.get(NETWORK_STORAGE_KEY)
     const raw = stored[NETWORK_STORAGE_KEY]
-    return parseActiveNetwork(typeof raw === 'string' ? raw : undefined)
+    return parseActiveDeployment(typeof raw === 'string' ? raw : undefined)
 }

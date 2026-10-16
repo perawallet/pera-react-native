@@ -33,6 +33,9 @@ import {
 } from '../endpoints'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 beforeEach(() => {
     registerFakeNameServiceAdapter()
 })
@@ -56,13 +59,13 @@ describe('fetchNfdNamesForAddress', () => {
 
         const result = await fetchNfdNamesForAddress({
             address: 'ADDR',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
                 method: 'GET',
                 url: '/v1/accounts/ADDR/names/',
             }),
@@ -75,7 +78,7 @@ describe('fetchNfdNamesForAddress', () => {
 
         const result = await fetchNfdNamesForAddress({
             address: 'ADDR',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual([])
@@ -104,7 +107,7 @@ describe('fetchNfdBulkRead', () => {
 
         const result = await fetchNfdBulkRead({
             addresses: ['ADDR1', 'ADDR2'],
-            network: 'testnet',
+            scope: ALGORAND_TESTNET,
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -125,7 +128,7 @@ describe('fetchNfdBulkRead', () => {
 
         const result = await fetchNfdBulkRead({
             addresses: ['ADDR1'],
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual([])
@@ -156,7 +159,7 @@ describe('fetchNfdSearch', () => {
 
         const result = await fetchNfdSearch({
             name: 'alice',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
@@ -180,7 +183,7 @@ describe('fetchNfdSearch', () => {
 
         const result = await fetchNfdSearch({
             name: 'alice',
-            network: 'mainnet',
+            scope: ALGORAND_MAINNET,
         })
 
         expect(result).toEqual([])
@@ -192,7 +195,7 @@ describe('fetchNfdSearch', () => {
             data: { count: 0, results: [] },
         })
 
-        await fetchNfdSearch({ name: 'alice', network: 'testnet' })
+        await fetchNfdSearch({ name: 'alice', scope: ALGORAND_TESTNET })
 
         expect(queryClientMock).toHaveBeenCalled()
     })
@@ -205,10 +208,10 @@ describe('non-Pera-backed networks', () => {
 
     test.each(['betanet', 'custom'] as const)(
         'fetchNfdBulkRead returns [] without calling queryClient on %s',
-        async network => {
+        async networkId => {
             const result = await fetchNfdBulkRead({
                 addresses: ['ADDR1'],
-                network,
+                scope: { chainId: 'algorand', networkId },
             })
 
             expect(result).toEqual([])
@@ -218,10 +221,10 @@ describe('non-Pera-backed networks', () => {
 
     test.each(['betanet', 'custom'] as const)(
         'fetchNfdSearch returns [] without calling queryClient on %s',
-        async network => {
+        async networkId => {
             const result = await fetchNfdSearch({
                 name: 'alice',
-                network,
+                scope: { chainId: 'algorand', networkId },
             })
 
             expect(result).toEqual([])
@@ -231,10 +234,10 @@ describe('non-Pera-backed networks', () => {
 
     test.each(['betanet', 'custom'] as const)(
         'fetchNfdNamesForAddress returns [] without calling queryClient on %s',
-        async network => {
+        async networkId => {
             const result = await fetchNfdNamesForAddress({
                 address: 'ADDR1',
-                network,
+                scope: { chainId: 'algorand', networkId },
             })
 
             expect(result).toEqual([])

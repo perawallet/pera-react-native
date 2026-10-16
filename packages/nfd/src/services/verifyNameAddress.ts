@@ -10,31 +10,29 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { nameServiceAdapterFor } from '../chain-adapter'
 import type { NfdAddressVerification } from '../models'
 
 export type VerifyNameAddressParams = {
     name: string
     address: string
-    network: Network
+    scope: ChainScope
     signal?: AbortSignal
 }
 
 /**
  * Checks a name's backend-asserted address against the chain itself, so
  * neither Pera's backend nor a third-party registry can vouch for an address.
- * @throws ChainAdapterNotRegisteredError when the network's chain registered
+ * @throws ChainAdapterNotRegisteredError when the scope's chain registered
  * no name service adapter, which is a bootstrap bug rather than a verdict.
  */
 export const verifyNameAddress = async ({
     name,
     address,
-    network,
+    scope,
     signal,
 }: VerifyNameAddressParams): Promise<NfdAddressVerification> => {
-    const scope = scopeForLegacyNetwork(network)
     const adapter = nameServiceAdapterFor(scope)
     // Without an on-chain check there is nothing to trust the address on, so
     // the name stays unusable as a destination rather than passing unchecked.

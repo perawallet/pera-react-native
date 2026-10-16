@@ -55,7 +55,6 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 
@@ -419,7 +418,7 @@ describe('useSelectDestinationScreen', () => {
 
         it('stops auto-advancing (no infinite spinner) when the deeplinked asset is not in the local DB', () => {
             // Asset query settled but the id resolves to nothing — an
-            // ASSET_TRANSFER for an ASA the user has never held.
+            // TRANSFER of an ASA the user has never held.
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map(),
                 isFetched: true,
@@ -542,7 +541,7 @@ describe('useSelectDestinationScreen', () => {
                 expect.objectContaining({
                     name: NFD_NAME,
                     address: EXTERNAL_ADDR,
-                    network: 'testnet',
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
                 }),
             )
             expect(mockSetDestination).toHaveBeenCalledWith(EXTERNAL_ADDR)

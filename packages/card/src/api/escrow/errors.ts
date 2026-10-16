@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 
 /** The on-chain ids the escrow card flows need are missing from the build. */
@@ -42,14 +42,14 @@ export class AutoDrawTealUnverifiedError extends AppError {
 
 /** The compiled AutoDraw program doesn't match the network's pinned hash. */
 export class AutoDrawProgramUnverifiedError extends AppError {
-    constructor(network: Network) {
+    constructor(networkId: NetworkId) {
         super(
-            `AutoDraw program for ${network} does not match the pinned hash`,
+            `AutoDraw program for ${networkId} does not match the pinned hash`,
             {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.BLOCKCHAIN,
                 recoverable: false,
-                params: { network },
+                params: { network: networkId },
             },
         )
         this.name = 'AutoDrawProgramUnverifiedError'

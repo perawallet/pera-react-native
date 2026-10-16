@@ -31,8 +31,8 @@ const USD_CURRENCY = 'USD'
 export type ProviderSelectionItemProps = {
     label: string
     quote: RampQuote
-    /** Raw source amount string — XO destination amounts are computed from it. */
-    sourceAmount: string
+    /** Display units; XO destination amounts are computed from it. */
+    sourceAmount: Nullable<Decimal>
     /** Destination token price in USD; null hides the fiat value line. */
     destinationPriceInUsd: Nullable<Decimal>
     isBest: boolean

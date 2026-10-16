@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { useWebViewStack, type WebViewRequest } from '../../hooks'
-import { PWWebView } from '../PWWebView'
+import { useWebViewOverlay } from './useWebViewOverlay'
 
 /**
  * WebViewOverlay opens a WebView bottom sheet for each entry in the
@@ -22,77 +19,6 @@ import { PWWebView } from '../PWWebView'
  * app.
  */
 export const WebViewOverlay = () => {
-    const { openWebViews, removeWebView } = useWebViewStack()
-    const { request: requestBottomSheet, dismiss } = useBottomSheet()
-
-    // Track which webview ids we've already opened a sheet for so we
-    // don't re-request on every render.
-    const openedRef = useRef<Set<string>>(new Set())
-
-    useEffect(() => {
-        const currentIds = new Set(openWebViews.map(v => v.id))
-
-        // Open sheets for newly-added entries.
-        for (const view of openWebViews) {
-            if (openedRef.current.has(view.id)) continue
-            openedRef.current.add(view.id)
-
-            const onCloseRequested = () => {
-                if (view.onCloseRequested) {
-                    view.onCloseRequested()
-                } else {
-                    removeWebView(view.id)
-                }
-            }
-
-            void requestBottomSheet({
-                id: view.id,
-                contents: (
-                    <WebViewSheetContents
-                        view={view}
-                        onClose={onCloseRequested}
-                    />
-                ),
-                options: {
-                    size: 'full',
-                    autoCreateContainer: false,
-                    // The WebView insets its own content.
-                    avoidKeyboard: false,
-                },
-            }).finally(() => {
-                openedRef.current.delete(view.id)
-                // If the sheet was dismissed externally (e.g. pan-down),
-                // make sure the store reflects that.
-                removeWebView(view.id)
-            })
-        }
-
-        // Close sheets that have been removed from the store.
-        for (const id of Array.from(openedRef.current)) {
-            if (!currentIds.has(id)) {
-                openedRef.current.delete(id)
-                dismiss(id)
-            }
-        }
-    }, [openWebViews, requestBottomSheet, dismiss, removeWebView])
-
+    useWebViewOverlay()
     return null
 }
-
-type WebViewSheetContentsProps = {
-    view: WebViewRequest
-    onClose: () => void
-}
-
-const WebViewSheetContents = ({ view, onClose }: WebViewSheetContentsProps) => (
-    <PWWebView
-        requestId={view.id}
-        url={view.url}
-        enablePeraConnect={view.enablePeraConnect ?? false}
-        showControls
-        favorite={view.favorite}
-        onBack={view.onBackRequested}
-        onClose={onClose}
-        inBottomSheet
-    />
-)

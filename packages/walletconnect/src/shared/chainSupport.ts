@@ -10,58 +10,56 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '@perawallet/wallet-core-connections/dappRequest'
-import {
-    Networks,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /** Shared by v1 and v2 (`pera/no-cross-protocol-imports` forbids them importing each other). */
 export type WalletConnectSupport = DappRequestChainAdapter['walletConnect']
 
-/** `null` when no chain adapter is registered for the chain `network` belongs to. */
+/** `null` when no chain adapter is registered for the scope's chain. */
 export const dappRequestAdapterFor = (
-    network: Network,
-): Nullable<DappRequestChainAdapter> => {
-    const { chainId } = scopeForLegacyNetwork(network)
-    return dappRequestChainAdapters.has(chainId)
-        ? dappRequestChainAdapters.get(chainId)
+    scope: ChainScope,
+): Nullable<DappRequestChainAdapter> =>
+    dappRequestChainAdapters.has(scope.chainId)
+        ? dappRequestChainAdapters.get(scope.chainId)
         : null
-}
 
 /**
- * Every network resolves to one chain package, which owns the whole
+ * Every scope resolves to one chain package, which owns the whole
  * `walletConnect` member; a version speaking to it never needs to know which
  * chain it reached.
  */
 export const walletConnectSupportFor = (
-    network: Network,
+    scope: ChainScope,
 ): Nullable<WalletConnectSupport> =>
-    dappRequestAdapterFor(network)?.walletConnect ?? null
+    dappRequestAdapterFor(scope)?.walletConnect ?? null
 
 /** Fails closed: no adapter, or a chain that serves no v1, accepts nothing. */
 export const isV1ChainIdAcceptable = (
     chainId: number | undefined,
-    network: Network,
+    scope: ChainScope,
 ): boolean => {
-    const support = walletConnectSupportFor(network)
+    const support = walletConnectSupportFor(scope)
     if (!support?.v1) return false
-    return support.v1.isChainIdAcceptable(chainId, network)
+    return support.v1.isChainIdAcceptable(chainId, scope.networkId)
 }
 
 /**
- * Fails closed to `[]`. `Networks.mainnet` is only the anchor used to look up
- * the registered adapter — every legacy network belongs to the same chain
- * today, so any of them would resolve to the same instance — the returned
- * networks are the adapter's own answer for `chainId`.
+ * Fails closed to `[]`. `scope` only selects the registered adapter; the
+ * returned networks are the adapter's own answer for `chainId`.
  */
-export const v1NetworksFor = (chainId: number): Network[] => {
-    const support = walletConnectSupportFor(Networks.mainnet)
+export const v1NetworksFor = (
+    scope: ChainScope,
+    chainId: number,
+): NetworkId[] => {
+    const support = walletConnectSupportFor(scope)
     if (!support?.v1) return []
-    return support.v1.networksFor(chainId) as Network[]
+    return support.v1.networksFor(chainId)
 }

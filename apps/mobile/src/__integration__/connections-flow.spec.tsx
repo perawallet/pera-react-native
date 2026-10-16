@@ -99,7 +99,6 @@ import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import {
     decodeFromBase64,
     encodeToBase64,
-    Networks,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -747,7 +746,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         beforeEach(async () => {
             await resetTestDatabase()
             await seedAlgoAsset('mainnet')
-            useNetworkStore.getState().setNetwork(Networks.mainnet)
+            useNetworkStore.getState().setMode('live')
             signSpy = vi
                 .spyOn(getProvider().key.store, 'sign')
                 .mockResolvedValue(VISIBLE_SIGNATURE)
@@ -841,6 +840,61 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                 ),
             ).toBe(true)
             expect(connector.rejectRequestCalls).toHaveLength(0)
+        })
+
+        it("Given a dApp names the wallet's account as the authority for a sender the wallet doesn't hold, when the user confirms, then the peer is answered with the transaction signed by that authority", async () => {
+            const signer = await seedAlgo25Signer()
+            await mountProviderWithSigning()
+            const connector = await pairAndHandshake('Rekeyed dApp', {
+                origin: IN_APP_ORIGIN,
+            })
+            await approveViaUi(signer.name as string)
+            await waitForStoredConnection(connector.clientId)
+
+            const requested = buildPaymentTransaction({
+                sender: HD_TEST_ADDRESS,
+                receiver: addressOf(signer),
+                amount: 1_000_000n,
+            })
+            const requestId = 9304
+            act(() => {
+                connector.fire('algo_signTxn', null, {
+                    id: requestId,
+                    method: 'algo_signTxn',
+                    params: [
+                        [
+                            {
+                                txn: encodeToBase64(
+                                    encodeTransactionRaw(requested),
+                                ),
+                                authAddr: addressOf(signer),
+                            },
+                        ],
+                    ],
+                })
+            })
+
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+
+            await waitFor(
+                () => {
+                    expect(connector.approveRequestCalls).toHaveLength(1)
+                },
+                { timeout: 15_000 },
+            )
+            const [carrier] = connector.approveRequestCalls[0]
+                .result as Nullable<string>[]
+            if (!carrier) throw new Error('the peer got no signed slot')
+            const signed = decodeSignedTransaction(decodeFromBase64(carrier))
+            expect(signed.sig).toEqual(VISIBLE_SIGNATURE)
+            expect(signed.sgnr?.toString()).toBe(addressOf(signer))
+            expect(signed.txn.sender.toString()).toBe(HD_TEST_ADDRESS)
         })
 
         it('Given a request the user already signed, when the bridge delivers it again, then no review sheet appears and the peer is answered only once', async () => {

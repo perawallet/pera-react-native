@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Platform } from 'react-native'
 import type { CloudFileStore } from '@perawallet/wallet-extension-platform'

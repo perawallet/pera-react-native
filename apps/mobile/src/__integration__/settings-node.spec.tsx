@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-// Network selection through `useNetwork`: `setNetwork` updates the persisted
-// store, `networkConfig` re-derives algod/indexer URLs, and every consumer
-// re-keys against the new network on the next render.
+// Network selection through the network store: switching the wallet mode
+// moves the selected scope, `getAlgorandChainConfig` re-derives algod/indexer
+// URLs from it, and every consumer re-keys against the new scope on the next
+// render.
 //
-// The point is the contract that hooks consume `useNetwork` rather than
+// The point is the contract that hooks consume the selected scope rather than
 // hardcoding URLs — a custom-algod-URL feature would extend this same surface.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -22,13 +23,12 @@ import { Decimal } from 'decimal.js'
 import { act, renderHook, waitFor } from '@testing-library/react'
 
 import {
-    useNetwork,
+    useNetworkStore,
     useSelectedScope,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { createQueryClientWrapper } from '@test-utils/render'
 import {
     resetTestDatabase,
@@ -43,13 +43,18 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { Networks } from '@perawallet/wallet-core-shared'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',
@@ -84,43 +89,38 @@ describe('Flow: Settings → Network selection', () => {
             .setSelectedAccountId(SAME_ADDRESS_ACCOUNT.id)
         // Reset network to a known starting point so each test isn't
         // contaminated by the persisted setting from a prior test.
-        renderHook(() => useNetwork()).result.current.setNetwork(
-            Networks.mainnet,
-        )
+        useNetworkStore.getState().resetState()
     })
 
-    it('Given the user is on mainnet, when setNetwork(testnet) runs, then the network state flips and the network config exposes the testnet algod URL', async () => {
-        const { result } = renderHook(() => useNetwork())
+    it('Given the user is on mainnet, when the mode flips to developer, then the selected scope moves to testnet and the chain config exposes the testnet algod URL', async () => {
+        const { result } = renderHook(() => ({
+            scope: useSelectedScope(LEGACY_CHAIN_ID),
+            deployment: useWalletDeployment(),
+        }))
 
         await waitFor(() => {
-            expect(result.current.network).toBe(Networks.mainnet)
+            expect(result.current.scope.networkId).toBe('mainnet')
         })
-        const mainnetAlgodUrl = result.current.networkConfig.algodUrl
-        const mainnetIndexerUrl = result.current.networkConfig.indexerUrl
-        expect(result.current.isMainnet).toBe(true)
-        expect(result.current.isTestnet).toBe(false)
+        const mainnetConfig = getAlgorandChainConfig(result.current.scope)
+        expect(result.current.deployment).toBe('live')
 
         act(() => {
-            result.current.setNetwork(Networks.testnet)
+            useNetworkStore.getState().setMode('developer')
         })
 
         await waitFor(() => {
-            expect(result.current.network).toBe(Networks.testnet)
+            expect(result.current.scope.networkId).toBe('testnet')
         })
-        // Production hooks key off `network` for query keys + URL
-        // resolution; the derived flags must flip too.
-        expect(result.current.isMainnet).toBe(false)
-        expect(result.current.isTestnet).toBe(true)
+        expect(result.current.deployment).toBe('developer')
 
         // Critical: the algod / indexer URLs differ between
         // networks. A regression that returns the same URL for both
         // would silently pin every "testnet" request to mainnet
         // (or vice-versa) — exactly the kind of cross-environment
         // bug a user would hit in seconds.
-        expect(result.current.networkConfig.algodUrl).not.toBe(mainnetAlgodUrl)
-        expect(result.current.networkConfig.indexerUrl).not.toBe(
-            mainnetIndexerUrl,
-        )
+        const testnetConfig = getAlgorandChainConfig(result.current.scope)
+        expect(testnetConfig.algodUrl).not.toBe(mainnetConfig.algodUrl)
+        expect(testnetConfig.indexerUrl).not.toBe(mainnetConfig.indexerUrl)
     })
 
     it('Given the same address has separate balances seeded into mainnet and testnet rows, when the network toggles, then useAccountBalancesQuery returns the per-network balance (proves consumers re-key on network change)', async () => {
@@ -149,29 +149,28 @@ describe('Flow: Settings → Network selection', () => {
             accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             assetId: '0',
             scope: MAINNET_SCOPE,
-            amount: '100000000', // 100 ALGO
+            amount: new Decimal('100000000'), // 100 ALGO
         })
         await insertAssetHolding({
             accountAddress: addressOf(SAME_ADDRESS_ACCOUNT),
             assetId: '0',
             scope: TESTNET_SCOPE,
-            amount: '7000000', // 7 ALGO
+            amount: new Decimal('7000000'), // 7 ALGO
         })
 
-        // Compose `useNetwork` + `useAccountBalancesQuery` in one
-        // hook so they share the same render lifecycle. Toggling
-        // `setNetwork` should make the balance query re-key off the
-        // new network and read the testnet row.
+        // Compose the selected scope + `useAccountBalancesQuery` in one
+        // hook so they share the same render lifecycle. Flipping the mode
+        // should make the balance query re-key off the new network and read
+        // the testnet row.
         const { result } = renderHook(
             () => {
-                const net = useNetwork()
                 const scope = useSelectedScope(LEGACY_CHAIN_ID)
                 const balances = useAccountBalancesQuery(
                     [SAME_ADDRESS_ACCOUNT],
                     scope,
                     true,
                 )
-                return { net, balances }
+                return { balances }
             },
             { wrapper: createQueryClientWrapper() },
         )
@@ -193,7 +192,7 @@ describe('Flow: Settings → Network selection', () => {
         // Toggle to testnet — the query re-keys and reads the
         // testnet row.
         act(() => {
-            result.current.net.setNetwork(Networks.testnet)
+            useNetworkStore.getState().setMode('developer')
         })
 
         await waitFor(
@@ -212,7 +211,7 @@ describe('Flow: Settings → Network selection', () => {
         // Toggle back: original mainnet figure resurfaces (no
         // accidental write through to the wrong network).
         act(() => {
-            result.current.net.setNetwork(Networks.mainnet)
+            useNetworkStore.getState().setMode('live')
         })
         await waitFor(
             () => {

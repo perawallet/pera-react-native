@@ -23,10 +23,12 @@ import {
     fetchTransactionHistory,
     fetchMoreTransactions,
 } from '../history-adapter'
+import { MAX_PENDING_HISTORY_ROWS } from '../pending-history'
 import { transactionQueryKeys } from './querykeys'
-import type {
-    TransactionHistoryItem,
-    TransactionHistoryResult,
+import {
+    TransactionHistoryStatuses,
+    type TransactionHistoryItem,
+    type TransactionHistoryResult,
 } from '../models/types'
 import { getTransactionHistory } from '../db'
 import { persistTransactionsToDb } from './useTransactionHistoryDb'
@@ -39,13 +41,6 @@ import { persistTransactionsToDb } from './useTransactionHistoryDb'
  * than the request is what signals SQLite is exhausted.
  */
 const HISTORY_PAGE_SIZE = 100
-
-/**
- * Ceiling on synthesized pending rows per first-page fetch. Concurrent
- * in-flight groups for one account are a handful at most, so this only caps
- * the pathological case rather than shaping normal output.
- */
-const MAX_PENDING_HISTORY_ROWS = 50
 
 /** Sentinel `nextUrl`s: the next page comes from SQLite / from the API. */
 const DB_CURSOR = '__load_more_from_db__'
@@ -158,9 +153,8 @@ export type UseTransactionHistoryQueryResult = {
 
 /**
  * Synthesizes a list row for a broadcast attempt that has not yet been
- * definitively resolved — the "pending — verifying" entry. The
- * real row replaces it (same txid) once the reconciler confirms it, so the
- * transaction appears in history exactly once.
+ * definitively resolved. The real row replaces it (same txid) once the
+ * reconciler confirms it, so the transaction appears in history exactly once.
  */
 const toPendingHistoryItem = (
     attempt: SubmissionAttempt,
@@ -184,6 +178,7 @@ const toPendingHistoryItem = (
     swapGroupDetail: null,
     interpretedMeaning: null,
     balanceImpacts: [],
+    status: TransactionHistoryStatuses.PENDING,
 })
 
 /**
@@ -345,7 +340,7 @@ export const useTransactionHistoryQuery = (
                     url: pageParam.url,
                     scope,
                     // Only meaningful on indexer-backed networks (see
-                    // `isPeraBackedNetwork`), which have no replayable
+                    // `hasPeraBackend`), which have no replayable
                     // pagination URL and need the address alongside the
                     // cursor. Harmless to pass on Pera-backed networks.
                     accountAddress,

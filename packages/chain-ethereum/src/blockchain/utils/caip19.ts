@@ -11,7 +11,10 @@
  */
 
 import { getAddress, isAddress } from 'viem'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
 import { ETHEREUM_CHAIN_ID } from '../../chain-id'
 import { ethereumDescriptor } from '../../descriptor'
 
@@ -42,17 +45,30 @@ const NATIVE_ASSET_ID = ethereumDescriptor.nativeAsset.ref.assetId
 const ETHER_SLIP44 = '60'
 const CAIP19_PATTERN = /^eip155:(\d+)\/(erc20|slip44):([^/]+)$/
 
+export const eip155ChainIdOfNetwork = (
+    networkId: NetworkId | undefined,
+): number | undefined => {
+    const nativeRef = ethereumDescriptor.networks.find(
+        n => n.id === networkId,
+    )?.nativeRef
+    return nativeRef?.kind === 'evm' ? nativeRef.eip155ChainId : undefined
+}
+
+export const networkIdOfEip155ChainId = (
+    eip155ChainId: number,
+): NetworkId | undefined =>
+    ethereumDescriptor.networks.find(
+        n =>
+            n.nativeRef.kind === 'evm' &&
+            n.nativeRef.eip155ChainId === eip155ChainId,
+    )?.id
+
 export const eip155ChainIdOf = (scope: ChainScope): number => {
-    const network = ethereumDescriptor.networks.find(
-        n => n.id === scope.networkId,
-    )
-    if (
-        scope.chainId !== ETHEREUM_CHAIN_ID ||
-        network?.nativeRef.kind !== 'evm'
-    ) {
+    const eip155ChainId = eip155ChainIdOfNetwork(scope.networkId)
+    if (scope.chainId !== ETHEREUM_CHAIN_ID || eip155ChainId === undefined) {
         throw new UnknownEvmNetworkError(scope)
     }
-    return network.nativeRef.eip155ChainId
+    return eip155ChainId
 }
 
 /** The backend's id for an app asset id; ERC-20 addresses go out lowercase. */

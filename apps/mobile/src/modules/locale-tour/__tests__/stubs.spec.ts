@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 
 import * as deeplinkHandlerStub from '@modules/deeplink/handlers/useLocaleTourDeeplink.stub'

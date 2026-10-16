@@ -67,7 +67,6 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { UndoRekeyConfirmScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeyConfirmScreen'
 import { UndoRekeySuccessScreen } from '@modules/rekey/screens/undo-rekey/UndoRekeySuccessScreen'
 
@@ -78,8 +77,12 @@ import {
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // The source is a rekeyed account; the held auth account does the signing.
 // integration tests don't load i18n, so `t()` returns the raw key — the
@@ -162,7 +165,7 @@ describe('Flow: Undo rekey end-to-end', () => {
         useAccountsStore.getState().setAccounts([])
         useAccountChainStateStore.getState().resetState()
         // The confirm screen reads the authority on the selected network.
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
 
         server.use(
             mockAlgodTransactionParams({ response: { fee: 1000 } }),
@@ -239,10 +242,10 @@ describe('Flow: Undo rekey end-to-end', () => {
                 response: { amount: 5_000_000, 'min-balance': 100_000 },
             }),
         )
-        await fetchAndPersistAccount(
-            REKEY_TARGET_ADDRESS,
-            scopeForLegacyNetwork('mainnet'),
-        )
+        await fetchAndPersistAccount(REKEY_TARGET_ADDRESS, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         const synced = useAccountsStore
             .getState()

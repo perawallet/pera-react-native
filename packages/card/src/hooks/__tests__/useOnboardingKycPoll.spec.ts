@@ -13,8 +13,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 
 type MockQuery = {
@@ -76,7 +76,10 @@ vi.mock('../../store', () => ({
 
 import { useOnboardingKycPoll } from '../useOnboardingKycPoll'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 /** Evaluates the interval the hook would schedule for the current data. */
 const scheduledInterval = () => {
@@ -97,7 +100,7 @@ beforeEach(() => {
     mockOnboardingStep = 'VERIFICATION'
 })
 
-describe('useOnboardingKycPoll', () => {
+describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
     it('exposes the polled state and keeps polling while a decision is pending', () => {
         mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))

@@ -14,10 +14,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    scopeForLegacyNetwork,
     type AccountChainState,
     type AssetRef,
     type ChainId,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
 
@@ -50,7 +50,7 @@ import {
     readAlgorandSpendableBalance,
 } from '../spendable-balance'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 const ALGO: AssetRef = { chainId: 'algorand' as ChainId, assetId: '0' }
 const USDC: AssetRef = { chainId: 'algorand' as ChainId, assetId: '31566704' }
 const SENDER: WalletAccount = {

@@ -18,6 +18,7 @@ import {
 } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
 const VALID_PROJECTS = [
@@ -53,10 +54,13 @@ const VALID_PROJECTS = [
 /** Single-locale payload: the shape `staking_projects_i18n` actually holds. */
 const VALID_PROJECTS_CONFIG = JSON.stringify({ en: VALID_PROJECTS })
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
+
 const mocks = vi.hoisted(() => ({
     fetchStakingProjectsInfo: vi.fn(),
     getStringValue: vi.fn(),
-    useSelectedScope: vi.fn(),
+    getChainDescriptor: vi.fn(() => ({ nativeAsset: { decimals: 6 } })),
 }))
 
 vi.mock('../endpoints', () => ({
@@ -64,7 +68,7 @@ vi.mock('../endpoints', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: mocks.useSelectedScope,
+    getChainDescriptor: mocks.getChainDescriptor,
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -91,10 +95,6 @@ describe('useStakingProjectsQuery', () => {
                     retry: false,
                 },
             },
-        })
-        mocks.useSelectedScope.mockReturnValue({
-            chainId: 'algorand',
-            networkId: 'mainnet',
         })
         mockRemoteConfig(VALID_PROJECTS_CONFIG)
     })
@@ -134,9 +134,12 @@ describe('useStakingProjectsQuery', () => {
             mockRemoteConfig(I18N_CONFIG)
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-            const { result } = renderHook(() => useStakingProjectsQuery('de'), {
-                wrapper,
-            })
+            const { result } = renderHook(
+                () => useStakingProjectsQuery(ALGORAND_TESTNET, 'de'),
+                {
+                    wrapper,
+                },
+            )
 
             await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -150,9 +153,12 @@ describe('useStakingProjectsQuery', () => {
             mockRemoteConfig(I18N_CONFIG)
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-            const { result } = renderHook(() => useStakingProjectsQuery('tr'), {
-                wrapper,
-            })
+            const { result } = renderHook(
+                () => useStakingProjectsQuery(ALGORAND_TESTNET, 'tr'),
+                {
+                    wrapper,
+                },
+            )
 
             await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -168,9 +174,12 @@ describe('useStakingProjectsQuery', () => {
             mockRemoteConfig('')
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-            const { result } = renderHook(() => useStakingProjectsQuery('de'), {
-                wrapper,
-            })
+            const { result } = renderHook(
+                () => useStakingProjectsQuery(ALGORAND_TESTNET, 'de'),
+                {
+                    wrapper,
+                },
+            )
 
             await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -184,9 +193,12 @@ describe('useStakingProjectsQuery', () => {
             mockRemoteConfig(JSON.stringify(VALID_PROJECTS))
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-            const { result } = renderHook(() => useStakingProjectsQuery('de'), {
-                wrapper,
-            })
+            const { result } = renderHook(
+                () => useStakingProjectsQuery(ALGORAND_TESTNET, 'de'),
+                {
+                    wrapper,
+                },
+            )
 
             await waitFor(() => expect(result.current.isError).toBe(true))
             expect(result.current.data).toEqual([])
@@ -209,9 +221,12 @@ describe('useStakingProjectsQuery', () => {
             },
         })
 
-        const { result } = renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useStakingProjectsQuery(ALGORAND_TESTNET),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -220,6 +235,7 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.data[2].id).toBe('valar')
         // Algorand's native asset has six decimals, so 2000 base units is 0.002.
         expect(result.current.data[0].tvlInNative.toString()).toBe('0.002')
+        expect(mocks.getChainDescriptor).toHaveBeenCalledWith('algorand')
         expect(result.current.data[0].tvlInUsd.toString()).toBe('2500')
         expect(result.current.data.length).toBe(3)
     })
@@ -227,9 +243,12 @@ describe('useStakingProjectsQuery', () => {
     it('returns error state when tvl request fails', async () => {
         mocks.fetchStakingProjectsInfo.mockRejectedValue(new Error('Failed'))
 
-        const { result } = renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useStakingProjectsQuery(ALGORAND_TESTNET),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
@@ -240,9 +259,12 @@ describe('useStakingProjectsQuery', () => {
         mockRemoteConfig('not-json')
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        const { result } = renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useStakingProjectsQuery(ALGORAND_TESTNET),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
@@ -269,9 +291,12 @@ describe('useStakingProjectsQuery', () => {
         )
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        const { result } = renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useStakingProjectsQuery(ALGORAND_TESTNET),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
@@ -283,9 +308,12 @@ describe('useStakingProjectsQuery', () => {
         mockRemoteConfig('')
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        const { result } = renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useStakingProjectsQuery(ALGORAND_TESTNET),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
@@ -294,44 +322,44 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.error).toBeNull()
     })
 
-    it('uses the active network when fetching', async () => {
-        mocks.useSelectedScope.mockReturnValue({
-            chainId: 'algorand',
-            networkId: 'testnet',
-        })
-        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+    it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
+        'fetches and keys the query by the given scope for $chainId',
+        async scope => {
+            mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
+            renderHook(() => useStakingProjectsQuery(scope), {
+                wrapper,
+            })
 
-        await waitFor(() =>
-            expect(mocks.fetchStakingProjectsInfo).toHaveBeenCalledWith(
-                'testnet',
-            ),
+            await waitFor(() =>
+                expect(mocks.fetchStakingProjectsInfo).toHaveBeenCalledWith(
+                    scope,
+                ),
+            )
+            await waitFor(() =>
+                expect(
+                    queryClient.getQueryData([
+                        'staking',
+                        'projects',
+                        { scope },
+                    ]),
+                ).toEqual({}),
+            )
+        },
+    )
+
+    it('surfaces PeraServiceUnavailableError for a scope with no Pera backend', async () => {
+        mocks.fetchStakingProjectsInfo.mockRejectedValue(
+            new PeraServiceUnavailableError(ETHEREUM_SEPOLIA),
         )
-    })
 
-    it('keys the query by the selected chain scope', async () => {
-        mocks.useSelectedScope.mockReturnValue({
-            chainId: 'algorand',
-            networkId: 'testnet',
-        })
-        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
-
-        renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
-
-        await waitFor(() =>
-            expect(
-                queryClient.getQueryData([
-                    'staking',
-                    'projects',
-                    { scope: { chainId: 'algorand', networkId: 'testnet' } },
-                ]),
-            ).toEqual({}),
+        const { result } = renderHook(
+            () => useStakingProjectsQuery(ETHEREUM_SEPOLIA),
+            { wrapper },
         )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(PeraServiceUnavailableError)
     })
 
     describe('offline', () => {
@@ -343,9 +371,12 @@ describe('useStakingProjectsQuery', () => {
             onlineManager.setOnline(false)
             mockRemoteConfig(VALID_PROJECTS_CONFIG)
 
-            const { result } = renderHook(() => useStakingProjectsQuery(), {
-                wrapper,
-            })
+            const { result } = renderHook(
+                () => useStakingProjectsQuery(ALGORAND_TESTNET),
+                {
+                    wrapper,
+                },
+            )
 
             await waitFor(() => expect(result.current.isPaused).toBe(true))
             expect(result.current.isLoading).toBe(false)
@@ -371,7 +402,7 @@ describe('useStakingProjectsQuery', () => {
             })
 
             const { result, rerender } = renderHook(
-                () => useStakingProjectsQuery(),
+                () => useStakingProjectsQuery(ALGORAND_TESTNET),
                 { wrapper },
             )
 

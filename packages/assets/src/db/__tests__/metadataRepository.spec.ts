@@ -19,22 +19,42 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
+import {
+    assetsChainAdapters,
+    type AssetChainDataCodec,
+} from '../../chain-adapter'
+import { registerFakeAssetsAdapter } from '../../__tests__/fakeAssetsChain'
 import {
     upsertAssets,
     getAssetsByIds,
     updateAssetPeraMetadata,
     deleteAssets,
+    peraAssetFromJoinRow,
 } from '../metadataRepository'
 import {
     upsertAssetPrices,
     getAssetPricesByIds,
     deleteAssetPrices,
 } from '../pricesRepository'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
+
+const creatorCodec: AssetChainDataCodec = {
+    encode: asset => ({
+        family: 'algorand',
+        creatorAddress: asset.creator.address,
+    }),
+    decode: data => ({ creator: { address: data.creatorAddress } }),
+}
 
 describe('asset metadata repository', () => {
     let db: Database
@@ -45,10 +65,12 @@ describe('asset metadata repository', () => {
         db = result.db
         teardown = result.teardown
         await runMigrations(db, migrations)
+        registerFakeAssetsAdapter({ chainData: creatorCodec })
     })
 
     afterEach(() => {
         vi.useRealTimers()
+        assetsChainAdapters.reset()
         teardown()
     })
 
@@ -97,6 +119,59 @@ describe('asset metadata repository', () => {
             expect(result[0].decimals).toBe(6)
             expect(result[0].totalSupply.toString()).toBe('10000000000')
             expect(result[0].creator.address).toBe('ABC123')
+        })
+
+        it('stores no chain data and reads an empty creator when the chain keeps none', async () => {
+            registerFakeAssetsAdapter()
+            await upsertAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
+
+            const stored = await db.values(
+                sql`select chain_data from assets_node where asset_id = '31566704'`,
+            )
+            const [asset] = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(stored).toEqual([[null]])
+            expect(asset!.creator).toEqual({ address: '' })
+        })
+
+        it('reads the creator of a joined row through the codec, and an empty one without chain data', () => {
+            const row = {
+                assetId: '31566704',
+                decimals: 6,
+                totalSupply: '10000000000',
+                name: 'USD Coin',
+                unitName: 'USDC',
+                url: null,
+                metadata: null,
+                peraMetadataJson: null,
+            }
+
+            expect(
+                peraAssetFromJoinRow(
+                    {
+                        ...row,
+                        chainData: JSON.stringify({
+                            family: 'algorand',
+                            creatorAddress: 'ABC123',
+                        }),
+                    },
+                    MAINNET_SCOPE.chainId,
+                )?.creator,
+            ).toEqual({ address: 'ABC123' })
+            expect(
+                peraAssetFromJoinRow(
+                    { ...row, chainData: null },
+                    MAINNET_SCOPE.chainId,
+                )?.creator,
+            ).toEqual({ address: '' })
         })
 
         it('updates existing assets on conflict', async () => {

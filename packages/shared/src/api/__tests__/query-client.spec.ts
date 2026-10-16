@@ -20,11 +20,7 @@ import {
     beforeAll,
     afterEach,
 } from 'vitest'
-import {
-    config,
-    getNetworkConfig,
-    Networks,
-} from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 import type {
     ChainId,
     ChainScope,
@@ -47,17 +43,12 @@ vi.mock('../../utils', async importOriginal => ({
 }))
 
 // Shared fixtures for the @perawallet/wallet-core-config mock below AND for
-// test bodies that assert on per-network values directly (e.g. "this
-// network's algod client used exactly this URL/token"). Hoisted because a
+// test bodies that assert on per-network values directly. Hoisted because a
 // vi.mock factory can't reference a later plain `const` (see the mockLogger
 // comment above) and because test bodies need the same values the mock
 // hands back, without duplicating the fixture data in two places.
 const {
     mockNetworks,
-    mockAlgodApiKey,
-    mockIndexerApiKey,
-    mockCustomNodeToken,
-    chainUrlsByNetwork,
     backendUrlByNetwork,
     servicesByScopeKey,
     extraScopes,
@@ -68,63 +59,6 @@ const {
         mainnet: 'mainnet',
         betanet: 'betanet',
         custom: 'custom',
-    }
-
-    // Real production default (packages/config/src/main.ts) is `''` —
-    // AlgoNode's public endpoints need no key, injected via env var only
-    // for keyed deployments. An empty token would make the token-header
-    // assertions below vacuous: createTokenHeaderClient's `if
-    // (token.length)` guard means an empty token never sets a header at
-    // all. Use a non-empty test value instead, and route every keyed
-    // network's algodToken through this SAME constant (not a separately
-    // typed-out duplicate) so they can never silently drift apart.
-    const mockAlgodApiKey = 'test-algod-key'
-
-    // Same reasoning as mockAlgodApiKey above, for the indexer's token.
-    const mockIndexerApiKey = 'test-indexer-key'
-
-    // `custom`'s algod/indexer tokens are runtime-provided by the
-    // developer-entered custom-network store (packages/config's real
-    // `custom` row is hardcoded empty), and production reads the SAME value
-    // for both algodToken and indexerToken. Mirrored below by using this one
-    // constant for both, so the "does not cross-wire" test below must tell
-    // the algod and indexer clients apart by header NAME, not by token
-    // value.
-    const mockCustomNodeToken = 'custom-node-token'
-
-    const chainUrlsByNetwork: Record<
-        string,
-        {
-            algodUrl: string
-            indexerUrl: string
-            algodToken: string
-            indexerToken: string
-        }
-    > = {
-        mainnet: {
-            algodUrl: 'https://mainnet.algod.algo',
-            indexerUrl: 'https://mainnet.indexer.algo',
-            algodToken: mockAlgodApiKey,
-            indexerToken: mockIndexerApiKey,
-        },
-        testnet: {
-            algodUrl: 'https://testnet.algod.algo',
-            indexerUrl: 'https://testnet.indexer.algo',
-            algodToken: mockAlgodApiKey,
-            indexerToken: mockIndexerApiKey,
-        },
-        betanet: {
-            algodUrl: 'https://betanet.algod.algo',
-            indexerUrl: 'https://betanet.indexer.algo',
-            algodToken: mockAlgodApiKey,
-            indexerToken: mockIndexerApiKey,
-        },
-        custom: {
-            algodUrl: 'https://custom-node.algod.algo',
-            indexerUrl: 'https://custom-node.indexer.algo',
-            algodToken: mockCustomNodeToken,
-            indexerToken: mockCustomNodeToken,
-        },
     }
 
     // Only MainNet and TestNet have real Pera backend deployments. BetaNet
@@ -142,12 +76,11 @@ const {
     // resetMockScopeConfig (afterEach) restores it.
     const servicesByScopeKey: Record<string, string[]> = {}
 
-    // Scopes beyond the four Algorand ones, e.g. a fixture chain. The query
-    // client builds clients for every configured scope once, so a test that
-    // adds one must vi.resetModules() and re-import it.
+    // Scopes beyond the four Algorand ones, e.g. a fixture chain, each with
+    // the deployment serving it.
     const extraScopes: Array<{
         scope: { chainId: string; networkId: string }
-        backendUrl: string
+        deployment: 'live' | 'developer'
     }> = []
 
     const resetMockScopeConfig = () => {
@@ -171,10 +104,6 @@ const {
 
     return {
         mockNetworks,
-        mockAlgodApiKey,
-        mockIndexerApiKey,
-        mockCustomNodeToken,
-        chainUrlsByNetwork,
         backendUrlByNetwork,
         servicesByScopeKey,
         extraScopes,
@@ -186,7 +115,6 @@ const {
 // (packages/config/src/network-config.ts): the fixtures above cover the four
 // Algorand scopes, and betanet/custom's `backendUrl` is empty — mirroring the
 // real table's empty rows — rather than a value borrowed from another network.
-// `getNetworkConfig` stays for the test bodies that read fixtures through it.
 vi.mock('@perawallet/wallet-core-config', () => {
     type Scope = { chainId: string; networkId: string }
     const isAlgorand = (scope: Scope) => scope.chainId === 'algorand'
@@ -201,20 +129,11 @@ vi.mock('@perawallet/wallet-core-config', () => {
         config: {
             debugEnabled: true,
             backendAPIKey: 'test-api-key',
-            algodApiKey: mockAlgodApiKey,
-            indexerApiKey: mockIndexerApiKey,
             // Not per-network: the backup service is one global endpoint, so every
             // network's `backup` client is built against this same prefix.
             backupBaseUrl: 'https://backup.test.perawallet.app/',
             webIntegrityBearerEnabled: false,
         },
-        Networks: mockNetworks,
-        getNetworkConfig: (network: string) => ({
-            ...chainUrlsByNetwork[network],
-            backendUrl: backendUrlByNetwork[network] ?? '',
-        }),
-        isPeraBackedNetwork: (network: string) =>
-            backendUrlByNetwork[network] !== undefined,
         configuredScopes: () => [
             ...Object.values(mockNetworks).map(network => ({
                 chainId: 'algorand',
@@ -222,11 +141,18 @@ vi.mock('@perawallet/wallet-core-config', () => {
             })),
             ...extraScopes.map(extra => extra.scope),
         ],
-        getPeraServicesConfig: (scope: Scope) => ({
-            backendUrl: isAlgorand(scope)
-                ? (backendUrlByNetwork[scope.networkId] ?? '')
-                : (findExtraScope(scope)?.backendUrl ?? ''),
+        getPeraDeploymentConfig: (deployment: string) => ({
+            backendUrl:
+                backendUrlByNetwork[
+                    deployment === 'live' ? 'mainnet' : 'testnet'
+                ] ?? '',
         }),
+        peraDeploymentOf: (scope: Scope) =>
+            isAlgorand(scope)
+                ? ({ mainnet: 'live', testnet: 'developer' } as const)[
+                      scope.networkId as 'mainnet' | 'testnet'
+                  ]
+                : findExtraScope(scope)?.deployment,
         hasPeraService: (scope: Scope, service: string) =>
             servicesByScopeKey[`${scope.chainId}/${scope.networkId}`]?.includes(
                 service,
@@ -357,8 +283,7 @@ vi.mock('ky', () => ({
         error instanceof Error && error.name === 'TypeError',
 }))
 
-// Shared with the `resetNodeClients` and `integrity bearer header`
-// describe blocks below: reaches a client's `beforeRequest` hooks via the
+// Shared with the `integrity bearer header` describe block below: reaches a client's `beforeRequest` hooks via the
 // config captured by the mocked `ky.create`, without exporting anything from
 // query-client.ts just for tests.
 type CapturedClientConfig = {
@@ -376,15 +301,6 @@ const findClientConfig = (prefix: string): CapturedClientConfig | undefined =>
             clientConfig.prefix === prefix,
     )?.[0]
 
-const readHeader = (
-    clientConfig: CapturedClientConfig,
-    headerName: string,
-): string | undefined => {
-    const request = { headers: new Map<string, string>() }
-    clientConfig.hooks.beforeRequest[0]({ request })
-    return request.headers.get(headerName)
-}
-
 // The instance actually returned for a given prefix's ky.create() call —
 // i.e. the per-client object `updateBackendHeaders` calls `.extend()` on.
 // Pairs with findClientConfig's index into `mockKy.create.mock.calls` to
@@ -399,35 +315,8 @@ const findClientInstance = (prefix: string): any => {
     return index === -1 ? undefined : mockKy.create.mock.results[index]?.value
 }
 
-// Stands in for chain-algorand's registration. Rerun after vi.resetModules():
-// the fresh query-client reads a fresh registry.
-const registerAlgorandNodes = async () => {
-    const { nodeBackendAdapters } = await import('../node-backends')
-    if (nodeBackendAdapters.has('algorand')) return
-    nodeBackendAdapters.register({
-        chainId: 'algorand',
-        backendsFor: scope => {
-            const chain = chainUrlsByNetwork[scope.networkId]
-            if (!chain) return {}
-            return {
-                algod: {
-                    url: chain.algodUrl,
-                    tokenHeader: 'X-Algo-API-Token',
-                    token: chain.algodToken,
-                },
-                indexer: {
-                    url: chain.indexerUrl,
-                    tokenHeader: 'X-Indexer-API-Token',
-                    token: chain.indexerToken,
-                },
-            }
-        },
-    })
-}
-
 describe('queryClient', () => {
     beforeEach(async () => {
-        await registerAlgorandNodes()
         vi.clearAllMocks()
         Object.values(mockLogger).forEach(mock => mock.mockClear())
         mockStatus.value = 200
@@ -453,7 +342,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test-endpoint',
             method: 'GET',
         })
@@ -467,82 +356,11 @@ describe('queryClient', () => {
         await expect(
             queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 url: '',
                 method: 'GET',
             }),
         ).rejects.toThrow('URL is required')
-    })
-
-    it('should throw an error for a network with no clients', async () => {
-        const { queryClient } = await import('../query-client')
-        await expect(
-            queryClient({
-                backend: 'backup',
-                network: 'invalid-network' as any,
-                url: '/test',
-                method: 'GET',
-            }),
-        ).rejects.toThrow('Could not get backends for algorand/invalid-network')
-    })
-
-    it('should throw an error for invalid backend', async () => {
-        const { queryClient } = await import('../query-client')
-        await expect(
-            queryClient({
-                backend: 'invalid-backend' as any,
-                network: 'mainnet',
-                url: '/test',
-                method: 'GET',
-            }),
-        ).rejects.toThrow('algorand/mainnet has no invalid-backend node')
-    })
-
-    it('refuses a node backend on a chain that registered no nodes', async () => {
-        const { queryClient } = await import('../query-client')
-        await expect(
-            queryClient({
-                backend: 'algod',
-                scope: { chainId: 'ethereum', networkId: 'mainnet' },
-                url: '/v2/status',
-                method: 'GET',
-            }),
-        ).rejects.toThrow(
-            'No nodeBackends adapter is registered for chain "ethereum"',
-        )
-        expect(mockKy).not.toHaveBeenCalled()
-    })
-
-    it('should make a successful request to algod backend', async () => {
-        const { queryClient } = await import('../query-client')
-        const mockData = { version: '1.0' }
-        mockJson.mockResolvedValue(mockData)
-
-        const response = await queryClient({
-            backend: 'algod',
-            network: 'testnet',
-            url: '/versions',
-            method: 'GET',
-        })
-
-        expect(response.data).toEqual(mockData)
-        expect(response.status).toBe(200)
-    })
-
-    it('should make a successful request to indexer backend', async () => {
-        const { queryClient } = await import('../query-client')
-        const mockData = { accounts: [] }
-        mockJson.mockResolvedValue(mockData)
-
-        const response = await queryClient({
-            backend: 'indexer',
-            network: 'mainnet',
-            url: '/v2/accounts',
-            method: 'GET',
-        })
-
-        expect(response.data).toEqual(mockData)
-        expect(response.status).toBe(200)
     })
 
     it('should handle request with params', async () => {
@@ -552,7 +370,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
             params: { limit: 10, offset: 0 },
@@ -572,7 +390,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test-with-slash',
             method: 'GET',
         })
@@ -596,7 +414,7 @@ describe('queryClient', () => {
         await expect(
             queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 url: '/test',
                 method: 'GET',
             }),
@@ -614,7 +432,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: 'test-no-slash',
             method: 'GET',
         })
@@ -630,7 +448,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'POST',
             data: { name: 'test' },
@@ -650,7 +468,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/chart',
             method: 'GET',
             timeout: 30_000,
@@ -668,7 +486,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
@@ -684,7 +502,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/integrity/challenge',
             method: 'POST',
             retry: IDEMPOTENT_POST_RETRY,
@@ -702,7 +520,7 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
@@ -711,9 +529,8 @@ describe('queryClient', () => {
         expect(options).not.toHaveProperty('retry')
     })
 
-    it("builds every scope's Pera clients on first use, never at import time, and a node client only when asked", async () => {
+    it("builds every deployment's Pera client on first use, never at import time", async () => {
         vi.resetModules()
-        await registerAlgorandNodes()
         mockKy.create.mockClear()
 
         const { queryClient } = await import('../query-client')
@@ -726,166 +543,22 @@ describe('queryClient', () => {
 
         mockJson.mockResolvedValue({ status: 'ok' })
         await queryClient({
-            backend: 'algod',
-            network: 'mainnet',
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
-            url: '/v2/status',
+            url: '/v1/status',
         })
 
-        // One request builds ALL 4 networks × (pera + backup), since the gate is
-        // shared rather than a per-network build-on-miss, plus the one algod
-        // client that request needed.
-        expect(mockKy.create).toHaveBeenCalledTimes(9)
+        // One request builds both deployments' Pera clients and the one backup
+        // client, since the gate is shared rather than a build-on-miss.
+        expect(mockKy.create).toHaveBeenCalledTimes(3)
 
-        // Every client is built uniformly — a `prefix` (empty for betanet's
-        // and custom's `pera` slot, which is never invoked) and the same
-        // retry policy. No client is special-cased at construction time; the
+        // Every client is built uniformly — a `prefix` and the same retry
+        // policy. No client is special-cased at construction time; the
         // "no Pera deployment" refusal lives on the request path instead.
         for (const [clientConfig] of mockKy.create.mock.calls) {
             expect(clientConfig).toMatchObject({ retry: { limit: 1 } })
             expect(clientConfig.prefix).toBeTypeOf('string')
-        }
-    })
-
-    it('does not cross-wire algod/indexer URLs or tokens between networks', async () => {
-        vi.resetModules()
-        await registerAlgorandNodes()
-        mockKy.create.mockClear()
-        const { queryClient } = await import('../query-client')
-        mockJson.mockResolvedValue({ status: 'ok' })
-
-        for (const network of Object.values(Networks)) {
-            for (const backend of ['algod', 'indexer'] as const) {
-                await queryClient({
-                    backend,
-                    network,
-                    method: 'GET',
-                    url: '/v2/status',
-                })
-            }
-        }
-
-        type CapturedClientConfig = {
-            prefix: string
-            hooks: {
-                beforeRequest: Array<
-                    (state: {
-                        request: { headers: Map<string, string> }
-                    }) => void
-                >
-            }
-        }
-
-        const findClientConfig = (
-            prefix: string,
-        ): CapturedClientConfig | undefined =>
-            mockKy.create.mock.calls.find(
-                ([clientConfig]: [CapturedClientConfig]) =>
-                    clientConfig.prefix === prefix,
-            )?.[0]
-
-        const readHeader = (
-            clientConfig: CapturedClientConfig,
-            headerName: string,
-        ): string | undefined => {
-            const request = { headers: new Map<string, string>() }
-            clientConfig.hooks.beforeRequest[0]({ request })
-            return request.headers.get(headerName)
-        }
-
-        for (const network of Object.values(Networks)) {
-            const { algodUrl, indexerUrl, algodToken, indexerToken } =
-                chainUrlsByNetwork[network]
-
-            const algodConfig = findClientConfig(algodUrl)
-            expect(algodConfig).toBeDefined()
-            expect(
-                readHeader(
-                    algodConfig as CapturedClientConfig,
-                    'X-Algo-API-Token',
-                ),
-            ).toBe(algodToken)
-
-            const indexerConfig = findClientConfig(indexerUrl)
-            expect(indexerConfig).toBeDefined()
-            expect(
-                readHeader(
-                    indexerConfig as CapturedClientConfig,
-                    'X-Indexer-API-Token',
-                ),
-            ).toBe(indexerToken)
-        }
-
-        // Pin the fixture to the real production constants (not just to each
-        // other) so a genuine regression in either value would fail here.
-        expect(chainUrlsByNetwork.custom.algodToken).toBe(mockCustomNodeToken)
-        // MainNet (and TestNet/BetaNet) route their algod token through
-        // config.algodApiKey — a regression that stopped reading it (e.g.
-        // hardcoding a different value) fails here even though nothing else
-        // in this test would notice.
-        expect(chainUrlsByNetwork.mainnet.algodToken).toBe(config.algodApiKey)
-        // Keep the mutual check too: confirms the two are actually distinct
-        // constants, not the same value doing double duty.
-        expect(chainUrlsByNetwork.custom.algodToken).not.toBe(
-            chainUrlsByNetwork.mainnet.algodToken,
-        )
-
-        // Same pins for the indexer token. Unlike algod, `custom`'s indexer
-        // token is NOT distinct from its algod token — production reads both
-        // from the SAME developer-entered custom-network store value — so
-        // there is no mutual-inequality check to keep here; asserting
-        // equality to the one real constant is the correct model, not a
-        // weakening.
-        expect(chainUrlsByNetwork.custom.indexerToken).toBe(mockCustomNodeToken)
-        expect(chainUrlsByNetwork.mainnet.indexerToken).toBe(
-            config.indexerApiKey,
-        )
-
-        // Now that custom's algod and indexer tokens are equal (mirroring
-        // production), a token-VALUE comparison alone can no longer tell the
-        // two clients apart for that network. Assert the header NAME each
-        // one actually sets instead, which stays distinct regardless of
-        // token equality — this is what would catch the algod and indexer
-        // clients being swapped (wrong URL/role paired with the other's
-        // header name) even when their token values happen to match.
-        const customAlgodConfig = findClientConfig(
-            chainUrlsByNetwork.custom.algodUrl,
-        ) as CapturedClientConfig
-        const customAlgodRequest = { headers: new Map<string, string>() }
-        customAlgodConfig.hooks.beforeRequest[0]({
-            request: customAlgodRequest,
-        })
-        expect(customAlgodRequest.headers.has('X-Algo-API-Token')).toBe(true)
-        expect(customAlgodRequest.headers.has('X-Indexer-API-Token')).toBe(
-            false,
-        )
-
-        const customIndexerConfig = findClientConfig(
-            chainUrlsByNetwork.custom.indexerUrl,
-        ) as CapturedClientConfig
-        const customIndexerRequest = { headers: new Map<string, string>() }
-        customIndexerConfig.hooks.beforeRequest[0]({
-            request: customIndexerRequest,
-        })
-        expect(customIndexerRequest.headers.has('X-Indexer-API-Token')).toBe(
-            true,
-        )
-        expect(customIndexerRequest.headers.has('X-Algo-API-Token')).toBe(false)
-    })
-
-    test('resolves algod for every network, including the new ones', async () => {
-        const { queryClient } = await import('../query-client')
-        mockJson.mockResolvedValue({ version: '1.0' })
-
-        for (const network of Object.values(Networks)) {
-            await expect(
-                queryClient({
-                    backend: 'algod',
-                    network,
-                    method: 'GET',
-                    url: '/v2/status',
-                }),
-            ).resolves.toBeDefined()
         }
     })
 
@@ -909,16 +582,39 @@ describe('queryClient', () => {
             PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
         } = await import('../../errors/pera-service')
 
-        await expect(
-            queryClient({
-                backend: 'pera',
-                network: 'betanet',
-                method: 'GET',
-                url: '/v1/assets/',
-            }),
-        ).rejects.toBeInstanceOf(FreshPeraServiceUnavailableError)
+        const refused = queryClient({
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'betanet' },
+            method: 'GET',
+            url: '/v1/assets/',
+        })
+
+        await expect(refused).rejects.toBeInstanceOf(
+            FreshPeraServiceUnavailableError,
+        )
+        await expect(refused).rejects.toMatchObject({
+            targetKey: 'algorand/betanet',
+        })
 
         expect(mockKy).not.toHaveBeenCalled()
+    })
+
+    test('a backup request names no target and reaches the backup client', async () => {
+        vi.resetModules()
+        mockKy.create.mockClear()
+        mockKy.mockClear()
+        mockJson.mockResolvedValue({ ok: true })
+        const { queryClient } = await import('../query-client')
+
+        await queryClient({
+            backend: 'backup',
+            method: 'GET',
+            url: '/backup/manifest',
+        })
+
+        expect(
+            findClientInstance('https://backup.test.perawallet.app/'),
+        ).toHaveBeenCalledTimes(1)
     })
 
     test('Pera-backed networks still reach their own backend', async () => {
@@ -929,12 +625,68 @@ describe('queryClient', () => {
 
         await queryClient({
             backend: 'pera',
-            network: 'testnet',
+            scope: { chainId: 'algorand', networkId: 'testnet' },
             method: 'GET',
             url: '/v1/assets/',
         })
 
         expect(mockKy).toHaveBeenCalled()
+    })
+
+    describe('Pera deployments', () => {
+        test.each([
+            ['live', 'https://mainnet.pera.algo'],
+            ['developer', 'https://testnet.pera.algo'],
+        ] as const)(
+            'a %s deployment target reaches its own host',
+            async (deployment, host) => {
+                vi.resetModules()
+                mockKy.create.mockClear()
+                const { queryClient } = await import('../query-client')
+                mockJson.mockResolvedValue({ results: [] })
+
+                await queryClient({
+                    backend: 'pera',
+                    deployment,
+                    method: 'GET',
+                    url: '/v1/currencies/',
+                })
+
+                expect(findClientInstance(host)).toHaveBeenCalledTimes(1)
+            },
+        )
+
+        test('a deployment the build has no host for is refused before ky', async () => {
+            const saved = backendUrlByNetwork.testnet
+            delete backendUrlByNetwork.testnet
+            try {
+                vi.resetModules()
+                mockKy.mockClear()
+                const { queryClient } = await import('../query-client')
+                const {
+                    PeraServiceUnavailableError:
+                        FreshPeraServiceUnavailableError,
+                } = await import('../../errors/pera-service')
+
+                const request = queryClient({
+                    backend: 'pera',
+                    deployment: 'developer',
+                    method: 'GET',
+                    url: '/v1/currencies/',
+                })
+
+                await expect(request).rejects.toBeInstanceOf(
+                    FreshPeraServiceUnavailableError,
+                )
+                await expect(request).rejects.toMatchObject({
+                    scope: undefined,
+                    targetKey: 'deployment/developer',
+                })
+                expect(mockKy).not.toHaveBeenCalled()
+            } finally {
+                backendUrlByNetwork.testnet = saved
+            }
+        })
     })
 
     describe('Pera services by scope', () => {
@@ -947,7 +699,6 @@ describe('queryClient', () => {
 
         test('a scope with no configuration is refused before ky, whether or not it names a service', async () => {
             vi.resetModules()
-            await registerAlgorandNodes()
             mockKy.mockClear()
             const { queryClient } = await import('../query-client')
             // Imported here for the same stale-class reason as the betanet test above.
@@ -976,13 +727,9 @@ describe('queryClient', () => {
         })
 
         test('a configured scope serves only the services its configuration lists', async () => {
-            extraScopes.push({
-                scope: FIXTURE_MAINNET,
-                backendUrl: 'https://fixture.pera.test',
-            })
+            extraScopes.push({ scope: FIXTURE_MAINNET, deployment: 'live' })
             servicesByScopeKey['fixture/mainnet'] = ['prices']
             vi.resetModules()
-            await registerAlgorandNodes()
             mockKy.create.mockClear()
             const { queryClient } = await import('../query-client')
             const {
@@ -1000,7 +747,7 @@ describe('queryClient', () => {
                 }),
             ).resolves.toBeDefined()
             const fixturePeraClient = findClientInstance(
-                'https://fixture.pera.test',
+                'https://mainnet.pera.algo',
             )
             expect(fixturePeraClient).toHaveBeenCalledTimes(1)
 
@@ -1022,7 +769,7 @@ describe('queryClient', () => {
             expect(fixturePeraClient).toHaveBeenCalledTimes(1)
         })
 
-        test('a legacy network request naming a service its scope lacks is refused', async () => {
+        test('a request naming a service its scope lacks is refused', async () => {
             servicesByScopeKey['algorand/mainnet'] = ['prices']
             mockKy.mockClear()
             const { queryClient } = await import('../query-client')
@@ -1033,7 +780,7 @@ describe('queryClient', () => {
 
             const refused = queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 service: 'assets',
                 method: 'GET',
                 url: '/v1/assets/',
@@ -1050,7 +797,7 @@ describe('queryClient', () => {
 
             await queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 service: 'prices',
                 method: 'GET',
                 url: '/v1/prices/',
@@ -1069,7 +816,7 @@ describe('queryClient', () => {
             await expect(
                 queryClient({
                     backend: 'pera',
-                    network: 'betanet',
+                    scope: { chainId: 'algorand', networkId: 'betanet' },
                     service: 'prices',
                     method: 'GET',
                     url: '/v1/prices/',
@@ -1077,44 +824,17 @@ describe('queryClient', () => {
             ).rejects.toBeInstanceOf(FreshPeraServiceUnavailableError)
             expect(mockKy).not.toHaveBeenCalled()
         })
-
-        test('a scope target reaches the same algod client as its legacy network', async () => {
-            vi.resetModules()
-            await registerAlgorandNodes()
-            mockKy.create.mockClear()
-            const { queryClient } = await import('../query-client')
-            mockJson.mockResolvedValue({ version: '1.0' })
-
-            await queryClient({
-                backend: 'algod',
-                network: 'mainnet',
-                method: 'GET',
-                url: '/v2/status',
-            })
-            await queryClient({
-                backend: 'algod',
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
-                method: 'GET',
-                url: '/v2/status',
-            })
-
-            expect(
-                findClientInstance(chainUrlsByNetwork.mainnet.algodUrl),
-            ).toHaveBeenCalledTimes(2)
-        })
     })
 
-    it('updateBackendHeaders reaches every network even when called before any request', async () => {
+    it('updateBackendHeaders reaches every deployment even when called before any request', async () => {
         vi.resetModules()
-        await registerAlgorandNodes()
         mockKy.extend.mockClear()
         const { updateBackendHeaders } = await import('../query-client')
 
         updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
 
-        // 4 networks × (pera + backup). algod and indexer are deliberately not extended,
-        // so a Pera credential can never reach a chain node.
-        expect(mockKy.extend).toHaveBeenCalledTimes(8)
+        // 2 deployments' Pera clients plus the backup client.
+        expect(mockKy.extend).toHaveBeenCalledTimes(3)
     })
 
     it('does not re-append the request logger when extending clients', async () => {
@@ -1140,82 +860,14 @@ describe('queryClient', () => {
         updateBackendHeaders(customHeaders)
 
         await queryClient({
-            backend: 'algod',
-            network: 'mainnet',
+            backend: 'pera',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
 
         // Verify extend was called
         expect(mockKy.extend).toHaveBeenCalled()
-    })
-
-    describe('resetNodeClients', () => {
-        const requestCustomAlgod = async () => {
-            const { queryClient } = await import('../query-client')
-            return queryClient({
-                backend: 'algod',
-                network: Networks.custom,
-                method: 'GET',
-                url: '/v2/status',
-            })
-        }
-
-        it("keeps a node client until reset, then re-reads the chain's backends", async () => {
-            const { resetNodeClients } = await import('../query-client')
-            mockJson.mockResolvedValue({ version: '1.0' })
-            await requestCustomAlgod()
-            const saved = chainUrlsByNetwork.custom
-            chainUrlsByNetwork.custom = {
-                ...saved,
-                algodUrl: 'https://saved-node.algod.algo',
-                algodToken: 'a'.repeat(64),
-            }
-
-            try {
-                await requestCustomAlgod()
-                expect(
-                    findClientConfig('https://saved-node.algod.algo'),
-                ).toBeUndefined()
-
-                resetNodeClients()
-                await requestCustomAlgod()
-
-                const algodConfig = findClientConfig(
-                    'https://saved-node.algod.algo',
-                )
-                expect(algodConfig).toBeDefined()
-                expect(
-                    readHeader(
-                        algodConfig as CapturedClientConfig,
-                        'X-Algo-API-Token',
-                    ),
-                ).toBe('a'.repeat(64))
-            } finally {
-                chainUrlsByNetwork.custom = saved
-                resetNodeClients()
-            }
-        })
-
-        it('leaves the Pera clients alone', async () => {
-            const { queryClient, resetNodeClients } =
-                await import('../query-client')
-            mockJson.mockResolvedValue({ status: 'ok' })
-            const requestPera = () =>
-                queryClient({
-                    backend: 'pera',
-                    network: 'mainnet',
-                    method: 'GET',
-                    url: '/status',
-                })
-            await requestPera()
-            mockKy.create.mockClear()
-
-            resetNodeClients()
-            await requestPera()
-
-            expect(mockKy.create).not.toHaveBeenCalled()
-        })
     })
 
     it('should set Content-Type and API key headers via setStandardHeaders', async () => {
@@ -1243,14 +895,13 @@ describe('queryClient', () => {
         }
 
         vi.resetModules()
-        await registerAlgorandNodes()
         mockKy.create.mockClear()
         const { queryClient } = await import('../query-client')
         mockJson.mockResolvedValue({ success: true })
 
         await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/test',
             method: 'GET',
         })
@@ -1274,10 +925,9 @@ describe('queryClient', () => {
     })
 
     describe('integrity bearer header', () => {
-        // setStandardHeaders is module-private; reached the same way
-        // resetNodeClients' tests reach a hook — via the config captured
-        // by the mocked ky.create for the Pera client, rather than exporting
-        // it just for tests.
+        // setStandardHeaders is module-private; reached via the config
+        // captured by the mocked ky.create for the Pera client, rather than
+        // exporting it just for tests.
         let setStandardHeadersUnderTest: (state: {
             request: { headers: Map<string, string> }
         }) => void
@@ -1292,7 +942,6 @@ describe('queryClient', () => {
 
         beforeAll(async () => {
             vi.resetModules()
-            await registerAlgorandNodes()
             mockKy.create.mockClear()
             const { queryClient } = await import('../query-client')
             const configModule = await import('@perawallet/wallet-core-config')
@@ -1304,7 +953,7 @@ describe('queryClient', () => {
 
             await queryClient({
                 backend: 'pera',
-                network: 'mainnet',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 method: 'GET',
                 url: '/warm-up',
             })
@@ -1358,58 +1007,6 @@ describe('queryClient', () => {
 
             expect(headers.has('Authorization')).toBe(false)
         })
-
-        // A build-time hook-config check can't catch this: createTokenHeaderClient
-        // never included setStandardHeaders in the first place, so a check
-        // against the config captured at ky.create() time would pass whether
-        // or not updateBackendHeaders' narrowing to `pera` were ever applied —
-        // it's structurally blind to the actual regression surface, which is
-        // which LIVE instance updateBackendHeaders calls `.extend()` on.
-        // Asserting on the per-client `.extend` spy instead is what actually
-        // fails if a future edit swaps the narrowing target (e.g. extends
-        // `algod` instead of `pera`, a plausible rename/copy-paste slip) —
-        // `toHaveBeenCalledTimes` alone can't tell WHICH client was extended.
-        it('extends only the pera instance, never algod or indexer, when updateBackendHeaders runs', async () => {
-            // Its own resetModules generation, separate from beforeAll's —
-            // needs its own fresh query-client so `findClientInstance` reads
-            // freshly captured create() calls/results for this test alone.
-            vi.resetModules()
-            await registerAlgorandNodes()
-            mockKy.create.mockClear()
-            mockKy.extend.mockClear()
-            const { queryClient, updateBackendHeaders } =
-                await import('../query-client')
-            mockJson.mockResolvedValue({ status: 'ok' })
-            for (const backend of ['algod', 'indexer'] as const) {
-                await queryClient({
-                    backend,
-                    network: 'mainnet',
-                    method: 'GET',
-                    url: '/v2/status',
-                })
-            }
-
-            updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
-
-            const {
-                algodUrl: algodUrlForMainnet,
-                indexerUrl: indexerUrlForMainnet,
-            } = getNetworkConfig('mainnet')
-            const peraUrlForMainnet = backendUrlByNetwork.mainnet
-
-            const peraInstance = findClientInstance(peraUrlForMainnet)
-            const algodInstance = findClientInstance(algodUrlForMainnet)
-            const indexerInstance = findClientInstance(indexerUrlForMainnet)
-            expect(peraInstance).toBeDefined()
-            expect(algodInstance).toBeDefined()
-            expect(indexerInstance).toBeDefined()
-
-            // A Pera credential must never reach a chain node — algod/indexer
-            // hosts can be third-party.
-            expect(peraInstance.extend).toHaveBeenCalled()
-            expect(algodInstance.extend).not.toHaveBeenCalled()
-            expect(indexerInstance.extend).not.toHaveBeenCalled()
-        })
     })
 
     it('returns undefined data for 200 with an empty body (no SyntaxError)', async () => {
@@ -1419,7 +1016,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/empty-success',
             method: 'GET',
         })
@@ -1436,7 +1033,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/no-content',
             method: 'DELETE',
         })
@@ -1452,7 +1049,7 @@ describe('queryClient', () => {
 
         const response = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/whitespace-body',
             method: 'GET',
         })
@@ -1468,7 +1065,7 @@ describe('queryClient', () => {
 
         const error = await queryClient({
             backend: 'pera',
-            network: 'mainnet',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             url: '/broken',
             method: 'GET',
         }).catch((thrown: unknown) => thrown)

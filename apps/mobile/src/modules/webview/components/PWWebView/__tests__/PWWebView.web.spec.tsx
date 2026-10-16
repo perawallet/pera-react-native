@@ -67,8 +67,8 @@ vi.mock('../../../hooks/useContextFingerprints', () => ({
     useContextFingerprints: () => ({ settings: 's', accounts: 'a' }),
 }))
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
-// M8: the helper (trusted-iframe-origins.web) reads both networks' Bidali
-// base via getNetworkConfig — mocked here alongside config so PWWebView.web's
+// The helper (trusted-iframe-origins.web) reads both deployments' Bidali
+// base via getPeraDeploymentConfig — mocked here alongside config so PWWebView.web's
 // isSecure/trustedOrigins derivation resolves the same way real config would.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     // The real helper: the commerce -> giftcards redirect rule under test.
@@ -78,13 +78,12 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     config: {
         discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     },
-    getNetworkConfig: (network: string) => ({
+    getPeraDeploymentConfig: (deployment: string) => ({
         bidaliBaseUrl:
-            network === 'mainnet'
+            deployment === 'live'
                 ? 'https://commerce.bidali.com/dapp'
                 : 'https://commerce.staging.bidali.com/dapp',
     }),
-    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
 }))
 
 import { asBridgeTransport } from '../../../hooks/handlers.web'
@@ -111,6 +110,7 @@ beforeEach(() => {
     useRemoteConfigStore.getState().resetState()
 })
 
+// lanekeep-ignore-next-line pera/no-module-component-specs reason: covers the webview bridge's security behaviour, which has no hook to move to
 describe('PWWebView.web', () => {
     it('renders an iframe whose src carries the bridge token param', () => {
         const { container } = renderDiscover()

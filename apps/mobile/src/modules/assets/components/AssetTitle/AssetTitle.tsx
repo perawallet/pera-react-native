@@ -14,6 +14,8 @@ import {
     useIsNativeAssetId,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
@@ -33,8 +35,9 @@ export const AssetTitle = ({
     showId = false,
     nameVariant = 'h4',
 }: AssetTitleProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const { t } = useLanguage()
 
     const isAlgo = useMemo(

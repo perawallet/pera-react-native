@@ -80,7 +80,7 @@ type SortableItem = BalanceImpactItem & { sortValue: Decimal }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset()
+    const nativeAsset = useNativeAsset(scope)
     const { transactions, signableAddresses, isSimulating, simulationFailed } =
         useImpactTransactions(scope)
 
@@ -110,8 +110,10 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
     // The signed group can touch assets the user doesn't hold (e.g. a swap
     // into a new asset), so they won't be in the local DB. Fetch them so rows
     // show real names/units instead of falling back to the raw asset id.
-    const { data: assets } = useAssetsQuery(assetIds, { fetchMissing: true })
-    const { data: prices } = useAssetPricesQuery([
+    const { data: assets } = useAssetsQuery(scope, assetIds, {
+        fetchMissing: true,
+    })
+    const { data: prices } = useAssetPricesQuery(scope, [
         nativeAsset.assetId,
         ...assetIds,
     ])

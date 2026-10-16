@@ -14,10 +14,12 @@ import {
     isChainId,
     type ChainId,
     type I18nKey,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     ConnectionErrorScope,
     ConnectionProposal,
+    MessageOperationType,
     SourceType,
     WalletOperation,
     WalletOperationResult,
@@ -25,7 +27,6 @@ import type {
 import {
     decodeFromBase64,
     encodeToBase64,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -62,6 +63,7 @@ type WireArc60SignDataPayload = Omit<Arc60SignDataPayload, 'authData'> & {
 
 export type WireWalletOperation =
     | Extract<WalletOperation, { type: 'sign-transactions' }>
+    | Extract<WalletOperation, { type: MessageOperationType }>
     | {
           type: 'sign-data'
           payload: WireArc60SignDataPayload | LegacySignDataPayload
@@ -70,14 +72,26 @@ export type WireWalletOperation =
 export type WireWalletOperationResult =
     | Extract<WalletOperationResult, { type: 'sign-transactions' }>
     | {
+          type: MessageOperationType
+          /** base64 of the signature. */
+          signature: string
+      }
+    | {
           type: 'sign-data'
           /** base64 of each signature. */
           signatures: string[]
       }
 
+// The browser registers no chain that serves one, and its request holds bigints
+// that cannot cross a message hop.
+const refuseSendTransaction = (): never => {
+    throw new Error('send-transaction cannot cross a browser message hop')
+}
+
 export const encodeWalletOperation = (
     operation: WalletOperation,
 ): WireWalletOperation => {
+    if (operation.type === 'send-transaction') return refuseSendTransaction()
     if (operation.type !== 'sign-data') return operation
     if (Array.isArray(operation.payload)) {
         return { type: 'sign-data', payload: operation.payload }
@@ -122,7 +136,14 @@ export const decodeWalletOperation = (
 export const encodeWalletOperationResult = (
     result: WalletOperationResult,
 ): WireWalletOperationResult => {
-    if (result.type !== 'sign-data') return result
+    if (result.type === 'send-transaction') return refuseSendTransaction()
+    if (result.type === 'sign-transactions') return result
+    if (result.type !== 'sign-data') {
+        return {
+            type: result.type,
+            signature: encodeToBase64(result.signature),
+        }
+    }
     return {
         type: 'sign-data',
         signatures: result.signatures.map(encodeToBase64),
@@ -132,7 +153,13 @@ export const encodeWalletOperationResult = (
 export const decodeWalletOperationResult = (
     result: WireWalletOperationResult,
 ): WalletOperationResult => {
-    if (result.type !== 'sign-data') return result
+    if (result.type === 'sign-transactions') return result
+    if (result.type !== 'sign-data') {
+        return {
+            type: result.type,
+            signature: decodeFromBase64(result.signature),
+        }
+    }
     return {
         type: 'sign-data',
         signatures: result.signatures.map(decodeFromBase64),
@@ -149,6 +176,14 @@ export const isWireWalletOperation = (
         }
         case 'sign-data': {
             return Array.isArray(value.payload) || isRecord(value.payload)
+        }
+        case 'sign-message':
+        case 'sign-typed-data': {
+            return (
+                isRecord(value.request) &&
+                typeof value.request.method === 'string' &&
+                typeof value.request.signer === 'string'
+            )
         }
         default: {
             return false
@@ -168,6 +203,10 @@ export const isWireWalletOperationResult = (
                     item => item === null || typeof item === 'string',
                 )
             )
+        }
+        case 'sign-message':
+        case 'sign-typed-data': {
+            return typeof value.signature === 'string'
         }
         case 'sign-data': {
             return isStringArray(value.signatures)
@@ -308,7 +347,7 @@ export type ConnectionApprovalRequest =
           pairingId?: string
           connectionKind: ConnectionKind
           peer: ConnectionPeer
-          /** Chain-reported network ids (`ChainScope['networkId']`), not the legacy `Network`. */
+          /** Chain-reported network ids (`ChainScope['networkId']`), not a four-value Algorand type. */
           requested: { networks: string[]; methods: string[] }
           expiresAt: number
           /** See `ConnectionsControlMessage`'s `pair.requesterOrigin`. */
@@ -347,7 +386,7 @@ export type ConnectionApprovalRequest =
           pairingId?: string
           peer?: ConnectionPeer
           /** Only the network-mismatch notice names a network. */
-          activeNetwork?: Network
+          activeNetwork?: NetworkId
       }
 
 /**

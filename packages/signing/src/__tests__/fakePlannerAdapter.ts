@@ -14,9 +14,9 @@ import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Transaction, computeGroupID } from 'algosdk'
 import {
-    scopeForLegacyNetwork,
     type PeraTransaction,
     type UnsignedTransaction,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
 
@@ -79,7 +79,7 @@ const payloadTransactions = (
 export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
 ): PlannerChainAdapter => ({
-    chainId: scopeForLegacyNetwork('mainnet').chainId,
+    chainId: LEGACY_CHAIN_ID,
     resolveDappRequest: vi.fn(notStubbed('resolveDappRequest')),
     enqueueDappRequest: vi.fn(notStubbed('enqueueDappRequest')),
     minFeeForSender: vi.fn(() => 0n),
@@ -141,6 +141,12 @@ export const fakePlannerAdapter = (
             : data,
     ),
     mergeSigningResults: vi.fn(results => results[0]),
+    signedTransactionsOf: vi.fn(({ signedData }) => {
+        if (signedData.type !== 'signed-transactions') {
+            throw new Error(`fake planner: ${signedData.type} is not stubbed`)
+        }
+        return signedData.signed
+    }),
     assembleSignedTransaction: vi.fn((txn, signature) => ({
         txn,
         sig: signature?.sig,

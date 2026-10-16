@@ -18,9 +18,11 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSwapLocalCurrency } from '@modules/swap/hooks'
 import { useSwapAmountSection } from '@modules/swap/components/SwapAmountSection/useSwapAmountSection'
 
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const ALGO_ID = '0'
 const ALGO_DECIMALS = 6
 
@@ -99,8 +101,9 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
 
 const renderSwapPayInput = (onAmountChange: (a: Nullable<Decimal>) => void) =>
     renderHook(() => {
-        const localCurrency = useSwapLocalCurrency(ALGO_ID)
+        const localCurrency = useSwapLocalCurrency(SCOPE, ALGO_ID)
         const section = useSwapAmountSection({
+            scope: SCOPE,
             variant: 'pay',
             assetId: ALGO_ID,
             amount: null,

@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
@@ -28,9 +28,10 @@ import type { ContextFingerprints } from './useNotifyWebViewOnContextChange'
  * to notify webviews only when values actually change.
  */
 export function useContextFingerprints(): ContextFingerprints {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isDarkMode = useIsDarkMode()
-    const { preferredCurrency } = useCurrency()
-    const { network } = useNetwork()
+    const { preferredCurrency } = useCurrency(scope)
+    const network = scope.networkId
     const { currentLanguage } = useLanguage()
     const accounts = useAllAccounts()
 

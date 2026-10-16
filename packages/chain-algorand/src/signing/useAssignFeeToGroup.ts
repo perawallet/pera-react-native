@@ -12,11 +12,17 @@
 
 import { useCallback } from 'react'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useFetchSuggestedMinFee, useMinimumFeeConfig } from '../blockchain'
 import type { AssignFeeToGroup } from '@perawallet/wallet-core-signing'
 import { assignFeeToGroup } from './assignMinimumFeesToGroup'
 import { findFundedIndices } from './feeCoverage'
+import {
+    algorandTransactionOf,
+    withAlgorandTransaction,
+} from './unsignedTransaction'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandNetworkOf } from '../network-id'
 
 // The suggested-params fetch goes through `useFetchSuggestedMinFee`, the
 // shared query cache, and never blocks the flow: on failure it falls back to
@@ -26,24 +32,48 @@ export const useAssignFeeToGroup = (): AssignFeeToGroup => {
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     return useCallback<AssignFeeToGroup>(
-        params =>
-            assignFeeToGroup(params, {
-                // Read live store state at call time, not a value captured at
-                // render: WalletConnect can invoke this after the owning
-                // component has unmounted, holding a frozen closure over a
-                // pre-rekey accounts array otherwise.
-                accounts: useAccountsStore.getState().accounts,
-                fetchSuggestedMinFee: () =>
-                    fetchSuggestedMinFee({ fallback: 0n }),
-                configMinTxnFee: minTxnFee,
-                pqMultiplier,
-                findFundedIndices: coverage =>
-                    findFundedIndices({
-                        ...coverage,
-                        accounts: useAccountsStore.getState().accounts,
-                        network: useNetworkStore.getState().network,
-                    }),
-            }),
+        async params => {
+            // A dApp group on the wrong network is the review's to report,
+            // so the payload isn't network-checked here.
+            const transactions = params.transactions.map(algorandTransactionOf)
+            const assigned = await assignFeeToGroup(
+                { ...params, transactions },
+                {
+                    // Read live store state at call time, not a value captured at
+                    // render: WalletConnect can invoke this after the owning
+                    // component has unmounted, holding a frozen closure over a
+                    // pre-rekey accounts array otherwise.
+                    accounts: useAccountsStore.getState().accounts,
+                    fetchSuggestedMinFee: () =>
+                        fetchSuggestedMinFee({ fallback: 0n }),
+                    configMinTxnFee: minTxnFee,
+                    pqMultiplier,
+                    findFundedIndices: coverage =>
+                        findFundedIndices({
+                            ...coverage,
+                            accounts: useAccountsStore.getState().accounts,
+                            network: algorandNetworkOf(
+                                getSelectedScope(ALGORAND_CHAIN_ID),
+                            ),
+                        }),
+                },
+            )
+            if (assigned.transactions === transactions) {
+                return {
+                    transactions: params.transactions,
+                    adjustments: assigned.adjustments,
+                }
+            }
+            return {
+                transactions: assigned.transactions.map((transaction, index) =>
+                    withAlgorandTransaction(
+                        params.transactions[index],
+                        transaction,
+                    ),
+                ),
+                adjustments: assigned.adjustments,
+            }
+        },
         [fetchSuggestedMinFee, minTxnFee, pqMultiplier],
     )
 }

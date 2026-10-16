@@ -125,7 +125,7 @@ describe('Flow: Cloud backup → Settings sync', () => {
         useBackupSyncStateStore.getState().resetState()
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+            .setDeviceID(useNetworkStore.getState().mode, 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         vi.clearAllMocks()
     })

@@ -27,8 +27,8 @@ import {
     withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useScopedDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -66,8 +66,8 @@ export const useMultisigInvitationNameScreen =
 
         const { t } = useLanguage()
         const { errorToast, successToast } = useToast()
-        const { network } = useNetwork()
-        const deviceId = useDeviceID(network) ?? ''
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const deviceId = useScopedDeviceID(scope) ?? ''
 
         const accounts = useAllAccounts()
         const setAccounts = useAccountsStore(state => state.setAccounts)
@@ -75,7 +75,7 @@ export const useMultisigInvitationNameScreen =
         const { setShouldPlayConfetti } = useShouldPlayConfetti()
 
         const deleteImportInboxMutation = useDeleteMultisigInvitationMutation({
-            network,
+            scope,
             deviceId,
         })
 
@@ -143,7 +143,7 @@ export const useMultisigInvitationNameScreen =
                 // invitation is corrupt or tampered. Checked before the inbox
                 // delete so a bad invitation isn't consumed. Mirrors the QR
                 // import path in useNameMultisigScreen.
-                const adapter = multisigAdapterFor(network)
+                const adapter = multisigAdapterFor(scope)
                 const derivedAddress = adapter.deriveAddress({
                     version: invitation.version,
                     threshold: invitation.threshold,
@@ -197,7 +197,7 @@ export const useMultisigInvitationNameScreen =
             }
         }, [
             isSaving,
-            network,
+            scope,
             deviceId,
             accounts,
             invitation.address,

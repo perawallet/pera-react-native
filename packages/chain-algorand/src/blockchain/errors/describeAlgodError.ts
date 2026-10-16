@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { AppError, type NodeErrorCopy } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    type NodeErrorCopy,
+    type NodeErrorsAdapter,
+} from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { AlgodError } from './AlgodError'
 import { ALGOD_ERROR_MESSAGE_KEYS, AlgodErrorCode } from './algodErrorCodes'
 import { toAlgodError } from './toAlgodError'
@@ -37,4 +42,9 @@ export const describeAlgodError = (
     return algodError.code === AlgodErrorCode.UNKNOWN_NODE_ERROR
         ? undefined
         : copyFor(algodError)
+}
+
+export const algorandNodeErrors: NodeErrorsAdapter = {
+    chainId: ALGORAND_CHAIN_ID,
+    describeError: describeAlgodError,
 }

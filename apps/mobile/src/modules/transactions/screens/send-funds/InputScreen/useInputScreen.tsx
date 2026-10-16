@@ -48,8 +48,8 @@ type CloseAccountChoice = 'close' | 'keepOpen'
 
 export const useInputScreen = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset()
-    const isNativeAssetId = useIsNativeAssetId()
+    const nativeAsset = useNativeAsset(scope)
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
@@ -116,14 +116,14 @@ export const useInputScreen = () => {
         () => (selectedAssetId ? [selectedAssetId] : []),
         [selectedAssetId],
     )
-    const { data: assets } = useAssetsQuery(assetIDs)
+    const { data: assets } = useAssetsQuery(scope, assetIDs)
 
     const asset = useMemo(() => {
         if (!selectedAssetId) return null
         return assets.get(selectedAssetId)
     }, [selectedAssetId, assets])
 
-    // ASSET_TRANSFER deeplinks stash a base-unit amount on the store because
+    // TRANSFER deeplinks stash a base-unit amount on the store because
     // they don't know the asset's `decimals` at parse time. Convert here once
     // the asset query resolves, mirror it into both `value` (the visual
     // input) and `amount` (the store's display-units amount), then clear the

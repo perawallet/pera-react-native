@@ -68,7 +68,10 @@ let chainIdsResolved = false
  */
 export const ensureChainIds = (): void => {
     if (chainIdsResolved) return
-    const support = walletConnectSupportFor('mainnet')
+    const support = walletConnectSupportFor({
+        chainId: 'algorand',
+        networkId: 'mainnet',
+    })
     if (!support) {
         throw new Error(
             'fakeWalletKit.ts requires a chain adapter registered before the test body runs (registerDappRequestAdapter.ts, or the consuming app’s own bootstrap)',

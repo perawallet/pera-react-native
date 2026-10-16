@@ -11,11 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    queryClient,
-    getHttpStatus,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { queryClient, getHttpStatus } from '@perawallet/wallet-core-shared'
 import {
     createMultisigAccountResponseSchema,
     getSignRequestsWithSignaturesResponseSchema,
@@ -34,12 +30,12 @@ import {
 } from './schema'
 
 export const createMultisigAccount = async (
-    network: Network,
+    scope: ChainScope,
     params: CreateMultisigAccountRequest,
 ): Promise<CreateMultisigAccountResponse> => {
     const response = await queryClient<CreateMultisigAccountResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/v1/joint-accounts/accounts/',
         data: params,
@@ -49,12 +45,12 @@ export const createMultisigAccount = async (
 }
 
 export const getMultisigAccountDetail = async (
-    network: Network,
+    scope: ChainScope,
     address: string,
 ): Promise<CreateMultisigAccountResponse> => {
     const response = await queryClient<CreateMultisigAccountResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'GET',
         url: `/v1/joint-accounts/accounts/${address}/`,
     })
@@ -63,11 +59,11 @@ export const getMultisigAccountDetail = async (
 }
 
 export const checkIsMultisigAddress = async (
-    network: Network,
+    scope: ChainScope,
     address: string,
 ): Promise<boolean> => {
     try {
-        await getMultisigAccountDetail(network, address)
+        await getMultisigAccountDetail(scope, address)
         return true
     } catch (error: unknown) {
         if (getHttpStatus(error) === 404) {
@@ -78,12 +74,12 @@ export const checkIsMultisigAddress = async (
 }
 
 export const proposeSignRequest = async (
-    network: Network,
+    scope: ChainScope,
     params: ProposeSignRequest,
 ): Promise<SignRequestDetailResponse> => {
     const response = await queryClient<SignRequestDetailResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/v1/joint-accounts/sign-requests/',
         data: params,
@@ -109,12 +105,12 @@ export const addSignature = async (
 }
 
 export const searchSignRequests = async (
-    network: Network,
+    scope: ChainScope,
     params: SearchSignRequestsRequest,
 ): Promise<SearchSignRequestsResponse> => {
     const response = await queryClient<SearchSignRequestsResponse>({
         backend: 'pera',
-        network,
+        scope,
         method: 'POST',
         url: '/v1/joint-accounts/sign-requests/search/',
         data: params,
@@ -124,11 +120,11 @@ export const searchSignRequests = async (
 }
 
 export const getSignRequestDetail = async (
-    network: Network,
+    scope: ChainScope,
     deviceId: string,
     signRequestId: string,
 ): Promise<SignRequestDetailResponse> => {
-    const searchResponse = await searchSignRequests(network, {
+    const searchResponse = await searchSignRequests(scope, {
         device_id: deviceId,
         sign_request_id: signRequestId,
     })
@@ -142,13 +138,13 @@ export const getSignRequestDetail = async (
 }
 
 export const deleteImportInbox = async (
-    network: Network,
+    scope: ChainScope,
     deviceId: string,
     multisigAddress: string,
 ): Promise<void> => {
     await queryClient<string>({
         backend: 'pera',
-        network,
+        scope,
         method: 'DELETE',
         url: `/v1/joint-accounts/inbox/device-import/${deviceId}/${multisigAddress}/`,
         responseType: 'text',

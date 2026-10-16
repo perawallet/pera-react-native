@@ -22,8 +22,6 @@ import {
 import { generateAccount } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { concatBytes } from '@perawallet/wallet-core-shared'
 import { AlgodError, decodeSignedTransaction } from '../../blockchain'
 import {
@@ -44,6 +42,9 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 import { algorandBroadcasterAdapter } from '../broadcaster'
+import { signedAlgorandTransactionFromBytes } from '../signedTransactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 
 describe('algorandBroadcasterAdapter.submitTimeoutError', () => {
     test('is a retryable network_unavailable error naming the timeout', () => {
@@ -57,7 +58,7 @@ describe('algorandBroadcasterAdapter.submitTimeoutError', () => {
 })
 
 describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
-    const scope = scopeForLegacyNetwork('testnet')
+    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
     const sender = generateAccount()
     const group = [1n, 2n].map(amount =>
         makeTestPaymentTx(sender.addr, {
@@ -108,17 +109,33 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
             }),
         )
 
+        const scope = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
         const ids = await algorandBroadcasterAdapter.submitAndAutoRefresh(
-            scopeForLegacyNetwork('mainnet'),
-            signed.map(decodeSignedTransaction),
+            scope,
+            signed.map(bytes =>
+                signedAlgorandTransactionFromBytes(bytes, scope),
+            ),
         )
 
         expect(ids).toEqual([txIds[0]])
         expect(postedTo).toBe(
-            new URL(getNetworkConfig('mainnet').algodUrl).origin,
+            new URL(
+                getAlgorandChainConfig({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const).algodUrl,
+            ).origin,
         )
         expect(postedTo).not.toBe(
-            new URL(getNetworkConfig('testnet').algodUrl).origin,
+            new URL(
+                getAlgorandChainConfig({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'testnet',
+                } as const).algodUrl,
+            ).origin,
         )
     })
 

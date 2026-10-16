@@ -25,6 +25,7 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import {
     algorandRampTokenAssetId,
     isAlgorandNativeRampToken,
@@ -48,7 +49,7 @@ const SOURCE = {
  * 2. Already opted in → no-op.
  * 3. Not opted in + enough spare ALGO → self-funded opt-in.
  * 4. Not opted in + insufficient ALGO → fee-delegated opt-in via
- *    `@perawallet/wallet-core-fee-delegation` (sponsor covers fees + MBR;
+ *    `../fee-delegation` (sponsor covers fees + MBR;
  *    requires a valid device attestation token, throws the onramp's
  *    `RampAttestationRequiredError` otherwise). The opt-in itself is built
  *    with a zero fee — the sponsor tops the group's fee pool up to the full
@@ -59,9 +60,9 @@ const SOURCE = {
 export const useEnsureDestinationOptIn =
     (): UseEnsureDestinationOptInResult => {
         const algokit = useAlgorandClient()
-        const { optIn } = useAssetOptInMutation(
-            useSelectedScope(ALGORAND_CHAIN_ID),
-        )
+        // The scope `algokit` builds for, so the payload's genesis matches it.
+        const selectedScope = useSelectedScope(ALGORAND_CHAIN_ID)
+        const { optIn } = useAssetOptInMutation(selectedScope)
         const { submitWithFeeDelegation } = useFeeDelegation()
         const { assetMbr } = useMinimumFeeConfig()
 
@@ -136,7 +137,10 @@ export const useEnsureDestinationOptIn =
                 try {
                     await submitWithFeeDelegation({
                         account: address,
-                        transactions: transactions.map(t => t.txn),
+                        transactions: toUnsignedAlgorandTransactions(
+                            transactions.map(t => t.txn),
+                            selectedScope,
+                        ),
                         includeAssetOptInMbr: true,
                         optInAssetIds: [assetId],
                         sourceMetadata: SOURCE,
@@ -151,7 +155,7 @@ export const useEnsureDestinationOptIn =
                 }
                 return true
             },
-            [algokit, optIn, submitWithFeeDelegation, assetMbr],
+            [algokit, optIn, submitWithFeeDelegation, assetMbr, selectedScope],
         )
 
         return { ensureOptIn }

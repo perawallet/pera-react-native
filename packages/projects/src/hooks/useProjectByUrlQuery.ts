@@ -11,16 +11,13 @@
  */
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
-import {
-    LEGACY_CHAIN_ID,
-    legacyNetworkOf,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchProjectByUrl } from '../api/projects'
 import { projectQueryKeys } from './querykeys'
 import type { PeraProject } from '../models/types'
 
 export type UseProjectByUrlQueryParams = {
+    scope: ChainScope
     url?: string
     isEnabled?: boolean
 }
@@ -30,16 +27,14 @@ export type UseProjectByUrlQueryResult = UseQueryResult<PeraProject>
 export const useProjectByUrlQuery = (
     params: UseProjectByUrlQueryParams,
 ): UseProjectByUrlQueryResult => {
-    const { url, isEnabled = true } = params
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const network = legacyNetworkOf(scope)
+    const { scope, url, isEnabled = true } = params
 
     return useQuery({
         queryKey: projectQueryKeys.byUrl(url ?? '', scope),
         queryFn: async ({ signal }) => {
             const projects = await fetchProjectByUrl({
                 sourceUrl: url!,
-                network,
+                scope,
                 signal,
             })
             return projects[0] ?? null

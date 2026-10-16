@@ -32,5 +32,7 @@ export {
     decimalSum,
     decimalMax,
     decimalMin,
+    parseDecimalJson,
+    stringifyDecimalJson,
 } from './columns'
 export { DB_WRITE_CHUNK_SIZE, forEachWriteChunk } from './chunkedWrite'

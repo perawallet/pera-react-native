@@ -22,6 +22,7 @@ export type TabResumeIntent =
           accountAddress: string
           assetInId: string
           assetOutId: string
+          // lanekeep-ignore-next-line pera/amount-types reason: the intent is the record put in chrome.storage.session for the popup-to-tab hand-off, which can't carry a Decimal
           payAmount: string
       }
     | {
@@ -29,6 +30,7 @@ export type TabResumeIntent =
           accountAddress: string
           assetId: string
           destination: string
+          // lanekeep-ignore-next-line pera/amount-types reason: the intent is the record put in chrome.storage.session for the popup-to-tab hand-off, which can't carry a Decimal
           amount: string
           note?: string
       }

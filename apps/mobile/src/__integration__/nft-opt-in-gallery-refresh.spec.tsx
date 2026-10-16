@@ -56,15 +56,12 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { OptInConfirmationContent } from '@modules/assets'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
@@ -82,8 +79,13 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // Gallery + opt-in in one host so both share the provider tree's query
 // client, mirroring the production layout (gallery mounted while the
@@ -212,13 +214,13 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
             accountAddress: addressOf(sender),
             assetId: NFT_TEST_ASSET_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
         await insertAssetHolding({
             accountAddress: addressOf(sender),
             assetId: NFT_TEST_ASSET_2_ID,
             scope: MAINNET_SCOPE,
-            amount: '1',
+            amount: new Decimal(1),
         })
 
         server.use(
@@ -242,7 +244,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
             // Lagging indexer: it does not know the fresh opt-in yet, so the
             // recentlyAdded order must float the roundless asset to the top.
             http.get(
-                `${getNetworkConfig(Networks.mainnet).indexerUrl}/v2/accounts/:address/assets`,
+                `${getAlgorandChainConfig({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
                 () =>
                     HttpResponse.json({
                         'current-round': 30_000,

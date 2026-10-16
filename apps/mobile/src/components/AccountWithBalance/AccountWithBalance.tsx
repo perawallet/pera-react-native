@@ -11,10 +11,12 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
+import { ChainBadge } from '@components/ChainBadge'
+import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -23,17 +25,26 @@ import { useAccountWithBalance } from './useAccountWithBalance'
 export type AccountWithBalanceProps = {
     account: WalletAccount
     isHighlighted?: boolean
+    /** The chain whose address, balance and native asset to show; defaults to the account's own chain. */
+    chainId?: ChainId
 } & PWViewProps
 
 export const AccountWithBalance = ({
     account,
     isHighlighted,
+    chainId,
     ...rest
 }: AccountWithBalanceProps) => {
-    const nativeAsset = useNativeAsset()
     const styles = useStyles({ isHighlighted })
     const { t } = useLanguage()
-    const { nativeValue, isTestTier } = useAccountWithBalance(account)
+    const {
+        scope,
+        chainName,
+        availability,
+        nativeValue,
+        isMultiChain,
+        isTestTier,
+    } = useAccountWithBalance(account, chainId)
 
     return (
         <PWView
@@ -42,34 +53,45 @@ export const AccountWithBalance = ({
         >
             <AccountDisplay
                 account={account}
+                chainId={chainId}
                 showChevron={false}
                 showAccountType
                 style={styles.accountDisplay}
             />
+            {isMultiChain && chainName && <ChainBadge name={chainName} />}
             {isTestTier && (
                 <PWBadge
                     variant='testnet'
                     value={t('common.network_label.testnet')}
                 />
             )}
-            <PWView style={styles.balanceContainer}>
-                <AssetAmount
-                    asset={nativeAsset}
-                    value={nativeValue}
-                    density='compact'
-                    variant='bodyLarge'
-                    weight={500}
+            {!availability.isAvailable ? (
+                <ChainUnavailableNotice
+                    chainName={chainName}
+                    testID='account_chain_unavailable'
                 />
-
-                <PreferredAmount
-                    sourceAssetId={nativeAsset.assetId}
-                    sourceAmount={nativeValue}
-                    density='compact'
-                    variant='footnoteMedium'
-                    weight={400}
-                    style={styles.fiatBalance}
-                />
-            </PWView>
+            ) : (
+                <PWView style={styles.balanceContainer}>
+                    <AssetAmount
+                        asset={availability.nativeAsset}
+                        value={nativeValue}
+                        density='compact'
+                        variant='bodyLarge'
+                        weight={500}
+                    />
+                    {/* Converts on the account's own chain, which keeps the
+                        ALGO-preferred fallback for an ALGO balance. */}
+                    <PreferredAmount
+                        sourceAssetId={availability.nativeAsset.assetId}
+                        sourceAmount={nativeValue}
+                        scope={scope}
+                        density='compact'
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.fiatBalance}
+                    />
+                </PWView>
+            )}
         </PWView>
     )
 }

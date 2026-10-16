@@ -15,10 +15,9 @@ import { PWTouchableOpacity } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 
 import {
-    chainAccountOf,
+    ownAddressOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export type SelectableAccountRowProps = {
     account: WalletAccount
@@ -41,10 +40,7 @@ const SelectableAccountRowComponent = ({
     return (
         <PWTouchableOpacity
             onPress={handlePress}
-            testID={
-                testID ??
-                `account-row-${chainAccountOf(account, LEGACY_CHAIN_ID)?.address}`
-            }
+            testID={testID ?? `account-row-${ownAddressOf(account)}`}
         >
             <AccountWithBalance
                 account={account}

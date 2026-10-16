@@ -13,9 +13,11 @@
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
+    accountChainIdOf,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
-    useSigningAccounts,
+    useRegisteredChainIds,
+    useSigningAccountsOnOwnChain,
     type AccountValueBasis,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -23,7 +25,10 @@ import {
     LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapabilityCheck,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -38,15 +43,22 @@ export type UsePortfolioViewResult = {
     portfolioPreferredValue: Nullable<Decimal>
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
+    /**
+     * Every counted account's chain has balance history. The chart and trend
+     * plot only those chains, so once the total counts another they'd contradict it.
+     */
+    hasBalanceHistory: boolean
     isPending: boolean
 }
 
 export const usePortfolioView = (): UsePortfolioViewResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency(scope)
     const basis = useAccountValueBasis(scope.chainId)
 
-    const accounts = useSigningAccounts(scope.chainId)
+    // Each account counts when it can sign on its own chain, so an Ethereum
+    // account joins the fiat total without an Algorand address.
+    const accounts = useSigningAccountsOnOwnChain()
     const {
         portfolioNativeValue,
         portfolioUsdValue,
@@ -54,6 +66,16 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         hasFiatTotal,
         isPending,
     } = useAccountValueTotalsQuery(accounts, scope)
+    const check = useChainCapabilityCheck()
+    const registeredChainIds = useRegisteredChainIds()
+    const hasBalanceHistory = accounts.every(account =>
+        check({
+            chain: {
+                chainId: accountChainIdOf(account, registeredChainIds),
+                capability: 'balanceHistory',
+            },
+        }),
+    )
     const portfolioPreferredValue = useMemo(
         () =>
             usdToPreferred(
@@ -69,6 +91,7 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         portfolioNativeValue,
         portfolioPreferredValue,
         hasFiatTotal,
+        hasBalanceHistory,
         isPending,
     }
 }

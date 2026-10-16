@@ -11,28 +11,29 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import { render, screen } from '@test-utils/render'
 import { TestnetIndicator } from '../TestnetIndicator.web'
 
 const mockNetworkState = vi.hoisted(() => ({
-    network: 'mainnet' as Network,
+    network: 'mainnet' as NetworkId,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({
-        network: mockNetworkState.network,
-        isMainnet: mockNetworkState.network === 'mainnet',
-        isTestnet: mockNetworkState.network === 'testnet',
+    useSelectedScope: () => ({
+        chainId: 'algorand',
+        networkId: mockNetworkState.network,
     }),
+    useWalletDeployment: () =>
+        mockNetworkState.network === 'mainnet' ? 'live' : 'developer',
 }))
 
 describe('TestnetIndicator', () => {
     it('renders the label bar and the frame accents off MainNet', () => {
-        mockNetworkState.network = Networks.testnet
+        mockNetworkState.network = 'testnet'
 
         render(<TestnetIndicator />)
 
@@ -43,7 +44,7 @@ describe('TestnetIndicator', () => {
     })
 
     it('renders nothing on MainNet', () => {
-        mockNetworkState.network = Networks.mainnet
+        mockNetworkState.network = 'mainnet'
 
         render(<TestnetIndicator />)
 

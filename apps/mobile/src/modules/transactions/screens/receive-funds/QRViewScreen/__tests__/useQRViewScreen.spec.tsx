@@ -56,11 +56,7 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },

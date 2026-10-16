@@ -10,22 +10,29 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import type { PeraService } from '@perawallet/wallet-core-config'
-import type { Network } from './base-types'
 
-/** A request targets a legacy Algorand network or a chain scope, never both. */
+/**
+ * A chain's data names its scope, which resolves to the deployment holding
+ * that chain's data; a chain-agnostic Pera request (integrity, banners,
+ * notifications, fiat rates) names the deployment. The backup host is global,
+ * so a backup request names neither.
+ */
 type RequestTarget =
-    | { network: Network; scope?: undefined }
-    | { scope: ChainScope; network?: undefined }
+    | { backend: 'pera'; scope: ChainScope; deployment?: undefined }
+    | { backend: 'pera'; deployment: WalletMode; scope?: undefined }
+    | { backend: 'backup'; scope?: undefined; deployment?: undefined }
 
 export type RequestConfiguration<TData = unknown> = RequestTarget & {
-    backend: 'algod' | 'indexer' | 'pera' | 'backup'
     /**
-     * The Pera service this request needs. Read only for `backend: 'pera'`:
-     * a service the scope's configuration does not list is refused before a
-     * socket opens. Without it, the request only needs the scope to have a
-     * Pera deployment.
+     * The Pera service this request needs. Read only for `backend: 'pera'`
+     * with a scope target: a service the scope's configuration does
+     * not list is refused before a socket opens. Without it, the request only
+     * needs the scope to have a Pera deployment.
      */
     service?: PeraService
     url?: string

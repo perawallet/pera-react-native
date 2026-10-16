@@ -11,11 +11,11 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     localKeySignerChainAdapters,
     type LocalKeySignerChainAdapter,
 } from '../chain-adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const notStubbed = (member: string) => () => {
     throw new Error(`fake local-key signer: ${member} is not stubbed`)
@@ -24,7 +24,7 @@ const notStubbed = (member: string) => () => {
 export const fakeLocalKeySignerAdapter = (
     overrides: Partial<LocalKeySignerChainAdapter> = {},
 ): LocalKeySignerChainAdapter => ({
-    chainId: scopeForLegacyNetwork('mainnet').chainId,
+    chainId: LEGACY_CHAIN_ID,
     signTransactions: vi.fn(notStubbed('signTransactions')),
     createStrategy: vi.fn(notStubbed('createStrategy')),
     signGroups: vi.fn(notStubbed('signGroups')),

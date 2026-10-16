@@ -14,8 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { seedAuthority } from '../../../../__tests__/registerAlgorandAccounts'
 import { createActor, toPromise } from 'xstate'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
@@ -102,7 +102,7 @@ describe('transportActor', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useNetworkStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
         useAccountChainStateStore.getState().resetState()
         registerFakeBroadcaster({
             createSubmitTransport: () =>
@@ -193,6 +193,79 @@ describe('transportActor', () => {
 
         expect(mergeSigningResults).toHaveBeenCalledWith([dataResult])
         expect(send).toHaveBeenCalled()
+    })
+
+    describe('a scope chain with no planner adapter', () => {
+        const ETHEREUM_SEPOLIA: ChainScope = {
+            chainId: 'ethereum',
+            networkId: 'sepolia',
+        }
+        const ethereumAccount = {
+            ...mockAlgo25Account,
+            chains: { ethereum: { address: MOCK_ADDRESS } },
+        } as WalletAccount
+        const signedResult = (id: string): SigningResult => ({
+            signedData: {
+                type: 'signed-transactions',
+                signed: [
+                    {
+                        scope: ETHEREUM_SEPOLIA,
+                        id,
+                        bytes: new Uint8Array([1]),
+                    },
+                ],
+                historyEntries: [],
+            },
+            signers: [{ address: MOCK_ADDRESS }],
+        })
+        const inputFor = (
+            signingResults: SigningResult[],
+            send: ReturnType<typeof vi.fn>,
+        ) =>
+            makeInput(
+                { type: 'walletconnect' },
+                {
+                    signingResults,
+                    allAccounts: [ethereumAccount],
+                    isKeyedByPlanner: true,
+                    createTransport: () => ({ send }),
+                    scope: ETHEREUM_SEPOLIA,
+                },
+            )
+
+        it('delivers its single result unmerged', async () => {
+            const send = vi
+                .fn()
+                .mockResolvedValue({ type: 'submitted', txIds: ['0x1'] })
+            const result = signedResult('0x1')
+
+            const actor = createActor(transportActor, {
+                input: inputFor([result], send),
+            })
+            actor.start()
+            await toPromise(actor)
+
+            expect(send).toHaveBeenCalledWith(
+                result,
+                expect.anything(),
+                MOCK_ADDRESS,
+            )
+        })
+
+        it('throws rather than guess how to merge several results', async () => {
+            const send = vi.fn()
+
+            const actor = createActor(transportActor, {
+                input: inputFor(
+                    [signedResult('0x1'), signedResult('0x2')],
+                    send,
+                ),
+            })
+            actor.start()
+
+            await expect(toPromise(actor)).rejects.toThrow(/cannot merge 2/)
+            expect(send).not.toHaveBeenCalled()
+        })
     })
 
     it('routes to algod transport for local source', async () => {
@@ -290,7 +363,10 @@ describe('transportActor', () => {
             addresses: ['p1', 'p2'],
             version: 1,
         })
-        seedAuthority(J1_ADDRESS, J2_ADDRESS, scopeForLegacyNetwork('testnet'))
+        seedAuthority(J1_ADDRESS, J2_ADDRESS, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const authAccount = multisigAccount(J2_ADDRESS, {
             threshold: 2,
             addresses: ['p3', 'p4'],
@@ -332,11 +408,10 @@ describe('transportActor', () => {
         const MSIG_AUTH_ADDRESS =
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
         const rekeyedSender: WalletAccount = mockAlgo25Account
-        seedAuthority(
-            MOCK_ADDRESS,
-            MSIG_AUTH_ADDRESS,
-            scopeForLegacyNetwork('testnet'),
-        )
+        seedAuthority(MOCK_ADDRESS, MSIG_AUTH_ADDRESS, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const msigAuth = multisigAccount(MSIG_AUTH_ADDRESS, {
             threshold: 2,
             addresses: ['p1', 'p2'],
@@ -376,11 +451,10 @@ describe('transportActor', () => {
         // hop must not be followed for transport keying either.
         mockAddSignatures.mockResolvedValue({ status: 'pending' })
         const rekeyedParticipant: WalletAccount = mockAlgo25Account
-        seedAuthority(
-            MOCK_ADDRESS,
-            'SOMEOTHERAUTH',
-            scopeForLegacyNetwork('testnet'),
-        )
+        seedAuthority(MOCK_ADDRESS, 'SOMEOTHERAUTH', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
         const source: SourceMetadata = {
             type: 'multisig-cosign',
             signRequestId: 'sign-req-2',

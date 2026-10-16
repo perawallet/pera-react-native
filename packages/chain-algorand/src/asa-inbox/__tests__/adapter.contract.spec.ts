@@ -11,26 +11,57 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { sendFlowContractTests } from '@perawallet/wallet-core-transactions/testing'
 
-// Builders stubbed to succeed, so a rejection can only come from the
-// adapter's own validation of the quote.
+// Builders stubbed to succeed with a real mainnet transaction, so a rejection
+// can only come from the adapter's own validation of the quote.
+const { payment } = vi.hoisted(() => ({
+    payment: async () => {
+        const { MAINNET_GENESIS_HASH, makeTestAddress, makeTestPaymentTx } =
+            await import('../../signing/__tests__/transactions')
+        return [
+            makeTestPaymentTx(makeTestAddress(1), {
+                receiver: makeTestAddress(2),
+                genesisHash: MAINNET_GENESIS_HASH,
+            }),
+        ]
+    },
+}))
+
 vi.mock('../../blockchain', async importOriginal => ({
     ...(await importOriginal<typeof import('../../blockchain')>()),
     createWalletAlgorandClient: vi.fn(() => ({})),
 }))
 vi.mock('../builders', () => ({
-    buildArc59SendViaInboxTxs: vi.fn(async () => [{}]),
-    buildArc59ClaimTxs: vi.fn(async () => [{}]),
-    buildArc59RejectTxs: vi.fn(async () => [{}]),
+    buildArc59SendViaInboxTxs: vi.fn(payment),
+    buildArc59ClaimTxs: vi.fn(payment),
+    buildArc59RejectTxs: vi.fn(payment),
+}))
+vi.mock('../../transactions/builders', () => ({
+    buildTransferTxs: vi.fn(payment),
+    buildExpressTransferTxs: vi.fn(payment),
+    buildOptInTxs: vi.fn(payment),
+    buildOptOutTxs: vi.fn(payment),
+    buildRekeyTx: vi.fn(async () => (await payment())[0]),
+    buildKeyRegistrationTx: vi.fn(async () => (await payment())[0]),
 }))
 
 import { algorandSendFlowAdapter } from '../../transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const claim = {
+    scope,
+    sender: 'SENDER',
+    assetId: 31566704n,
+    shouldClaimAlgo: true,
+    inboxAddress: 'INBOX',
+    senderMinFee: 1000n,
+}
 
 sendFlowContractTests(() => algorandSendFlowAdapter, {
     inboxSend: {
-        scope: scopeForLegacyNetwork('testnet'),
+        scope,
         sender: 'SENDER',
         receiver: 'RECEIVER',
         assetId: 31566704n,
@@ -38,4 +69,42 @@ sendFlowContractTests(() => algorandSendFlowAdapter, {
         summary: {},
         senderMinFee: 1000n,
     },
+    inboxSendQuote: {
+        is_arc59_opted_in: true,
+        minimum_balance_requirement: 100000,
+        inner_tx_count: 2,
+        total_protocol_and_mbr_fee: 4000,
+        inbox_address: null,
+        algo_fund_amount: 0,
+        warning_message: null,
+    },
+    inboxClaim: claim,
+    inboxReject: { ...claim, assetCreator: 'CREATOR' },
+    transfer: {
+        scope,
+        sender: 'SENDER',
+        receiver: 'RECEIVER',
+        assetId: '0',
+        amount: 1n,
+    },
+    express: {
+        scope,
+        sender: 'SENDER',
+        receiver: 'RECEIVER',
+        assetId: 31566704n,
+        amount: 1n,
+        funding: 0n,
+    },
+    optIn: { scope, sender: 'SENDER', assetId: 31566704n },
+    optOut: {
+        scope,
+        optOuts: [{ sender: 'SENDER', assetId: 31566704n, creator: 'CREATOR' }],
+    },
+    rekey: {
+        scope,
+        sourceAddress: 'SENDER',
+        rekeyToAddress: 'AUTH',
+        minFee: 1000n,
+    },
+    keyRegistration: { kind: 'offline', scope, sender: 'SENDER' },
 })

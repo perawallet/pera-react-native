@@ -20,12 +20,18 @@ const { fetchRegistrationSettings } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/onboarding', () => ({ fetchRegistrationSettings }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useRegistrationSettingsQuery } from '../useRegistrationSettingsQuery'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useRegistrationSettingsQuery', () => {
+describe.each(SCOPES)('useRegistrationSettingsQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

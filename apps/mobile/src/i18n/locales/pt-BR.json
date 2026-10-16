@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Colar da área de transferência",
         "invalid_qr_title": "Código QR inválido",
         "invalid_qr_body": "Este código QR não contém um endereço de wallet",
+        "other_chain_qr_body": "Este é um endereço de {{chain}}.",
         "address": "Endereço",
         "contacts": "Contatos",
         "my_accounts": "Contas",
@@ -293,7 +294,9 @@
             "bodyWithDependents": "Infelizmente identificamos um problema na versão 7.1.0 na forma como o endereço das contas Quantum é derivado das suas 25 palavras, o que o torna incompatível com outras ferramentas.\n\nSeus fundos estão seguros e sua conta funciona normalmente.\n\nOutra conta está com rekey para esta, então não deixe de usá-la por enquanto — ela é a única signatária dessa conta no momento. No entanto, para evitar problemas de compatibilidade, recomendamos criar uma nova conta Quantum e mover seus fundos assim que o rekey da outra conta for refeito, assim sua passphrase de recuperação funciona em qualquer lugar.\n\nPedimos desculpas pelo transtorno e agradecemos sua compreensão.",
             "markerLabel": "Sobre esta conta Quantum",
             "dismiss": "Entendi"
-        }
+        },
+        "chain_unavailable": "{{chain}} está indisponível no momento",
+        "chain_unavailable_unnamed": "Esta blockchain está indisponível no momento"
     },
     "account_details": {
         "assets": {
@@ -970,7 +973,9 @@
         "save": "Salvar",
         "apply": "Aplicar",
         "copy": "Copiar",
-        "send": "Enviar"
+        "send": "Enviar",
+        "show_more": "Mostrar mais",
+        "show_less": "Mostrar menos"
     },
     "contacts": {
         "edit_contact": {
@@ -1173,6 +1178,7 @@
         "connections": {
             "invalid_payload": "Um app enviou uma solicitação que a Pera não conseguiu entender. Verifique o app e tente novamente.",
             "no_handler": "A Pera não conseguiu processar esta solicitação de conexão. Verifique o app e tente novamente.",
+            "unauthorized_account": "Um app pediu para assinar com uma conta que não faz parte da sua conexão.",
             "unknown_connection": "A Pera não encontrou essa conexão. Ela pode já ter sido desconectada.",
             "duplicate_kind": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
             "already_initialized": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
@@ -3061,7 +3067,9 @@
             "data_label": "Dados a serem assinados",
             "untrusted_message_label": "Mensagem exibida (não faz parte do que você assina)",
             "binary_warning_title": "Os dados não são texto legível",
-            "binary_warning_body": "Os dados a assinar não são texto legível, então os bytes brutos aparecem em hexadecimal. Aprove somente se você confia neste aplicativo."
+            "binary_warning_body": "Os dados a assinar não são texto legível, então os bytes brutos aparecem em hexadecimal. Aprove somente se você confia neste aplicativo.",
+            "typed_data_warning_title": "Esta assinatura pode movimentar seus tokens",
+            "typed_data_warning_body": "Assinar dados estruturados pode autorizar um aplicativo a gastar ou negociar seus tokens sem pedir sua confirmação de novo. Aprove somente se você confia neste aplicativo."
         },
         "arbitrary_data_details": {
             "unnamed": "Alguém",
@@ -3172,7 +3180,6 @@
             "completed": "Concluída",
             "failed": "Falhou",
             "pending": "Pendente",
-            "pending_verifying": "Pendente — verificando",
             "raw_transaction": "Transação bruta"
         },
         "notice": {
@@ -3198,6 +3205,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} transações internas"
+        },
+        "contract_call": {
+            "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
+            "function_selector": "Seletor de função",
+            "call_data": "Dados da chamada"
         },
         "type": {
             "pay": "Transação de pagamento",

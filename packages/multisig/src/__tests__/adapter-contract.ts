@@ -11,11 +11,16 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    SigningScheme,
+} from '@perawallet/wallet-core-chain-contract'
 import type { MultisigChainAdapter, MultisigParameters } from '../chain-adapter'
 import type { MultisigSignRequest } from '../models'
 
 export interface MultisigContractFixtures {
+    /** The scope the chain's requests are decoded for. */
+    scope: ChainScope
     /** At least three participants and a threshold of two. */
     parameters: MultisigParameters
     /** An unsigned transaction sent by the address `parameters` derives. */
@@ -124,12 +129,23 @@ export const multisigContractTests = (
             })
         })
 
-        it('decodes the unsigned transaction a request carries', () => {
+        it('decodes the unsigned transaction a request carries as a chain-neutral one on the scope', () => {
             const bytes = Uint8Array.from(atob(rawTransactionBase64), char =>
                 char.charCodeAt(0),
             )
 
-            expect(makeAdapter().decodeTransaction(bytes)).toBeDefined()
+            expect(
+                makeAdapter().decodeTransaction(
+                    bytes,
+                    fixtures.scope,
+                    parameters,
+                ),
+            ).toEqual(
+                expect.objectContaining({
+                    scope: fixtures.scope,
+                    payload: expect.anything(),
+                }),
+            )
         })
 
         it('reports missing signatures as retryable, not as an error', async () => {

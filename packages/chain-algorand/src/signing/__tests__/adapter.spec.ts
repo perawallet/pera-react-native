@@ -210,20 +210,50 @@ describe('algorandReviewerAdapter.toTransactionNative', () => {
     })
 })
 
-describe('algorandMessageSignerAdapter.signerPublicKey', () => {
+describe('algorandMessageSignerAdapter.authData.signerPublicKey', () => {
+    const authData = () => {
+        const leg = algorandMessageSignerAdapter.authData
+        if (!leg) throw new Error('Algorand signs auth data')
+        return leg
+    }
+
     test('decodes an address to the 32-byte key it encodes', () => {
-        const key = algorandMessageSignerAdapter.signerPublicKey(
-            senderA.toString(),
-        )
+        const key = authData().signerPublicKey(senderA.toString())
 
         expect(key).toHaveLength(32)
         expect(encodeAlgorandAddress(key)).toBe(senderA.toString())
     })
 
     test('throws on an invalid address', () => {
-        expect(() =>
-            algorandMessageSignerAdapter.signerPublicKey('not-an-address'),
-        ).toThrow()
+        expect(() => authData().signerPublicKey('not-an-address')).toThrow()
+    })
+})
+
+describe('algorandMessageSignerAdapter.canSign', () => {
+    const local: WalletAccount = {
+        id: 'a1',
+        custody: { kind: 'local', seed: null },
+        chains: { algorand: { address: senderA.toString(), keyPairId: 'k1' } },
+    }
+
+    test.each(['arbitraryData', 'authData'] as const)(
+        'signs %s with a local key',
+        kind => {
+            expect(algorandMessageSignerAdapter.canSign(local, kind)).toBe(true)
+        },
+    )
+
+    test.each(['message', 'typedData'] as const)(
+        'signs no %s, a kind Algorand has no format for',
+        kind => {
+            expect(algorandMessageSignerAdapter.canSign(local, kind)).toBe(
+                false,
+            )
+        },
+    )
+
+    test('provides the auth-data leg', () => {
+        expect(algorandMessageSignerAdapter.authData).toBeDefined()
     })
 })
 

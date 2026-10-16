@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { z } from 'zod'
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import { fetchOnChainAsset } from '@perawallet/wallet-core-assets'
 import {
     DEFAULT_ITEMS_PER_PAGE,
     type TransactionHistoryResult,
 } from '@perawallet/wallet-core-transactions'
+import { fetchNodeJson } from '../../../blockchain/utils/nodeHttp'
 import { transformTransactionHistoryResponse } from '../transformers'
 import {
     collectAssetIds,
@@ -25,6 +24,7 @@ import {
     type AssetLookup,
 } from './transformers'
 import { amountish } from './schema'
+import { algorandScope, type AlgorandNetworkId } from '../../../network-id'
 
 /**
  * Resolves display facts (name/unit/decimals) for every asset referenced in a
@@ -34,17 +34,14 @@ import { amountish } from './schema'
  */
 const buildAssetLookup = async (
     response: unknown,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<AssetLookup> => {
     const lookup: AssetLookup = new Map()
     const ids = collectAssetIds(response)
 
     const settled = await Promise.allSettled(
         ids.map(async id => {
-            const asset = await fetchOnChainAsset(
-                id,
-                scopeForLegacyNetwork(network),
-            )
+            const asset = await fetchOnChainAsset(id, algorandScope(network))
             return { id, asset }
         }),
     )
@@ -65,7 +62,7 @@ const buildAssetLookup = async (
 const toResult = async (
     raw: unknown,
     accountAddress: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<TransactionHistoryResult> => {
     const assets = await buildAssetLookup(raw, network)
     return transformTransactionHistoryResponse(
@@ -80,7 +77,7 @@ const toResult = async (
  */
 export const fetchIndexerTransactionHistory = async (params: {
     accountAddress: string
-    network: Network
+    network: AlgorandNetworkId
     assetId?: string
     afterTime?: string
     beforeTime?: string
@@ -97,21 +94,24 @@ export const fetchIndexerTransactionHistory = async (params: {
         signal,
     } = params
 
-    const response = await queryClient<unknown>({
-        backend: 'indexer',
+    const response = await fetchNodeJson(
         network,
-        method: 'GET',
-        url: `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
-        params: {
-            limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
-            ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
-            ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
-            ...(beforeTime !== undefined ? { 'before-time': beforeTime } : {}),
+        'indexer',
+        `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
+        {
+            params: {
+                limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
+                ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
+                ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
+                ...(beforeTime !== undefined
+                    ? { 'before-time': beforeTime }
+                    : {}),
+            },
+            signal,
         },
-        signal,
-    })
+    )
 
-    return toResult(response.data, accountAddress, network)
+    return toResult(response, accountAddress, network)
 }
 
 /**
@@ -130,7 +130,7 @@ export const fetchIndexerTransactionHistory = async (params: {
 export const fetchMoreIndexerTransactions = async (params: {
     accountAddress: string
     nextToken: string
-    network: Network
+    network: AlgorandNetworkId
     assetId?: string
     afterTime?: string
     beforeTime?: string
@@ -148,22 +148,25 @@ export const fetchMoreIndexerTransactions = async (params: {
         signal,
     } = params
 
-    const response = await queryClient<unknown>({
-        backend: 'indexer',
+    const response = await fetchNodeJson(
         network,
-        method: 'GET',
-        url: `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
-        params: {
-            limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
-            next: nextToken,
-            ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
-            ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
-            ...(beforeTime !== undefined ? { 'before-time': beforeTime } : {}),
+        'indexer',
+        `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
+        {
+            params: {
+                limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
+                next: nextToken,
+                ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
+                ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
+                ...(beforeTime !== undefined
+                    ? { 'before-time': beforeTime }
+                    : {}),
+            },
+            signal,
         },
-        signal,
-    })
+    )
 
-    return toResult(response.data, accountAddress, network)
+    return toResult(response, accountAddress, network)
 }
 
 const closeAmountLegSchema = z
@@ -181,20 +184,19 @@ const closeAmountLookupSchema = z.object({
  * The swept close amount of a single confirmed transaction (base units,
  * decimal string), straight from the chain — perspective-free, unlike the
  * Pera backend's balance-impact derivation. Null when the transaction has no
- * close leg. Powers sync/close-amount-backfill.ts.
+ * close leg. Powers history-cache/close-amount-backfill.ts.
  */
 export const fetchIndexerCloseAmount = async (
     txId: string,
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<string | null> => {
-    const response = await queryClient<unknown>({
-        backend: 'indexer',
+    const response = await fetchNodeJson(
         network,
-        method: 'GET',
-        url: `/v2/transactions/${encodeURIComponent(txId)}`,
-    })
+        'indexer',
+        `/v2/transactions/${encodeURIComponent(txId)}`,
+    )
 
-    const { transaction } = closeAmountLookupSchema.parse(response.data)
+    const { transaction } = closeAmountLookupSchema.parse(response)
     const closeAmount =
         transaction['payment-transaction']?.['close-amount'] ??
         transaction['asset-transfer-transaction']?.['close-amount']

@@ -11,10 +11,10 @@
  */
 
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
     type AssetRef,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -96,7 +96,7 @@ describe('useSingleAssetDetailsQuery', () => {
         expect(result.current.data).toEqual(dbAsset)
         expect(mocks.getAssetById).toHaveBeenCalledWith({
             assetId: '123',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
     })
 
@@ -186,10 +186,10 @@ describe('useSingleAssetDetailsQuery', () => {
         expect(mocks.batchEnqueue).not.toHaveBeenCalled()
         expect(
             queryClient.getQueryData(
-                getRemoteAssetDetailsQueryKey(
-                    '789',
-                    scopeForLegacyNetwork('mainnet'),
-                ),
+                getRemoteAssetDetailsQueryKey('789', {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const),
             ),
         ).toBeDefined()
     })

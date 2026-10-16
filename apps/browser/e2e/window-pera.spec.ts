@@ -26,7 +26,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import algosdk from 'algosdk'
-import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { clickThroughPinPrompt, settlePinPrompt } from './pin-prompt'
 import {
     expectApprovalSurfaceUrl,
@@ -297,7 +297,8 @@ test('getAddresses returns the approved account', async () => {
 test('signTransactions opens the signing review and returns one signed transaction', async () => {
     const unsignedTxnB64 = buildUnsignedPaymentTxn(
         grantedAddress,
-        getNetworkConfig(Networks.mainnet).genesisHash,
+        getAlgorandChainConfig({ chainId: 'algorand', networkId: 'mainnet' })
+            .genesisHash,
         'mainnet-v1.0',
     )
     await dappPage.evaluate(txn => {

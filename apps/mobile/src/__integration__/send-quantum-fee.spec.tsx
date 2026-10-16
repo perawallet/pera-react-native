@@ -149,7 +149,7 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         // network the ALGO asset is seeded into. The default network is
         // env-driven (testnet in local dev), so without this the confirmation
         // screen never resolves its asset and stays on the loading gate.
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         // Confirmation screen reads ALGO via useAssetsQuery — seed it first.
         await seedAlgoAsset('mainnet')
 

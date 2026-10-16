@@ -11,13 +11,10 @@
  */
 
 /**
- * Returns props for testing/automation.
- * On Android, we set both testID and accessibilityLabel for better Appium support.
- * On iOS, testID is usually sufficient as it maps to accessibilityIdentifier.
- *
- * @param {string} id - The unique ID for the element.
- * @param {string} [suffix] - Optional suffix for the ID.
- * @returns {object} - The test props.
+ * Returns props for testing/automation. testID becomes the Android
+ * resource-id and the iOS accessibilityIdentifier, so the ID never doubles as
+ * the accessibilityLabel: screen readers would announce it instead of the
+ * visible text. `accessible` keeps the element in the iOS tree Appium queries.
  */
 export function getTestProps(id?: string, suffix?: string) {
     if (!id) {
@@ -28,7 +25,6 @@ export function getTestProps(id?: string, suffix?: string) {
 
     return {
         testID: suffixedID,
-        accessibilityLabel: suffixedID, // Set on both platforms per Appium Pro recommendation
         accessibilityIdentifier: suffixedID,
         accessible: true,
     }

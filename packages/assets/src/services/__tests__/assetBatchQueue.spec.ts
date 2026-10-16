@@ -13,8 +13,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
 
@@ -31,8 +31,14 @@ vi.mock('../../db', () => ({
 
 import { assetBatchQueue } from '../assetBatchQueue'
 
-const MAINNET_KEY = toScopeKey(scopeForLegacyNetwork('mainnet'))
-const TESTNET_KEY = toScopeKey(scopeForLegacyNetwork('testnet'))
+const MAINNET_KEY = toScopeKey({
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const)
+const TESTNET_KEY = toScopeKey({
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const)
 
 const makeAsset = (assetId: string, name = `asset-${assetId}`): PeraAsset => ({
     assetId,
@@ -63,7 +69,10 @@ describe('assetBatchQueue (adapter)', () => {
         expect(mockFetchAndPersistAssets).toHaveBeenCalledTimes(1)
         const [ids, scope] = mockFetchAndPersistAssets.mock.calls[0]
         expect(new Set(ids)).toEqual(new Set(['1', '2', '3']))
-        expect(scope).toEqual(scopeForLegacyNetwork('mainnet'))
+        expect(scope).toEqual({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         expect(r1).toEqual(a)
         expect(r2).toEqual(b)

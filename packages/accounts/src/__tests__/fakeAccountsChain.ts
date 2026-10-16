@@ -13,14 +13,18 @@ import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     addressCodecs,
+    CHAIN_CAPABILITIES,
     keyDerivations,
     type AddressCodec,
+    type ChainCapabilities,
+    type ChainDescriptor,
     type ChainId,
     type ChainScope,
     type KeyDerivation,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { SeedScheme } from '@perawallet/wallet-core-kms'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     accountKindId,
     accountsChainAdapters,
@@ -343,6 +347,23 @@ export const registerFakeAccountsChain = (
     addressCodecs.register(current.codec)
     keyDerivations.register(current.derivation)
     return current
+}
+
+/** Registers a descriptor with the native asset's decimals and the two tiers' networks, so network selection resolves as it does before any chain registers. */
+export const registerFakeNativeAsset = (decimals = 6): void => {
+    getProvider().chains.register(
+        {
+            id: FAKE_CHAIN_ID,
+            networks: [
+                { id: 'mainnet', tier: 'mainnet', isDefaultForTier: true },
+                { id: 'testnet', tier: 'testnet', isDefaultForTier: true },
+            ],
+            nativeAsset: { decimals },
+        } as unknown as ChainDescriptor,
+        Object.fromEntries(
+            CHAIN_CAPABILITIES.map(capability => [capability, false]),
+        ) as ChainCapabilities,
+    )
 }
 
 export const fakeAccountsChain = (): FakeAccountsChain => {

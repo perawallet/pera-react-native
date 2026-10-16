@@ -16,18 +16,17 @@ import type {
     ChainRegistry,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AssetSyncKind } from '../polling/models'
 
 /**
  * Handler invoked after a submitted transaction group involves wallet-held
- * addresses. Structurally compatible with `OnConfirmedHandler` from
- * `@perawallet/wallet-core-signing`; duplicated here to keep the
- * dependency edge `signing → background` (not the reverse).
+ * addresses. Declared here, not imported from `@perawallet/wallet-core-signing`,
+ * to keep the dependency edge `signing → background` (not the reverse).
  */
 export type SyncCompletionHandler = (
     addresses: string[],
-    network: Network,
+    scope: ChainScope,
 ) => void | Promise<void>
 
 /** One account's address on one chain it holds an entry for. */

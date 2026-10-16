@@ -30,7 +30,7 @@ import type {
     TransferTxsParams,
 } from '@perawallet/wallet-core-transactions'
 import { isAlgorandNativeAssetId } from '../descriptor'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 
 // Built per call so a custom-network edit is picked up, as useAlgorandClient's
 // memo does.

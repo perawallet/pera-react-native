@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    ChainScopeKey,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { DevicePlatform } from '@perawallet/wallet-extension-platform'
 
@@ -85,7 +88,7 @@ export type DeviceResponse = {
 }
 
 /**
- * Provenance of a network's device id: 'migrated' while the id written by
+ * Provenance of a deployment's device id: 'migrated' while the id written by
  * migrateDeviceIdentifiers is still the active one, 'recreated' once the
  * registration recreate-fallback replaced it (device-keyed server state such
  * as Discover favorites is orphaned at that point). Absent = the id never
@@ -95,13 +98,13 @@ export type DeviceIdOrigin = 'migrated' | 'recreated'
 
 export type DeviceState = BaseStoreState & {
     pushToken: Nullable<string>
-    /** Read through `deviceIdFor`; the setters take a `Network`. */
+    /** Read through `deviceIdForDeployment`; the setters take a deployment. */
     deviceIDs: Map<ChainScopeKey, Nullable<string>>
-    /** Networks whose last registration attempt failed and awaits a retry. */
-    pendingRegistrationNetworks: Network[]
+    /** Deployments whose last registration attempt failed and awaits a retry. */
+    pendingRegistrationDeployments: WalletMode[]
     deviceIdOrigins: Partial<Record<ChainScopeKey, DeviceIdOrigin>>
     setPushToken: (token: Nullable<string>) => void
-    setDeviceID: (network: Network, id: Nullable<string>) => void
-    setRegistrationPending: (network: Network, isPending: boolean) => void
-    setDeviceIdOrigin: (network: Network, origin: DeviceIdOrigin) => void
+    setDeviceID: (deployment: WalletMode, id: Nullable<string>) => void
+    setRegistrationPending: (deployment: WalletMode, isPending: boolean) => void
+    setDeviceIdOrigin: (deployment: WalletMode, origin: DeviceIdOrigin) => void
 }

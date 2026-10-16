@@ -42,6 +42,7 @@ import {
 } from '../../connection/connectorRegistry'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { toPeer } from '../../shared/peer'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Spied, not replaced: the point is proving the handler reaches the one
 // shared implementation rather than carrying its own.
@@ -220,9 +221,12 @@ vi.mock('@perawallet/walletconnect', () => ({ default: wc.FakeConnector }))
 const V1_URI =
     'wc:8a5e5bdc-a0e4-4702-ba63-8f1a5655744f@1?bridge=https%3A%2F%2Fb.example&key=41791102999c339c844880b23950704cc43aa840f3739e365323cda4dfa89e7a'
 
-// `getNetwork` is a required constructor argument (no store-reading
+// `getNetworkId` is a required constructor argument (no store-reading
 // default — see handler.ts), so every call site in this file supplies one.
-const testGetNetwork = () => 'mainnet' as const
+const testGetNetworkId = () => 'mainnet' as const
+
+const algorandScope = (networkId: string) =>
+    ({ chainId: LEGACY_CHAIN_ID, networkId }) as const
 
 const SIGN_TXN_FRAME = { id: 7, params: [[{ txn: 'dHhu' }]] }
 
@@ -252,7 +256,8 @@ describe('walletconnect v1 handler contract', () => {
         'walletconnect-v1',
         () =>
             createWalletConnectV1Handler({
-                getNetwork: testGetNetwork,
+                chainId: LEGACY_CHAIN_ID,
+                getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
         {
@@ -303,7 +308,8 @@ describe('walletconnect v1 handler specifics', () => {
     it('declines a v1 URI with no bridge — the v1 client throws on those', () => {
         expect(
             createWalletConnectV1Handler({
-                getNetwork: testGetNetwork,
+                chainId: LEGACY_CHAIN_ID,
+                getNetworkId: testGetNetworkId,
                 sessionKeys,
             }).canHandleUri('wc:topic@1?key=beef'),
         ).toBe(false)
@@ -311,7 +317,8 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('accepts only https/wss bridges — the client turns any other bridge into an attacker-chosen socket', () => {
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         })
         const uriWithBridge = (bridge: string): string =>
@@ -358,7 +365,8 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('reports the topic and bridge origin but never the key', () => {
         const described = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         }).describeUri(V1_URI)
 
@@ -370,7 +378,8 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('treats the 4160 wildcard as matching every network', () => {
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         })
         const connection = {
@@ -391,13 +400,18 @@ describe('walletconnect v1 handler specifics', () => {
             },
         }
 
-        expect(handler.matchesNetwork(connection, 'mainnet')).toBe(true)
-        expect(handler.matchesNetwork(connection, 'testnet')).toBe(true)
+        expect(
+            handler.matchesChainScope(connection, algorandScope('mainnet')),
+        ).toBe(true)
+        expect(
+            handler.matchesChainScope(connection, algorandScope('testnet')),
+        ).toBe(true)
     })
 
     it('binds a specific chainId to exactly one network', () => {
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         })
         const connection = {
@@ -418,16 +432,21 @@ describe('walletconnect v1 handler specifics', () => {
             },
         }
 
-        expect(handler.matchesNetwork(connection, 'testnet')).toBe(true)
-        expect(handler.matchesNetwork(connection, 'mainnet')).toBe(false)
+        expect(
+            handler.matchesChainScope(connection, algorandScope('testnet')),
+        ).toBe(true)
+        expect(
+            handler.matchesChainScope(connection, algorandScope('mainnet')),
+        ).toBe(false)
     })
 
-    it('covers every Network member, not just mainnet and testnet', () => {
-        // `Network` has four members. A two-branch mainnet/testnet mapping
-        // silently mislabels betanet and custom, which is why matchesNetwork
+    it('covers every Algorand network, not just mainnet and testnet', () => {
+        // Algorand has four networks. A two-branch mainnet/testnet mapping
+        // silently mislabels betanet and custom, which is why matchesChainScope
         // delegates to getExpectedChainId, which lists every network.
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         })
         const at = (chainId: number) => ({
@@ -448,15 +467,22 @@ describe('walletconnect v1 handler specifics', () => {
             },
         })
 
-        expect(handler.matchesNetwork(at(416_003), 'betanet')).toBe(true)
-        expect(handler.matchesNetwork(at(416_003), 'mainnet')).toBe(false)
+        expect(
+            handler.matchesChainScope(at(416_003), algorandScope('betanet')),
+        ).toBe(true)
+        expect(
+            handler.matchesChainScope(at(416_003), algorandScope('mainnet')),
+        ).toBe(false)
         // `custom` (LocalNet/fnet) borrows TestNet's id — see expectedChainId.ts.
-        expect(handler.matchesNetwork(at(416_002), 'custom')).toBe(true)
+        expect(
+            handler.matchesChainScope(at(416_002), algorandScope('custom')),
+        ).toBe(true)
     })
 
     it('rejects a request whose chain id is missing rather than guessing', () => {
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         })
         const connection = {
@@ -477,7 +503,9 @@ describe('walletconnect v1 handler specifics', () => {
             },
         }
 
-        expect(handler.matchesNetwork(connection, 'mainnet')).toBe(false)
+        expect(
+            handler.matchesChainScope(connection, algorandScope('mainnet')),
+        ).toBe(false)
     })
 })
 
@@ -539,7 +567,8 @@ describe('walletconnect v1 handler behaviour', () => {
             onError,
         }
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
             answeredRequests,
         })
@@ -828,7 +857,8 @@ describe('walletconnect v1 handler behaviour', () => {
         const store = memoryStore()
         const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
         })
         await handler.initialize({
             store,
@@ -1033,7 +1063,8 @@ describe('walletconnect v1 handler behaviour', () => {
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
             createWalletConnectV1Handler({
-                getNetwork: testGetNetwork,
+                chainId: LEGACY_CHAIN_ID,
+                getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
         )
@@ -1201,7 +1232,10 @@ describe('walletconnect v1 handler behaviour', () => {
 
     it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {
         keys.set('c1', 'restored-key')
-        const adapter = dappRequestAdapterFor(testGetNetwork())
+        const adapter = dappRequestAdapterFor({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: testGetNetworkId(),
+        } as const)
         if (!adapter) throw new Error('no Algorand adapter registered')
         const emptySignaturesFor = vi
             .spyOn(adapter, 'emptySignaturesFor')
@@ -1215,7 +1249,9 @@ describe('walletconnect v1 handler behaviour', () => {
             params: [
                 {
                     chainId:
-                        adapter.walletConnect.caip2ChainIdFor(testGetNetwork()),
+                        adapter.walletConnect.caip2ChainIdFor(
+                            testGetNetworkId(),
+                        ),
                 },
             ],
         })
@@ -1385,7 +1421,8 @@ describe('walletconnect v1 handler behaviour', () => {
         // connector's own listener and escapes as an unhandled rejection —
         // which vitest fails the file for, so this test is the guard.
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         })
         await handler.pair(V1_URI)
@@ -1518,11 +1555,12 @@ describe('walletconnect v1 handler behaviour', () => {
         })
     })
 
-    it('networksFor expands the 4160 wildcard and pins an explicit chain id', () => {
+    it('scopesFor expands the 4160 wildcard and pins an explicit chain id', () => {
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
             createWalletConnectV1Handler({
-                getNetwork: testGetNetwork,
+                chainId: LEGACY_CHAIN_ID,
+                getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
         )
@@ -1531,28 +1569,31 @@ describe('walletconnect v1 handler behaviour', () => {
             metadata: { ...SEEDED.metadata, chainId },
         })
 
-        expect([...registry.networksFor(at(4160))].sort()).toEqual([
-            'betanet',
-            'custom',
-            'mainnet',
-            'testnet',
-        ])
-        expect(registry.networksFor(at(416_001))).toEqual(['mainnet'])
+        expect(
+            registry
+                .scopesFor(at(4160))
+                .map(scope => scope.networkId)
+                .sort(),
+        ).toEqual(['betanet', 'custom', 'mainnet', 'testnet'])
+        expect(
+            registry.scopesFor(at(416_001)).map(scope => scope.networkId),
+        ).toEqual(['mainnet'])
     })
 
-    it('networksFor is empty, not a throw, for an own-kind record with no metadata', () => {
+    it('scopesFor is empty, not a throw, for an own-kind record with no metadata', () => {
         // `restore()` already proves malformed own-kind records reach the
-        // store; `matchesNetwork` must not be the place they blow up.
+        // store; `matchesChainScope` must not be the place they blow up.
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
             createWalletConnectV1Handler({
-                getNetwork: testGetNetwork,
+                chainId: LEGACY_CHAIN_ID,
+                getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
         )
         const { metadata: _metadata, ...noMetadata } = SEEDED
 
-        expect(registry.networksFor(noMetadata)).toEqual([])
+        expect(registry.scopesFor(noMetadata)).toEqual([])
     })
 
     it('reads the peer through the shared toPeer', async () => {
@@ -1613,7 +1654,8 @@ describe('walletconnect v1 handler behaviour', () => {
 
     it('re-initialising without a teardown replaces the sweep instead of stacking it', async () => {
         const handler = createWalletConnectV1Handler({
-            getNetwork: testGetNetwork,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId: testGetNetworkId,
             sessionKeys,
         })
         const context: ConnectionHandlerContext = {

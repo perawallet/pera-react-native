@@ -220,6 +220,32 @@ export const transferContractTests = (
             expect(result.reserved.gte(0)).toBe(true)
         })
 
+        it('never offers more of the native asset while an earlier send is in flight', async () => {
+            const adapter = makeAdapter()
+            const idle = await adapter.spendableBalance(spendableInput)
+
+            const result = await adapter.spendableBalance({
+                ...spendableInput,
+                inFlight: [
+                    {
+                        // Past any synced sequence number, so it reads as unmined.
+                        nonce: Number.MAX_SAFE_INTEGER,
+                        outflows: [
+                            {
+                                assetRef: spendableInput.asset,
+                                value: spendable.nativeBalance,
+                            },
+                        ],
+                        maxFee: spendable.fee,
+                    },
+                ],
+            })
+
+            expect(result.max.gte(0)).toBe(true)
+            expect(result.max.lte(idle.max)).toBe(true)
+            expect(result.reserved.gte(idle.reserved)).toBe(true)
+        })
+
         it("refuses to price another chain's scope", async () => {
             await expect(
                 makeAdapter().spendableBalance({

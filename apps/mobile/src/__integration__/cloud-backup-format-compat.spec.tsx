@@ -236,7 +236,7 @@ describe('Flow: Cloud backup across format versions', () => {
         useCloudBackupRestoreDraftStore.getState().resetState()
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+            .setDeviceID(useNetworkStore.getState().mode, 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         vi.mocked(Notifier.showNotification).mockClear()
         keys = await deriveBackupKeys({
@@ -510,7 +510,7 @@ describe('Flow: Cloud backup of contacts across format versions', () => {
         useCloudBackupRestoreDraftStore.getState().resetState()
         useDeviceStore
             .getState()
-            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+            .setDeviceID(useNetworkStore.getState().mode, 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         keys = await deriveBackupKeys({
             mnemonic: BACKUP_MNEMONIC,

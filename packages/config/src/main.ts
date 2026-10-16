@@ -152,10 +152,14 @@ export const configSchema = z
         notificationRefreshTime: z.number().int(),
         remoteConfigRefreshTime: z.number().int(),
 
-        /** Bounded ceiling (ms) for algod/indexer GET/DELETE requests (reads). */
-        algodReadTimeout: z.number().int(),
-        /** Bounded ceiling (ms) for algod/indexer POST requests (e.g. broadcast). */
-        algodSubmitTimeout: z.number().int(),
+        /** Per-chain ceilings (ms) for node reads and for submitting a transaction. */
+        chainRequestTimeouts: z.record(
+            z.enum(CHAIN_IDS),
+            z.object({
+                readMs: z.number().int().positive(),
+                submitMs: z.number().int().positive(),
+            }),
+        ),
         /** Bounded ceiling (ms) for the signing machine's `transporting` state. */
         signingTransportTimeout: z.number().int(),
 
@@ -258,7 +262,7 @@ export const configSchema = z
         }),
 
         /**
-         * Deliberately NOT the full `Network` union: `custom` has no baked chain
+         * Deliberately NOT every Algorand network id: `custom` has no baked chain
          * config, so no build-time value could make it valid — and defaulting to
          * it would leave every endpoint `''` on first launch.
          */
@@ -438,9 +442,13 @@ const productionConfig: Omit<
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
-    algodReadTimeout: TEN_SECONDS,
-    algodSubmitTimeout: THIRTY_SECONDS,
-    // Must cover algodSubmitTimeout PLUS the post-error landing verification
+    chainRequestTimeouts: {
+        algorand: { readMs: TEN_SECONDS, submitMs: THIRTY_SECONDS },
+        // One request carries a JSON-RPC batch of up to 100 calls, so reads get
+        // more room than a single algod GET.
+        ethereum: { readMs: 15 * ONE_SECOND, submitMs: THIRTY_SECONDS },
+    },
+    // Must cover the largest chainRequestTimeouts submitMs PLUS the post-error landing verification
     // in submitAndAutoRefresh (2 short waitForConfirmation probes + retry
     // delay) — if this backstop fires first, a transaction that actually
     // landed is reported as a timeout failure.
@@ -533,8 +541,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',
 
-    algodReadTimeout: 'ALGOD_READ_TIMEOUT',
-    algodSubmitTimeout: 'ALGOD_SUBMIT_TIMEOUT',
     signingTransportTimeout: 'SIGNING_TRANSPORT_TIMEOUT',
 
     appStoreAppID: 'APP_STORE_APPLE_ID',

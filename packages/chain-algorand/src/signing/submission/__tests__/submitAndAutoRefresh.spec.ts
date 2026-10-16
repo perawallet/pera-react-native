@@ -18,10 +18,17 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import { generateAccount } from 'algosdk'
 import {
     submitAndAutoRefresh,
     submitAndAutoRefreshCore,
+    submitSignedAndAutoRefresh,
 } from '../submitAndAutoRefresh'
+import { signedAlgorandTransactionFromBytes } from '../../signedTransactions'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../__tests__/transactions'
 import { setOnConfirmedHandler } from '../onConfirmedRegistry'
 import {
     getOpenSubmissionAttempts,
@@ -482,11 +489,11 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         const all = await db.select().from(SubmissionAttemptsSchema).all()
         expect(all).toHaveLength(1)
         expect(all[0]).toMatchObject({
-            network: 'algorand/mainnet',
+            scope: 'algorand/mainnet',
             flow: 'rekey',
             sender: WALLET,
             intentKeyJson: JSON.stringify({ kind: 'rekey', address: WALLET }),
-            lastValid: 2000,
+            chainData: { family: 'algorand', lastValid: 2000 },
             status: 'confirmed',
         })
     })
@@ -686,10 +693,35 @@ describe('submitAndAutoRefresh (public)', () => {
             expect(mockWaitForConfirmation).toHaveBeenCalled(),
         )
         await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith(
-                [PUBLIC_WALLET],
-                'betanet',
-            ),
+            expect(onConfirmed).toHaveBeenCalledWith([PUBLIC_WALLET], {
+                chainId: 'algorand',
+                networkId: 'betanet',
+            }),
         )
+    })
+})
+
+describe('submitSignedAndAutoRefresh', () => {
+    test('posts the signed bytes exactly as given and resolves their ids', async () => {
+        const account = generateAccount()
+        const bytes = makeTestPaymentTx(account.addr, {
+            receiver: makeTestAddress(2),
+        }).signTxn(account.sk)
+        const signed = signedAlgorandTransactionFromBytes(bytes, {
+            chainId: ALGORAND_CHAIN_ID,
+            networkId: 'mainnet',
+        })
+        const sendRawTransaction = vi.fn().mockReturnValue({
+            do: vi.fn().mockResolvedValue({}),
+        })
+
+        const txIds = await submitSignedAndAutoRefresh(
+            'mainnet',
+            { client: { algod: { sendRawTransaction } } } as never,
+            [signed],
+        )
+
+        expect(sendRawTransaction).toHaveBeenCalledWith(bytes)
+        expect(txIds).toEqual([signed.id])
     })
 })

@@ -42,7 +42,6 @@ import { UserPreferences } from '@constants/user-preferences'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 const DEVICE_ID = 'prompt-arbiter-device'
-const NETWORK = 'mainnet' as const
 const TERMS_PROMPT_ID = 'terms_acceptance_prompt'
 const ANALYTICS_CONSENT_PROMPT_ID = 'analytics-consent-prompt'
 const BANNER_PROMPT_ID = 'banner_prompt'
@@ -143,7 +142,7 @@ describe('Flow: prompt arbiter', () => {
         // shouldAdvanceTime: waitFor polls on real timers, so a frozen clock
         // deadlocks every await in this file.
         vi.useFakeTimers({ shouldAdvanceTime: true })
-        useDeviceStore.getState().setDeviceID(NETWORK, DEVICE_ID)
+        useDeviceStore.getState().setDeviceID('live', DEVICE_ID)
         mocks.needsTermsAcceptance = false
         mocks.analyticsConsent = 'granted'
         mocks.isPinEnabled = false

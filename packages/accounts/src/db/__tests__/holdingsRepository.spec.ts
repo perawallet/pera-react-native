@@ -23,7 +23,6 @@ import {
     PeraAssetType,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     refreshAccountHoldings,
     getAccountHoldings,
@@ -37,9 +36,16 @@ import {
     deleteAllAssetHoldingsForAccount,
 } from '../holdingsRepository'
 import { getAccountHoldingsPage } from '../holdingsQueries'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 describe('account holdings repository', () => {
     let db: Database
@@ -538,6 +544,26 @@ describe('account holdings repository', () => {
             expect(result).toHaveLength(1)
             expect(result[0].assetId).toBe('100')
             expect(result[0].amount).toEqual(new Decimal(0))
+        })
+
+        it('stores the given base-unit amount', async () => {
+            await insertAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '100',
+                scope: MAINNET_SCOPE,
+                amount: new Decimal('12345678901234567890'),
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(result[0].amount).toEqual(
+                new Decimal('12345678901234567890'),
+            )
         })
 
         it('does not overwrite existing holding on conflict', async () => {

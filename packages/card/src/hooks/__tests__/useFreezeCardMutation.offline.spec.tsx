@@ -23,12 +23,18 @@ import React from 'react'
 const api = vi.hoisted(() => ({ freezeCard: vi.fn() }))
 vi.mock('../../api/card', () => api)
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { CardStatus, type Card } from '../../models/card'
 import { cardQueryKeys } from '../querykeys'
 import { useFreezeCardMutation } from '../useFreezeCardMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 const ACTIVE_CARD: Card = {
     id: 'card_1',
@@ -48,39 +54,45 @@ const createWrapper = (queryClient: QueryClient) =>
         )
     }
 
-describe('useFreezeCardMutation (offline optimism regression)', () => {
-    afterEach(() => onlineManager.setOnline(true))
-
-    // Pins the AC "no optimistic frozen-state divergence": onSuccess is the
-    // only place the cached status flips to Frozen, so a failed-offline
-    // freeze must leave the cache exactly as it was.
-    it('does not flip cached status to Frozen when the freeze fails offline', async () => {
-        const queryClient = new QueryClient({
-            defaultOptions: {
-                queries: { retry: false },
-                mutations: { ...mutationDefaults, retry: false },
-            },
-        })
-        queryClient.setQueryData(cardQueryKeys.status(SCOPE), ACTIVE_CARD)
-
-        onlineManager.setOnline(false)
-        api.freezeCard.mockRejectedValue(
-            new TypeError('Network request failed'),
-        )
-
-        const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
-            wrapper: createWrapper(queryClient),
+describe.each(SCOPES)(
+    'useFreezeCardMutation (offline optimism regression) ($chainId)',
+    SCOPE => {
+        afterEach(() => {
+            onlineManager.setOnline(true)
+            api.freezeCard.mockReset()
         })
 
-        await act(async () => {
-            await expect(result.current.mutateAsync()).rejects.toThrow()
-        })
+        // Pins the AC "no optimistic frozen-state divergence": onSuccess is the
+        // only place the cached status flips to Frozen, so a failed-offline
+        // freeze must leave the cache exactly as it was.
+        it('does not flip cached status to Frozen when the freeze fails offline', async () => {
+            const queryClient = new QueryClient({
+                defaultOptions: {
+                    queries: { retry: false },
+                    mutations: { ...mutationDefaults, retry: false },
+                },
+            })
+            queryClient.setQueryData(cardQueryKeys.status(SCOPE), ACTIVE_CARD)
 
-        // networkMode:'always' ran the mutationFn (which rejected) rather than
-        // pausing — proving fail-fast, not pause-and-later-resume.
-        expect(api.freezeCard).toHaveBeenCalledTimes(1)
-        expect(queryClient.getQueryData(cardQueryKeys.status(SCOPE))).toEqual(
-            ACTIVE_CARD,
-        )
-    })
-})
+            onlineManager.setOnline(false)
+            api.freezeCard.mockRejectedValue(
+                new TypeError('Network request failed'),
+            )
+
+            const { result } = renderHook(() => useFreezeCardMutation(SCOPE), {
+                wrapper: createWrapper(queryClient),
+            })
+
+            await act(async () => {
+                await expect(result.current.mutateAsync()).rejects.toThrow()
+            })
+
+            // networkMode:'always' ran the mutationFn (which rejected) rather than
+            // pausing — proving fail-fast, not pause-and-later-resume.
+            expect(api.freezeCard).toHaveBeenCalledTimes(1)
+            expect(
+                queryClient.getQueryData(cardQueryKeys.status(SCOPE)),
+            ).toEqual(ACTIVE_CARD)
+        })
+    },
+)

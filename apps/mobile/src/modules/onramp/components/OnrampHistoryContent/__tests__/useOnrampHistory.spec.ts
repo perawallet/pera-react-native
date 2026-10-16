@@ -137,7 +137,7 @@ describe('useOnrampHistory', () => {
         expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
     })
 
-    it('falls back to empty deviceId when useDeviceID returns null', () => {
+    it('falls back to empty deviceId when useScopedDeviceID returns null', () => {
         vi.mocked(useScopedDeviceID).mockReturnValue(null)
 
         renderHook(() => useOnrampHistory())

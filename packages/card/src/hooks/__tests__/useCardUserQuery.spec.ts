@@ -18,13 +18,19 @@ import React from 'react'
 const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
 vi.mock('../../api/user', () => ({ fetchUser }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardUserQuery } from '../useCardUserQuery'
 import { VerificationState } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useCardUserQuery', () => {
+describe.each(SCOPES)('useCardUserQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

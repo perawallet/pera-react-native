@@ -14,21 +14,18 @@ import {
     createChainAdapterRegistry,
     type ChainId,
     type ChainScope,
-    type PeraSignedTransaction,
+    type ChainSubmissionData,
+    type SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 
-import type {
-    AppError,
-    Network,
-    Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 import type { SignRequest } from './models'
 import type { DataTransport } from './pipeline/types'
 import type { IntentKey, SubmissionFlow } from './db/types'
 
 export type OnConfirmedHandler = (
     affectedAddresses: string[],
-    network: Network,
+    scope: ChainScope,
 ) => void | Promise<void>
 
 /**
@@ -55,8 +52,7 @@ export type StaleGroupReason = 'already-on-chain' | 'expired'
 
 export type DerivedSubmissionAttempt = {
     txIds: string[]
-    /** Highest lastValid in the group, in rounds. */
-    lastValid?: number
+    chainData?: ChainSubmissionData
 }
 
 /**
@@ -102,7 +98,7 @@ export interface BroadcasterChainAdapter {
      */
     submitAndAutoRefresh(
         scope: ChainScope,
-        signedTxns: PeraSignedTransaction[],
+        signedTransactions: SignedTransaction[],
         options?: SubmitAndAutoRefreshOptions,
     ): Promise<string[]>
     /** Whether the attempt journal already holds this request's group as landed or landable. */

@@ -10,18 +10,31 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandNetworkOf } from '../legacy-network'
+import {
+    decodeTransaction,
+    encodeTransaction,
+} from '../blockchain/utils/transact'
+import { readAlgorandTransaction } from '../signing/planner'
+import {
+    toUnsignedAlgorandTransaction,
+    toUnsignedAlgorandTransactions,
+} from '../signing/unsignedTransaction'
+import { algorandNetworkOf } from '../network-id'
 import type {
     HistoryChainAdapter,
     SendFlowChainAdapter,
     TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
 import { algorandAssetInbox } from '../asa-inbox/adapter'
-import { fetchIndexerCloseAmount } from './history/indexer/endpoints'
 import { fetchMoreTransactions, fetchTransactionHistory } from './history'
 import { resolveAlgorandAssetFacts } from './history/assetFacts'
 import { getAlgorandTransactionHistory } from './history-records'
+import {
+    algorandHistoryChainData,
+    healAlgorandCachedRows,
+} from './history-cache'
 import { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
 import {
     buildExpressTransferTxs,
@@ -42,12 +55,53 @@ import {
 
 export const algorandSendFlowAdapter: SendFlowChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    buildTransferTxs,
-    express: { buildTxs: buildExpressTransferTxs },
+    buildTransferTxs: async params =>
+        toUnsignedAlgorandTransactions(
+            await buildTransferTxs(params),
+            params.scope,
+        ),
+    express: {
+        buildTxs: async params =>
+            toUnsignedAlgorandTransactions(
+                await buildExpressTransferTxs(params),
+                params.scope,
+            ),
+    },
     assetInbox: algorandAssetInbox,
-    assetHolding: { buildOptInTxs, buildOptOutTxs },
-    rekey: { buildTx: buildRekeyTx },
-    keyRegistration: { buildTx: buildKeyRegistrationTx },
+    assetHolding: {
+        buildOptInTxs: async params =>
+            toUnsignedAlgorandTransactions(
+                await buildOptInTxs(params),
+                params.scope,
+            ),
+        buildOptOutTxs: async params =>
+            toUnsignedAlgorandTransactions(
+                await buildOptOutTxs(params),
+                params.scope,
+            ),
+    },
+    rekey: {
+        buildTx: async params =>
+            toUnsignedAlgorandTransaction(
+                await buildRekeyTx(params),
+                params.scope,
+            ),
+    },
+    keyRegistration: {
+        // AlgoKit hands back an `Address` sender; the signing pipeline reads
+        // the shape `decodeTransaction` produces, so round-trip it once here.
+        buildTx: async params =>
+            toUnsignedAlgorandTransaction(
+                decodeTransaction(
+                    encodeTransaction(await buildKeyRegistrationTx(params)),
+                ),
+                params.scope,
+            ),
+    },
+    transactionFee: transaction =>
+        new Decimal(
+            readAlgorandTransaction(transaction).transaction.fee.toString(),
+        ),
 }
 
 export const algorandTransferAdapter: TransferChainAdapter = {
@@ -68,10 +122,10 @@ export const algorandHistoryAdapter = {
         }),
     fetchMoreHistory: async ({ scope, ...params }) =>
         fetchMoreTransactions({ ...params, network: algorandNetworkOf(scope) }),
-    fetchCloseAmount: async (txId, scope) =>
-        fetchIndexerCloseAmount(txId, algorandNetworkOf(scope)),
     getTransactionHistory: getAlgorandTransactionHistory,
     summarize: summarizeAlgorandHistoryItem,
     toDisplayable: mapHistoryItemToDisplayableTransaction,
     resolveAssetFacts: resolveAlgorandAssetFacts,
+    chainData: algorandHistoryChainData,
+    healCachedRows: healAlgorandCachedRows,
 } satisfies HistoryChainAdapter

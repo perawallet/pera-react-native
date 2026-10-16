@@ -69,4 +69,20 @@ describe('fetchAvailableAssets', () => {
             }),
         )
     })
+
+    test('lowercases q to match the backend search index', async () => {
+        queryClientMock.mockResolvedValue({ data: { results: [] } })
+
+        await fetchAvailableAssets(
+            0,
+            { chainId: 'algorand', networkId: 'mainnet' },
+            'USDc',
+        )
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                params: { asset_in_id: 0, q: 'usdc' },
+            }),
+        )
+    })
 })

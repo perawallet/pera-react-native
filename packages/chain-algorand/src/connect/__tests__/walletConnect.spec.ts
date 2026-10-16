@@ -11,7 +11,6 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-config'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
 import {
     ALGORAND_WC_V2_METHOD,
@@ -107,7 +106,7 @@ describe('v1', () => {
         })
 
         it('accepts the 4160 wildcard on every network', () => {
-            for (const network of Object.values(Networks)) {
+            for (const network of ['mainnet', 'testnet', 'betanet', 'custom']) {
                 expect(v1.isChainIdAcceptable(V1_ALL, network)).toBe(true)
             }
         })
@@ -125,7 +124,7 @@ describe('v1', () => {
     describe('networksFor', () => {
         it('expands the wildcard to every network', () => {
             expect([...v1.networksFor(V1_ALL)].sort()).toEqual(
-                [...Object.values(Networks)].sort(),
+                [...['mainnet', 'testnet', 'betanet', 'custom']].sort(),
             )
         })
 
@@ -245,6 +244,15 @@ describe('toWireResult', () => {
             }),
         ).toEqual(['AQID'])
     })
+
+    it('answers no message request', () => {
+        expect(() =>
+            support.toWireResult({
+                type: 'sign-message',
+                signature: new Uint8Array([1]),
+            }),
+        ).toThrow('Algorand routes no sign-message request')
+    })
 })
 
 describe('createAlgorandWalletConnectV2Support', () => {
@@ -321,7 +329,7 @@ describe('createAlgorandWalletConnectV2Support', () => {
     })
 
     it('answers empty signatures for a request naming no chain', () => {
-        const { answer, emptySignaturesFor } = answerFor({}, Networks.mainnet)
+        const { answer, emptySignaturesFor } = answerFor({}, 'mainnet')
 
         expect(answer).toEqual({ [ADDRESS]: 'gA==' })
         expect(emptySignaturesFor).toHaveBeenCalledWith([ADDRESS])
@@ -329,17 +337,17 @@ describe('createAlgorandWalletConnectV2Support', () => {
 
     it("answers a request naming the network's own chain, bare or array-wrapped", () => {
         expect(
-            answerFor({ chainId: MAINNET_CHAIN_ID }, Networks.mainnet).answer,
+            answerFor({ chainId: MAINNET_CHAIN_ID }, 'mainnet').answer,
         ).toEqual({ [ADDRESS]: 'gA==' })
         expect(
-            answerFor([{ chainId: MAINNET_CHAIN_ID }], Networks.mainnet).answer,
+            answerFor([{ chainId: MAINNET_CHAIN_ID }], 'mainnet').answer,
         ).toEqual({ [ADDRESS]: 'gA==' })
     })
 
     it('refuses a request naming another network without building signatures', () => {
         const { answer, emptySignaturesFor } = answerFor(
             { chainId: TESTNET_CHAIN_ID },
-            Networks.mainnet,
+            'mainnet',
         )
 
         expect(answer).toBeNull()
@@ -348,7 +356,7 @@ describe('createAlgorandWalletConnectV2Support', () => {
 
     it('refuses any named chain on a custom network, which has no CAIP-2 id', () => {
         expect(
-            answerFor({ chainId: MAINNET_CHAIN_ID }, Networks.custom).answer,
+            answerFor({ chainId: MAINNET_CHAIN_ID }, 'custom').answer,
         ).toBeNull()
     })
 })

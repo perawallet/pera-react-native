@@ -11,8 +11,8 @@
  */
 
 import type { ChainId, FeeModel } from '@perawallet/wallet-core-chain-contract'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { getChainDescriptor } from '../utils/getChainDescriptor'
 
 /** Subscribes to nothing: a descriptor never changes once registered. */
 export const useChainFeeModel = (chainId: ChainId): FeeModel =>
-    getProvider().chains.get(chainId).descriptor.protocol.feeModel
+    getChainDescriptor(chainId).protocol.feeModel

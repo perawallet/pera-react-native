@@ -15,11 +15,13 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { RekeyError } from '../errors'
 
 import type {
-    ChainId,
-    PeraSignedTransaction,
-    PeraTransaction,
+    SignedTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type {
+    TransactionSignRequest,
+    UnsignedTransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 
 type AddSignRequestFn = (request: TransactionSignRequest) => void
 
@@ -44,10 +46,9 @@ const REKEY_SIGNING_TIMEOUT_MS = 5 * 60 * 1000
  */
 export const requestRekeySignatures = (
     addSignRequest: AddSignRequestFn,
-    chainId: ChainId,
     source: { name: string; description: string },
-    unsignedTxs: PeraTransaction[],
-): Promise<PeraSignedTransaction[]> =>
+    unsignedTxs: UnsignedTransaction[],
+): Promise<SignedTransaction[]> =>
     new Promise((resolve, reject) => {
         // Safety net: if the signing pipeline ever drops the request without
         // invoking approve / reject / error, the Promise would hang forever
@@ -73,25 +74,21 @@ export const requestRekeySignatures = (
             )
         }, REKEY_SIGNING_TIMEOUT_MS)
 
-        const request: TransactionSignRequest = {
+        const request: UnsignedTransactionSignRequest = {
             id: generateOrderedUniqueId(),
             type: 'transactions',
             transport: 'callback',
             sourceType: 'local',
-            chainId,
             txs: unsignedTxs,
             sourceMetadata: source,
             approve: async signed => {
                 // Rekey is a single full-group headless sign (no per-slot
                 // padding), so every entry is expected to be present — the
-                // null filter is defensive only. A quantum signature is just
-                // a `PeraSignedTransaction` with `pqsig` set, so undoing a
-                // rekey to a quantum auth flows through the same shared
-                // local-key path and submitAndAutoRefresh unchanged.
+                // null filter is defensive only.
                 settle(() =>
                     resolve(
                         signed.filter(
-                            (tx): tx is PeraSignedTransaction => tx !== null,
+                            (tx): tx is SignedTransaction => tx !== null,
                         ),
                     ),
                 )

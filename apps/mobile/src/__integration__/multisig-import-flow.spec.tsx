@@ -76,8 +76,8 @@ describe('Flow: Import shared account by scanning its QR code', () => {
         // `handleFinish` bails out early without a device ID. Seed both
         // networks so the test doesn't depend on the harness default.
         useDeviceStore.getState().resetState()
-        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
-        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('live', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('developer', 'test-device-id')
     })
 
     it('Given a scanned shared-account address, when the user reviews the preview and finishes naming, then a multisig account is persisted and selected', async () => {

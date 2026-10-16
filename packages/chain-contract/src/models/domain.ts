@@ -70,6 +70,27 @@ export type ChainHoldingNative = {
     isFrozen: boolean
 }
 
+/**
+ * Asset data only its own chain reads, persisted on the asset's node row. A
+ * chain package adds its member, discriminated by `family`.
+ */
+export type ChainAssetData = {
+    family: 'algorand'
+    creatorAddress: string
+}
+
+/**
+ * Attempt data only its own chain reads, persisted on the submission attempt.
+ * A chain package adds its member, discriminated by `family`. Record it only
+ * when the chain's reconciler can settle the attempt by it: an attempt carrying
+ * it never ages out of the ledger's guards.
+ */
+export type ChainSubmissionData = {
+    family: 'algorand'
+    /** A last-valid round of the group; the group can't land after any member's. */
+    lastValid: number
+}
+
 export type AccountChainState =
     | {
           family: 'algorand'
@@ -264,7 +285,7 @@ export type TransferIntent = {
     note?: string
 }
 
-/** Only meaningful on a chain whose descriptor has `protocol.requiresAssetOptIn`. */
+/** Only built by a chain whose accounts must opt in before they can hold an asset. */
 export type AssetOptInIntent = {
     kind: 'asset-opt-in'
     account: string
@@ -359,10 +380,17 @@ export interface PaymentUriOpts {
     networkId?: NetworkId
 }
 
+/** Field names and values come from the requester and are never translated. */
+export type MessageTreeNode =
+    | { label: string; value: string }
+    | { label: string; children: MessageTreeNode[] }
+
 export interface MessageSummary {
     kind: 'text' | 'typed-data' | 'raw'
     title: LocalizedText
     preview?: string
+    /** Set for kind `'typed-data'`: the signed fields, in schema order. */
+    tree?: MessageTreeNode[]
 }
 
 export interface MessageRequest {

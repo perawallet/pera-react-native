@@ -113,7 +113,6 @@ const serialize = (a: WalletAccount) =>
 registerAlgorandAccountsAdapter()
 
 const deps = () => ({
-    network: 'mainnet' as const,
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey,
@@ -517,7 +516,7 @@ describe('syncBackup', () => {
             createEmptySyncState('b'),
         )
 
-        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const [, , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
         ).toEqual([recordKey('W'), contactRecordKey('C1'), settingsKey].sort())
@@ -566,7 +565,7 @@ describe('syncBackup', () => {
             createEmptySyncState('b'),
         )
 
-        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const [, , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
         ).toEqual([recordKey('W'), contactRecordKey('C1'), settingsKey].sort())
@@ -603,7 +602,7 @@ describe('syncBackup', () => {
             createEmptySyncState('b'),
         )
 
-        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const [, , request] = batchUpsertItems.mock.calls[0]
         const keys = request.items.map((entry: { key: string }) => entry.key)
         expect(keys).toEqual(
             expect.arrayContaining([
@@ -693,7 +692,7 @@ describe('syncBackup after a chain becomes readable', () => {
 
         const next = await syncBackup(dependencies, stateWithUnreadItem())
 
-        expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [ETH_KEY])
+        expect(readItems).toHaveBeenCalledWith('b', 'dev', [ETH_KEY])
         expect(dependencies.importAccounts).toHaveBeenCalledWith([
             expect.objectContaining({
                 address: '0xabc',
@@ -713,7 +712,7 @@ describe('syncBackup after a chain becomes readable', () => {
 
         await syncBackup(syncDeps(), state)
 
-        expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [ETH_KEY])
+        expect(readItems).toHaveBeenCalledWith('b', 'dev', [ETH_KEY])
     })
 
     it('short-circuits when the readable chains are unchanged', async () => {
@@ -807,9 +806,7 @@ describe('syncBackup after a chain becomes readable', () => {
 
             const next = await syncBackup(failing(), withFailures(1))
 
-            expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [
-                ETH_KEY,
-            ])
+            expect(readItems).toHaveBeenCalledWith('b', 'dev', [ETH_KEY])
             expect(next.items[ETH_KEY]?.importFailures).toBe(2)
         })
 
@@ -874,7 +871,7 @@ describe('syncBackup after a chain becomes readable', () => {
 
             const next = await syncBackup(holding(), stateWith(1))
 
-            expect(readItems).toHaveBeenCalledWith('mainnet', 'b', 'dev', [KEY])
+            expect(readItems).toHaveBeenCalledWith('b', 'dev', [KEY])
             expect(batchUpsertItems).not.toHaveBeenCalled()
             expect(next.items[KEY]?.importFailures).toBe(2)
         })
@@ -890,7 +887,7 @@ describe('syncBackup after a chain becomes readable', () => {
                 stateWith(MAX_IMPORT_ATTEMPTS),
             )
 
-            const [, , , request] = batchUpsertItems.mock.calls[0]
+            const [, , request] = batchUpsertItems.mock.calls[0]
             expect(
                 request.items.map((entry: { key: string }) => entry.key),
             ).toContain(KEY)
@@ -911,7 +908,7 @@ describe('syncBackup writing an account record', () => {
     }
 
     const pushed = (): Record<string, unknown> => {
-        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const [, , request] = batchUpsertItems.mock.calls[0]
         const entry = request.items.find(
             (item: { key: string }) => item.key === KEY,
         )
@@ -1098,7 +1095,7 @@ describe('syncBackup writing a contact record', () => {
     }
 
     const pushedRecord = (): Record<string, unknown> => {
-        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const [, , request] = batchUpsertItems.mock.calls[0]
         const entry = request.items.find(
             (item: { key: string }) => item.key === KEY,
         )
@@ -1150,7 +1147,7 @@ describe('syncBackup writing a contact record', () => {
 
         const next = await syncBackup(contactDeps([alice]), state)
 
-        const [, , , request] = batchUpsertItems.mock.calls[0]
+        const [, , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key),
         ).toContain(KEY)
@@ -1258,7 +1255,7 @@ describe('syncBackup writing a contact record', () => {
         )
 
         const pushedKeys = batchUpsertItems.mock.calls.flatMap(
-            ([, , , request]) =>
+            ([, , request]) =>
                 request.items.map((entry: { key: string }) => entry.key),
         )
         expect(pushedKeys).not.toContain(KEY)

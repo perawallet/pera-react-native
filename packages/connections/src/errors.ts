@@ -16,12 +16,14 @@ import {
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { DappRequestFailure } from './dappRequest'
 
 export type ConnectionsErrorCode =
     | 'invalid-payload'
     | 'no-handler'
     | 'unsupported-chain'
     | 'unsupported-operation'
+    | 'unauthorized-account'
     | 'unknown-connection'
     | 'duplicate-kind'
     | 'already-initialized'
@@ -36,6 +38,7 @@ const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, I18nKey> = {
     // same "nobody can answer this" as no-handler; no new locale copy needed.
     'unsupported-chain': i18nKey('errors.connections.no_handler'),
     'unsupported-operation': i18nKey('errors.connections.no_handler'),
+    'unauthorized-account': i18nKey('errors.connections.unauthorized_account'),
     'unknown-connection': i18nKey('errors.connections.unknown_connection'),
     'duplicate-kind': i18nKey('errors.connections.duplicate_kind'),
     'already-initialized': i18nKey('errors.connections.already_initialized'),
@@ -44,12 +47,22 @@ const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, I18nKey> = {
     'not-initialized': i18nKey('errors.connections.not_initialized'),
 }
 
+const FAILURE_BY_CODE: Partial<
+    Record<ConnectionsErrorCode, DappRequestFailure>
+> = {
+    'invalid-payload': 'invalid-params',
+    'unauthorized-account': 'unauthorized-account',
+    'unsupported-operation': 'unsupported-method',
+}
+
 /**
  * `message` reaches the remote peer, so it must never carry wallet-private
  * data; the user sees `metadata.messageKey` via `resolveErrorCopy` instead.
  */
 export class ConnectionsError extends AppError {
     public readonly code: ConnectionsErrorCode
+    /** What a namespace maps to its own wire code; absent for a failure no dApp caused. */
+    public readonly failure?: DappRequestFailure
 
     constructor(
         code: ConnectionsErrorCode,
@@ -67,5 +80,6 @@ export class ConnectionsError extends AppError {
             originalError,
         )
         this.code = code
+        this.failure = FAILURE_BY_CODE[code]
     }
 }

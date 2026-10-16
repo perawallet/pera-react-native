@@ -11,7 +11,8 @@
  */
 
 import { Dialog, useTheme } from '@rneui/themed'
-import { formatDatetime, type Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 
 import {
@@ -43,10 +44,10 @@ export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
 >
 
 // `custom` names a runtime-configurable node slot, not a network a user picks.
-const ConnectedNetworks = ({ networks }: { networks: Network[] }) => {
+const ConnectedNetworks = ({ networks }: { networks: NetworkId[] }) => {
     const styles = useStyles()
     const networkLabel = useNetworkLabel()
-    const textStyleFor = (network: Network) => {
+    const textStyleFor = (network: NetworkId) => {
         if (network === 'mainnet') return styles.mainnetText
         if (network === 'testnet') return styles.testnetText
         return styles.otherNetworkText

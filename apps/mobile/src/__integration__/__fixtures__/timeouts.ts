@@ -11,6 +11,6 @@
  */
 
 // `waitFor` gives up after 1s by default. Steps that run real key derivation
-// (Argon2 for cloud backup, Falcon keygen, BIP39 + xhd) need the whole
-// per-test budget, which the integration project sets as `testTimeout`.
+// (Falcon keygen, BIP39 + xhd) need the whole per-test budget, which the
+// integration project sets as `testTimeout`. Cloud-backup Argon2 is stubbed.
 export const SLOW_WAIT_TIMEOUT_MS = 30_000

@@ -12,7 +12,7 @@
 
 // Kill-after-submit reconnect. The real submit chokepoint
 // writes the ledger row before the algod POST; a relaunch offline surfaces it
-// as a "Pending — verifying" history row; a relaunch online reconciles it to
+// as a pending history row with its ChainNotice; a relaunch online reconciles it to
 // confirmed and the synced transaction appears exactly once.
 
 import { type ReactNode } from 'react'
@@ -33,11 +33,9 @@ import {
 } from '@tanstack/react-query'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { toSignedAlgorandTransaction } from '@perawallet/wallet-core-chain-algorand/signing'
 import {
     mockAlgodAccountInformation,
     mockAlgodPendingTransaction,
@@ -97,7 +95,10 @@ const renderHistoryQuery = (accountAddress: string) => {
         () =>
             useTransactionHistoryQuery({
                 accountAddress,
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
             }),
         { wrapper },
     )
@@ -137,7 +138,7 @@ describe('Flow: offline submission reconnect', () => {
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         server.use(
             mockAlgodTransactionParams({ response: { fee: 1000 } }),
             mockAlgodAccountInformation({
@@ -171,11 +172,14 @@ describe('Flow: offline submission reconnect', () => {
             [unsignedTxn],
             [0],
             account,
-            scopeForLegacyNetwork(NETWORK),
+            { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         )
+        const scope = { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const
         const txIds = await submitAndAutoRefresh(
-            scopeForLegacyNetwork(NETWORK),
-            signedTxns,
+            scope,
+            signedTxns.map(signed =>
+                toSignedAlgorandTransaction(signed, scope),
+            ),
         )
         expect(txIds).toHaveLength(1)
         // The ledger row records the locally-derived txid, while algod's
@@ -184,14 +188,17 @@ describe('Flow: offline submission reconnect', () => {
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
             })
             expect(open).toHaveLength(1)
             expect(open[0]!.txIds).toContain(txid)
             expect(open[0]!.status).toBe('submitted')
         })
 
-        // Relaunch offline: the pending entry and its badge are observable
+        // Relaunch offline: the pending entry and its notice are observable
         // even though nothing has been persisted as a sign request.
         onlineManager.setOnline(false)
 
@@ -204,24 +211,24 @@ describe('Flow: offline submission reconnect', () => {
         const firstHistoryItem = history.result.current.transactions[0]!
         expect(firstHistoryItem.id).toBe(txid)
         expect(firstHistoryItem.confirmedRound).toBe(0)
+        expect(firstHistoryItem.status).toBe('pending')
 
-        // The badge query is a pure DB read pinned to networkMode 'always'
-        // in source; mirror that here so the badge is observable offline.
-        const offlineBadgeClient = new QueryClient({
+        const offlineClient = new QueryClient({
             defaultOptions: {
                 queries: { retry: false, gcTime: 0, networkMode: 'always' },
                 mutations: { retry: false },
             },
         })
         render(<TransactionListItem transaction={firstHistoryItem} />, {
-            queryClient: offlineBadgeClient,
+            queryClient: offlineClient,
         })
         await waitFor(() => {
             // The integration harness leaves i18n uninitialised, so `t`
             // returns the key rather than the English translation.
             expect(
-                screen.getByText('transactions.common.pending_verifying'),
+                screen.getByTestId(`transaction_row_notice_${txid}`),
             ).toBeTruthy()
+            expect(screen.getByText('transactions.notice.pending')).toBeTruthy()
         })
 
         const signingClient = createTestQueryClient()
@@ -272,7 +279,10 @@ describe('Flow: offline submission reconnect', () => {
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
             })
             expect(open).toHaveLength(0)
         })
@@ -296,10 +306,10 @@ describe('Flow: offline submission reconnect', () => {
             }),
         )
 
-        await fetchAndPersistTransactions(
-            addressOf(account),
-            scopeForLegacyNetwork(NETWORK),
-        )
+        await fetchAndPersistTransactions(addressOf(account), {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: NETWORK,
+        } as const)
 
         const syncedHistory = renderHistoryQuery(addressOf(account))
         await waitFor(() => {

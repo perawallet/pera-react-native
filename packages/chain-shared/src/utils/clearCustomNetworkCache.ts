@@ -39,7 +39,7 @@ const CUSTOM_SCOPE: ChainScope = {
     networkId: CUSTOM_NETWORK_ID,
 }
 
-// Every table partitioned by a `network` column, across the domain packages that
+// Every table partitioned by a `scope` column, across the domain packages that
 // own them. Named as literal SQL rather than imported Drizzle schemas: those
 // packages all depend on `chain-shared`, so importing back would cycle. A spec
 // compares this list against the migrated schema, so a new table fails a test.
@@ -63,7 +63,7 @@ export const NETWORK_PARTITIONED_TABLES = [
  * asserting its own prefix is a member. A rename then fails a test in the package
  * doing the renaming.
  *
- * Reach isn't exactly "packages with a DB table": `currencies`' `algoUsdPrice`
+ * Reach isn't exactly "packages with a DB table": `currencies`' `nativeUsdPrice`
  * nests under `'assets'` for cache locality, so it's swept too. Fine — it's still
  * per-network price data.
  */
@@ -96,10 +96,10 @@ export const clearCustomNetworkCache = async (
     queryClient: QueryClient,
     db: Database = getDatabase(),
 ): Promise<void> => {
-    const network = toScopeKey(CUSTOM_SCOPE)
+    const scopeKey = toScopeKey(CUSTOM_SCOPE)
     for (const table of NETWORK_PARTITIONED_TABLES) {
         await db.run(
-            sql`DELETE FROM ${sql.raw(table)} WHERE network = ${network}`,
+            sql`DELETE FROM ${sql.raw(table)} WHERE scope = ${scopeKey}`,
         )
     }
 

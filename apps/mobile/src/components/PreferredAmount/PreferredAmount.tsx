@@ -110,7 +110,7 @@ const PrecomputedPreferredAmount = ({
     ...displayProps
 }: PrecomputedProps) => {
     const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency(currencyScope)
 
     return (
         <CurrencyAmount

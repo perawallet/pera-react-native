@@ -13,8 +13,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { fetchAndPersistNfds } from '../nfd-syncer'
 import { NFD_BULK_CHUNK_SIZE } from '../../constants'
-import { Networks } from '@perawallet/wallet-core-config'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mockFetchNfdBulkRead = vi.hoisted(() => vi.fn())
 const mockUpsertNfdEntries = vi.hoisted(() => vi.fn())
@@ -47,13 +48,13 @@ describe('fetchAndPersistNfds', () => {
     })
 
     it('is a no-op for empty input', async () => {
-        await fetchAndPersistNfds([], 'mainnet')
+        await fetchAndPersistNfds([], ALGORAND_MAINNET)
         expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
         expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
     })
 
     it('filters invalid addresses before fetching', async () => {
-        await fetchAndPersistNfds(['not-an-address', ''], 'mainnet')
+        await fetchAndPersistNfds(['not-an-address', ''], ALGORAND_MAINNET)
         expect(mockGetStaleOrMissingAddresses).not.toHaveBeenCalled()
         expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
     })
@@ -63,7 +64,7 @@ describe('fetchAndPersistNfds', () => {
         // the request — bulk-read returns 400 if any single address is
         // invalid, so we filter strictly before sending.
         mockFetchNfdBulkRead.mockResolvedValue([])
-        await fetchAndPersistNfds([ADDR_A, 'short'], 'mainnet')
+        await fetchAndPersistNfds([ADDR_A, 'short'], ALGORAND_MAINNET)
 
         expect(mockFetchNfdBulkRead).toHaveBeenCalledTimes(1)
         const sent = mockFetchNfdBulkRead.mock.calls[0][0].addresses
@@ -72,7 +73,7 @@ describe('fetchAndPersistNfds', () => {
 
     it('deduplicates addresses before fetching', async () => {
         mockFetchNfdBulkRead.mockResolvedValue([])
-        await fetchAndPersistNfds([ADDR_A, ADDR_A, ADDR_A], 'mainnet')
+        await fetchAndPersistNfds([ADDR_A, ADDR_A, ADDR_A], ALGORAND_MAINNET)
         expect(mockGetStaleOrMissingAddresses).toHaveBeenCalledTimes(1)
         const passed = mockGetStaleOrMissingAddresses.mock.calls[0][0].addresses
         expect(passed).toHaveLength(1)
@@ -80,7 +81,7 @@ describe('fetchAndPersistNfds', () => {
 
     it('skips fetch when all addresses are cached and fresh', async () => {
         mockGetStaleOrMissingAddresses.mockResolvedValue([])
-        await fetchAndPersistNfds([ADDR_A], 'mainnet')
+        await fetchAndPersistNfds([ADDR_A], ALGORAND_MAINNET)
         expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
         expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
     })
@@ -93,7 +94,7 @@ describe('fetchAndPersistNfds', () => {
             },
         ])
 
-        await fetchAndPersistNfds([ADDR_A], 'mainnet')
+        await fetchAndPersistNfds([ADDR_A], ALGORAND_MAINNET)
 
         expect(mockFetchNfdBulkRead).toHaveBeenCalledTimes(1)
         expect(mockUpsertNfdEntries).toHaveBeenCalledTimes(1)
@@ -115,7 +116,7 @@ describe('fetchAndPersistNfds', () => {
             // ADDR_B intentionally absent
         ])
 
-        await fetchAndPersistNfds([ADDR_A, ADDR_B], 'mainnet')
+        await fetchAndPersistNfds([ADDR_A, ADDR_B], ALGORAND_MAINNET)
 
         const persisted = mockUpsertNfdEntries.mock.calls[0][0].entries
         const entryB = persisted.find(
@@ -132,7 +133,7 @@ describe('fetchAndPersistNfds', () => {
         expect(new Set(unique).size).toBe(unique.length)
         mockFetchNfdBulkRead.mockResolvedValue([])
 
-        await fetchAndPersistNfds(unique, 'mainnet')
+        await fetchAndPersistNfds(unique, ALGORAND_MAINNET)
 
         expect(mockFetchNfdBulkRead).toHaveBeenCalledTimes(2)
         const first = mockFetchNfdBulkRead.mock.calls[0][0].addresses.length
@@ -144,7 +145,7 @@ describe('fetchAndPersistNfds', () => {
 
     it('does not write cache rows when fetch fails', async () => {
         mockFetchNfdBulkRead.mockRejectedValue(new Error('boom'))
-        await fetchAndPersistNfds([ADDR_C], 'mainnet')
+        await fetchAndPersistNfds([ADDR_C], ALGORAND_MAINNET)
         expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
     })
 
@@ -157,7 +158,7 @@ describe('fetchAndPersistNfds', () => {
             .mockRejectedValueOnce(new Error('first batch boom'))
             .mockResolvedValueOnce([])
 
-        await fetchAndPersistNfds(unique, 'mainnet')
+        await fetchAndPersistNfds(unique, ALGORAND_MAINNET)
 
         // The successful batch should still write
         expect(mockUpsertNfdEntries).toHaveBeenCalledTimes(1)
@@ -173,20 +174,20 @@ describe('non-Pera-backed networks', () => {
             .mockImplementation(async ({ addresses }) => addresses)
     })
 
-    it.each([Networks.betanet, Networks.custom])(
-        'writes nothing on %s',
-        async network => {
-            await fetchAndPersistNfds([ADDR_A], network)
+    it.each(['betanet', 'custom'])('writes nothing on %s', async network => {
+        await fetchAndPersistNfds([ADDR_A], {
+            chainId: 'algorand',
+            networkId: network,
+        })
 
-            expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
-            expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
-        },
-    )
+        expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
+        expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
+    })
 
     it('still persists misses as null on mainnet', async () => {
         mockFetchNfdBulkRead.mockResolvedValue([])
 
-        await fetchAndPersistNfds([ADDR_A], Networks.mainnet)
+        await fetchAndPersistNfds([ADDR_A], ALGORAND_MAINNET)
 
         expect(mockUpsertNfdEntries).toHaveBeenCalledTimes(1)
         const persisted = mockUpsertNfdEntries.mock.calls[0][0].entries

@@ -11,8 +11,11 @@
  */
 
 import { BatchQueue } from '@perawallet/wallet-core-shared/queue'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    parseScopeKey,
+    type ChainScopeKey,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchAndPersistNfds } from '../sync/nfd-syncer'
 import { getNfdsByAddresses } from '../db'
 import {
@@ -32,14 +35,18 @@ import type { NfdName } from '../models'
  * Names are decorative, so the added latency costs nothing a user would call
  * broken — a row renders its truncated address until its name arrives.
  */
-export const nfdBatchQueue = new BatchQueue<string, Nullable<NfdName>, Network>(
-    async (addresses, network) => {
-        await fetchAndPersistNfds(addresses, network)
+// Partitioned by the scope key, not the scope: BatchQueue groups by Map identity,
+// so equal-but-distinct scope objects would never share a batch.
+export const nfdBatchQueue = new BatchQueue<
+    string,
+    Nullable<NfdName>,
+    ChainScopeKey
+>(
+    async (addresses, scopeKey) => {
+        const scope = parseScopeKey(scopeKey)
+        await fetchAndPersistNfds(addresses, scope)
 
-        const rows = await getNfdsByAddresses({
-            addresses,
-            scope: scopeForLegacyNetwork(network),
-        })
+        const rows = await getNfdsByAddresses({ addresses, scope })
         const map = new Map<string, Nullable<NfdName>>()
         for (const row of rows) {
             map.set(row.address, row.name)

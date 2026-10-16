@@ -17,6 +17,7 @@ import {
     useAssetInboxRequestsQuery,
     type AssetInboxRequest,
 } from '@perawallet/wallet-core-transactions'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
@@ -30,6 +31,7 @@ type UseAssetTransferRequestsScreenResult = {
 
 export const useAssetTransferRequestsScreen =
     (): UseAssetTransferRequestsScreenResult => {
+        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { push } = useAppNavigation()
         const route =
             useRoute<
@@ -45,7 +47,7 @@ export const useAssetTransferRequestsScreen =
             data: assetRequests,
             isPending,
             isUnavailableOnNetwork,
-        } = useAssetInboxRequestsQuery(accountAddress, LEGACY_CHAIN_ID)
+        } = useAssetInboxRequestsQuery(scope, accountAddress)
 
         const handleItemPress = useCallback(
             (index: number) => {

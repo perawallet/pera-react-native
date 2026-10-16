@@ -18,6 +18,9 @@ import {
     simulateInnerTransactions,
 } from '../simulateImpact'
 
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const mockSimulate = vi.fn()
 // Faithful to the real composer: it rejects any transaction that already
 // carries a group id.
@@ -123,7 +126,10 @@ describe('simulateInnerTransactions', () => {
     it('simulates on the given network without signatures and returns the flattened inner transactions', async () => {
         mockSimulate.mockResolvedValue(simulated(5n))
 
-        const result = await simulateInnerTransactions([payment(1n)], 'testnet')
+        const result = await simulateInnerTransactions(
+            [payment(1n)],
+            ALGORAND_TESTNET,
+        )
 
         expect(mockCreateClient).toHaveBeenCalledWith('testnet')
         expect(mockSimulate).toHaveBeenCalledWith({
@@ -139,7 +145,7 @@ describe('simulateInnerTransactions', () => {
         const grouped = groupTransactions([payment(1n), payment(2n)])
         expect(grouped[0].group).toBeDefined()
 
-        await simulateInnerTransactions(grouped, 'mainnet')
+        await simulateInnerTransactions(grouped, ALGORAND_MAINNET)
 
         for (const [added] of mockAddTransaction.mock.calls.slice(-2)) {
             expect(added?.group).toBeUndefined()
@@ -151,7 +157,7 @@ describe('simulateInnerTransactions', () => {
         mockSimulate.mockRejectedValue(new Error('simulate failed'))
 
         await expect(
-            simulateInnerTransactions([payment(1n)], 'mainnet'),
+            simulateInnerTransactions([payment(1n)], ALGORAND_MAINNET),
         ).rejects.toThrow('simulate failed')
     })
 })

@@ -166,7 +166,9 @@ const nativeAmount = (value: bigint) => ({
     value: toDecimal(value),
 })
 
-const contractCallSummary = (call: Call): TransactionSummary => ({
+type CallFacts = Pick<Call, 'from' | 'to' | 'value' | 'data'>
+
+const contractCallSummary = (call: CallFacts): TransactionSummary => ({
     kind: 'contract-call',
     title: { key: CONTRACT_CALL_TITLE_KEY },
     direction: call.value > 0n ? 'out' : 'none',
@@ -212,6 +214,12 @@ const verifiedTokenTransfer = (
     return { contract: call.to, to, amount: toDecimal(units) }
 }
 
+/** A native transfer when there is a `to` and no calldata, else a contract call. */
+export const ethereumCallSummary = (call: CallFacts): TransactionSummary =>
+    call.to && size(call.data) === 0
+        ? sendSummary('transfer', call.from, call.to, nativeAmount(call.value))
+        : contractCallSummary(call)
+
 const reviewCall = (
     call: Call,
     summary: TransactionSummary | undefined,
@@ -220,12 +228,7 @@ const reviewCall = (
 ): ReviewedTransaction => {
     if (call.to && size(call.data) === 0) {
         return {
-            summary: sendSummary(
-                'transfer',
-                call.from,
-                call.to,
-                nativeAmount(call.value),
-            ),
+            summary: ethereumCallSummary(call),
             native: toEthereumNative(viewOf(call, 'transfer')),
         }
     }
@@ -248,7 +251,7 @@ const reviewCall = (
         ? recogniseCall({ to: call.to, data: call.data, value: call.value })
         : undefined
     return {
-        summary: recognised ?? contractCallSummary(call),
+        summary: recognised ?? ethereumCallSummary(call),
         native: toEthereumNative(viewOf(call, 'contract-call')),
     }
 }

@@ -11,6 +11,10 @@
  */
 
 export { ChainNotice } from './ChainNotice'
+export {
+    ChainUnavailableNotice,
+    type ChainUnavailableNoticeProps,
+} from './ChainUnavailableNotice'
 export { chainNoticeOf, type ChainNoticeContent } from './chainNoticeOf'
 export type {
     ChainNoticeAction,

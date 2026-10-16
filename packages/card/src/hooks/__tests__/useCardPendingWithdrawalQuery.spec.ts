@@ -32,11 +32,17 @@ vi.mock('../useEscrowWithdrawal', () => ({
     }),
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardPendingWithdrawalQuery } from '../useCardPendingWithdrawalQuery'
 import { CardEscrowNotConfiguredError } from '../../api/escrow'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 const PENDING = {
     card: 'CARD',
@@ -47,7 +53,7 @@ const PENDING = {
     nonce: 0n,
 }
 
-describe('useCardPendingWithdrawalQuery', () => {
+describe.each(SCOPES)('useCardPendingWithdrawalQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
     const wrapper = ({ children }: { children: React.ReactNode }) =>
         React.createElement(

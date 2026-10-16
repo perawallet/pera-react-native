@@ -20,12 +20,18 @@ const { fetchCurrentRegion } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/region', () => ({ fetchCurrentRegion }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCurrentRegionQuery } from '../useCurrentRegionQuery'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useCurrentRegionQuery', () => {
+describe.each(SCOPES)('useCurrentRegionQuery ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

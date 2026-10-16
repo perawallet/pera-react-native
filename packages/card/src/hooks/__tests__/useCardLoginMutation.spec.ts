@@ -45,12 +45,18 @@ vi.mock('../../store', () => ({
     },
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardLoginMutation } from '../useCardLoginMutation'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useCardLoginMutation', () => {
+describe.each(SCOPES)('useCardLoginMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -94,14 +100,14 @@ describe('useCardLoginMutation', () => {
             expect.objectContaining({
                 email: 'e@x.com',
                 password: 'pw',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // The exchange runs with the ephemeral login token…
         expect(acquireCardSessionTokens).toHaveBeenCalledWith(
             expect.objectContaining({
                 accessToken: 'ephemeral-login-token',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // …and the durable OAuth pair is what gets persisted.
@@ -194,7 +200,7 @@ describe('useCardLoginMutation', () => {
         expect(fetchOnboardingDetails).toHaveBeenCalledWith(
             expect.objectContaining({
                 onboardingId: 'user-123',
-                network: 'mainnet',
+                scope: SCOPE,
             }),
         )
         // The resolved state is merged into the result, and the bridge is set.

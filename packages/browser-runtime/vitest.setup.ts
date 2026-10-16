@@ -14,10 +14,28 @@ import { vi } from 'vitest'
 
 // The connections barrel transitively reaches react-native-mmkv, which has no
 // loadable binding under vitest (`packages/connections` hits the same wall).
-// This package only needs the error class and the pairing-outcome helper, both
-// dependency-light, so they are re-exported for real instead of faked.
+// This package only needs the error class, the pairing-outcome helper and the
+// registry's scope filter. The first two are re-exported for real; the filter is
+// restated over config's own table because the registry module reaches the same
+// binding.
 vi.mock('@perawallet/wallet-core-connections', async () => {
     const errors = await import('../connections/src/errors')
     const pairingOutcome = await import('../connections/src/pairingOutcome')
-    return { ...errors, ...pairingOutcome }
+    const { configuredScopes } = await import('../config/src/network-config')
+    return {
+        ...errors,
+        ...pairingOutcome,
+        chainScopesServedBy: (
+            handler: {
+                matchesChainScope: (
+                    connection: unknown,
+                    scope: unknown,
+                ) => boolean
+            },
+            connection: unknown,
+        ) =>
+            configuredScopes().filter(scope =>
+                handler.matchesChainScope(connection, scope),
+            ),
+    }
 })

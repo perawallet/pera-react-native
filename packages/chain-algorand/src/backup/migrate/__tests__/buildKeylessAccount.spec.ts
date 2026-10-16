@@ -21,9 +21,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {
-        getState: () => ({ network: 'mainnet' }),
+        getState: () => ({ mode: 'live' }),
         subscribe: () => () => {},
     },
+    getSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 
 import {

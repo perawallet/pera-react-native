@@ -13,6 +13,7 @@
 import { decodeSignedTransaction } from 'algosdk'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { DerivedSubmissionAttempt } from '@perawallet/wallet-core-signing'
+import { algorandSubmissionChainData } from './chain-data'
 
 /**
  * A validity round, or undefined when absent or non-numeric. Bare
@@ -56,5 +57,5 @@ export const deriveSubmissionAttemptFromBytes = (
         }
     }
 
-    return { txIds, lastValid }
+    return { txIds, chainData: algorandSubmissionChainData(lastValid) }
 }

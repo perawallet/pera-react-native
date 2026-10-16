@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Share from 'react-native-share'
 import { shareFile } from '../shareFile'

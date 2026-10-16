@@ -11,7 +11,7 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { destroyBackup } from '../api'
 import { deleteBackupKeys } from '../credentials/keyStorage'
@@ -54,7 +54,7 @@ const suspendSyncManager = async (): Promise<() => void> => {
 export const useRemoveCloudBackupMutation = (
     options?: UseMutationOptions<void, Error, void>,
 ) => {
-    const { network } = useNetwork()
+    const deployment = useWalletDeployment()
     const backupId = useCloudBackupStore(state => state.backupId)
     const resetCloudBackup = useCloudBackupStore(state => state.resetState)
     const resetSyncState = useBackupSyncStateStore(state => state.resetState)
@@ -65,7 +65,7 @@ export const useRemoveCloudBackupMutation = (
     return useMutation({
         throwOnError: false,
         mutationFn: async (): Promise<void> => {
-            const deviceId = resolveBackupDeviceId(network)
+            const deviceId = resolveBackupDeviceId(deployment)
             if (!backupId || !deviceId) {
                 throw new Error(
                     'useRemoveCloudBackupMutation: no backup configured on this device',
@@ -74,7 +74,7 @@ export const useRemoveCloudBackupMutation = (
 
             const resumeSync = await suspendSyncManager()
             try {
-                await destroyBackup(network, backupId, deviceId)
+                await destroyBackup(backupId, deviceId)
             } catch (error) {
                 resumeSync()
                 throw error

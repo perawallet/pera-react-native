@@ -13,14 +13,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     assetFactsResolverFor,
-    fetchCloseAmount,
+    chainDataCodecFor,
     fetchMoreTransactions,
     fetchTransactionHistory,
+    healCachedRows,
     historyChainAdapters,
     mapHistoryItemToDisplayableTransaction,
     summarizeHistoryItem,
@@ -54,7 +55,7 @@ describe('history adapter wrappers', () => {
 
         const result = await fetchTransactionHistory({
             accountAddress: 'ADDR',
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             afterTime: '2026-01-01',
         })
 
@@ -62,7 +63,7 @@ describe('history adapter wrappers', () => {
         expect(adapter.fetchHistory).toHaveBeenCalledWith({
             accountAddress: 'ADDR',
             afterTime: '2026-01-01',
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
         })
     })
 
@@ -72,12 +73,12 @@ describe('history adapter wrappers', () => {
 
         await fetchMoreTransactions({
             url: 'NEXT',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
 
         expect(adapter.fetchMoreHistory).toHaveBeenCalledWith({
             url: 'NEXT',
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         })
     })
 
@@ -107,32 +108,55 @@ describe('history adapter wrappers', () => {
         expect(adapter.summarize).toHaveBeenCalledWith(item, 'ADDR')
     })
 
-    it('asks the adapter for a close amount', async () => {
-        const lookup = vi.fn().mockResolvedValue('500')
-        historyChainAdapters.register(makeAdapter({ fetchCloseAmount: lookup }))
+    it("runs the chain's repair for the account", async () => {
+        const repair = vi.fn().mockResolvedValue(undefined)
+        historyChainAdapters.register(makeAdapter({ healCachedRows: repair }))
 
-        await expect(
-            fetchCloseAmount('TX', scopeForLegacyNetwork('testnet')),
-        ).resolves.toBe('500')
-        expect(lookup).toHaveBeenCalledWith(
-            'TX',
-            scopeForLegacyNetwork('testnet'),
-        )
+        await healCachedRows('ADDR', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
+
+        expect(repair).toHaveBeenCalledWith({
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            accountAddress: 'ADDR',
+        })
     })
 
-    it('reports no close amount when the adapter has no lookup', async () => {
+    it('keeps a failed repair from failing the sync', async () => {
+        historyChainAdapters.register(
+            makeAdapter({
+                healCachedRows: vi.fn().mockRejectedValue(new Error('boom')),
+            }),
+        )
+
+        await expect(
+            healCachedRows('ADDR', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
+        ).resolves.toBeUndefined()
+    })
+
+    it('repairs nothing on a chain with no repair', async () => {
         historyChainAdapters.register(makeAdapter())
 
         await expect(
-            fetchCloseAmount('TX', scopeForLegacyNetwork('mainnet')),
-        ).resolves.toBeNull()
+            healCachedRows('ADDR', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
+        ).resolves.toBeUndefined()
     })
 
     it('names the missing registry when no adapter is registered', async () => {
         await expect(
             fetchTransactionHistory({
                 accountAddress: 'A',
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             }),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         expect(() =>
@@ -165,6 +189,12 @@ describe('a chain whose history is not cached as rows', () => {
         await expect(
             fetchMoreTransactions({ url: 'NEXT', scope }),
         ).rejects.toBeInstanceOf(TransactionHistoryRowsUnsupportedError)
+    })
+
+    it('has no codec to store a row with', () => {
+        expect(() => chainDataCodecFor('ethereum')).toThrow(
+            TransactionHistoryRowsUnsupportedError,
+        )
     })
 
     it('refuses to summarise a stored row', () => {

@@ -74,7 +74,6 @@ const active = (ver: number, hash: string, lastSeq: number) => ({
 
 const pull = () =>
     pullBackupItems({
-        network: 'mainnet',
         backupId,
         deviceId: 'device-1',
         encryptionKey: encKey,
@@ -365,12 +364,9 @@ describe('pullBackupItems', () => {
         await pull()
 
         expect(fetchDelta).not.toHaveBeenCalled()
-        expect(readItems).toHaveBeenCalledWith(
-            'mainnet',
-            backupId,
-            'device-1',
-            [accountKey('A')],
-        )
+        expect(readItems).toHaveBeenCalledWith(backupId, 'device-1', [
+            accountKey('A'),
+        ])
     })
 
     it('skips (does not throw) an item that fails to decrypt', async () => {
@@ -569,12 +565,9 @@ describe('pullBackupItems', () => {
 
         const result = await pull()
 
-        expect(readItems).toHaveBeenCalledWith(
-            'mainnet',
-            backupId,
-            'device-1',
-            [contactKey('CADDR')],
-        )
+        expect(readItems).toHaveBeenCalledWith(backupId, 'device-1', [
+            contactKey('CADDR'),
+        ])
         expect(result.contacts).toEqual([
             {
                 id: 'algorand:CADDR',
@@ -769,12 +762,9 @@ describe('pullBackupItems manifest pass-through', () => {
 
         const result = await pull()
 
-        expect(readItems).toHaveBeenCalledWith(
-            'mainnet',
-            backupId,
-            'device-1',
-            [accountKey('A')],
-        )
+        expect(readItems).toHaveBeenCalledWith(backupId, 'device-1', [
+            accountKey('A'),
+        ])
         expect(Object.keys(result.manifestItems)).toEqual([
             accountKey('A'),
             accountKey('GONE'),
@@ -882,19 +872,16 @@ describe('pullBackupItems with an item kind it does not know', () => {
         // Serves only what was asked for, so a read of the unknown key would
         // come back and surface as a skip.
         readItems.mockImplementation(
-            async (_network, _backupId, _deviceId, keys: string[]) =>
+            async (_backupId, _deviceId, keys: string[]) =>
                 stored.filter(entry => keys.includes(entry.key)),
         )
 
         const result = await pull()
 
         expect(readItems).toHaveBeenCalledTimes(1)
-        expect(readItems).toHaveBeenCalledWith(
-            'mainnet',
-            backupId,
-            'device-1',
-            [accountKey('WADDR')],
-        )
+        expect(readItems).toHaveBeenCalledWith(backupId, 'device-1', [
+            accountKey('WADDR'),
+        ])
         expect(result.accounts.map(account => account.address)).toEqual([
             'WADDR',
         ])
@@ -1034,12 +1021,9 @@ describe('pullBackupItems on a contact record', () => {
 
         const result = await pull()
 
-        expect(readItems).toHaveBeenCalledWith(
-            'mainnet',
-            backupId,
-            'device-1',
-            [contactRecordKey('id-1')],
-        )
+        expect(readItems).toHaveBeenCalledWith(backupId, 'device-1', [
+            contactRecordKey('id-1'),
+        ])
         expect(result.contacts).toEqual([
             {
                 id: 'id-1',

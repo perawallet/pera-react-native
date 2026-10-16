@@ -57,10 +57,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
@@ -137,14 +134,14 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // sync service writes after fetching from algod).
         await seedAlgorandAccountState({
             accountAddress: addressOf(ACCOUNT_A),
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             nativeBalance: new Decimal(10_000_000), // 10 ALGO
             totalAssetsOptedIn: 1,
             minBalance: new Decimal(100_000),
         })
         await seedAlgorandAccountState({
             accountAddress: addressOf(ACCOUNT_B),
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             nativeBalance: new Decimal(4_000_000), // 4 ALGO
             totalAssetsOptedIn: 1,
             minBalance: new Decimal(100_000),
@@ -157,14 +154,14 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_A),
             assetId: '0',
-            scope: scopeForLegacyNetwork(NETWORK),
-            amount: '10000000', // 10 ALGO
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            amount: new Decimal('10000000'), // 10 ALGO
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_B),
             assetId: '0',
-            scope: scopeForLegacyNetwork(NETWORK),
-            amount: '4000000', // 4 ALGO
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            amount: new Decimal('4000000'), // 4 ALGO
         })
 
         // ASA holdings — both accounts hold USDC. Amounts are in base
@@ -172,14 +169,14 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_A),
             assetId: USDC_ASSET.assetId,
-            scope: scopeForLegacyNetwork(NETWORK),
-            amount: '50000000', // 50 USDC
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            amount: new Decimal('50000000'), // 50 USDC
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_B),
             assetId: USDC_ASSET.assetId,
-            scope: scopeForLegacyNetwork(NETWORK),
-            amount: '20000000', // 20 USDC
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            amount: new Decimal('20000000'), // 20 USDC
         })
 
         // Prices: USDC at $1, ALGO at... whatever — the per-asset
@@ -194,7 +191,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                     usdPrice: new Decimal('1.00'),
                 },
             ],
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
 
         // Wrap in a fresh QueryClient so the queries can settle —
@@ -319,7 +316,10 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             registerEthereumChain()
             useNetworkStore.getState().setMode('developer')
             useAccountsStore.getState().setAccounts([ACCOUNT_A])
-            const scope = scopeForLegacyNetwork(TEST_NETWORK)
+            const scope = {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: TEST_NETWORK,
+            } as const
             await seedAlgoAsset(TEST_NETWORK)
             await seedAlgorandAccountState({
                 accountAddress: addressOf(ACCOUNT_A),
@@ -332,7 +332,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                 accountAddress: addressOf(ACCOUNT_A),
                 assetId: '0',
                 scope,
-                amount: '10000000',
+                amount: new Decimal('10000000'),
             })
             await upsertAssetPrices({
                 prices: [{ assetId: '0', usdPrice: new Decimal('0.30') }],

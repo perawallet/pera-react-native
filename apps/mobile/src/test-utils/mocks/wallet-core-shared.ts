@@ -254,18 +254,29 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     // missing the named service; the crash-reporting sites in QueryProvider
     // branch on the guard below.
     class PeraServiceUnavailableError extends AppError {
-        public readonly scope: { chainId: string; networkId: string }
+        public readonly scope:
+            | { chainId: string; networkId: string }
+            | undefined
+        public readonly targetKey: string
         public readonly service: string | undefined
 
         constructor(
-            target: string | { chainId: string; networkId: string },
+            target:
+                | string
+                | { chainId: string; networkId: string }
+                | { deployment: string },
             service?: string,
         ) {
             const scope =
                 typeof target === 'string'
                     ? { chainId: 'algorand', networkId: target }
-                    : target
-            const scopeKey = `${scope.chainId}/${scope.networkId}`
+                    : 'deployment' in target
+                      ? undefined
+                      : target
+            const scopeKey =
+                scope === undefined
+                    ? `deployment/${(target as { deployment: string }).deployment}`
+                    : `${scope.chainId}/${scope.networkId}`
             super(
                 `Pera services are not deployed for ${scopeKey}` +
                     (service === undefined ? '' : ` (service: ${service})`),
@@ -279,6 +290,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 },
             )
             this.scope = scope
+            this.targetKey = scopeKey
             this.service = service
         }
     }
@@ -417,12 +429,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         DEFAULT_PRECISION: 2,
         ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
         ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
-        Networks: {
-            mainnet: 'mainnet',
-            testnet: 'testnet',
-            betanet: 'betanet',
-            custom: 'custom',
-        },
         // Must mirror packages/shared/src/models/base-types.ts — period pills
         // render from this list, so a missing member silently drops a pill.
         HISTORY_PERIODS: ['one-day', 'one-week', 'one-month', 'one-year'],

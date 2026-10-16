@@ -20,7 +20,6 @@ import {
     type ChainId,
     type ChainScope,
     type ChainScopeKey,
-    type LegacyNetwork,
 } from './models/identity'
 
 // Not ':' — existing composite keys and CAIP-2 already join with it. The key is
@@ -63,42 +62,9 @@ export const LEGACY_CHAIN_ID = 'algorand' satisfies ChainId
 // item's bare `address`, belongs to this family.
 export const LEGACY_CHAIN_FAMILY = 'algorand' satisfies ChainFamily
 
-export const scopeForLegacyNetwork = (
-    network: LegacyNetwork,
-): ChainScope & { chainId: typeof LEGACY_CHAIN_ID } => ({
-    chainId: LEGACY_CHAIN_ID,
-    networkId: network,
-})
-
 export const LEGACY_SCOPES: readonly ChainScope[] = LEGACY_NETWORKS.map(
-    scopeForLegacyNetwork,
+    networkId => ({ chainId: LEGACY_CHAIN_ID, networkId }),
 )
-
-export const scopeKeyForLegacyNetwork = (
-    network: LegacyNetwork,
-): ChainScopeKey => toScopeKey(scopeForLegacyNetwork(network))
-
-// A Record so that adding a chain id stops this compiling. A new chain has no
-// legacy networks, so its entry returns undefined.
-const LEGACY_NETWORK_OF: Record<
-    ChainId,
-    (scope: ChainScope) => LegacyNetwork | undefined
-> = {
-    algorand: scope =>
-        isLegacyNetwork(scope.networkId) ? scope.networkId : undefined,
-    ethereum: () => undefined,
-}
-
-// The inverse, for the backend and algod clients that are still keyed by the
-// legacy network.
-export const legacyNetworkOf = (scope: ChainScope): LegacyNetwork => {
-    assertValidScope(scope)
-    const network = LEGACY_NETWORK_OF[scope.chainId](scope)
-    if (network === undefined) {
-        throw new InvalidScopeKeyError(joinScope(scope))
-    }
-    return network
-}
 
 const isScopeOf = (part: unknown, scope: ChainScope): boolean =>
     typeof part === 'object' &&
@@ -123,8 +89,8 @@ export const queryKeyReferencesScope = (
     )
 }
 
-// Never parseScopeKey a persisted value directly: state written before scope
-// keys holds a bare network.
+// For persisted store state, which may predate scope keys and hold a bare
+// network. Database rows all hold scope keys; read them with parseScopeKey.
 export const scopeFromNetworkColumn = (value: string): ChainScope => {
     if (value.includes(SCOPE_KEY_SEPARATOR)) {
         return parseScopeKey(value)
@@ -132,7 +98,7 @@ export const scopeFromNetworkColumn = (value: string): ChainScope => {
     if (!isLegacyNetwork(value)) {
         throw new InvalidScopeKeyError(value)
     }
-    return scopeForLegacyNetwork(value)
+    return { chainId: LEGACY_CHAIN_ID, networkId: value }
 }
 
 // For persisted state keyed by the bare legacy network. A key that already is a

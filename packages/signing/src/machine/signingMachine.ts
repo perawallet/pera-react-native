@@ -38,6 +38,7 @@ import {
     signPlannedGroups,
     type PlannedSignerInput,
 } from './actors/signers/signPlannedGroups'
+import { signMessageGroups } from './actors/signers/signMessageGroups'
 import { transportActor } from './actors/transports/transportActor'
 import { hardwareSigningMachine } from './children/hardwareSigningMachine'
 import type { HardwareSigningOutput } from './children/hardwareSigningMachine.context'
@@ -59,15 +60,20 @@ type LocalSignerInput = LocalKeySignerInput &
 const signLocalKeyGroups = async (
     input: LocalSignerInput,
 ): Promise<SigningResult[]> => {
-    const planned = input.groups.filter(group =>
+    const messages = input.groups.filter(group => group.data.type === 'message')
+    const groups = input.groups.filter(group => !messages.includes(group))
+    const planned = groups.filter(group =>
         isPlannerSigned(
             group,
             input.groupSigners.get(group.signerAddress),
             input.scope.chainId,
         ),
     )
-    const others = input.groups.filter(group => !planned.includes(group))
+    const others = groups.filter(group => !planned.includes(group))
     return [
+        ...(messages.length > 0
+            ? await signMessageGroups({ ...input, groups: messages })
+            : []),
         ...(planned.length > 0
             ? await signPlannedGroups({ ...input, groups: planned })
             : []),
@@ -453,7 +459,8 @@ export const signingMachine = setup({
                                 // overlay reads this to pick context-aware copy.
                                 operation:
                                     groups[0]?.data.type === 'auth-data' ||
-                                    groups[0]?.data.type === 'arbitrary-data'
+                                    groups[0]?.data.type === 'arbitrary-data' ||
+                                    groups[0]?.data.type === 'message'
                                         ? ('data' as const)
                                         : ('transaction' as const),
                             }

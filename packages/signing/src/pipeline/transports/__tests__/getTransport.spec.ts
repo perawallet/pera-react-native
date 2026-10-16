@@ -73,7 +73,7 @@ describe('createTransportSelector', () => {
 
     beforeEach(() => {
         useNetworkStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
         planner = registerFakePlannerAdapter({
             createMultisigProposeTransport: vi.fn(() => proposeTransport),
             createMultisigCosignTransport: vi.fn(() => cosignTransport),

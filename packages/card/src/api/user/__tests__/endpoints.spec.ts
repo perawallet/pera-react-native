@@ -46,6 +46,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 import { HTTPError } from 'ky'
 import { fetchUser, fetchVerificationSession } from '../endpoints'
 
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 describe('user endpoints', () => {
     beforeEach(() => vi.clearAllMocks())
 
@@ -54,7 +56,7 @@ describe('user endpoints', () => {
             data: { id: 'u1', verificationState: 'VERIFIED' },
         })
 
-        const user = await fetchUser({ network: 'mainnet' })
+        const user = await fetchUser({ scope: ALGORAND_MAINNET })
 
         expect(user?.id).toBe('u1')
         expect(user?.verificationState).toBe('VERIFIED')
@@ -66,21 +68,21 @@ describe('user endpoints', () => {
     it('returns null when there is no user (404)', async () => {
         request.mockRejectedValue(new HTTPError(404))
 
-        expect(await fetchUser({ network: 'mainnet' })).toBeNull()
+        expect(await fetchUser({ scope: ALGORAND_MAINNET })).toBeNull()
     })
 
     it('returns null on a validation error', async () => {
         request.mockResolvedValue({ data: { id: 123 } })
 
-        expect(await fetchUser({ network: 'mainnet' })).toBeNull()
+        expect(await fetchUser({ scope: ALGORAND_MAINNET })).toBeNull()
     })
 
     it('rethrows non-404 HTTP errors', async () => {
         request.mockRejectedValue(new HTTPError(500))
 
-        await expect(fetchUser({ network: 'mainnet' })).rejects.toBeInstanceOf(
-            HTTPError,
-        )
+        await expect(
+            fetchUser({ scope: ALGORAND_MAINNET }),
+        ).rejects.toBeInstanceOf(HTTPError)
     })
 
     it('fetches the Veriff verification session via GET', async () => {
@@ -88,7 +90,9 @@ describe('user endpoints', () => {
             data: { sessionUrl: 'https://veriff/session' },
         })
 
-        const session = await fetchVerificationSession({ network: 'mainnet' })
+        const session = await fetchVerificationSession({
+            scope: ALGORAND_MAINNET,
+        })
 
         expect(session.sessionUrl).toBe('https://veriff/session')
         expect(request).toHaveBeenCalledWith(

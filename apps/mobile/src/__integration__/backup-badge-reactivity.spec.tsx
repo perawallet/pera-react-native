@@ -39,12 +39,14 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
     type LegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
 import { addressOf } from './__fixtures__/accounts'
 
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 const NETWORK = 'mainnet' as const
 
@@ -72,15 +74,15 @@ const seedUnfunded = async (
 ) => {
     await seedAlgorandAccountState({
         accountAddress: address,
-        scope: scopeForLegacyNetwork(network),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: network } as const,
         nativeBalance: new Decimal(0),
         minBalance: new Decimal(100_000),
     })
     await insertAssetHolding({
         accountAddress: address,
         assetId: '0',
-        scope: scopeForLegacyNetwork(network),
-        amount: '0',
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: network } as const,
+        amount: new Decimal(0),
     })
 }
 
@@ -124,7 +126,10 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         await act(async () => {
             await refreshAccountHoldings({
                 accountAddress: addressOf(ACCOUNT_B),
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
                 holdings: [
                     {
                         assetId: '0',
@@ -153,7 +158,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
                 },
             ],
         })
-        useNetworkStore.getState().setNetwork(NETWORK)
+        useNetworkStore.getState().setMode('live')
 
         const queryClient = createTestQueryClient()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -197,11 +202,10 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
 
         // What fetchAndPersistAccount does when it sees the new auth-addr.
         act(() => {
-            seedAuthority(
-                addressOf(ACCOUNT_A),
-                addressOf(ACCOUNT_B),
-                scopeForLegacyNetwork(NETWORK),
-            )
+            seedAuthority(addressOf(ACCOUNT_A), addressOf(ACCOUNT_B), {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: NETWORK,
+            } as const)
         })
 
         await waitFor(() => expect(result.current).toBe(true))

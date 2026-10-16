@@ -35,7 +35,6 @@ import {
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 const DEVICE_ID = 'integration-test-device'
-const NETWORK = 'mainnet' as const
 
 describe('Flow: Banners (regular)', () => {
     afterEach(() => {
@@ -49,7 +48,7 @@ describe('Flow: Banners (regular)', () => {
         // The hooks gate fetches on a device ID being present for the
         // active network. In a real session this is set by the device-
         // registration flow.
-        useDeviceStore.getState().setDeviceID(NETWORK, DEVICE_ID)
+        useDeviceStore.getState().setDeviceID('live', DEVICE_ID)
     })
 
     it('Given the server returns three banners of mixed types, when useVisibleBanners resolves, then all three round-trip with type / title / subtitle / CTA mapped to camelCase', async () => {
@@ -246,7 +245,7 @@ describe('Flow: Banners (regular)', () => {
 
 describe('Flow: Spot banners', () => {
     beforeEach(() => {
-        useDeviceStore.getState().setDeviceID(NETWORK, DEVICE_ID)
+        useDeviceStore.getState().setDeviceID('live', DEVICE_ID)
     })
 
     it('Given the server returns spot banners, when useSpotBannersQuery resolves, then API fields map to the SpotBanner domain shape (image→imageUrl, button_url_is_external→isUrlExternal)', async () => {

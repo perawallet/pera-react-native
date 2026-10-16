@@ -23,6 +23,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardSignInScreen } from '@modules/card/screens/CardSignInScreen'
 import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const VALID_EMAIL = 'john@example.com'
 const VALID_PASSWORD = 'Passw0rd!'
@@ -89,7 +90,7 @@ describe('Flow: Card sign in', () => {
         useCardStore.getState().setEscrowCard({
             cardAddress: 'ESCROW_CARD_ADDR',
             ownerAddress: 'FUNDING_ADDR',
-            network: 'testnet',
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             txId: 'TX',
         })
     })

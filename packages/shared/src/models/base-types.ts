@@ -10,11 +10,6 @@
  limitations under the License
  */
 
-import { type Network, Networks } from '@perawallet/wallet-core-config'
-
-export { Networks }
-export type { Network }
-
 // Also the display order of chart period selectors.
 export const HISTORY_PERIODS = [
     'one-day',

@@ -16,6 +16,7 @@ import type {
     ChainScope,
     PeraSignedTransaction,
     PeraTransaction,
+    SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -67,7 +68,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
     submitAndAutoRefresh: async (
         scope: ChainScope,
-        signedTxns: PeraSignedTransaction[],
+        signedTxns: SignedTransaction[],
         options?: unknown,
     ): Promise<string[]> => {
         mockSubmitAndAutoRefreshScope(scope)
@@ -82,11 +83,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
             ids.push(...response.txid)
         }
         if (ids.length === 0) {
-            for (const signedTxn of signedTxns) {
-                if (signedTxn.txn.txID) {
-                    ids.push(signedTxn.txn.txID())
-                }
-            }
+            ids.push(...signedTxns.map(signedTxn => signedTxn.id))
         }
         return ids
     },
@@ -255,11 +252,18 @@ const standardAccountRekeyedToQuantum: WalletAccount = {
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
     ({
-        txn: { txID: () => id },
+        txn: { txID: () => id, sender: { toString: () => 'BACKEND' } },
         sig: new Uint8Array([1]),
     }) as unknown as PeraSignedTransaction
 
-const autoApproveWith = (signed: PeraSignedTransaction[]) => {
+// What the pipeline hands a chain-neutral request's `approve`.
+const makeSigned = (id: string): SignedTransaction => ({
+    scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
+    id,
+    bytes: new Uint8Array([1]),
+})
+
+const autoApproveWith = (signed: Nullable<SignedTransaction>[]) => {
     mockAddSignRequest.mockImplementation((request: TransactionSignRequest) => {
         // Defer to the next microtask to mimic real pipeline behavior.
         void Promise.resolve().then(() => request.approve?.(signed))
@@ -304,7 +308,7 @@ describe('executeAlgorandSwap', () => {
                     txID: () => 'mock-tx-id',
                 }) as unknown as PeraTransaction,
         )
-        autoApproveWith([makeSignedTxn('tx-id-1'), makeSignedTxn('tx-id-2')])
+        autoApproveWith([makeSigned('tx-id-1'), makeSigned('tx-id-2')])
         mockEncodeSignedTransactions.mockReturnValue([
             new Uint8Array([10, 20]),
             new Uint8Array([30, 40]),
@@ -348,12 +352,16 @@ describe('executeAlgorandSwap', () => {
         // must stay `'local'` (outside `INTERACTIVE_SOURCES`) to skip the
         // standard review/completion sheets.
         expect(request.sourceType).toBe('local')
-        expect(request).toMatchObject({ chainId: 'algorand' })
+        expect(request).not.toHaveProperty('chainId')
+        expect(request.txs[0].scope).toEqual({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(request.sourceMetadata).toEqual(SIGNING_SOURCE)
         expect(request.txs).toHaveLength(2)
         // The signing-machine analyzer recomputes the group hash over
         // `groupContext`, so it must cover every slot of the prepare result.
-        expect(request.groupContext).toHaveLength(2)
+        expect(request.chainData?.algorand?.groupContext).toHaveLength(2)
 
         expect(mockSendRawTransaction).toHaveBeenCalled()
         expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
@@ -381,7 +389,7 @@ describe('executeAlgorandSwap', () => {
 
         const preSigned1 = makeSignedTxn('pre-1')
         const preSigned2 = makeSignedTxn('pre-2')
-        const userSigned = makeSignedTxn('user-1')
+        const userSigned = makeSigned('user-1')
 
         mockDecodeSignedTransaction
             .mockReturnValueOnce(preSigned1)
@@ -399,12 +407,17 @@ describe('executeAlgorandSwap', () => {
         // groupContext must cover ALL 3 slots so the analyzer recomputes the
         // right group hash; without it every mixed-group swap fails with
         // `blockchain_error`.
-        expect(request.groupContext).toHaveLength(3)
+        expect(request.chainData?.algorand?.groupContext).toHaveLength(3)
 
         expect(mockSendRawTransaction).toHaveBeenCalledTimes(1)
         const submitted = mockSendRawTransaction.mock
-            .calls[0][0] as PeraSignedTransaction[]
-        expect(submitted).toEqual([preSigned1, userSigned, preSigned2])
+            .calls[0][0] as SignedTransaction[]
+        expect(submitted.map(signed => signed.id)).toEqual([
+            'pre-1',
+            'user-1',
+            'pre-2',
+        ])
+        expect(submitted[1]).toBe(userSigned)
     })
 
     it('submits multiple groups independently and aggregates txIds', async () => {
@@ -423,8 +436,8 @@ describe('executeAlgorandSwap', () => {
             }),
         )
 
-        const signedA = makeSignedTxn('a')
-        const signedB = makeSignedTxn('b')
+        const signedA = makeSigned('a')
+        const signedB = makeSigned('b')
         autoApproveWith([signedA, signedB])
 
         mockSendRawTransaction
@@ -1005,17 +1018,13 @@ describe('executeAlgorandSwap', () => {
     })
 
     it('drops null slots before resolving', async () => {
-        autoApproveWith([
-            makeSignedTxn('tx-id-1'),
-            null,
-            makeSignedTxn('tx-id-2'),
-        ] as unknown as PeraSignedTransaction[])
+        autoApproveWith([makeSigned('tx-id-1'), null, makeSigned('tx-id-2')])
 
         const result = await run(makeQuote('quote-null-slot'))
 
         expect(result.kind).toBe('success')
         const submitted = mockSendRawTransaction.mock
-            .calls[0][0] as PeraSignedTransaction[]
+            .calls[0][0] as SignedTransaction[]
         expect(submitted).toHaveLength(2)
     })
 
@@ -1172,7 +1181,7 @@ describe('executeAlgorandSwap', () => {
 
         it('a single-signer account still takes the normal inline submit flow', async () => {
             mockIsMultisigAccount.mockReturnValue(false)
-            autoApproveWith([makeSignedTxn('tx-1'), makeSignedTxn('tx-2')])
+            autoApproveWith([makeSigned('tx-1'), makeSigned('tx-2')])
 
             const result = await run(makeQuote('quote-single-signer'))
 

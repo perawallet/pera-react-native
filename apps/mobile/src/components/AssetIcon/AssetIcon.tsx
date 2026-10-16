@@ -15,6 +15,8 @@ import {
     useIsNativeAssetId,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SvgProps } from 'react-native-svg'
@@ -40,9 +42,10 @@ export type AssetIconProps = {
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 export const AssetIcon = (props: AssetIconProps) => {
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { asset, size, style, logoUrl, shape = 'circle', ...rest } = props
     const { theme } = useTheme()
-    const isNativeAssetId = useIsNativeAssetId()
+    const isNativeAssetId = useIsNativeAssetId(scope)
     const [loadFailed, setLoadFailed] = useState(false)
 
     const iconSize = getIconPixelSize(theme, size ?? 'md')

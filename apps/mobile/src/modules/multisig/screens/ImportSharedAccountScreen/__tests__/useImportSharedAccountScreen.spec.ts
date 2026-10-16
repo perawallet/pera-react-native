@@ -50,7 +50,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -72,7 +71,7 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => mockUseDeviceID(),
+    useScopedDeviceID: () => mockUseDeviceID(),
 }))
 
 vi.mock('@modules/onboarding/hooks', () => ({

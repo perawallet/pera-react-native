@@ -137,10 +137,31 @@ describe('useWalletWithdrawConfirmationSheet', () => {
             result.current.onConfirm()
         })
 
-        expect(mocks.withdrawMutateAsync).toHaveBeenCalledWith({
-            amount: '25.50',
-        })
+        const [{ amount }] = mocks.withdrawMutateAsync.mock.calls[0]
+        expect(amount).toBeInstanceOf(Decimal)
+        expect(amount.toFixed()).toBe('25.5')
         expect(mocks.resolve).toHaveBeenCalledWith('confirm')
+    })
+
+    it('withdraws the amount rounded to display precision', async () => {
+        mocks.withdrawMutateAsync.mockResolvedValue({
+            txHash: '0xabc',
+            network: 'linea',
+            isConfirmed: true,
+        })
+
+        const { result } = renderHook(() =>
+            useWalletWithdrawConfirmationSheet({
+                kind: CardWalletKind.Reward,
+                amount: new Decimal('12.345'),
+            }),
+        )
+        await act(async () => {
+            result.current.onConfirm()
+        })
+
+        const [{ amount }] = mocks.withdrawMutateAsync.mock.calls[0]
+        expect(amount.toFixed()).toBe('12.35')
     })
 
     it('blocks the withdraw when the wallet is not withdrawable', async () => {

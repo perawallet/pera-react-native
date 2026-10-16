@@ -1,0 +1,115 @@
+*** Settings ***
+Documentation       WalletConnect against a host-side v1 dApp harness, started outside the suite and
+...                 reached at WC_HARNESS_URL. Its requests are self amount-0 payments that are never
+...                 submitted, so no case moves funds.
+Resource            app.resource
+Library             libraries/wc_harness.py
+
+
+*** Variables ***
+${WC_HARNESS_URL}                   %{WC_HARNESS_URL=}
+# The harness builds its transactions for this network; it must match the wallet's active one.
+${WC_NETWORK}                       mainnet
+
+${WC_CONNECT_BUTTON}                accessibility_id=wc_connect_button
+${WC_REJECT_BUTTON}                 accessibility_id=wc_reject_button
+${WC_SUCCESS}                       accessibility_id=wc_connection_success
+# Rows are suffixed with the internal account id, so only a prefix match finds them.
+${WC_ACCOUNT_ROW_ANY}               xpath=//*[starts-with(@name,'wc_account_row_') or starts-with(@content-desc,'wc_account_row_')]
+${SIGNING_REJECT_BUTTON}            accessibility_id=signing_reject_button
+${SIGNING_CONFIRM_SLIDE}            accessibility_id=signing-confirm-slide
+${ARBITRARY_CONFIRM_SLIDE}          accessibility_id=arbitrary-data-confirm-slide
+${ARBITRARY_REJECT_BUTTON}          accessibility_id=arbitrary-data-reject-button
+
+${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
+${SETTINGS_WC_SESSIONS}             accessibility_id=settings_item_walletconnect_sessions
+${WC_SESSION_ITEM}                  accessibility_id=wallet_connect_session_item
+${WC_EMPTY_CONNECT_BUTTON}          accessibility_id=wallet_connect_connect_button
+${WC_CLEAR_ALL_BUTTON}              accessibility_id=wallet_connect_clear_all_button
+${WC_DETAILS_DELETE_BUTTON}         accessibility_id=wallet_connect_details_delete_button
+${WC_DETAILS_CONFIRM_BUTTON}        accessibility_id=wallet_connect_details_confirm_delete_button
+${WC_DETAILS_CANCEL_BUTTON}         accessibility_id=wallet_connect_details_cancel_button
+# The delete-all dialog's confirm button has no testID, so match its label.
+${WC_DELETE_ALL_CONFIRM}            xpath=//*[@text='Delete' or @label='Delete']
+
+
+*** Keywords ***
+Start Pera For WalletConnect
+    Skip If    not $WC_HARNESS_URL    WC_HARNESS_URL is not set; these cases need the dApp harness.
+    Harness Status
+    Start Pera With Wallet
+
+Open WC Approval Sheet
+    ${deeplink}=    Fresh WC Deeplink
+    Open Deeplink    ${deeplink}
+    Wait Until Settled    ${WC_CONNECT_BUTTON}
+
+Approve WC Session
+    Open WC Approval Sheet
+    Tap    ${WC_ACCOUNT_ROW_ANY}
+    Tap    ${WC_CONNECT_BUTTON}
+    Wait Until Page Contains Element    ${WC_SUCCESS}    timeout=30s
+    Wait Until Keyword Succeeds    20s    1s    Harness Should Be Connected
+
+Connect WC Session
+    [Documentation]    An approved session with its success sheet closed, ready for dApp requests.
+    Approve WC Session
+    Close Sheet
+    Wait Until Page Does Not Contain Element    ${WC_SUCCESS}    timeout=10s
+
+Harness Should Be Connected
+    ${status}=    Harness Status
+    Should Be True    $status['connected']
+
+Harness Should Not Be Connected
+    ${status}=    Harness Status
+    Should Not Be True    $status['connected']
+
+Send WC Request
+    [Documentation]    Send one request only: a resend queues a duplicate that suppresses the sheet.
+    [Arguments]    ${endpoint}
+    Send Harness Request    ${endpoint}    ${WC_NETWORK}
+
+Wait For Sign Sheet
+    [Arguments]    ${anchor}
+    Wait Until Page Contains Element    ${anchor}    timeout=45s
+    Wait Until Settled    ${anchor}
+
+Harness Sign Should Be Approved
+    ${result}=    Harness Sign Result
+    Should Be True    $result['done'] and not $result['rejected']    ${result}
+
+Drag Slide To Confirm
+    [Documentation]    The slide is a pan gesture, so a tap does nothing.
+    [Arguments]    ${slide}
+    Wait Until Settled    ${slide}
+    ${loc}=    Get Element Location    ${slide}
+    ${size}=    Get Element Size    ${slide}
+    ${y}=    Evaluate    int($loc['y'] + $size['height'] / 2)
+    ${x1}=    Evaluate    int($loc['x'] + $size['width'] * 0.10)
+    ${x2}=    Evaluate    int($loc['x'] + $size['width'] * 0.95)
+    Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms
+
+Open WC Sessions From Settings
+    Tap    ${MENU_TAB}
+    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
+    Tap    ${MENU_SETTINGS_BUTTON}
+    Wait Until Page Contains Element    ${SETTINGS_WC_SESSIONS}    timeout=15s
+    Tap    ${SETTINGS_WC_SESSIONS}
+    Wait Until Page Contains Element    ${WC_SESSION_ITEM}    timeout=30s
+
+WC Session Count
+    ${rows}=    Get Webelements    ${WC_SESSION_ITEM}
+    ${count}=    Get Length    ${rows}
+    RETURN    ${count}
+
+WC Session Count Should Be
+    [Arguments]    ${expected}
+    ${count}=    WC Session Count
+    Should Be Equal As Integers    ${count}    ${expected}
+
+WC Sessions Should Be Empty
+    [Documentation]    The list pops back only after the bridge round-trip resolves, which is slow
+    ...                when the socket idled during navigation.
+    Wait Until Page Contains Element    ${WC_EMPTY_CONNECT_BUTTON}    timeout=90s
+    Page Should Not Contain Element    ${WC_SESSION_ITEM}

@@ -25,8 +25,8 @@ import { onlineManager } from '@tanstack/react-query'
 import { Notifier } from 'react-native-notifier'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    useNetworkStore,
     useSelectedScope,
+    getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
@@ -72,7 +72,7 @@ import {
     seedAlgo25Account,
 } from './__fixtures__/cloudBackup'
 
-const NETWORK = useNetworkStore.getState().network
+const NETWORK = getSelectedScope(LEGACY_CHAIN_ID).networkId
 
 const REMOTE_ONLY_ADDRESS =
     'ZZZ7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
@@ -185,7 +185,7 @@ describe('Flow: Cloud backup → review actions while offline', () => {
         useContactsStore.getState().resetState()
         useCloudBackupStore.getState().resetState()
         useBackupSyncStateStore.getState().resetState()
-        useDeviceStore.getState().setDeviceID(NETWORK, 'test-device-id')
+        useDeviceStore.getState().setDeviceID('live', 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         vi.clearAllMocks()
     })

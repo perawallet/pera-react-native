@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import {
-    scopeForLegacyNetwork,
-    type ChainId,
+import type {
+    ChainId,
+    ChainScope,
+    NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
@@ -28,7 +29,6 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
     logger,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -68,7 +68,7 @@ export type DappHandlerDeps = {
      * chain, so it is fixed per handler.
      */
     chainId: ChainId
-    getNetwork: () => Network
+    getNetworkId: (chainId: ChainId) => NetworkId
     getCustomNetworkGenesisHash: () => string | undefined
     /**
      * The wallet's current signing-capable accounts. Read on every answer, not
@@ -101,10 +101,19 @@ const PERMISSION_METHODS: readonly DappMethod[] = DAPP_METHODS.filter(
     method => method !== 'getEmptySignatures',
 )
 
-const toWireResult = (result: WalletOperationResult): unknown =>
-    result.type === 'sign-transactions'
-        ? result.signed
-        : result.signatures.map(encodeToBase64)
+const toWireResult = (result: WalletOperationResult): unknown => {
+    switch (result.type) {
+        case 'sign-transactions': {
+            return result.signed
+        }
+        case 'sign-data': {
+            return result.signatures.map(encodeToBase64)
+        }
+        default: {
+            throw new Error(`The dApp bridge routes no ${result.type} request`)
+        }
+    }
+}
 
 const toErrorResponse = (
     id: JsonRpcRequest['id'],
@@ -203,6 +212,11 @@ export const createDappConnectionHandler = (
             ? dappRequestChainAdapters.get(deps.chainId)
             : undefined
 
+    const activeScope = (): ChainScope => ({
+        chainId: deps.chainId,
+        networkId: deps.getNetworkId(deps.chainId),
+    })
+
     const deliver = (
         respond: DappRespond,
         response: JsonRpcResponse,
@@ -277,7 +291,7 @@ export const createDappConnectionHandler = (
             )
         }
         const network = adapter.resolveReportedNetwork(
-            scopeForLegacyNetwork(deps.getNetwork()),
+            activeScope(),
             deps.getCustomNetworkGenesisHash(),
         )
         if (!network) {
@@ -508,7 +522,7 @@ export const createDappConnectionHandler = (
         }
         const params = isRecord(request.params) ? request.params : {}
         const network = adapter.resolveReportedNetwork(
-            scopeForLegacyNetwork(deps.getNetwork()),
+            activeScope(),
             deps.getCustomNetworkGenesisHash(),
         )
         if (!network) {
@@ -652,7 +666,7 @@ export const createDappConnectionHandler = (
             await Promise.all(all.map(connection => disconnect(connection.id)))
         },
         restore,
-        matchesNetwork: () => true,
+        matchesChainScope: (_, scope) => scope.chainId === deps.chainId,
         methodsFor: () => [...PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             const notification =
@@ -663,7 +677,7 @@ export const createDappConnectionHandler = (
                       }
                     : {
                           method: DAPP_NOTIFICATIONS.networkChanged,
-                          params: { network: notice.network },
+                          params: { network: notice.scope.networkId },
                       }
             await deps.transport.notify(id, { jsonrpc: '2.0', ...notification })
         },

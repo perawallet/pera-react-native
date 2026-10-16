@@ -53,7 +53,7 @@ export const usePriceTrend = ({
         data: chartData,
         isPaused,
         isUnavailableOnNetwork,
-    } = useAssetPriceHistoryQuery(assetId, period, scope)
+    } = useAssetPriceHistoryQuery(scope, assetId, period)
 
     const [changePercentage, changeValue] = useMemo(() => {
         const dataPoints = chartData?.map(p => p.usdPrice) ?? []

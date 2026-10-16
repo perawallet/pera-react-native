@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     },
-    getNetworkConfig: () => ({
+    getPeraServicesConfig: () => ({
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
@@ -49,7 +49,6 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedChainMode: () => 'live',
-    useNetwork: () => ({ network: 'mainnet' }),
     useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
 }))
 

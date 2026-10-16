@@ -81,9 +81,9 @@ import {
     type AlgorandAccountKind,
 } from '@test-utils/accountCustody'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 const account = (
     address: string,

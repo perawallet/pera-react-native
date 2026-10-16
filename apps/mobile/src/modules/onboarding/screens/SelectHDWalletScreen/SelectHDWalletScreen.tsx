@@ -27,6 +27,7 @@ import {
 } from '@components/core'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
@@ -35,7 +36,8 @@ import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
 
 export const SelectHDWalletScreen = () => {
-    const nativeAsset = useNativeAsset()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const {
         hdSeedGroups,

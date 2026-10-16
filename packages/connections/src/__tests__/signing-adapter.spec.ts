@@ -27,12 +27,18 @@ import type {
     SourceType,
 } from '@perawallet/wallet-core-signing'
 import {
+    DappRequestRejectedError,
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
+    PendingRequestCapacityError,
 } from '../dappRequest'
 import type { InboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
 import type { PendingRequestLedger } from '../signing-adapter'
+import {
+    MAX_PENDING_REQUESTS,
+    MAX_PENDING_REQUESTS_PER_PEER,
+} from '../capacity'
 
 const CHAIN_ID = 'algorand' as ChainId
 
@@ -53,12 +59,18 @@ const lastTransport = (): ExternalSignTxnTransport => {
 }
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
+const mockIsSignRequestPending = vi.fn((_id: string) => true)
+const mockIsSignRequestPastApproval = vi.fn((_id: string) => false)
+const mockPlan = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
         addSignRequest: mockAddSignRequest,
         removeSignRequest: mockRemoveSignRequest,
     }),
+    isSignRequestPending: (id: string) => mockIsSignRequestPending(id),
+    isSignRequestPastApproval: (id: string) =>
+        mockIsSignRequestPastApproval(id),
     // Small on purpose so "too many requests" tests stay short — the real
     // value (1000, `@perawallet/wallet-core-signing`'s `constants.ts`) is
     // exercised by that package's own tests.
@@ -74,6 +86,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         (kind === 'authData'
             ? account.canArc60 === true
             : account.canSignData === true),
+    messageSignerChainAdapters: { get: () => ({ plan: mockPlan }) },
     // Mirrors the real predicate: the class name, or the marker the
     // WalletConnect rewrap keeps in the message.
     isFeeAdjustmentDeliveryError: (error: Error) =>
@@ -180,6 +193,22 @@ const signDataMessage = (
     reject: vi.fn(async () => {}),
 })
 
+const txnMessage = (
+    correlationId = '7',
+    connectionId = 'c1',
+): Extract<InboundMessage, { kind: 'request' }> => ({
+    kind: 'request',
+    chainId: CHAIN_ID,
+    connectionId,
+    correlationId,
+    sourceType: 'walletconnect',
+    authorizedAccounts: ['AAAA'],
+    peer: PEER,
+    operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+    respond: vi.fn(async () => {}),
+    reject: vi.fn(async () => {}),
+})
+
 // A real `ConnectionRegistry`, not an `as never` double: `subscribeToMessages`
 // is the live implementation under test, and the other nine members are
 // `vi.fn()`s. If the interface gains a required method or
@@ -199,7 +228,7 @@ const makeRegistry = () => {
         reconnect: vi.fn(),
         abandonPairing: vi.fn(),
         describeUri: vi.fn(() => ({})),
-        networksFor: vi.fn(() => []),
+        scopesFor: vi.fn(() => []),
         methodsFor: vi.fn(() => []),
         subscribeToProposals: vi.fn(() => () => {}),
         subscribeToMessages: listener => {
@@ -223,6 +252,10 @@ describe('useConnectionSigningAdapter', () => {
         mockSelectedNetwork.current = 'mainnet'
         mockAddSignRequest.mockClear()
         mockRemoveSignRequest.mockClear()
+        mockIsSignRequestPending.mockReset()
+        mockIsSignRequestPending.mockReturnValue(true)
+        mockIsSignRequestPastApproval.mockReset()
+        mockIsSignRequestPastApproval.mockReturnValue(false)
         mockEnqueue.mockClear()
         mockEnqueue.mockResolvedValue(null)
         dappRequestChainAdapters.reset()
@@ -688,6 +721,8 @@ describe('useConnectionSigningAdapter', () => {
                 transactionSigning: new Map([[CHAIN_ID, throwingEnqueue]]),
                 addSignRequest: mockAddSignRequest,
                 removeSignRequest: mockRemoveSignRequest,
+                isSignRequestPending: mockIsSignRequestPending,
+                isSignRequestPastApproval: mockIsSignRequestPastApproval,
                 accounts: [],
                 pendingRequests,
                 onError,
@@ -734,19 +769,6 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request-expired',
             connectionId: 'c1',
             correlationId,
-        })
-
-        const txnMessage = (correlationId = '7'): InboundMessage => ({
-            kind: 'request',
-            chainId: CHAIN_ID,
-            connectionId: 'c1',
-            correlationId,
-            sourceType: 'walletconnect',
-            authorizedAccounts: ['AAAA'],
-            peer: PEER,
-            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
-            respond: vi.fn(async () => {}),
-            reject: vi.fn(async () => {}),
         })
 
         it('withdraws the enqueued transaction request the peer stopped waiting for', async () => {
@@ -828,6 +850,173 @@ describe('useConnectionSigningAdapter', () => {
             send(expired())
 
             expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('pending capacity', () => {
+        const sendBurst = (
+            send: (m: InboundMessage) => void,
+            count: number,
+            connectionFor: (index: number) => string,
+        ): void => {
+            for (let i = 0; i < count; i++) {
+                send(txnMessage(String(i), connectionFor(i)))
+            }
+        }
+
+        it('refuses a connection past its cap while earlier enqueues are still in flight', () => {
+            mockEnqueue.mockReturnValue(new Promise<never>(() => {}))
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS_PER_PEER, () => 'c1')
+
+            const over = txnMessage('over', 'c1')
+            send(over)
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(
+                MAX_PENDING_REQUESTS_PER_PEER,
+            )
+            expect(over.reject).toHaveBeenCalledWith(
+                expect.any(PendingRequestCapacityError),
+            )
+            expect(over.reject.mock.calls[0][0]).toMatchObject({
+                failure: 'limit-exceeded',
+            })
+        })
+
+        it('refuses any connection once the total cap is reached', () => {
+            mockEnqueue.mockReturnValue(new Promise<never>(() => {}))
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS, index => `c${index}`)
+
+            send(txnMessage('over', 'fresh'))
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(MAX_PENDING_REQUESTS)
+        })
+
+        it('frees the slot once a request is answered', async () => {
+            mockEnqueue.mockImplementation(
+                async () =>
+                    ({
+                        id: `sr-${mockEnqueue.mock.calls.length}`,
+                    }) as never,
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS_PER_PEER, () => 'c1')
+            await Promise.resolve()
+            await lastTransport().respondWithResult([null])
+
+            send(txnMessage('next', 'c1'))
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(
+                MAX_PENDING_REQUESTS_PER_PEER + 1,
+            )
+        })
+
+        it('frees the slot of a request that left the queue without an answer', async () => {
+            mockEnqueue.mockImplementation(
+                async () =>
+                    ({
+                        id: `sr-${mockEnqueue.mock.calls.length}`,
+                    }) as never,
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            sendBurst(send, MAX_PENDING_REQUESTS_PER_PEER, () => 'c1')
+            await Promise.resolve()
+            mockIsSignRequestPending.mockImplementation(id => id !== 'sr-1')
+
+            send(txnMessage('next', 'c1'))
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(
+                MAX_PENDING_REQUESTS_PER_PEER + 1,
+            )
+        })
+    })
+
+    describe('connection closed', () => {
+        // A send-transaction broadcast goes out even once its actor stops, so
+        // withdrawing here would hide an outcome the user needs to see.
+        it('leaves a request the user already approved to finish', async () => {
+            const approved = { id: 'sr-approved' }
+            const waiting = { id: 'sr-waiting' }
+            mockEnqueue
+                .mockResolvedValueOnce(approved as never)
+                .mockResolvedValueOnce(waiting as never)
+            mockIsSignRequestPastApproval.mockImplementation(
+                id => id === approved.id,
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('1', 'c1'))
+            send(txnMessage('2', 'c1'))
+            await Promise.resolve()
+
+            send({ kind: 'connection-closed', connectionId: 'c1' })
+
+            expect(mockRemoveSignRequest.mock.calls).toEqual([[waiting]])
+        })
+
+        it('leaves an approved request to finish on expiry too', async () => {
+            const approved = { id: 'sr-approved' }
+            mockEnqueue.mockResolvedValueOnce(approved as never)
+            mockIsSignRequestPastApproval.mockReturnValue(true)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage())
+            await Promise.resolve()
+
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '7',
+            })
+
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('withdraws every request the closed connection still has open, and only those', async () => {
+            const first = { id: 'sr-a' }
+            const second = { id: 'sr-b' }
+            const other = { id: 'sr-c' }
+            mockEnqueue
+                .mockResolvedValueOnce(first as never)
+                .mockResolvedValueOnce(second as never)
+                .mockResolvedValueOnce(other as never)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('1', 'c1'))
+            send(txnMessage('2', 'c1'))
+            send(txnMessage('1', 'c2'))
+            await Promise.resolve()
+
+            send({ kind: 'connection-closed', connectionId: 'c1' })
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledTimes(2)
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(first)
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(second)
+        })
+
+        it('withdraws on arrival when the close beats the enqueue', async () => {
+            const signRequest = { id: 'sr-late' }
+            let settle: (value: never) => void = () => {}
+            mockEnqueue.mockReturnValueOnce(
+                new Promise<never>(resolve => {
+                    settle = resolve
+                }),
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('1', 'c1'))
+            send({ kind: 'connection-closed', connectionId: 'c1' })
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+
+            settle(signRequest as never)
+            await Promise.resolve()
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(signRequest)
         })
     })
 
@@ -1288,6 +1477,465 @@ describe('useConnectionSigningAdapter', () => {
         })
     })
 
+    describe('message', () => {
+        const MESSAGE_PAYLOAD = { message: '0x68656c6c6f' }
+
+        const messageRequest = (
+            type: 'sign-message' | 'sign-typed-data' = 'sign-message',
+            signer = PRIMARY_SIGNER,
+        ) => ({
+            kind: 'request' as const,
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId: '11',
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts: [PRIMARY_SIGNER],
+            peer: PEER,
+            verifiedOrigin: 'https://dapp.example',
+            operation: {
+                type,
+                request: {
+                    method: type === 'sign-message' ? 'plain' : 'structured',
+                    signer,
+                    payload: MESSAGE_PAYLOAD,
+                },
+            },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        const enqueuedSignRequest = () =>
+            mockAddSignRequest.mock.calls.at(-1)?.[0]
+
+        beforeEach(() => {
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: true })]
+            mockPlan.mockReset()
+        })
+
+        it('enqueues a message request on the selected scope, carrying the peer', () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+
+            send(messageRequest())
+
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+            expect(enqueuedSignRequest()).toMatchObject({
+                type: 'message',
+                transport: 'callback',
+                sourceType: 'walletconnect',
+                transportId: 'c1',
+                sourceMetadata: PEER,
+                verifiedOrigin: 'https://dapp.example',
+                message: {
+                    method: 'plain',
+                    signer: PRIMARY_SIGNER,
+                    payload: MESSAGE_PAYLOAD,
+                    scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                },
+            })
+        })
+
+        it.each(['sign-message', 'sign-typed-data'] as const)(
+            'plans a %s once as a pre-check',
+            type => {
+                const { registry, send } = makeRegistry()
+                renderHook(() =>
+                    useConnectionSigningAdapter(registry, CHAIN_ID),
+                )
+
+                send(messageRequest(type))
+
+                expect(mockPlan).toHaveBeenCalledTimes(1)
+            },
+        )
+
+        it('answers the peer with the assembled signature bytes', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest('sign-typed-data')
+            send(message)
+            const bytes = new Uint8Array([7, 7, 7])
+
+            await enqueuedSignRequest().approve({
+                scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                signature: { bytes },
+            })
+
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'sign-typed-data',
+                signature: bytes,
+            })
+        })
+
+        it('propagates a delivery failure from respond', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            message.respond.mockRejectedValueOnce(new Error('socket closed'))
+            send(message)
+
+            await expect(
+                enqueuedSignRequest().approve({
+                    scope: { chainId: CHAIN_ID, networkId: 'mainnet' },
+                    signature: { bytes: new Uint8Array([1]) },
+                }),
+            ).rejects.toThrow('socket closed')
+        })
+
+        it('rejects the peer with DappRequestRejectedError when the user declines', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            send(message)
+
+            await enqueuedSignRequest().reject()
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.any(DappRequestRejectedError),
+            )
+            expect(message.reject.mock.calls[0][0].message).toBe(
+                'User rejected',
+            )
+        })
+
+        it('hands a soft reject to the peer as given and withdraws the request', async () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            send(message)
+            const handoff = new Error('handed off')
+
+            await enqueuedSignRequest().reject({
+                kind: 'softReject',
+                error: handoff,
+            })
+
+            expect(message.reject).toHaveBeenCalledWith(handoff)
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(
+                enqueuedSignRequest(),
+            )
+        })
+
+        it('answers and withdraws on an error the machine cannot retry', async () => {
+            const { registry, send, reportError } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+            send(message)
+            const failure = new Error('key store is gone')
+
+            await enqueuedSignRequest().error(failure)
+
+            expect(message.reject).toHaveBeenCalledWith(failure)
+            expect(reportError).toHaveBeenCalled()
+            expect(mockRemoveSignRequest).toHaveBeenCalled()
+        })
+
+        it('declines a signer that cannot sign as an unsupported operation, with nothing enqueued', () => {
+            mockAccounts = [mockAccount(PRIMARY_SIGNER, { canSignData: false })]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.objectContaining({ failure: 'unsupported-method' }),
+            )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockPlan).not.toHaveBeenCalled()
+        })
+
+        it('declines a signer the wallet no longer holds as unauthorized, with nothing enqueued', () => {
+            mockAccounts = []
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.objectContaining({ failure: 'unauthorized-account' }),
+            )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('declines a payload the chain plan refuses as invalid-payload, with nothing enqueued', () => {
+            mockPlan.mockImplementation(() => {
+                throw new Error('The payload is for another network')
+            })
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = messageRequest('sign-typed-data')
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    code: 'invalid-payload',
+                    message: 'The payload is for another network',
+                }),
+            )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('withdraws the request when the peer stops waiting', () => {
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(messageRequest())
+
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '11',
+            })
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(
+                enqueuedSignRequest(),
+            )
+        })
+    })
+
+    describe('send-transaction', () => {
+        const BUILT = { scope: { chainId: CHAIN_ID }, payload: 'built' }
+        const mockBuild = vi.fn(async (_request: unknown) => BUILT as never)
+
+        const sendMessage = (correlationId = '5') => ({
+            kind: 'request' as const,
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId,
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            verifiedOrigin: 'https://dapp.example',
+            operation: {
+                type: 'send-transaction' as const,
+                request: { marker: 'validated' },
+            },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        const addedRequest = () => {
+            const request = mockAddSignRequest.mock.calls[0]?.[0]
+            if (!request) throw new Error('no sign request was queued')
+            return request as {
+                approve: (
+                    signed: unknown[],
+                    submission?: { txIds: string[] },
+                ) => Promise<void>
+                reject: (reason?: unknown) => Promise<void>
+                error: (error: Error) => Promise<void>
+                [key: string]: unknown
+            }
+        }
+
+        const mount = () => {
+            const harness = makeRegistry()
+            renderHook(() =>
+                useConnectionSigningAdapter(harness.registry, CHAIN_ID),
+            )
+            return harness
+        }
+
+        beforeEach(() => {
+            mockBuild.mockReset()
+            mockBuild.mockResolvedValue(BUILT as never)
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...fixtureAdapter(),
+                sendTransaction: { validate: vi.fn(), build: mockBuild },
+            })
+        })
+
+        it("queues the chain's built transaction for the broadcaster, tagged with the dApp's identity", async () => {
+            const { send } = mount()
+
+            send(sendMessage())
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            expect(mockBuild).toHaveBeenCalledWith({ marker: 'validated' })
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+            expect(addedRequest()).toMatchObject({
+                type: 'transactions',
+                transport: 'algod',
+                sourceType: 'walletconnect',
+                transportId: 'c1',
+                sourceMetadata: PEER,
+                verifiedOrigin: 'https://dapp.example',
+                txs: [BUILT],
+            })
+        })
+
+        it('answers the dApp with the submitted transaction id on approve', async () => {
+            const { send } = mount()
+            const message = sendMessage()
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await addedRequest().approve([], { txIds: ['0xabc'] })
+
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'send-transaction',
+                txId: '0xabc',
+            })
+        })
+
+        it('throws on approve without a submission, so the transport logs it rather than faking an answer', async () => {
+            const { send } = mount()
+            const message = sendMessage()
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await expect(addedRequest().approve([])).rejects.toThrow(
+                /without being submitted/,
+            )
+            expect(message.respond).not.toHaveBeenCalled()
+        })
+
+        it('rejects the dApp with a user rejection on reject', async () => {
+            const { send } = mount()
+            const message = sendMessage()
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await addedRequest().reject()
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.any(DappRequestRejectedError),
+            )
+        })
+
+        it('declines and tells the user when the chain cannot build, queuing nothing', async () => {
+            const failure = new Error('execution reverted')
+            mockBuild.mockRejectedValueOnce(failure)
+            const { send, reportError } = mount()
+            const message = sendMessage()
+
+            send(message)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(failure)
+            expect(reportError).toHaveBeenCalledWith(failure, {
+                connectionId: 'c1',
+            })
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('never queues a request that expired while the transaction was priced', async () => {
+            let settle: (value: never) => void = () => {}
+            mockBuild.mockReturnValueOnce(
+                new Promise<never>(resolve => {
+                    settle = resolve
+                }),
+            )
+            const { send } = mount()
+
+            send(sendMessage())
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '5',
+            })
+            settle(BUILT as never)
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('withdraws the queued request when the peer stops waiting', async () => {
+            const { send } = mount()
+            send(sendMessage())
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '5',
+            })
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(addedRequest())
+        })
+
+        it('declines a chain that registers no sendTransaction', () => {
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register(fixtureAdapter())
+            const { send, reportError } = mount()
+            const message = sendMessage()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalled()
+            expect(reportError).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+    })
+
+    it('rejects a declined sign-transactions request with a user rejection', async () => {
+        mockEnqueue.mockResolvedValueOnce(null)
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+        const reject = vi.fn(async () => {})
+        send({
+            kind: 'request',
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId: '7',
+            sourceType: 'walletconnect',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(async () => {}),
+            reject,
+        })
+        await Promise.resolve()
+
+        lastTransport().respondWithReject()
+
+        expect(reject).toHaveBeenCalledWith(
+            expect.any(DappRequestRejectedError),
+        )
+        expect(reject).toHaveBeenCalledWith(
+            expect.objectContaining({ message: 'User rejected' }),
+        )
+    })
+
+    it('rejects a declined sign-data request with a user rejection', async () => {
+        mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: true })]
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+        const message = signDataMessage(
+            {
+                type: 'auth-data',
+                authData: {
+                    data: 'ZGF0YQ==',
+                    signer: PRIMARY_SIGNER,
+                    domain: 'example.com',
+                    authenticatorData: new Uint8Array([1]),
+                },
+                metadata: { scope: 1, encoding: 'base64' },
+            },
+            [PRIMARY_SIGNER],
+        )
+        send(message)
+
+        await mockAddSignRequest.mock.calls[0][0].reject()
+
+        expect(message.reject).toHaveBeenCalledWith(
+            expect.any(DappRequestRejectedError),
+        )
+    })
+
     // The browser's approval window has no hook to mount: it reconstructs the
     // message and calls the function directly.
     it('enqueues through the pure function with explicit deps, no hook mounted', () => {
@@ -1311,6 +1959,8 @@ describe('useConnectionSigningAdapter', () => {
             transactionSigning: new Map([[CHAIN_ID, mockEnqueue]]),
             addSignRequest: mockAddSignRequest,
             removeSignRequest: mockRemoveSignRequest,
+            isSignRequestPending: mockIsSignRequestPending,
+            isSignRequestPastApproval: mockIsSignRequestPastApproval,
             accounts: [],
             pendingRequests: new Map(),
         })

@@ -183,6 +183,7 @@
         "paste_from_clipboard": "Coller depuis le presse-papiers",
         "invalid_qr_title": "QR code non valide",
         "invalid_qr_body": "Ce QR code ne contient pas d’adresse de wallet",
+        "other_chain_qr_body": "Il s’agit d’une adresse sur {{chain}}.",
         "address": "Adresse",
         "contacts": "Contacts",
         "my_accounts": "Comptes",
@@ -293,7 +294,9 @@
             "bodyWithDependents": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nUn autre compte a un rekey vers celui-ci, ne vous en éloignez donc pas pour le moment — il en est actuellement l’unique signataire. Cependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds une fois le rekey de l’autre compte effectué, afin que votre passphrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
             "markerLabel": "À propos de ce compte Quantum",
             "dismiss": "Compris"
-        }
+        },
+        "chain_unavailable": "{{chain}} est indisponible pour le moment",
+        "chain_unavailable_unnamed": "Cette blockchain est indisponible pour le moment"
     },
     "account_details": {
         "assets": {
@@ -970,7 +973,9 @@
         "save": "Enregistrer",
         "apply": "Appliquer",
         "copy": "Copier",
-        "send": "Envoyer"
+        "send": "Envoyer",
+        "show_more": "Afficher plus",
+        "show_less": "Afficher moins"
     },
     "contacts": {
         "edit_contact": {
@@ -1173,6 +1178,7 @@
         "connections": {
             "invalid_payload": "Une application a envoyé une demande que Pera n’a pas pu comprendre. Veuillez vérifier l’application, puis réessayer.",
             "no_handler": "Pera n’a pas pu traiter cette demande de connexion. Veuillez vérifier l’application, puis réessayer.",
+            "unauthorized_account": "Une application a demandé de signer avec un compte qui ne fait pas partie de sa connexion.",
             "unknown_connection": "Pera n’a pas trouvé cette connexion. Elle a peut-être déjà été déconnectée.",
             "duplicate_kind": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
             "already_initialized": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
@@ -3045,7 +3051,9 @@
             "data_label": "Données à signer",
             "untrusted_message_label": "Message affiché (ne fait pas partie de ce que vous signez)",
             "binary_warning_title": "Les données ne sont pas du texte lisible",
-            "binary_warning_body": "Les données à signer ne sont pas du texte lisible ; leurs octets bruts sont donc affichés en hexadécimal. N’approuvez que si vous faites confiance à cette application."
+            "binary_warning_body": "Les données à signer ne sont pas du texte lisible ; leurs octets bruts sont donc affichés en hexadécimal. N’approuvez que si vous faites confiance à cette application.",
+            "typed_data_warning_title": "Cette signature peut déplacer vos tokens",
+            "typed_data_warning_body": "Signer des données structurées peut autoriser une application à dépenser ou échanger vos tokens sans vous redemander votre accord. N’approuvez que si vous faites confiance à cette application."
         },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",
@@ -3155,7 +3163,6 @@
             "completed": "Terminée",
             "failed": "Échouée",
             "pending": "En attente",
-            "pending_verifying": "En attente — vérification",
             "raw_transaction": "Transaction brute"
         },
         "notice": {
@@ -3181,6 +3188,11 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} contre {{amountOut}} {{assetOut}}",
             "inner_transaction_count": "{{innerCount}} transactions internes"
+        },
+        "contract_call": {
+            "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
+            "function_selector": "Sélecteur de fonction",
+            "call_data": "Données de l’appel"
         },
         "type": {
             "pay": "Transaction de paiement",

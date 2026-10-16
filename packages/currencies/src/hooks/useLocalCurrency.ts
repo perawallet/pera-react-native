@@ -12,9 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { isAlgoAssetName, type Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useCurrency } from './useCurrency'
 import { useCurrenciesQuery } from './useCurrenciesQuery'
+import { nativeCurrencyFor } from './nativeCurrency'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
 
 export type UseLocalCurrencyResult = {
@@ -26,17 +28,20 @@ export type UseLocalCurrencyResult = {
 /**
  * Resolves the user's local fiat currency and the USD→fiat rate used for
  * conversions. The local currency is the app's preferred currency when that
- * is a fiat, or the fallback fiat (USD) when the app currency is ALGO. The
- * symbol falls back to the currency code when unknown.
+ * is a fiat, or the fallback fiat (USD) when the app currency is the native
+ * asset. The symbol falls back to the currency code when unknown.
  */
-export const useLocalCurrency = (): UseLocalCurrencyResult => {
+export const useLocalCurrency = (scope: ChainScope): UseLocalCurrencyResult => {
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
-        useCurrency()
+        useCurrency(scope)
 
-    const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
-    const localCurrency = isAlgoPreferred ? fallbackCurrency : preferredCurrency
+    const isNativePreferred =
+        preferredCurrency === nativeCurrencyFor(scope).symbol
+    const localCurrency = isNativePreferred
+        ? fallbackCurrency
+        : preferredCurrency
 
-    const { data: currencies } = useCurrenciesQuery()
+    const { data: currencies } = useCurrenciesQuery(scope)
     const localCurrencySymbol = useMemo(
         () =>
             currencies?.find(currency => currency.id === localCurrency)
@@ -46,12 +51,12 @@ export const useLocalCurrency = (): UseLocalCurrencyResult => {
 
     const { data: fallbackRate } = usePreferredCurrencyPriceQuery(
         fallbackCurrency,
-        isAlgoPreferred,
+        isNativePreferred,
     )
     const localRate = useMemo<Nullable<Decimal>>(() => {
-        if (isAlgoPreferred) return fallbackRate?.usdPrice ?? null
+        if (isNativePreferred) return fallbackRate?.usdPrice ?? null
         return usdToPreferred(new Decimal(1))
-    }, [isAlgoPreferred, fallbackRate, usdToPreferred])
+    }, [isNativePreferred, fallbackRate, usdToPreferred])
 
     return { localCurrency, localCurrencySymbol, localRate }
 }

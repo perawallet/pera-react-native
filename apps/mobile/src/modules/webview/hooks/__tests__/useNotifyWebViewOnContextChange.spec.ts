@@ -21,7 +21,6 @@ import {
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({

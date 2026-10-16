@@ -44,7 +44,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: () => ({ network: 'mainnet' }),
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
@@ -65,7 +64,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
-    useDeviceID: () => 'device-id',
+    useScopedDeviceID: () => 'device-id',
 }))
 
 const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
@@ -897,7 +896,7 @@ describe('usePendingSignaturesContent', () => {
                 drafts: {
                     [DRAFT_ID]: {
                         localId: DRAFT_ID,
-                        network: 'mainnet',
+                        scope: { chainId: 'algorand', networkId: 'mainnet' },
                         multisigAddress: 'DRAFT_MULTISIG',
                         multisigDetails: {
                             threshold: 2,

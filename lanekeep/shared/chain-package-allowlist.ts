@@ -7,14 +7,6 @@ interface ExemptPath {
     reason: string
 }
 
-interface TransitionalEntry {
-    // Repo-relative; a trailing slash makes it a directory.
-    path: string
-    // The only chain-package specifiers the entry may import.
-    specifiers: string[]
-    reason: string
-}
-
 interface ChainUiModule {
     // Repo-relative directory, with a trailing slash.
     path: string
@@ -24,6 +16,7 @@ interface ChainUiModule {
 }
 
 const ALGORAND = '@perawallet/wallet-core-chain-algorand'
+const ETHEREUM = '@perawallet/wallet-core-chain-ethereum'
 
 export const COMPOSITION_ROOTS: ExemptPath[] = [
     {
@@ -56,6 +49,11 @@ export const CHAIN_UI_MODULES: ChainUiModule[] = [
         pkg: ALGORAND,
         reason: "Algorand's review and detail UI: renders TransactionNative's algorand member with chain-algorand's view types and classifiers",
     },
+    {
+        path: 'apps/mobile/src/modules/ethereum/',
+        pkg: ETHEREUM,
+        reason: "Ethereum's review and detail UI: renders TransactionNative's evm member with chain-ethereum's EthereumTransactionView; metro stubs its chain-ui entry out of builds whose CHAINS omits ethereum",
+    },
 ]
 
 // Test support not named as a test; `withoutTests()` already drops `__tests__/` and `*.spec.*`.
@@ -71,20 +69,5 @@ export const TEST_PATHS: ExemptPath[] = [
     {
         glob: '**/conformance/src/**',
         reason: 'conformance harness: runs the real chain code against LocalNet, never bundled',
-    },
-]
-
-// Only whole-move shims live here. A package split behind an adapter has no
-// shim and gets no entry.
-export const TRANSITIONAL_ALLOWLIST: TransitionalEntry[] = [
-    {
-        path: 'packages/asa-inbox/src/index.ts',
-        specifiers: [`${ALGORAND}/asa-inbox`],
-        reason: 'one-line re-export shim for the asa-inbox whole move (PERA-5226) until its importers switch',
-    },
-    {
-        path: 'packages/fee-delegation/src/index.ts',
-        specifiers: [`${ALGORAND}/fee-delegation`],
-        reason: 'one-line re-export shim for the fee-delegation whole move (PERA-5233) until its importers switch',
     },
 ]

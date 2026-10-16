@@ -42,8 +42,8 @@ export const initializeSyncService = (deps: SyncServiceDeps): SyncService => {
     }
     const newInstance = new SyncService(deps)
     instance = newInstance
-    deps.registerCompletionHandler?.((addresses, network) =>
-        newInstance.refreshAccounts(addresses, network),
+    deps.registerCompletionHandler?.((addresses, scope) =>
+        newInstance.refreshAccounts(addresses, scope),
     )
     return newInstance
 }

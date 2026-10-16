@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { WalletConnectV1Delivery } from '@perawallet/wallet-core-walletconnect'
 import {

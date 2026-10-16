@@ -150,9 +150,39 @@ describe('v2.handleRequest', () => {
 })
 
 describe('toWireResult', () => {
-    it('throws: no Ethereum result kind exists', () => {
+    it('answers a sent transaction with its hash', () => {
+        expect(
+            support.toWireResult({ type: 'send-transaction', txId: '0xabc' }),
+        ).toBe('0xabc')
+    })
+
+    it.each(['sign-message', 'sign-typed-data'] as const)(
+        'answers a %s result as 0x-prefixed hex of the 65 signature bytes',
+        type => {
+            const signature = new Uint8Array(65).fill(0xab)
+
+            expect(support.toWireResult({ type, signature })).toBe(
+                `0x${'ab'.repeat(65)}`,
+            )
+        },
+    )
+
+    it('throws for a result kind Ethereum does not serve', () => {
         expect(() =>
             support.toWireResult({ type: 'sign-data', signatures: [] }),
         ).toThrow()
+    })
+})
+
+describe('toWireErrorCode', () => {
+    it.each([
+        ['user-rejected', 4001],
+        ['unauthorized-account', 4100],
+        ['unsupported-method', 4200],
+        ['unselected-chain', 4901],
+        ['invalid-params', -32_602],
+        ['limit-exceeded', -32_005],
+    ] as const)('maps %s to %i', (failure, code) => {
+        expect(support.toWireErrorCode?.(failure)).toBe(code)
     })
 })

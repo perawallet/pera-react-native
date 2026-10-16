@@ -28,9 +28,13 @@ import m0012 from './0012_account_chain_state.sql?raw'
 import m0013 from './0013_drop_account_balances.sql?raw'
 import m0014 from './0014_holdings_native.sql?raw'
 import m0015 from './0015_submission_attempts_nonce.sql?raw'
+import m0016 from './0016_submission_attempts_history_entry.sql?raw'
+import m0017 from './0017_submission_attempts_max_fee.sql?raw'
+import m0018 from './0018_drop_transaction_algorand_columns.sql?raw'
+import m0019 from './0019_chain_data_scope_columns.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
-// backfill (packages/transactions sync/close-amount-backfill.ts) — no
+// backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
 // cache-wiping migration needed.
 export const migrations: MigrationConfig = {
     '0000_initial': m0000,
@@ -64,8 +68,7 @@ export const migrations: MigrationConfig = {
     '0010_text_asset_ids': m0010,
     // Nullable, and not backfilled: the syncer only fetches transactions newer
     // than the newest cached one, so a row cached before this keeps a NULL
-    // chain_data until it is re-upserted. Readers must fall back to the old
-    // columns for such rows.
+    // chain_data until it is re-upserted. 0018 builds it from the old columns.
     '0011_transactions_chain_data': m0011,
     // Created empty; the syncer fills it and 0013 backfills the rest.
     '0012_account_chain_state': m0012,
@@ -75,4 +78,14 @@ export const migrations: MigrationConfig = {
     '0014_holdings_native': m0014,
     // Nullable: Algorand rows have no account sequence number and stay NULL.
     '0015_submission_attempts_nonce': m0015,
+    // Nullable: Algorand attempts and attempts recorded before it carry no history entry.
+    '0016_submission_attempts_history_entry': m0016,
+    // Nullable: Algorand attempts and attempts recorded before it carry no max fee.
+    '0017_submission_attempts_max_fee': m0017,
+    // Rebuilt by copy so chain_data can be NOT NULL. A row without a valid
+    // document gets one built from the old columns; one with it keeps it, since every write path wrote both.
+    '0018_drop_transaction_algorand_columns': m0018,
+    // Copied in SQL before the drops so a pending attempt keeps its validity
+    // window; the renames carry primary keys and indexes along.
+    '0019_chain_data_scope_columns': m0019,
 }

@@ -11,11 +11,11 @@
  */
 
 import { vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { fakeSwapAdapter } from './fakeSwapAdapter'
 import type { ExecuteSwapParams } from '../execution'
 import { isQuoteFresh } from '../utils/quoteFreshness'
 import { swapContractTests } from './adapter-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const adapter = fakeSwapAdapter({
     executeSwap: async ({ quote }) => {
@@ -35,7 +35,7 @@ swapContractTests(() => adapter, {
         quote: { quoteIdStr: 'quote-1', fetchedAt: Date.now() },
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
-        scope: scopeForLegacyNetwork('mainnet'),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         deviceId: null,
         addSignRequest: vi.fn(),
         prepareTransactions: vi.fn(),

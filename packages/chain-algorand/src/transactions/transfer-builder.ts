@@ -19,18 +19,16 @@ import {
     type TransactionSummary,
     type TransferIntent,
     type UnsignedTransaction,
-    i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { encodeToBase64, toBigInt } from '@perawallet/wallet-core-shared'
+import { toBigInt } from '@perawallet/wallet-core-shared'
 import { getMinimumFeeConfig } from '../blockchain'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { assignFeeToGroup } from '../signing/assignMinimumFeesToGroup'
+import { toUnsignedAlgorandTransaction } from '../signing/unsignedTransaction'
 import { buildOptInTxs, buildTransferTxs } from './builders'
 import { fetchSuggestedMinFee, resolveAlgorandSenderFee } from './transfer-fees'
+import { OPT_IN_TITLE_KEY, SEND_TITLE_KEY } from './summaryKeys'
 import { assertBuildableIntent } from './transfer-validation'
-
-const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
-const OPT_IN_TITLE_KEY = i18nKey('transactions.list_item.opt_in')
 
 const transferSummary = (intent: TransferIntent): TransactionSummary => {
     const isSelf = intent.from === intent.to
@@ -108,14 +106,7 @@ export const buildAlgorandTransfer = async (
             : [await buildAssetOptIn(intent, context), OPT_IN_SUMMARY]
 
     return transactions.map(transaction => ({
-        scope: context.scope,
-        payload: transaction,
+        ...toUnsignedAlgorandTransaction(transaction, context.scope),
         summary,
-        chainData: {
-            family: 'algorand',
-            groupId: transaction.group
-                ? encodeToBase64(transaction.group)
-                : undefined,
-        },
     }))
 }

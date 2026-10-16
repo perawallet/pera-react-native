@@ -23,7 +23,7 @@ const FORBIDDEN_DEPENDENCIES = [
 ]
 
 // A leaf of the workspace graph: any other workspace package could close a
-// cycle once it depends on this one, and shared already reaches algosdk.
+// cycle once it depends on this one.
 const ALLOWED_WORKSPACE_DEPENDENCIES = ['@perawallet/wallet-core-devtools']
 
 const DEPENDENCY_FIELDS = [

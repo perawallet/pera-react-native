@@ -31,12 +31,18 @@ vi.mock('../../api/user', async () => ({
     fetchUser,
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardIssuance, CardIssuanceState } from '../useCardIssuance'
 import { CardStatus, CardType, VerificationState } from '../../models'
 import type { Card } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 const ACTIVE_CARD: Card = {
     id: 'card-1',
@@ -57,7 +63,7 @@ const baanxError = (status: number, body: Record<string, unknown>) => ({
     response: { status },
 })
 
-describe('useCardIssuance', () => {
+describe.each(SCOPES)('useCardIssuance ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {

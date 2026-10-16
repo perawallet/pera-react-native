@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, expect, it, vi } from 'vitest'
 import { TRANSLATION_BUNDLES } from '@i18n/locales'
 import { EMBEDDED_TERMS, getEmbeddedTerms } from '../embeddedTerms'

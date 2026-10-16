@@ -20,13 +20,19 @@ const { exportCardStatement } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/transactions', () => ({ exportCardStatement }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useExportCardStatementMutation } from '../useExportCardStatementMutation'
 import { StatementFormat } from '../../models'
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
-describe('useExportCardStatementMutation', () => {
+describe.each(SCOPES)('useExportCardStatementMutation ($chainId)', SCOPE => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -66,7 +72,7 @@ describe('useExportCardStatementMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(exportCardStatement).toHaveBeenCalledWith({
-            network: 'mainnet',
+            scope: SCOPE,
             format: StatementFormat.Csv,
             filters: { dateFrom: '2026-01-01' },
         })

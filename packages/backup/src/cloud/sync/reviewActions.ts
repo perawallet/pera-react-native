@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { deleteItem, readItems } from '../api'
 import {
@@ -69,7 +68,6 @@ import type {
 } from './types'
 
 export type ReviewActionDeps = {
-    network: Network
     backupId: BackupId
     deviceId: DeviceId
     encryptionKey: Uint8Array
@@ -78,13 +76,11 @@ export type ReviewActionDeps = {
     importContacts: ContactImportFn
     importPasskeys: PasskeyImportFn
     readItems: (
-        network: Network,
         backupId: BackupId,
         deviceId: DeviceId,
         keys: BackupItemKey[],
     ) => Promise<FetchedItem[]>
     deleteItem: (
-        network: Network,
         backupId: BackupId,
         deviceId: DeviceId,
         key: BackupItemKey,
@@ -100,7 +96,6 @@ export type ReviewActionDeps = {
 }
 
 export const reviewActionDeps = (deps: SyncEngineDeps): ReviewActionDeps => ({
-    network: deps.network,
     backupId: deps.backupId,
     deviceId: deps.deviceId,
     encryptionKey: deps.encryptionKey,
@@ -332,12 +327,7 @@ export const importFromBackup = async ({
         }
     }
 
-    const fetched = await deps.readItems(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        readKeys,
-    )
+    const fetched = await deps.readItems(deps.backupId, deps.deviceId, readKeys)
     const collected: CollectedPayloads = {
         records: [],
         addressPayloads: new Map(),
@@ -367,7 +357,6 @@ export const importFromBackup = async ({
             state.items[seedKey]?.status === BackupItemStatus.ACTIVE
         ) {
             const seedFetched = await deps.readItems(
-                deps.network,
                 deps.backupId,
                 deps.deviceId,
                 [seedKey],
@@ -411,12 +400,7 @@ const readSeedReferences = async (
     const out = new Map<BackupItemKey, string | null>()
     if (keys.length === 0) return out
 
-    const fetched = await deps.readItems(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        keys,
-    )
+    const fetched = await deps.readItems(deps.backupId, deps.deviceId, keys)
     for (const item of fetched) {
         try {
             const plaintext = decryptWithDeps(item, deps)
@@ -701,12 +685,7 @@ export const importContactFromBackup = async ({
     if (readKeys.length === 0)
         return contactImportFailure(state, id, 'Not present in the backup')
 
-    const fetched = await deps.readItems(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        readKeys,
-    )
+    const fetched = await deps.readItems(deps.backupId, deps.deviceId, readKeys)
     if (fetched.length === 0)
         return contactImportFailure(state, id, 'Not present in the backup')
 
@@ -855,7 +834,6 @@ export const importPasskeyFromBackup = async ({
         partner !== null && isLiveIn(state)(partner) ? partner : null
 
     const fetchedItems = await deps.readItems(
-        deps.network,
         deps.backupId,
         deps.deviceId,
         secretKey === null ? [key] : [key, secretKey],

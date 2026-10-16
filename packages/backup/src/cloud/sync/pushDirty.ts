@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
 import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import {
     UpsertResult,
@@ -42,18 +41,15 @@ import type { LocalItem } from './types'
 const UPSERT_BATCH_SIZE = 25
 
 export type PushDirtyDeps = {
-    network: Network
     backupId: BackupId
     deviceId: DeviceId
     encryptionKey: Uint8Array
     batchUpsertItems: (
-        network: Network,
         backupId: BackupId,
         deviceId: DeviceId,
         request: BatchUpsertRequest,
     ) => Promise<BatchUpsertResponse>
     deleteItem: (
-        network: Network,
         backupId: BackupId,
         deviceId: DeviceId,
         key: BackupItemKey,
@@ -66,10 +62,9 @@ export type PushDirtyDeps = {
 
 type DeleteItemDeps<TResponse> = Pick<
     PushDirtyDeps,
-    'network' | 'backupId' | 'deviceId'
+    'backupId' | 'deviceId'
 > & {
     deleteItem: (
-        network: Network,
         backupId: BackupId,
         deviceId: DeviceId,
         key: BackupItemKey,
@@ -84,12 +79,7 @@ export const deleteItemIfPresent = async <TResponse>(
     key: BackupItemKey,
 ): Promise<TResponse | null> => {
     try {
-        return await deps.deleteItem(
-            deps.network,
-            deps.backupId,
-            deps.deviceId,
-            key,
-        )
+        return await deps.deleteItem(deps.backupId, deps.deviceId, key)
     } catch (error) {
         if (isNotFoundError(error)) return null
         throw error
@@ -204,7 +194,6 @@ export const pushDirty = async ({
         let response: BatchUpsertResponse
         try {
             response = await deps.batchUpsertItems(
-                deps.network,
                 deps.backupId,
                 deps.deviceId,
                 {

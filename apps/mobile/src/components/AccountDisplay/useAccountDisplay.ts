@@ -13,15 +13,19 @@
 import { useMemo } from 'react'
 import {
     dedupeSecondaryLabel,
-    truncateAlgorandAddress,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     addressOn,
     getAccountDisplayName,
+    useAccountChainId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
@@ -34,6 +38,7 @@ type UseAccountDisplayParams = {
     compact: boolean
     showAccountType: boolean
     iconSize: AccountIconSize
+    chainId?: ChainId
 }
 
 type UseAccountDisplayResult = {
@@ -50,8 +55,10 @@ export const useAccountDisplay = ({
     compact,
     showAccountType,
     iconSize,
+    chainId,
 }: UseAccountDisplayParams): UseAccountDisplayResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainId ?? accountChainId)
     const fullAddress = account ? addressOn(account, scope) : undefined
     const displayName = useMemo(
         () =>
@@ -60,13 +67,16 @@ export const useAccountDisplay = ({
                 : 'No Account',
         [account, scope.chainId],
     )
-    const address = useMemo(
-        () =>
-            account ? truncateAlgorandAddress(fullAddress ?? '') : undefined,
-        [account, fullAddress],
-    )
+    // Truncate with the codec getAccountDisplayName uses, so an unnamed account's displayName equals `address`.
+    const address = useMemo(() => {
+        if (!account) return undefined
+        const { chainId } = scope
+        return addressCodecs.has(chainId)
+            ? addressCodecs.get(chainId).truncate(fullAddress ?? '')
+            : fullAddress
+    }, [account, fullAddress, scope])
 
-    const { data: nfdNames } = useNfdForAddressQuery(fullAddress ?? '', {
+    const { data: nfdNames } = useNfdForAddressQuery(scope, fullAddress ?? '', {
         enabled: !!fullAddress,
     })
 
@@ -87,7 +97,13 @@ export const useAccountDisplay = ({
     const secondaryText = compact ? rawSecondary : dedupedSecondary
     const renderSecondary = compact || Boolean(dedupedSecondary)
 
-    const shouldPromptBackup = useShouldPromptMnemonicBackup(account, scope)
+    // Mnemonic backup reads the backup adapter before its capability gate, and
+    // only Algorand registers one; an account with no Algorand address is never prompted.
+    const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const shouldPromptBackup = useShouldPromptMnemonicBackup(
+        account,
+        legacyScope,
+    )
     // Every non-`sm` account-icon size renders the 40px round-icon format
     // (the account-selector size); `sm` is the 24px format, too small for a
     // legible badge.

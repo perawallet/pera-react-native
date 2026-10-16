@@ -14,7 +14,6 @@ import type { ReactNode } from 'react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useNetworkStatusStore } from '@modules/network'
 import { useSettingsCurrencyScreen } from '../useSettingsCurrencyScreen'
@@ -30,9 +29,9 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: mockUseCurrency,
     useCurrenciesQuery: mockUseCurrenciesQuery,
     currencyQueryKeys: {
-        price: (scope: object, preferredFiatCurrency: string) => [
+        price: (deployment: string, preferredFiatCurrency: string) => [
             'currencies',
-            { scope, preferredFiatCurrency },
+            { deployment, preferredFiatCurrency },
         ],
     },
 }))
@@ -75,10 +74,7 @@ const seedCachedRate = (currencyId: string) => {
     queryClient.setQueryData(
         [
             'currencies',
-            {
-                scope: scopeForLegacyNetwork('mainnet'),
-                preferredFiatCurrency: currencyId,
-            },
+            { deployment: 'live', preferredFiatCurrency: currencyId },
         ],
         { id: currencyId, usdPrice: '1.1' },
     )
@@ -92,7 +88,12 @@ describe('useSettingsCurrencyScreen', () => {
         })
         useNetworkStatusStore.getState().setHasInternet(true)
         setPreferredCurrency('USD')
-        mockUseCurrenciesQuery.mockReturnValue({ data: [] })
+        mockUseCurrenciesQuery.mockReturnValue({
+            data: [],
+            isPaused: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
     })
 
     afterEach(() => {
@@ -181,5 +182,37 @@ describe('useSettingsCurrencyScreen', () => {
         result.current.setCurrency({ id: 'AED', name: 'Dirham' } as never)
 
         expect(mockInvalidateAssetPrices).toHaveBeenCalledTimes(1)
+    })
+
+    describe('currency list failure', () => {
+        const mockFailedQuery = (refetch = vi.fn()) => {
+            mockUseCurrenciesQuery.mockReturnValue({
+                data: undefined,
+                isPaused: false,
+                isError: true,
+                refetch,
+            })
+            return refetch
+        }
+
+        it('reports an error while online and retries via refetch', () => {
+            const refetch = mockFailedQuery()
+
+            const { result } = renderScreenHook()
+            result.current.refetch()
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.isOffline).toBe(false)
+            expect(refetch).toHaveBeenCalledTimes(1)
+        })
+
+        it('reports offline when the failure happens without internet', () => {
+            mockFailedQuery()
+            useNetworkStatusStore.getState().setHasInternet(false)
+
+            const { result } = renderScreenHook()
+
+            expect(result.current.isOffline).toBe(true)
+        })
     })
 })

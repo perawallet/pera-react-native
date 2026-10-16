@@ -82,9 +82,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const { mockShowToast, mockShowError } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),

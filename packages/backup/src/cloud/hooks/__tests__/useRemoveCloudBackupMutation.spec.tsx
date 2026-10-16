@@ -75,7 +75,7 @@ vi.mock('../../store/syncActivityStore', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useWalletDeployment: () => 'live',
 }))
 
 vi.mock('../../store/resolveBackupDeviceId', () => ({
@@ -118,11 +118,7 @@ describe('useRemoveCloudBackupMutation', () => {
         act(() => result.current.mutate())
 
         await waitFor(() => expect(onSuccess).toHaveBeenCalled())
-        expect(destroyBackupMock).toHaveBeenCalledWith(
-            'mainnet',
-            'did:pera:ADDR',
-            'dev-1',
-        )
+        expect(destroyBackupMock).toHaveBeenCalledWith('did:pera:ADDR', 'dev-1')
         expect(deleteBackupKeysMock).toHaveBeenCalled()
         expect(resetCloudBackupMock).toHaveBeenCalled()
         expect(resetSyncStateMock).toHaveBeenCalled()

@@ -22,6 +22,7 @@ import {
     type PublicClient,
     type TransactionSerialized,
 } from 'viem'
+import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -31,6 +32,7 @@ import {
     resolveSubmissionAttempt,
     SubmissionError,
     type SubmissionFlow,
+    type SubmissionHistoryEntry,
 } from '@perawallet/wallet-core-signing'
 import { EvmErrorCode, toEvmError } from '../blockchain/errors'
 
@@ -118,8 +120,20 @@ export type SubmitAndRecordEthereumTransactionsParams = {
     scope: ChainScope
     signedTransactions: readonly Uint8Array[]
     flow: SubmissionFlow
+    /** Index-aligned with `signedTransactions`; a transaction without one is left out of history. */
+    historyEntries: readonly SubmissionHistoryEntry[]
     db?: Database
 }
+
+// Wei: gas limit x max fee per gas, the most the transaction can be charged.
+// The signing adapter signs EIP-1559 only, so there is no legacy gasPrice.
+const maxFeeOf = ({
+    gas,
+    maxFeePerGas,
+}: ReturnType<typeof parseTransaction>): Decimal | undefined =>
+    gas === undefined || maxFeePerGas === undefined
+        ? undefined
+        : new Decimal((gas * maxFeePerGas).toString())
 
 const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     try {
@@ -139,12 +153,16 @@ export const submitAndRecordEthereumTransactions = async ({
     scope,
     signedTransactions,
     flow,
+    historyEntries,
     db,
 }: SubmitAndRecordEthereumTransactionsParams): Promise<string[]> => {
     const txIds: string[] = []
-    for (const bytes of signedTransactions) {
+    for (const [index, bytes] of signedTransactions.entries()) {
         const serializedTransaction = bytesToHex(bytes) as TransactionSerialized
-        const { nonce } = parseTransaction(serializedTransaction)
+        const parsed = parseTransaction(serializedTransaction)
+        const { nonce } = parsed
+        const entry = historyEntries[index]
+        const fee = maxFeeOf(parsed)
         const sender = await recoverTransactionAddress({
             serializedTransaction,
         })
@@ -157,6 +175,8 @@ export const submitAndRecordEthereumTransactions = async ({
                 flow,
                 sender,
                 nonce,
+                maxFee: fee,
+                historyEntry: entry && { ...entry, ...(fee && { fee }) },
             })
         })
         try {

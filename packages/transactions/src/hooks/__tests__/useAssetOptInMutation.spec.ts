@@ -64,9 +64,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         mockFetchAndPersistAssets(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 /** Base-unit (microAlgo) inputs, shaped as the on-chain read returns them. */
 const accountState = (
@@ -92,6 +90,8 @@ describe('useAssetOptInMutation', () => {
         sendFlowChainAdapters.register({
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
+            transactionFee: tx =>
+                new Decimal(String((tx as unknown as { fee: bigint }).fee)),
             assetHolding: { buildOptInTxs: mockBuild, buildOptOutTxs: vi.fn() },
         })
         transferChainAdapters.reset()

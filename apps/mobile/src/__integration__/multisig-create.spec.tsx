@@ -56,8 +56,8 @@ describe('Flow: Create a multisig account from scratch', () => {
             useMultisigCreationStore.getState().addParticipant({ address }),
         )
         useDeviceStore.getState().resetState()
-        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
-        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('live', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('developer', 'test-device-id')
     })
 
     it('Given participants, when the user proceeds and raises the threshold to the participant count, then the threshold is committed and the warning gate hands off to the naming screen', async () => {

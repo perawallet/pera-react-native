@@ -49,7 +49,13 @@ const SUBPATHS: Record<string, () => Promise<unknown>> = {
 }
 
 describe('chain-algorand subpaths', () => {
-    it.each(Object.keys(SUBPATHS))('%s resolves', async specifier => {
-        await expect(SUBPATHS[specifier]()).resolves.toBeDefined()
-    })
+    // The first case loads the whole package cold, which overruns the unit
+    // project's 5 s default on a loaded CI runner.
+    it.each(Object.keys(SUBPATHS))(
+        '%s resolves',
+        async specifier => {
+            await expect(SUBPATHS[specifier]()).resolves.toBeDefined()
+        },
+        30_000,
+    )
 })

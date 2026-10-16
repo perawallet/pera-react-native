@@ -17,8 +17,6 @@ import {
     type Address,
 } from 'algosdk'
 import { standaloneAccount } from '../../__tests__/algorandAccounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { SignableGroup } from '@perawallet/wallet-core-signing'
 import { reviewerContractTests } from '@perawallet/wallet-core-signing/testing'
@@ -28,12 +26,17 @@ import {
     makeTestAddress,
     makeTestPaymentTx,
 } from './transactions'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 
 const WALLET = makeTestAddress(1)
 const OTHER = makeTestAddress(2)
 // Real mainnet transactions, so the decoder's genesis check runs unmocked.
 const MAINNET_GENESIS = decodeFromBase64(
-    getNetworkConfig('mainnet').genesisHash,
+    getAlgorandChainConfig({
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'mainnet',
+    } as const).genesisHash,
 )
 
 const REKEY_TARGET = makeTestAddress(5)
@@ -73,7 +76,7 @@ const groupOf = (signer: Address, transactions: Transaction[]): SignableGroup =>
 
 reviewerContractTests(() => algorandReviewerAdapter, {
     context: {
-        scope: scopeForLegacyNetwork('mainnet'),
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
         accounts: [standaloneAccount(WALLET.toString())],
     },
     plainGroup: groupOf(WALLET, [payment(WALLET)]),

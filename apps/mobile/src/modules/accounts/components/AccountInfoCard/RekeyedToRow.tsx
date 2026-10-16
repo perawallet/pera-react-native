@@ -104,6 +104,7 @@ export const RekeyedToRow = ({
                 </PWTouchableOpacity>
                 {onUndoRekey && (
                     <PWTouchableOpacity
+                        testID='account_info_undo_rekey_link'
                         style={styles.rekeyedUndo}
                         onPress={onUndoRekey}
                         hitSlop={8}

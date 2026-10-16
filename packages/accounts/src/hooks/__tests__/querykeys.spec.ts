@@ -14,7 +14,7 @@ import { describe, test, expect } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
 import {
     queryKeyReferencesScope,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -36,8 +36,8 @@ import {
     isAccountBalancesHistoryQuery,
 } from '../querykeys'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
-const TESTNET = scopeForLegacyNetwork('testnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('query keys', () => {
     test.each([

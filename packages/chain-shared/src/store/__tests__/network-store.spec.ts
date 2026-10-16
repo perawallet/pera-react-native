@@ -80,7 +80,6 @@ const algorandDescriptor = {
 const PERSISTED_KEYS = [
     'customNetworksByChain',
     'mode',
-    'network',
     'selectedNetworkByChain',
 ]
 
@@ -114,6 +113,9 @@ type Store = Awaited<ReturnType<typeof loadStore>>
 
 const ALGORAND = 'algorand' as ChainId
 
+const networkOf = ({ useNetworkStore, selectChainNetworkId }: Store) =>
+    selectChainNetworkId(useNetworkStore.getState(), ALGORAND)
+
 const savedCustom = ({ useNetworkStore, selectCustomNetwork }: Store) =>
     selectCustomNetwork(useNetworkStore.getState(), ALGORAND, 'custom')
 
@@ -140,14 +142,15 @@ describe('chain-shared network-store', () => {
             async (network, mode, algorandOverride) => {
                 seedV1(network)
 
-                const { useNetworkStore } = await loadStore()
+                const { useNetworkStore, selectChainNetworkId } =
+                    await loadStore()
 
                 const state = useNetworkStore.getState()
                 expect(state.mode).toBe(mode)
                 expect(state.selectedNetworkByChain.algorand).toBe(
                     algorandOverride,
                 )
-                expect(state.network).toBe(network)
+                expect(selectChainNetworkId(state, ALGORAND)).toBe(network)
                 expect(state.customNetworksByChain.algorand).toEqual([])
             },
         )
@@ -162,7 +165,7 @@ describe('chain-shared network-store', () => {
                 { ...CONFIG, id: 'custom' },
             ])
             expect(state.selectedNetworkByChain.algorand).toBe('custom')
-            expect(state.network).toBe('custom')
+            expect(store.selectChainNetworkId(state, ALGORAND)).toBe('custom')
             expect(state.mode).toBe('developer')
             expect(savedCustom(store)).toMatchObject(CONFIG)
         })
@@ -170,10 +173,10 @@ describe('chain-shared network-store', () => {
         test('a v1 custom selection with no legacy record falls back to the default', async () => {
             seedV1('custom')
 
-            const { useNetworkStore } = await loadStore()
+            const store = await loadStore()
 
-            expect(useNetworkStore.getState().network).toBe('mainnet')
-            expect(useNetworkStore.getState().mode).toBe('live')
+            expect(networkOf(store)).toBe('mainnet')
+            expect(store.useNetworkStore.getState().mode).toBe('live')
         })
 
         test.each(['fnet', 'nope'])(
@@ -181,12 +184,13 @@ describe('chain-shared network-store', () => {
             async network => {
                 seedV1(network)
 
-                const { useNetworkStore } = await loadStore()
+                const { useNetworkStore, selectChainNetworkId } =
+                    await loadStore()
 
                 const state = useNetworkStore.getState()
                 expect(state.mode).toBe('live')
                 expect(state.selectedNetworkByChain.algorand).toBeUndefined()
-                expect(state.network).toBe('mainnet')
+                expect(selectChainNetworkId(state, ALGORAND)).toBe('mainnet')
             },
         )
 
@@ -196,16 +200,16 @@ describe('chain-shared network-store', () => {
             const store = await loadStore()
 
             expect(savedCustom(store)).toMatchObject(CONFIG)
-            expect(store.useNetworkStore.getState().network).toBe('mainnet')
+            expect(networkOf(store)).toBe('mainnet')
         })
 
         test('a malformed legacy record is ignored', async () => {
             seedV1('custom', '{not json')
 
-            const { useNetworkStore } = await loadStore()
+            const { useNetworkStore, selectChainNetworkId } = await loadStore()
 
             const state = useNetworkStore.getState()
-            expect(state.network).toBe('mainnet')
+            expect(selectChainNetworkId(state, ALGORAND)).toBe('mainnet')
             expect(state.customNetworksByChain.algorand).toEqual([])
         })
 
@@ -260,7 +264,8 @@ describe('chain-shared network-store', () => {
                     }),
                 )
 
-                const { useNetworkStore } = await loadStore()
+                const { useNetworkStore, selectChainNetworkId } =
+                    await loadStore()
 
                 const state = useNetworkStore.getState()
                 expect(state.mode).toBe(mode)
@@ -268,7 +273,7 @@ describe('chain-shared network-store', () => {
                     ethereum: 'sepolia',
                     ...(algorandOverride && { algorand: algorandOverride }),
                 })
-                expect(state.network).toBe(network)
+                expect(selectChainNetworkId(state, ALGORAND)).toBe(network)
                 expect(state.customNetworksByChain.algorand).toEqual(
                     hasRecord ? [record] : [],
                 )
@@ -277,7 +282,7 @@ describe('chain-shared network-store', () => {
                 expect(Object.keys(written.state).sort()).toEqual(
                     PERSISTED_KEYS,
                 )
-                expect(written.state.network).toBe(network)
+                expect(written.state.network).toBeUndefined()
             },
         )
 
@@ -304,7 +309,8 @@ describe('chain-shared network-store', () => {
         const record = { ...CONFIG, id: 'custom' }
 
         test('a valid v3 blob survives', async () => {
-            const { mergePersistedNetwork } = await loadStore()
+            const { mergePersistedNetwork, selectChainNetworkId } =
+                await loadStore()
 
             const merged = mergePersistedNetwork({
                 mode: 'developer',
@@ -314,7 +320,7 @@ describe('chain-shared network-store', () => {
 
             expect(merged.mode).toBe('developer')
             expect(merged.selectedNetworkByChain.algorand).toBe('custom')
-            expect(merged.network).toBe('custom')
+            expect(selectChainNetworkId(merged, ALGORAND)).toBe('custom')
             expect(merged.customNetworksByChain.algorand).toEqual([record])
         })
 
@@ -340,7 +346,8 @@ describe('chain-shared network-store', () => {
         })
 
         test("keeps another chain's override and drops one that is not a network id", async () => {
-            const { mergePersistedNetwork } = await loadStore()
+            const { mergePersistedNetwork, selectChainNetworkId } =
+                await loadStore()
 
             const merged = mergePersistedNetwork({
                 mode: 'developer',
@@ -356,7 +363,7 @@ describe('chain-shared network-store', () => {
                 algorand: 'betanet',
                 ethereum: 'sepolia',
             })
-            expect(merged.network).toBe('betanet')
+            expect(selectChainNetworkId(merged, ALGORAND)).toBe('betanet')
         })
 
         test("keeps another chain's override through a rehydrate", async () => {
@@ -379,7 +386,8 @@ describe('chain-shared network-store', () => {
         test.each([undefined, 'mainnet', 'Live', 7])(
             'an invalid mode (%s) falls back to the default',
             async mode => {
-                const { mergePersistedNetwork } = await loadStore()
+                const { mergePersistedNetwork, selectChainNetworkId } =
+                    await loadStore()
 
                 const merged = mergePersistedNetwork({
                     mode,
@@ -387,7 +395,7 @@ describe('chain-shared network-store', () => {
                 })
 
                 expect(merged.mode).toBe('live')
-                expect(merged.network).toBe('mainnet')
+                expect(selectChainNetworkId(merged, ALGORAND)).toBe('mainnet')
                 expect(merged.selectedNetworkByChain).toEqual({
                     ethereum: 'sepolia',
                 })
@@ -401,7 +409,8 @@ describe('chain-shared network-store', () => {
         ])(
             'developer with an unusable Algorand override (%s) demotes to the default and keeps other overrides',
             async override => {
-                const { mergePersistedNetwork } = await loadStore()
+                const { mergePersistedNetwork, selectChainNetworkId } =
+                    await loadStore()
 
                 const merged = mergePersistedNetwork({
                     mode: 'developer',
@@ -412,7 +421,7 @@ describe('chain-shared network-store', () => {
                 })
 
                 expect(merged.mode).toBe('live')
-                expect(merged.network).toBe('mainnet')
+                expect(selectChainNetworkId(merged, ALGORAND)).toBe('mainnet')
                 expect(merged.selectedNetworkByChain).toEqual({
                     ethereum: 'sepolia',
                 })
@@ -432,7 +441,8 @@ describe('chain-shared network-store', () => {
         })
 
         test('live keeps a usable Algorand override unread', async () => {
-            const { mergePersistedNetwork } = await loadStore()
+            const { mergePersistedNetwork, selectChainNetworkId } =
+                await loadStore()
 
             const merged = mergePersistedNetwork({
                 mode: 'live',
@@ -440,7 +450,7 @@ describe('chain-shared network-store', () => {
             })
 
             expect(merged.selectedNetworkByChain.algorand).toBe('betanet')
-            expect(merged.network).toBe('mainnet')
+            expect(selectChainNetworkId(merged, ALGORAND)).toBe('mainnet')
         })
 
         test.each([
@@ -451,15 +461,22 @@ describe('chain-shared network-store', () => {
                 { mode: 'developer', selectedNetworkByChain: { algorand: 7 } },
             ],
         ])('%s falls back to the default', async (_label, persisted) => {
-            const { mergePersistedNetwork } = await loadStore()
+            const { mergePersistedNetwork, selectChainNetworkId } =
+                await loadStore()
 
-            expect(mergePersistedNetwork(persisted).network).toBe('mainnet')
+            expect(
+                selectChainNetworkId(
+                    mergePersistedNetwork(persisted),
+                    ALGORAND,
+                ),
+            ).toBe('mainnet')
         })
 
         test('rehydration keeps the actions and leaves state alone on an empty read', async () => {
-            const { useNetworkStore } = await loadStore()
+            const { useNetworkStore, selectChainNetworkId } = await loadStore()
             const { merge } = useNetworkStore.persist.getOptions()
-            useNetworkStore.getState().setNetwork('betanet')
+            useNetworkStore.getState().setMode('developer')
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
 
             const merged = merge?.(
                 { mode: 'developer', selectedNetworkByChain: {} },
@@ -467,31 +484,59 @@ describe('chain-shared network-store', () => {
             )
             const untouched = merge?.(undefined, useNetworkStore.getState())
 
-            expect(merged?.network).toBe('testnet')
+            expect(selectChainNetworkId(merged!, ALGORAND)).toBe('testnet')
             expect(typeof merged?.selectNetwork).toBe('function')
-            expect(untouched?.network).toBe('betanet')
+            expect(selectChainNetworkId(untouched!, ALGORAND)).toBe('betanet')
+        })
+
+        test('a v3 blob that still carries the retired network field hydrates and the next write drops it', async () => {
+            storage().setItem(
+                'network-store',
+                JSON.stringify({
+                    state: {
+                        mode: 'developer',
+                        network: 'testnet',
+                        selectedNetworkByChain: {},
+                        customNetworksByChain: {},
+                    },
+                    version: 3,
+                }),
+            )
+
+            const store = await loadStore()
+
+            expect(store.useNetworkStore.getState().mode).toBe('developer')
+            expect(networkOf(store)).toBe('testnet')
+            store.useNetworkStore.getState().setMode('live')
+            const written = JSON.parse(storage().getItem('network-store')!)
+            expect(written.state.mode).toBe('live')
+            expect(Object.keys(written.state).sort()).toEqual(PERSISTED_KEYS)
         })
     })
 
     describe('actions', () => {
-        test('setMode keeps overrides and moves the shim: live ignores them, developer restores them', async () => {
-            const { useNetworkStore } = await loadStore()
-            const store = useNetworkStore.getState()
-            store.setMode('developer')
-            store.selectNetwork('algorand', 'betanet')
-            store.selectNetwork(ETHEREUM, 'sepolia')
-            expect(useNetworkStore.getState().network).toBe('betanet')
+        test('setMode keeps overrides: live ignores them, developer restores them', async () => {
+            const store = await loadStore()
+            const actions = store.useNetworkStore.getState()
+            actions.setMode('developer')
+            actions.selectNetwork('algorand', 'betanet')
+            actions.selectNetwork(ETHEREUM, 'sepolia')
+            expect(networkOf(store)).toBe('betanet')
 
-            useNetworkStore.getState().setMode('live')
-            expect(useNetworkStore.getState().network).toBe('mainnet')
-            expect(useNetworkStore.getState().selectedNetworkByChain).toEqual({
+            store.useNetworkStore.getState().setMode('live')
+            expect(networkOf(store)).toBe('mainnet')
+            expect(
+                store.useNetworkStore.getState().selectedNetworkByChain,
+            ).toEqual({
                 algorand: 'betanet',
                 ethereum: 'sepolia',
             })
 
-            useNetworkStore.getState().setMode('developer')
-            expect(useNetworkStore.getState().network).toBe('betanet')
-            expect(useNetworkStore.getState().selectedNetworkByChain).toEqual({
+            store.useNetworkStore.getState().setMode('developer')
+            expect(networkOf(store)).toBe('betanet')
+            expect(
+                store.useNetworkStore.getState().selectedNetworkByChain,
+            ).toEqual({
                 algorand: 'betanet',
                 ethereum: 'sepolia',
             })
@@ -514,54 +559,10 @@ describe('chain-shared network-store', () => {
             ).toBe(false)
         })
 
-        test.each([
-            ['mainnet', 'live', undefined, 'mainnet'],
-            ['testnet', 'developer', undefined, 'testnet'],
-            ['betanet', 'developer', 'betanet', 'betanet'],
-            ['custom', 'developer', 'custom', 'custom'],
-        ] as const)(
-            'setNetwork(%s) sets mode %s and Algorand override %s',
-            async (network, mode, algorandOverride, shim) => {
-                const { useNetworkStore } = await loadStore()
-                useNetworkStore.getState().selectNetwork(ETHEREUM, 'sepolia')
-
-                useNetworkStore.getState().setNetwork(network)
-
-                const state = useNetworkStore.getState()
-                expect(state.mode).toBe(mode)
-                expect(state.selectedNetworkByChain.algorand).toBe(
-                    algorandOverride,
-                )
-                expect(state.selectedNetworkByChain.ethereum).toBe('sepolia')
-                expect(state.network).toBe(shim)
-            },
-        )
-
-        test('setNetwork to mainnet keeps every override', async () => {
-            const { useNetworkStore } = await loadStore()
-            useNetworkStore.getState().setNetwork('betanet')
-
-            useNetworkStore.getState().setNetwork('mainnet')
-
-            const state = useNetworkStore.getState()
-            expect(state.mode).toBe('live')
-            expect(state.selectedNetworkByChain.algorand).toBe('betanet')
-        })
-
-        test('setNetwork to testnet clears a stored Algorand override', async () => {
-            const { useNetworkStore } = await loadStore()
-            useNetworkStore.getState().setNetwork('betanet')
-
-            useNetworkStore.getState().setNetwork('testnet')
-
-            expect(
-                useNetworkStore.getState().selectedNetworkByChain.algorand,
-            ).toBeUndefined()
-        })
-
         test('resetState restores live mode and drops overrides', async () => {
             const { useNetworkStore } = await loadStore()
-            useNetworkStore.getState().setNetwork('betanet')
+            useNetworkStore.getState().setMode('developer')
+            useNetworkStore.getState().selectNetwork('algorand', 'betanet')
 
             useNetworkStore.getState().resetState()
 
@@ -573,12 +574,13 @@ describe('chain-shared network-store', () => {
         test('resetState restores the defaults', async () => {
             const store = await loadStore()
             saveCustom(store, CONFIG)
-            store.useNetworkStore.getState().setNetwork('custom')
+            store.useNetworkStore.getState().setMode('developer')
+            store.useNetworkStore.getState().selectNetwork('algorand', 'custom')
 
             store.useNetworkStore.getState().resetState()
 
             const state = store.useNetworkStore.getState()
-            expect(state.network).toBe('mainnet')
+            expect(networkOf(store)).toBe('mainnet')
             expect(state.customNetworksByChain).toEqual({})
         })
 
@@ -606,16 +608,17 @@ describe('chain-shared network-store', () => {
             expect(savedCustom(store)).toBeUndefined()
         })
 
-        test('clearCustomNetwork while on custom moves the shim to testnet', async () => {
+        test('clearCustomNetwork while on custom falls back to testnet', async () => {
             registerAlgorand()
             const store = await loadStore()
             saveCustom(store, CONFIG)
-            store.useNetworkStore.getState().setNetwork('custom')
-            expect(store.useNetworkStore.getState().network).toBe('custom')
+            store.useNetworkStore.getState().setMode('developer')
+            store.useNetworkStore.getState().selectNetwork('algorand', 'custom')
+            expect(networkOf(store)).toBe('custom')
 
             clearCustom(store)
 
-            expect(store.useNetworkStore.getState().network).toBe('testnet')
+            expect(networkOf(store)).toBe('testnet')
         })
 
         test('the registered clearStorage removes both keys', async () => {

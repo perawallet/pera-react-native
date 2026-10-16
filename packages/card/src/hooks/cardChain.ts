@@ -12,7 +12,7 @@
 
 import type {
     ChainScope,
-    PeraTransaction,
+    UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -29,7 +29,7 @@ export const getCardSettlementAssetId = (scope: ChainScope): Nullable<string> =>
 export const buildCardManualDeposit = (
     params: CardManualDepositBuildParams,
     scope: ChainScope,
-): Promise<PeraTransaction[]> =>
+): Promise<UnsignedTransaction[]> =>
     cardAdapterFor(scope).buildManualDeposit(params, scope)
 
 export const getCardFundingSourceEligibility = (

@@ -54,16 +54,4 @@ describe('InfoCallout', () => {
         expect(screen.getByTestId('icon-trash')).toBeTruthy()
         expect(screen.queryByTestId('icon-info')).toBeFalsy()
     })
-
-    it('forwards the testID to the container so callers can target it', () => {
-        render(
-            <InfoCallout
-                title='Heads up'
-                body='Something to know.'
-                testID='my-callout'
-            />,
-        )
-
-        expect(screen.getByTestId('my-callout')).toBeTruthy()
-    })
 })

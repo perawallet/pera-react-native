@@ -114,13 +114,12 @@ export const unreadAccountDeltas = (
  * empty rather than unfetched, which is not something to rebuild from.
  */
 export const fetchDeltaOrRebuild = async (
-    deps: Pick<SyncEngineDeps, 'network' | 'backupId' | 'deviceId'>,
+    deps: Pick<SyncEngineDeps, 'backupId' | 'deviceId'>,
     state: SyncState,
     getManifest: () => Promise<Manifest | null>,
 ): Promise<{ deltas: DeltaEntry[]; rebuiltThroughSeq: number }> => {
     try {
         const deltas = await fetchDelta(
-            deps.network,
             deps.backupId,
             deps.deviceId,
             state.lastSyncedSeq,

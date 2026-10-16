@@ -12,6 +12,8 @@
 
 import { vi, beforeEach } from 'vitest'
 import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
+import { setAlgorandChainContext } from './src/chain-context'
+import { testChainContext } from './src/__tests__/context'
 // Patches BigInt.prototype.microAlgo() globally; the patch outlives a spec's own
 // mock of algokit-utils, which the transaction builders rely on.
 import '@algorandfoundation/algokit-utils'
@@ -20,15 +22,19 @@ import '@algorandfoundation/algokit-utils'
 // native module that the test runtime cannot load.
 const store = new Map<string, string>()
 
-// The network store resolves its `network` shim through the chain registry.
+// The network store resolves each chain's selection through the chain registry.
 const chains = createChainRegistry()
 
 // Persisted state from one test would otherwise rehydrate into the next, e.g.
-// a `setNetwork('testnet')` in test A is still in storage when test B
+// a `setMode('developer')` in test A is still in storage when test B
 // re-imports the store.
 beforeEach(() => {
     store.clear()
     chains.reset()
+    // Every Algorand request is bounded by the registered context, which specs
+    // otherwise never register; re-set each test so one spec's custom ceilings
+    // never leak into the next. A spec that resets modules sets its own.
+    setAlgorandChainContext(testChainContext())
 })
 
 const keyValueStorage = {

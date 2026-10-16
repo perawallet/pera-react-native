@@ -10,13 +10,17 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { getPeraDeploymentConfig } from '@perawallet/wallet-core-config'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { mockListCurrencies } from '@perawallet/wallet-core-currencies/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { JPY_ONLY, USD_EUR_GBP } from './__fixtures__/currencies'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The "integration" Vitest project's setup file opts out of the global
 // @perawallet/wallet-core-* mocks — see apps/mobile/vitest.integration-setup.ts.
@@ -75,5 +79,40 @@ describe('Flow: Settings → Currency selection', () => {
         expect(screen.queryByTestId('settings_currency_item_eur')).toBeFalsy()
         // ALGO is always prepended.
         expect(screen.getByTestId('settings_currency_item_algo')).toBeTruthy()
+    })
+
+    describe('on a network with no Pera backend of its own', () => {
+        afterEach(() => {
+            useNetworkStore.getState().setMode('live')
+        })
+
+        it.each(['betanet', 'custom'])(
+            'Given developer mode on %s, when the screen mounts, then the developer deployment serves the full list',
+            async network => {
+                const requested: string[] = []
+                server.use(
+                    http.get('*/v1/currencies/', ({ request }) => {
+                        requested.push(new URL(request.url).origin)
+                        return HttpResponse.json(USD_EUR_GBP)
+                    }),
+                )
+                useNetworkStore.getState().setMode('developer')
+                useNetworkStore
+                    .getState()
+                    .selectNetwork(LEGACY_CHAIN_ID, network)
+
+                renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
+
+                await waitFor(() => {
+                    expect(
+                        screen.getByTestId('settings_currency_item_eur'),
+                    ).toBeTruthy()
+                })
+                expect([...new Set(requested)]).toEqual([
+                    new URL(getPeraDeploymentConfig('developer').backendUrl)
+                        .origin,
+                ])
+            },
+        )
     })
 })

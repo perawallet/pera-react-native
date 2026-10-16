@@ -15,8 +15,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    scopeForLegacyNetwork,
     type ChainId,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -25,12 +25,11 @@ import {
 } from '../../chain-adapter'
 import { useAssetInboxRequestsQuery } from '../useAssetInboxRequestsQuery'
 
-const scope = scopeForLegacyNetwork('testnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 const chainId: ChainId = scope.chainId
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(),
-    useSelectedScope: () => scope,
 }))
 
 const fetchRequests = vi.fn()
@@ -63,11 +62,11 @@ describe('useAssetInboxRequestsQuery', () => {
         sendFlowChainAdapters.reset()
     })
 
-    it('fetches through the chain adapter with the selected scope when assetInbox is on', async () => {
+    it('fetches through the chain adapter with the scope it is given when assetInbox is on', async () => {
         fetchRequests.mockResolvedValue([{ id: '1' }])
 
         const { result } = renderHook(
-            () => useAssetInboxRequestsQuery('ADDR1', chainId),
+            () => useAssetInboxRequestsQuery(scope, 'ADDR1'),
             { wrapper },
         )
 
@@ -82,9 +81,37 @@ describe('useAssetInboxRequestsQuery', () => {
         expect(result.current.isUnavailableOnNetwork).toBe(false)
     })
 
+    it("fetches through the adapter of the given scope's chain", async () => {
+        const ethereumScope = {
+            chainId: 'ethereum',
+            networkId: 'sepolia',
+        } as const
+        const fetchEthereumRequests = vi.fn().mockResolvedValue([])
+        sendFlowChainAdapters.register({
+            chainId: ethereumScope.chainId,
+            assetInbox: { fetchRequests: fetchEthereumRequests },
+        } as unknown as SendFlowChainAdapter)
+
+        const { result } = renderHook(
+            () => useAssetInboxRequestsQuery(ethereumScope, 'ADDR1'),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(useChainCapability).toHaveBeenCalledWith(
+            'ethereum',
+            'assetInbox',
+        )
+        expect(fetchEthereumRequests).toHaveBeenCalledWith({
+            scope: ethereumScope,
+            address: 'ADDR1',
+        })
+        expect(fetchRequests).not.toHaveBeenCalled()
+    })
+
     it('does not fetch without an address', () => {
         const { result } = renderHook(
-            () => useAssetInboxRequestsQuery(null, chainId),
+            () => useAssetInboxRequestsQuery(scope, null),
             { wrapper },
         )
 
@@ -96,7 +123,7 @@ describe('useAssetInboxRequestsQuery', () => {
         vi.mocked(useChainCapability).mockReturnValue(false)
 
         const { result } = renderHook(
-            () => useAssetInboxRequestsQuery('ADDR1', chainId),
+            () => useAssetInboxRequestsQuery(scope, 'ADDR1'),
             { wrapper },
         )
 
@@ -111,7 +138,7 @@ describe('useAssetInboxRequestsQuery', () => {
         fetchRequests.mockRejectedValue(error)
 
         const { result } = renderHook(
-            () => useAssetInboxRequestsQuery('ADDR1', chainId),
+            () => useAssetInboxRequestsQuery(scope, 'ADDR1'),
             { wrapper },
         )
 

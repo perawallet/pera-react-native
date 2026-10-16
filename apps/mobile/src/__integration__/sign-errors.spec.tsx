@@ -72,7 +72,9 @@ describe('Flow: signing error paths', () => {
         const { request } = buildTransactionSignRequest({
             sourceType: 'webview',
             txs: [buildPaymentTransaction()],
-            overrides: { rawTransactionsBase64: ['AQID'] },
+            overrides: {
+                chainData: { algorand: { rawTransactionsBase64: ['AQID'] } },
+            },
         })
 
         renderSignReview(request)

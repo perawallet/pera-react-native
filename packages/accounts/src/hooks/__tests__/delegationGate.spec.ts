@@ -23,6 +23,7 @@ import {
     fakeAccountStateSnapshot,
     fakeAccountsChain,
     registerFakeAccountsChain,
+    registerFakeNativeAsset,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
 import { testAccount } from '../../__tests__/accountFactory'
@@ -86,10 +87,11 @@ describe.each(STATES)('delegation gate when $name', state => {
         gate.isOn = state.isOn
         useAccountsStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         registerFakeAccountsChain(
             state.hasMember ? {} : { authority: undefined },
         )
+        registerFakeNativeAsset()
         const fetchDelegatedAddresses = fetchDelegated()
         if (fetchDelegatedAddresses) {
             vi.mocked(fetchDelegatedAddresses).mockResolvedValue(['D1'])

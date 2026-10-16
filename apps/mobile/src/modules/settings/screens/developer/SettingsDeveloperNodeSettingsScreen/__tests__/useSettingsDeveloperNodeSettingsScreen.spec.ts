@@ -16,7 +16,10 @@ import {
     algorandCapabilityDefaults,
     algorandDescriptor,
 } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    getSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     allCapabilities,
@@ -24,6 +27,7 @@ import {
     fixtureEthereumDescriptor,
 } from '@test-utils/chain-fixtures'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
     restart: vi.fn(),
@@ -219,7 +223,7 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
                 await result.current.selectNetwork('algorand', 'betanet')
             })
 
-            expect(useNetworkStore.getState().network).toBe('betanet')
+            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('betanet')
             expect(
                 sectionFor(result, 'algorand')?.networks.find(
                     network => network.isSelected,
@@ -239,7 +243,7 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
                 await result.current.selectNetwork('algorand', 'testnet')
             })
 
-            expect(useNetworkStore.getState().network).toBe('testnet')
+            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('testnet')
         })
 
         it('restores the BetaNet choice when developer mode goes off and on again', async () => {
@@ -250,11 +254,11 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             })
 
             act(() => result.current.setDeveloperMode(false))
-            expect(useNetworkStore.getState().network).toBe('mainnet')
+            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('mainnet')
             expect(result.current.chainSections).toEqual([])
 
             act(() => result.current.setDeveloperMode(true))
-            expect(useNetworkStore.getState().network).toBe('betanet')
+            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('betanet')
         })
     })
 })

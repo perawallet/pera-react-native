@@ -38,7 +38,7 @@ const makeRegistry = () => {
         describeUri: vi.fn((uri: string) => ({
             topic: /^wc:([^@?#]+)@/.exec(uri)?.[1] ?? null,
         })),
-        networksFor: vi.fn(() => []),
+        scopesFor: vi.fn(() => []),
         disconnect: vi.fn(async () => {}),
         disconnectAll: vi.fn(async () => {}),
         subscribeToProposals: listener => {

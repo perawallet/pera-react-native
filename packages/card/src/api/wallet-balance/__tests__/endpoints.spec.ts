@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { HTTPError } from 'ky'
+import { Decimal } from 'decimal.js'
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
@@ -22,6 +23,8 @@ import {
     withdrawWalletBalance,
 } from '../endpoints'
 import { CardWalletKind } from '../../../models'
+
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const httpError = (status: number, path: string) =>
     new HTTPError(
@@ -51,7 +54,7 @@ describe.each([
 
             const wallet = await fetchWalletBalance({
                 kind,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             })
 
             expect(request).toHaveBeenCalledWith(
@@ -72,7 +75,7 @@ describe.each([
 
             const wallet = await fetchWalletBalance({
                 kind,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             })
             expect(wallet?.isWithdrawable).toBe(false)
         })
@@ -84,7 +87,7 @@ describe.each([
             request.mockRejectedValue(httpError(404, basePath))
 
             await expect(
-                fetchWalletBalance({ kind, network: 'mainnet' }),
+                fetchWalletBalance({ kind, scope: ALGORAND_MAINNET }),
             ).resolves.toBeNull()
         })
 
@@ -92,7 +95,7 @@ describe.each([
             request.mockRejectedValue(httpError(500, basePath))
 
             await expect(
-                fetchWalletBalance({ kind, network: 'mainnet' }),
+                fetchWalletBalance({ kind, scope: ALGORAND_MAINNET }),
             ).rejects.toThrow()
         })
     })
@@ -114,7 +117,7 @@ describe.each([
                 kind,
                 walletId: 'w_1',
                 page: 2,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             })
 
             expect(request).toHaveBeenCalledWith(
@@ -144,7 +147,7 @@ describe.each([
             const page = await fetchWalletHistory({
                 kind,
                 walletId: 'w_1',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             })
 
             expect(page.items.map(item => item.sign)).toEqual([
@@ -165,13 +168,13 @@ describe.each([
             const full = await fetchWalletHistory({
                 kind,
                 walletId: 'w_1',
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             })
             const short = await fetchWalletHistory({
                 kind,
                 walletId: 'w_1',
                 page: 1,
-                network: 'mainnet',
+                scope: ALGORAND_MAINNET,
             })
 
             expect(full.hasMore).toBe(true)
@@ -187,8 +190,8 @@ describe.each([
 
             const result = await withdrawWalletBalance({
                 kind,
-                network: 'mainnet',
-                amount: '10.5',
+                scope: ALGORAND_MAINNET,
+                amount: new Decimal('10.5'),
             })
 
             expect(request).toHaveBeenCalledWith(
@@ -206,14 +209,31 @@ describe.each([
             })
         })
 
+        // Decimal's toString switches to exponent notation for small values.
+        it('sends the amount in plain notation', async () => {
+            request.mockResolvedValue({
+                data: { txHash: '0xabc', network: 'linea', confirmed: true },
+            })
+
+            await withdrawWalletBalance({
+                kind,
+                scope: ALGORAND_MAINNET,
+                amount: new Decimal('0.0000001'),
+            })
+
+            expect(request).toHaveBeenCalledWith(
+                expect.objectContaining({ data: { amount: '0.0000001' } }),
+            )
+        })
+
         it('rejects on a malformed response', async () => {
             request.mockResolvedValue({ data: {} })
 
             await expect(
                 withdrawWalletBalance({
                     kind,
-                    network: 'mainnet',
-                    amount: '1',
+                    scope: ALGORAND_MAINNET,
+                    amount: new Decimal('1'),
                 }),
             ).rejects.toThrow()
         })

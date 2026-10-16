@@ -13,34 +13,55 @@
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
-    addressOn,
+    accountValueOf,
+    useAccountChainId,
+    useAccountValueBasis,
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    chainDisplayNameOf,
     useIsOnTestTier,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
+import {
+    useChainAvailability,
+    type ChainAvailability,
+} from '@hooks/useChainAvailability'
 
 export type UseAccountWithBalanceResult = {
-    /** `undefined` until loaded, `null` when unknown; both render a placeholder, not 0. */
+    /** `chainId`, else the account's own chain, at its selected network; where its native asset is priced. */
+    scope: ChainScope
+    /** Undefined for a chain this build doesn't register. */
+    chainName: Optional<string>
+    availability: ChainAvailability
+    /** In the account's own native asset. `undefined` until loaded, `null` when unknown; both render a placeholder, not 0. */
     nativeValue: Maybe<Decimal>
+    /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
+    isMultiChain: boolean
     isTestTier: boolean
 }
 
 export const useAccountWithBalance = (
     account: WalletAccount,
+    chainOverride?: ChainId,
 ): UseAccountWithBalanceResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(chainOverride ?? accountChainId)
+    const { chainId } = scope
+    const homeScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
+    const availability = useChainAvailability(chainId)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
-        scope,
-        true,
+        homeScope,
+        availability.isAvailable,
     )
     const chainIds = useMemo(
         () => Object.keys(account.chains) as ChainId[],
@@ -48,9 +69,16 @@ export const useAccountWithBalance = (
     )
     const isTestTier = useIsOnTestTier(chainIds)
 
+    const chainName = chainDisplayNameOf(chainId)
+
+    const totals = accountValueOf(account, chainId, accountValueTotals)
+
     return {
-        nativeValue: accountValueTotals.get(addressOn(account, scope) ?? '')
-            ?.nativeValue,
+        scope,
+        chainName,
+        availability,
+        nativeValue: totals?.nativeValue,
+        isMultiChain: basis === 'fiat',
         isTestTier,
     }
 }

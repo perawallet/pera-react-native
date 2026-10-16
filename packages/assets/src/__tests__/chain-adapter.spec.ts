@@ -13,7 +13,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     AssetSearchUnsupportedError,
@@ -24,6 +24,7 @@ import {
     fetchAssetAuthorities,
     fetchAssetMetadata,
     fetchOnChainAsset,
+    findNativeAsset,
     isNativeAssetId,
     nativeAssetFor,
     searchAssets,
@@ -35,8 +36,14 @@ describe('assetsAdapterFor / nativeAssetFor', () => {
     it("resolve a scope's chain to its registered adapter and native asset", () => {
         const adapter = registerFakeAssetsAdapter()
 
-        expect(assetsAdapterFor(scopeForLegacyNetwork('testnet'))).toBe(adapter)
+        expect(
+            assetsAdapterFor({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const),
+        ).toBe(adapter)
         expect(nativeAssetFor('algorand')).toBe(FAKE_NATIVE_ASSET)
+        expect(findNativeAsset('algorand')).toBe(FAKE_NATIVE_ASSET)
     })
 
     it('isNativeAssetId matches only the registered chain native id', () => {
@@ -64,10 +71,10 @@ describe('scope wrappers', () => {
         const syncAssets = vi.fn().mockResolvedValue(undefined)
         registerFakeAssetsAdapter({ syncAssets })
 
-        await fetchAndPersistAssets(
-            ['1', '2'],
-            scopeForLegacyNetwork('testnet'),
-        )
+        await fetchAndPersistAssets(['1', '2'], {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
 
         expect(syncAssets).toHaveBeenCalledWith(
             [
@@ -82,10 +89,10 @@ describe('scope wrappers', () => {
         const getAssetMetadata = vi.fn().mockResolvedValue({ assetId: '7' })
         registerFakeAssetsAdapter({ getAssetMetadata })
 
-        const asset = await fetchAssetMetadata(
-            '7',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const asset = await fetchAssetMetadata('7', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         expect(asset).toEqual({ assetId: '7' })
         expect(getAssetMetadata).toHaveBeenCalledWith(
@@ -104,10 +111,10 @@ describe('scope wrappers', () => {
         const member = vi.fn().mockResolvedValue(authorities)
         registerFakeAssetsAdapter({ fetchAssetAuthorities: member })
 
-        const result = await fetchAssetAuthorities(
-            '7',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const result = await fetchAssetAuthorities('7', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         expect(result).toEqual(authorities)
         expect(member).toHaveBeenCalledWith(
@@ -120,7 +127,10 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ fetchAssetAuthorities: undefined })
 
         await expect(
-            fetchAssetAuthorities('7', scopeForLegacyNetwork('mainnet')),
+            fetchAssetAuthorities('7', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         ).resolves.toEqual({
             hasFreeze: false,
             hasClawback: false,
@@ -134,10 +144,10 @@ describe('scope wrappers', () => {
         const search = vi.fn().mockResolvedValue(page)
         registerFakeAssetsAdapter({ search })
 
-        const result = await searchAssets(
-            { query: 'usdc', cursor: 'C1' },
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const result = await searchAssets({ query: 'usdc', cursor: 'C1' }, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         expect(result).toBe(page)
         expect(search).toHaveBeenCalledWith(
@@ -149,10 +159,10 @@ describe('scope wrappers', () => {
     it('searchAssets rejects with AssetSearchUnsupportedError on a chain that declares no search', async () => {
         registerFakeAssetsAdapter({ search: undefined })
 
-        const rejection = searchAssets(
-            { query: 'usdc' },
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const rejection = searchAssets({ query: 'usdc' }, {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         await expect(rejection).rejects.toBeInstanceOf(
             AssetSearchUnsupportedError,
@@ -164,10 +174,10 @@ describe('scope wrappers', () => {
         const fetchOnChain = vi.fn().mockResolvedValue({ assetId: '7' })
         registerFakeAssetsAdapter({ fetchOnChainAsset: fetchOnChain })
 
-        const asset = await fetchOnChainAsset(
-            '7',
-            scopeForLegacyNetwork('mainnet'),
-        )
+        const asset = await fetchOnChainAsset('7', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
 
         expect(asset).toEqual({ assetId: '7' })
         expect(fetchOnChain).toHaveBeenCalledWith(
@@ -186,26 +196,50 @@ describe('with no adapter registered', () => {
         )
     })
 
+    it('finds no native asset rather than throwing', () => {
+        assetsChainAdapters.reset()
+
+        expect(findNativeAsset('algorand')).toBeUndefined()
+    })
+
     it('rejects each wrapper instead of throwing synchronously', async () => {
         assetsChainAdapters.reset()
 
         await expect(
-            fetchAndPersistAssets(['1'], scopeForLegacyNetwork('mainnet')),
+            fetchAndPersistAssets(['1'], {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
-            fetchOnChainAsset('1', scopeForLegacyNetwork('mainnet')),
+            fetchOnChainAsset('1', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
-            fetchAssetMetadata('1', scopeForLegacyNetwork('mainnet')),
+            fetchAssetMetadata('1', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
-            fetchAssetAuthorities('1', scopeForLegacyNetwork('mainnet')),
+            fetchAssetAuthorities('1', {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
-            searchAssets({ query: 'a' }, scopeForLegacyNetwork('mainnet')),
+            searchAssets({ query: 'a' }, {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
-            fetchAndPersistPrices(['1'], scopeForLegacyNetwork('mainnet')),
+            fetchAndPersistPrices(['1'], {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
     })
 })

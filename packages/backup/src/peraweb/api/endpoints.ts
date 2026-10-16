@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import type { PeraWebBackupResponse } from '../models'
 
 /**
@@ -27,12 +28,12 @@ import type { PeraWebBackupResponse } from '../models'
  * second source of truth for the same field names.
  */
 export const fetchPeraWebBackup = async (
-    network: Network,
+    deployment: WalletMode,
     backupId: string,
 ): Promise<PeraWebBackupResponse> => {
     const response = await queryClient<PeraWebBackupResponse>({
         backend: 'pera',
-        network,
+        deployment,
         method: 'GET',
         // `backupId` originates from a scanned QR, so encode it before
         // interpolating: a raw `../`, `?` or `#` would otherwise retarget the

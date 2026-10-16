@@ -118,6 +118,21 @@ export const isSignRequestAwaitingPreflight = (request: SignRequest): boolean =>
             useSigningStore.getState().pendingSignRequests.at(0)?.id ===
                 request.id))
 
+const PRE_APPROVAL_STATES = ['idle', 'validating', 'awaiting_user'] as const
+
+/**
+ * Whether the user (or a headless caller) has approved the request, so it is
+ * signing, delivering or showing an outcome. Withdrawing it then would stop
+ * the actor under a broadcast that still goes out, leaving no outcome to show.
+ */
+export const isSignRequestPastApproval = (id: string): boolean => {
+    const snapshot = actorRefsMap.get(id)?.getSnapshot()
+    return (
+        snapshot !== undefined &&
+        !PRE_APPROVAL_STATES.some(state => snapshot.matches(state))
+    )
+}
+
 type PreflightOutcome =
     | { kind: 'present' }
     | { kind: 'suppress' }
@@ -472,9 +487,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 removeSignRequestFromStoreRef.current(req)
             })
 
-            actor.start()
+            // Registered before start: a request the machine refuses on start
+            // fails synchronously, and its cleanup must find the actor or it
+            // stays registered and holds up the queue.
             actorRefsMap.set(request.id, actor)
             notifyActorRegistry()
+            actor.start()
         },
         [allAccounts, buildDeps],
     )

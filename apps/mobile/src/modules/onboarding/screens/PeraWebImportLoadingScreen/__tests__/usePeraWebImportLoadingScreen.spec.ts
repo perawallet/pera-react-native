@@ -13,8 +13,6 @@
 import { renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
-import { Networks } from '@perawallet/wallet-core-config'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
@@ -37,11 +35,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockFetchPeraWebBackup = vi.fn()
 const mockDecryptPeraWebBackupPayload = vi.fn()
@@ -74,9 +68,6 @@ describe('usePeraWebImportLoadingScreen', () => {
             backupId: 'backup-1',
             encryptionKey,
         })
-        vi.mocked(useNetwork).mockReturnValue({
-            network: Networks.mainnet,
-        } as ReturnType<typeof useNetwork>)
         mockDecryptPeraWebBackupPayload.mockReturnValue({ accounts: [] })
     })
 
@@ -103,7 +94,7 @@ describe('usePeraWebImportLoadingScreen', () => {
 
         await waitFor(() => {
             expect(mockFetchPeraWebBackup).toHaveBeenCalledWith(
-                Networks.mainnet,
+                'live',
                 'backup-1',
             )
         })

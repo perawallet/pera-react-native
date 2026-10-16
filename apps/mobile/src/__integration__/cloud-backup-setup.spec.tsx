@@ -102,11 +102,12 @@ const answerQuizCorrectly = async (): Promise<void> => {
         // being asked for — the item testID is just the array index.
         const label = within(item).getByText(/^Select word #\d+$/)
         const position = Number(/#(\d+)/.exec(label.textContent ?? '')![1]) - 1
-        fireEvent.click(
-            within(item).getByTestId(
-                `cloud_backup_verify_item_${index}_option_${PHRASE[position]}`,
-            ),
-        )
+        const correctOption = within(item)
+            .getAllByTestId(
+                new RegExp(`^cloud_backup_verify_item_${index}_option_`),
+            )
+            .find(option => option.textContent === PHRASE[position])
+        fireEvent.click(correctOption!)
     }
 }
 
@@ -142,10 +143,12 @@ const answerQuizIncorrectly = (): void => {
 }
 
 const enableFromStoreKeyScreen = async (): Promise<void> => {
-    await waitFor(() =>
-        expect(
-            screen.getByTestId('cloud_backup_store_encryption_key_screen'),
-        ).toBeTruthy(),
+    await waitFor(
+        () =>
+            expect(
+                screen.getByTestId('cloud_backup_store_encryption_key_screen'),
+            ).toBeTruthy(),
+        { timeout: SLOW_WAIT_TIMEOUT_MS },
     )
     fireEvent.click(
         screen.getByTestId('cloud_backup_store_encryption_key_checkbox'),
@@ -176,8 +179,8 @@ const enterPin = async (pin: string): Promise<void> => {
 beforeEach(() => {
     // Also wipes the PIN, so a PIN test can't gate the tests after it.
     resetTestKeystore()
-    useDeviceStore.getState().setDeviceID('mainnet', 'device-integration')
-    useDeviceStore.getState().setDeviceID('testnet', 'device-integration')
+    useDeviceStore.getState().setDeviceID('live', 'device-integration')
+    useDeviceStore.getState().setDeviceID('developer', 'device-integration')
     useCloudBackupStore.getState().resetState()
     useCloudBackupDraftStore.getState().resetState()
 })

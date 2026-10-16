@@ -15,7 +15,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     fetchDelegationToken,
     fetchExternalWallets,
@@ -25,6 +24,10 @@ import {
 } from '../endpoints'
 import { AutoDrawDelegationRejectedError } from '../errors'
 import { registerFakeCardAdapter } from '../../../__tests__/fakeCardAdapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+
+const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
@@ -36,7 +39,7 @@ describe('fetchDelegationToken', () => {
             data: { token: 'tok-1', nonce: 'bm9uY2U=' },
         })
 
-        const result = await fetchDelegationToken({ network: 'mainnet' })
+        const result = await fetchDelegationToken({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -52,7 +55,7 @@ describe('fetchDelegationToken', () => {
         request.mockResolvedValue({ data: { token: 'tok-1' } })
 
         await expect(
-            fetchDelegationToken({ network: 'mainnet' }),
+            fetchDelegationToken({ scope: ALGORAND_MAINNET }),
         ).rejects.toThrow()
     })
 })
@@ -73,7 +76,7 @@ describe('fetchExternalWallets', () => {
             ],
         })
 
-        const wallets = await fetchExternalWallets({ network: 'mainnet' })
+        const wallets = await fetchExternalWallets({ scope: ALGORAND_MAINNET })
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -92,7 +95,7 @@ describe('fetchExternalWallets', () => {
             data: [{ address: 'ALGO_ADDR', currency: 'usdc' }],
         })
 
-        const wallets = await fetchExternalWallets({ network: 'mainnet' })
+        const wallets = await fetchExternalWallets({ scope: ALGORAND_MAINNET })
 
         expect(wallets[0].allowance.isZero()).toBe(true)
         expect(wallets[0].balance.isZero()).toBe(true)
@@ -110,7 +113,10 @@ describe('postDelegationApproval', () => {
         signature: 'c2ln',
         token: 'ABC_tok',
     }
-    const params = { scope: scopeForLegacyNetwork('testnet'), ...approval }
+    const params = {
+        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+        ...approval,
+    }
 
     it("POSTs the chain adapter's route and body on the direct route with the user Bearer", async () => {
         const adapter = registerFakeCardAdapter({
@@ -126,7 +132,7 @@ describe('postDelegationApproval', () => {
         expect(adapter.delegationApprovalRequest).toHaveBeenCalledWith(approval)
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 method: 'POST',
                 path: '/v1/delegation/chain/post-approval',
                 authenticated: true,
@@ -175,7 +181,7 @@ describe('postDelegationApproval', () => {
 describe('postCardDelegation', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const scope = scopeForLegacyNetwork('testnet')
+    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
     const delegation = {
         path: '/v1/delegation/chain/delegator-lsig',
         data: { body: 'chain' },
@@ -188,7 +194,7 @@ describe('postCardDelegation', () => {
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
-                network: 'testnet',
+                scope: ALGORAND_TESTNET,
                 method: 'POST',
                 path: '/v1/delegation/chain/delegator-lsig',
                 authenticated: true,
@@ -222,7 +228,7 @@ describe('postCardDelegation', () => {
 describe('postAutoDrawDelegation', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const scope = scopeForLegacyNetwork('testnet')
+    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
     const delegation = {
         path: '/v1/delegation/chain/delegator-lsig',
         data: { body: 'chain' },

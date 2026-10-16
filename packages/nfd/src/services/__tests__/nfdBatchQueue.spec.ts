@@ -23,7 +23,17 @@ vi.mock('../../db', () => ({
     getNfdsByAddresses: mockGetNfdsByAddresses,
 }))
 
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { nfdBatchQueue } from '../nfdBatchQueue'
+
+const ALGORAND_MAINNET_KEY = toScopeKey({
+    chainId: 'algorand',
+    networkId: 'mainnet',
+})
+const ETHEREUM_SEPOLIA_KEY = toScopeKey({
+    chainId: 'ethereum',
+    networkId: 'sepolia',
+})
 
 const ADDR_A = 'A'.repeat(58)
 const ADDR_B = 'B'.repeat(58)
@@ -38,7 +48,7 @@ describe('nfdBatchQueue (adapter)', () => {
         mockGetNfdsByAddresses.mockReset().mockResolvedValue([])
     })
 
-    it('coalesces concurrent enqueues into one fetchAndPersistNfds call per network', async () => {
+    it('coalesces concurrent enqueues into one fetchAndPersistNfds call per scope', async () => {
         mockGetNfdsByAddresses.mockResolvedValue([
             { address: ADDR_A, name: ALICE, updatedAt: Date.now() },
             { address: ADDR_B, name: BOB, updatedAt: Date.now() },
@@ -46,15 +56,15 @@ describe('nfdBatchQueue (adapter)', () => {
         ])
 
         const [a, b, c] = await Promise.all([
-            nfdBatchQueue.enqueue(ADDR_A, 'mainnet'),
-            nfdBatchQueue.enqueue(ADDR_B, 'mainnet'),
-            nfdBatchQueue.enqueue(ADDR_C, 'mainnet'),
+            nfdBatchQueue.enqueue(ADDR_A, ALGORAND_MAINNET_KEY),
+            nfdBatchQueue.enqueue(ADDR_B, ALGORAND_MAINNET_KEY),
+            nfdBatchQueue.enqueue(ADDR_C, ALGORAND_MAINNET_KEY),
         ])
 
         expect(mockFetchAndPersistNfds).toHaveBeenCalledTimes(1)
-        const [addresses, network] = mockFetchAndPersistNfds.mock.calls[0]
+        const [addresses, scope] = mockFetchAndPersistNfds.mock.calls[0]
         expect(new Set(addresses)).toEqual(new Set([ADDR_A, ADDR_B, ADDR_C]))
-        expect(network).toBe('mainnet')
+        expect(scope).toEqual({ chainId: 'algorand', networkId: 'mainnet' })
 
         // Each waiter resolves with its own per-key value from the re-read
         expect(a).toEqual(ALICE)
@@ -62,24 +72,46 @@ describe('nfdBatchQueue (adapter)', () => {
         expect(c).toBeNull()
     })
 
-    it('separates batches per network', async () => {
+    it('separates batches per scope', async () => {
         mockGetNfdsByAddresses.mockResolvedValue([])
 
         await Promise.all([
-            nfdBatchQueue.enqueue(ADDR_A, 'mainnet'),
-            nfdBatchQueue.enqueue(ADDR_B, 'testnet'),
+            nfdBatchQueue.enqueue(ADDR_A, ALGORAND_MAINNET_KEY),
+            nfdBatchQueue.enqueue(ADDR_B, ETHEREUM_SEPOLIA_KEY),
         ])
 
         expect(mockFetchAndPersistNfds).toHaveBeenCalledTimes(2)
-        const networks = mockFetchAndPersistNfds.mock.calls.map(c => c[1])
-        expect(networks.sort()).toEqual(['mainnet', 'testnet'])
+        const scopes = mockFetchAndPersistNfds.mock.calls.map(c => c[1])
+        expect(scopes).toContainEqual({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+        expect(scopes).toContainEqual({
+            chainId: 'ethereum',
+            networkId: 'sepolia',
+        })
+    })
+
+    it('coalesces lookups whose scope keys were built from distinct scope objects', async () => {
+        await Promise.all([
+            nfdBatchQueue.enqueue(
+                ADDR_A,
+                toScopeKey({ chainId: 'ethereum', networkId: 'sepolia' }),
+            ),
+            nfdBatchQueue.enqueue(
+                ADDR_B,
+                toScopeKey({ chainId: 'ethereum', networkId: 'sepolia' }),
+            ),
+        ])
+
+        expect(mockFetchAndPersistNfds).toHaveBeenCalledTimes(1)
     })
 
     it('rejects waiters when fetchAndPersistNfds throws', async () => {
         mockFetchAndPersistNfds.mockRejectedValue(new Error('boom'))
-        await expect(nfdBatchQueue.enqueue(ADDR_A, 'mainnet')).rejects.toThrow(
-            'boom',
-        )
+        await expect(
+            nfdBatchQueue.enqueue(ADDR_A, ALGORAND_MAINNET_KEY),
+        ).rejects.toThrow('boom')
     })
 
     it('resolves with undefined when getNfdsByAddresses returns no row for the key', async () => {
@@ -87,7 +119,7 @@ describe('nfdBatchQueue (adapter)', () => {
         // produces no row in the cache for ADDR_A → waiter sees undefined.
         mockGetNfdsByAddresses.mockResolvedValue([])
 
-        const result = await nfdBatchQueue.enqueue(ADDR_A, 'mainnet')
+        const result = await nfdBatchQueue.enqueue(ADDR_A, ALGORAND_MAINNET_KEY)
         expect(result).toBeUndefined()
     })
 })

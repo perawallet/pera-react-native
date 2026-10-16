@@ -17,7 +17,7 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { fetchMoreTransactions, fetchTransactionHistory } from './history'
 import { summarizeAlgorandHistoryItem } from './summarize'
 

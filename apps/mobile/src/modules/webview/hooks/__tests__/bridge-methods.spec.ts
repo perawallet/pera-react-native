@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 import {
     PERA_WEBVIEW_BRIDGE_METHODS,

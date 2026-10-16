@@ -77,7 +77,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     getSelectedScope: vi.fn((chainId: string) => ({
         chainId,
         networkId: 'testnet',
@@ -116,6 +115,7 @@ vi.mock('../../store', async importOriginal => {
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     isSignRequestAwaitingPreflight,
+    isSignRequestPastApproval,
     useSigningActorLifecycle,
     __resetSigningActorRegistryForTests,
 } from '../useSigningActorLifecycle'
@@ -245,6 +245,38 @@ describe('useSigningActorLifecycle', () => {
         expect(createSigningMachine).toHaveBeenCalledTimes(1)
         expect(actor.start).toHaveBeenCalled()
         expect(actor.subscribe).toHaveBeenCalled()
+    })
+
+    test('starts the next request after one the machine refuses as it starts', async () => {
+        const refused = makeMockActor('tx-1')
+        const request = makeTxRequest({ sourceType: 'local' })
+        // A refusal at machine start fails before `start` returns.
+        refused.start.mockImplementation(() =>
+            refused.emit({
+                value: 'failed',
+                request,
+                error: new AppError('refused', {}),
+            }),
+        )
+        const next = makeMockActor('tx-2')
+        vi.mocked(createSigningMachine)
+            .mockReturnValueOnce(refused as never)
+            .mockReturnValueOnce(next as never)
+
+        const { result } = renderHook(() => useSigningActorLifecycle())
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+        act(() => {
+            useSigningStore
+                .getState()
+                .addSignRequest(makeTxRequest({ id: 'tx-2' }))
+        })
+        await flushQueue()
+
+        expect(result.current.getActorRef('tx-1')).toBeUndefined()
+        expect(next.start).toHaveBeenCalled()
     })
 
     test("captures the request chain's selected scope for the machine and its transports", async () => {
@@ -589,6 +621,33 @@ describe('useSigningActorLifecycle', () => {
         })
 
         expect(actor.send).toHaveBeenCalledWith({ type: 'USER_APPROVED' })
+    })
+
+    test('isSignRequestPastApproval holds only once the actor leaves the approval gate', async () => {
+        const actor = makeMockActor('tx-past')
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+        renderHook(() => useSigningActorLifecycle())
+        const request = makeTxRequest({ id: 'tx-past' })
+        expect(isSignRequestPastApproval('tx-past')).toBe(false)
+
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+        act(() => {
+            actor.emit({ value: 'awaiting_user', request })
+        })
+        expect(isSignRequestPastApproval('tx-past')).toBe(false)
+
+        act(() => {
+            actor.emit({ value: { signing: 'local' }, request })
+        })
+        expect(isSignRequestPastApproval('tx-past')).toBe(true)
+
+        act(() => {
+            actor.emit({ value: 'transporting', request })
+        })
+        expect(isSignRequestPastApproval('tx-past')).toBe(true)
     })
 
     test('rejected gate result forwards USER_REJECTED to the actor', async () => {

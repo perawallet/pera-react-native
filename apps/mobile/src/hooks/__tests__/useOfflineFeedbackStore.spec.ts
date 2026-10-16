@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useOfflineFeedbackStore } from '@hooks/useOfflineFeedbackStore'
 

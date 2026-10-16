@@ -25,11 +25,17 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mocks.submit }),
 }))
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSubmitAndConfirmMutation } from '../useSubmitAndConfirmMutation'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 
 const PARAMS = {
     unsignedTxs: [],
@@ -42,14 +48,15 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
     </QueryClientProvider>
 )
 
-const renderMutation = () =>
-    renderHook(() => useSubmitAndConfirmMutation(SCOPE), { wrapper })
+const renderMutation = (scope: ChainScope) =>
+    renderHook(() => useSubmitAndConfirmMutation(scope), { wrapper })
 
-describe('useSubmitAndConfirmMutation', () => {
+describe.each(SCOPES)('useSubmitAndConfirmMutation ($chainId)', SCOPE => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.waitForTransactionConfirmation.mockResolvedValue(undefined)
         registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
             awaitConfirmation: mocks.waitForTransactionConfirmation,
         })
     })
@@ -63,7 +70,7 @@ describe('useSubmitAndConfirmMutation', () => {
         mocks.waitForTransactionConfirmation.mockImplementation(async () => {
             order.push('confirm')
         })
-        const { result } = renderMutation()
+        const { result } = renderMutation(SCOPE)
 
         let submitted: unknown
         await act(async () => {
@@ -84,7 +91,7 @@ describe('useSubmitAndConfirmMutation', () => {
 
     it('skips the wait when nothing was submitted', async () => {
         mocks.submit.mockResolvedValue({ txIds: [] })
-        const { result } = renderMutation()
+        const { result } = renderMutation(SCOPE)
 
         await act(async () => {
             await result.current.mutateAsync(PARAMS)
@@ -95,7 +102,7 @@ describe('useSubmitAndConfirmMutation', () => {
 
     it('propagates a submit failure without waiting or retrying', async () => {
         mocks.submit.mockRejectedValue(new Error('rejected'))
-        const { result } = renderMutation()
+        const { result } = renderMutation(SCOPE)
 
         await act(async () => {
             await expect(result.current.mutateAsync(PARAMS)).rejects.toThrow(

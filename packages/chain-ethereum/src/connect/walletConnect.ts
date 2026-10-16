@@ -10,11 +10,14 @@
  limitations under the License
  */
 
-import { numberToHex } from 'viem'
+import { bytesToHex, numberToHex } from 'viem'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
-import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
+import type {
+    DappRequestChainAdapter,
+    DappRequestFailure,
+} from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { eip155ChainIdOf } from '../accounts/address-codec'
+import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumDescriptor } from '../descriptor'
 
 export const ETHEREUM_CAIP2_NAMESPACE = 'eip155'
@@ -31,6 +34,16 @@ export const ETHEREUM_WC_V2_METHOD = {
     // additional EVM chain.
     addChain: 'wallet_addEthereumChain',
 } as const
+
+/** EIP-1193 provider error codes, and EIP-1474's invalid params and limit exceeded, which viem and wagmi read. */
+const EIP_1193_CODE: Record<DappRequestFailure, number> = {
+    'user-rejected': 4001,
+    'unauthorized-account': 4100,
+    'unsupported-method': 4200,
+    'unselected-chain': 4901,
+    'invalid-params': -32_602,
+    'limit-exceeded': -32_005,
+}
 
 const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>
     ethereumDescriptor.networks.find(network => network.id === networkId)
@@ -98,7 +111,7 @@ const v2: NonNullable<DappRequestChainAdapter['walletConnect']['v2']> = {
                 return {
                     kind: 'public-data',
                     answer: (_addresses, networkId) => {
-                        const eip155ChainId = eip155ChainIdOf(networkId)
+                        const eip155ChainId = eip155ChainIdOfNetwork(networkId)
                         return eip155ChainId === undefined
                             ? null
                             : numberToHex(eip155ChainId)
@@ -117,8 +130,16 @@ export const ethereumWalletConnectSupport: DappRequestChainAdapter['walletConnec
         namespace: ETHEREUM_CAIP2_NAMESPACE,
         caip2ChainIdFor,
         networkForCaip2ChainId,
-        toWireResult: () => {
-            throw new Error('Ethereum has no WalletConnect result kind yet')
+        toWireResult: result => {
+            if (result.type === 'send-transaction') return result.txId
+            if (
+                result.type === 'sign-message' ||
+                result.type === 'sign-typed-data'
+            ) {
+                return bytesToHex(result.signature)
+            }
+            throw new Error(`Ethereum answers no ${result.type} result`)
         },
+        toWireErrorCode: failure => EIP_1193_CODE[failure],
         v2,
     }

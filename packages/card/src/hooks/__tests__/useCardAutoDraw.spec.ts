@@ -12,21 +12,28 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import {
+    type ChainScope,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 import { useCardAutoDraw } from '../useCardAutoDraw'
 
-const SCOPE = scopeForLegacyNetwork('testnet')
+const SCOPES: ChainScope[] = [
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'ethereum', networkId: 'sepolia' },
+]
 const account = { address: 'FUNDING' } as WalletAccount
 
 const enableAutoDraw = vi.fn(async () => undefined)
 const disableAutoDraw = vi.fn(async () => undefined)
 
-describe('useCardAutoDraw', () => {
+describe.each(SCOPES)('useCardAutoDraw ($chainId)', SCOPE => {
     beforeEach(() => {
         vi.clearAllMocks()
         registerFakeCardAdapter({
+            chainId: SCOPE.chainId,
             autoDraw: { enableAutoDraw, disableAutoDraw },
         })
     })

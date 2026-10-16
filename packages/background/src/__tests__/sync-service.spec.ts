@@ -146,6 +146,7 @@ function cursorState(rounds: Record<string, number | null>) {
     }
 }
 const mockReconcileOpenSubmissions = vi.fn()
+const mockLedgerListeners = new Set<() => void>()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     broadcasterChainAdapters: {
@@ -153,6 +154,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
     reconcileOpenSubmissions: (...args: unknown[]) =>
         mockReconcileOpenSubmissions(...args),
+    subscribeToSubmissionLedger: (listener: () => void) => {
+        mockLedgerListeners.add(listener)
+        return () => {
+            mockLedgerListeners.delete(listener)
+        }
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -222,6 +229,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     ),
     getLatestTransactionRoundTime: vi.fn(() => Promise.resolve(null)),
     upsertTransactions: vi.fn(() => Promise.resolve()),
+    invalidateSpendableBalanceQueries: vi.fn(),
     invalidateTransactionQueries: vi.fn(),
     invalidateTransactionQueriesForAddresses: vi.fn(),
     fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
@@ -231,7 +239,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
     isPeraNetworkError: (error: unknown) =>
         error instanceof Error && error.name === 'PeraNetworkError',
-    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     partition: (arr: unknown[], size: number) => {
         const result = []
         for (let i = 0; i < arr.length; i += size) {
@@ -340,6 +347,39 @@ describe('SyncService', () => {
 
         service.stop()
         expect(service.isRunning()).toBe(false)
+    })
+
+    describe('submission ledger', () => {
+        const ledgerChanged = () => {
+            for (const listener of mockLedgerListeners) listener()
+        }
+
+        it('re-prices the spendable balance once for a burst of ledger writes', async () => {
+            const { invalidateSpendableBalanceQueries } =
+                await import('@perawallet/wallet-core-transactions')
+            service.start()
+
+            ledgerChanged()
+            ledgerChanged()
+            ledgerChanged()
+            expect(invalidateSpendableBalanceQueries).not.toHaveBeenCalled()
+            await vi.advanceTimersByTimeAsync(250)
+
+            expect(invalidateSpendableBalanceQueries).toHaveBeenCalledTimes(1)
+            expect(invalidateSpendableBalanceQueries).toHaveBeenCalledWith(
+                queryClient,
+            )
+        })
+
+        it('subscribes once while running and not after stop', () => {
+            service.start()
+            service.start()
+            expect(mockLedgerListeners.size).toBe(1)
+
+            service.stop()
+
+            expect(mockLedgerListeners.size).toBe(0)
+        })
     })
 
     it('reconciles open submission attempts on each online tick', async () => {
@@ -1073,7 +1113,7 @@ describe('SyncService', () => {
             const { fetchAndPersistTransactions } =
                 await import('@perawallet/wallet-core-transactions')
 
-            await service.refreshAccounts([], 'mainnet')
+            await service.refreshAccounts([], MAINNET)
 
             expect(fetchAndPersistAccount).not.toHaveBeenCalled()
             expect(fetchAndPersistTransactions).not.toHaveBeenCalled()
@@ -1087,7 +1127,7 @@ describe('SyncService', () => {
                 invalidateTransactionQueriesForAddresses,
             } = await import('@perawallet/wallet-core-transactions')
 
-            await service.refreshAccounts(['ADDR1', 'ADDR2'], 'testnet')
+            await service.refreshAccounts(['ADDR1', 'ADDR2'], TESTNET)
 
             expect(fetchAndPersistAccount).toHaveBeenCalledTimes(2)
             expect(fetchAndPersistAccount).toHaveBeenCalledWith('ADDR1', {
@@ -1130,7 +1170,7 @@ describe('SyncService', () => {
                 observedRound: null,
             })
 
-            await service.refreshAccounts(['ADDR1'], 'mainnet')
+            await service.refreshAccounts(['ADDR1'], MAINNET)
 
             expect(invalidateAccountQueries).not.toHaveBeenCalled()
             expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
@@ -1159,7 +1199,7 @@ describe('SyncService', () => {
             )
 
             await expect(
-                service.refreshAccounts(['ADDR1', 'ADDR2'], 'mainnet'),
+                service.refreshAccounts(['ADDR1', 'ADDR2'], MAINNET),
             ).resolves.toBeUndefined()
 
             expect(logger.warn).toHaveBeenCalledWith(
@@ -1187,7 +1227,7 @@ describe('SyncService', () => {
                 new Error('all fetches fail'),
             )
 
-            await service.refreshAccounts(['ADDR1'], 'mainnet')
+            await service.refreshAccounts(['ADDR1'], MAINNET)
 
             // A rejected fetch reports no holdings change, so the scoped
             // (non-broad) path applies.
@@ -1215,7 +1255,7 @@ describe('SyncService', () => {
             } = await import('@perawallet/wallet-core-assets')
 
             // Default mock: fetchAndPersistAccount returns holdingsChanged: true.
-            await service.refreshAccounts(['ADDR1'], 'mainnet')
+            await service.refreshAccounts(['ADDR1'], MAINNET)
 
             expect(getAllHeldAssetIdsForNetwork).toHaveBeenCalledWith({
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
@@ -1243,7 +1283,7 @@ describe('SyncService', () => {
                 observedRound: null,
             })
 
-            await service.refreshAccounts(['ADDR1'], 'mainnet')
+            await service.refreshAccounts(['ADDR1'], MAINNET)
 
             expect(fetchAndPersistAssets).not.toHaveBeenCalled()
             expect(invalidateAssetQueries).not.toHaveBeenCalled()
@@ -1264,7 +1304,7 @@ describe('SyncService', () => {
             )
 
             await expect(
-                service.refreshAccounts(['ADDR1'], 'mainnet'),
+                service.refreshAccounts(['ADDR1'], MAINNET),
             ).resolves.toBeUndefined()
 
             // Default mock reports holdingsChanged → broad accounts pass.

@@ -25,6 +25,7 @@ import {
     ArbitraryDataSigningDetailsScreen,
     Arc60SigningScreen,
     Arc60SigningDetailsScreen,
+    MessageSigningScreen,
 } from '@modules/signing/screens'
 import { SettingsSecurityScreen } from '@modules/security/routes'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -46,6 +47,9 @@ const useInitialRouteConfig = (): InitialRouteConfig | null => {
         }
         case 'auth-data': {
             return { initialRoute: 'Arc60Signing' }
+        }
+        case 'message': {
+            return { initialRoute: 'MessageSigning' }
         }
         case 'transactions': {
             return resolved.kind.hasMultiple
@@ -117,6 +121,11 @@ export const SigningRoutes = () => {
             <Stack.Screen
                 name='Arc60Signing'
                 component={Arc60SigningScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name='MessageSigning'
+                component={MessageSigningScreen}
                 options={{ headerShown: false }}
             />
             <Stack.Screen

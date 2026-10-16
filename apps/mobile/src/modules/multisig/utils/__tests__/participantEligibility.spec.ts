@@ -12,6 +12,8 @@
 
 // @vitest-environment node
 
+// @vitest-environment node
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { accountForType } from '@test-utils/accountCustody'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'

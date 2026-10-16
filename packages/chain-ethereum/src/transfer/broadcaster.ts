@@ -16,7 +16,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
-import { toError } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     SubmissionError,
     TransportError,
@@ -69,7 +69,7 @@ export const createEthereumBroadcasterAdapter = (
             )
         },
         createSubmitTransport: (capturedScope): DataTransport => ({
-            send: async result => {
+            send: async (result, source) => {
                 const { signedData } = result
                 if (signedData.type !== 'signed-transactions') {
                     throw new TransportError(
@@ -77,16 +77,17 @@ export const createEthereumBroadcasterAdapter = (
                     )
                 }
                 assertScopeUnchanged(capturedScope)
+                let txIds: string[]
                 try {
-                    const txIds = await submitAndRecordEthereumTransactions({
+                    txIds = await submitAndRecordEthereumTransactions({
                         client: clientFor(capturedScope),
                         scope: capturedScope,
                         signedTransactions: signedData.signed.map(
                             signed => signed.bytes,
                         ),
+                        historyEntries: signedData.historyEntries,
                         flow: 'pipeline',
                     })
-                    return { type: 'submitted', txIds }
                 } catch (error) {
                     // Keeps the classification: wrapping would make a node
                     // refusal look retryable.
@@ -94,13 +95,25 @@ export const createEthereumBroadcasterAdapter = (
                     const cause = toError(error)
                     throw new TransportError(cause.message, cause)
                 }
+                // The transaction is in flight, so a failing callback must not
+                // fail the pipeline; the dApp waits until its request expires.
+                if (source.callbacks?.approve) {
+                    try {
+                        await source.callbacks.approve(result, { txIds })
+                        return { type: 'submitted-and-answered', txIds }
+                    } catch (error) {
+                        logger.error(
+                            'Ethereum transport: approve callback failed after submission',
+                            { error },
+                        )
+                    }
+                }
+                return { type: 'submitted', txIds }
             },
         }),
         submitAndAutoRefresh: () =>
             Promise.reject(
-                new Error(
-                    "Ethereum submits through createSubmitTransport: submitAndAutoRefresh takes Algorand's PeraSignedTransaction envelope",
-                ),
+                new Error('Ethereum submits through createSubmitTransport'),
             ),
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,
@@ -110,8 +123,7 @@ export const createEthereumBroadcasterAdapter = (
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
         }),
-        // The handler takes Algorand's legacy Network; Ethereum confirms
-        // through the reconciler.
+        // Ethereum confirms through the reconciler, not a completion handler.
         setOnConfirmedHandler: () => undefined,
         setSubmissionSettledHandler: setEthereumSubmissionSettledHandler,
         submitTimeoutError: timeoutMs =>

@@ -34,11 +34,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 describe('useAssetSortContent', () => {
     beforeEach(() => {

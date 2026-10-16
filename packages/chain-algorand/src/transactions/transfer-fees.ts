@@ -20,7 +20,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { createWalletAlgorandClient, getMinimumFeeConfig } from '../blockchain'
 import { algorandDescriptor } from '../descriptor'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { resolveMinFeeForSender } from '../signing/minFeeResolver'
 import { assertBuildableIntent } from './transfer-validation'
 

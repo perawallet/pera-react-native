@@ -12,10 +12,12 @@
 
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
+import { ethereumChainUi } from '@modules/ethereum/chain-ui'
 import type { ChainUi, ChainUiRegistry } from './types'
 
 export const chainUiRegistry: ChainUiRegistry = {
     algorand: algorandChainUi,
+    evm: ethereumChainUi,
 }
 
 const NO_CHAIN_UI: ChainUi = {}
