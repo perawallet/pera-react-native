@@ -12,7 +12,10 @@
 
 import { numberToHex } from 'viem'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
-import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
+import type {
+    DappRequestChainAdapter,
+    DappRequestFailure,
+} from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumDescriptor } from '../descriptor'
@@ -31,6 +34,15 @@ export const ETHEREUM_WC_V2_METHOD = {
     // additional EVM chain.
     addChain: 'wallet_addEthereumChain',
 } as const
+
+/** EIP-1193 provider error codes, and JSON-RPC's invalid params, which viem and wagmi read. */
+const EIP_1193_CODE: Record<DappRequestFailure, number> = {
+    'user-rejected': 4001,
+    'unauthorized-account': 4100,
+    'unsupported-method': 4200,
+    'unselected-chain': 4901,
+    'invalid-params': -32_602,
+}
 
 const caip2ChainIdFor = (networkId: NetworkId): Nullable<string> =>
     ethereumDescriptor.networks.find(network => network.id === networkId)
@@ -117,8 +129,10 @@ export const ethereumWalletConnectSupport: DappRequestChainAdapter['walletConnec
         namespace: ETHEREUM_CAIP2_NAMESPACE,
         caip2ChainIdFor,
         networkForCaip2ChainId,
-        toWireResult: () => {
-            throw new Error('Ethereum has no WalletConnect result kind yet')
+        toWireResult: result => {
+            if (result.type === 'send-transaction') return result.txId
+            throw new Error(`Ethereum answers no ${result.type} result yet`)
         },
+        toWireErrorCode: failure => EIP_1193_CODE[failure],
         v2,
     }

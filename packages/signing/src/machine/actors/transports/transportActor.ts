@@ -23,7 +23,10 @@ import type {
     TransportResult,
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
-import { plannerAdapterForScope } from '../../../chain-adapter'
+import {
+    plannerAdapterForScope,
+    plannerChainAdapters,
+} from '../../../chain-adapter'
 import { CannotSignError } from '../../../pipeline/errors'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
@@ -41,6 +44,23 @@ export type TransportActorInput = {
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
     scope: ChainScope
+}
+
+// A chain with no planner adapter has nothing to merge, so it delivers its
+// single group as signed.
+const mergeResults = (
+    scope: ChainScope,
+    signingResults: SigningResult[],
+): SigningResult => {
+    if (plannerChainAdapters.has(scope.chainId)) {
+        return plannerAdapterForScope(scope).mergeSigningResults(signingResults)
+    }
+    if (signingResults.length !== 1) {
+        throw new Error(
+            `Chain ${scope.chainId} cannot merge ${signingResults.length} signing results`,
+        )
+    }
+    return signingResults[0]
 }
 
 /**
@@ -103,8 +123,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         }
 
         const transport = createTransport(source, authAccount)
-        const merged =
-            plannerAdapterForScope(scope).mergeSigningResults(signingResults)
+        const merged = mergeResults(scope, signingResults)
 
         return transport.send(merged, source, authAddress)
     },

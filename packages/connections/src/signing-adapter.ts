@@ -35,6 +35,7 @@ import {
     type PeraArbitraryDataSignResult,
     type RejectReason,
     type SignRequest,
+    type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
     authorityOf,
@@ -44,6 +45,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    DappRequestRejectedError,
     dappRequestChainAdapters,
     type EnqueueTransactionSigning,
 } from './dappRequest'
@@ -238,7 +240,7 @@ const enqueueDataSignRequest = (
                 removeSignRequest(signRequest)
                 return
             }
-            rejectInBackground(message, new Error('User rejected'))
+            rejectInBackground(message, new DappRequestRejectedError())
         },
         error: async (error: Error) => {
             if (failRequest(message, error, onError)) {
@@ -388,6 +390,91 @@ const enqueueSignDataRequest = (
     enqueueArc60Request(message, payload, deps)
 }
 
+// The wallet builds the transaction from the dApp's request, so the user is
+// shown the wallet's own priced transaction rather than the dApp's claim.
+const enqueueSendTransactionRequest = (
+    message: RequestMessage,
+    request: unknown,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const { addSignRequest, removeSignRequest, onError } = deps
+    const sending = dappRequestChainAdapters.get(
+        message.chainId,
+    ).sendTransaction
+    if (!sending) {
+        declineRequest(
+            message,
+            new Error(`${message.chainId} sends no transaction for a dApp`),
+            onError,
+        )
+        return
+    }
+
+    trackRequest(deps, message, null)
+    Promise.resolve()
+        .then(() => sending.build(request))
+        .then(
+            transaction => {
+                // An expiry while the chain built the transaction: the peer no longer takes an answer.
+                if (deps.pendingRequests.get(requestKey(message))?.isExpired) {
+                    forgetRequest(deps, message)
+                    return
+                }
+                const signRequest: UnsignedTransactionSignRequest = {
+                    id: generateOrderedUniqueId(),
+                    type: 'transactions',
+                    // Routes an external source to the chain's broadcaster, which
+                    // answers through `approve` once the transaction is submitted.
+                    transport: 'algod',
+                    sourceType: message.sourceType,
+                    transportId: message.connectionId,
+                    sourceMetadata: message.peer,
+                    verifiedOrigin: message.verifiedOrigin,
+                    txs: [transaction],
+                    approve: async (_signed, submission) => {
+                        const txId = submission?.txIds[0]
+                        if (txId === undefined) {
+                            throw new Error(
+                                'The transaction was approved without being submitted',
+                            )
+                        }
+                        await message.respond({
+                            type: 'send-transaction',
+                            txId,
+                        })
+                        forgetRequest(deps, message)
+                    },
+                    reject: async (reason: RejectReason = { kind: 'user' }) => {
+                        forgetRequest(deps, message)
+                        if (reason.kind === 'softReject') {
+                            await message.reject(reason.error)
+                            removeSignRequest(signRequest)
+                            return
+                        }
+                        rejectInBackground(
+                            message,
+                            new DappRequestRejectedError(),
+                        )
+                    },
+                    error: async (error: Error) => {
+                        if (failRequest(message, error, onError)) {
+                            forgetRequest(deps, message)
+                            removeSignRequest(signRequest)
+                        }
+                    },
+                }
+                addSignRequest(signRequest)
+                settleTrackedRequest(deps, message, () =>
+                    removeSignRequest(signRequest),
+                )
+            },
+            (error: unknown) => {
+                forgetRequest(deps, message)
+                declineRequest(message, toError(error), onError)
+            },
+        )
+}
+
 export type EnqueueInboundRequestDeps = {
     transactionSigning: ChainTransactionSigning
     addSignRequest: (request: SignRequest) => void
@@ -468,7 +555,10 @@ export const enqueueInboundRequest = (
                     },
                     respondWithReject: () => {
                         forgetRequest(deps, message)
-                        rejectInBackground(message, new Error('User rejected'))
+                        rejectInBackground(
+                            message,
+                            new DappRequestRejectedError(),
+                        )
                     },
                     respondWithSoftReject: async error => {
                         await message.reject(error)
@@ -504,6 +594,11 @@ export const enqueueInboundRequest = (
                 declineRequest(message, toError(error), deps.onError)
             },
         )
+        return
+    }
+
+    if (message.operation.type === 'send-transaction') {
+        enqueueSendTransactionRequest(message, message.operation.request, deps)
         return
     }
 

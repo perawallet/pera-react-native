@@ -101,10 +101,19 @@ const PERMISSION_METHODS: readonly DappMethod[] = DAPP_METHODS.filter(
     method => method !== 'getEmptySignatures',
 )
 
-const toWireResult = (result: WalletOperationResult): unknown =>
-    result.type === 'sign-transactions'
-        ? result.signed
-        : result.signatures.map(encodeToBase64)
+const toWireResult = (result: WalletOperationResult): unknown => {
+    switch (result.type) {
+        case 'sign-transactions': {
+            return result.signed
+        }
+        case 'sign-data': {
+            return result.signatures.map(encodeToBase64)
+        }
+        default: {
+            throw new Error(`The dApp bridge routes no ${result.type} request`)
+        }
+    }
+}
 
 const toErrorResponse = (
     id: JsonRpcRequest['id'],

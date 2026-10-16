@@ -25,7 +25,10 @@ import {
     transactionReviewers,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
-import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
+import {
+    dappRequestChainAdapters,
+    type DappRequestChainAdapter,
+} from '@perawallet/wallet-core-connections/dappRequest'
 import {
     broadcasterChainAdapters,
     messageSignerChainAdapters,
@@ -43,7 +46,7 @@ import {
     ethereumKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
-import { ethereumDappRequestAdapter } from './connect/dappRequestAdapter'
+import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
 import { ethereumDeeplinkAdapter } from './deeplinks/adapter'
 import { ethereumHistoryAdapter } from './history'
 import { ethereumPlannerAdapter } from './signing/adapter'
@@ -61,12 +64,14 @@ let accountsAdapter: AccountsChainAdapter | undefined
 let assetsAdapter: AssetsChainAdapter | undefined
 let transferAdapter: TransferChainAdapter | undefined
 let broadcasterAdapter: BroadcasterChainAdapter | undefined
+let dappRequestAdapter: DappRequestChainAdapter | undefined
 
 export const registerChain = (ctx: ChainContext): void => {
     accountsAdapter ??= createEthereumAccountsAdapter(ctx)
     assetsAdapter ??= createEthereumAssetsAdapter(ctx)
     transferAdapter ??= createEthereumTransferAdapter(ctx)
     broadcasterAdapter ??= createEthereumBroadcasterAdapter(ctx)
+    dappRequestAdapter ??= createEthereumDappRequestAdapter(ctx)
     addressCodecs.register(ethereumAddressCodec)
     keyDerivations.register(ethereumKeyDerivation)
     transactionPlanners.register(ethereumPlannerAdapter)
@@ -77,6 +82,6 @@ export const registerChain = (ctx: ChainContext): void => {
     transferChainAdapters.register(transferAdapter)
     broadcasterChainAdapters.register(broadcasterAdapter)
     historyChainAdapters.register(ethereumHistoryAdapter)
-    dappRequestChainAdapters.register(ethereumDappRequestAdapter)
+    dappRequestChainAdapters.register(dappRequestAdapter)
     deeplinkAdapters.register(ethereumDeeplinkAdapter)
 }

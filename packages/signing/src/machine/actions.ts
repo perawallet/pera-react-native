@@ -115,11 +115,15 @@ const transactionApproveOf = (
         return (
             approve &&
             (async (result, submission) => {
+                // Already in the chain's wire form, and a chain with no
+                // planner adapter has no `signedTransactionsOf` to ask.
                 await approve(
-                    plannerAdapterForScope(scope).signedTransactionsOf(
-                        result,
-                        scope,
-                    ),
+                    result.signedData.type === 'signed-transactions'
+                        ? result.signedData.signed
+                        : plannerAdapterForScope(scope).signedTransactionsOf(
+                              result,
+                              scope,
+                          ),
                     submission,
                 )
             })

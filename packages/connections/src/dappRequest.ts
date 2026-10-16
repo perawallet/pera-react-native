@@ -17,6 +17,7 @@ import {
     type ChainId,
     type ChainScope,
     type NetworkId,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 // Type-only: keeps the `./dappRequest` subpath hook-free and light, since
 // walletconnect resolves it from source without pulling in signing's runtime.
@@ -25,6 +26,41 @@ import type {
     SignRequest,
 } from '@perawallet/wallet-core-signing'
 import type { WalletOperationResult, WalletOperationType } from './models'
+
+/**
+ * Why a dApp request failed, in no chain's wire vocabulary. A namespace's
+ * `toWireErrorCode` turns it into the numbers its dApps expect.
+ */
+export const DAPP_REQUEST_FAILURES = [
+    'user-rejected',
+    'unauthorized-account',
+    'unsupported-method',
+    'unselected-chain',
+    'invalid-params',
+] as const
+
+export type DappRequestFailure = (typeof DAPP_REQUEST_FAILURES)[number]
+
+export class DappRequestRejectedError extends Error {
+    readonly failure = 'user-rejected' as const
+
+    constructor() {
+        super('User rejected')
+        this.name = 'DappRequestRejectedError'
+    }
+}
+
+/**
+ * Read structurally rather than by `instanceof`: walletconnect resolves this
+ * module as its own subpath copy, so a class check would miss an error built
+ * in the main bundle.
+ */
+export const dappRequestFailureOf = (
+    error: Error,
+): DappRequestFailure | undefined => {
+    const { failure } = error as { failure?: unknown }
+    return DAPP_REQUEST_FAILURES.find(known => known === failure)
+}
 
 export type DappSigningParamsResult =
     | { ok: true; payload: unknown }
@@ -48,6 +84,29 @@ export type EnqueueTransactionSigning = (
     request: TransactionSigningRequest,
     transport: ExternalSignTxnTransport,
 ) => Promise<Nullable<SignRequest>>
+
+export type DappSendTransactionValidation<Request = unknown> =
+    | { ok: true; request: Request }
+    | {
+          ok: false
+          failure: 'unauthorized-account' | 'invalid-params'
+          /** Reaches the peer. */
+          message: string
+      }
+
+/**
+ * A chain whose dApps ask the wallet to build and send a transaction from a
+ * request object, rather than handing it a transaction to sign.
+ */
+export interface DappTransactionSending {
+    /** Every refusal happens here, before anything is shown to the user. */
+    validate(
+        params: unknown,
+        authorizedAccounts: readonly string[],
+    ): DappSendTransactionValidation
+    /** Prices on the chain's selected network and rejects when the node can't. */
+    build(request: unknown): Promise<UnsignedTransaction>
+}
 
 /**
  * What a chain makes of one WalletConnect v2 request. `operation` params are
@@ -114,6 +173,11 @@ export interface DappRequestChainAdapter {
         /** The network a CAIP-2 chain id names, or `null` for none of ours. */
         networkForCaip2ChainId(caip2: string): NetworkId | null
         toWireResult(result: WalletOperationResult): unknown
+        /**
+         * Omitted by a namespace whose dApps expect the handler's defaults
+         * (`-32000` for a failed request, WalletConnect SDK errors for a refusal).
+         */
+        toWireErrorCode?(failure: DappRequestFailure): number
         /** Omitted by a chain v1 never served. */
         readonly v1?: {
             isChainIdAcceptable(
@@ -144,6 +208,8 @@ export interface DappRequestChainAdapter {
     validateTransactionPayload(
         payload: unknown,
     ): { ok: true; group: readonly unknown[] } | { ok: false; message: string }
+    /** Omitted by a chain whose dApps send no transaction for the wallet to build. */
+    readonly sendTransaction?: DappTransactionSending
     useEnqueueTransactionSigning: () => EnqueueTransactionSigning
     /**
      * The account kind the dApp bridge reports for `account` on `scope`, rekey

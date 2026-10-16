@@ -34,7 +34,12 @@ import {
 } from '@perawallet/wallet-core-chain-ethereum/testing'
 import { registerAlgorandRulesAs } from '../../__tests__/registerAlgorandAccounts'
 import type { TransactionSignRequest } from '../../models'
-import type { TransportResult } from '../../pipeline/types'
+import type {
+    DataTransport,
+    SigningResult,
+    SourceMetadata,
+    TransportResult,
+} from '../../pipeline/types'
 import type { SigningMachineInput } from '../context'
 import { signingMachine } from '../signingMachine'
 import { SIGNING_KEY_DOMAIN } from '../../constants'
@@ -126,5 +131,54 @@ describe('signing an Ethereum transaction through the machine', () => {
         expect(
             calls.map(({ keyPairId, domain }) => ({ keyPairId, domain })),
         ).toEqual([{ keyPairId: KEY_PAIR_ID, domain: SIGNING_KEY_DOMAIN }])
+    })
+
+    // Ethereum registers no signing planner adapter, so the transport and the
+    // approve callback must work without one.
+    it('delivers the signed transaction to a dApp request and answers with the submitted hash', async () => {
+        const { kms } = createVectorKeyStore()
+        const approve = vi.fn(async () => undefined)
+        const send = vi.fn(
+            async (
+                result: SigningResult,
+                source: SourceMetadata,
+            ): Promise<TransportResult> => {
+                await source.callbacks?.approve?.(result, { txIds: ['0xhash'] })
+                return { type: 'submitted-and-answered', txIds: ['0xhash'] }
+            },
+        )
+        const request: TransactionSignRequest = {
+            id: 'eth-dapp-send',
+            type: 'transactions',
+            transport: 'algod',
+            sourceType: 'walletconnect',
+            txs: [transfer],
+            approve,
+        }
+        const input = {
+            request,
+            allAccounts: [account],
+            signTransactions: vi.fn(),
+            signArbitraryData: vi.fn(),
+            signAuthData: vi.fn(),
+            createTransport: vi.fn((): DataTransport => ({ send })),
+            encodeTransaction: vi.fn(),
+            scope: MAINNET,
+            keyStore: kms,
+        } as unknown as SigningMachineInput
+
+        const actor = createActor(signingMachine, { input })
+        actor.start()
+        await waitFor(actor, s => s.matches('awaiting_user'))
+        actor.send({ type: 'USER_APPROVED' })
+        await waitFor(actor, s => s.matches('completed'))
+
+        expect(approve).toHaveBeenCalledTimes(1)
+        const [signed, receipt] = approve.mock.calls[0] as unknown as [
+            { bytes: Uint8Array }[],
+            { txIds: string[] },
+        ]
+        expect(`0x${bytesToHex(signed[0].bytes)}`).toBe(VIEM_TRANSFER_NONCE_0)
+        expect(receipt).toEqual({ txIds: ['0xhash'] })
     })
 })
