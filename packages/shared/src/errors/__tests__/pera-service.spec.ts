@@ -15,9 +15,11 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AppError, ErrorCategory } from '../base'
 import { PeraServiceUnavailableError } from '../pera-service'
 
+const BETANET = { chainId: 'algorand', networkId: 'betanet' } as const
+
 describe('PeraServiceUnavailableError', () => {
-    test('turns a legacy network into its scope and is not retryable', () => {
-        const error = new PeraServiceUnavailableError('betanet')
+    test('names the scope and is not retryable', () => {
+        const error = new PeraServiceUnavailableError(BETANET)
 
         // Not retryable: retrying cannot conjure a deployment that does not
         // exist. This is what separates it from a PeraNetworkError outage,
@@ -58,8 +60,17 @@ describe('PeraServiceUnavailableError', () => {
         })
     })
 
+    test('names a deployment when the request had no scope', () => {
+        const error = new PeraServiceUnavailableError({
+            deployment: 'developer',
+        })
+
+        expect(error.scope).toBeUndefined()
+        expect(error.targetKey).toBe('deployment/developer')
+    })
+
     test('declares user-facing copy that does not interpolate the scope', () => {
-        const error = new PeraServiceUnavailableError('betanet', 'assets')
+        const error = new PeraServiceUnavailableError(BETANET, 'assets')
 
         expect(error.metadata.messageKey).toBe(
             'errors.pera_service.unavailable',

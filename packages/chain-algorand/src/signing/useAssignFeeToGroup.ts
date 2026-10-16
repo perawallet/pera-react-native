@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useFetchSuggestedMinFee, useMinimumFeeConfig } from '../blockchain'
 import type { AssignFeeToGroup } from '@perawallet/wallet-core-signing'
 import { assignFeeToGroup } from './assignMinimumFeesToGroup'
@@ -21,6 +20,9 @@ import {
     algorandTransactionOf,
     withAlgorandTransaction,
 } from './unsignedTransaction'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
+import { algorandNetworkOf } from '../network-id'
 
 // The suggested-params fetch goes through `useFetchSuggestedMinFee`, the
 // shared query cache, and never blocks the flow: on failure it falls back to
@@ -50,7 +52,9 @@ export const useAssignFeeToGroup = (): AssignFeeToGroup => {
                         findFundedIndices({
                             ...coverage,
                             accounts: useAccountsStore.getState().accounts,
-                            network: useNetworkStore.getState().network,
+                            network: algorandNetworkOf(
+                                getSelectedScope(ALGORAND_CHAIN_ID),
+                            ),
                         }),
                 },
             )

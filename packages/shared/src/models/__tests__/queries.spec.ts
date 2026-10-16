@@ -16,25 +16,22 @@ import type {
     ResponseConfiguration,
     ResponseErrorConfiguration,
 } from '../queries'
-import { Networks } from '../base-types'
 
 describe('RequestConfiguration', () => {
     test('accepts backup backend configuration', () => {
         const config: RequestConfiguration = {
             backend: 'backup',
-            network: Networks.testnet,
             method: 'POST',
         }
 
         expect(config.backend).toBe('backup')
-        expect(config.network).toBe('testnet')
         expect(config.method).toBe('POST')
     })
 
     test('accepts pera backend configuration', () => {
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'PUT',
         }
 
@@ -54,7 +51,7 @@ describe('RequestConfiguration', () => {
         methods.forEach(method => {
             const config: RequestConfiguration = {
                 backend: 'pera',
-                network: Networks.mainnet,
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 method,
             }
 
@@ -65,7 +62,7 @@ describe('RequestConfiguration', () => {
     test('accepts optional url', () => {
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             url: '/v2/accounts',
         }
@@ -76,7 +73,7 @@ describe('RequestConfiguration', () => {
     test('accepts optional params', () => {
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             params: { limit: 10, offset: 0 },
         }
@@ -87,7 +84,7 @@ describe('RequestConfiguration', () => {
     test('accepts optional data', () => {
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'POST',
             data: { name: 'test', value: 123 },
         }
@@ -101,7 +98,7 @@ describe('RequestConfiguration', () => {
 
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'POST',
             data: formData,
         }
@@ -122,7 +119,7 @@ describe('RequestConfiguration', () => {
         responseTypes.forEach(responseType => {
             const config: RequestConfiguration = {
                 backend: 'pera',
-                network: Networks.mainnet,
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
                 method: 'GET',
                 responseType,
             }
@@ -135,7 +132,7 @@ describe('RequestConfiguration', () => {
         const controller = new AbortController()
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             signal: controller.signal,
         }
@@ -146,7 +143,7 @@ describe('RequestConfiguration', () => {
     test('accepts custom headers', () => {
         const config: RequestConfiguration = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'GET',
             headers: {
                 'X-Custom-Header': 'value',
@@ -168,7 +165,7 @@ describe('RequestConfiguration', () => {
 
         const config: RequestConfiguration<CustomData> = {
             backend: 'pera',
-            network: Networks.mainnet,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
             method: 'POST',
             data: { id: 1, name: 'test' },
         }

@@ -12,8 +12,8 @@
 
 import type { CardManualDepositBuildParams } from '@perawallet/wallet-core-card'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { cardAlgorandClient } from './client'
+import { type AlgorandNetworkId } from '../network-id'
 
 /**
  * Manual funding on the escrow design is a plain transfer to the card's own
@@ -27,7 +27,7 @@ export const buildAlgorandManualDeposit = async (
         assetId,
         amount,
     }: CardManualDepositBuildParams & { assetId: string },
-    network: Network,
+    network: AlgorandNetworkId,
 ): Promise<PeraTransaction[]> => {
     const composer = cardAlgorandClient(network).newGroup()
     composer.addAssetTransfer({

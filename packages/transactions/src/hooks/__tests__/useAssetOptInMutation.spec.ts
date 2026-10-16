@@ -64,9 +64,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         mockFetchAndPersistAssets(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 /** Base-unit (microAlgo) inputs, shaped as the on-chain read returns them. */
 const accountState = (

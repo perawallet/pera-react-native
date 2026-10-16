@@ -30,7 +30,6 @@ import {
     type ChainId,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-shared'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import type { WalletKitFactory } from '../client'
 import { createWalletConnectV2Handler } from '../handler'
@@ -78,7 +77,7 @@ const EIP_1193 = {
 
 const algorandAdapter = dappRequestAdapterFor({
     chainId: 'algorand',
-    networkId: Networks.mainnet,
+    networkId: 'mainnet',
 })
 if (!algorandAdapter) {
     throw new Error('the package setup file registers the Algorand adapter')
@@ -178,7 +177,7 @@ beforeEach(() => {
     connectable.clear()
     connectable.add('algorand')
     connectable.add('ethereum')
-    selectedNetworks.algorand = Networks.mainnet
+    selectedNetworks.algorand = 'mainnet'
     selectedNetworks.ethereum = 'mainnet'
 })
 

@@ -35,8 +35,8 @@ const auth = vi.hoisted(() => ({ acquireCardSessionTokens: vi.fn() }))
 vi.mock('../../api/auth', () => auth)
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSendEmailVerificationMutation } from '../useSendEmailVerificationMutation'
 import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
@@ -53,7 +53,7 @@ import { OnboardingNotVerifiedError } from '../../api/errors'
 import { cardQueryKeys } from '../querykeys'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('mainnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

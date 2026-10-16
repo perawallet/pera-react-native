@@ -30,7 +30,7 @@ import {
 import { encodeToBase64, logger } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { useFeeDelegation } from '../fee-delegation'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { autoDrawDelegationRequest } from './delegation'
 import { algorandAutoDraw } from './escrow/killswitch'
 import { compileAutoDrawProgram, resolveEscrowChainConfig } from './escrow/lsig'

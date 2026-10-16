@@ -11,16 +11,12 @@
  */
 
 import { sha256 } from '@noble/hashes/sha2.js'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     AutoDrawProgramUnverifiedError,
     CardEscrowNotConfiguredError,
 } from '@perawallet/wallet-core-card'
-import {
-    bytesToHex,
-    decodeFromBase64,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { bytesToHex, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { getAlgorandClient } from '../../blockchain'
 import { algorandCardConfig } from '../config'
 import {
@@ -30,6 +26,7 @@ import {
     TMPL_MAIN_APP,
 } from './autodraw-teal'
 import { verifyAutoDrawTealTemplate } from './verify-teal'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 
 /** The on-chain ids the escrow card flows need, as decimal strings. */
 export type AlgorandEscrowConfig = {
@@ -48,7 +45,7 @@ export type AlgorandEscrowConfig = {
  * unusable one.
  */
 export const resolveEscrowChainConfig = (
-    network: Network,
+    network: AlgorandNetworkId,
 ): AlgorandEscrowConfig => {
     const { mainAppId, killswitchAppId, usdcAssetId } =
         algorandCardConfig(network)
@@ -102,7 +99,7 @@ export const renderAutoDrawTeal = ({
  */
 export const verifyAutoDrawProgram = (
     program: Uint8Array,
-    network: Network,
+    network: AlgorandNetworkId,
     expected?: string,
 ): void => {
     const pinned = expected ?? algorandCardConfig(network).autoDrawProgramHash
@@ -127,13 +124,13 @@ export const verifyAutoDrawProgram = (
 export const compileAutoDrawProgram = async ({
     network,
 }: {
-    network: Network
+    network: AlgorandNetworkId
 }): Promise<Uint8Array> => {
     // Refuse to compile anything but the pinned, integrity-checked template —
     // the only program this delegation path is ever allowed to produce.
     verifyAutoDrawTealTemplate()
 
-    const { genesisHash } = getNetworkConfig(network)
+    const { genesisHash } = getAlgorandChainConfig(algorandScope(network))
     const teal = renderAutoDrawTeal({
         ...resolveEscrowChainConfig(network),
         genesisHashBase64: genesisHash,

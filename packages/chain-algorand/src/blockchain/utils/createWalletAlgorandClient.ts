@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    scopeForLegacyNetwork,
-    type PeraTransactionGroup,
-} from '@perawallet/wallet-core-chain-contract'
-import { getChainConfig, type Network } from '@perawallet/wallet-core-config'
+import { type PeraTransactionGroup } from '@perawallet/wallet-core-chain-contract'
+import { getChainConfig } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     PeraEncodedTransactionSigner,
@@ -23,6 +20,7 @@ import type {
 
 import { encodeSignedTransactions } from './transact'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
     throw new Error(
@@ -37,11 +35,11 @@ const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
  * hardware-wallet confirmation.
  */
 export const createWalletAlgorandClient = (
-    network: Network,
+    network: AlgorandNetworkId,
     signer?: PeraTransactionSigner,
 ) => {
     const client = createTimeoutBoundedAlgorandClient(
-        getChainConfig(scopeForLegacyNetwork(network)),
+        getChainConfig(algorandScope(network)),
     )
     // algokit-utils defaults this to 10 rounds (~30s) on non-localnet,
     // which expires before a hardware-wallet user can confirm on-device.

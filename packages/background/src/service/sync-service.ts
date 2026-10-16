@@ -29,11 +29,9 @@ import {
     logger,
     calculateBackoff,
     isPeraNetworkError,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -640,11 +638,10 @@ export class SyncService {
      */
     async refreshAccounts(
         addresses: string[],
-        network: Network,
+        scope: ChainScope,
     ): Promise<void> {
         if (addresses.length === 0) return
 
-        const scope = scopeForLegacyNetwork(network)
         const accountPass = await syncAccountsPhase(
             addresses,
             scope,
@@ -671,7 +668,7 @@ export class SyncService {
                 }
             } catch (error) {
                 logger.warn('Refresh asset enrichment failed', {
-                    network,
+                    scope,
                     error:
                         error instanceof Error
                             ? { message: error.message, stack: error.stack }

@@ -17,8 +17,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
-    scopeForLegacyNetwork,
     type AssetRef,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     transferChainAdapters,
@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account.chains[scope.chainId]?.address,
 }))
 
-const SCOPE = scopeForLegacyNetwork('mainnet')
+const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 const ALGO: AssetRef = { chainId: SCOPE.chainId, assetId: '0' }
 const ACCOUNT: WalletAccount = {
     id: 'sender',

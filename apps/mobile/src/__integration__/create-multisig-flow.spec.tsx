@@ -62,8 +62,8 @@ describe('Flow: Create a multisig account from scratch', () => {
         // `handleFinish` bails out early without a device ID. Seed both
         // networks so the test doesn't depend on the harness default.
         useDeviceStore.getState().resetState()
-        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
-        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('live', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('developer', 'test-device-id')
     })
 
     it('Given seeded participants, when the user advances from the create screen through the threshold step and confirms the info sheet, then the flow reaches the naming screen', async () => {

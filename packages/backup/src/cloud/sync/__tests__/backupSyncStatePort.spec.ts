@@ -63,8 +63,8 @@ describe('createBackupSyncStatePort', () => {
         const port = createBackupSyncStatePort()
 
         expect(port.getBackupId()).toBe('backup-123')
-        expect(port.getDeviceId('mainnet')).toBe('dev-id')
-        expect(mocks.resolveBackupDeviceId).toHaveBeenCalledWith('mainnet')
+        expect(port.getDeviceId('live')).toBe('dev-id')
+        expect(mocks.resolveBackupDeviceId).toHaveBeenCalledWith('live')
         expect(port.getSyncState()).toBe(stored)
     })
 

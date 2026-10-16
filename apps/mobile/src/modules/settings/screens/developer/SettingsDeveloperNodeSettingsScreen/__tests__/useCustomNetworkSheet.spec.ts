@@ -12,7 +12,6 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { Networks } from '@perawallet/wallet-core-shared'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     customNodeAdapters,
@@ -26,16 +25,11 @@ import {
     setCustomNetwork,
 } from '@packages/chain-algorand/src/blockchain/store/custom-network'
 import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const { switchNetwork, fetchGenesisFromNode, clearCustomNetworkCache } =
-    vi.hoisted(() => ({
-        switchNetwork: vi.fn(),
-        fetchGenesisFromNode: vi.fn(),
-        clearCustomNetworkCache: vi.fn(),
-    }))
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useSwitchNetwork: () => ({ switchNetwork }),
+const { fetchGenesisFromNode, clearCustomNetworkCache } = vi.hoisted(() => ({
+    fetchGenesisFromNode: vi.fn(),
+    clearCustomNetworkCache: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -60,9 +54,6 @@ describe('useCustomNetworkSheet', () => {
             ...algorandCustomNode,
             fetchGenesis: fetchGenesisFromNode,
         })
-        // Reset, not just clear: the persist-before-switch test installs an
-        // implementation that snapshots store state, which must not leak.
-        switchNetwork.mockReset()
         fetchGenesisFromNode.mockClear()
         // Reset, not clear: the clear-before-repoint test installs an
         // implementation that snapshots store state, which must not leak.
@@ -107,7 +98,7 @@ describe('useCustomNetworkSheet', () => {
     test('mounting the hook does not switch the network', () => {
         renderHook(() => useCustomNetworkSheet())
 
-        expect(switchNetwork).not.toHaveBeenCalled()
+        expect(useNetworkStore.getState().mode).toBe('live')
     })
 
     test('save persists the config and then commits the switch', async () => {
@@ -115,10 +106,18 @@ describe('useCustomNetworkSheet', () => {
         // only that both happened passes even if the switch runs FIRST, which
         // would let the app observe `custom` as active while the store is
         // still empty — the exact state this sheet exists to prevent. So
-        // snapshot what the store holds at the moment switchNetwork is called.
+        // snapshot what the store holds at the moment `custom` becomes active.
         let configAtSwitchTime: CustomNetworkConfig | undefined
-        switchNetwork.mockImplementation(() => {
-            configAtSwitchTime = getCustomNetworkConfig()
+        let hasSwitched = false
+        const unsubscribe = useNetworkStore.subscribe(state => {
+            if (
+                !hasSwitched &&
+                state.mode === 'developer' &&
+                state.selectedNetworkByChain[LEGACY_CHAIN_ID] === 'custom'
+            ) {
+                hasSwitched = true
+                configAtSwitchTime = getCustomNetworkConfig()
+            }
         })
 
         const { result } = renderHook(() => useCustomNetworkSheet())
@@ -142,7 +141,11 @@ describe('useCustomNetworkSheet', () => {
             algodUrl: 'http://10.0.0.5:4001',
             genesisHash: 'HASH=',
         })
-        expect(switchNetwork).toHaveBeenCalledWith(Networks.custom)
+        unsubscribe()
+        expect(useNetworkStore.getState().mode).toBe('developer')
+        expect(
+            useNetworkStore.getState().selectedNetworkByChain[LEGACY_CHAIN_ID],
+        ).toBe('custom')
         expect(configAtSwitchTime).toMatchObject({
             algodUrl: 'http://10.0.0.5:4001',
             genesisHash: 'HASH=',
@@ -157,7 +160,7 @@ describe('useCustomNetworkSheet', () => {
         })
 
         expect(getCustomNetworkConfig()).toBeUndefined()
-        expect(switchNetwork).not.toHaveBeenCalled()
+        expect(useNetworkStore.getState().mode).toBe('live')
     })
 
     test('an invalid URL blocks save entirely, including the switch', async () => {
@@ -179,7 +182,7 @@ describe('useCustomNetworkSheet', () => {
         expect(saved).toBe(false)
         expect(result.current.errors.algodUrl).toBe(true)
         expect(getCustomNetworkConfig()).toBeUndefined()
-        expect(switchNetwork).not.toHaveBeenCalled()
+        expect(useNetworkStore.getState().mode).toBe('live')
     })
 
     test('a missing genesis hash blocks save', async () => {
@@ -197,7 +200,7 @@ describe('useCustomNetworkSheet', () => {
         })
 
         expect(result.current.errors.genesisHash).toBe(true)
-        expect(switchNetwork).not.toHaveBeenCalled()
+        expect(useNetworkStore.getState().mode).toBe('live')
     })
 
     test('a missing genesis id blocks save', async () => {
@@ -221,7 +224,7 @@ describe('useCustomNetworkSheet', () => {
 
         expect(result.current.errors.genesisId).toBe(true)
         expect(getCustomNetworkConfig()).toBeUndefined()
-        expect(switchNetwork).not.toHaveBeenCalled()
+        expect(useNetworkStore.getState().mode).toBe('live')
     })
 
     test('fetch fills both genesis fields and leaves them editable', async () => {
@@ -384,7 +387,7 @@ describe('useCustomNetworkSheet', () => {
             expect(fetchGenesisFromNode).not.toHaveBeenCalled()
             expect(saved).toBe(false)
             expect(getCustomNetworkConfig()).toBeUndefined()
-            expect(switchNetwork).not.toHaveBeenCalled()
+            expect(useNetworkStore.getState().mode).toBe('live')
         })
     })
 })

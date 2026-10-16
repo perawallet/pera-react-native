@@ -22,7 +22,6 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useChainCapability,
     useIsCapabilityRestricted,
-    useNetwork,
 } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -114,7 +113,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const accountAddress = account ? addressOn(account, scope) : undefined
-    const { network } = useNetwork()
     const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
@@ -215,7 +213,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         // the reason has to be raised here or the button would do nothing.
         if (isUnavailableOnNetwork) {
             showError(
-                new PeraServiceUnavailableError(network),
+                new PeraServiceUnavailableError(scope),
                 t('common.network_unavailable.title'),
             )
             return
@@ -223,14 +221,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         if (accountAddress) {
             exportCsv({ accountAddress })
         }
-    }, [
-        accountAddress,
-        exportCsv,
-        isUnavailableOnNetwork,
-        network,
-        showError,
-        t,
-    ])
+    }, [accountAddress, exportCsv, isUnavailableOnNetwork, scope, showError, t])
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {

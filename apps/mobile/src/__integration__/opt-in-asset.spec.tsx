@@ -57,7 +57,6 @@ import {
     mockAlgodStatus,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -66,8 +65,12 @@ import {
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 import { addressOf } from './__fixtures__/accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 // Test host that mirrors what AddAssetView does for the "approve
 // opt-in" step: open the confirmation sheet via `requestBottomSheet`

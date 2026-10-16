@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAssetTransactionList } from '../useAssetTransactionList'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
@@ -29,7 +28,7 @@ import {
     isPeraServiceUnavailableError,
     type PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
-import { Networks } from '@perawallet/wallet-core-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mockRequestBottomSheet = vi.fn()
 const mockUseNetworkStatus = vi.hoisted(() => vi.fn())
@@ -89,7 +88,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 describe('useAssetTransactionList', () => {
     const ACCOUNT_ADDRESS =
@@ -177,7 +179,10 @@ describe('useAssetTransactionList', () => {
         })
 
         it('reads the history on the scope it is given', () => {
-            const testnet = scopeForLegacyNetwork('testnet')
+            const testnet = {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'testnet',
+            } as const
 
             renderHook(() =>
                 useAssetTransactionList({
@@ -567,7 +572,7 @@ describe('useAssetTransactionList', () => {
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
                 [ACCOUNT_ADDRESS],
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             )
         })
 
@@ -818,14 +823,17 @@ describe('useAssetTransactionList', () => {
             expect(result.current.isCsvExportVisible).toBe(true)
         })
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'keeps the export action visible on %s',
             network => {
                 mockCsvUnavailable()
 
                 const { result } = renderHook(() =>
                     useAssetTransactionList({
-                        scope: scopeForLegacyNetwork(network),
+                        scope: {
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: network,
+                        } as const,
                         account: mockAccount,
                         asset: mockAsset,
                     }),
@@ -835,14 +843,17 @@ describe('useAssetTransactionList', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'explains why instead of exporting on %s',
             network => {
                 mockCsvUnavailable()
 
                 const { result } = renderHook(() =>
                     useAssetTransactionList({
-                        scope: scopeForLegacyNetwork(network),
+                        scope: {
+                            chainId: LEGACY_CHAIN_ID,
+                            networkId: network,
+                        } as const,
                         account: mockAccount,
                         asset: mockAsset,
                     }),

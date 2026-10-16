@@ -19,13 +19,6 @@ vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 const ADDRESSES = ['ADDR1', 'ADDR2']
 
 const createDeferred = () => {
@@ -60,7 +53,10 @@ describe('useSyncRefresh', () => {
             result.current.refresh()
         })
 
-        expect(refreshAccounts).toHaveBeenCalledWith(ADDRESSES, 'mainnet')
+        expect(refreshAccounts).toHaveBeenCalledWith(ADDRESSES, {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(invalidateQueries).not.toHaveBeenCalled()
     })
 
@@ -183,16 +179,14 @@ describe('useSyncRefresh', () => {
             b.result.current.refresh()
         })
 
-        expect(refreshAccounts).toHaveBeenNthCalledWith(
-            1,
-            ['A_ADDR'],
-            'mainnet',
-        )
-        expect(refreshAccounts).toHaveBeenNthCalledWith(
-            2,
-            ['B_ADDR'],
-            'mainnet',
-        )
+        expect(refreshAccounts).toHaveBeenNthCalledWith(1, ['A_ADDR'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+        expect(refreshAccounts).toHaveBeenNthCalledWith(2, ['B_ADDR'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
 
         await act(async () => {
             accountA.resolve()
@@ -211,7 +205,10 @@ describe('useSyncRefresh', () => {
             result.current.refresh()
         })
 
-        expect(refreshAccounts).toHaveBeenCalledWith([], 'mainnet')
+        expect(refreshAccounts).toHaveBeenCalledWith([], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
         expect(result.current.isRefreshing).toBe(false)
     })
 

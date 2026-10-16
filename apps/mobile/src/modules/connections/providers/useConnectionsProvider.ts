@@ -11,11 +11,11 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
-    getSelectedScope,
-    useNetworkStore,
-} from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
@@ -36,6 +36,8 @@ import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useProposalQueue } from './useProposalQueue'
 
+const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
+
 /**
  * The handler factories run synchronously during render, before
  * `useConnectionsBoot`, so one that threw would take the whole provider — and
@@ -55,13 +57,14 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         // blockchain package into every importer's graph, `apps/browser`
         // included.
         const v1Handler = createWalletConnectV1Handler({
-            getNetwork: () => useNetworkStore.getState().network,
+            chainId: LEGACY_CHAIN_ID,
+            getNetworkId,
         })
         registry.register(v1Handler)
         v1HandlerRef.current = v1Handler
         registry.register(
             createWalletConnectV2Handler({
-                getNetworkId: chainId => getSelectedScope(chainId).networkId,
+                getNetworkId,
                 isDappConnectEnabled: chainId => {
                     const { chains } = getProvider()
                     return (

@@ -14,15 +14,15 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useAssetInboxInvalidator } from '../useAssetInboxInvalidator'
 import {
     getAssetInboxRequestsQueryKey,
     getAssetInboxSendSummaryQueryKey,
     transactionQueryKeys,
 } from '../querykeys'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const scope = scopeForLegacyNetwork('mainnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 const seed = () => {
     const queryClient = new QueryClient()

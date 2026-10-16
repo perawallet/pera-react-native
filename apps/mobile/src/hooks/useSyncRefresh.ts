@@ -12,7 +12,8 @@
 
 import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useIsMounted } from '@hooks/useIsMounted'
 
 type UseSyncRefreshParams = {
@@ -29,8 +30,8 @@ export type UseSyncRefreshResult = {
 // or, worse, be dropped by a guard another instance still holds.
 const inFlightRefreshes = new Map<string, Promise<void>>()
 
-const buildRefreshKey = (addresses: string[], network: string) =>
-    `${network}:${[...addresses].sort().join(',')}`
+const buildRefreshKey = (addresses: string[], networkId: string) =>
+    `${networkId}:${[...addresses].sort().join(',')}`
 
 /**
  * Pull-to-refresh for DB-first screens. Their queries hold
@@ -44,12 +45,12 @@ const buildRefreshKey = (addresses: string[], network: string) =>
 export const useSyncRefresh = ({
     addresses,
 }: UseSyncRefreshParams): UseSyncRefreshResult => {
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isMounted = useIsMounted()
     const [isRefreshing, setIsRefreshing] = useState(false)
 
     const refresh = useCallback(() => {
-        const key = buildRefreshKey(addresses, network)
+        const key = buildRefreshKey(addresses, scope.networkId)
         setIsRefreshing(true)
         void (async () => {
             try {
@@ -62,7 +63,7 @@ export const useSyncRefresh = ({
                 // refreshAccounts owns the invalidation fan-out; a second call
                 // here would re-fire it un-debounced for no new data.
                 const work = (async () =>
-                    getSyncService().refreshAccounts(addresses, network))()
+                    getSyncService().refreshAccounts(addresses, scope))()
                 inFlightRefreshes.set(key, work)
                 try {
                     await work
@@ -76,7 +77,7 @@ export const useSyncRefresh = ({
                 if (isMounted()) setIsRefreshing(false)
             }
         })()
-    }, [addresses, isMounted, network])
+    }, [addresses, isMounted, scope])
 
     return { isRefreshing, refresh }
 }

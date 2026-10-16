@@ -55,7 +55,7 @@ const makeRegistry = (order: string[]): ConnectionRegistry => ({
     pair: vi.fn(async () => 'pairing-id'),
     abandonPairing: vi.fn(),
     describeUri: vi.fn(() => ({})),
-    networksFor: vi.fn(() => []),
+    scopesFor: vi.fn(() => []),
     disconnect: vi.fn(async () => {}),
     disconnectAll: vi.fn(async () => {}),
     reconnect: vi.fn(),

@@ -51,10 +51,10 @@ import {
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { encodeTransactionRaw } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { buildMultisigCosignRequest } from '@modules/multisig/utils/buildMultisigCosignRequest'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The multisig account's address is the transaction sender; the seeded Algo25
 // signer is its (only) participant, so the wallet can sign for it.
@@ -135,8 +135,8 @@ describe('Flow: multisig signing review (propose)', () => {
         // The propose transport requires a registered device id before it
         // creates the backend sign-request (handoff precondition).
         useDeviceStore.getState().resetState()
-        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
-        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('live', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('developer', 'test-device-id')
         // Seed the participant's key, then register both it and the multisig
         // account so the wallet can sign for the multisig.
         await seedAlgo25Signer()
@@ -257,7 +257,7 @@ describe('Flow: multisig signing review (propose)', () => {
                 ],
             },
             signerAddress: REVIEW_SIGNER_ADDRESS,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             localAccounts: useAccountsStore.getState().accounts,
         })
 

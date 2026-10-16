@@ -11,10 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -40,7 +37,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
@@ -101,7 +98,6 @@ export const useCollectibleDetail = (
         false,
     )
     const account = useSelectedAccount()
-    const { network } = useNetwork()
     const isReadOnly = !useCanSignWith(account, scope.chainId)
     const canManageAssets = useCapability({
         chain: { chainId: scope.chainId, capability: 'manageAssets' },
@@ -318,16 +314,14 @@ export const useCollectibleDetail = (
     }, [assetId, saveableMediaUrl, saveableMedia, showToast, t])
 
     const handleSharePressed = useCallback(() => {
-        const networkConfig = getNetworkConfig(network)
-        const url = networkConfig.explorerUrl
-            ? `${networkConfig.explorerUrl}/asset/${assetId}`
-            : undefined
+        const { explorerUrl } = getAlgorandChainConfig(scope)
+        const url = explorerUrl ? `${explorerUrl}/asset/${assetId}` : undefined
 
         void shareText({
             message: t('asset_details.collectible.share_message'),
             url,
         })
-    }, [assetId, network, t])
+    }, [assetId, scope, t])
 
     // Carousel pages exclude models (shown as a 3D badge); indices below are
     // into this list.

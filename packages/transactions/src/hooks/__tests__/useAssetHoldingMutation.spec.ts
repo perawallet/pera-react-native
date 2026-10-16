@@ -39,9 +39,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         mockInvalidate(...args),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 const SOURCE = { name: 'test-source', description: 'Test source' }
 const SCOPE = { chainId: 'algorand', networkId: 'testnet' } as const

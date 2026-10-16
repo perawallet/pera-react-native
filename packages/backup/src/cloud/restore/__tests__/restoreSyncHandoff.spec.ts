@@ -81,7 +81,7 @@ const versionCheckingBackend = () => {
     const versions: Record<string, number> = { 'accounts/A': 1, 'secrets/A': 1 }
     const pushes: { key: string; expected: number }[] = []
 
-    const batchUpsertItems = vi.fn(async (_n, _b, _d, request) => ({
+    const batchUpsertItems = vi.fn(async (_b, _d, request) => ({
         results: request.items.map(
             (entry: { key: string; expected_ver: number }) => {
                 pushes.push({ key: entry.key, expected: entry.expected_ver })
@@ -108,7 +108,6 @@ const versionCheckingBackend = () => {
     return {
         pushes,
         deps: {
-            network: 'mainnet',
             backupId: 'did:pera:X',
             deviceId: 'device-1',
             encryptionKey: new Uint8Array(32).fill(7),

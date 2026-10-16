@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    isPeraNetworkError,
-    queryClient,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { isPeraNetworkError, queryClient } from '@perawallet/wallet-core-shared'
 import type {
     BackupId,
     BackupItemKey,
@@ -55,12 +51,10 @@ import { signedBackupRequest } from './signedRequest'
 import { API_PREFIX } from './constants'
 
 export const registerBackup = async (
-    network: Network,
     request: RegisterBackupRequest,
 ): Promise<RegisterBackupResponse> => {
     const response = await queryClient<unknown, RegisterBackupRequest>({
         backend: 'backup',
-        network,
         method: 'POST',
         url: `${API_PREFIX}/backup/register`,
         data: request,
@@ -73,12 +67,10 @@ export const registerBackup = async (
 }
 
 export const fetchManifest = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
 ): Promise<Manifest> => {
     const data = await signedBackupRequest<unknown>({
-        network,
         method: 'GET',
         backupId,
         pathSuffix: '/manifest',
@@ -107,7 +99,6 @@ export const isFromSeqTooOldError = (
 ): error is FromSeqTooOldError => error instanceof FromSeqTooOldError
 
 export const fetchDelta = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     fromSeq: number,
@@ -115,7 +106,6 @@ export const fetchDelta = async (
     let data: unknown
     try {
         data = await signedBackupRequest<unknown>({
-            network,
             method: 'GET',
             backupId,
             pathSuffix: '/delta',
@@ -136,13 +126,11 @@ export const fetchDelta = async (
 }
 
 export const fetchItem = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     key: BackupItemKey,
 ): Promise<EncryptedPayload> => {
     const data = await signedBackupRequest<unknown>({
-        network,
         method: 'GET',
         backupId,
         pathSuffix: `/${key}`,
@@ -153,13 +141,11 @@ export const fetchItem = async (
 }
 
 export const readItems = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     keys: BackupItemKey[],
 ): Promise<FetchedItem[]> => {
     const data = await signedBackupRequest<unknown, { keys: string[] }>({
-        network,
         method: 'POST',
         backupId,
         pathSuffix: '/items/read',
@@ -172,14 +158,12 @@ export const readItems = async (
 }
 
 export const upsertItem = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     key: BackupItemKey,
     request: UpsertItemRequest,
 ): Promise<UpsertItemResponse> => {
     const data = await signedBackupRequest<unknown, UpsertItemRequest>({
-        network,
         method: 'PUT',
         backupId,
         pathSuffix: `/${key}`,
@@ -190,13 +174,11 @@ export const upsertItem = async (
 }
 
 export const batchUpsertItems = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     request: BatchUpsertRequest,
 ): Promise<BatchUpsertResponse> => {
     const data = await signedBackupRequest<unknown, BatchUpsertRequest>({
-        network,
         method: 'POST',
         backupId,
         pathSuffix: '/items/upsert',
@@ -207,13 +189,11 @@ export const batchUpsertItems = async (
 }
 
 export const deleteItem = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     key: BackupItemKey,
 ): Promise<DeleteItemResponse> => {
     const data = await signedBackupRequest<unknown>({
-        network,
         method: 'DELETE',
         backupId,
         pathSuffix: `/${key}`,
@@ -226,12 +206,10 @@ export const deleteItem = async (
  *  (empty path suffix, no body). The server wipes all items + the registration
  *  and pushes BACKUP_DELETED to other devices — do NOT enumerate-and-delete. */
 export const destroyBackup = async (
-    network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
 ): Promise<DestroyBackupResponse> => {
     const data = await signedBackupRequest<unknown>({
-        network,
         method: 'DELETE',
         backupId,
         pathSuffix: '',

@@ -97,7 +97,7 @@ import {
 
 import { registerPreview } from './registry'
 
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Banner } from '@perawallet/wallet-core-banners'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
@@ -270,12 +270,12 @@ registerPreview({
         <PWView>
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
-                scope={scopeForLegacyNetwork('mainnet')}
+                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
                 isFavorite={false}
             />
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
-                scope={scopeForLegacyNetwork('mainnet')}
+                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
                 isFavorite={true}
             />
         </PWView>
@@ -288,12 +288,12 @@ registerPreview({
         <PWView>
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
-                scope={scopeForLegacyNetwork('mainnet')}
+                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
                 isNotificationsEnabled={false}
             />
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
-                scope={scopeForLegacyNetwork('mainnet')}
+                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
                 isNotificationsEnabled={true}
             />
         </PWView>

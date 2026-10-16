@@ -14,7 +14,7 @@ import {
     getAlgorandClient,
     type PeraEncodedTransactionSigner,
 } from '../blockchain'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { type AlgorandNetworkId } from '../network-id'
 
 // The card flows build groups a Ledger holder may have to confirm on-device;
 // algokit's default window (~10 rounds) can expire first.
@@ -29,7 +29,7 @@ const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
 }
 
 /** Configured like `useAlgorandClient` for building, never for signing. */
-export const cardAlgorandClient = (network: Network) => {
+export const cardAlgorandClient = (network: AlgorandNetworkId) => {
     const client = getAlgorandClient(network)
     client.setDefaultValidityWindow(VALIDITY_WINDOW_ROUNDS)
     client.setDefaultSigner(pipelineRoutedSigner)

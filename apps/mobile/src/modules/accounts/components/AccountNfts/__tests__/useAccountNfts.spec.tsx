@@ -61,13 +61,6 @@ vi.mock(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -622,7 +615,7 @@ describe('useAccountNfts', () => {
 
             expect(mockRefreshAccounts).toHaveBeenCalledWith(
                 [ACCOUNT_ADDRESS],
-                'mainnet',
+                { chainId: 'algorand', networkId: 'mainnet' },
             )
             expect(mockInvalidateQueries).not.toHaveBeenCalled()
         })

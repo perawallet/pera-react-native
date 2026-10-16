@@ -18,7 +18,7 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getTransactionHistory,
     historyChainAdapters,
@@ -131,13 +131,13 @@ describe('backfillSwapAssetFacts', () => {
                 makeTx({ swapGroupDetail: legacySwapDetail, ...overrides }),
             ],
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
 
     const run = (fetchHistory: unknown) =>
         backfillSwapAssetFacts({
             db,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             accountAddress: ACCOUNT,
             fetchHistory: fetchHistory as never,
         })
@@ -146,7 +146,7 @@ describe('backfillSwapAssetFacts', () => {
         const rows = await getTransactionHistory({
             db,
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
         return rows.find(row => row.id === id)
     }
@@ -163,7 +163,7 @@ describe('backfillSwapAssetFacts', () => {
 
         expect(fetchHistory).toHaveBeenCalledWith({
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
             afterTime: WINDOW_START,
             beforeTime: WINDOW_END,
             limit: 200,
@@ -182,7 +182,7 @@ describe('backfillSwapAssetFacts', () => {
             db,
             items: [makeTx({ id: 'BYSTANDER' })],
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
         const fetchHistory = vi.fn().mockResolvedValue(
             asResult([
@@ -256,7 +256,7 @@ describe('backfillSwapAssetFacts', () => {
             db,
             items: [makeTx({ swapGroupDetail: healedSwapDetail })],
             accountAddress: ACCOUNT,
-            scope: scopeForLegacyNetwork(NETWORK),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
         })
         const fetchHistory = vi.fn()
 
@@ -271,7 +271,10 @@ describe('backfillSwapAssetFacts', () => {
         await expect(
             backfillSwapAssetFacts({
                 db: { select: () => throwingBuilder() } as never,
-                scope: scopeForLegacyNetwork(NETWORK),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: NETWORK,
+                } as const,
                 accountAddress: ACCOUNT,
                 fetchHistory: fetchHistory as never,
             }),

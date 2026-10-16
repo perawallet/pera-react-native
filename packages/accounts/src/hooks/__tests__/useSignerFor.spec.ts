@@ -38,7 +38,7 @@ beforeEach(() => {
     useAccountsStore.getState().resetState()
     useAccountChainStateStore.getState().resetState()
     registerFakeAccountsChain()
-    useNetworkStore.getState().setNetwork('mainnet')
+    useNetworkStore.getState().setMode('live')
 })
 
 describe('useSignerFor', () => {
@@ -92,7 +92,7 @@ describe('useSignerFor', () => {
         const { result } = renderHook(() => useSignerFor('A', FAKE_CHAIN_ID))
         expect(result.current).toBe(account)
 
-        act(() => useNetworkStore.getState().setNetwork('testnet'))
+        act(() => useNetworkStore.getState().setMode('developer'))
         expect(result.current).toBe(auth)
 
         act(() => seedAuthority('A', null, TESTNET_SCOPE))

@@ -35,9 +35,7 @@ import { addressOn, signingKeyOn } from '../../credentials'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-}))
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({}))
 
 const deriveAccount = () =>
     vi.mocked(fakeAccountsChain().derivation.deriveAccount)

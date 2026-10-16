@@ -12,8 +12,8 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
@@ -52,7 +52,7 @@ const deviceIdGetMock = vi.hoisted(() => vi.fn(() => null as string | null))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceStore: { getState: () => ({}) },
-    deviceIdFor: () => deviceIdGetMock(),
+    deviceIdForScope: () => deviceIdGetMock(),
 }))
 
 import {
@@ -64,7 +64,10 @@ import {
 import { algorandAssetsAdapter } from '../../adapter'
 import { fetchAndPersistAssets } from '../asset-syncer'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 const ref = (assetId: string) => ({ chainId: 'algorand', assetId }) as const
 
 describe('fetchAndPersistAssets', () => {
@@ -250,14 +253,17 @@ describe('fetchAndPersistAssets', () => {
                     results: [{ assetId: '1002', decimals: 6 }],
                 })
 
-                await fetchAndPersistAssets(
-                    ['1002'],
-                    scopeForLegacyNetwork(network),
-                )
+                await fetchAndPersistAssets(['1002'], {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const)
 
                 expect(upsertAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 6 }],
-                    scope: scopeForLegacyNetwork(network),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: network,
+                    } as const,
                 })
                 expect(fetchIndexerAssetDetailsMock).not.toHaveBeenCalled()
                 expect(upsertNodeAssetsMock).not.toHaveBeenCalled()
@@ -285,14 +291,17 @@ describe('fetchAndPersistAssets', () => {
                     name: 'MYTOKEN',
                 })
 
-                await fetchAndPersistAssets(
-                    ['1002'],
-                    scopeForLegacyNetwork(network),
-                )
+                await fetchAndPersistAssets(['1002'], {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const)
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0, name: 'MYTOKEN' }],
-                    scope: scopeForLegacyNetwork(network),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: network,
+                    } as const,
                 })
                 // The whole-row writer must not run at all here — it would put
                 // the borrowed decimals straight into assets_node.
@@ -307,14 +316,17 @@ describe('fetchAndPersistAssets', () => {
                     new Error('no such asset on this chain'),
                 )
 
-                await fetchAndPersistAssets(
-                    ['1002'],
-                    scopeForLegacyNetwork(network),
-                )
+                await fetchAndPersistAssets(['1002'], {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const)
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [],
-                    scope: scopeForLegacyNetwork(network),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: network,
+                    } as const,
                 })
                 expect(upsertAssetsMock).not.toHaveBeenCalled()
             })
@@ -326,14 +338,17 @@ describe('fetchAndPersistAssets', () => {
                     decimals: 0,
                 })
 
-                await fetchAndPersistAssets(
-                    ['1002'],
-                    scopeForLegacyNetwork(network),
-                )
+                await fetchAndPersistAssets(['1002'], {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const)
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0 }],
-                    scope: scopeForLegacyNetwork(network),
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: network,
+                    } as const,
                 })
             })
         },
@@ -346,7 +361,10 @@ describe('fetchAndPersistAssets', () => {
             params: { decimals: 3 },
         })
 
-        await fetchAndPersistAssets(['123'], scopeForLegacyNetwork('betanet'))
+        await fetchAndPersistAssets(['123'], {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'betanet',
+        } as const)
 
         expect(upsertNodeAssetsMock).toHaveBeenCalled()
         // The borrowed-opinion half is gone entirely: not attempted, not
@@ -404,7 +422,10 @@ describe('through the adapter', () => {
     })
 
     test('writes the same rows as a direct sync on a network with no Pera deployment', async () => {
-        const betanet = scopeForLegacyNetwork('betanet')
+        const betanet = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'betanet',
+        } as const
         await fetchAndPersistAssets(['1', '2'], betanet)
         const direct = [...upsertNodeAssetsMock.mock.calls]
         upsertNodeAssetsMock.mockClear()

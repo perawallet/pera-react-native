@@ -19,9 +19,9 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
     type AccountChainState,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     upsertAccountChainState,
@@ -30,8 +30,14 @@ import {
     deleteAccountChainState,
 } from '../chainStateRepository'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 const algorandState = (
     overrides: Partial<Extract<AccountChainState, { family: 'algorand' }>> = {},

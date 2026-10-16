@@ -25,7 +25,7 @@ import type { BackupSyncSources } from './types'
 export const createBackupSyncStoreSources = (
     chainId: ChainId,
 ): BackupSyncSources => ({
-    getNetwork: () => useNetworkStore.getState().network,
+    getDeployment: () => useNetworkStore.getState().mode,
     listAccounts: () => useAccountsStore.getState().accounts,
     subscribeAccounts: listener =>
         useAccountsStore.subscribe(state => listener(state.accounts)),

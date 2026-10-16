@@ -33,10 +33,13 @@ import {
     ASSET_RECLASSIFY_TTL_MS,
 } from '../constants'
 import { partition, type Nullable } from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import { deviceIdFor, useDeviceStore } from '@perawallet/wallet-core-device'
+import {
+    deviceIdForScope,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import { isAlgorandNativeAssetId } from '../../descriptor'
-import { algorandNetworkOf } from '../../legacy-network'
+import { algorandNetworkOf, algorandScope } from '../../network-id'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
 
 const ASSET_FETCH_CONCURRENCY = 5
 
@@ -160,7 +163,7 @@ export async function fetchAndPersistAssets(
 
     // Pera-backed networks only: elsewhere persistChainIntrinsics already
     // sources whole rows (url included) from the chain indexer.
-    if (isPeraBackedNetwork(network)) {
+    if (hasPeraBackend(algorandScope(network))) {
         await backfillCollectibleUrls(nonAlgoIds, scope)
     }
 
@@ -176,7 +179,10 @@ export async function fetchAndPersistAssets(
     })
     if (toFetch.length === 0) return
 
-    const deviceId = deviceIdFor(useDeviceStore.getState(), network)
+    const deviceId = deviceIdForScope(
+        useDeviceStore.getState(),
+        algorandScope(network),
+    )
 
     const batches = partition(toFetch, ASSET_BULK_CHUNK_SIZE)
 
@@ -189,7 +195,7 @@ export async function fetchAndPersistAssets(
     // Pera opinion data (verification tier, favorites, collectibles) to fetch.
     // persistChainIntrinsics simply ignores the deviceId argument — a Pera
     // device id means nothing to a chain indexer.
-    const persistBatch = isPeraBackedNetwork(network)
+    const persistBatch = hasPeraBackend(algorandScope(network))
         ? persistFromPeraBackend
         : persistChainIntrinsics
 

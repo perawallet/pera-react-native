@@ -15,7 +15,6 @@ import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/tes
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import type { ConnectionHandlerContext } from '@perawallet/wallet-core-connections'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
-import { Networks } from '@perawallet/wallet-core-shared'
 import type { WalletKitFactory } from '../client'
 import { createWalletConnectV2Handler } from '../handler'
 import {
@@ -72,7 +71,7 @@ const makeContext = (store = memoryStore()) => ({
 const makeHandler = (walletKit: FakeWalletKit = createFakeWalletKit()) => {
     const createWalletKit = vi.fn<WalletKitFactory>(async () => walletKit)
     const handler = createWalletConnectV2Handler({
-        getNetworkId: () => Networks.mainnet,
+        getNetworkId: () => 'mainnet',
         isDappConnectEnabled: () => true,
         projectId: 'a-reown-project-id',
         keyValueStorage: new MemoryKeyValueStorage(),

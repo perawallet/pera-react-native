@@ -14,14 +14,13 @@ import { Decimal } from 'decimal.js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { algorandNetworkOf } from '@perawallet/wallet-core-chain-algorand/legacy-network'
+import { algorandNetworkOf } from '@perawallet/wallet-core-chain-algorand/network-id'
 import { buildTransferTxs } from '@perawallet/wallet-core-chain-algorand/transactions/builders'
 import {
     fetchMoreTransactions,
     fetchTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/transactions/history'
 import { fetchIndexerCloseAmount } from '@perawallet/wallet-core-chain-algorand/transactions/history/indexer/endpoints'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
@@ -52,7 +51,7 @@ import { localNetScope } from '../../harness/scope'
  */
 describe('history adapter conformance', () => {
     let scope: ChainScope
-    let network: Network
+    let network: ReturnType<typeof algorandNetworkOf>
     let keyStore: ConformanceKeyStore
     let sender: ConformanceAccount
     let receiver: ConformanceAccount

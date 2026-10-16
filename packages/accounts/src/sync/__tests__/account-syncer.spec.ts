@@ -11,9 +11,12 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: {

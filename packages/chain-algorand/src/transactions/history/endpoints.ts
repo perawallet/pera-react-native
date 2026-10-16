@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     parseTransactionHistoryResponse,
     type TransactionHistoryApiResponse,
@@ -27,12 +26,14 @@ import {
     type FetchTransactionHistoryParams as FetchHistoryParams,
     type TransactionHistoryResult,
 } from '@perawallet/wallet-core-transactions'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 
 type FetchTransactionHistoryParams = Omit<FetchHistoryParams, 'scope'> & {
-    network: Network
+    network: AlgorandNetworkId
 }
 type FetchMoreTransactionsParams = Omit<FetchMoreParams, 'scope'> & {
-    network: Network
+    network: AlgorandNetworkId
 }
 
 /**
@@ -73,7 +74,7 @@ const fetchPeraTransactionHistory = async (
 
     const response = await queryClient<TransactionHistoryApiResponse>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'GET',
         url: `/v1/accounts/${encodeURIComponent(accountAddress)}/transactions/`,
         params: buildQueryParams(queryParams),
@@ -96,7 +97,7 @@ const fetchMorePeraTransactions = async (
 
     const response = await queryClient<TransactionHistoryApiResponse>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'GET',
         url: pathWithSearch,
         signal,
@@ -120,7 +121,7 @@ const fetchMorePeraTransactions = async (
 export const fetchTransactionHistory = async (
     params: FetchTransactionHistoryParams,
 ): Promise<TransactionHistoryResult> =>
-    isPeraBackedNetwork(params.network)
+    hasPeraBackend(algorandScope(params.network))
         ? fetchPeraTransactionHistory(params)
         : fetchIndexerTransactionHistory(params)
 
@@ -128,7 +129,7 @@ export const fetchTransactionHistory = async (
 export const fetchMoreTransactions = async (
     params: FetchMoreTransactionsParams,
 ): Promise<TransactionHistoryResult> => {
-    if (isPeraBackedNetwork(params.network)) {
+    if (hasPeraBackend(algorandScope(params.network))) {
         return fetchMorePeraTransactions(params)
     }
 

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { AppError, logger, type Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
+import { AppError, logger } from '@perawallet/wallet-core-shared'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
     matchesScope,
@@ -33,7 +34,7 @@ import {
 
 export type ConnectionsHostDeps = {
     registry: ConnectionRegistry
-    network: () => Network
+    activeNetworkId: () => NetworkId
     knownAddresses: () => readonly string[]
     /**
      * Resolves on the router's ack (acceptance for a proposal/request, dismissal
@@ -93,7 +94,7 @@ export const startConnectionsHost = (
                 kind: 'connection-error',
                 reason: 'network-mismatch',
                 pairingId,
-                activeNetwork: deps.network(),
+                activeNetwork: deps.activeNetworkId(),
             })
             .catch((error: unknown) => {
                 logger.error(

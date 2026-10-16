@@ -12,13 +12,11 @@
 
 import { SignedTransaction } from 'algosdk'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     bytesToHex,
     encodeToBase64,
     logger,
     withTimeout,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -26,6 +24,7 @@ import {
     type SignRequest,
     type StaleGroupReason,
 } from '@perawallet/wallet-core-signing'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     AlgodErrorCode,
     asAlgosdkTransaction,
@@ -35,6 +34,8 @@ import {
 } from '../blockchain'
 import { algorandRequestOf } from './algorandRequest'
 import { simulateSignedGroup } from './feeCoverage'
+import { type AlgorandNetworkId, algorandNetworkOf } from '../network-id'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 // How long a WalletConnect request may wait on this check before its sheet
 // shows; past it the request is presented as if the check never ran.
@@ -43,7 +44,7 @@ export const STALE_CHECK_TIMEOUT_MS = 3000
 /** Resolves with algod's failure message for the group, or `null` if it would pass. */
 export type SimulateOriginalGroup = (
     group: readonly PeraTransaction[],
-    network: Network,
+    network: AlgorandNetworkId,
 ) => Promise<Nullable<string>>
 
 /**
@@ -116,7 +117,7 @@ export const staleReasonFor = (
  */
 const isOnNetwork = (
     txs: readonly PeraTransaction[],
-    network: Network,
+    network: AlgorandNetworkId,
 ): boolean => {
     const expected = getExpectedGenesisHash(network)
     return (
@@ -134,7 +135,7 @@ const isOnNetwork = (
 // something worth signing.
 const classifyGroups = async (
     groups: readonly PeraTransaction[][],
-    network: Network,
+    network: AlgorandNetworkId,
     simulate: SimulateOriginalGroup,
 ): Promise<Nullable<StaleGroupReason>> => {
     let reason: Nullable<StaleGroupReason> = null
@@ -151,11 +152,11 @@ export const findStaleGroupReason = async (
     request: SignRequest,
     {
         simulate = simulateOriginalGroup,
-        network = useNetworkStore.getState().network,
+        network = algorandNetworkOf(getSelectedScope(ALGORAND_CHAIN_ID)),
         timeoutMs = STALE_CHECK_TIMEOUT_MS,
     }: {
         simulate?: SimulateOriginalGroup
-        network?: Network
+        network?: AlgorandNetworkId
         timeoutMs?: number
     } = {},
 ): Promise<Nullable<StaleGroupReason>> => {

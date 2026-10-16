@@ -22,11 +22,11 @@ import '@algorandfoundation/algokit-utils'
 // native module that the test runtime cannot load.
 const store = new Map<string, string>()
 
-// The network store resolves its `network` shim through the chain registry.
+// The network store resolves each chain's selection through the chain registry.
 const chains = createChainRegistry()
 
 // Persisted state from one test would otherwise rehydrate into the next, e.g.
-// a `setNetwork('testnet')` in test A is still in storage when test B
+// a `setMode('developer')` in test A is still in storage when test B
 // re-imports the store.
 beforeEach(() => {
     store.clear()

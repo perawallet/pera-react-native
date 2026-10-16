@@ -29,7 +29,7 @@ import {
 } from '../blockchain/utils/transact'
 import { algorandAddressCodec } from '../accounts/address-codec'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { generateMultisigAddress } from '../multisig/address'
 import { assembleSignedMultisigTransactions } from '../multisig/assemble'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'

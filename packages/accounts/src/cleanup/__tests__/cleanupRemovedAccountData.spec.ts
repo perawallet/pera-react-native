@@ -31,9 +31,8 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
-    scopeForLegacyNetwork,
-    type ChainScope,
     type ChainScopeKey,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountAssetHoldingsSchema,
@@ -48,8 +47,14 @@ import {
 } from '../../store/accountChainState'
 import { cleanupRemovedAccountData } from '../cleanupRemovedAccountData'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
-const TESTNET_SCOPE = scopeForLegacyNetwork('testnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
+const TESTNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'testnet',
+} as const
 
 const makeAsset = (assetId: string): PeraAsset => ({
     assetId,

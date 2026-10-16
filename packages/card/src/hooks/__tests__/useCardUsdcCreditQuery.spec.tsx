@@ -16,8 +16,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     useCardUsdcCreditQuery,
@@ -26,7 +26,7 @@ import {
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('testnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

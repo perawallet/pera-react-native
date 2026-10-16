@@ -15,8 +15,6 @@ import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/tes
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
 import type { ConnectionHandlerContext } from '@perawallet/wallet-core-connections'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import type { WalletKitFactory } from '../client'
 import { createWalletConnectV2Handler } from '../handler'
@@ -30,6 +28,7 @@ import {
     makeSession,
     TOPIC,
 } from './fakeWalletKit'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Same stand-in as the other v2 specs: the connections barrel reaches the
 // provider, which imports react-native-mmkv at module scope.
@@ -43,9 +42,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-const registeredAdapter = dappRequestAdapterFor(
-    scopeForLegacyNetwork(Networks.mainnet),
-)
+const registeredAdapter = dappRequestAdapterFor({
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const)
 if (!registeredAdapter) {
     throw new Error('the package setup file registers the Algorand adapter')
 }
@@ -78,7 +78,7 @@ const makeContext = (store = memoryStore()) => ({
 
 const makeHandler = (walletKit = createFakeWalletKit()) =>
     createWalletConnectV2Handler({
-        getNetworkId: () => Networks.mainnet,
+        getNetworkId: () => 'mainnet',
         isDappConnectEnabled: () => true,
         projectId: 'a-reown-project-id',
         keyValueStorage: new MemoryKeyValueStorage(),

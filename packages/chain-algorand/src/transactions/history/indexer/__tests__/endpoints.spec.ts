@@ -12,7 +12,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { Networks } from '@perawallet/wallet-core-shared'
 
 const mockFetchNodeJson = vi.hoisted(() => vi.fn())
 const mockFetchOnChainAsset = vi.hoisted(() => vi.fn())
@@ -78,11 +77,11 @@ describe('fetchIndexerTransactionHistory', () => {
 
         await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.betanet,
+            network: 'betanet',
         })
 
         expect(mockFetchNodeJson).toHaveBeenCalledWith(
-            Networks.betanet,
+            'betanet',
             'indexer',
             '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
@@ -97,12 +96,12 @@ describe('fetchIndexerTransactionHistory', () => {
 
         const result = await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.betanet,
+            network: 'betanet',
         })
 
         expect(mockFetchOnChainAsset).toHaveBeenCalledWith('888', {
             chainId: 'algorand',
-            networkId: Networks.betanet,
+            networkId: 'betanet',
         })
         expect(result.transactions[0]?.asset).toEqual({
             assetId: '888',
@@ -120,7 +119,7 @@ describe('fetchIndexerTransactionHistory', () => {
 
         const result = await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.betanet,
+            network: 'betanet',
         })
 
         expect(result.transactions).toHaveLength(1)
@@ -144,11 +143,11 @@ describe('fetchMoreIndexerTransactions', () => {
         await fetchMoreIndexerTransactions({
             accountAddress: 'ABC123',
             nextToken: 'CURSOR1',
-            network: Networks.betanet,
+            network: 'betanet',
         })
 
         expect(mockFetchNodeJson).toHaveBeenCalledWith(
-            Networks.betanet,
+            'betanet',
             'indexer',
             '/v2/accounts/ABC123/transactions',
             expect.objectContaining({
@@ -168,7 +167,7 @@ describe('fetchMoreIndexerTransactions', () => {
         await fetchMoreIndexerTransactions({
             accountAddress: 'ABC123',
             nextToken: 'CURSOR1',
-            network: Networks.betanet,
+            network: 'betanet',
             assetId: '31566704',
             afterTime: '2025-02-01',
             beforeTime: '2025-02-13',
@@ -176,7 +175,7 @@ describe('fetchMoreIndexerTransactions', () => {
         })
 
         expect(mockFetchNodeJson).toHaveBeenCalledWith(
-            Networks.betanet,
+            'betanet',
             'indexer',
             '/v2/accounts/ABC123/transactions',
             expect.objectContaining({

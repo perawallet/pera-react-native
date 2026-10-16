@@ -21,7 +21,7 @@ import {
     toUnsignedAlgorandTransaction,
     toUnsignedAlgorandTransactions,
 } from '../signing/unsignedTransaction'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import type {
     HistoryChainAdapter,
     SendFlowChainAdapter,

@@ -11,20 +11,21 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import {
     gateSignDataRequest,
     gateSignTxnRequest,
 } from '../../validation/inboundRequestGate'
 import { AlgorandWalletConnectChainId } from '../../models'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The real adapter this package's setup file registers, not a fixture: v1's
 // inbound gate must screen through the same chain adapter v2 routes through.
 const screenRequestOfRegisteredAdapter = () => {
-    const v1 = dappRequestAdapterFor(scopeForLegacyNetwork(Networks.mainnet))
-        ?.walletConnect.v1
+    const v1 = dappRequestAdapterFor({
+        chainId: LEGACY_CHAIN_ID,
+        networkId: 'mainnet',
+    } as const)?.walletConnect.v1
     if (!v1) throw new Error('the registered adapter serves no v1')
     return vi.spyOn(v1, 'screenRequest')
 }
@@ -39,7 +40,7 @@ describe('v1 inbound requests screened by the registered chain adapter', () => {
 
         gateSignTxnRequest({
             payload: { id: 1, params: [[{ txn: 'AA==' }]] },
-            network: Networks.mainnet,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             sessionChainId: AlgorandWalletConnectChainId.all,
             knownAddresses: [],
         })
@@ -57,7 +58,7 @@ describe('v1 inbound requests screened by the registered chain adapter', () => {
 
         gateSignDataRequest({
             payload: { id: 1, params },
-            network: Networks.mainnet,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             sessionChainId: AlgorandWalletConnectChainId.all,
         })
 
@@ -72,7 +73,7 @@ describe('v1 inbound requests screened by the registered chain adapter', () => {
 
         const result = gateSignTxnRequest({
             payload: { id: 1, params: [[{ txn: 'AA==' }]] },
-            network: Networks.mainnet,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             sessionChainId: AlgorandWalletConnectChainId.all,
             knownAddresses: [],
         })

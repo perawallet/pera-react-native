@@ -13,12 +13,12 @@
 import { describe, test, expect } from 'vitest'
 import {
     queryKeyReferencesScope,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { onrampQueryKeys } from '../querykeys'
 
-const mainnet = scopeForLegacyNetwork('mainnet')
-const testnet = scopeForLegacyNetwork('testnet')
+const mainnet = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('onramp/hooks/querykeys', () => {
     test('every scoped builder carries the scope object in its key', () => {

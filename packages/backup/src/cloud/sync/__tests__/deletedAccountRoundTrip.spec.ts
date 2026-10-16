@@ -75,13 +75,11 @@ const syncedState = (): SyncState => {
 }
 
 const pushDeps = () => ({
-    network: 'mainnet' as const,
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey: new Uint8Array(32).fill(7),
     batchUpsertItems: vi.fn(
         async (
-            _network: unknown,
             _backupId: unknown,
             _deviceId: unknown,
             _request: BatchUpsertRequest,
@@ -101,7 +99,6 @@ const pushDeps = () => ({
 })
 
 const pullDeps = () => ({
-    network: 'mainnet' as const,
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey: new Uint8Array(32).fill(7),
@@ -133,12 +130,7 @@ describe('an account deleted on one device and re-backed-up on another', () => {
             deps: { ...pullDeps(), deleteItem },
         })
 
-        expect(deleteItem).toHaveBeenCalledWith(
-            'mainnet',
-            'b',
-            'dev',
-            ACCOUNT_KEY,
-        )
+        expect(deleteItem).toHaveBeenCalledWith('b', 'dev', ACCOUNT_KEY)
         expect(next.items[ACCOUNT_KEY].status).toBe(BackupItemStatus.IGNORED)
     })
 
@@ -199,7 +191,7 @@ describe('an account deleted on one device and re-backed-up on another', () => {
             deps,
         })
 
-        const [[, , , request]] = deps.batchUpsertItems.mock.calls
+        const [[, , request]] = deps.batchUpsertItems.mock.calls
         expect(request.items[0]).toMatchObject({
             key: ACCOUNT_KEY,
             expected_ver: 0,

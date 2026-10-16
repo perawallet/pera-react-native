@@ -17,7 +17,7 @@ import {
     getRowsByChainData,
     setChainDataValue,
 } from '@perawallet/wallet-core-transactions'
-import { algorandNetworkOf } from '../../legacy-network'
+import { algorandNetworkOf } from '../../network-id'
 import { fetchIndexerCloseAmount } from '../history/indexer/endpoints'
 import {
     CLOSE_AMOUNT_PATH,

@@ -14,7 +14,7 @@ import type { AssetsChainAdapter } from '@perawallet/wallet-core-assets'
 import { isNativeAsset } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { ASSET_PRICES_MAX_IDS_PER_REQUEST } from '../pricing/endpoints'
 import { fetchPeraUsdPrices } from '../pricing/provider'
 import {

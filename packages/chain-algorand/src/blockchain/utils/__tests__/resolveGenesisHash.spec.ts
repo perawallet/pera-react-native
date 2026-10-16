@@ -11,10 +11,11 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { Networks, getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { setCustomNetwork } from '../../store'
 import { getExpectedGenesisHash } from '../resolveGenesisHash'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 describe('getExpectedGenesisHash', () => {
     beforeEach(() => {
@@ -22,7 +23,7 @@ describe('getExpectedGenesisHash', () => {
         vi.restoreAllMocks()
     })
 
-    test.each([Networks.mainnet, Networks.testnet, Networks.betanet])(
+    test.each(['mainnet', 'testnet', 'betanet'])(
         'returns the build-time-pinned hash for %s without any network access',
         network => {
             const fetchSpy = vi
@@ -30,7 +31,10 @@ describe('getExpectedGenesisHash', () => {
                 .mockRejectedValue(new Error('no network in unit tests'))
 
             expect(getExpectedGenesisHash(network)).toBe(
-                getNetworkConfig(network).genesisHash,
+                getAlgorandChainConfig({
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: network,
+                } as const).genesisHash,
             )
             expect(fetchSpy).not.toHaveBeenCalled()
         },
@@ -47,13 +51,13 @@ describe('getExpectedGenesisHash', () => {
             genesisId: 'dockernet-v1',
         })
 
-        expect(getExpectedGenesisHash(Networks.custom)).toBe(
+        expect(getExpectedGenesisHash('custom')).toBe(
             'MvoAmMBVQX32w2gqkfMKShsYCbYio8wyepw6Zk5CgOw=',
         )
         expect(fetchSpy).not.toHaveBeenCalled()
     })
 
     test('returns empty string for an unconfigured custom slot', () => {
-        expect(getExpectedGenesisHash(Networks.custom)).toBe('')
+        expect(getExpectedGenesisHash('custom')).toBe('')
     })
 })

@@ -13,8 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import type { SwapHandoffRecord } from '../../models'
 import {
@@ -176,7 +176,7 @@ describe('swaps/useSwapCosignResolver', () => {
         const descriptor = config().poll(handoff)
         expect(descriptor.queryKey).toEqual([
             'msig',
-            scopeForLegacyNetwork('mainnet'),
+            { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             'req-1',
         ])
         expect(descriptor.enabled).toBe(true)
@@ -286,7 +286,7 @@ describe('swaps/useSwapCosignResolver', () => {
         const bytes = [new Uint8Array([1])]
         await deps.submitGroup(bytes)
         expect(submit).toHaveBeenCalledWith(
-            scopeForLegacyNetwork('mainnet'),
+            { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             bytes,
         )
     })

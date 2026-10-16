@@ -12,7 +12,6 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import {
     createEmptySyncState,
@@ -81,7 +80,6 @@ type RestoreCloudBackupParams = {
      *  parameters its backup was created under, so that path passes them. */
     argon2id?: Argon2idConfig
     deviceId: DeviceId
-    network: Network
     /** Decrypted remote accounts → wallet. Hook-bound (needs KMS), so the app
      *  layer injects it. */
     importAccounts: SyncImportFn
@@ -297,7 +295,6 @@ export const restoreCloudBackup = async ({
     salt,
     argon2id,
     deviceId,
-    network,
     importAccounts,
     importContacts,
     importPasskeys,
@@ -318,7 +315,6 @@ export const restoreCloudBackup = async ({
         })
 
         const pull = await pullBackupItems({
-            network,
             backupId,
             deviceId,
             encryptionKey,

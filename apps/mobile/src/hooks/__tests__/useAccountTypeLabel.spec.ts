@@ -12,7 +12,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 import {
@@ -30,6 +29,7 @@ import {
     accountForType,
     type AlgorandAccountKind,
 } from '@test-utils/accountCustody'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -89,7 +89,7 @@ const multisigAccount: MultiSigAccount = {
 describe('useAccountTypeLabel', () => {
     beforeEach(() => {
         registerAlgorandAccountsAdapter()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         useAccountChainStateStore.getState().resetState()
         seedAuthority('REKEYED_ADDR', 'AUTH_ADDR')
         vi.clearAllMocks()
@@ -100,16 +100,15 @@ describe('useAccountTypeLabel', () => {
 
     it('turns rekeyed when the network moves to the scope that holds the authority', () => {
         useAccountChainStateStore.getState().resetState()
-        seedAuthority(
-            'REKEYED_ADDR',
-            'AUTH_ADDR',
-            scopeForLegacyNetwork('testnet'),
-        )
-        useNetworkStore.getState().setNetwork('mainnet')
+        seedAuthority('REKEYED_ADDR', 'AUTH_ADDR', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
+        useNetworkStore.getState().setMode('live')
         const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
         expect(result.current.label).toBe('account_info.type_algo25')
 
-        act(() => useNetworkStore.getState().setNetwork('testnet'))
+        act(() => useNetworkStore.getState().setMode('developer'))
 
         expect(result.current.label).toBe('account_info.type_rekeyed')
     })

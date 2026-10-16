@@ -48,7 +48,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 const mockCopyToClipboard = vi.fn()

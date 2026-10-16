@@ -11,11 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    logger,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import {
     withBackupAuthSecretKey,
@@ -109,7 +105,7 @@ export type BackupSyncManagerDeps = {
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
     onBackupDeleted?: () => void
-    /** Accounts, contacts and network; `createBackupSyncStoreSources()` in the app. */
+    /** Accounts, contacts and deployment; `createBackupSyncStoreSources()` in the app. */
     sources: BackupSyncSources
     /** Defaults to the backup package's own stores; overridable for tests. */
     state?: BackupSyncStatePort
@@ -225,19 +221,18 @@ export class BackupSyncManager {
     }
 
     private context(): Nullable<{
-        network: Network
         backupId: string
         deviceId: string
     }> {
-        const network = this.deps.sources.getNetwork()
+        const deployment = this.deps.sources.getDeployment()
         const backupId = this.state.getBackupId()
-        const deviceId = this.state.getDeviceId(network)
+        const deviceId = this.state.getDeviceId(deployment)
         if (!backupId || !deviceId) return null
-        return { network, backupId, deviceId }
+        return { backupId, deviceId }
     }
 
     private async withEngineDeps<T>(
-        ctx: { network: Network; backupId: string; deviceId: string },
+        ctx: { backupId: string; deviceId: string },
         run: (deps: SyncEngineDeps) => Promise<T>,
     ): Promise<Nullable<T>> {
         const epoch = this.stopEpoch
@@ -247,7 +242,6 @@ export class BackupSyncManager {
             withBackupItemKey(itemKey =>
                 withItemKeyHasher(itemKey, hashAddress =>
                     run({
-                        network: ctx.network,
                         backupId: ctx.backupId,
                         deviceId: ctx.deviceId,
                         encryptionKey,
@@ -702,7 +696,6 @@ export class BackupSyncManager {
     }
 
     private async runSync(ctx: {
-        network: Network
         backupId: string
         deviceId: string
     }): Promise<void> {

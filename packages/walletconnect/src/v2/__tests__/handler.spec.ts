@@ -26,8 +26,7 @@ import type {
     Connection,
     ConnectionOrigin,
 } from '@perawallet/wallet-extension-connections'
-import { logger, Networks } from '@perawallet/wallet-core-shared'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import type {
     WalletKitEvent,
     WalletKitFactory,
@@ -63,6 +62,7 @@ import {
     type FakeWalletKit,
     type RequestOverrides,
 } from './fakeWalletKit'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Same stand-in as the v1 handler spec: the connections barrel reaches the
 // provider, whose keystore migration ledger imports react-native-mmkv at
@@ -135,7 +135,7 @@ const makeHandler = (
         vi.fn<WalletKitFactory>(async () => walletKit)
     const keyValueStorage = new MemoryKeyValueStorage()
     const handler = createWalletConnectV2Handler({
-        getNetworkId: () => Networks.mainnet,
+        getNetworkId: () => 'mainnet',
         isDappConnectEnabled: () => true,
         projectId: overrides.projectId ?? PROJECT_ID,
         keyValueStorage,
@@ -455,7 +455,7 @@ describe('restore', () => {
 
     it('derives the chains from the accounts when the namespace declares none', async () => {
         // An empty array is representable and defeats `??`: left as `[]` the
-        // record matches no network at all, so `networksFor` reports none.
+        // record matches no network at all, so `scopesFor` reports none.
         const walletKit = createFakeWalletKit({
             [TOPIC]: makeSession({
                 namespaces: {
@@ -474,7 +474,9 @@ describe('restore', () => {
         const [record] = await handler.restore()
 
         expect(record.metadata.chains).toEqual([MAINNET_CHAIN_ID])
-        expect(handler.matchesNetwork(record, Networks.mainnet)).toBe(true)
+        expect(
+            handler.matchesChainScope(record, algorandScope('mainnet')),
+        ).toBe(true)
     })
 
     it('drops a foreign-namespace account listed under algorand', async () => {
@@ -932,9 +934,10 @@ describe('session requests', () => {
 
 describe('empty signatures', () => {
     const stubEmptySignatures = () => {
-        const adapter = dappRequestAdapterFor(
-            scopeForLegacyNetwork(Networks.mainnet),
-        )
+        const adapter = dappRequestAdapterFor({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const)
         if (!adapter) throw new Error('no Algorand adapter registered')
         return vi
             .spyOn(adapter, 'emptySignaturesFor')
@@ -1262,7 +1265,7 @@ describe('session proposals', () => {
         expect(proposal.kind).toBe(WALLET_CONNECT_V2_KIND)
         expect(proposal.pairingId).toBe(PAIRING_TOPIC)
         expect(proposal.pairingId).toBe(pairingId)
-        expect(proposal.requested.networks).toEqual([Networks.mainnet])
+        expect(proposal.requested.networks).toEqual(['mainnet'])
         expect(proposal.requested.chains).toEqual(['algorand'])
         expect(proposal.requested.methods).toEqual(['algo_signTxn'])
         expect(proposal.peer.name).toBe('Test dApp')
@@ -1322,10 +1325,7 @@ describe('session proposals', () => {
 
         const proposal = requireProposal()
 
-        expect(proposal.requested.networks).toEqual([
-            Networks.mainnet,
-            Networks.testnet,
-        ])
+        expect(proposal.requested.networks).toEqual(['mainnet', 'testnet'])
         // `eth_sign` is not a method this wallet implements.
         expect(proposal.requested.methods).toEqual([
             'algo_signTxn',
@@ -1874,16 +1874,32 @@ describe('origin bookkeeping', () => {
     })
 })
 
-describe('matchesNetwork', () => {
+const algorandScope = (networkId: string) =>
+    ({ chainId: 'algorand', networkId }) as const
+
+describe('matchesChainScope', () => {
     it('accepts the network whose CAIP-2 id the session was approved for', async () => {
         const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
         const { handler } = makeHandler({ walletKit })
         await handler.initialize(makeContext())
         const [record] = await handler.restore()
 
-        expect(handler.matchesNetwork(record, Networks.mainnet)).toBe(true)
-        expect(handler.matchesNetwork(record, Networks.testnet)).toBe(false)
+        expect(
+            handler.matchesChainScope(record, algorandScope('mainnet')),
+        ).toBe(true)
+        expect(
+            handler.matchesChainScope(record, algorandScope('testnet')),
+        ).toBe(false)
         // `custom` has no CAIP-2 identity, so no session can claim it.
-        expect(handler.matchesNetwork(record, Networks.custom)).toBe(false)
+        expect(handler.matchesChainScope(record, algorandScope('custom'))).toBe(
+            false,
+        )
+        // No CAIP-2 id is claimed for another chain's scope either.
+        expect(
+            handler.matchesChainScope(record, {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }),
+        ).toBe(false)
     })
 })

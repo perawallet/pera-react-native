@@ -27,7 +27,7 @@ import {
     type AlgokitClientInterface,
     type EncodeSignedTransactionsFn,
 } from '../submission'
-import { algorandNetworkOf } from '../../legacy-network'
+import { algorandNetworkOf } from '../../network-id'
 
 /**
  * Creates a transport that submits transactions directly to algod.

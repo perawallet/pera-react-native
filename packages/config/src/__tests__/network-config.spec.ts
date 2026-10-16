@@ -13,42 +13,29 @@
 import { describe, test, expect, vi } from 'vitest'
 import {
     LEGACY_NETWORKS,
-    scopeForLegacyNetwork,
+    type ChainScope,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks, type Network } from '../models/network'
 import { config } from '../main'
 import {
+    configuredScopes,
+    getAlgorandChainConfig,
     getArc59Config,
     getIframeOrigins,
-    getNetworkConfig,
+    getPeraServicesConfig,
     hasPeraBackend,
-    isMainnet,
-    isPeraBackedNetwork,
-    isTestnet,
-    type NetworkConfig,
 } from '../network-config'
 
+const algorand = (networkId: NetworkId): ChainScope => ({
+    chainId: 'algorand',
+    networkId,
+})
+
 describe('network-config', () => {
-    test('isMainnet returns correct boolean', () => {
-        expect(isMainnet(Networks.mainnet)).toBe(true)
-        expect(isMainnet(Networks.testnet)).toBe(false)
-    })
+    test('mainnet carries its chain endpoints and live Pera services', () => {
+        const scope = algorand('mainnet')
 
-    test('isTestnet is a real testnet check, not the mainnet inverse', () => {
-        expect(isTestnet(Networks.testnet)).toBe(true)
-        expect(isTestnet(Networks.mainnet)).toBe(false)
-        expect(isTestnet(Networks.betanet)).toBe(false)
-        expect(isTestnet(Networks.custom)).toBe(false)
-    })
-
-    test('getNetworkConfig returns correct mainnet config', () => {
-        const networkConfig = getNetworkConfig(Networks.mainnet)
-
-        expect(networkConfig).toEqual({
-            network: Networks.mainnet,
-            isMainnet: true,
-            isTestnet: false,
-            backendUrl: config.mainnetBackendUrl,
+        expect(getAlgorandChainConfig(scope)).toEqual({
             algodUrl: config.mainnetAlgodUrl,
             indexerUrl: config.mainnetIndexerUrl,
             genesisHash: config.mainnetGenesisHash,
@@ -57,6 +44,9 @@ describe('network-config', () => {
             algodToken: config.algodApiKey,
             indexerToken: config.indexerApiKey,
             dispenserUrl: config.mainnetDispenserUrl,
+        })
+        expect(getPeraServicesConfig(scope)).toEqual({
+            backendUrl: config.mainnetBackendUrl,
             bidaliBaseUrl: config.mainnetBidaliBaseUrl,
             bidaliApiKey: config.mainnetBidaliApiKey,
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
@@ -65,14 +55,10 @@ describe('network-config', () => {
         })
     })
 
-    test('getNetworkConfig returns correct testnet config', () => {
-        const networkConfig = getNetworkConfig(Networks.testnet)
+    test('testnet carries its chain endpoints and developer Pera services', () => {
+        const scope = algorand('testnet')
 
-        expect(networkConfig).toEqual({
-            network: Networks.testnet,
-            isMainnet: false,
-            isTestnet: true,
-            backendUrl: config.testnetBackendUrl,
+        expect(getAlgorandChainConfig(scope)).toEqual({
             algodUrl: config.testnetAlgodUrl,
             indexerUrl: config.testnetIndexerUrl,
             genesisHash: config.testnetGenesisHash,
@@ -81,6 +67,9 @@ describe('network-config', () => {
             algodToken: config.algodApiKey,
             indexerToken: config.indexerApiKey,
             dispenserUrl: config.dispenserUrl,
+        })
+        expect(getPeraServicesConfig(scope)).toEqual({
+            backendUrl: config.testnetBackendUrl,
             bidaliBaseUrl: config.testnetBidaliBaseUrl,
             bidaliApiKey: config.testnetBidaliApiKey,
             baanxBaseUrl: config.testnetBaanxBaseUrl,
@@ -89,17 +78,8 @@ describe('network-config', () => {
         })
     })
 
-    test('union is exactly the four supported networks', () => {
-        expect(Object.values(Networks)).toEqual([
-            'testnet',
-            'mainnet',
-            'betanet',
-            'custom',
-        ])
-    })
-
     test('custom carries no baked chain config', () => {
-        const custom = getNetworkConfig(Networks.custom)
+        const custom = getAlgorandChainConfig(algorand('custom'))
 
         expect(custom.algodUrl).toBe('')
         expect(custom.indexerUrl).toBe('')
@@ -109,19 +89,11 @@ describe('network-config', () => {
         expect(custom.dispenserUrl).toBe('')
     })
 
-    test('isPeraBackedNetwork is true only where a Pera backend is deployed', () => {
-        expect(isPeraBackedNetwork(Networks.mainnet)).toBe(true)
-        expect(isPeraBackedNetwork(Networks.testnet)).toBe(true)
-        expect(isPeraBackedNetwork(Networks.betanet)).toBe(false)
-        expect(isPeraBackedNetwork(Networks.custom)).toBe(false)
-    })
-
-    test('hasPeraBackend agrees with isPeraBackedNetwork for every Algorand network', () => {
-        for (const network of Object.values(Networks)) {
-            expect(hasPeraBackend(scopeForLegacyNetwork(network))).toBe(
-                isPeraBackedNetwork(network),
-            )
-        }
+    test('hasPeraBackend is true only where a Pera backend is deployed', () => {
+        expect(hasPeraBackend(algorand('mainnet'))).toBe(true)
+        expect(hasPeraBackend(algorand('testnet'))).toBe(true)
+        expect(hasPeraBackend(algorand('betanet'))).toBe(false)
+        expect(hasPeraBackend(algorand('custom'))).toBe(false)
     })
 
     test('hasPeraBackend follows the Ethereum service list', () => {
@@ -134,30 +106,34 @@ describe('network-config', () => {
     })
 
     test('networks without a Pera deployment get empty services, never borrowed ones', () => {
-        // The whole point of the change: betanet's backendUrl used to BE
-        // testnet's. Asserting inequality with the real testnet value is what
-        // makes this test fail if the lane indirection ever comes back.
-        const testnetBackend = getNetworkConfig(Networks.testnet).backendUrl
+        // betanet's backendUrl used to BE testnet's. Asserting inequality with
+        // the real testnet value is what makes this test fail if that
+        // borrowing ever comes back.
+        const testnetBackend = getPeraServicesConfig(
+            algorand('testnet'),
+        ).backendUrl
         expect(testnetBackend).not.toBe('')
 
-        for (const network of [Networks.betanet, Networks.custom]) {
-            const networkConfig = getNetworkConfig(network)
+        for (const network of ['betanet', 'custom']) {
+            const services = getPeraServicesConfig(algorand(network))
 
-            expect(networkConfig.backendUrl).toBe('')
-            expect(networkConfig.backendUrl).not.toBe(testnetBackend)
-            expect(networkConfig.bidaliBaseUrl).toBe('')
-            expect(networkConfig.baanxBaseUrl).toBe('')
+            expect(services.backendUrl).toBe('')
+            expect(services.backendUrl).not.toBe(testnetBackend)
+            expect(services.bidaliBaseUrl).toBe('')
+            expect(services.baanxBaseUrl).toBe('')
         }
     })
 
     test('chain truth is untouched by the Pera-services change', () => {
         // Guards the one thing that must NOT go empty alongside the services.
-        expect(getNetworkConfig(Networks.betanet).algodUrl).not.toBe('')
-        expect(getNetworkConfig(Networks.betanet).genesisHash).not.toBe('')
+        const betanet = getAlgorandChainConfig(algorand('betanet'))
+
+        expect(betanet.algodUrl).not.toBe('')
+        expect(betanet.genesisHash).not.toBe('')
     })
 
     test('betanet keeps its pinned chain identity', () => {
-        const betanet = getNetworkConfig(Networks.betanet)
+        const betanet = getAlgorandChainConfig(algorand('betanet'))
 
         expect(betanet.genesisHash).toBe(config.betanetGenesisHash)
         expect(betanet.genesisId).toBe('betanet-v1.0')
@@ -185,61 +161,62 @@ describe('network-config', () => {
             }
         })
 
-        const { getNetworkConfig: freshGetNetworkConfig } =
+        const { getAlgorandChainConfig: freshChainConfig } =
             await import('../network-config')
 
-        // The mock took effect — mainnet correctly uses the real key.
-        expect(freshGetNetworkConfig(Networks.mainnet).algodToken).toBe(
+        // The mock took effect: mainnet correctly uses the real key.
+        expect(freshChainConfig(algorand('mainnet')).algodToken).toBe(
             'REAL_PERA_ALGOD_SECRET',
         )
         // betanet/custom must not, even though the same real secret is
         // configured for the process.
-        for (const network of [Networks.betanet, Networks.custom]) {
-            expect(freshGetNetworkConfig(network).algodToken).toBe('')
-            expect(freshGetNetworkConfig(network).indexerToken).toBe('')
+        for (const network of ['betanet', 'custom']) {
+            expect(freshChainConfig(algorand(network)).algodToken).toBe('')
+            expect(freshChainConfig(algorand(network)).indexerToken).toBe('')
         }
 
         vi.doUnmock('../main')
     })
-
-    test('getArc59Config returns null where the inbox app is not deployed', () => {
-        expect(getArc59Config(Networks.mainnet)).toEqual(config.arc59.mainnet)
-        expect(getArc59Config(Networks.testnet)).toEqual(config.arc59.testnet)
-        // Was config.arc59.testnet — TestNet's app id aimed at another chain.
-        expect(getArc59Config(Networks.betanet)).toBeNull()
-        expect(getArc59Config(Networks.custom)).toBeNull()
-    })
 })
 
-describe('getNetworkConfig genesisHash', () => {
-    test('returns the canonical mainnet genesis hash', () => {
-        expect(getNetworkConfig('mainnet').genesisHash).toBe(
-            'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+describe('getArc59Config', () => {
+    test('returns the inbox app of Algorand MainNet and TestNet', () => {
+        expect(getArc59Config(algorand('mainnet'))).toEqual(
+            config.arc59.mainnet,
+        )
+        expect(getArc59Config(algorand('testnet'))).toEqual(
+            config.arc59.testnet,
         )
     })
 
-    test('returns the canonical testnet genesis hash', () => {
-        expect(getNetworkConfig('testnet').genesisHash).toBe(
+    test('is null where the inbox app is not deployed', () => {
+        // TestNet's app id aimed at another chain would fail opaquely.
+        expect(getArc59Config(algorand('betanet'))).toBeNull()
+        expect(getArc59Config(algorand('custom'))).toBeNull()
+        expect(
+            getArc59Config({ chainId: 'ethereum', networkId: 'mainnet' }),
+        ).toBeNull()
+    })
+})
+
+describe('Algorand genesis', () => {
+    test('returns the canonical genesis hashes', () => {
+        expect(getAlgorandChainConfig(algorand('mainnet')).genesisHash).toBe(
+            'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+        )
+        expect(getAlgorandChainConfig(algorand('testnet')).genesisHash).toBe(
             'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
         )
     })
-})
 
-describe('getNetworkConfig genesisId', () => {
-    test('returns the canonical mainnet genesis id', () => {
-        expect(getNetworkConfig(Networks.mainnet).genesisId).toBe(
+    test('returns the canonical genesis ids', () => {
+        expect(getAlgorandChainConfig(algorand('mainnet')).genesisId).toBe(
             'mainnet-v1.0',
         )
-    })
-
-    test('returns the canonical testnet genesis id', () => {
-        expect(getNetworkConfig(Networks.testnet).genesisId).toBe(
+        expect(getAlgorandChainConfig(algorand('testnet')).genesisId).toBe(
             'testnet-v1.0',
         )
-    })
-
-    test('returns the canonical betanet genesis id', () => {
-        expect(getNetworkConfig(Networks.betanet).genesisId).toBe(
+        expect(getAlgorandChainConfig(algorand('betanet')).genesisId).toBe(
             'betanet-v1.0',
         )
     })
@@ -267,101 +244,14 @@ describe('getIframeOrigins', () => {
     })
 })
 
-describe('getNetworkConfig keeps its values and key order for every network', () => {
-    const noPeraServices = {
-        backendUrl: '',
-        bidaliBaseUrl: '',
-        bidaliApiKey: '',
-        baanxBaseUrl: '',
-        baanxClientKey: '',
-        baanxTenantId: '',
-    }
-
-    // Written in the key order getNetworkConfig has always produced; the
-    // Object.keys assertion pins that order, toStrictEqual pins the values.
-    const expected: Record<Network, NetworkConfig> = {
-        testnet: {
-            network: Networks.testnet,
-            isMainnet: false,
-            isTestnet: true,
-            algodUrl: config.testnetAlgodUrl,
-            indexerUrl: config.testnetIndexerUrl,
-            genesisHash: config.testnetGenesisHash,
-            genesisId: 'testnet-v1.0',
-            explorerUrl: config.testnetExplorerUrl,
-            algodToken: config.algodApiKey,
-            indexerToken: config.indexerApiKey,
-            dispenserUrl: config.dispenserUrl,
-            backendUrl: config.testnetBackendUrl,
-            bidaliBaseUrl: config.testnetBidaliBaseUrl,
-            bidaliApiKey: config.testnetBidaliApiKey,
-            baanxBaseUrl: config.testnetBaanxBaseUrl,
-            baanxClientKey: config.testnetBaanxClientKey,
-            baanxTenantId: config.testnetBaanxTenantId,
-        },
-        mainnet: {
-            network: Networks.mainnet,
-            isMainnet: true,
-            isTestnet: false,
-            algodUrl: config.mainnetAlgodUrl,
-            indexerUrl: config.mainnetIndexerUrl,
-            genesisHash: config.mainnetGenesisHash,
-            genesisId: 'mainnet-v1.0',
-            explorerUrl: config.mainnetExplorerUrl,
-            algodToken: config.algodApiKey,
-            indexerToken: config.indexerApiKey,
-            dispenserUrl: config.mainnetDispenserUrl,
-            backendUrl: config.mainnetBackendUrl,
-            bidaliBaseUrl: config.mainnetBidaliBaseUrl,
-            bidaliApiKey: config.mainnetBidaliApiKey,
-            baanxBaseUrl: config.mainnetBaanxBaseUrl,
-            baanxClientKey: config.mainnetBaanxClientKey,
-            baanxTenantId: config.mainnetBaanxTenantId,
-        },
-        betanet: {
-            network: Networks.betanet,
-            isMainnet: false,
-            isTestnet: false,
-            algodUrl: config.betanetAlgodUrl,
-            indexerUrl: config.betanetIndexerUrl,
-            genesisHash: config.betanetGenesisHash,
-            genesisId: 'betanet-v1.0',
-            explorerUrl: config.betanetExplorerUrl,
-            algodToken: '',
-            indexerToken: '',
-            dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
-            ...noPeraServices,
-        },
-        custom: {
-            network: Networks.custom,
-            isMainnet: false,
-            isTestnet: false,
-            algodUrl: '',
-            indexerUrl: '',
-            genesisHash: '',
-            genesisId: '',
-            explorerUrl: '',
-            algodToken: '',
-            indexerToken: '',
-            dispenserUrl: '',
-            ...noPeraServices,
-        },
-    }
-
-    test.each(Object.values(Networks))('%s', network => {
-        const actual = getNetworkConfig(network)
-
-        expect(actual).toStrictEqual(expected[network])
-        expect(Object.keys(actual)).toEqual(Object.keys(expected[network]))
-    })
-})
-
-describe('Networks', () => {
+describe('Algorand scope rows', () => {
     // Stored network columns are decoded against LEGACY_NETWORKS, so a network
     // missing there would make its existing rows unreadable.
-    test('lists the same networks as the chain contract', () => {
-        expect(Object.values(Networks).sort()).toEqual(
-            [...LEGACY_NETWORKS].sort(),
-        )
+    test('configure the same networks as the chain contract', () => {
+        const configured = configuredScopes()
+            .filter(scope => scope.chainId === 'algorand')
+            .map(scope => scope.networkId)
+
+        expect([...configured].sort()).toEqual([...LEGACY_NETWORKS].sort())
     })
 })

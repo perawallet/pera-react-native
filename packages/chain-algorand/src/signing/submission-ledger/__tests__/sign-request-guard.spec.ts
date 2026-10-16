@@ -35,8 +35,8 @@ import {
     resolveSubmissionAttempt,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const makeTestAddress = (fill: number): Address =>
     new Address(new Uint8Array(32).fill(fill))
@@ -145,7 +145,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         })
         await recordSubmissionAttempt({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             txIds: submitTimeTxIds(txs),
             flow: 'generic',
         })
@@ -159,7 +159,10 @@ describe('isRequestGroupAlreadySubmitted', () => {
         await expect(
             isRequestGroupAlreadySubmitted(request, {
                 db,
-                scope: scopeForLegacyNetwork('mainnet'),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
             }),
         ).resolves.toBe(true)
     })
@@ -182,14 +185,20 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         await recordSubmissionAttempt({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             txIds,
             flow: 'generic',
         })
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),
-            { db, scope: scopeForLegacyNetwork('mainnet') },
+            {
+                db,
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
+            },
         )
         expect(submitted).toBe(true)
     })
@@ -199,7 +208,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             txIds,
             flow: 'generic',
         })
@@ -207,7 +216,13 @@ describe('isRequestGroupAlreadySubmitted', () => {
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),
-            { db, scope: scopeForLegacyNetwork('mainnet') },
+            {
+                db,
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
+            },
         )
         expect(submitted).toBe(true)
     })
@@ -217,7 +232,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            scope: scopeForLegacyNetwork('mainnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
             txIds,
             flow: 'generic',
         })
@@ -227,7 +242,13 @@ describe('isRequestGroupAlreadySubmitted', () => {
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),
-            { db, scope: scopeForLegacyNetwork('mainnet') },
+            {
+                db,
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
+            },
         )
         expect(submitted).toBe(false)
     })
@@ -236,14 +257,20 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txs = makeGroup()
         await recordSubmissionAttempt({
             db,
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             txIds: submitTimeTxIds(txs),
             flow: 'generic',
         })
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),
-            { db, scope: scopeForLegacyNetwork('mainnet') },
+            {
+                db,
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'mainnet',
+                } as const,
+            },
         )
         expect(submitted).toBe(false)
     })
@@ -255,7 +282,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txs = makeGroup()
         await recordSubmissionAttempt({
             db,
-            scope: scopeForLegacyNetwork('testnet'),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
             txIds: submitTimeTxIds(txs),
             flow: 'generic',
         })

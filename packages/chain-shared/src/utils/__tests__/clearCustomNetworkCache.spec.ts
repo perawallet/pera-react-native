@@ -19,11 +19,10 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     toScopeKey,
-    scopeForLegacyNetwork,
     type LegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     shouldClearCustomCache,
@@ -84,7 +83,7 @@ describe('clearCustomNetworkCache', () => {
     })
 
     const storedValue = (network: LegacyNetwork) =>
-        toScopeKey(scopeForLegacyNetwork(network))
+        toScopeKey({ chainId: LEGACY_CHAIN_ID, networkId: network } as const)
 
     test('lists every table that has a scope column', async () => {
         const rows = await db.values<[string]>(sql`
@@ -164,35 +163,67 @@ describe('clearCustomNetworkCache', () => {
         const customAccountKey = [
             'accounts',
             'balance',
-            { address: 'ADDR', scope: scopeForLegacyNetwork(Networks.custom) },
+            {
+                address: 'ADDR',
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'custom',
+                } as const,
+            },
         ]
         const testnetAccountKey = [
             'accounts',
             'balance',
-            { address: 'ADDR', scope: scopeForLegacyNetwork(Networks.testnet) },
+            {
+                address: 'ADDR',
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'testnet',
+                } as const,
+            },
         ]
         const customAssetKey = [
             'assets',
             'prices',
             'usd',
-            { assetIDs: ['1'], scope: scopeForLegacyNetwork(Networks.custom) },
+            {
+                assetIDs: ['1'],
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'custom',
+                } as const,
+            },
         ]
         const customTransactionKey = [
             'transactions',
             'history',
             {
                 accountAddress: 'ADDR',
-                scope: scopeForLegacyNetwork(Networks.custom),
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'custom',
+                } as const,
             },
         ]
         const customNfdKey = [
             'nfd',
             'address',
-            { address: 'ADDR', scope: scopeForLegacyNetwork(Networks.custom) },
+            {
+                address: 'ADDR',
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'custom',
+                } as const,
+            },
         ]
         const unrelatedDomainKey = [
             'card',
-            { scope: scopeForLegacyNetwork(Networks.custom) },
+            {
+                scope: {
+                    chainId: LEGACY_CHAIN_ID,
+                    networkId: 'custom',
+                } as const,
+            },
         ]
 
         queryClient.setQueryData(customAccountKey, { value: 1 })

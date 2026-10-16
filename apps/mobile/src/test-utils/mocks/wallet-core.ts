@@ -720,16 +720,6 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
     }
 })
 
-// Source-aliased code and the dist-resolved packages (app-integrity,
-// background, projects, card/nfd roots) all reach useNetwork through here.
-// Everything else, including the network store, stays real.
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-}))
-
 // Mock @perawallet/wallet-core-chain-algorand/blockchain
 class MockAlgodError extends Error {
     constructor(

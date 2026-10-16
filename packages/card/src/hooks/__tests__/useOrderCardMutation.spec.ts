@@ -22,15 +22,15 @@ vi.mock('../../api/card', async () => ({
 }))
 
 import {
-    scopeForLegacyNetwork,
     type ChainScope,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useOrderCardMutation } from '../useOrderCardMutation'
 import { CardOrderNotVerifiedError } from '../../api/card'
 import { cardMutationKeys } from '../querykeys'
 
 const SCOPES: ChainScope[] = [
-    scopeForLegacyNetwork('mainnet'),
+    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

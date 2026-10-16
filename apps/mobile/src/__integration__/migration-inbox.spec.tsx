@@ -31,7 +31,6 @@ import { server, http, HttpResponse } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { getPlatformServices } from '@test-utils/platform-driver-test'
-import { Networks } from '@perawallet/wallet-core-config'
 import type {
     LegacyAccount,
     LegacyDeviceIdentifiers,
@@ -47,7 +46,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {
-    deviceIdFor,
+    deviceIdForDeployment,
     useDeviceRegistration,
     useDeviceStore,
     type DeviceRegistrationRequest,
@@ -172,7 +171,7 @@ const MigratedUserApp = () => {
         [accounts],
     )
     const legacyDeviceId = useDeviceStore(state =>
-        deviceIdFor(state, Networks.mainnet),
+        deviceIdForDeployment(state, 'live'),
     )
     const migrationSettled = addresses.length >= 2 && !!legacyDeviceId
 

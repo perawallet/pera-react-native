@@ -13,20 +13,19 @@
 import type { AnalyticsService } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { isMainnet } from '@perawallet/wallet-core-config'
 
 const TESTNET_PREFIX = 't_'
 
 /**
- * Resolves the raw event/screen name to send, prefixing on every network that
- * is not MainNet. The `t_` prefix is shared across every Pera client app, so
- * betanet and custom reuse it rather than introducing per-network prefixes
- * that would fragment existing dashboards.
+ * Resolves the raw event/screen name to send, prefixing in every mode but
+ * live. The `t_` prefix is shared across every Pera client app, so betanet and
+ * custom reuse it rather than introducing per-network prefixes that would
+ * fragment existing dashboards.
  */
-export const resolveEventName = (name: string): string => {
-    const { network } = useNetworkStore.getState()
-    return isMainnet(network) ? name : `${TESTNET_PREFIX}${name}`
-}
+export const resolveEventName = (name: string): string =>
+    useNetworkStore.getState().mode === 'live'
+        ? name
+        : `${TESTNET_PREFIX}${name}`
 
 /**
  * The base, untyped logging primitive. Client apps build their own type-safe

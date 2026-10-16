@@ -19,9 +19,9 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
     type ChainScopeKey,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -38,8 +38,8 @@ import { hydrateAccountChainStates } from '../hydrateAccountChainStates'
 import { recordAuthority } from '../recordAuthority'
 import { useAccountsStore } from '../store'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
-const TESTNET = scopeForLegacyNetwork('testnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 const addressOf = (account: WalletAccount): string =>
     addressOn(account, MAINNET) as string
@@ -184,7 +184,7 @@ describe('hydrateAccountChainStates', () => {
     it('seeds a lone scalar under the selected scope', async () => {
         const account = holdAccount()
         await launchWithLegacyPayload(account, { authority: 'S' })
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
 
         await hydrateAccountChainStates({ db })
 
@@ -198,7 +198,7 @@ describe('hydrateAccountChainStates', () => {
             authority: 'SCALAR',
             authorityByScope: { [toScopeKey(TESTNET)]: 'T' },
         })
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
 
         await hydrateAccountChainStates({ db })
 
@@ -223,9 +223,9 @@ describe('hydrateAccountChainStates', () => {
     it('keeps a lone scalar on the scope it resolved to, after the network changes', async () => {
         const account = holdAccount()
         await launchWithLegacyPayload(account, { authority: 'S' })
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
         await hydrateAccountChainStates({ db })
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
 
         await restart()
 

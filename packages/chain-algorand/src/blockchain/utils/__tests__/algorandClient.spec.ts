@@ -83,7 +83,7 @@ beforeEach(() => {
     mocks.Indexer.mockImplementation(function Indexer() {})
     mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
     useNetworkStore.getState().resetState()
-    useNetworkStore.getState().setNetwork('mainnet')
+    useNetworkStore.getState().setMode('live')
     setAlgorandChainContext({
         ...testChainContext(),
         timeouts: { readMs: 1_234, submitMs: 5_678 },

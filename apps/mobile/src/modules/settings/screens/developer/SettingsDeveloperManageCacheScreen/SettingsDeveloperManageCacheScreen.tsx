@@ -18,7 +18,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAgeGateStore } from '@perawallet/wallet-core-device'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 
@@ -33,7 +33,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const accounts = useAllAccounts()
-    const { network } = useNetwork()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const resetBanners = useBannersStore(state => state.resetState)
     const resetAgeGate = useAgeGateStore(state => state.resetState)
     const { deletePreference } = usePreferences()
@@ -48,7 +48,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
             ) ?? []
         try {
             const syncService = getSyncService()
-            await syncService.refreshAccounts(addresses, network)
+            await syncService.refreshAccounts(addresses, scope)
             syncService.invalidateQueries()
             showToast({
                 title: t('settings.developer.refresh_cache_success_title'),

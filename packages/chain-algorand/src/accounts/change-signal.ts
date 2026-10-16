@@ -11,12 +11,9 @@
  */
 
 import type { AccountChangeSignal } from '@perawallet/wallet-core-accounts'
-import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
-import {
-    queryClient,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
+import { hasPeraBackend } from '@perawallet/wallet-core-config'
+import { algorandScope, type AlgorandNetworkId } from '../network-id'
 
 type ShouldRefreshResponse = { refresh: boolean; round: number }
 
@@ -27,18 +24,18 @@ type ShouldRefreshResponse = { refresh: boolean; round: number }
  */
 export const fetchAlgorandChangeSignal = async (
     addresses: string[],
-    network: Network,
+    network: AlgorandNetworkId,
     cursor: Nullable<number>,
 ): Promise<AccountChangeSignal> => {
     // No Pera backend to ask: read every pass. The checkpoint comes from the
     // account reads' observed round, so the cursor stays put.
-    if (!isPeraBackedNetwork(network)) {
+    if (!hasPeraBackend(algorandScope(network))) {
         return { changed: true, cursor: cursor ?? 0 }
     }
 
     const { data } = await queryClient<ShouldRefreshResponse>({
         backend: 'pera',
-        network,
+        scope: algorandScope(network),
         method: 'POST',
         url: '/v1/accounts/should-refresh/',
         data: {

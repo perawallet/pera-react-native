@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import {
     chainAccountOf,
     type AccountBalances,
@@ -31,7 +31,6 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    useNetwork,
     useSelectedChainMode,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
@@ -196,7 +195,6 @@ export const useBidaliTransport = (
     balances: AccountBalances,
 ): UseBidaliTransportResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { network } = useNetwork()
     const chainMode = useSelectedChainMode(scope.chainId)
     const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
@@ -212,10 +210,10 @@ export const useBidaliTransport = (
         )
 
         return buildBidaliProviderJS(
-            getNetworkConfig(network).bidaliApiKey,
+            getPeraServicesConfig(scope).bidaliApiKey,
             JSON.stringify(balanceMap),
         )
-    }, [network, chainMode, account, balances, scope])
+    }, [chainMode, account, balances, scope])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
@@ -296,7 +294,7 @@ export const useBidaliTransport = (
                     sourceMetadata: {
                         name: t('giftCard.signing.source_name'),
                         description: t('giftCard.signing.source_description'),
-                        url: getNetworkConfig(network).bidaliBaseUrl,
+                        url: getPeraServicesConfig(scope).bidaliBaseUrl,
                     },
                     approve: async () => {
                         sendBidaliEvent(webviewRef, 'paymentSent')
@@ -315,7 +313,7 @@ export const useBidaliTransport = (
                 sendBidaliEvent(webviewRef, 'paymentCancelled')
             }
         },
-        [account, network, nativeAsset, addSignRequest, t, scope],
+        [account, nativeAsset, addSignRequest, t, scope],
     )
 
     const handleOpenUrl = useCallback((params: Record<string, unknown>) => {

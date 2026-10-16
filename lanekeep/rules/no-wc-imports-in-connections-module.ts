@@ -14,7 +14,7 @@ export default defineRule({
         message:
             'the connections module and the deeplink handlers must not import the WalletConnect package',
         remediation:
-            'Reach the protocol through the registry (pair, abandonPairing, describeUri, networksFor) or move the transport-agnostic piece into @perawallet/wallet-core-connections. apps/mobile/src/modules/connections and the deeplink pairing handlers are the layer that knows nothing about which protocol answered; one WalletConnect import there and every future handler has to be special-cased alongside it. Type-only imports count. A composition root (registering the handler, running its legacy import, the web twin the extension pairs through) suppresses this rule with a reason; nothing else should.',
+            'Reach the protocol through the registry (pair, abandonPairing, describeUri, scopesFor) or move the transport-agnostic piece into @perawallet/wallet-core-connections. apps/mobile/src/modules/connections and the deeplink pairing handlers are the layer that knows nothing about which protocol answered; one WalletConnect import there and every future handler has to be special-cased alongside it. Type-only imports count. A composition root (registering the handler, running its legacy import, the web twin the extension pairs through) suppresses this rule with a reason; nothing else should.',
         examples: {
             bad: "// in src/modules/connections/hooks/useConnectionPairing.ts\nimport { abandonPairing } from '@perawallet/wallet-core-walletconnect'",
             good: '// in src/modules/connections/hooks/useConnectionPairing.ts\nregistry.abandonPairing(pairingId)',

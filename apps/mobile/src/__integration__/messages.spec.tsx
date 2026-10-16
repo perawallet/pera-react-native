@@ -90,8 +90,8 @@ describe('Flow: Messages — inbox & notifications lists', () => {
         useAccountsStore.getState().setAccounts([SIGNER])
         useAccountsStore.getState().setSelectedAccountId(SIGNER.id)
         useDeviceStore.getState().resetState()
-        useDeviceStore.getState().setDeviceID('mainnet', DEVICE_ID)
-        useDeviceStore.getState().setDeviceID('testnet', DEVICE_ID)
+        useDeviceStore.getState().setDeviceID('live', DEVICE_ID)
+        useDeviceStore.getState().setDeviceID('developer', DEVICE_ID)
     })
 
     it('Given the inbox endpoint returns one ASA request, when InboxScreen mounts, then the ASA request row renders', async () => {

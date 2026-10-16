@@ -18,11 +18,7 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import {
-    getNetworkConfig,
-    Networks,
-    type Network,
-} from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import {
     describeZodIssues,
     type DappRequestChainAdapter,
@@ -44,6 +40,7 @@ import {
     algorandWalletConnectSupport,
     createAlgorandWalletConnectV2Support,
 } from './walletConnect'
+import { algorandScope, type AlgorandNetworkId } from '../network-id'
 
 /**
  * The resolver's own schema, not a copy: zod strips undeclared keys, so any
@@ -56,11 +53,7 @@ const arc0001GroupSchema = arc0001SignTxnRequestSchema
     .min(1)
     .max(MAX_TRANSACTION_SIGN_REQUESTS)
 
-const BAKED_NETWORKS: Network[] = [
-    Networks.mainnet,
-    Networks.testnet,
-    Networks.betanet,
-]
+const BAKED_NETWORKS: AlgorandNetworkId[] = ['mainnet', 'testnet', 'betanet']
 
 // The webview bridge's account-type names, shared with the Pera webapp.
 const BRIDGE_ACCOUNT_TYPES: Record<AccountType, string> = {
@@ -161,10 +154,12 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     // the wallet tell a dApp "this is MainNet" — the hash check is what a dApp
     // actually validates.
     resolveReportedNetwork(scope, customGenesisHash): NetworkId | undefined {
-        if (scope.networkId !== Networks.custom) return scope.networkId
+        if (scope.networkId !== 'custom') return scope.networkId
         if (!customGenesisHash) return undefined
         return BAKED_NETWORKS.find(
-            baked => getNetworkConfig(baked).genesisHash === customGenesisHash,
+            baked =>
+                getAlgorandChainConfig(algorandScope(baked)).genesisHash ===
+                customGenesisHash,
         )
     },
 

@@ -49,7 +49,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
     ...(await importOriginal<object>()),
-    deviceIdFor: () => null,
+    deviceIdForScope: () => null,
 }))
 
 const TOKEN = { assetId: '31566704', unitName: 'USDC', decimals: 6 }

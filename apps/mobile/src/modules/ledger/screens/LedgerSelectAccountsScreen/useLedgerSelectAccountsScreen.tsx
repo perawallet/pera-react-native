@@ -30,10 +30,7 @@ import {
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import {
-    useNetwork,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
@@ -94,7 +91,6 @@ export const useLedgerSelectAccountsScreen =
         const { errorToast } = useToast()
 
         const queryClient = useQueryClient()
-        const { network } = useNetwork()
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const { request } = useBottomSheet()
         const { exitAccountFlow } = useExitAccountFlow()
@@ -127,7 +123,7 @@ export const useLedgerSelectAccountsScreen =
         // caches, so reset and let the prefetch effect re-warm the list.
         useEffect(() => {
             prefetchedRef.current = new Set()
-        }, [network])
+        }, [scope.networkId])
 
         const { delegated, isScanning } = useLedgerDelegatedScan(
             accounts,
@@ -151,12 +147,12 @@ export const useLedgerSelectAccountsScreen =
                     selectable.kind === 'derived'
                         ? selectable.account.address
                         : selectable.address
-                const key = `${network}:${address}`
+                const key = `${scope.networkId}:${address}`
                 if (prefetchedRef.current.has(key)) continue
                 prefetchedRef.current.add(key)
                 void prefetchLedgerAccountPreview(queryClient, address, scope)
             }
-        }, [selectableAccounts, queryClient, network, scope])
+        }, [selectableAccounts, queryClient, scope])
 
         const selectableByAddress = useMemo(() => {
             const m = new Map<string, LedgerSelectableAccount>()

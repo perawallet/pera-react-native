@@ -43,14 +43,11 @@ const registration: DeviceRegistration = {
 const wrapper = createWrapper()
 
 describe('useRegisterDeviceMutation', () => {
-    // (final review, Finding 1): this hook used to resolve the
-    // network from its own `useNetwork()` — re-read on every render, so the
-    // URL was chosen when the request fired, not when the caller decided to
-    // make it. `useDevice.registerDevice` queues registrations behind one
-    // another, so a call enqueued on mainnet can run after the user switched
-    // to testnet. The network is now a mutation variable the caller pins at
+    // `useDevice.registerDevice` queues registrations behind one another, so
+    // a call enqueued on the live deployment can run after the user switched
+    // to developer. The deployment is a mutation variable the caller pins at
     // enqueue time, and this hook must honour it and nothing else.
-    it('sends the registration to the network passed in the mutation variables', async () => {
+    it('sends the registration to the deployment passed in the mutation variables', async () => {
         mockedRegisterDevice.mockResolvedValueOnce({ platform: 'ios' })
 
         const { result } = renderHook(() => useRegisterDeviceMutation(), {
@@ -59,13 +56,13 @@ describe('useRegisterDeviceMutation', () => {
 
         await act(async () => {
             await result.current.mutateAsync({
-                network: 'testnet',
+                deployment: 'developer',
                 data: registration,
             })
         })
 
         expect(mockedRegisterDevice).toHaveBeenCalledWith(
-            'testnet',
+            'developer',
             registration,
         )
     })

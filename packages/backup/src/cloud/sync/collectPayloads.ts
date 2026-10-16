@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     BackupId,
@@ -23,7 +22,6 @@ import { contentHash } from './canonicalize'
 import { itemContentHash } from './itemContentHash'
 
 export type CollectPayloadsDeps = {
-    network: Network
     backupId: BackupId
     deviceId: DeviceId
     encryptionKey: Uint8Array

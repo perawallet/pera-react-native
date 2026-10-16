@@ -17,8 +17,8 @@ import {
     getTrustedIframeSourceBases,
 } from '../trusted-iframe-origins.web'
 
-const { getNetworkConfig } = vi.hoisted(() => ({
-    getNetworkConfig: vi.fn(),
+const { getPeraDeploymentConfig } = vi.hoisted(() => ({
+    getPeraDeploymentConfig: vi.fn(),
 }))
 
 const MAINNET_BIDALI = 'https://commerce.bidali.com/dapp'
@@ -32,13 +32,12 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     config: {
         discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     },
-    getNetworkConfig,
-    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
+    getPeraDeploymentConfig,
 }))
 
 beforeEach(() => {
-    getNetworkConfig.mockImplementation((network: string) => ({
-        bidaliBaseUrl: network === 'mainnet' ? MAINNET_BIDALI : TESTNET_BIDALI,
+    getPeraDeploymentConfig.mockImplementation((deployment: string) => ({
+        bidaliBaseUrl: deployment === 'live' ? MAINNET_BIDALI : TESTNET_BIDALI,
     }))
 })
 
@@ -76,7 +75,7 @@ describe('getTrustedIframeOrigins', () => {
     })
 
     it('falls back to itself when the configured Bidali base is already giftcards-hosted (env override)', () => {
-        getNetworkConfig.mockImplementation(() => ({
+        getPeraDeploymentConfig.mockImplementation(() => ({
             bidaliBaseUrl: 'https://giftcards.bidali.com/dapp',
         }))
         expect(

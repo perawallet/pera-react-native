@@ -13,7 +13,6 @@
 import { Decimal } from 'decimal.js'
 import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import { isNativeAsset } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     uriSchemeOf,
     type ChainDeeplinkIntent,
@@ -153,7 +152,7 @@ const parseArc90 = (input: string): DeeplinkParseResult => {
     if (uri.kind === 'account') return parseAccount(uri)
 
     // A link naming no network opens MainNet's explorer.
-    const networkId = uri.networkId ?? Networks.mainnet
+    const networkId = uri.networkId ?? 'mainnet'
     const url =
         uri.kind === 'asset'
             ? algorandDescriptor.explorer.assetUrl(networkId, uri.assetId)

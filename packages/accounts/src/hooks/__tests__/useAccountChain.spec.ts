@@ -111,7 +111,7 @@ describe('useSigningAccountsOnOwnChain', () => {
     beforeEach(() => {
         vi.restoreAllMocks()
         useAccountsStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
     })
 
     it('checks each account on its own chain, skipping a chain with no accounts adapter', () => {

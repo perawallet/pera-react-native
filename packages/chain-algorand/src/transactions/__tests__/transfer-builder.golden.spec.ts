@@ -30,12 +30,12 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import {
-    scopeForLegacyNetwork,
     type AssetRef,
     type ChainId,
     type PeraTransaction,
     type UnsignedTransaction,
     type TransactionIntent,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
@@ -66,7 +66,7 @@ import {
 // `readAlgorandTransaction`'s network check.
 const transactionOf = (built: UnsignedTransaction): PeraTransaction =>
     (built.payload as { transaction: PeraTransaction }).transaction
-const scope = scopeForLegacyNetwork('testnet')
+const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 const SUGGESTED_MIN_FEE = 1000n
 const CONFIG = { configMinTxnFee: 1000n, pqMultiplier: 3n }
 

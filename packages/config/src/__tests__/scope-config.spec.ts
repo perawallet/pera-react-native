@@ -12,22 +12,22 @@
 
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { UnconfiguredScopeError } from '../errors'
 import { config } from '../main'
-import { Networks, type Network } from '../models/network'
 import {
     PERA_SERVICES,
     configuredScopes,
+    getAlgorandChainConfig,
     getChainConfig,
-    getNetworkConfig,
     getPeraDeploymentConfig,
     getPeraServicesConfig,
+    hasPeraBackend,
     hasPeraService,
-    isPeraBackedNetwork,
     peraDeploymentOf,
     peraServicesFor,
     registerCustomNetworkSource,
@@ -35,7 +35,8 @@ import {
     type PeraService,
 } from '../network-config'
 
-const algorandScope = (network: Network) => scopeForLegacyNetwork(network)
+const algorandScope = (networkId: NetworkId) =>
+    ({ chainId: LEGACY_CHAIN_ID, networkId }) as const
 
 // A chain id outside the compiled-in union, standing in for a chain package
 // that is not built in.
@@ -67,7 +68,7 @@ const cleanups: Array<() => void> = []
 const registerSavedCustomNode = (): void => {
     cleanups.push(
         registerCustomNetworkSource(scope =>
-            scope.chainId === 'algorand' && scope.networkId === Networks.custom
+            scope.chainId === 'algorand' && scope.networkId === 'custom'
                 ? SAVED_NODE
                 : undefined,
         ),
@@ -80,7 +81,7 @@ afterEach(() => {
 
 describe('getChainConfig', () => {
     test('mainnet resolves its baked endpoints', () => {
-        expect(getChainConfig(algorandScope(Networks.mainnet))).toStrictEqual({
+        expect(getChainConfig(algorandScope('mainnet'))).toStrictEqual({
             algodUrl: config.mainnetAlgodUrl,
             indexerUrl: config.mainnetIndexerUrl,
             genesisHash: config.mainnetGenesisHash,
@@ -93,7 +94,7 @@ describe('getChainConfig', () => {
     })
 
     test('testnet resolves its baked endpoints', () => {
-        expect(getChainConfig(algorandScope(Networks.testnet))).toStrictEqual({
+        expect(getChainConfig(algorandScope('testnet'))).toStrictEqual({
             algodUrl: config.testnetAlgodUrl,
             indexerUrl: config.testnetIndexerUrl,
             genesisHash: config.testnetGenesisHash,
@@ -106,7 +107,7 @@ describe('getChainConfig', () => {
     })
 
     test('betanet resolves its public endpoints with no Pera token', () => {
-        expect(getChainConfig(algorandScope(Networks.betanet))).toStrictEqual({
+        expect(getChainConfig(algorandScope('betanet'))).toStrictEqual({
             algodUrl: config.betanetAlgodUrl,
             indexerUrl: config.betanetIndexerUrl,
             genesisHash: config.betanetGenesisHash,
@@ -119,7 +120,7 @@ describe('getChainConfig', () => {
     })
 
     test('custom is the empty placeholder while no node is saved', () => {
-        expect(getChainConfig(algorandScope(Networks.custom))).toStrictEqual({
+        expect(getChainConfig(algorandScope('custom'))).toStrictEqual({
             algodUrl: '',
             indexerUrl: '',
             genesisHash: '',
@@ -134,7 +135,7 @@ describe('getChainConfig', () => {
     test('a saved custom node is laid over the placeholder, explorer and dispenser stay empty', () => {
         registerSavedCustomNode()
 
-        expect(getChainConfig(algorandScope(Networks.custom))).toStrictEqual({
+        expect(getChainConfig(algorandScope('custom'))).toStrictEqual({
             ...SAVED_NODE,
             explorerUrl: '',
             dispenserUrl: '',
@@ -142,17 +143,15 @@ describe('getChainConfig', () => {
     })
 
     test('the baked networks ignore the saved node', () => {
-        const before = [
-            Networks.mainnet,
-            Networks.testnet,
-            Networks.betanet,
-        ].map(network => getChainConfig(algorandScope(network)))
+        const before = ['mainnet', 'testnet', 'betanet'].map(network =>
+            getChainConfig(algorandScope(network)),
+        )
 
         registerSavedCustomNode()
 
         expect(
-            [Networks.mainnet, Networks.testnet, Networks.betanet].map(
-                network => getChainConfig(algorandScope(network)),
+            ['mainnet', 'testnet', 'betanet'].map(network =>
+                getChainConfig(algorandScope(network)),
             ),
         ).toStrictEqual(before)
     })
@@ -162,7 +161,7 @@ describe('getChainConfig', () => {
 
         unregister()
 
-        expect(getChainConfig(algorandScope(Networks.custom)).algodUrl).toBe('')
+        expect(getChainConfig(algorandScope('custom')).algodUrl).toBe('')
     })
 
     test('a stale unregister leaves a newer source in place', () => {
@@ -171,7 +170,7 @@ describe('getChainConfig', () => {
 
         unregisterFirst()
 
-        expect(getChainConfig(algorandScope(Networks.custom)).algodUrl).toBe(
+        expect(getChainConfig(algorandScope('custom')).algodUrl).toBe(
             SAVED_NODE.algodUrl,
         )
     })
@@ -194,7 +193,7 @@ describe('getChainConfig', () => {
     })
 
     test('returns a copy, so a caller cannot change the table', () => {
-        const scope = algorandScope(Networks.mainnet)
+        const scope = algorandScope('mainnet')
 
         getChainConfig(scope).algodUrl = 'https://mutated.example'
 
@@ -202,31 +201,39 @@ describe('getChainConfig', () => {
     })
 })
 
-describe('getNetworkConfig', () => {
+describe('getAlgorandChainConfig', () => {
     test('serves the saved custom node too', () => {
         registerSavedCustomNode()
 
-        expect(getNetworkConfig(Networks.custom)).toMatchObject({
-            network: Networks.custom,
+        expect(getAlgorandChainConfig(algorandScope('custom'))).toMatchObject({
             ...SAVED_NODE,
             explorerUrl: '',
             dispenserUrl: '',
-            ...NO_PERA_SERVICES,
         })
+        expect(getPeraServicesConfig(algorandScope('custom'))).toStrictEqual(
+            NO_PERA_SERVICES,
+        )
     })
 
-    test('throws UnconfiguredScopeError for a network outside the union', () => {
-        expect(() => getNetworkConfig('fnet' as unknown as Network)).toThrow(
+    test('throws UnconfiguredScopeError for a network no row configures', () => {
+        expect(() => getAlgorandChainConfig(algorandScope('fnet'))).toThrow(
             UnconfiguredScopeError,
         )
+    })
+
+    test('throws UnconfiguredScopeError for another chain', () => {
+        expect(() =>
+            getAlgorandChainConfig({
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }),
+        ).toThrow(UnconfiguredScopeError)
     })
 })
 
 describe('getPeraServicesConfig', () => {
     test('mainnet resolves its product endpoints', () => {
-        expect(
-            getPeraServicesConfig(algorandScope(Networks.mainnet)),
-        ).toStrictEqual({
+        expect(getPeraServicesConfig(algorandScope('mainnet'))).toStrictEqual({
             backendUrl: config.mainnetBackendUrl,
             bidaliBaseUrl: config.mainnetBidaliBaseUrl,
             bidaliApiKey: config.mainnetBidaliApiKey,
@@ -237,9 +244,7 @@ describe('getPeraServicesConfig', () => {
     })
 
     test('testnet resolves its product endpoints', () => {
-        expect(
-            getPeraServicesConfig(algorandScope(Networks.testnet)),
-        ).toStrictEqual({
+        expect(getPeraServicesConfig(algorandScope('testnet'))).toStrictEqual({
             backendUrl: config.testnetBackendUrl,
             bidaliBaseUrl: config.testnetBidaliBaseUrl,
             bidaliApiKey: config.testnetBidaliApiKey,
@@ -249,14 +254,11 @@ describe('getPeraServicesConfig', () => {
         })
     })
 
-    test.each([Networks.betanet, Networks.custom])(
-        '%s has no Pera deployment',
-        network => {
-            expect(getPeraServicesConfig(algorandScope(network))).toStrictEqual(
-                NO_PERA_SERVICES,
-            )
-        },
-    )
+    test.each(['betanet', 'custom'])('%s has no Pera deployment', network => {
+        expect(getPeraServicesConfig(algorandScope(network))).toStrictEqual(
+            NO_PERA_SERVICES,
+        )
+    })
 
     test('an unconfigured fixture chain gets empty values, not an error', () => {
         expect(getPeraServicesConfig(FIXTURE_MAINNET)).toStrictEqual(
@@ -267,8 +269,8 @@ describe('getPeraServicesConfig', () => {
 
 describe('Pera deployments', () => {
     test.each([
-        ['live', Networks.mainnet],
-        ['developer', Networks.testnet],
+        ['live', 'mainnet'],
+        ['developer', 'testnet'],
     ] as const)(
         "the %s deployment is the %s Algorand scope's Pera services",
         (deployment, network) => {
@@ -279,10 +281,10 @@ describe('Pera deployments', () => {
     )
 
     test.each([
-        [Networks.mainnet, 'live'],
-        [Networks.testnet, 'developer'],
-        [Networks.betanet, undefined],
-        [Networks.custom, undefined],
+        ['mainnet', 'live'],
+        ['testnet', 'developer'],
+        ['betanet', undefined],
+        ['custom', undefined],
     ] as const)('algorand/%s is served by %s', (network, deployment) => {
         expect(peraDeploymentOf(algorandScope(network))).toBe(deployment)
     })
@@ -305,16 +307,13 @@ describe('peraServicesFor', () => {
         ])
     })
 
-    test.each([Networks.mainnet, Networks.testnet])(
-        '%s has every Pera service',
-        network => {
-            expect(peraServicesFor(algorandScope(network))).toStrictEqual(
-                new Set(PERA_SERVICES),
-            )
-        },
-    )
+    test.each(['mainnet', 'testnet'])('%s has every Pera service', network => {
+        expect(peraServicesFor(algorandScope(network))).toStrictEqual(
+            new Set(PERA_SERVICES),
+        )
+    })
 
-    test.each([Networks.betanet, Networks.custom])('%s has none', network => {
+    test.each(['betanet', 'custom'])('%s has none', network => {
         expect(peraServicesFor(algorandScope(network)).size).toBe(0)
     })
 
@@ -323,7 +322,7 @@ describe('peraServicesFor', () => {
     })
 
     test('returns a copy, so a caller cannot change the table', () => {
-        const scope = algorandScope(Networks.mainnet)
+        const scope = algorandScope('mainnet')
 
         ;(peraServicesFor(scope) as Set<PeraService>).delete('prices')
 
@@ -333,22 +332,20 @@ describe('peraServicesFor', () => {
 
 describe('hasPeraService', () => {
     test('answers per scope and service', () => {
-        expect(hasPeraService(algorandScope(Networks.mainnet), 'prices')).toBe(
-            true,
-        )
-        expect(hasPeraService(algorandScope(Networks.betanet), 'prices')).toBe(
-            false,
-        )
+        expect(hasPeraService(algorandScope('mainnet'), 'prices')).toBe(true)
+        expect(hasPeraService(algorandScope('betanet'), 'prices')).toBe(false)
         expect(hasPeraService(FIXTURE_MAINNET, 'prices')).toBe(false)
     })
 
-    test('isPeraBackedNetwork holds exactly where the Algorand scope has every service', () => {
-        const pairs = Object.values(Networks).map(network => ({
-            isBacked: isPeraBackedNetwork(network),
-            hasEvery: PERA_SERVICES.every(service =>
-                hasPeraService(algorandScope(network), service),
-            ),
-        }))
+    test('hasPeraBackend holds exactly where the Algorand scope has every service', () => {
+        const pairs = ['mainnet', 'testnet', 'betanet', 'custom'].map(
+            network => ({
+                isBacked: hasPeraBackend(algorandScope(network)),
+                hasEvery: PERA_SERVICES.every(service =>
+                    hasPeraService(algorandScope(network), service),
+                ),
+            }),
+        )
 
         for (const { isBacked, hasEvery } of pairs) {
             expect(isBacked).toBe(hasEvery)
@@ -363,7 +360,7 @@ describe('hasPeraService', () => {
 describe('configuredScopes', () => {
     test('lists the Algorand scopes in network order, then the Ethereum ones', () => {
         expect(configuredScopes()).toStrictEqual([
-            ...Object.values(Networks).map(network => ({
+            ...['mainnet', 'testnet', 'betanet', 'custom'].map(network => ({
                 chainId: 'algorand',
                 networkId: network,
             })),
@@ -466,9 +463,9 @@ describe('ethereum scopes', () => {
         const { getAlgorandChainConfig, config: fresh } =
             await withEthereumConfig({})
 
-        expect(
-            getAlgorandChainConfig(algorandScope(Networks.mainnet)).algodUrl,
-        ).toBe(fresh.mainnetAlgodUrl)
+        expect(getAlgorandChainConfig(algorandScope('mainnet')).algodUrl).toBe(
+            fresh.mainnetAlgodUrl,
+        )
     })
 
     test('peraServicesFor reflects the configured list', async () => {

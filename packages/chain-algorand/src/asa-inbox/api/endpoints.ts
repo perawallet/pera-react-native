@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Network, queryClient } from '@perawallet/wallet-core-shared'
+import { queryClient } from '@perawallet/wallet-core-shared'
 import {
     arc59SendSummaryResponseSchema,
     arc59AssetRequestsResponseSchema,
@@ -18,6 +18,7 @@ import {
     type Arc59SendSummaryResponse,
     type Arc59AssetRequest,
 } from './schema'
+import { type AlgorandNetworkId, algorandScope } from '../../network-id'
 
 const getArc59SendSummaryEndpoint = (
     receiverAddress: string,
@@ -25,13 +26,13 @@ const getArc59SendSummaryEndpoint = (
 ) => `/v1/asa-inboxes/summary/send-flow/${receiverAddress}/${assetId}/`
 
 export const fetchArc59SendSummary = async (
-    network: Network,
+    network: AlgorandNetworkId,
     receiverAddress: string,
     assetId: string,
 ): Promise<Arc59SendSummaryResponse> => {
     const response = await queryClient<Arc59SendSummaryResponse>({
         backend: 'pera',
-        network: network,
+        scope: algorandScope(network),
         method: 'GET',
         url: getArc59SendSummaryEndpoint(receiverAddress, assetId),
     })
@@ -43,12 +44,12 @@ const getArc59AssetRequestsEndpoint = (address: string) =>
     `/v1/asa-inboxes/requests/${address}/`
 
 export const fetchArc59AssetRequests = async (
-    network: Network,
+    network: AlgorandNetworkId,
     address: string,
 ): Promise<Arc59AssetRequest[]> => {
     const response = await queryClient<unknown>({
         backend: 'pera',
-        network: network,
+        scope: algorandScope(network),
         method: 'GET',
         url: getArc59AssetRequestsEndpoint(address),
     })

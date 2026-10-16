@@ -17,11 +17,7 @@ import {
     type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    isNotFoundError,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
     getOpenSubmissionAttempts,
@@ -33,7 +29,7 @@ import {
     type SubmissionFlow,
 } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
-import { algorandNetworkOf } from '../../legacy-network'
+import { algorandNetworkOf, type AlgorandNetworkId } from '../../network-id'
 import { lastValidOf } from './chain-data'
 import { getSubmissionSettledHandler } from './settle-registry'
 
@@ -305,7 +301,7 @@ const FLOWS_REQUIRING_SETTLE_HANDLER: readonly SubmissionFlow[] = ['cosign']
 
 const notifySettled = async (
     attempt: SubmissionAttempt,
-    network: Network,
+    network: AlgorandNetworkId,
     status: 'confirmed' | 'failed',
 ): Promise<boolean> => {
     const handler = getSubmissionSettledHandler(attempt.flow)

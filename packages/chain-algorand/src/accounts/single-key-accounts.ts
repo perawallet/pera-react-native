@@ -35,7 +35,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { algorandNetworkOf } from '../legacy-network'
+import { algorandNetworkOf } from '../network-id'
 import { algorandAddressCodec } from './address-codec'
 import { algorandAccountExists } from './discovery'
 import { algorandQuantumDerivation, quantumNative } from './quantum'

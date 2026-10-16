@@ -11,9 +11,10 @@
  */
 
 import type { AssetSearchPage } from '@perawallet/wallet-core-assets'
-import type { Maybe, Network, Optional } from '@perawallet/wallet-core-shared'
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { searchAssets } from './api/search-endpoints'
 import { transformSearchResult } from './api/search-mappers'
+import { type AlgorandNetworkId } from '../network-id'
 
 export const extractCursor = (nextUrl: Maybe<string>): Optional<string> => {
     if (!nextUrl) {
@@ -29,7 +30,7 @@ export const extractCursor = (nextUrl: Maybe<string>): Optional<string> => {
 
 type SearchAssetPageParams = {
     query: string
-    network: Network
+    network: AlgorandNetworkId
     cursor?: string
     hasCollectible?: boolean
 }

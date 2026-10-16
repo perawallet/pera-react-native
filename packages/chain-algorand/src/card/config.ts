@@ -11,7 +11,7 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import type { AlgorandNetworkId } from '../network-id'
 
 export type AlgorandCardConfig = {
     /** W3Card (main) application id. */
@@ -40,22 +40,24 @@ const EMPTY_CARD_CONFIG: AlgorandCardConfig = {
 // Functions, not values, so `config` is read on every call and a test's config
 // mock reaches it. A Record so a new network fails to compile until someone
 // decides its card deployment.
-const cardConfigByNetwork: Record<Network, () => AlgorandCardConfig> = {
-    [Networks.mainnet]: () => ({
-        mainAppId: config.mainnetCardW3CardAppId,
-        killswitchAppId: config.mainnetCardKillswitchAppId,
-        autoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
-        usdcAssetId: config.mainnetCardUsdcAssetId,
-    }),
-    [Networks.testnet]: () => ({
-        mainAppId: config.testnetCardW3CardAppId,
-        killswitchAppId: config.testnetCardKillswitchAppId,
-        autoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
-        usdcAssetId: config.testnetCardUsdcAssetId,
-    }),
-    [Networks.betanet]: () => EMPTY_CARD_CONFIG,
-    [Networks.custom]: () => EMPTY_CARD_CONFIG,
-}
+const cardConfigByNetwork: Record<AlgorandNetworkId, () => AlgorandCardConfig> =
+    {
+        mainnet: () => ({
+            mainAppId: config.mainnetCardW3CardAppId,
+            killswitchAppId: config.mainnetCardKillswitchAppId,
+            autoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
+            usdcAssetId: config.mainnetCardUsdcAssetId,
+        }),
+        testnet: () => ({
+            mainAppId: config.testnetCardW3CardAppId,
+            killswitchAppId: config.testnetCardKillswitchAppId,
+            autoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
+            usdcAssetId: config.testnetCardUsdcAssetId,
+        }),
+        betanet: () => EMPTY_CARD_CONFIG,
+        custom: () => EMPTY_CARD_CONFIG,
+    }
 
-export const algorandCardConfig = (network: Network): AlgorandCardConfig =>
-    cardConfigByNetwork[network]()
+export const algorandCardConfig = (
+    network: AlgorandNetworkId,
+): AlgorandCardConfig => cardConfigByNetwork[network]()

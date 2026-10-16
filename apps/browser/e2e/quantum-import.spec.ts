@@ -28,7 +28,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import algosdk from 'algosdk'
 import { generateKey } from 'falcon-1024'
-import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { dismissPinPromptIfPresent } from './pin-prompt'
 import { trackPageErrors } from './approval-surface'
 
@@ -239,8 +239,10 @@ const enterQuantumWordsAsStandard = async (page: Page): Promise<void> => {
 const expectMainnetProbeOfBoth = (
     probed: { host: string; address: string }[],
 ): void => {
-    const mainnetHost = new URL(getNetworkConfig(Networks.mainnet).algodUrl)
-        .host
+    const mainnetHost = new URL(
+        getAlgorandChainConfig({ chainId: 'algorand', networkId: 'mainnet' })
+            .algodUrl,
+    ).host
     expect(new Set(probed.map(probe => probe.host))).toEqual(
         new Set([mainnetHost]),
     )

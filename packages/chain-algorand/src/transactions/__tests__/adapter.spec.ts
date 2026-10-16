@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
@@ -44,8 +43,9 @@ import {
     payloadTransactionOf,
 } from '../../signing/__tests__/transactions'
 import { algorandHistoryAdapter, algorandSendFlowAdapter } from '../adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const testnet = scopeForLegacyNetwork('testnet')
+const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('algorandSendFlowAdapter', () => {
     it('serves the Algorand chain with every optional feature', () => {
@@ -70,7 +70,10 @@ describe('algorandSendFlowAdapter key registration', () => {
             keyregParams: {},
         })
         mocks.buildKeyRegistrationTx.mockResolvedValueOnce(built)
-        const scope = scopeForLegacyNetwork('mainnet')
+        const scope = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'mainnet',
+        } as const
 
         const unsigned = await algorandSendFlowAdapter.keyRegistration!.buildTx(
             { kind: 'offline', scope, sender: makeTestAddress(1).toString() },

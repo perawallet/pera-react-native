@@ -85,18 +85,11 @@ vi.mock(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 let mockDeviceId: string | null = 'device-1'
 vi.mock('@perawallet/wallet-core-device', () => ({
     logEvent: vi.fn(),
     createBaseLogger: vi.fn(() => vi.fn()),
-    useDeviceID: () => mockDeviceId,
+    useScopedDeviceID: () => mockDeviceId,
 }))
 
 const mockNavigate = vi.fn()

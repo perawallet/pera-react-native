@@ -13,9 +13,13 @@
 import { Linking } from 'react-native'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useNetwork } from '@perawallet/wallet-core-chain-shared'
+import {
+    useSelectedScope,
+    useWalletDeployment,
+} from '@perawallet/wallet-core-chain-shared'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 import { PWListItem, PWScreen } from '@components/core'
@@ -29,8 +33,9 @@ export const SettingsDeveloperScreen = () => {
     const { t } = useLanguage()
     const { getPreference } = usePreferences()
     const { pushWebView } = useWebView()
-    const { isMainnet, network } = useNetwork()
-    const { dispenserUrl } = getNetworkConfig(network)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const isLive = useWalletDeployment() === 'live'
+    const { dispenserUrl } = getAlgorandChainConfig(scope)
 
     const handleTapEvent = (page: string) => {
         navigation.push(page)
@@ -58,7 +63,7 @@ export const SettingsDeveloperScreen = () => {
                 testID='developer_settings_node_item'
             />
 
-            {!isMainnet && dispenserUrl.length > 0 && (
+            {!isLive && dispenserUrl.length > 0 && (
                 <PWListItem
                     onPress={openDispenser}
                     icon='algo'

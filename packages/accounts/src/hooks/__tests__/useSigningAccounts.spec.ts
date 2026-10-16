@@ -28,7 +28,7 @@ import {
 describe('useSigningAccounts', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
     })
 
     it('keeps the accounts the chain resolves a signer for', () => {
@@ -89,7 +89,7 @@ describe('useSigningAccountsOn', () => {
 
     beforeEach(() => {
         useAccountsStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         registerFakeAccountsChain()
         accountsChainAdapters.register({
             ...fakeAccountsChain().adapter,

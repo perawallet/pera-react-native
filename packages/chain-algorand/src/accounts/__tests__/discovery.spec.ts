@@ -47,10 +47,10 @@ describe('checkAlgorandActivity', () => {
 
         const activity = await checkAlgorandActivity(['A', 'B'], 'testnet')
 
-        expect(mockFetchAccountFastLookup).toHaveBeenCalledWith(
-            ['A', 'B'],
-            'testnet',
-        )
+        expect(mockFetchAccountFastLookup).toHaveBeenCalledWith(['A', 'B'], {
+            chainId: 'algorand',
+            networkId: 'testnet',
+        })
         expect(activity).toEqual(
             new Map([
                 ['A', true],

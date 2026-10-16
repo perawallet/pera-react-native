@@ -55,7 +55,6 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetwork: () => ({ network: 'testnet' }),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
 }))
 

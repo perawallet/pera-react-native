@@ -33,7 +33,7 @@ vi.mock('../../config', () => ({ algorandCardConfig }))
 
 import { algorandAutoDraw as autoDraw } from '../killswitch'
 import { payloadTransactionOf } from '../../../signing/__tests__/transactions'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const APP_ADDRESS = 'KILLSWITCHAPPADDR'
 const ENABLE_CALL = { method: 'enable' }
@@ -130,7 +130,10 @@ describe('algorandAutoDraw', () => {
         expect(txns.map(payloadTransactionOf)).toEqual([
             { id: 'txn-1', sender: 'SENDER', fee: 0n, group: undefined },
         ])
-        expect(txns[0].scope).toEqual(scopeForLegacyNetwork('testnet'))
+        expect(txns[0].scope).toEqual({
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
     })
 
     it('buildKill calls kill(asset) with no funding and no extra fee', async () => {

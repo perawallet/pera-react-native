@@ -60,7 +60,7 @@ const fetchManifestOrNull = async (
     deps: SyncEngineDeps,
 ): Promise<Manifest | null> => {
     try {
-        return await fetchManifest(deps.network, deps.backupId, deps.deviceId)
+        return await fetchManifest(deps.backupId, deps.deviceId)
     } catch (error) {
         if (!isNotFoundError(error)) throw error
         logger.warn('syncBackup: no manifest, treating backup as empty')
@@ -166,7 +166,6 @@ export const syncBackup = async (
         state: next,
         deltas: [...unread, ...fetchedDeltas],
         deps: {
-            network: deps.network,
             backupId: deps.backupId,
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
@@ -189,7 +188,6 @@ export const syncBackup = async (
         state: refreshed.state,
         localItems: [...refreshed.items, ...passkeyItems],
         deps: {
-            network: deps.network,
             backupId: deps.backupId,
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,

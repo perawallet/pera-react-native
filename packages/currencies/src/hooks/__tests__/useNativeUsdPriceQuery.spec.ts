@@ -21,8 +21,8 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 import {
-    scopeForLegacyNetwork,
     toScopeKey,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     migrations,
@@ -53,7 +53,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     }),
 }))
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 describe('useNativeUsdPriceQuery', () => {
     let queryClient: QueryClient
@@ -158,7 +158,10 @@ describe('useNativeUsdPriceQuery', () => {
     })
 
     it('returns zero when only another scope has a price', async () => {
-        await storePrice('0.15', scopeForLegacyNetwork('testnet'))
+        await storePrice('0.15', {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const)
 
         const { result } = renderHook(() => useNativeUsdPriceQuery(MAINNET), {
             wrapper,

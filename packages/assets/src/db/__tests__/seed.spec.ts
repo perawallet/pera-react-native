@@ -12,11 +12,11 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { configuredScopes } from '@perawallet/wallet-core-config'
 import {
     ChainAdapterNotRegisteredError,
-    scopeForLegacyNetwork,
+    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
     runMigrations,
     migrations,
@@ -34,7 +34,10 @@ import { assetsChainAdapters } from '../../chain-adapter'
 import { FAKE_NATIVE_ASSET } from '../../__tests__/fakeAssetsChain'
 import { seedNativeAssets } from '../seed'
 
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 const NATIVE_ID = FAKE_NATIVE_ASSET.assetId
 
@@ -53,23 +56,23 @@ describe('seedNativeAssets', () => {
         teardown()
     })
 
-    // Asserts EVERY network in `Networks`, not a hand-picked pair. The seed
-    // used to name mainnet and testnet literally and this test mirrored it, so
-    // both went stale the moment betanet and the custom slot were added — the
-    // ALGO row was missing there and `InputScreen` (which gates on `!asset`)
-    // spun forever, making Send unusable. Driving the assertion off the enum
-    // means adding a network fails here until it is seeded.
+    // Driven off config's rows, not a hand-picked list: a network the seed
+    // misses leaves no ALGO row, and `InputScreen` (which gates on `!asset`)
+    // spins forever. Adding a row fails here until it is seeded.
     it('seeds the native asset into every network', async () => {
         await seedNativeAssets(db)
 
-        const networks = Object.values(Networks)
-        expect(networks.length).toBeGreaterThan(2)
+        const scopes = configuredScopes().filter(
+            scope => scope.chainId === LEGACY_CHAIN_ID,
+        )
+        expect(scopes.length).toBeGreaterThan(2)
 
-        for (const network of networks) {
+        for (const scope of scopes) {
+            const network = scope.networkId
             const rows = await getAssetsByIds({
                 db,
                 assetIds: [NATIVE_ID],
-                scope: scopeForLegacyNetwork(network),
+                scope,
             })
 
             expect(

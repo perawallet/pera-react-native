@@ -109,7 +109,7 @@ addresses before approving, because any extension page can send on the control s
   pairs.
 
 A handler added on web must be constructed in both `useConnectionsProvider.web.ts` (so URI claims
-and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
+and `scopesFor` are answered) and `runOffscreenApp.ts` (so it is live).
 
 WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
 <!-- doc-hygiene-ignore-next-line stale-path reason: build output dir, produced by CI before the grep -->
@@ -128,7 +128,7 @@ requests never read the capability, so turning it off leaves them listed and rev
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
 origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
 the per-origin approval cap in `packages/browser-runtime/src/dapp/approval-bridge.ts` and
-`disconnect` all key on one value. It is network-agnostic (`matchesNetwork` is always true) and
+`disconnect` all key on one value. It matches every network of its own chain (`matchesChainScope`) and
 reports the active network at connect time instead.
 
 The handler is transport-agnostic through `DappTransport`: the extension supplies one over

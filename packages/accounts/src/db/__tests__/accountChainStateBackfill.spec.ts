@@ -20,7 +20,6 @@ import {
     type MigrationConfig,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import {
     authorityAddressOf,
@@ -30,9 +29,13 @@ import {
 import { hydrateAccountChainStates } from '../../store/hydrateAccountChainStates'
 import { useAccountsStore } from '../../store/store'
 import { getAccountChainStateRow } from '../index'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const TAG = '0013_drop_account_balances'
-const MAINNET_SCOPE = scopeForLegacyNetwork('mainnet')
+const MAINNET_SCOPE = {
+    chainId: LEGACY_CHAIN_ID,
+    networkId: 'mainnet',
+} as const
 
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))

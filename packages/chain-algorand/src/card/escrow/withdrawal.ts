@@ -17,11 +17,12 @@ import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-
 import { FALLBACK_MIN_TXN_FEE } from '../../blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-contract'
 import type { PendingWithdrawal } from '@perawallet/wallet-core-card'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { cardAlgorandClient } from '../client'
 import { isAlgodNotFoundError } from './algod'
 import { resolveEscrowChainConfig } from './lsig'
 import mainArc56 from './main-arc56.json'
+import { type AlgorandNetworkId } from '../../network-id'
 
 // AppliedBlockchain's W3Card (main) contract. Withdrawal is timelocked and
 // two-step: `withdrawalRequest` writes a box under the card address stamped
@@ -52,7 +53,7 @@ const buildWithdrawalBoxName = (ownerAddress: string): Uint8Array => {
 }
 
 export type AlgorandEscrowWithdrawalParams = {
-    network: Network
+    network: AlgorandNetworkId
     sender: string
     cardAddress: string
     /** Base units of the card's settlement asset. */
@@ -70,13 +71,13 @@ export interface AlgorandEscrowWithdrawals {
         params: Omit<AlgorandEscrowWithdrawalParams, 'amount'>,
     ): Promise<PeraTransaction[]>
     getPending(
-        network: Network,
+        network: AlgorandNetworkId,
         ownerAddress: string,
     ): Promise<Nullable<PendingWithdrawal>>
-    getWaitTimeSeconds(network: Network): Promise<Nullable<number>>
+    getWaitTimeSeconds(network: AlgorandNetworkId): Promise<Nullable<number>>
 }
 
-const getAppClient = (network: Network, sender?: string) => {
+const getAppClient = (network: AlgorandNetworkId, sender?: string) => {
     const { mainAppId } = resolveEscrowChainConfig(network)
     return cardAlgorandClient(network).client.getAppClientById({
         appId: BigInt(mainAppId),
@@ -90,7 +91,7 @@ type AppCallParams = Parameters<
 >[0]
 
 const buildCall = async (
-    network: Network,
+    network: AlgorandNetworkId,
     sender: string,
     params: AppCallParams,
 ): Promise<PeraTransaction[]> => {

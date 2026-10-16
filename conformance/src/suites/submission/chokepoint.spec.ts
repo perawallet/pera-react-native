@@ -18,7 +18,6 @@ import {
     encodeSignedTransactions,
     groupTransactions,
 } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/transact'
-import { Networks } from '@perawallet/wallet-core-config/models/network'
 // `submitAndAutoRefresh.ts` also imports the full `@perawallet/wallet-core-chain-algorand/blockchain`
 // barrel (for real `toAlgodError` classification logic this suite exercises).
 // That barrel IS aliased to `src` like every other import here — the barrel
@@ -97,7 +96,7 @@ describe('submission chokepoint conformance', () => {
                     () => undefined,
                 ),
             walletAddresses: [sender.address],
-            network: Networks.custom,
+            network: 'custom',
             onConfirmed,
             signedTxns: [signedTxn],
         })
@@ -114,7 +113,7 @@ describe('submission chokepoint conformance', () => {
             () =>
                 expect(onConfirmed).toHaveBeenCalledWith(
                     [sender.address],
-                    Networks.custom,
+                    'custom',
                 ),
             { timeout: 30_000 },
         )
@@ -164,7 +163,7 @@ describe('submission chokepoint conformance', () => {
                     () => undefined,
                 ),
             walletAddresses: [sender.address],
-            network: Networks.custom,
+            network: 'custom',
             onConfirmed: vi.fn(),
             signedTxns: [signedA, signedB],
         })

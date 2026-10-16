@@ -153,7 +153,7 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
         // than the active one. `config.defaultNetwork` is mainnet in CI, but a
         // local `.env` may set it to testnet — pin mainnet so the review UI
         // (and its FeeDisplay) renders deterministically in both.
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
         server.use(
             mockAlgodTransactionParams({ response: { fee: 1000 } }),
             mockAlgodAccountInformation({

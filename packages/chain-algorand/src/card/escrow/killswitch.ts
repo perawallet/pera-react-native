@@ -16,15 +16,12 @@ import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
 import { FALLBACK_MIN_TXN_FEE } from '../../blockchain'
-import {
-    scopeForLegacyNetwork,
-    type UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { type UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { cardAlgorandClient } from '../client'
 import { algorandCardConfig } from '../config'
 import { isAlgodNotFoundError } from './algod'
 import killswitchArc56 from './killswitch-arc56.json'
+import { algorandScope, type AlgorandNetworkId } from '../../network-id'
 
 // AppliedBlockchain's Killswitch contract. The AutoDraw LSig only draws while
 // the Killswitch holds an on-chain "accounts" box for the (funding account,
@@ -49,7 +46,7 @@ const buildAccountAssetBoxName = (
 }
 
 export type AlgorandAutoDrawToggleParams = {
-    network: Network
+    network: AlgorandNetworkId
     sender: string
     /** Settlement asset id as a decimal string. */
     asset: string
@@ -58,7 +55,7 @@ export type AlgorandAutoDrawToggleParams = {
 /** The on-chain switch that lets the card draw from the funding account. */
 export interface AlgorandAutoDraw {
     /** False until a real switch contract is configured for the network. */
-    isConfigured(network: Network): boolean
+    isConfigured(network: AlgorandNetworkId): boolean
     /**
      * Built for fee delegation: the sponsor pays, so the returned group
      * carries no fee or group id of its own.
@@ -77,7 +74,7 @@ export interface AlgorandAutoDraw {
     isEnabled(params: AlgorandAutoDrawToggleParams): Promise<boolean>
 }
 
-const getAppClient = (network: Network, sender: string) => {
+const getAppClient = (network: AlgorandNetworkId, sender: string) => {
     const { killswitchAppId } = algorandCardConfig(network)
     return cardAlgorandClient(network).client.getAppClientById({
         appId: BigInt(killswitchAppId),
@@ -138,7 +135,7 @@ export const algorandAutoDraw: AlgorandAutoDraw = {
         })
         return toUnsignedAlgorandTransactions(
             transactions,
-            scopeForLegacyNetwork(network),
+            algorandScope(network),
         )
     },
 
@@ -161,7 +158,7 @@ export const algorandAutoDraw: AlgorandAutoDraw = {
         )
         return toUnsignedAlgorandTransactions(
             populated.buildGroup().map(t => t.txn),
-            scopeForLegacyNetwork(network),
+            algorandScope(network),
         )
     },
 

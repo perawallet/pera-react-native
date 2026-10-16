@@ -92,10 +92,7 @@ export type ChainScopeKey = `${ChainId}/${NetworkId}` & {
     readonly __chainScopeKey: unique symbol
 }
 
-/**
- * The same values as `Network` in packages/config, declared here so this
- * package depends on nothing.
- */
+/** Algorand ids persisted before scope keys. */
 export const LEGACY_NETWORKS = [
     'mainnet',
     'testnet',

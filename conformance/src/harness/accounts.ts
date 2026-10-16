@@ -36,10 +36,9 @@ import { deriveQuantumAddress } from '@perawallet/wallet-core-chain-algorand/blo
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/addresses'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig/address'
 import {
+    CUSTOM_NETWORK_ID,
     LEGACY_CHAIN_ID,
-    scopeForLegacyNetwork,
 } from '@perawallet/wallet-core-chain-contract'
-import { Networks } from '@perawallet/wallet-core-config/models/network'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
@@ -125,7 +124,7 @@ export const createAlgo25Account = async (
     // LocalNet is the app's custom network, as the submission suite models it.
     const address = algorandAddressCodec.fromPublicKey(publicKey, {
         scheme: 'ed25519',
-        networkId: scopeForLegacyNetwork(Networks.custom).networkId,
+        networkId: CUSTOM_NETWORK_ID,
     })
     const keyId = await keyStore.import(
         {

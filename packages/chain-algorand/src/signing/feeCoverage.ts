@@ -23,7 +23,6 @@ import {
     bytesToHex,
     logger,
     withTimeout,
-    type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -35,6 +34,7 @@ import {
     emptySignatureFieldsOf,
     type EmptySignatureFields,
 } from '../connect/emptySignatures'
+import { type AlgorandNetworkId } from '../network-id'
 
 // Runs before the review sheet shows; past it the group is bumped as if
 // unchecked, which overpays rather than fails.
@@ -43,7 +43,7 @@ export const FEE_COVERAGE_TIMEOUT_MS = 3000
 /** algod's failure message for the group, or `null` if it would pass. */
 export type SimulateSignedGroup = (
     group: SignedTransaction[],
-    network: Network,
+    network: AlgorandNetworkId,
 ) => Promise<Nullable<string>>
 
 export const simulateSignedGroup: SimulateSignedGroup = async (
@@ -109,7 +109,7 @@ export type FindFundedIndicesParams = {
     signableIndices: number[]
     signerOverrides?: Map<number, string>
     accounts: WalletAccount[]
-    network: Network
+    network: AlgorandNetworkId
     simulate?: SimulateSignedGroup
     timeoutMs?: number
 }

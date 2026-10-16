@@ -11,6 +11,7 @@
  */
 
 import {
+    chainScopesServedBy,
     ConnectionsError,
     type ConnectionErrorScope,
     type ConnectionHandler,
@@ -21,7 +22,6 @@ import {
     AppError,
     ErrorCategory,
     logger,
-    Networks,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { ConnectionKind } from '@perawallet/wallet-extension-connections'
@@ -48,7 +48,7 @@ const rebuildError = (
 }
 
 /**
- * URI claims, `describeUri`, `networksFor` and `methodsFor` are answered locally from
+ * URI claims, `describeUri`, `scopesFor` and `methodsFor` are answered locally from
  * un-initialized handler instances; every lifecycle call goes to the offscreen
  * document, which owns the live handlers. No host surface by type: inbound
  * requests route offscreen → service worker → approval window, never to a UI realm.
@@ -163,12 +163,9 @@ export const createRemoteConnectionRegistry = (options: {
             })
         },
         describeUri: uri => claimingHandler(uri)?.describeUri?.(uri) ?? {},
-        networksFor: connection => {
+        scopesFor: connection => {
             const handler = handlers.get(connection.kind)
-            if (!handler) return []
-            return Object.values(Networks).filter(network =>
-                handler.matchesNetwork(connection, network),
-            )
+            return handler ? chainScopesServedBy(handler, connection) : []
         },
         methodsFor: connection =>
             handlers.get(connection.kind)?.methodsFor(connection) ?? [],

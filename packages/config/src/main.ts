@@ -262,7 +262,7 @@ export const configSchema = z
         }),
 
         /**
-         * Deliberately NOT the full `Network` union: `custom` has no baked chain
+         * Deliberately NOT every Algorand network id: `custom` has no baked chain
          * config, so no build-time value could make it valid — and defaulting to
          * it would leave every endpoint `''` on first launch.
          */

@@ -33,12 +33,10 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         networkId: currentNetwork,
     }),
     useNetworkStore: {
-        getState: () => ({ network: currentNetwork }),
+        getState: () => ({
+            mode: currentNetwork === 'mainnet' ? 'live' : 'developer',
+        }),
     },
-}))
-
-vi.mock('@perawallet/wallet-core-config', () => ({
-    isMainnet: (network: string) => network === 'mainnet',
 }))
 
 import { trackEvent, trackScreen } from '../track'

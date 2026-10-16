@@ -11,7 +11,6 @@
  */
 
 import {
-    scopeForLegacyNetwork,
     type ChainEndpoints,
     type ChainId,
     type ChainScope,
@@ -19,7 +18,6 @@ import {
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import { UnconfiguredScopeError } from './errors'
-import { type Network, Networks } from './models/network'
 import { config } from './main'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
@@ -48,7 +46,7 @@ type ChainConfigByChain = {
 
 export type ChainConfig = ChainConfigByChain[ChainId]
 
-/** Empty outside `PeraBackedNetwork`s — never borrowed from another network. */
+/** Empty for a scope with no Pera deployment, never borrowed from another network. */
 export type PeraServices = {
     backendUrl: string
     bidaliBaseUrl: string
@@ -57,13 +55,6 @@ export type PeraServices = {
     baanxClientKey: string
     baanxTenantId: string
 }
-
-export type NetworkConfig = AlgorandChainConfig &
-    PeraServices & {
-        network: Network
-        isTestnet: boolean
-        isMainnet: boolean
-    }
 
 export const PERA_SERVICES = [
     'accounts',
@@ -120,77 +111,62 @@ export type CustomNetworkSource = (
     scope: ChainScope,
 ) => CustomNetworkEndpoints | undefined
 
-export const isTestnet = (network: Network) => network === Networks.testnet
-export const isMainnet = (network: Network) => network === Networks.mainnet
-
-const chainConfigByNetwork: Record<Network, AlgorandChainConfig> = {
-    [Networks.mainnet]: {
-        algodUrl: config.mainnetAlgodUrl,
-        indexerUrl: config.mainnetIndexerUrl,
-        genesisHash: config.mainnetGenesisHash,
-        genesisId: 'mainnet-v1.0',
-        explorerUrl: config.mainnetExplorerUrl,
-        algodToken: config.algodApiKey,
-        indexerToken: config.indexerApiKey,
-        dispenserUrl: config.mainnetDispenserUrl,
-    },
-    [Networks.testnet]: {
-        algodUrl: config.testnetAlgodUrl,
-        indexerUrl: config.testnetIndexerUrl,
-        genesisHash: config.testnetGenesisHash,
-        genesisId: 'testnet-v1.0',
-        explorerUrl: config.testnetExplorerUrl,
-        algodToken: config.algodApiKey,
-        indexerToken: config.indexerApiKey,
-        dispenserUrl: config.dispenserUrl,
-    },
-    [Networks.betanet]: {
-        algodUrl: config.betanetAlgodUrl,
-        indexerUrl: config.betanetIndexerUrl,
-        genesisHash: config.betanetGenesisHash,
-        genesisId: 'betanet-v1.0',
-        explorerUrl: config.betanetExplorerUrl,
-        // Deliberately empty, NOT config.algodApiKey/indexerApiKey: betanet's
-        // endpoints are public third-party hosts Pera doesn't control and that
-        // need no token, so sending Pera's own credential would just leak it.
-        // The client factories skip the auth header when the token is empty.
-        algodToken: '',
-        indexerToken: '',
-        dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
-    },
-    [Networks.custom]: {
-        // Deliberately all empty: `custom`'s real values live in the
-        // custom-network store, which `config` can't read — it must stay free
-        // of store dependencies. The store's owner registers a
-        // `CustomNetworkSource`, and `getChainConfig` lays the saved node over
-        // this placeholder.
-        //
-        // explorerUrl and dispenserUrl stay empty for good: an arbitrary node has
-        // no known explorer or faucet, and the existing gate already hides the
-        // dispenser row on an empty value.
-        algodUrl: '',
-        indexerUrl: '',
-        genesisHash: '',
-        genesisId: '',
-        explorerUrl: '',
-        algodToken: '',
-        indexerToken: '',
-        dispenserUrl: '',
-    },
+const ALGORAND_MAINNET_CHAIN: AlgorandChainConfig = {
+    algodUrl: config.mainnetAlgodUrl,
+    indexerUrl: config.mainnetIndexerUrl,
+    genesisHash: config.mainnetGenesisHash,
+    genesisId: 'mainnet-v1.0',
+    explorerUrl: config.mainnetExplorerUrl,
+    algodToken: config.algodApiKey,
+    indexerToken: config.indexerApiKey,
+    dispenserUrl: config.mainnetDispenserUrl,
 }
 
-/**
- * A type guard, not a boolean: `KNOWN_ASSET_IDS` and the `PeraServices` table are
- * keyed by these networks, so callers need the narrowing to index them.
- */
-const PERA_BACKED_NETWORKS = [Networks.mainnet, Networks.testnet] as const
+const ALGORAND_TESTNET_CHAIN: AlgorandChainConfig = {
+    algodUrl: config.testnetAlgodUrl,
+    indexerUrl: config.testnetIndexerUrl,
+    genesisHash: config.testnetGenesisHash,
+    genesisId: 'testnet-v1.0',
+    explorerUrl: config.testnetExplorerUrl,
+    algodToken: config.algodApiKey,
+    indexerToken: config.indexerApiKey,
+    dispenserUrl: config.dispenserUrl,
+}
 
-export type PeraBackedNetwork = (typeof PERA_BACKED_NETWORKS)[number]
+const ALGORAND_BETANET_CHAIN: AlgorandChainConfig = {
+    algodUrl: config.betanetAlgodUrl,
+    indexerUrl: config.betanetIndexerUrl,
+    genesisHash: config.betanetGenesisHash,
+    genesisId: 'betanet-v1.0',
+    explorerUrl: config.betanetExplorerUrl,
+    // Deliberately empty, NOT config.algodApiKey/indexerApiKey: betanet's
+    // endpoints are public third-party hosts Pera doesn't control and that
+    // need no token, so sending Pera's own credential would just leak it.
+    // The client factories skip the auth header when the token is empty.
+    algodToken: '',
+    indexerToken: '',
+    dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
+}
 
-export const isPeraBackedNetwork = (
-    network: Network,
-): network is PeraBackedNetwork =>
-    (PERA_BACKED_NETWORKS as readonly Network[]).includes(network)
+const ALGORAND_CUSTOM_CHAIN: AlgorandChainConfig = {
+    // Deliberately all empty: `custom`'s real values live in the
+    // custom-network store, which `config` can't read — it must stay free
+    // of store dependencies. The store's owner registers a
+    // `CustomNetworkSource`, and `getChainConfig` lays the saved node over
+    // this placeholder.
+    //
+    // explorerUrl and dispenserUrl stay empty for good: an arbitrary node has
+    // no known explorer or faucet, and the existing gate already hides the
+    // dispenser row on an empty value.
+    algodUrl: '',
+    indexerUrl: '',
+    genesisHash: '',
+    genesisId: '',
+    explorerUrl: '',
+    algodToken: '',
+    indexerToken: '',
+    dispenserUrl: '',
+}
 
 /**
  * Named rather than inlined twice, so the rows below can't drift and `satisfies`
@@ -230,27 +206,6 @@ const peraServicesByDeployment: Record<WalletMode, PeraServices> = {
     },
 }
 
-/**
- * `Record<Network, …>`, not `Partial<…>` plus a fallback: a fifth network added
- * to the union fails TypeScript here until someone decides its deployment,
- * rather than silently resolving to TestNet's. Betanet and custom have none:
- * their chain data does not exist on either deployment.
- */
-const peraDeploymentByNetwork: Record<Network, WalletMode | undefined> = {
-    [Networks.mainnet]: 'live',
-    [Networks.testnet]: 'developer',
-    [Networks.betanet]: undefined,
-    [Networks.custom]: undefined,
-}
-
-/** `Record<Network, …>` for the same reason as the table above. */
-const peraServiceNamesByNetwork: Record<Network, readonly PeraService[]> = {
-    [Networks.mainnet]: PERA_SERVICES,
-    [Networks.testnet]: PERA_SERVICES,
-    [Networks.betanet]: [],
-    [Networks.custom]: [],
-}
-
 type ScopeConfigOf<C extends ChainId> = {
     scope: ChainScope & { chainId: C }
     /** The deployment serving the scope's chain data; absent where none does. */
@@ -265,21 +220,30 @@ type ScopeConfigOf<C extends ChainId> = {
 
 type ScopeConfig = { [C in ChainId]: ScopeConfigOf<C> }[ChainId]
 
-const ALGORAND_SCOPE_CONFIGS: readonly ScopeConfigOf<'algorand'>[] =
-    Object.values(Networks).map(network => {
-        const deployment = peraDeploymentByNetwork[network]
-        return {
-            scope: scopeForLegacyNetwork(network),
-            deployment,
-            chain: chainConfigByNetwork[network],
-            peraServices:
-                deployment === undefined
-                    ? EMPTY_PERA_SERVICES
-                    : peraServicesByDeployment[deployment],
-            services: new Set(peraServiceNamesByNetwork[network]),
-            acceptsCustomNode: true,
-        }
-    })
+// Betanet and custom pass no deployment: their chain data lives on neither
+// Pera deployment, so they carry no services.
+const algorandScopeConfig = (
+    networkId: NetworkId,
+    chain: AlgorandChainConfig,
+    deployment: WalletMode | undefined,
+): ScopeConfigOf<'algorand'> => ({
+    scope: { chainId: 'algorand', networkId },
+    deployment,
+    chain,
+    peraServices:
+        deployment === undefined
+            ? EMPTY_PERA_SERVICES
+            : peraServicesByDeployment[deployment],
+    services: new Set(deployment === undefined ? [] : PERA_SERVICES),
+    acceptsCustomNode: true,
+})
+
+const ALGORAND_SCOPE_CONFIGS: readonly ScopeConfigOf<'algorand'>[] = [
+    algorandScopeConfig('mainnet', ALGORAND_MAINNET_CHAIN, 'live'),
+    algorandScopeConfig('testnet', ALGORAND_TESTNET_CHAIN, 'developer'),
+    algorandScopeConfig('betanet', ALGORAND_BETANET_CHAIN, undefined),
+    algorandScopeConfig('custom', ALGORAND_CUSTOM_CHAIN, undefined),
+]
 
 const ethereumScopeConfig = (
     networkId: NetworkId,
@@ -434,17 +398,6 @@ export const hasPeraService = (
     service: PeraService,
 ): boolean => servicesOf(scope).has(service)
 
-export const getNetworkConfig = (network: Network): NetworkConfig => {
-    const scope = scopeForLegacyNetwork(network)
-    return {
-        network,
-        isMainnet: isMainnet(network),
-        isTestnet: isTestnet(network),
-        ...getChainConfig(scope),
-        ...getPeraServicesConfig(scope),
-    }
-}
-
 const COMMERCE_HOST_PREFIX = 'commerce.'
 const GIFTCARDS_HOST_PREFIX = 'giftcards.'
 
@@ -470,7 +423,7 @@ export const getIframeOrigins = (url: string): string[] => {
 }
 
 /**
- * ARC-59 inbox app id/address for `network`, or `null` where the inbox app is
+ * ARC-59 inbox app id/address for `scope`, or `null` where the inbox app is
  * not deployed.
  *
  * Returned `null` rather than TestNet's ids: those ids do not exist on another
@@ -479,11 +432,10 @@ export const getIframeOrigins = (url: string): string[] => {
  * caller now fails with a typed error instead.
  */
 export const getArc59Config = (
-    network: Network,
+    scope: ChainScope,
 ): { appId: bigint; appAddress: string } | null => {
-    if (!isPeraBackedNetwork(network)) return null
-
-    return network === Networks.mainnet
-        ? config.arc59.mainnet
-        : config.arc59.testnet
+    const networkId = findRow(ALGORAND_SCOPE_CONFIGS, scope)?.scope.networkId
+    if (networkId === 'mainnet') return config.arc59.mainnet
+    if (networkId === 'testnet') return config.arc59.testnet
+    return null
 }

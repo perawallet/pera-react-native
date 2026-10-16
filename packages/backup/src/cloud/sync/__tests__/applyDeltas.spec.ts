@@ -24,7 +24,6 @@ import { TEST_SETTINGS } from './testSettings'
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const baseDeps = () => ({
-    network: 'mainnet' as const,
     backupId: 'did:pera:ADDR',
     deviceId: 'dev',
     encryptionKey,
@@ -826,7 +825,7 @@ describe('applyDeltas: passkeys', () => {
         const servingBoth = () => {
             const deps = baseDeps()
             deps.readItems.mockImplementation(
-                async (_n: unknown, _b: unknown, _d: unknown, keys: string[]) =>
+                async (_b: unknown, _d: unknown, keys: string[]) =>
                     keys.map(key => ({
                         key,
                         ver: 3,
@@ -869,7 +868,7 @@ describe('applyDeltas: passkeys', () => {
                 deps,
             })
 
-            expect(deps.readItems.mock.calls[0]![3]).toEqual([
+            expect(deps.readItems.mock.calls[0]![2]).toEqual([
                 SECRET_KEY,
                 'passkeys/P1',
             ])
@@ -897,7 +896,7 @@ describe('applyDeltas: passkeys', () => {
                 deps,
             })
 
-            expect(deps.readItems.mock.calls[0]![3]).toEqual(['passkeys/P1'])
+            expect(deps.readItems.mock.calls[0]![2]).toEqual(['passkeys/P1'])
             expect(deps.importPasskeys).not.toHaveBeenCalled()
         })
     })

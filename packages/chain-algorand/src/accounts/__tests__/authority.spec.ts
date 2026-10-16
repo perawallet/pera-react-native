@@ -17,7 +17,6 @@ import {
     canSignArbitraryData,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
 import {
     standaloneAccount,
@@ -37,9 +36,10 @@ import {
 import { algorandDescriptor } from '../../descriptor'
 import { algorandAuthority, AlgorandAuthorityTargetKinds } from '../authority'
 import { seedAuthority } from './seedAuthority'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const mainnet = scopeForLegacyNetwork('mainnet')
-const testnet = scopeForLegacyNetwork('testnet')
+const mainnet = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 beforeAll(() => {
     accountsChainAdapters.reset()

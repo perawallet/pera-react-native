@@ -144,7 +144,6 @@ const params = () => ({
     mnemonic: MNEMONIC,
     salt: 'c2FsdA==',
     deviceId: 'device-123',
-    network: 'mainnet' as const,
     importAccounts,
     importContacts,
     importPasskeys,

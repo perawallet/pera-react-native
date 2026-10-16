@@ -12,10 +12,9 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
-    useNetwork,
     useSelectedChainMode,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
@@ -48,7 +47,6 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedAccount } = useBidali()
     const onClose = useBidaliClose()
-    const { network } = useNetwork()
     const chainMode = useSelectedChainMode(scope.chainId)
 
     const { accountBalances } = useAccountBalancesQuery(
@@ -80,14 +78,14 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     )
 
     const url = useMemo(() => {
-        const networkConfig = getNetworkConfig(network)
+        const { bidaliBaseUrl, bidaliApiKey } = getPeraServicesConfig(scope)
         return buildBidaliUrl({
-            baseUrl: networkConfig.bidaliBaseUrl,
-            apiKey: networkConfig.bidaliApiKey,
+            baseUrl: bidaliBaseUrl,
+            apiKey: bidaliApiKey,
             balances: frozenBalances,
             paymentCurrencies: BIDALI_PAYMENT_CURRENCIES,
         })
-    }, [network, frozenBalances])
+    }, [scope, frozenBalances])
 
     // The provider global (API key + user balances) is re-injected into the
     // main frame on every navigation, so no foreign origin may ever load in

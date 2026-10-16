@@ -21,7 +21,6 @@ import ky, {
     isTimeoutError,
 } from 'ky'
 import {
-    scopeForLegacyNetwork,
     WALLET_MODES,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
@@ -433,21 +432,19 @@ const clientFor = (
 ): KyInstance => {
     if (requestConfig.backend === 'backup') return backupClient as KyInstance
 
-    if (requestConfig.deployment !== undefined) {
-        const client = servedPeraClient(requestConfig.deployment)
+    if (requestConfig.scope === undefined) {
+        const { deployment } = requestConfig
+        const client = servedPeraClient(deployment)
         if (!client) {
             throw new PeraServiceUnavailableError(
-                { deployment: requestConfig.deployment },
+                { deployment },
                 requestConfig.service,
             )
         }
         return client
     }
+    const { scope } = requestConfig
 
-    const scope =
-        requestConfig.scope !== undefined
-            ? requestConfig.scope
-            : scopeForLegacyNetwork(requestConfig.network)
     // A scope reaches the deployment holding its chain's data, and must list
     // any service it names.
     const { service } = requestConfig

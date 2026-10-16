@@ -19,7 +19,7 @@ import {
     afterEach,
     type Mock,
 } from 'vitest'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
     CONNECTION_LATE_PAIRING_GRACE_MS,
     type ConnectionErrorScope,
@@ -63,7 +63,7 @@ const makeFakeRegistry = () => {
         abandonPairing: vi.fn(),
         methodsFor: vi.fn(() => []),
         describeUri: vi.fn(() => ({})),
-        networksFor: vi.fn(() => []),
+        scopesFor: vi.fn(() => []),
         disconnect: vi.fn(async () => {}),
         disconnectAll: vi.fn(async () => {}),
         reconnect: vi.fn(),
@@ -102,7 +102,7 @@ const makeProposal = (
     pairingId: 'pairing-1',
     peer: { name: 'Dapp', url: 'https://dapp.example' },
     requested: {
-        networks: ['mainnet' as Network],
+        networks: ['mainnet' as NetworkId],
         chains: ['algorand'],
         methods: ['algo_signTxn'],
     },
@@ -162,7 +162,7 @@ describe('startConnectionsHost', () => {
         broadcastEvent = vi.fn(async () => {})
         host = startConnectionsHost({
             registry: fake.registry,
-            network: () => 'mainnet' as Network,
+            activeNetworkId: () => 'mainnet' as NetworkId,
             knownAddresses: () => ['ADDR1', 'ADDR2'],
             requestApproval,
             broadcastEvent,

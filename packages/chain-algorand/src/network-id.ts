@@ -11,21 +11,36 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { Networks, type Network } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from './chain-id'
 
-const NETWORKS: readonly string[] = Object.values(Networks)
+export const ALGORAND_NETWORK_IDS = [
+    'mainnet',
+    'testnet',
+    'betanet',
+    'custom',
+] as const
 
-// Algorand's network ids are the legacy `Network` values the algod client and
-// the Pera backend are keyed by.
-export const algorandNetworkOf = (scope: ChainScope): Network => {
+/** The ids the algod client and the Pera backend are keyed by. */
+export type AlgorandNetworkId = (typeof ALGORAND_NETWORK_IDS)[number]
+
+const isAlgorandNetworkId = (value: string): value is AlgorandNetworkId =>
+    (ALGORAND_NETWORK_IDS as readonly string[]).includes(value)
+
+export const algorandScope = (
+    networkId: AlgorandNetworkId,
+): ChainScope & { chainId: typeof ALGORAND_CHAIN_ID } => ({
+    chainId: ALGORAND_CHAIN_ID,
+    networkId,
+})
+
+export const algorandNetworkOf = (scope: ChainScope): AlgorandNetworkId => {
     if (
         scope.chainId !== ALGORAND_CHAIN_ID ||
-        !NETWORKS.includes(scope.networkId)
+        !isAlgorandNetworkId(scope.networkId)
     ) {
         throw new Error(
             `Not an Algorand scope: ${scope.chainId}/${scope.networkId}`,
         )
     }
-    return scope.networkId as Network
+    return scope.networkId
 }

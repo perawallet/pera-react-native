@@ -117,7 +117,7 @@ describe('createCallbackTransport', () => {
 describe('createWalletConnectTransport', () => {
     beforeEach(() => {
         useNetworkStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
     })
 
     test('calls approve and returns callback-sent with requestId', async () => {
@@ -188,7 +188,7 @@ describe('createWalletConnectTransport', () => {
         const approve = vi.fn().mockResolvedValue(undefined)
         const transport = createWalletConnectTransport(ALGORAND_TESTNET)
 
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
 
         await expect(
             transport.send(transactionResult, {

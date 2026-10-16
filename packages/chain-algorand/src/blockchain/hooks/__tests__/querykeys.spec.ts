@@ -11,16 +11,16 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import {
     getSuggestedParametersQueryKey,
     getTransactionDetailQueryKey,
     getGroupTransactionsQueryKey,
     isBlockchainQuery,
 } from '../querykeys'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET = scopeForLegacyNetwork('mainnet')
-const TESTNET = scopeForLegacyNetwork('testnet')
+const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('querykeys', () => {
     describe('getSuggestedParametersQueryKey', () => {

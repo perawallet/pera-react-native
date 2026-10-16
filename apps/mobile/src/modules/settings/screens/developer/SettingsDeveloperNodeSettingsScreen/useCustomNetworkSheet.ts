@@ -12,15 +12,17 @@
 
 import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    CUSTOM_NETWORK_ID,
+    LEGACY_CHAIN_ID,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     clearCustomNetworkCache,
     shouldClearCustomCache,
     useCustomNode,
+    useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
-import { useSwitchNetwork } from '@perawallet/wallet-core-device'
-import { Networks } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { isValidEndpoint } from './isValidEndpoint'
 
@@ -102,7 +104,8 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
     )
     const [errors, setErrors] = useState<CustomNetworkSheetErrors>({})
     const [isFetching, setIsFetching] = useState(false)
-    const { switchNetwork } = useSwitchNetwork()
+    const selectNetwork = useNetworkStore(state => state.selectNetwork)
+    const setMode = useNetworkStore(state => state.setMode)
     const queryClient = useQueryClient()
 
     const handleFieldChange = useCallback(
@@ -201,7 +204,9 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
 
         customNode.save(next)
 
-        await switchNetwork(Networks.custom)
+        // The override first, so a live wallet changes network only once, on the mode flip.
+        selectNetwork(LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
+        setMode('developer')
         try {
             // Invalidation is owned by the shell's network effect
             // (useNetworkSwitchInvalidation), which fires on the network
@@ -215,7 +220,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
         }
 
         return true
-    }, [customNode, draft, queryClient, switchNetwork])
+    }, [customNode, draft, queryClient, selectNetwork, setMode])
 
     const handleReset = useCallback(() => {
         setDraft({ ...BLANK_DRAFT })

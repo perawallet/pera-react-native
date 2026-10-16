@@ -11,7 +11,8 @@
  */
 
 import type { IClientMeta } from '@perawallet/walletconnect'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { isV1ChainIdAcceptable } from '../shared/chainSupport'
 import { readString } from '../shared/read'
@@ -20,14 +21,14 @@ import { readString } from '../shared/read'
 // a foreign `chainId` on an individual legacy entry.
 export const legacyItemChainIdsAcceptable = (
     params: unknown[],
-    network: Network,
+    scope: ChainScope,
 ): boolean =>
     params.every(item => {
         if (typeof item !== 'object' || item === null) return false
         const { chainId } = item as { chainId?: unknown }
         return isV1ChainIdAcceptable(
             typeof chainId === 'number' ? chainId : undefined,
-            network,
+            scope,
         )
     })
 

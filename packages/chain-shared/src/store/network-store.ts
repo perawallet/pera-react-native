@@ -24,7 +24,7 @@ import {
     type NetworkId,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
-import { config, type Network } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 import {
     guardedPersist,
     registerStore,
@@ -61,28 +61,15 @@ type NetworkSelection = {
     customNetworksByChain: CustomNetworksByChain
 }
 
-type PersistedNetworkState = NetworkSelection & {
-    /** The legacy chain's network in the legacy shape, derived on every write and persisted only because the extension worker reads storage without hydrating. */
-    network: Network
-}
-
 type NetworkState = BaseStoreState &
-    PersistedNetworkState & {
+    NetworkSelection & {
         setMode: (mode: WalletMode) => void
         /** Writes a developer-mode override; the chain's default test network clears it. */
         selectNetwork: (chainId: ChainId, networkId: NetworkId) => void
-        /** Legacy entry: maps a legacy network onto a mode plus a legacy-chain override. */
-        setNetwork: (network: Network) => void
         /** Replaces the chain's network with the same id, never merging into it. */
         setCustomNetwork: (chainId: ChainId, network: CustomNetwork) => void
         clearCustomNetwork: (chainId: ChainId, networkId: NetworkId) => void
     }
-
-const selectionOf = (state: NetworkSelection): NetworkSelection => ({
-    mode: state.mode,
-    selectedNetworkByChain: state.selectedNetworkByChain,
-    customNetworksByChain: state.customNetworksByChain,
-})
 
 // A registered chain's override must name one of its test networks or a saved
 // custom network; anything else would make every read of its config throw.
@@ -148,16 +135,9 @@ export const selectCustomNetwork = (
 ): CustomNetwork | undefined =>
     state.customNetworksByChain[chainId]?.find(entry => entry.id === networkId)
 
-const withNetworkShim = (
-    selection: NetworkSelection,
-): PersistedNetworkState => ({
-    ...selection,
-    network: selectChainNetworkId(selection, LEGACY_CHAIN_ID) as Network,
-})
-
 // The store is created at module load, before every provider is wired, so the
-// shim is read straight off the default rather than resolved through the registry.
-const initialState = (): PersistedNetworkState => {
+// selection is read straight off the default rather than resolved through the registry.
+const initialState = (): NetworkSelection => {
     const { mode, legacyOverride } = selectionForLegacyNetwork(
         config.defaultNetwork,
     )
@@ -165,7 +145,6 @@ const initialState = (): PersistedNetworkState => {
         mode,
         selectedNetworkByChain: withLegacyOverride({}, legacyOverride),
         customNetworksByChain: {},
-        network: config.defaultNetwork,
     }
 }
 
@@ -189,13 +168,11 @@ const customNetworksOf = (raw: unknown): CustomNetworksByChain =>
 /**
  * Validates a persisted state on every hydrate. Other chains' overrides are
  * kept on shape alone (see usableOverride); the legacy chain's is checked
- * here because the persisted shim is derived from it. A developer-mode wallet
- * that loses that override, or has no valid mode, falls back to
- * `config.defaultNetwork`; a live one just drops it.
+ * here because an unusable one would make every read of its config throw. A
+ * developer-mode wallet that loses that override, or has no valid mode, falls
+ * back to `config.defaultNetwork`; a live one just drops it.
  */
-export const mergePersistedNetwork = (
-    persisted: unknown,
-): PersistedNetworkState => {
+export const mergePersistedNetwork = (persisted: unknown): NetworkSelection => {
     const state = (persisted ?? {}) as {
         mode?: unknown
         selectedNetworkByChain?: Record<string, unknown>
@@ -227,13 +204,13 @@ export const mergePersistedNetwork = (
             !isLegacyUsable)
     const fallback = selectionForLegacyNetwork(config.defaultNetwork)
 
-    return withNetworkShim({
+    return {
         mode: isFallbackNeeded ? fallback.mode : (state.mode as WalletMode),
         selectedNetworkByChain: isFallbackNeeded
             ? withLegacyOverride(overrides, fallback.legacyOverride)
             : overrides,
         customNetworksByChain,
-    })
+    }
 }
 
 export const migrateNetworkState = (
@@ -250,8 +227,7 @@ export const useNetworkStore: UseBoundStore<
     guardedPersist(
         set => ({
             ...initialState(),
-            setMode: mode =>
-                set(state => withNetworkShim({ ...selectionOf(state), mode })),
+            setMode: mode => set({ mode }),
             selectNetwork: (chainId, networkId) =>
                 set(state => {
                     const { chains } = getProvider()
@@ -263,56 +239,33 @@ export const useNetworkStore: UseBoundStore<
                         )?.id === networkId
                     const { [chainId]: _replaced, ...rest } =
                         state.selectedNetworkByChain
-                    return withNetworkShim({
-                        ...selectionOf(state),
+                    return {
                         selectedNetworkByChain: isDefault
                             ? rest
                             : { ...rest, [chainId]: networkId },
-                    })
-                }),
-            setNetwork: network =>
-                set(state => {
-                    const { mode, legacyOverride } =
-                        selectionForLegacyNetwork(network)
-                    return withNetworkShim({
-                        ...selectionOf(state),
-                        mode,
-                        selectedNetworkByChain:
-                            mode === 'live'
-                                ? state.selectedNetworkByChain
-                                : withLegacyOverride(
-                                      state.selectedNetworkByChain,
-                                      legacyOverride,
-                                  ),
-                    })
+                    }
                 }),
             setCustomNetwork: (chainId, network) =>
-                set(state =>
-                    withNetworkShim({
-                        ...selectionOf(state),
-                        customNetworksByChain: {
-                            ...state.customNetworksByChain,
-                            [chainId]: [
-                                ...(
-                                    state.customNetworksByChain[chainId] ?? []
-                                ).filter(entry => entry.id !== network.id),
-                                network,
-                            ],
-                        },
-                    }),
-                ),
-            clearCustomNetwork: (chainId, networkId) =>
-                set(state =>
-                    withNetworkShim({
-                        ...selectionOf(state),
-                        customNetworksByChain: {
-                            ...state.customNetworksByChain,
-                            [chainId]: (
+                set(state => ({
+                    customNetworksByChain: {
+                        ...state.customNetworksByChain,
+                        [chainId]: [
+                            ...(
                                 state.customNetworksByChain[chainId] ?? []
-                            ).filter(entry => entry.id !== networkId),
-                        },
-                    }),
-                ),
+                            ).filter(entry => entry.id !== network.id),
+                            network,
+                        ],
+                    },
+                })),
+            clearCustomNetwork: (chainId, networkId) =>
+                set(state => ({
+                    customNetworksByChain: {
+                        ...state.customNetworksByChain,
+                        [chainId]: (
+                            state.customNetworksByChain[chainId] ?? []
+                        ).filter(entry => entry.id !== networkId),
+                    },
+                })),
             resetState: () => set(initialState()),
         }),
         {
@@ -323,7 +276,6 @@ export const useNetworkStore: UseBoundStore<
                 mode: state.mode,
                 selectedNetworkByChain: state.selectedNetworkByChain,
                 customNetworksByChain: state.customNetworksByChain,
-                network: state.network,
             }),
             migrate: migrateNetworkState,
             merge: (persisted, current) => {

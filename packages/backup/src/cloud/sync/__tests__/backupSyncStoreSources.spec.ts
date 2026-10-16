@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useNetworkStore: { getState: () => ({ network: 'testnet' }) },
+    useNetworkStore: { getState: () => ({ mode: 'developer' }) },
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -59,10 +59,10 @@ import {
 import { createBackupSyncStoreSources } from '../backupSyncStoreSources'
 
 describe('createBackupSyncStoreSources', () => {
-    it('reads the network and accounts, and an unset contact list as empty', () => {
+    it('reads the deployment and accounts, and an unset contact list as empty', () => {
         const sources = createBackupSyncStoreSources('algorand')
 
-        expect(sources.getNetwork()).toBe('testnet')
+        expect(sources.getDeployment()).toBe('developer')
         expect(sources.listAccounts()).toEqual([{ address: 'ADDR1' }])
         expect(sources.listContacts()).toEqual([])
     })

@@ -30,9 +30,8 @@ import {
     type Contact,
 } from '@perawallet/wallet-core-contacts'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
-import { Networks } from '@perawallet/wallet-core-config'
 import {
-    deviceIdFor,
+    deviceIdForDeployment,
     deviceIdOriginFor,
     useDeviceStore,
     type DeviceIdOrigin,
@@ -195,16 +194,13 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
         ),
         notificationDisabledAccounts: new Set(notificationDisabled),
         deviceIDs: {
-            mainnet: deviceIdFor({ deviceIDs }, Networks.mainnet),
-            testnet: deviceIdFor({ deviceIDs }, Networks.testnet),
+            mainnet: deviceIdForDeployment({ deviceIDs }, 'live'),
+            testnet: deviceIdForDeployment({ deviceIDs }, 'developer'),
         },
         deviceIdOrigins: {
-            mainnet:
-                deviceIdOriginFor({ deviceIdOrigins }, Networks.mainnet) ??
-                null,
+            mainnet: deviceIdOriginFor({ deviceIdOrigins }, 'live') ?? null,
             testnet:
-                deviceIdOriginFor({ deviceIdOrigins }, Networks.testnet) ??
-                null,
+                deviceIdOriginFor({ deviceIdOrigins }, 'developer') ?? null,
         },
         legacyStash,
     }

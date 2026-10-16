@@ -14,6 +14,7 @@ import {
     isChainId,
     type ChainId,
     type I18nKey,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     ConnectionErrorScope,
@@ -26,7 +27,6 @@ import type {
 import {
     decodeFromBase64,
     encodeToBase64,
-    type Network,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -347,7 +347,7 @@ export type ConnectionApprovalRequest =
           pairingId?: string
           connectionKind: ConnectionKind
           peer: ConnectionPeer
-          /** Chain-reported network ids (`ChainScope['networkId']`), not the legacy `Network`. */
+          /** Chain-reported network ids (`ChainScope['networkId']`), not a four-value Algorand type. */
           requested: { networks: string[]; methods: string[] }
           expiresAt: number
           /** See `ConnectionsControlMessage`'s `pair.requesterOrigin`. */
@@ -386,7 +386,7 @@ export type ConnectionApprovalRequest =
           pairingId?: string
           peer?: ConnectionPeer
           /** Only the network-mismatch notice names a network. */
-          activeNetwork?: Network
+          activeNetwork?: NetworkId
       }
 
 /**

@@ -12,7 +12,6 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsAssetsBalanceHistoryQuery } from '../useAccountsAssetBalanceHistoryQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -184,7 +183,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             )
         })
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'disables the query and flags isUnavailableOnNetwork on %s',
             network => {
                 mockNetwork.network = network
@@ -209,7 +208,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.mainnet, Networks.testnet])(
+        it.each(['mainnet', 'testnet'])(
             'leaves the query enabled and isUnavailableOnNetwork false on %s',
             async network => {
                 mockNetwork.network = network
@@ -235,7 +234,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'does not invoke the queryFn when refetch is called on %s',
             async network => {
                 mockNetwork.network = network
@@ -257,7 +256,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.mainnet, Networks.testnet])(
+        it.each(['mainnet', 'testnet'])(
             'still invokes the queryFn when refetch is called on %s',
             async network => {
                 mockNetwork.network = network
@@ -283,7 +282,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             },
         )
 
-        it.each([Networks.betanet, Networks.custom])(
+        it.each(['betanet', 'custom'])(
             'reports isPending false while unavailable on %s',
             network => {
                 mockNetwork.network = network

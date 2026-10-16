@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
 import {
     isAccountKey,
     BACKUP_SECRETS_KEY_PREFIX,
@@ -48,7 +47,6 @@ export type ApplyDeltasDeps = CollectPayloadsDeps & {
     importPasskeys: PasskeyImportFn
     importSettings: SettingsImportFn
     readItems: (
-        network: Network,
         backupId: BackupId,
         deviceId: DeviceId,
         keys: BackupItemKey[],
@@ -175,7 +173,6 @@ export const applyDeltas = async ({
     if (downloadKeys.length === 0) return { ...state, items, lastSyncedSeq }
 
     const fetched = await deps.readItems(
-        deps.network,
         deps.backupId,
         deps.deviceId,
         withPasskeyPartners(downloadKeys, items),

@@ -55,7 +55,7 @@ const arbitraryResult = {
 describe('createAlgodTransport', () => {
     beforeEach(() => {
         useNetworkStore.getState().resetState()
-        useNetworkStore.getState().setNetwork('testnet')
+        useNetworkStore.getState().setMode('developer')
     })
 
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX_ID') => ({
@@ -236,7 +236,7 @@ describe('createAlgodTransport', () => {
             ALGORAND_TESTNET,
         )
 
-        useNetworkStore.getState().setNetwork('mainnet')
+        useNetworkStore.getState().setMode('live')
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),

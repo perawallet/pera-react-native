@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     isV1ChainIdAcceptable,
     walletConnectSupportFor,
@@ -57,7 +57,7 @@ const asEnvelope = (payload: unknown): WcEnvelope | null => {
 
 export const gateSignTxnRequest = (input: {
     payload: unknown
-    network: Network
+    scope: ChainScope
     sessionChainId: number | undefined
     knownAddresses: readonly string[]
 }): GateResult => {
@@ -67,7 +67,7 @@ export const gateSignTxnRequest = (input: {
     if (input.sessionChainId === undefined) {
         return reject(SESSION_NOT_FOUND_REASON, 'session-not-found')
     }
-    if (!isV1ChainIdAcceptable(input.sessionChainId, input.network)) {
+    if (!isV1ChainIdAcceptable(input.sessionChainId, input.scope)) {
         return reject(
             'chain id not acceptable on the active network',
             'invalid-network',
@@ -77,7 +77,7 @@ export const gateSignTxnRequest = (input: {
     // `isV1ChainIdAcceptable` above already proved a chain adapter serving v1
     // is registered for this network; this repeats the lookup rather than
     // threading it through, since both are cheap map reads.
-    const support = walletConnectSupportFor(input.network)
+    const support = walletConnectSupportFor(input.scope)
     if (!support?.v1) return reject(NO_SIGNING_SUPPORT_REASON)
 
     const verdict = support.v1.screenRequest(
@@ -103,7 +103,7 @@ const asSignDataEnvelope = (payload: unknown): SignDataEnvelope | null => {
 
 export const gateSignDataRequest = (input: {
     payload: unknown
-    network: Network
+    scope: ChainScope
     sessionChainId: number | undefined
 }): GateResult => {
     const envelope = asSignDataEnvelope(input.payload)
@@ -118,14 +118,14 @@ export const gateSignDataRequest = (input: {
     if (input.sessionChainId === undefined) {
         return reject(SESSION_NOT_FOUND_REASON, 'session-not-found')
     }
-    if (!isV1ChainIdAcceptable(input.sessionChainId, input.network)) {
+    if (!isV1ChainIdAcceptable(input.sessionChainId, input.scope)) {
         return reject(
             'chain id not acceptable on the active network',
             'invalid-network',
         )
     }
 
-    const support = walletConnectSupportFor(input.network)
+    const support = walletConnectSupportFor(input.scope)
     if (!support?.v1) return reject(NO_SIGNING_SUPPORT_REASON)
 
     const verdict = support.v1.screenRequest('sign-data', envelope.params, [])
