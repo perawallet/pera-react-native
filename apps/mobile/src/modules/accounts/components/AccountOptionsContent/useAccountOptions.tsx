@@ -23,6 +23,8 @@ import {
     isMultisigAccount,
     isDelegatedAccount,
     multisigParametersOf,
+    standaloneSecretOf,
+    useAccountCapabilityScope,
     useAllAccounts,
     useAuthorityOf,
     useCanSignWith,
@@ -49,7 +51,10 @@ import { useCapability } from '@hooks/useCapability'
 import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useViewPassphraseFlow } from '@modules/view-passphrase'
+import {
+    useRevealPrivateKeyFlow,
+    useViewPassphraseFlow,
+} from '@modules/view-passphrase'
 import { useIsAccountBackedUp } from '@modules/cloud-backup'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { ExportShareAccountContent } from '@modules/multisig'
@@ -128,6 +133,7 @@ export const useAccountOptions = ({
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
+    const { openRevealPrivateKeyFlow } = useRevealPrivateKeyFlow()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const address = addressOn(account, scope) ?? ''
@@ -148,6 +154,9 @@ export const useAccountOptions = ({
     const showPassphrase =
         canBackUpMnemonic && !isRekeyed && hasRecoverySeed(account)
     const canUndoRekey = canRekey && isRekeyed && canSign
+    const privateKeyScope = useAccountCapabilityScope(account, 'privateKeys')
+    const showPrivateKey =
+        privateKeyScope !== null && standaloneSecretOf(account) === 'privateKey'
     const isHdWallet = hdIndexOf(account) !== undefined
     const isSharedAccount = isMultisigAccount(account)
     const multisigParameters = useMemo(
@@ -177,6 +186,14 @@ export const useAccountOptions = ({
         onClose()
         void openViewPassphraseFlow(address)
     }, [onClose, openViewPassphraseFlow, address])
+
+    const handleViewPrivateKey = useCallback(() => {
+        if (!privateKeyScope) return
+        // Dismissed first so the menu doesn't stay stacked under the PIN
+        // and key sheets.
+        onClose()
+        void openRevealPrivateKeyFlow(account.id, privateKeyScope.chainId)
+    }, [onClose, openRevealPrivateKeyFlow, account.id, privateKeyScope])
 
     const handleUndoRekey = useCallback(() => {
         onClose()
@@ -537,6 +554,15 @@ export const useAccountOptions = ({
             })
         }
 
+        if (showPrivateKey) {
+            items.push({
+                id: 'view-private-key',
+                icon: 'key',
+                title: t('account_options.view_private_key'),
+                onPress: handleViewPrivateKey,
+            })
+        }
+
         // Gated on the capability, not just on the account: every rekey target
         // is a root stack that a platform may not register, and an
         // unregistered route makes the row a silent no-op rather than an error.
@@ -606,6 +632,7 @@ export const useAccountOptions = ({
         address,
         participantCount,
         showPassphrase,
+        showPrivateKey,
         canSign,
         canRekey,
         canUseMultisig,
@@ -615,6 +642,7 @@ export const useAccountOptions = ({
         handleCopyAddress,
         handleShowAddress,
         handleViewPassphrase,
+        handleViewPrivateKey,
         isHdWallet,
         handleRekeyAccount,
         handleScanRekeyed,

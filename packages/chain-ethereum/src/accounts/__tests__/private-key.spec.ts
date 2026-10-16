@@ -13,6 +13,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
+    formatEthereumPrivateKey,
     InvalidPrivateKeyError,
     parseEthereumPrivateKey,
     revealEthereumPrivateKey,
@@ -83,6 +84,26 @@ describe('parseEthereumPrivateKey', () => {
         expect(thrown?.metadata.params).toBeUndefined()
         expect(JSON.stringify(thrown?.metadata)).not.toContain(HARDHAT_0)
         expect(thrown?.message).not.toContain(HARDHAT_0)
+    })
+})
+
+describe('formatEthereumPrivateKey', () => {
+    it.each([
+        ['a 0x prefix', `0x${HARDHAT_0}`],
+        ['no prefix', HARDHAT_0],
+        ['uppercase digits', `0X${HARDHAT_0.toUpperCase()}`],
+    ])('formats a key parsed from %s as lowercase 0x hex', (_label, input) => {
+        expect(formatEthereumPrivateKey(parseEthereumPrivateKey(input))).toBe(
+            `0x${HARDHAT_0}`,
+        )
+    })
+
+    it('leaves the key bytes untouched', () => {
+        const bytes = parseEthereumPrivateKey(HARDHAT_0)
+
+        formatEthereumPrivateKey(bytes)
+
+        expect(toHex(bytes)).toBe(HARDHAT_0)
     })
 })
 

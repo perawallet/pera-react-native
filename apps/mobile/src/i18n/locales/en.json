@@ -397,7 +397,8 @@
         "backup_warning_continue": "Yes, continue",
         "backup_warning_cancel": "No, keep account",
         "remove_rekey_error_title": "Cannot remove account",
-        "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)"
+        "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
+        "view_private_key": "View private key"
     },
     "account_info": {
         "min_balance": "Min Balance",
@@ -468,6 +469,11 @@
             "error_title": "Could not retrieve passphrase",
             "error_body": "Something went wrong. Please try again."
         }
+    },
+    "reveal_private_key": {
+        "title": "Private key",
+        "body": "Anyone with this key controls the account. Never share it.",
+        "error_title": "Couldn't show the private key"
     },
     "banners": {
         "dismiss": "Don't show again"
@@ -2140,6 +2146,16 @@
             "pera_card_option_title": "Add Pera Card Account",
             "pera_card_option_description": "Spend your crypto in the real world with the Pera Card",
             "see_other_options": "See other options"
+        },
+        "import_private_key": {
+            "title": "Import private key",
+            "body": "Enter the {{chain}} account's private key.",
+            "input_label": "Private key",
+            "invalid": "This isn't a valid private key",
+            "submit": "Import Account",
+            "error_title": "Couldn't import the account",
+            "backup_included": "This account is included in your cloud backup.",
+            "backup_not_included": "This account isn't in a cloud backup. To recover it later, use View private key in the account's options and keep the key somewhere safe."
         },
         "import_account_options": {
             "title": "Import an\naccount",

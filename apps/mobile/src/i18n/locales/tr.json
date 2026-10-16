@@ -397,7 +397,8 @@
         "backup_warning_continue": "Evet, devam et",
         "backup_warning_cancel": "Hayır, hesabı koru",
         "remove_rekey_error_title": "Hesap kaldırılamıyor",
-        "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın"
+        "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın",
+        "view_private_key": "Özel anahtarı görüntüle"
     },
     "account_info": {
         "min_balance": "Min. bakiye",
@@ -468,6 +469,11 @@
             "error_title": "Passphrase alınamadı",
             "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene."
         }
+    },
+    "reveal_private_key": {
+        "title": "Özel anahtar",
+        "body": "Bu anahtara sahip olan herkes hesabı kontrol eder. Asla paylaşma.",
+        "error_title": "Özel anahtar gösterilemedi"
     },
     "banners": {
         "dismiss": "Bir daha gösterme"
@@ -2140,6 +2146,16 @@
             "pera_card_option_title": "Pera Card hesabı ekle",
             "pera_card_option_description": "Pera Card ile kriptonu gerçek dünyada harca",
             "see_other_options": "Diğer seçenekleri gör"
+        },
+        "import_private_key": {
+            "title": "Özel anahtarı içe aktar",
+            "body": "{{chain}} hesabının özel anahtarını gir.",
+            "input_label": "Özel anahtar",
+            "invalid": "Bu geçerli bir özel anahtar değil",
+            "submit": "Hesabı içe aktar",
+            "error_title": "Hesap içe aktarılamadı",
+            "backup_included": "Bu hesap bulut yedeğine dahil.",
+            "backup_not_included": "Bu hesap herhangi bir bulut yedeğinde değil. Daha sonra kurtarmak için hesap seçeneklerindeki Özel anahtarı görüntüle seçeneğini kullan ve anahtarı güvenli bir yerde sakla."
         },
         "import_account_options": {
             "title": "Hesap\niçe aktar",

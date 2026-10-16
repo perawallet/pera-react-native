@@ -214,6 +214,12 @@ export class RootKeyDiscoveryUnsupportedError extends ChainFeatureUnsupportedErr
     }
 }
 
+export class PrivateKeyCodecUnsupportedError extends ChainFeatureUnsupportedError {
+    constructor(chainId: ChainId) {
+        super('Private-key encoding', chainId)
+    }
+}
+
 export class PrivateKeyRevealUnsupportedError extends AccountError {
     readonly accountId: string
 
