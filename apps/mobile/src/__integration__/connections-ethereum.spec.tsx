@@ -27,20 +27,26 @@ import {
     type Mock,
 } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { Address, Transaction, TransactionType } from 'algosdk'
+import { http, HttpResponse } from 'msw'
 import { render } from '@test-utils/render'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import {
     resetTestDatabase,
+    seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import { seedAlgo25Signer } from '@test-utils/signing-review'
 import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
 import {
     makeProposal,
     makeRequest,
+    makeSession,
     MAINNET_CHAIN_ID,
+    TESTNET_CHAIN_ID,
     TOPIC as V2_SESSION_TOPIC,
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
@@ -49,6 +55,17 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { encodeTransactionRaw } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import {
+    mockAlgodAccountInformation,
+    mockAlgodStatus,
+    mockAlgodTransactionParams,
+    mockIndexerSearchForAccounts,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import {
+    getSelectedScope,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     resetConnectionPairingStateForTesting,
     useConnectionRegistry,
@@ -57,13 +74,17 @@ import {
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useSigningStore } from '@packages/signing/src/store'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
-import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // The integration setup registers whichever chains config enables, and v2
 // builds no client without a Reown project id.
@@ -491,6 +512,342 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(pendingSignRequests()).toHaveLength(0)
                 },
             )
+        })
+
+        describe('network switching and session events', () => {
+            const ETH_SEPOLIA = 'eip155:11155111'
+            const EVENTS = ['chainChanged', 'accountsChanged']
+            const ALGORAND_TESTNET_GENESIS_HASH =
+                'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
+
+            beforeAll(setupTestDatabase)
+            beforeEach(resetTestDatabase)
+            afterAll(teardownTestDatabase)
+
+            afterEach(() => {
+                useNetworkStore.getState().setMode('live')
+            })
+
+            const answers = (walletKit: FakeWalletKit) =>
+                new Map(
+                    (walletKit.respondSessionRequest as Mock).mock.calls.map(
+                        ([{ response }]) => [response.id, response],
+                    ),
+                )
+
+            const emitRequest = (
+                walletKit: FakeWalletKit,
+                request: Parameters<typeof makeRequest>[0],
+            ) =>
+                act(() => {
+                    walletKit.emit('session_request', makeRequest(request))
+                })
+
+            const settleEthereum = async () => {
+                await mountProvider()
+                const walletKit = await propose({
+                    requiredNamespaces: {
+                        eip155: {
+                            chains: [ETH_MAINNET],
+                            methods: [
+                                'eth_sendTransaction',
+                                'wallet_switchEthereumChain',
+                                'eth_chainId',
+                            ],
+                            events: EVENTS,
+                        },
+                    },
+                })
+                await selectRows(ETHEREUM_ACCOUNT)
+                await connect(walletKit)
+                return walletKit
+            }
+
+            describe('in developer mode, with an Algorand signature in flight', () => {
+                const paymentFrom = (sender: string): Transaction =>
+                    new Transaction({
+                        type: TransactionType.pay,
+                        sender: Address.fromString(sender),
+                        suggestedParams: {
+                            fee: 1000n,
+                            minFee: 1000n,
+                            flatFee: true,
+                            firstValid: 1000n,
+                            lastValid: 2000n,
+                            genesisID: 'testnet-v1.0',
+                            genesisHash: new Uint8Array(
+                                decodeFromBase64(ALGORAND_TESTNET_GENESIS_HASH),
+                            ),
+                        },
+                        paymentParams: {
+                            receiver: Address.fromString(HD_TEST_ADDRESS),
+                            amount: 1_000_000n,
+                        },
+                    })
+
+                beforeEach(async () => {
+                    useNetworkStore.getState().setMode('developer')
+                    await seedAlgoAsset('testnet')
+                    server.use(
+                        http.get('*/v1/projects/', () => HttpResponse.json([])),
+                        mockAlgodTransactionParams({
+                            response: {
+                                fee: 1000,
+                                'min-fee': 1000,
+                                'genesis-id': 'testnet-v1.0',
+                                'genesis-hash': ALGORAND_TESTNET_GENESIS_HASH,
+                            },
+                        }),
+                        mockAlgodAccountInformation({
+                            address: ALGO25_TEST_ADDRESS,
+                            response: {
+                                amount: 5_000_000,
+                                'min-balance': 100_000,
+                            },
+                        }),
+                        mockAlgodAccountInformation({
+                            address: HD_TEST_ADDRESS,
+                            response: {
+                                amount: 5_000_000,
+                                'min-balance': 100_000,
+                            },
+                        }),
+                        mockAlgodStatus({ response: { 'last-round': 100 } }),
+                        mockIndexerSearchForAccounts(),
+                    )
+                })
+
+                it('Given a switch to the network the wallet is already on, when the dApp asks from another chain of its session, then only the Ethereum side moves, the session is extended and the Algorand signature stays pending', async () => {
+                    // Resolved from the registered adapter once a test runs.
+                    const ALGORAND_TESTNET = TESTNET_CHAIN_ID
+                    const signer = await seedAlgo25Signer()
+                    useAccountsStore
+                        .getState()
+                        .setAccounts([signer, ETHEREUM_ACCOUNT])
+                    await mountProvider()
+                    const walletKit = await propose({
+                        requiredNamespaces: {
+                            algorand: {
+                                chains: [ALGORAND_TESTNET],
+                                methods: ['algo_signTxn'],
+                                events: [],
+                            },
+                            eip155: {
+                                chains: [ETH_MAINNET],
+                                methods: [
+                                    'wallet_switchEthereumChain',
+                                    'eth_chainId',
+                                ],
+                                events: EVENTS,
+                            },
+                        },
+                    })
+                    await selectRows(signer, ETHEREUM_ACCOUNT)
+                    await connect(walletKit)
+                    const algorandBefore = getSelectedScope('algorand')
+
+                    emitRequest(walletKit, {
+                        id: 21,
+                        chainId: ALGORAND_TESTNET,
+                        params: [
+                            [
+                                {
+                                    txn: encodeToBase64(
+                                        encodeTransactionRaw(
+                                            paymentFrom(ALGO25_TEST_ADDRESS),
+                                        ),
+                                    ),
+                                },
+                            ],
+                        ],
+                    })
+                    await waitFor(
+                        () => {
+                            expect(pendingSignRequests()).toHaveLength(1)
+                        },
+                        { timeout: 15_000 },
+                    )
+
+                    emitRequest(walletKit, {
+                        id: 22,
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0xaa36a7' }],
+                        chainId: ETH_MAINNET,
+                    })
+                    await waitFor(() => {
+                        expect(answers(walletKit).get(22)).toMatchObject({
+                            result: null,
+                        })
+                    })
+
+                    expect(walletKit.updateSession).toHaveBeenCalledTimes(1)
+                    // No sheet: the wallet was already on Sepolia.
+                    expect(
+                        screen.queryByText(
+                            'walletconnect.switch_network.title',
+                        ),
+                    ).toBeNull()
+                    expect(getSelectedScope('algorand')).toEqual(algorandBefore)
+                    expect(getSelectedScope('ethereum')).toEqual({
+                        chainId: 'ethereum',
+                        networkId: 'sepolia',
+                    })
+                    expect(useNetworkStore.getState().mode).toBe('developer')
+                    expect(pendingSignRequests()).toHaveLength(1)
+
+                    // The extended session now serves requests on the new chain.
+                    emitRequest(walletKit, {
+                        id: 23,
+                        method: 'eth_chainId',
+                        params: [],
+                        chainId: ETH_SEPOLIA,
+                    })
+                    await waitFor(() => {
+                        expect(answers(walletKit).get(23)).toMatchObject({
+                            result: '0xaa36a7',
+                        })
+                    })
+                })
+            })
+
+            describe('in live mode', () => {
+                it('Given requests the wallet cannot honour, when the dApp sends them, then it gets 4901 for the other tier, 4902 for an unknown chain and 4200 for wallet_addEthereumChain', async () => {
+                    const walletKit = await settleEthereum()
+
+                    emitRequest(walletKit, {
+                        id: 31,
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0xaa36a7' }],
+                        chainId: ETH_MAINNET,
+                    })
+                    emitRequest(walletKit, {
+                        id: 32,
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x89' }],
+                        chainId: ETH_MAINNET,
+                    })
+                    emitRequest(walletKit, {
+                        id: 33,
+                        method: 'wallet_addEthereumChain',
+                        params: [{ chainId: '0x89' }],
+                        chainId: ETH_MAINNET,
+                    })
+
+                    await waitFor(() => {
+                        expect(
+                            walletKit.respondSessionRequest,
+                        ).toHaveBeenCalledTimes(3)
+                    })
+                    const sent = answers(walletKit)
+                    expect(sent.get(31)).toMatchObject({
+                        error: { code: 4901 },
+                    })
+                    expect(sent.get(32)).toMatchObject({
+                        error: { code: 4902 },
+                    })
+                    expect(sent.get(33)).toMatchObject({
+                        error: { code: 4200 },
+                    })
+                    expect(walletKit.updateSession).not.toHaveBeenCalled()
+                    expect(getSelectedScope('ethereum').networkId).toBe(
+                        'mainnet',
+                    )
+                })
+
+                it('Given a switch to the network the wallet is on, when it arrives, then it is answered null without a prompt', async () => {
+                    const walletKit = await settleEthereum()
+
+                    emitRequest(walletKit, {
+                        id: 34,
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x1' }],
+                        chainId: ETH_MAINNET,
+                    })
+
+                    await waitFor(() => {
+                        expect(answers(walletKit).get(34)).toMatchObject({
+                            result: null,
+                        })
+                    })
+                    expect(walletKit.updateSession).not.toHaveBeenCalled()
+                })
+            })
+
+            describe('session events', () => {
+                const ALGORAND_ONLY_TOPIC = 'f'.repeat(64)
+
+                // An Algorand-only session beside the eip155 one, as a second
+                // dApp would leave it: in the SDK and in the store.
+                const openAlgorandOnlySession = async (
+                    walletKit: FakeWalletKit,
+                ) => {
+                    walletKit.getActiveSessions()[ALGORAND_ONLY_TOPIC] =
+                        makeSession({ topic: ALGORAND_ONLY_TOPIC })
+                    await getProvider().connections.store.upsert({
+                        id: ALGORAND_ONLY_TOPIC,
+                        kind: 'walletconnect-v2',
+                        name: 'Algorand dApp',
+                        peer: { name: 'Algorand dApp' },
+                        accounts: [ALGO25_TEST_ADDRESS],
+                        status: 'active',
+                        createdAt: 1,
+                        lastActiveAt: 1,
+                        metadata: {
+                            topic: ALGORAND_ONLY_TOPIC,
+                            chains: [MAINNET_CHAIN_ID],
+                            methods: ['algo_signTxn'],
+                            expiry: 1_800_000_000,
+                        },
+                    })
+                }
+
+                const emitted = (walletKit: FakeWalletKit) =>
+                    (walletKit.emitSessionEvent as Mock).mock.calls.map(
+                        ([call]) => call,
+                    )
+
+                it('Given the wallet leaves live mode, when its Ethereum network moves, then every eip155 session hears chainChanged and an Algorand-only one hears nothing', async () => {
+                    const walletKit = await settleEthereum()
+                    await openAlgorandOnlySession(walletKit)
+
+                    act(() => {
+                        useNetworkStore.getState().setMode('developer')
+                    })
+
+                    await waitFor(() => {
+                        expect(emitted(walletKit)).toEqual([
+                            {
+                                topic: V2_SESSION_TOPIC,
+                                event: {
+                                    name: 'chainChanged',
+                                    data: '0xaa36a7',
+                                },
+                                chainId: ETH_SEPOLIA,
+                            },
+                        ])
+                    })
+                })
+
+                it('Given the session holds the only Ethereum account, when the wallet removes it, then the dApp hears accountsChanged with no accounts', async () => {
+                    const walletKit = await settleEthereum()
+
+                    act(() => {
+                        useAccountsStore
+                            .getState()
+                            .setAccounts([ALGORAND_ACCOUNT])
+                    })
+
+                    await waitFor(() => {
+                        expect(emitted(walletKit)).toEqual([
+                            {
+                                topic: V2_SESSION_TOPIC,
+                                event: { name: 'accountsChanged', data: [] },
+                                chainId: ETH_MAINNET,
+                            },
+                        ])
+                    })
+                })
+            })
         })
     })
 
