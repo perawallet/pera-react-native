@@ -489,11 +489,11 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
         const all = await db.select().from(SubmissionAttemptsSchema).all()
         expect(all).toHaveLength(1)
         expect(all[0]).toMatchObject({
-            network: 'algorand/mainnet',
+            scope: 'algorand/mainnet',
             flow: 'rekey',
             sender: WALLET,
             intentKeyJson: JSON.stringify({ kind: 'rekey', address: WALLET }),
-            lastValid: 2000,
+            chainData: { family: 'algorand', lastValid: 2000 },
             status: 'confirmed',
         })
     })

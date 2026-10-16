@@ -341,7 +341,7 @@ describe('hydrateAccountChainStates', () => {
             .insert(AccountChainStateSchema)
             .values({
                 accountAddress: address,
-                network: 'bogus' as ChainScopeKey,
+                scope: 'bogus' as ChainScopeKey,
                 nativeBalance: new Decimal(0),
                 chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
                 updatedAt: Date.now(),

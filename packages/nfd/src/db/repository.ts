@@ -61,7 +61,7 @@ export async function upsertNfdEntries({
     scope,
     entries,
 }: UpsertNfdEntriesParams): Promise<void> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (entries.length === 0) return
 
     const now = Date.now()
@@ -69,7 +69,7 @@ export async function upsertNfdEntries({
     for (const entry of entries) {
         const values = {
             address: entry.address,
-            network,
+            scope: scopeKey,
             name: entry.name?.name ?? null,
             image: entry.name?.image ?? null,
             source: entry.name?.source ?? null,
@@ -80,7 +80,7 @@ export async function upsertNfdEntries({
             .insert(NfdCacheSchema)
             .values(values)
             .onConflictDoUpdate({
-                target: [NfdCacheSchema.address, NfdCacheSchema.network],
+                target: [NfdCacheSchema.address, NfdCacheSchema.scope],
                 set: {
                     name: values.name,
                     image: values.image,
@@ -103,7 +103,7 @@ export async function getNfdByAddress({
     address,
     scope,
 }: GetNfdByAddressParams): Promise<Nullable<NfdCacheRow>> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const rows = await db
         .select({
             address: NfdCacheSchema.address,
@@ -116,7 +116,7 @@ export async function getNfdByAddress({
         .where(
             and(
                 eq(NfdCacheSchema.address, address),
-                eq(NfdCacheSchema.network, network),
+                eq(NfdCacheSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -135,7 +135,7 @@ export async function getNfdsByAddresses({
     addresses,
     scope,
 }: GetNfdsByAddressesParams): Promise<NfdCacheRow[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (addresses.length === 0) return []
 
     const rows = await db
@@ -150,7 +150,7 @@ export async function getNfdsByAddresses({
         .where(
             and(
                 inArray(NfdCacheSchema.address, addresses),
-                eq(NfdCacheSchema.network, network),
+                eq(NfdCacheSchema.scope, scopeKey),
             ),
         )
         .all()
@@ -179,7 +179,7 @@ export async function getStaleOrMissingAddresses({
     scope,
     ttlMs,
 }: GetStaleOrMissingAddressesParams): Promise<string[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (addresses.length === 0) return []
 
     const freshThreshold = Date.now() - ttlMs
@@ -190,7 +190,7 @@ export async function getStaleOrMissingAddresses({
         .where(
             and(
                 inArray(NfdCacheSchema.address, addresses),
-                eq(NfdCacheSchema.network, network),
+                eq(NfdCacheSchema.scope, scopeKey),
                 gte(NfdCacheSchema.updatedAt, freshThreshold),
             ),
         )

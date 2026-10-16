@@ -33,7 +33,10 @@ const SCOPE = scopeForLegacyNetwork('testnet')
 describe('broadcaster wrappers', () => {
     it('forward their arguments to the adapter registered for the chain and return its result', async () => {
         const summary = { probed: 2, confirmed: 1, failed: 1 }
-        const derived = { txIds: ['TX1'], lastValid: 7 }
+        const derived = {
+            txIds: ['TX1'],
+            chainData: { family: 'algorand' as const, lastValid: 7 },
+        }
         const handler = vi.fn()
         const adapter = registerFakeBroadcaster({
             submitAndAutoRefresh: vi.fn(async () => ['TX1']),

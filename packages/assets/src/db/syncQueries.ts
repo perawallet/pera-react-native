@@ -77,13 +77,13 @@ async function getStaleOrMissingIdsFromTable({
     db,
     table,
     assetIds,
-    network,
+    scopeKey,
     ttlMs,
 }: {
     db: Database
     table: typeof AssetsNodeSchema | typeof AssetPricesSchema
     assetIds: string[]
-    network: ChainScopeKey
+    scopeKey: ChainScopeKey
     ttlMs: number
 }): Promise<string[]> {
     if (assetIds.length === 0) return []
@@ -95,7 +95,7 @@ async function getStaleOrMissingIdsFromTable({
         .from(table)
         .where(
             and(
-                eq(table.network, network),
+                eq(table.scope, scopeKey),
                 gte(table.updatedAt, freshThreshold),
                 idPredicate(table.assetId, assetIds),
             ),
@@ -126,13 +126,13 @@ export type UnclassifiedRecheck = {
 async function getUnclassifiedNftIds({
     db,
     assetIds,
-    network,
+    scopeKey,
     ttlMs,
     windowMs,
 }: {
     db: Database
     assetIds: string[]
-    network: ChainScopeKey
+    scopeKey: ChainScopeKey
 } & UnclassifiedRecheck): Promise<string[]> {
     const now = Date.now()
 
@@ -147,12 +147,12 @@ async function getUnclassifiedNftIds({
             AssetsNodeSchema,
             and(
                 eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
-                eq(AssetsPeraSchema.network, AssetsNodeSchema.network),
+                eq(AssetsPeraSchema.scope, AssetsNodeSchema.scope),
             ),
         )
         .where(
             and(
-                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.scope, scopeKey),
                 // NULL on rows cached before the column, which reads as "not
                 // newly seen" and keeps them on the long TTL.
                 gte(AssetsPeraSchema.firstSeenAt, now - windowMs),
@@ -193,12 +193,12 @@ export type Arc19Recheck = {
 async function getStaleArc19CollectibleIds({
     db,
     assetIds,
-    network,
+    scopeKey,
     ttlMs,
 }: {
     db: Database
     assetIds: string[]
-    network: ChainScopeKey
+    scopeKey: ChainScopeKey
 } & Arc19Recheck): Promise<string[]> {
     const now = Date.now()
 
@@ -209,12 +209,12 @@ async function getStaleArc19CollectibleIds({
             AssetsNodeSchema,
             and(
                 eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
-                eq(AssetsPeraSchema.network, AssetsNodeSchema.network),
+                eq(AssetsPeraSchema.scope, AssetsNodeSchema.scope),
             ),
         )
         .where(
             and(
-                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.scope, scopeKey),
                 eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
                 like(AssetsNodeSchema.url, 'template-ipfs://%'),
                 lt(AssetsPeraSchema.updatedAt, now - ttlMs),
@@ -247,7 +247,7 @@ export async function getCollectibleIdsMissingUrl({
     /** Bounds one backfill pass; the remainder converges on later passes. */
     limit?: number
 }): Promise<string[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     if (assetIds.length === 0) return []
 
     const query = db
@@ -257,12 +257,12 @@ export async function getCollectibleIdsMissingUrl({
             AssetsNodeSchema,
             and(
                 eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
-                eq(AssetsPeraSchema.network, AssetsNodeSchema.network),
+                eq(AssetsPeraSchema.scope, AssetsNodeSchema.scope),
             ),
         )
         .where(
             and(
-                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.scope, scopeKey),
                 eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
                 isNull(AssetsNodeSchema.url),
                 idPredicate(AssetsPeraSchema.assetId, assetIds),
@@ -296,12 +296,12 @@ export async function getStaleOrMissingAssetIds({
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
 }): Promise<string[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetsNodeSchema,
         assetIds,
-        network,
+        scopeKey,
         ttlMs,
     })
 
@@ -309,7 +309,7 @@ export async function getStaleOrMissingAssetIds({
         ? await getUnclassifiedNftIds({
               db,
               assetIds,
-              network,
+              scopeKey,
               ...recheckUnclassified,
           })
         : []
@@ -318,7 +318,7 @@ export async function getStaleOrMissingAssetIds({
         ? await getStaleArc19CollectibleIds({
               db,
               assetIds,
-              network,
+              scopeKey,
               ...recheckArc19,
           })
         : []
@@ -350,12 +350,12 @@ export async function getStaleOrMissingPriceAssetIds({
     ttlMs,
     missRetryMs,
 }: GetStaleOrMissingPriceAssetIdsParams): Promise<string[]> {
-    const network = toScopeKey(scope)
+    const scopeKey = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetPricesSchema,
         assetIds,
-        network,
+        scopeKey,
         ttlMs,
     })
     if (missRetryMs === undefined || staleOrMissing.length === 0) {
@@ -364,7 +364,7 @@ export async function getStaleOrMissingPriceAssetIds({
 
     const retryThreshold = Date.now() - missRetryMs
     const conditions = [
-        eq(AssetPriceMissesSchema.network, network),
+        eq(AssetPriceMissesSchema.scope, scopeKey),
         gte(AssetPriceMissesSchema.attemptedAt, retryThreshold),
     ]
     // Same split as getStaleOrMissingIdsFromTable: past the cap, scanning the

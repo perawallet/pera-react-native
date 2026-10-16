@@ -22,6 +22,10 @@ const MIGRATION_TAG = '0014_holdings_native'
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
 
+// Later migrations rename the network column, so the assertions stop here.
+const migrationsThrough = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t <= tag))
+
 const insertHolding = (
     db: Database,
     assetId: string,
@@ -58,7 +62,7 @@ describe('holdings native data migration', () => {
         await insertHolding(db, '20', 'algorand/testnet', 0)
         await insertHolding(db, 'native', 'ethereum/mainnet', 0)
 
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(MIGRATION_TAG))
 
         expect(await nativeOf(db, '10', 'algorand/mainnet')).toEqual({
             family: 'algorand',

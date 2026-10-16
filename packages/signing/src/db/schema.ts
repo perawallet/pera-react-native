@@ -11,8 +11,14 @@
  */
 
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import type { ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
-import { decimalColumn } from '@perawallet/wallet-core-database'
+import type {
+    ChainScopeKey,
+    ChainSubmissionData,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    decimalColumn,
+    decimalJsonColumn,
+} from '@perawallet/wallet-core-database'
 
 /**
  * One broadcast attempt of an atomic transaction group. Written before the
@@ -24,7 +30,7 @@ export const SubmissionAttemptsSchema = sqliteTable(
     'submission_attempts',
     {
         id: text('id').primaryKey(),
-        network: text('network').notNull().$type<ChainScopeKey>(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
         /** JSON array of txids — the on-chain dedupe identity of the group. */
         txIdsJson: text('tx_ids_json').notNull(),
         /**
@@ -37,8 +43,11 @@ export const SubmissionAttemptsSchema = sqliteTable(
         /** Wallet-held sender address, when known — part of the intent match. */
         sender: text('sender'),
         status: text('status').notNull(),
-        /** Decoded txn validity window, in rounds (null when undecodable). */
-        lastValid: integer('last_valid'),
+        /**
+         * Chain data the chain's reconciler bounds the attempt by; null when
+         * there is none, which makes the attempt unevaluatable.
+         */
+        chainData: decimalJsonColumn<ChainSubmissionData>('chain_data'),
         /** Account sequence number, on chains that have one (null otherwise). */
         nonce: integer('nonce'),
         createdAt: integer('created_at').notNull(),
@@ -58,7 +67,7 @@ export const SubmissionAttemptsSchema = sqliteTable(
         maxFee: decimalColumn('max_fee'),
     },
     table => [
-        index('submission_attempts_open_idx').on(table.network, table.status),
+        index('submission_attempts_open_idx').on(table.scope, table.status),
         // The retention sweep runs on every sync tick; without this it is a
         // full scan of a table that grows with every submission.
         index('submission_attempts_retention_idx').on(

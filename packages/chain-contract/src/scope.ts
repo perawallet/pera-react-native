@@ -123,8 +123,8 @@ export const queryKeyReferencesScope = (
     )
 }
 
-// Never parseScopeKey a persisted value directly: state written before scope
-// keys holds a bare network.
+// For persisted store state, which may predate scope keys and hold a bare
+// network. Database rows all hold scope keys; read them with parseScopeKey.
 export const scopeFromNetworkColumn = (value: string): ChainScope => {
     if (value.includes(SCOPE_KEY_SEPARATOR)) {
         return parseScopeKey(value)

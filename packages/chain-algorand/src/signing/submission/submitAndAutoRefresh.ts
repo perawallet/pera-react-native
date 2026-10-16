@@ -35,7 +35,7 @@ import type {
 } from './types'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
-import { toRound } from '../submission-ledger'
+import { algorandSubmissionChainData, toRound } from '../submission-ledger'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 import {
     decodeSignedTransaction,
@@ -207,7 +207,9 @@ const recordLedgerRow = async (
             // Fall back to the group's first sender so generic flows still
             // scope their pending history row to the right account.
             sender: input.ledger?.sender ?? firstTxn?.sender?.toString(),
-            lastValid: toRound(firstTxn?.lastValid),
+            chainData: algorandSubmissionChainData(
+                toRound(firstTxn?.lastValid),
+            ),
         })
     })
     return attemptId

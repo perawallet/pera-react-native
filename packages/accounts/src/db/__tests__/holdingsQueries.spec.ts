@@ -476,7 +476,7 @@ describe('account holdings queries', () => {
         const unsyncedRow = (assetId: string) => ({
             assetId,
             decimals: null,
-            creatorAddress: null,
+            chainData: null,
             totalSupply: null,
             name: null,
             unitName: null,

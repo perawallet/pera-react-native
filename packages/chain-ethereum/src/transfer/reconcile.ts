@@ -17,7 +17,7 @@ import {
     type PublicClient,
 } from 'viem'
 import {
-    scopeFromNetworkColumn,
+    parseScopeKey,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -156,7 +156,7 @@ export const reconcileEthereumSubmissions = async ({
     await Promise.all(
         open.map(async attempt => {
             try {
-                const scope = scopeFromNetworkColumn(attempt.network)
+                const scope = parseScopeKey(attempt.network)
                 const scopeKey = toScopeKey(scope)
                 let client = clients.get(scopeKey)
                 if (!client) {

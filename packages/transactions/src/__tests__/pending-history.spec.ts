@@ -52,7 +52,7 @@ const attempt = (
     flow: 'pipeline',
     sender: ADDRESS,
     status: 'submitted',
-    lastValid: null,
+    chainData: null,
     nonce: 0,
     createdAt: CREATED_AT,
     resolvedAt: null,

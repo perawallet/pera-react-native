@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    ChainSubmissionData,
+} from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
@@ -32,7 +35,7 @@ export type CosignSubmissionAttemptParams = {
      * shared-account swap past the rebuild guard entirely.
      */
     sender?: string
-    lastValid?: number
+    chainData?: ChainSubmissionData
 }
 
 /**
@@ -204,7 +207,7 @@ export const resolveSwapHandoffOutcome = async ({
                                 swapId: swapIdStr,
                             },
                             sender: record.multisigAddress,
-                            lastValid: derived.lastValid,
+                            chainData: derived.chainData,
                         })
                     }
                     try {

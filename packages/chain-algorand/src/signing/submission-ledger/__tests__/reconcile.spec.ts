@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import {
     scopeForLegacyNetwork,
     toScopeKey,
@@ -29,6 +29,7 @@ import {
     setSubmissionSettledHandler,
 } from '..'
 import {
+    getOpenSubmissionAttempts,
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     markSubmissionUnknown,
@@ -113,7 +114,7 @@ describe('submission reconciler', () => {
             scope: scopeForLegacyNetwork('mainnet'),
             txIds: ['TXID-1'],
             flow: 'cosign',
-            lastValid: 100,
+            chainData: { family: 'algorand', lastValid: 100 },
             ...overrides,
         })
 
@@ -125,7 +126,7 @@ describe('submission reconciler', () => {
         flow: 'cosign',
         sender: null,
         status: 'submitted',
-        lastValid: 100,
+        chainData: { family: 'algorand', lastValid: 100 },
         nonce: null,
         createdAt: 0,
         resolvedAt: null,
@@ -202,6 +203,45 @@ describe('submission reconciler', () => {
             }),
         )
         expect(outcome).toBe('failed')
+    })
+
+    it('expires an attempt recorded before its validity window moved to chain data at its original round', async () => {
+        const legacy = createTestDatabase()
+        try {
+            await runMigrations(
+                legacy.db,
+                Object.fromEntries(
+                    Object.entries(migrations).filter(
+                        ([tag]) => tag < '0019_chain_data_scope_columns',
+                    ),
+                ),
+            )
+            await legacy.db.run(sql`
+                INSERT INTO submission_attempts (id, network, tx_ids_json, flow, status, last_valid, created_at)
+                VALUES ('LEGACY', 'algorand/mainnet', '["TXID-1"]', 'cosign', 'submitted', 100, 1)
+            `)
+            await runMigrations(legacy.db, migrations)
+            const [attempt] = await getOpenSubmissionAttempts({ db: legacy.db })
+            const absent = {
+                pendingError: httpError(404),
+                indexerError: httpError(404),
+            }
+
+            expect(
+                await probeSubmissionAttempt(
+                    attempt!,
+                    makeClient({ ...absent, indexerRound: 100 }),
+                ),
+            ).toBeNull()
+            expect(
+                await probeSubmissionAttempt(
+                    attempt!,
+                    makeClient({ ...absent, indexerRound: 101 }),
+                ),
+            ).toBe('failed')
+        } finally {
+            legacy.teardown()
+        }
     })
 
     it('leaves a row open when algod is unreachable, past lastValid or not', async () => {
@@ -296,7 +336,7 @@ describe('submission reconciler', () => {
         const keyedId = await record({ txIds: ['TXID-KEYED'] })
         await db
             .update(SubmissionAttemptsSchema)
-            .set({ network: toScopeKey(scopeForLegacyNetwork('mainnet')) })
+            .set({ scope: toScopeKey(scopeForLegacyNetwork('mainnet')) })
             .where(eq(SubmissionAttemptsSchema.id, keyedId))
             .run()
         const handled: string[] = []
@@ -324,7 +364,7 @@ describe('submission reconciler', () => {
         const id = await record()
         await db
             .update(SubmissionAttemptsSchema)
-            .set({ network: 'not-a-network' as ChainScopeKey })
+            .set({ scope: 'not-a-network' as ChainScopeKey })
             .where(eq(SubmissionAttemptsSchema.id, id))
             .run()
         const getClient = vi.fn(() => makeClient())

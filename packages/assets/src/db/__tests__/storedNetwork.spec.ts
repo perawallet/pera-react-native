@@ -53,9 +53,9 @@ describe('assets repositories store the scope key', () => {
 
     const storedNetworks = async (table: string): Promise<string[]> => {
         const rows = (await db.all(
-            sql.raw(`select network from ${table}`),
+            sql.raw(`select scope from ${table}`),
         )) as Array<[string]>
-        return rows.map(([network]) => network)
+        return rows.map(([scope]) => scope)
     }
 
     it('writes the scope key to assets_node and assets_pera', async () => {

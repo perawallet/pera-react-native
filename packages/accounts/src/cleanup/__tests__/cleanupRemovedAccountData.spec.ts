@@ -126,7 +126,7 @@ describe('cleanupRemovedAccountData', () => {
             .values({
                 accountAddress: 'ADDR1',
                 assetId: '200',
-                network: 'unknown/devnet' as ChainScopeKey,
+                scope: 'unknown/devnet' as ChainScopeKey,
                 updatedAt: Date.now(),
             })
             .run()

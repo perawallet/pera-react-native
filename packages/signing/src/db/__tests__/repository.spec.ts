@@ -93,7 +93,7 @@ describe('submission ledger repository', () => {
             flow: 'rekey',
             intentKey: { kind: 'rekey', address: 'SENDER_A' },
             sender: 'SENDER_A',
-            lastValid: 2000,
+            chainData: { family: 'algorand', lastValid: 2000 },
             ...overrides,
         })
 
@@ -110,7 +110,7 @@ describe('submission ledger repository', () => {
             flow: 'rekey',
             sender: 'SENDER_A',
             status: 'submitted',
-            lastValid: 2000,
+            chainData: { family: 'algorand', lastValid: 2000 },
             resolvedAt: null,
         })
 
@@ -178,7 +178,7 @@ describe('submission ledger repository', () => {
         await recordRekey({ scope: scopeForLegacyNetwork('testnet') })
 
         const rows = (await db.all(
-            sql.raw('select network from submission_attempts'),
+            sql.raw('select scope from submission_attempts'),
         )) as Array<[string]>
         expect(rows.map(([network]) => network)).toEqual(['algorand/testnet'])
     })
@@ -246,7 +246,7 @@ describe('submission ledger repository', () => {
         // so past the bound it must stop blocking new activity.
         const unevaluatableId = await recordRekey({
             txIds: ['TXID-NO-WINDOW'],
-            lastValid: undefined,
+            chainData: undefined,
         })
         await db
             .update(SubmissionAttemptsSchema)

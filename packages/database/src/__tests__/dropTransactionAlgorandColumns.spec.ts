@@ -23,6 +23,10 @@ const NETWORK = 'algorand/mainnet'
 const migrationsBefore = (tag: string): MigrationConfig =>
     Object.fromEntries(Object.entries(migrations).filter(([t]) => t < tag))
 
+// Later migrations rename the network column, so the assertions stop here.
+const migrationsThrough = (tag: string): MigrationConfig =>
+    Object.fromEntries(Object.entries(migrations).filter(([t]) => t <= tag))
+
 const SWAP_DETAIL = {
     assetInId: '0',
     assetInUnitName: 'ALGO',
@@ -139,7 +143,7 @@ describe('0018 drop transaction algorand columns', () => {
             INSERT INTO submission_attempts (id, network, tx_ids_json, flow, status, created_at)
             VALUES ('SUB', ${NETWORK}, '[]', 'send', 'open', 1)
         `)
-        await runMigrations(db, migrations)
+        await runMigrations(db, migrationsThrough(TAG))
     })
 
     afterEach(() => {
