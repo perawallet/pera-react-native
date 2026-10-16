@@ -237,13 +237,18 @@ Wait Until Participant Sheet Closed
     Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
 
 Add Participants
+    [Documentation]    Onto an empty Create Shared Account list.
     [Arguments]    @{addresses}
-    FOR    ${address}    IN    @{addresses}
+    FOR    ${index}    ${address}    IN ENUMERATE    @{addresses}
         IF    $address == $OWN
             Add Own Account As Participant
         ELSE
             Add Participant    ${address}
         END
+        # The row is added only after the sheet has closed, and Continue stays disabled until the
+        # second one is; a tap before then does nothing.
+        ${row}=    Test Id Starting With    participant_item_${index}_
+        Wait Until Page Contains Element    ${row}    timeout=10s
     END
 
 Participant Should Be Listed

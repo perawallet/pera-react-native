@@ -18,6 +18,9 @@ ${ANALYTICS_CONSENT_DECLINE}    accessibility_id=analytics_consent_prompt_declin
 ${STARTUP_PROMPT_ANY}           xpath=//*[@content-desc='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button']
 ${NAVIGATION_BACK_BUTTON}       accessibility_id=navigation_back_button
 ${MENU_SETTINGS_BUTTON}         accessibility_id=menu_settings_button
+${SETTINGS_SCREEN}              xpath=//*[@resource-id='settings_screen' or @name='settings_screen']
+${SETTINGS_SECURITY_ITEM}       accessibility_id=settings_item_security
+${DELETE_ALL_SUCCESS_SHEET}     xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
 # Screens that can show a recovery phrase: the import word fields, the backup grid and quiz.
 ${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_')]
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
@@ -171,6 +174,14 @@ Reset To Fresh Wallet
     [Documentation]    Suite Teardown for suites that import, add or remove accounts: removes every
     ...                account and creates one new unfunded wallet, so later suites start from the
     ...                state Start Pera With Wallet assumes instead of whatever this suite left.
+    # A case that failed after removing every account leaves onboarding up, where fixtures do nothing.
+    ${onboarding}=    Run Keyword And Return Status    Page Should Contain Element    ${CREATE_WALLET_BUTTON}
+    IF    not ${onboarding}    Remove All Accounts
+    Create Wallet
+    Wait Clear Of Startup Prompts
+
+Open Settings
+    [Documentation]    Menu > Settings from any screen of a wallet, with the list settled.
     Go Home
     Tap    ${MENU_TAB}
     # A wallet the suite created just before can still raise its startup prompts, which swallow the tap.
@@ -181,35 +192,37 @@ Reset To Fresh Wallet
         Tap    ${MENU_TAB}
         Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     END
-    # A toast the suite raised last can still cover the header and take the tap; tap again
-    # until Settings is up.
-    FOR    ${attempt}    IN RANGE    3
+    Wait Until Settled    ${MENU_SETTINGS_BUTTON}
+    # The gear tap is sometimes dropped: under a toast the suite raised last, and on iOS right after
+    # Go Home remounted the tab shell (Menu focused, no Settings mount in the nav trace). Tap again
+    # only while Settings is not up, so it is never pushed twice.
+    FOR    ${_}    IN RANGE    3
         Tap    ${MENU_SETTINGS_BUTTON}
-        ${settings}=    Run Keyword And Return Status    Wait Until Page Contains Element
-        ...    xpath=//*[@resource-id='settings_screen' or @name='settings_screen']    timeout=3s
+        ${settings}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${SETTINGS_SCREEN}    timeout=5s
         IF    ${settings}    BREAK
     END
+    # Settings slides in; a row tapped mid-slide is missed.
+    Wait Until Settled    ${SETTINGS_SECURITY_ITEM}
+
+Remove All Accounts
+    [Documentation]    Settings > Remove all accounts, through to a settled onboarding screen.
+    Open Settings
     Scroll Into View    settings_remove_all_accounts_button
     Tap    accessibility_id=settings_remove_all_accounts_button
     Wait Until Settled    accessibility_id=settings_delete_all_confirm_button
     Tap    accessibility_id=settings_delete_all_confirm_button
     # The app routes back to onboarding only once the success sheet is closed.
-    Wait Until Page Contains Element
-    ...    xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
-    ...    timeout=30s
-    # A backdrop tap while the sheet still slides up is lost.
-    Wait Until Settled
-    ...    xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
+    Wait Until Page Contains Element    ${DELETE_ALL_SUCCESS_SHEET}    timeout=30s
+    # A backdrop tap while the sheet still slides up is lost, and onboarding under it then
+    # takes no taps.
+    Wait Until Settled    ${DELETE_ALL_SUCCESS_SHEET}
     # Its Close button has no testID (ConfirmActionContent gets no confirmTestID); a backdrop tap
     # (the adapters' Close Sheet) closes it on both platforms.
     Close Sheet
     # Onboarding is already in the tree under the closing sheet; a tap before it is gone is lost.
-    Wait Until Page Does Not Contain Element
-    ...    xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
-    ...    timeout=15s
+    Wait Until Page Does Not Contain Element    ${DELETE_ALL_SUCCESS_SHEET}    timeout=15s
     Wait Until Settled    ${CREATE_WALLET_BUTTON}
-    Create Wallet
-    Wait Clear Of Startup Prompts
 
 Tap Upper Half
     [Documentation]    For rows a system bar can cover: a sheet that ignores the bottom inset puts its

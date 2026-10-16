@@ -63,16 +63,6 @@ ${FLAG_OVERRIDE_CLOUD_BACKUP}           accessibility_id=feature_flag_override_$
 
 
 *** Keywords ***
-Open Settings
-    Go Home
-    Tap    ${MENU_TAB}
-    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
-    # The tab switch is still animating when the gear appears; a tap then is lost.
-    Wait Until Settled    ${MENU_SETTINGS_BUTTON}
-    Tap    ${MENU_SETTINGS_BUTTON}
-    # Settings slides in; a row tapped mid-slide is missed.
-    Wait Until Settled    ${SETTINGS_ITEM_SECURITY}
-
 Scroll To
     [Documentation]    Brings an element on screen in one driver call. Takes this file's locators:
     ...                accessibility_id=<id>, or an xpath on a bare testID (a resource-id on Android).

@@ -15,7 +15,6 @@ ${BACKEND_KEYED}                    %{PERA_E2E_BACKEND_KEYED=}
 ${CB_QUIZ_ITEMS}                    3
 
 ${MENU_SETTINGS_BUTTON}             accessibility_id=menu_settings_button
-${SETTINGS_SECURITY_ROW}            accessibility_id=settings_item_security
 ${SETTINGS_DEVELOPER_ROW}           accessibility_id=settings_item_developer_settings
 ${SETTINGS_APP_VERSION}             xpath=//*[@resource-id='settings_app_version' or @name='settings_app_version']
 # The toast carries no testID; matched on settings.developer.debug_tools_enabled (English). iOS keeps
@@ -79,13 +78,6 @@ Skip Unless Backend Keyed
     ...                the verify screen, which reads exactly like a missing element.
     Skip If    not $BACKEND_KEYED
     ...    Needs a build carrying BACKEND_API_KEY; set PERA_E2E_BACKEND_KEYED=1 when the build has one.
-
-Open Settings
-    Go Home
-    Tap    ${MENU_TAB}
-    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
-    Tap    ${MENU_SETTINGS_BUTTON}
-    Wait Until Page Contains Element    ${SETTINGS_SECURITY_ROW}    timeout=15s
 
 Open Cloud Backup
     [Documentation]    Settings row, turning the flag on first when the row is not offered.

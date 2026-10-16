@@ -54,18 +54,6 @@ Restore Account Name
     Capture Failure Screenshot
     IF    $ORIGINAL_ACCOUNT_NAME    Rename Selected Account    ${ORIGINAL_ACCOUNT_NAME}
 
-Remove All Accounts
-    [Documentation]    Settings > Remove all accounts, through to the onboarding screen.
-    Open Settings
-    Scroll To    ${SETTINGS_REMOVE_ALL_BUTTON}
-    Tap    ${SETTINGS_REMOVE_ALL_BUTTON}
-    Wait Until Settled    ${SETTINGS_DELETE_ALL_CONFIRM}
-    Tap    ${SETTINGS_DELETE_ALL_CONFIRM}
-    # The app routes back to onboarding only once the success sheet is closed.
-    Wait Until Page Contains Element    ${SETTINGS_DELETE_ALL_SUCCESS}    timeout=30s
-    Close Sheet
-    Wait Until Page Contains Element    ${CREATE_WALLET_BUTTON}    timeout=30s
-
 Ensure Wallet After Test
     [Documentation]    A removal case that fails between removing and recreating would leave every
     ...                later case on onboarding, where fixtures do nothing.

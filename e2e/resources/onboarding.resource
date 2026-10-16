@@ -80,20 +80,6 @@ Start Without Wallet
     IF    ${welcome}    RETURN
     Wait Clear Of Startup Prompts
     Remove All Accounts
-    Wait Until Page Contains Element    ${CREATE_WALLET_BUTTON}    timeout=30s
-
-Remove All Accounts
-    Go Home
-    Tap    ${MENU_TAB}
-    Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
-    Tap    ${MENU_SETTINGS_BUTTON}
-    Scroll Until Present    ${REMOVE_ALL_ACCOUNTS_BUTTON}
-    Tap    ${REMOVE_ALL_ACCOUNTS_BUTTON}
-    Wait Until Settled    ${REMOVE_ALL_CONFIRM_BUTTON}
-    Tap    ${REMOVE_ALL_CONFIRM_BUTTON}
-    # The app routes back to onboarding only once the success sheet is closed.
-    Wait Until Page Contains Element    ${REMOVE_ALL_SUCCESS_SHEET}    timeout=30s
-    Close Sheet
 
 Start With New Wallet
     Start Without Wallet

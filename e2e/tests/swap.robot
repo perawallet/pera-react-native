@@ -358,10 +358,8 @@ Top Pair Row Shows Its Pair And Volume
     Open Swap
     ${shown}=    Run Keyword And Return Status    Wait Until Page Contains Element    ${TOP_PAIR_FIRST}    timeout=20s
     Skip If    not ${shown}    No top pairs from the backend on this run.
-    ${text}=    Text Inside    ${TOP_PAIR_FIRST.replace('xpath=', '')}
+    ${text}=    Wait Until Keyword Succeeds    10s    0.5s    Top Pair Row With Volume
     Should Contain    ${text}    to    The top pair row shows no "X to Y" label: "${text}".
-    ${volume}=    Extract Number    ${text}
-    Should Not Be Equal    ${volume}    ${None}    The top pair row shows no volume: "${text}".
 
 Swap History Opens From See All And Closes Back To The Form
     [Tags]    id:swap.history.open-close    swap-history    p2    needs-funded    excludefromci

@@ -157,6 +157,14 @@ Displayed Value
     ...    App gap: PWText passes its testID through getTestProps (apps/mobile/src/components/core/PWText/PWText.tsx), which makes it the iOS accessibility label, so ${test_id}'s value cannot be read.
     RETURN    ${text}
 
+Top Pair Row With Volume
+    [Documentation]    Joined text of the first top pair row once it shows a volume, which renders
+    ...                after the pair label, when the currency rates have loaded.
+    ${text}=    Text Inside    ${TOP_PAIR_FIRST.replace('xpath=', '')}
+    ${volume}=    Extract Number    ${text}
+    Should Not Be Equal    ${volume}    ${None}    The top pair row shows no volume: "${text}".
+    RETURN    ${text}
+
 Text Inside
     [Documentation]    Joined text of an element's descendants, for rows whose own node carries no text.
     [Arguments]    ${xpath}
