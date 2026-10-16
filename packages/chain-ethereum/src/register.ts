@@ -42,6 +42,7 @@ import {
     transferChainAdapters,
     type TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import {
     createEthereumAccountsAdapter,
     ethereumAddressCodec,
@@ -51,6 +52,7 @@ import { createEthereumAssetsAdapter } from './assets'
 import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
 import { ethereumDeeplinkAdapter } from './deeplinks/adapter'
 import { ethereumHistoryAdapter } from './history'
+import { ethereumLedgerAppDriver } from './ledger/driver'
 import { ethereumPlannerAdapter } from './signing/adapter'
 import { ethereumLocalKeySignerAdapter } from './signing/localKeySigner'
 import { ethereumMessageSignerAdapter } from './signing/messages'
@@ -90,4 +92,5 @@ export const registerChain = (ctx: ChainContext): void => {
     historyChainAdapters.register(ethereumHistoryAdapter)
     dappRequestChainAdapters.register(dappRequestAdapter)
     deeplinkAdapters.register(ethereumDeeplinkAdapter)
+    ledgerAppDriverRegistry.register(ethereumLedgerAppDriver)
 }

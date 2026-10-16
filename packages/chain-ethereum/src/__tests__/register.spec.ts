@@ -35,11 +35,13 @@ import {
     historyChainAdapters,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
+import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
 import { ethereumAddressCodec } from '../accounts/address-codec'
 import { ethereumDeeplinkAdapter } from '../deeplinks/adapter'
 import { ethereumKeyDerivation } from '../accounts/key-derivation'
 import { ETHEREUM_NATIVE_ASSET } from '../assets/native-asset'
 import { ethereumHistoryAdapter } from '../history'
+import { ethereumLedgerAppDriver } from '../ledger/driver'
 import { registerChain } from '../register'
 import { ethereumPlannerAdapter } from '../signing/adapter'
 import { ethereumLocalKeySignerAdapter } from '../signing/localKeySigner'
@@ -66,9 +68,10 @@ describe('registerChain', () => {
         broadcasterChainAdapters.reset()
         dappRequestChainAdapters.reset()
         deeplinkAdapters.reset()
+        ledgerAppDriverRegistry.reset()
     })
 
-    it('registers the address codec, key derivation, planner, reviewer, signing reviewer, local-key signer, message signer, and accounts, assets, transfer, broadcaster, history, dApp request and deeplink adapters', () => {
+    it('registers the address codec, key derivation, planner, reviewer, signing reviewer, local-key signer, message signer, Ledger app driver, and accounts, assets, transfer, broadcaster, history, dApp request and deeplink adapters', () => {
         registerChain(context)
 
         expect(addressCodecs.get('ethereum')).toBe(ethereumAddressCodec)
@@ -101,6 +104,9 @@ describe('registerChain', () => {
             'ethereum',
         )
         expect(deeplinkAdapters.get('ethereum')).toBe(ethereumDeeplinkAdapter)
+        expect(ledgerAppDriverRegistry.resolve('ethereum')).toBe(
+            ethereumLedgerAppDriver,
+        )
     })
 
     it('can run more than once, so a repeated bootstrap is harmless', () => {

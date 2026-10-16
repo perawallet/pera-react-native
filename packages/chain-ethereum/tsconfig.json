@@ -11,7 +11,8 @@
       "@perawallet/wallet-core-connections/testing": ["../connections/src/__tests__/dapp-request-contract.ts"],
       "@perawallet/wallet-core-deeplinks/testing": ["../deeplinks/src/__tests__/adapter-contract.ts"],
       "@perawallet/wallet-core-signing/testing": ["../signing/src/__tests__/testing.ts"],
-      "@perawallet/wallet-core-transactions/testing": ["../transactions/src/__tests__/testing.ts"]
+      "@perawallet/wallet-core-transactions/testing": ["../transactions/src/__tests__/testing.ts"],
+      "@perawallet/wallet-extension-hardware-wallet/testing": ["../../extensions/hardware-wallet/src/__tests__/app-driver-contract.ts"]
     }
   },
   "include": [
