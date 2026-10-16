@@ -55,9 +55,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/onboarding/hooks', () => ({
     useExitAccountFlow: vi.fn(),

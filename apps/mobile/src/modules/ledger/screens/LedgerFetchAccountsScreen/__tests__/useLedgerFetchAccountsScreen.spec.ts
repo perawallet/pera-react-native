@@ -41,9 +41,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
         goBack: mockGoBack,
     }),
 }))
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
-}))
+vi.mock('@hooks/useLanguage')
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
         request: mockSheetRequest,

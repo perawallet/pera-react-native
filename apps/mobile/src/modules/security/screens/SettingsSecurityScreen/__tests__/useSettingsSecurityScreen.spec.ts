@@ -62,11 +62,7 @@ vi.mock('@modules/security', () => ({
     PinEditContent: () => null,
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const { mockShowToast } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
