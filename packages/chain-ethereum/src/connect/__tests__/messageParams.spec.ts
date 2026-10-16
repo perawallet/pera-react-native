@@ -13,7 +13,12 @@
 import { describe, expect, it } from 'vitest'
 import { stringToHex } from 'viem'
 import { MAIL_TYPED_DATA, SENDER } from '../../signing/__tests__/fixtures'
-import { validateEthereumMessagePayload } from '../messageParams'
+import {
+    MAX_MESSAGE_LENGTH,
+    MAX_TYPED_DATA_DEPTH,
+    MAX_TYPED_DATA_NODES,
+    validateEthereumMessagePayload,
+} from '../messageParams'
 import { ETHEREUM_WC_V2_METHOD } from '../walletConnect'
 
 const LOWERCASE_SENDER = SENDER.toLowerCase()
@@ -168,5 +173,57 @@ describe('validateEthereumMessagePayload: session accounts', () => {
                 [LOWERCASE_SENDER],
             ).ok,
         ).toBe(true)
+    })
+})
+
+describe('validateEthereumMessagePayload: size caps', () => {
+    const nested = (depth: number): unknown =>
+        depth === 0 ? 'leaf' : { child: nested(depth - 1) }
+
+    it('refuses a personal_sign message over the length cap', () => {
+        expect(
+            validate('sign-message', [
+                'a'.repeat(MAX_MESSAGE_LENGTH + 1),
+                SENDER,
+            ]),
+        ).toMatchObject({ ok: false, failure: 'invalid-params' })
+    })
+
+    it('refuses typed data whose JSON is over the length cap, before parsing it', () => {
+        expect(
+            validate('sign-typed-data', [
+                SENDER,
+                JSON.stringify({
+                    ...MAIL_TYPED_DATA,
+                    pad: 'a'.repeat(MAX_MESSAGE_LENGTH),
+                }),
+            ]),
+        ).toMatchObject({ ok: false, failure: 'invalid-params' })
+    })
+
+    it('refuses a typed-data object over the node budget', () => {
+        const typedData = {
+            ...MAIL_TYPED_DATA,
+            message: {
+                items: Array.from({ length: MAX_TYPED_DATA_NODES }, () => 1),
+            },
+        }
+
+        expect(validate('sign-typed-data', [SENDER, typedData])).toMatchObject({
+            ok: false,
+            failure: 'invalid-params',
+        })
+    })
+
+    it('refuses typed data nested past the depth cap', () => {
+        const typedData = {
+            ...MAIL_TYPED_DATA,
+            message: nested(MAX_TYPED_DATA_DEPTH),
+        }
+
+        expect(validate('sign-typed-data', [SENDER, typedData])).toMatchObject({
+            ok: false,
+            failure: 'invalid-params',
+        })
     })
 })
