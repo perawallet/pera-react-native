@@ -27,6 +27,7 @@ import type {
     SourceType,
 } from '@perawallet/wallet-core-signing'
 import {
+    DappRequestRejectedError,
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '../dappRequest'
@@ -1286,6 +1287,247 @@ describe('useConnectionSigningAdapter', () => {
                 ]),
             ).rejects.toThrow('socket dead')
         })
+    })
+
+    describe('send-transaction', () => {
+        const BUILT = { scope: { chainId: CHAIN_ID }, payload: 'built' }
+        const mockBuild = vi.fn(async (_request: unknown) => BUILT as never)
+
+        const sendMessage = (correlationId = '5') => ({
+            kind: 'request' as const,
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId,
+            sourceType: 'walletconnect' as const,
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            verifiedOrigin: 'https://dapp.example',
+            operation: {
+                type: 'send-transaction' as const,
+                request: { marker: 'validated' },
+            },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        const addedRequest = () => {
+            const request = mockAddSignRequest.mock.calls[0]?.[0]
+            if (!request) throw new Error('no sign request was queued')
+            return request as {
+                approve: (
+                    signed: unknown[],
+                    submission?: { txIds: string[] },
+                ) => Promise<void>
+                reject: (reason?: unknown) => Promise<void>
+                error: (error: Error) => Promise<void>
+                [key: string]: unknown
+            }
+        }
+
+        const mount = () => {
+            const harness = makeRegistry()
+            renderHook(() =>
+                useConnectionSigningAdapter(harness.registry, CHAIN_ID),
+            )
+            return harness
+        }
+
+        beforeEach(() => {
+            mockBuild.mockReset()
+            mockBuild.mockResolvedValue(BUILT as never)
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...fixtureAdapter(),
+                sendTransaction: { validate: vi.fn(), build: mockBuild },
+            })
+        })
+
+        it("queues the chain's built transaction for the broadcaster, tagged with the dApp's identity", async () => {
+            const { send } = mount()
+
+            send(sendMessage())
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            expect(mockBuild).toHaveBeenCalledWith({ marker: 'validated' })
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+            expect(addedRequest()).toMatchObject({
+                type: 'transactions',
+                transport: 'algod',
+                sourceType: 'walletconnect',
+                transportId: 'c1',
+                sourceMetadata: PEER,
+                verifiedOrigin: 'https://dapp.example',
+                txs: [BUILT],
+            })
+        })
+
+        it('answers the dApp with the submitted transaction id on approve', async () => {
+            const { send } = mount()
+            const message = sendMessage()
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await addedRequest().approve([], { txIds: ['0xabc'] })
+
+            expect(message.respond).toHaveBeenCalledWith({
+                type: 'send-transaction',
+                txId: '0xabc',
+            })
+        })
+
+        it('throws on approve without a submission, so the transport logs it rather than faking an answer', async () => {
+            const { send } = mount()
+            const message = sendMessage()
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await expect(addedRequest().approve([])).rejects.toThrow(
+                /without being submitted/,
+            )
+            expect(message.respond).not.toHaveBeenCalled()
+        })
+
+        it('rejects the dApp with a user rejection on reject', async () => {
+            const { send } = mount()
+            const message = sendMessage()
+            send(message)
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            await addedRequest().reject()
+
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.any(DappRequestRejectedError),
+            )
+        })
+
+        it('declines and tells the user when the chain cannot build, queuing nothing', async () => {
+            const failure = new Error('execution reverted')
+            mockBuild.mockRejectedValueOnce(failure)
+            const { send, reportError } = mount()
+            const message = sendMessage()
+
+            send(message)
+            await vi.waitFor(() => expect(message.reject).toHaveBeenCalled())
+
+            expect(message.reject).toHaveBeenCalledWith(failure)
+            expect(reportError).toHaveBeenCalledWith(failure, {
+                connectionId: 'c1',
+            })
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('never queues a request that expired while the transaction was priced', async () => {
+            let settle: (value: never) => void = () => {}
+            mockBuild.mockReturnValueOnce(
+                new Promise<never>(resolve => {
+                    settle = resolve
+                }),
+            )
+            const { send } = mount()
+
+            send(sendMessage())
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '5',
+            })
+            settle(BUILT as never)
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('withdraws the queued request when the peer stops waiting', async () => {
+            const { send } = mount()
+            send(sendMessage())
+            await vi.waitFor(() =>
+                expect(mockAddSignRequest).toHaveBeenCalled(),
+            )
+
+            send({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '5',
+            })
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(addedRequest())
+        })
+
+        it('declines a chain that registers no sendTransaction', () => {
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register(fixtureAdapter())
+            const { send, reportError } = mount()
+            const message = sendMessage()
+
+            send(message)
+
+            expect(message.reject).toHaveBeenCalled()
+            expect(reportError).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+    })
+
+    it('rejects a declined sign-transactions request with a user rejection', async () => {
+        mockEnqueue.mockResolvedValueOnce(null)
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+        const reject = vi.fn(async () => {})
+        send({
+            kind: 'request',
+            chainId: CHAIN_ID,
+            connectionId: 'c1',
+            correlationId: '7',
+            sourceType: 'walletconnect',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(async () => {}),
+            reject,
+        })
+        await Promise.resolve()
+
+        lastTransport().respondWithReject()
+
+        expect(reject).toHaveBeenCalledWith(
+            expect.any(DappRequestRejectedError),
+        )
+        expect(reject).toHaveBeenCalledWith(
+            expect.objectContaining({ message: 'User rejected' }),
+        )
+    })
+
+    it('rejects a declined sign-data request with a user rejection', async () => {
+        mockAccounts = [mockAccount(PRIMARY_SIGNER, { canArc60: true })]
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+        const message = signDataMessage(
+            {
+                type: 'auth-data',
+                authData: {
+                    data: 'ZGF0YQ==',
+                    signer: PRIMARY_SIGNER,
+                    domain: 'example.com',
+                    authenticatorData: new Uint8Array([1]),
+                },
+                metadata: { scope: 1, encoding: 'base64' },
+            },
+            [PRIMARY_SIGNER],
+        )
+        send(message)
+
+        await mockAddSignRequest.mock.calls[0][0].reject()
+
+        expect(message.reject).toHaveBeenCalledWith(
+            expect.any(DappRequestRejectedError),
+        )
     })
 
     // The browser's approval window has no hook to mount: it reconstructs the

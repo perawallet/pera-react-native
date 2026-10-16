@@ -13,11 +13,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
 import { memoryStore } from '@perawallet/wallet-core-connections/testing'
-import type {
-    ConnectionHandlerContext,
-    ConnectionProposal,
+import {
+    ConnectionsError,
+    type ConnectionHandlerContext,
+    type ConnectionProposal,
+    type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import {
+    DappRequestRejectedError,
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '@perawallet/wallet-core-connections/dappRequest'
@@ -62,6 +65,15 @@ const ETH_SEPOLIA = 'eip155:11155111'
 const UNSUPPORTED_CHAINS = 5100
 const UNSUPPORTED_METHODS = 5101
 const UNSUPPORTED_NAMESPACE_KEY = 5104
+const JSON_RPC_SERVER_ERROR = -32_000
+
+const EIP_1193 = {
+    'user-rejected': 4001,
+    'unauthorized-account': 4100,
+    'unsupported-method': 4200,
+    'unselected-chain': 4901,
+    'invalid-params': -32_602,
+} as const
 
 const algorandAdapter = dappRequestAdapterFor({
     chainId: 'algorand',
@@ -90,7 +102,9 @@ const ethereumAdapter: DappRequestChainAdapter = {
         networkForCaip2ChainId: caip2 =>
             ({ [ETH_MAINNET]: 'mainnet', [ETH_SEPOLIA]: 'sepolia' })[caip2] ??
             null,
-        toWireResult: () => null,
+        toWireResult: result =>
+            result.type === 'send-transaction' ? result.txId : null,
+        toWireErrorCode: failure => EIP_1193[failure],
         v2: {
             methods: ['eth_sendTransaction', 'eth_chainId'],
             signingMethods: ['eth_sendTransaction'],
@@ -101,6 +115,9 @@ const ethereumAdapter: DappRequestChainAdapter = {
                         type: 'send-transaction',
                         params,
                     }
+                }
+                if (method === 'eth_unanswerable') {
+                    return { kind: 'public-data', answer: () => null }
                 }
                 if (method === 'eth_chainId') {
                     return {
@@ -403,7 +420,7 @@ describe('requests', () => {
         })
     })
 
-    it('refuses a method the chain does not list', async () => {
+    it('refuses a method the chain does not list with the chain’s own unsupported-method code', async () => {
         const { walletKit, context } = await open(seeded())
 
         walletKit.emit(
@@ -421,12 +438,14 @@ describe('requests', () => {
             response: {
                 id: REQUEST_ID,
                 jsonrpc: '2.0',
-                error: expect.objectContaining({ code: UNSUPPORTED_METHODS }),
+                error: expect.objectContaining({
+                    code: EIP_1193['unsupported-method'],
+                }),
             },
         })
     })
 
-    it('refuses a request on a network of the session that is not the chain’s selected one', async () => {
+    it('refuses a request on a network of the session that is not the chain’s selected one with the unselected-chain code', async () => {
         const { walletKit, context } = await open(seeded())
 
         walletKit.emit(
@@ -439,6 +458,73 @@ describe('requests', () => {
         await flush()
 
         expect(context.onMessage).not.toHaveBeenCalled()
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({
+                    code: EIP_1193['unselected-chain'],
+                }),
+            },
+        })
+    })
+
+    it('answers public data the chain cannot give with the unselected-chain code', async () => {
+        const { walletKit } = await open(seeded())
+
+        walletKit.emit(
+            'session_request',
+            makeRequest({
+                method: 'eth_unanswerable',
+                chainId: ETH_MAINNET,
+            }),
+        )
+        await flush()
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({
+                    code: EIP_1193['unselected-chain'],
+                }),
+            },
+        })
+    })
+
+    it('keeps the SDK refusals for a chain whose namespace maps no codes', async () => {
+        const { walletKit } = await open(seeded())
+
+        walletKit.emit(
+            'session_request',
+            makeRequest({ method: 'algo_unlisted' }),
+        )
+        await flush()
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({ code: UNSUPPORTED_METHODS }),
+            },
+        })
+    })
+
+    it('keeps the SDK refusal for a chain id no namespace owns', async () => {
+        const { walletKit } = await open(seeded())
+
+        walletKit.emit(
+            'session_request',
+            makeRequest({
+                method: 'eth_sendTransaction',
+                chainId: 'eip155:137',
+            }),
+        )
+        await flush()
+
         expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
             topic: TOPIC,
             response: {
@@ -464,6 +550,100 @@ describe('requests', () => {
         await flush()
 
         expect(context.onMessage).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('a request’s answer', () => {
+    const seeded = () => [
+        {
+            id: TOPIC,
+            kind: 'walletconnect-v2',
+            name: 'dApp',
+            peer: { name: 'dApp' },
+            accounts: [ADDRESS, ETH],
+            status: 'active' as const,
+            createdAt: 1,
+            lastActiveAt: 1,
+            metadata: {
+                topic: TOPIC,
+                chains: [MAINNET_CHAIN_ID, ETH_MAINNET],
+                methods: ['algo_signTxn', 'eth_sendTransaction'],
+                expiry: 1_800_000_000,
+            },
+        },
+    ]
+
+    const delivered = async (request: Parameters<typeof makeRequest>[0]) => {
+        const opened = await open(seeded())
+        opened.walletKit.emit('session_request', makeRequest(request))
+        await flush()
+        const [message] = opened.context.onMessage.mock.calls[0] as [
+            Extract<InboundMessage, { kind: 'request' }>,
+        ]
+        return { ...opened, message }
+    }
+
+    const ETH_SEND = {
+        method: 'eth_sendTransaction',
+        params: [{ to: ETH }],
+        chainId: ETH_MAINNET,
+    }
+
+    it.each([
+        ['a user rejection', new DappRequestRejectedError(), 4001],
+        [
+            'an unauthorized account',
+            new ConnectionsError('unauthorized-account', 'not held'),
+            4100,
+        ],
+        [
+            'an invalid payload',
+            new ConnectionsError('invalid-payload', 'bad params'),
+            -32_602,
+        ],
+        ['a plain failure', new Error('node down'), JSON_RPC_SERVER_ERROR],
+    ])('sends eip155 %s as its code', async (_, error, code) => {
+        const { walletKit, message } = await delivered(ETH_SEND)
+
+        await message.reject(error)
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: { code, message: error.message },
+            },
+        })
+    })
+
+    it('sends the result the chain’s toWireResult makes', async () => {
+        const { walletKit, message } = await delivered(ETH_SEND)
+
+        await message.respond({ type: 'send-transaction', txId: '0xabc' })
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: { id: REQUEST_ID, jsonrpc: '2.0', result: '0xabc' },
+        })
+    })
+
+    it('still sends an Algorand user rejection as -32000 with its message', async () => {
+        const { walletKit, message } = await delivered({})
+
+        await message.reject(new DappRequestRejectedError())
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: {
+                    code: JSON_RPC_SERVER_ERROR,
+                    message: 'User rejected',
+                },
+            },
+        })
     })
 })
 

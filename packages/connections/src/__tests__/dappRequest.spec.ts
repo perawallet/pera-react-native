@@ -12,9 +12,12 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import { ConnectionsError, type ConnectionsErrorCode } from '../errors'
 import {
+    DappRequestRejectedError,
     dappRelayableErrorNames,
     dappRequestChainAdapters,
+    dappRequestFailureOf,
     type DappRequestChainAdapter,
 } from '../dappRequest'
 
@@ -82,5 +85,47 @@ describe('dappRelayableErrorNames', () => {
 
     it('returns none for a chain with no registered adapter', () => {
         expect(dappRelayableErrorNames('algorand')).toEqual([])
+    })
+})
+
+describe('dappRequestFailureOf', () => {
+    it.each([
+        ['invalid-payload', 'invalid-params'],
+        ['unauthorized-account', 'unauthorized-account'],
+        ['unsupported-operation', 'unsupported-method'],
+    ] as const)('reads a %s ConnectionsError as %s', (code, failure) => {
+        expect(dappRequestFailureOf(new ConnectionsError(code, 'm'))).toBe(
+            failure,
+        )
+    })
+
+    it.each([
+        'no-handler',
+        'unsupported-chain',
+        'already-answered',
+    ] as ConnectionsErrorCode[])(
+        'reads no failure from a %s ConnectionsError, which no dApp caused',
+        code => {
+            expect(
+                dappRequestFailureOf(new ConnectionsError(code, 'm')),
+            ).toBeUndefined()
+        },
+    )
+
+    it('reads a user rejection', () => {
+        const error = new DappRequestRejectedError()
+
+        expect(dappRequestFailureOf(error)).toBe('user-rejected')
+        expect(error.message).toBe('User rejected')
+        expect(error.name).toBe('DappRequestRejectedError')
+    })
+
+    it('reads nothing from a plain error or a forged failure', () => {
+        expect(dappRequestFailureOf(new Error('boom'))).toBeUndefined()
+        expect(
+            dappRequestFailureOf(
+                Object.assign(new Error('boom'), { failure: 'x' }),
+            ),
+        ).toBeUndefined()
     })
 })
