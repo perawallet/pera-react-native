@@ -3348,6 +3348,11 @@
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
         },
+        "switch_network": {
+            "title": "Ağ değiştirilsin mi?",
+            "body": "{{name}}, {{chain}} ağını {{network}} olarak değiştirmek istiyor.",
+            "confirm": "Değiştir"
+        },
         "settings": {
             "empty_title": "WalletConnect oturumu yok",
             "empty_body": "Etkin bir WalletConnect oturumun yok.",

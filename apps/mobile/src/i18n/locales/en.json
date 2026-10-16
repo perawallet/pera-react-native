@@ -3348,6 +3348,11 @@
         "connection": {
             "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
         },
+        "switch_network": {
+            "title": "Switch network?",
+            "body": "{{name}} wants to switch {{chain}} to {{network}}.",
+            "confirm": "Switch"
+        },
         "settings": {
             "empty_title": "No WalletConnect Sessions",
             "empty_body": "You don't have any active WalletConnect sessions.",

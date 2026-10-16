@@ -74,6 +74,20 @@ export interface WalletKitClient {
         id: number
         reason: { code: number; message: string }
     }): Promise<void>
+    /**
+     * Replaces a settled session's namespaces. `acknowledged` settles when the
+     * dApp confirms, which a backgrounded dApp may never do.
+     */
+    updateSession(params: {
+        topic: string
+        namespaces: WalletKitSessionNamespaces
+    }): Promise<{ acknowledged: () => Promise<void> }>
+    /** Emits a session event the namespace lists, on one of its chains. */
+    emitSessionEvent(params: {
+        topic: string
+        event: { name: string; data: unknown }
+        chainId: string
+    }): Promise<void>
     /** Ends a settled session; the peer learns of it, the relay permitting. */
     disconnectSession(params: {
         topic: string

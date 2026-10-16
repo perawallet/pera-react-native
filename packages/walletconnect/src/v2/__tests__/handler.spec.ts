@@ -474,9 +474,9 @@ describe('restore', () => {
         const [record] = await handler.restore()
 
         expect(record.metadata.chains).toEqual([MAINNET_CHAIN_ID])
-        expect(
-            handler.matchesChainScope(record, algorandScope('mainnet')),
-        ).toBe(true)
+        expect(handler.networksOf(record)).toEqual([
+            { chainId: 'algorand', networkId: Networks.mainnet },
+        ])
     })
 
     it('drops a foreign-namespace account listed under algorand', async () => {
@@ -1874,32 +1874,34 @@ describe('origin bookkeeping', () => {
     })
 })
 
-const algorandScope = (networkId: string) =>
-    ({ chainId: 'algorand', networkId }) as const
-
-describe('matchesChainScope', () => {
-    it('accepts the network whose CAIP-2 id the session was approved for', async () => {
+describe('networksOf', () => {
+    it('lists the network whose CAIP-2 id the session was approved for', async () => {
         const walletKit = createFakeWalletKit({ [TOPIC]: makeSession() })
         const { handler } = makeHandler({ walletKit })
         await handler.initialize(makeContext())
         const [record] = await handler.restore()
 
-        expect(
-            handler.matchesChainScope(record, algorandScope('mainnet')),
-        ).toBe(true)
-        expect(
-            handler.matchesChainScope(record, algorandScope('testnet')),
-        ).toBe(false)
         // `custom` has no CAIP-2 identity, so no session can claim it.
-        expect(handler.matchesChainScope(record, algorandScope('custom'))).toBe(
-            false,
-        )
-        // No CAIP-2 id is claimed for another chain's scope either.
+        expect(handler.networksOf(record)).toEqual([
+            { chainId: 'algorand', networkId: Networks.mainnet },
+        ])
+    })
+
+    it('is empty for a record that is not its own kind', async () => {
+        const { handler } = makeHandler({ walletKit: createFakeWalletKit() })
+        await handler.initialize(makeContext())
+
         expect(
-            handler.matchesChainScope(record, {
-                chainId: 'ethereum',
-                networkId: 'mainnet',
+            handler.networksOf({
+                id: 'x',
+                kind: 'walletconnect-v1',
+                name: 'x',
+                peer: { name: 'x' },
+                accounts: [],
+                status: 'active',
+                createdAt: 0,
+                lastActiveAt: 0,
             }),
-        ).toBe(false)
+        ).toEqual([])
     })
 })

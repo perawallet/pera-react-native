@@ -30,6 +30,10 @@ import {
 } from '@perawallet/wallet-core-connections'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
+    scopeForLegacyNetwork,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     createStorageAnsweredRequests,
     type WalletConnectV1AnsweredRequests,
 } from '../answeredRequests'
@@ -228,6 +232,9 @@ const testGetNetworkId = () => 'mainnet' as const
 const algorandScope = (networkId: string) =>
     ({ chainId: LEGACY_CHAIN_ID, networkId }) as const
 
+const networkIdsOf = (scopes: ChainScope[]): string[] =>
+    scopes.map(({ networkId }) => networkId).sort()
+
 const SIGN_TXN_FRAME = { id: 7, params: [[{ txn: 'dHhu' }]] }
 
 /** For the contract suite, whose `propose` takes an optional pairing id. */
@@ -400,12 +407,9 @@ describe('walletconnect v1 handler specifics', () => {
             },
         }
 
-        expect(
-            handler.matchesChainScope(connection, algorandScope('mainnet')),
-        ).toBe(true)
-        expect(
-            handler.matchesChainScope(connection, algorandScope('testnet')),
-        ).toBe(true)
+        expect(networkIdsOf(handler.networksOf(connection))).toEqual(
+            expect.arrayContaining(['mainnet', 'testnet']),
+        )
     })
 
     it('binds a specific chainId to exactly one network', () => {
@@ -432,17 +436,14 @@ describe('walletconnect v1 handler specifics', () => {
             },
         }
 
-        expect(
-            handler.matchesChainScope(connection, algorandScope('testnet')),
-        ).toBe(true)
-        expect(
-            handler.matchesChainScope(connection, algorandScope('mainnet')),
-        ).toBe(false)
+        const networks = networkIdsOf(handler.networksOf(connection))
+        expect(networks).toContain('testnet')
+        expect(networks).not.toContain('mainnet')
     })
 
-    it('covers every Algorand network, not just mainnet and testnet', () => {
-        // Algorand has four networks. A two-branch mainnet/testnet mapping
-        // silently mislabels betanet and custom, which is why matchesChainScope
+    it('covers every Network member, not just mainnet and testnet', () => {
+        // `Network` has four members. A two-branch mainnet/testnet mapping
+        // silently mislabels betanet and custom, which is why networksOf
         // delegates to getExpectedChainId, which lists every network.
         const handler = createWalletConnectV1Handler({
             chainId: LEGACY_CHAIN_ID,
@@ -467,16 +468,13 @@ describe('walletconnect v1 handler specifics', () => {
             },
         })
 
-        expect(
-            handler.matchesChainScope(at(416_003), algorandScope('betanet')),
-        ).toBe(true)
-        expect(
-            handler.matchesChainScope(at(416_003), algorandScope('mainnet')),
-        ).toBe(false)
+        expect(networkIdsOf(handler.networksOf(at(416_003)))).toEqual([
+            'betanet',
+        ])
         // `custom` (LocalNet/fnet) borrows TestNet's id — see expectedChainId.ts.
-        expect(
-            handler.matchesChainScope(at(416_002), algorandScope('custom')),
-        ).toBe(true)
+        expect(networkIdsOf(handler.networksOf(at(416_002)))).toContain(
+            'custom',
+        )
     })
 
     it('rejects a request whose chain id is missing rather than guessing', () => {
@@ -503,9 +501,7 @@ describe('walletconnect v1 handler specifics', () => {
             },
         }
 
-        expect(
-            handler.matchesChainScope(connection, algorandScope('mainnet')),
-        ).toBe(false)
+        expect(handler.networksOf(connection)).toEqual([])
     })
 })
 
@@ -1569,20 +1565,20 @@ describe('walletconnect v1 handler behaviour', () => {
             metadata: { ...SEEDED.metadata, chainId },
         })
 
-        expect(
-            registry
-                .scopesFor(at(4160))
-                .map(scope => scope.networkId)
-                .sort(),
-        ).toEqual(['betanet', 'custom', 'mainnet', 'testnet'])
-        expect(
-            registry.scopesFor(at(416_001)).map(scope => scope.networkId),
-        ).toEqual(['mainnet'])
+        expect(networkIdsOf(registry.networksFor(at(4160)))).toEqual([
+            'betanet',
+            'custom',
+            'mainnet',
+            'testnet',
+        ])
+        expect(registry.networksFor(at(416_001))).toEqual([
+            { chainId: 'algorand', networkId: 'mainnet' },
+        ])
     })
 
     it('scopesFor is empty, not a throw, for an own-kind record with no metadata', () => {
         // `restore()` already proves malformed own-kind records reach the
-        // store; `matchesChainScope` must not be the place they blow up.
+        // store; `networksOf` must not be the place they blow up.
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
             createWalletConnectV1Handler({

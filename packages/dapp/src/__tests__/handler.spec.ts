@@ -11,9 +11,11 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { LEGACY_SCOPES } from '@perawallet/wallet-core-chain-contract'
 import {
     createConnectionRegistry,
     dappRequestChainAdapters,
+    type ConnectionHandler,
     type ConnectionProposal,
     type DappRequestChainAdapter,
     type InboundMessage,
@@ -791,28 +793,111 @@ describe('DappConnectionHandler', () => {
             ).toEqual([DAPP_NOTIFICATIONS.disconnect])
         })
 
-        it('forwards wallet notices as page notifications', async () => {
-            const { transport, registry, handler } = setup([connected()])
-            await registry.initialize()
-            await handler.notify?.(ORIGIN, {
-                type: 'network-changed',
-                scope: { chainId: 'algorand', networkId: 'testnet' },
+        describe('wallet notices', () => {
+            const notified = async (
+                notice: Parameters<NonNullable<ConnectionHandler['notify']>>[1],
+            ) => {
+                const { transport, registry, handler } = setup([connected()])
+                await registry.initialize()
+                await handler.notify?.(ORIGIN, notice)
+                return transport.notifications.map(n => n.notification)
+            }
+
+            it('reports an Algorand network change as the page-facing network', async () => {
+                expect(
+                    await notified({
+                        type: 'network-changed',
+                        scope: { chainId: 'algorand', networkId: 'testnet' },
+                    }),
+                ).toEqual([
+                    {
+                        jsonrpc: '2.0',
+                        method: DAPP_NOTIFICATIONS.networkChanged,
+                        params: { network: 'testnet' },
+                    },
+                ])
             })
-            await handler.notify?.(ORIGIN, {
-                type: 'accounts-changed',
-                accounts: [ADDR_B],
+
+            it('says nothing about a network it must not disclose', async () => {
+                expect(
+                    await notified({
+                        type: 'network-changed',
+                        scope: { chainId: 'algorand', networkId: 'custom' },
+                    }),
+                ).toEqual([])
             })
-            expect(transport.notifications.map(n => n.notification)).toEqual([
-                {
-                    jsonrpc: '2.0',
-                    method: DAPP_NOTIFICATIONS.networkChanged,
-                    params: { network: 'testnet' },
-                },
-                {
-                    jsonrpc: '2.0',
-                    method: DAPP_NOTIFICATIONS.accountsChanged,
-                    params: { accounts: [ADDR_B] },
-                },
+
+            it('ignores a network notice for another chain', async () => {
+                expect(
+                    await notified({
+                        type: 'network-changed',
+                        scope: { chainId: 'ethereum', networkId: 'sepolia' },
+                    }),
+                ).toEqual([])
+            })
+
+            it('ignores an accounts notice for another chain', async () => {
+                expect(
+                    await notified({
+                        type: 'accounts-changed',
+                        chainId: 'ethereum',
+                        accounts: [ADDR_A],
+                        changed: [ADDR_A],
+                    }),
+                ).toEqual([])
+            })
+
+            it('reports only the connection’s addresses the wallet still holds, when it held a changed one', async () => {
+                expect(
+                    await notified({
+                        type: 'accounts-changed',
+                        chainId: 'algorand',
+                        accounts: [ADDR_A, ADDR_B],
+                        changed: [ADDR_B, ADDR_A],
+                    }),
+                ).toEqual([
+                    {
+                        jsonrpc: '2.0',
+                        method: DAPP_NOTIFICATIONS.accountsChanged,
+                        params: { accounts: [ADDR_A] },
+                    },
+                ])
+            })
+
+            it('reports an empty list once the wallet holds none of them', async () => {
+                expect(
+                    await notified({
+                        type: 'accounts-changed',
+                        chainId: 'algorand',
+                        accounts: [ADDR_B],
+                        changed: [ADDR_A],
+                    }),
+                ).toEqual([
+                    {
+                        jsonrpc: '2.0',
+                        method: DAPP_NOTIFICATIONS.accountsChanged,
+                        params: { accounts: [] },
+                    },
+                ])
+            })
+
+            it('stays quiet when the changed addresses are none of the connection’s', async () => {
+                expect(
+                    await notified({
+                        type: 'accounts-changed',
+                        chainId: 'algorand',
+                        accounts: [ADDR_A, ADDR_B],
+                        changed: [ADDR_B],
+                    }),
+                ).toEqual([])
+            })
+        })
+
+        it('lists every legacy scope as its networks', () => {
+            const { handler } = setup([connected()])
+
+            expect(handler.networksOf(connected() as never)).toEqual([
+                ...LEGACY_SCOPES,
             ])
         })
 

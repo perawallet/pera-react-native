@@ -12,10 +12,11 @@
 
 import type {
     ChainId,
+    ChainScope,
     MessageRequest,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AuthDataSignableData,
     PeraArbitraryDataMessage,
@@ -34,11 +35,7 @@ import type {
 // have no reason to depend on the signing package for the type alone.
 export type { SourceType }
 
-/**
- * `send-transaction` and `switch-network` are routed by a chain's WalletConnect
- * support and refused by the registry until each gains a `WalletOperation`
- * variant and a validator.
- */
+/** The operations a chain's WalletConnect support may route; the registry validates each into a {@link WalletOperation}. */
 export const WALLET_OPERATION_TYPES = [
     'sign-transactions',
     'sign-data',
@@ -74,6 +71,8 @@ export type WalletOperation =
           request: unknown
       }
     | { type: MessageOperationType; request: DappMessageRequest }
+    /** Points the chain's network selection at `networkId`, once the user agrees. */
+    | { type: 'switch-network'; networkId: NetworkId }
 
 /** Signing results, before the handler envelopes them for its wire. */
 export type WalletOperationResult =
@@ -83,11 +82,23 @@ export type WalletOperationResult =
     | { type: 'send-transaction'; txId: string }
     /** The signature as the chain's message signer assembled it. */
     | { type: MessageOperationType; signature: Uint8Array }
+    /** The selection moved; the wire answer is the chain's. */
+    | { type: 'switch-network' }
 
 /** Wallet-initiated push. Only handlers implementing `notify` receive these. */
 export type WalletNotice =
-    | { type: 'accounts-changed'; accounts: string[] }
+    | {
+          type: 'accounts-changed'
+          chainId: ChainId
+          /** Every address the wallet now holds on `chainId`. */
+          accounts: string[]
+          /** The addresses this change added or removed. */
+          changed: string[]
+      }
     | { type: 'network-changed'; scope: ChainScope }
+
+export const walletNoticeChainId = (notice: WalletNotice): ChainId =>
+    notice.type === 'network-changed' ? notice.scope.chainId : notice.chainId
 
 export type ConnectionEvent =
     | { type: 'session-expiring'; expiresAt: number }

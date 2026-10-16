@@ -64,6 +64,7 @@ type WireArc60SignDataPayload = Omit<Arc60SignDataPayload, 'authData'> & {
 export type WireWalletOperation =
     | Extract<WalletOperation, { type: 'sign-transactions' }>
     | Extract<WalletOperation, { type: MessageOperationType }>
+    | Extract<WalletOperation, { type: 'switch-network' }>
     | {
           type: 'sign-data'
           payload: WireArc60SignDataPayload | LegacySignDataPayload
@@ -71,6 +72,7 @@ export type WireWalletOperation =
 
 export type WireWalletOperationResult =
     | Extract<WalletOperationResult, { type: 'sign-transactions' }>
+    | Extract<WalletOperationResult, { type: 'switch-network' }>
     | {
           type: MessageOperationType
           /** base64 of the signature. */
@@ -138,6 +140,7 @@ export const encodeWalletOperationResult = (
 ): WireWalletOperationResult => {
     if (result.type === 'send-transaction') return refuseSendTransaction()
     if (result.type === 'sign-transactions') return result
+    if (result.type === 'switch-network') return result
     if (result.type !== 'sign-data') {
         return {
             type: result.type,
@@ -154,6 +157,7 @@ export const decodeWalletOperationResult = (
     result: WireWalletOperationResult,
 ): WalletOperationResult => {
     if (result.type === 'sign-transactions') return result
+    if (result.type === 'switch-network') return result
     if (result.type !== 'sign-data') {
         return {
             type: result.type,
@@ -176,6 +180,9 @@ export const isWireWalletOperation = (
         }
         case 'sign-data': {
             return Array.isArray(value.payload) || isRecord(value.payload)
+        }
+        case 'switch-network': {
+            return typeof value.networkId === 'string'
         }
         case 'sign-message':
         case 'sign-typed-data': {
@@ -203,6 +210,9 @@ export const isWireWalletOperationResult = (
                     item => item === null || typeof item === 'string',
                 )
             )
+        }
+        case 'switch-network': {
+            return true
         }
         case 'sign-message':
         case 'sign-typed-data': {

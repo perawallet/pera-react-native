@@ -163,10 +163,8 @@ export const createRemoteConnectionRegistry = (options: {
             })
         },
         describeUri: uri => claimingHandler(uri)?.describeUri?.(uri) ?? {},
-        scopesFor: connection => {
-            const handler = handlers.get(connection.kind)
-            return handler ? chainScopesServedBy(handler, connection) : []
-        },
+        networksFor: connection =>
+            handlers.get(connection.kind)?.networksOf(connection) ?? [],
         methodsFor: connection =>
             handlers.get(connection.kind)?.methodsFor(connection) ?? [],
         disconnect: async id => {

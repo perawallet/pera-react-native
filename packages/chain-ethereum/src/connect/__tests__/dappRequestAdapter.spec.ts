@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { buildAccount } from '@perawallet/wallet-core-accounts'
 import { testChainContext } from '../../__tests__/context'
 import { createEthereumDappRequestAdapter } from '../dappRequestAdapter'
@@ -51,6 +52,22 @@ describe('ethereumDappRequestAdapter', () => {
                 undefined,
             ),
         ).toBeUndefined()
+    })
+
+    it('switches only the Ethereum selection, and never the wallet mode', () => {
+        const selectNetwork = vi.spyOn(
+            useNetworkStore.getState(),
+            'selectNetwork',
+        )
+        const setMode = vi.spyOn(useNetworkStore.getState(), 'setMode')
+
+        adapter.switchChain?.('sepolia')
+
+        expect(selectNetwork).toHaveBeenCalledTimes(1)
+        expect(selectNetwork).toHaveBeenCalledWith('ethereum', 'sepolia')
+        expect(setMode).not.toHaveBeenCalled()
+        selectNetwork.mockRestore()
+        setMode.mockRestore()
     })
 
     it('parses no signing payload from params', () => {

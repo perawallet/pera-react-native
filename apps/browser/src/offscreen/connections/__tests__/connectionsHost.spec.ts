@@ -70,6 +70,7 @@ const makeFakeRegistry = () => {
         reportError: (error, scope) => {
             for (const listener of errorListeners) listener(error, scope)
         },
+        notify: vi.fn(async () => {}),
         subscribeToProposals: listener => {
             proposalListeners.add(listener)
             return () => void proposalListeners.delete(listener)

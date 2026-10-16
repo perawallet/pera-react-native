@@ -13,13 +13,52 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+
+type MockAccount = {
+    id: string
+    chains: Record<string, { address: string }>
+}
 
 const mocks = vi.hoisted(() => ({
     revoke: vi.fn(),
     goBack: vi.fn(),
     showError: vi.fn(),
     pushWebView: vi.fn(),
+    accounts: [] as MockAccount[],
+}))
+
+const network = (
+    id: string,
+    tier: string,
+    displayName: string,
+    isDefaultForTier: boolean,
+) => ({ id, tier, displayName, isDefaultForTier })
+
+const DESCRIPTORS: Record<string, { networks: unknown[] }> = {
+    algorand: {
+        networks: [
+            network('mainnet', 'mainnet', 'MainNet', true),
+            network('testnet', 'testnet', 'TestNet', true),
+            network('betanet', 'testnet', 'BetaNet', false),
+        ],
+    },
+    ethereum: {
+        networks: [
+            network('mainnet', 'mainnet', 'Mainnet', true),
+            network('sepolia', 'testnet', 'Sepolia', true),
+        ],
+    },
+}
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        chains: {
+            has: (chainId: string) => chainId in DESCRIPTORS,
+            get: (chainId: string) => ({ descriptor: DESCRIPTORS[chainId] }),
+        },
+    }),
 }))
 
 // The screen revokes through the settings list hook's awaited `revoke`, not
@@ -30,7 +69,12 @@ vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [],
+    useAllAccounts: () => mocks.accounts,
+    findAccountByAddressOn: (
+        accounts: MockAccount[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(account => account.chains[chainId]?.address === address),
 }))
 
 vi.mock('@react-navigation/native', async importOriginal => ({
@@ -72,7 +116,7 @@ const connectionRow = (url = 'https://d.app'): ConnectionSettingsRow => ({
     lastActiveAt: 0,
     peer: { name: 'Dapp', url },
     permissions: ['algo_signTxn'],
-    networks: ['mainnet'],
+    networks: [{ chainId: 'algorand', networkId: 'mainnet' }],
     protocolVersion: 1,
 })
 
@@ -148,6 +192,124 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
         })
 
         expect(result.current.isLoading).toBe(false)
+    })
+})
+
+describe('useSettingsWalletConnectDetailsScreen — connected accounts', () => {
+    const ALGO = 'A'.repeat(58)
+    const ETH = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+    const algorandOnly: MockAccount = {
+        id: 'algo-only',
+        chains: { algorand: { address: ALGO } },
+    }
+    const both: MockAccount = {
+        id: 'both',
+        chains: {
+            algorand: { address: 'B'.repeat(58) },
+            ethereum: { address: ETH },
+        },
+    }
+
+    const rowsFor = (
+        connection: Partial<ConnectionSettingsRow>,
+        accounts: MockAccount[],
+    ) => {
+        mocks.accounts = accounts
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...connectionRow(),
+                ...connection,
+            }),
+        )
+        return result.current.connectedAccounts.map(row => ({
+            id: (row.account as unknown as MockAccount).id,
+            labels: row.networks.map(({ label, tone }) => [label, tone]),
+        }))
+    }
+
+    beforeEach(() => {
+        mocks.accounts = []
+    })
+
+    it('labels each account with the networks of its own chain only', () => {
+        const rows = rowsFor(
+            {
+                accounts: [ALGO, ETH],
+                networks: [
+                    { chainId: 'algorand', networkId: 'mainnet' },
+                    { chainId: 'ethereum', networkId: 'mainnet' },
+                    { chainId: 'ethereum', networkId: 'sepolia' },
+                ],
+            },
+            [algorandOnly, both],
+        )
+
+        expect(rows).toEqual([
+            { id: 'algo-only', labels: [['MainNet', 'mainnet']] },
+            {
+                id: 'both',
+                labels: [
+                    ['Mainnet', 'mainnet'],
+                    ['Sepolia', 'testnet'],
+                ],
+            },
+        ])
+    })
+
+    it('groups an account holding addresses on two chains into one row', () => {
+        const rows = rowsFor(
+            {
+                accounts: ['B'.repeat(58), ETH],
+                networks: [
+                    { chainId: 'algorand', networkId: 'mainnet' },
+                    { chainId: 'ethereum', networkId: 'sepolia' },
+                ],
+            },
+            [both],
+        )
+
+        expect(rows).toEqual([
+            {
+                id: 'both',
+                labels: [
+                    ['MainNet', 'mainnet'],
+                    ['Sepolia', 'testnet'],
+                ],
+            },
+        ])
+    })
+
+    it('drops a network its chain does not list, such as the custom node slot', () => {
+        const rows = rowsFor(
+            {
+                accounts: [ALGO],
+                networks: [
+                    { chainId: 'algorand', networkId: 'custom' },
+                    { chainId: 'algorand', networkId: 'betanet' },
+                    {
+                        chainId: 'unregistered' as ChainId,
+                        networkId: 'mainnet',
+                    },
+                ],
+            },
+            [algorandOnly],
+        )
+
+        expect(rows).toEqual([
+            { id: 'algo-only', labels: [['BetaNet', 'other']] },
+        ])
+    })
+
+    it('lists no row for an address the wallet no longer holds', () => {
+        expect(
+            rowsFor(
+                {
+                    accounts: ['GONE'],
+                    networks: [{ chainId: 'algorand', networkId: 'mainnet' }],
+                },
+                [algorandOnly],
+            ),
+        ).toEqual([])
     })
 })
 

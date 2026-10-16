@@ -11,6 +11,7 @@
  */
 
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumKindIdOf } from '../accounts/local-key-kinds'
@@ -54,6 +55,11 @@ export const createEthereumDappRequestAdapter = (
     emptySignaturesFor: () => ({}),
 
     walletConnect: ethereumWalletConnectSupport,
+
+    // The only way a dApp request moves the selection: never `setMode`, and
+    // never another chain's entry.
+    switchChain: networkId =>
+        useNetworkStore.getState().selectNetwork(ETHEREUM_CHAIN_ID, networkId),
 
     validateTransactionPayload: () => ({
         ok: false,

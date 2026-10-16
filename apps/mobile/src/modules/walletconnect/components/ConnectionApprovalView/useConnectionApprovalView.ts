@@ -13,8 +13,14 @@
 import { useCallback, useRef, useState } from 'react'
 import {
     signingAddressesOn,
+    useAccountValueTotalsQuery,
     useAllAccounts,
+    useSigningAccountsOn,
+    useSortedAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import type { ConnectionPeerVerificationStatus } from '@perawallet/wallet-extension-connections'
 import {
@@ -38,6 +44,8 @@ import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 export type ConnectionOriginWarning = 'scam' | 'mismatch' | 'unverified'
 
 export type UseConnectionApprovalViewResult = {
+    /** The accounts that can sign on the proposal's chains, in the user's sort order. */
+    sortedAccounts: WalletAccount[]
     /** Account ids; an account may connect on more than one chain. */
     selectedAccounts: string[]
     isConnecting: boolean
@@ -108,6 +116,20 @@ export const useConnectionApprovalView = (
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const { pushWebView } = useWebView()
     const accounts = useAllAccounts()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const signingAccounts = useSigningAccountsOn(proposal.requested.chains)
+    // Totals are keyed by address across every chain, so an Ethereum account
+    // ranks by its own balance rather than as if empty.
+    const { accountValueTotals } = useAccountValueTotalsQuery(
+        signingAccounts,
+        scope,
+        true,
+    )
+    const { sortedAccounts } = useSortedAccounts(
+        signingAccounts,
+        accountValueTotals,
+        scope.chainId,
+    )
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
     // Guards both handlers against a double-tap reaching `proposal` twice:
@@ -233,6 +255,7 @@ export const useConnectionApprovalView = (
     }, [proposal, pushWebView])
 
     return {
+        sortedAccounts,
         selectedAccounts,
         isConnecting,
         handleAccountPress,

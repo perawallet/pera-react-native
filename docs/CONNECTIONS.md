@@ -123,12 +123,16 @@ goes only under the namespace whose chain's address codec accepts it (no codec, 
 request routes by its CAIP-2 id to a chain's selected network only. Existing sessions and their
 requests never read the capability, so turning it off leaves them listed and revocable.
 
+The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain's network and
+account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
+declares `sessionEvents`.
+
 ## The `dapp` handler
 
 `packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
 origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
 the per-origin approval cap in `packages/browser-runtime/src/dapp/approval-bridge.ts` and
-`disconnect` all key on one value. It matches every network of its own chain (`matchesChainScope`) and
+`disconnect` all key on one value. It is network-agnostic (`networksOf` lists every legacy scope) and
 reports the active network at connect time instead.
 
 The handler is transport-agnostic through `DappTransport`: the extension supplies one over

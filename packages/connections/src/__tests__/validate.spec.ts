@@ -83,20 +83,81 @@ describe('validateRawMessage', () => {
         dappRequestChainAdapters.register(fixtureAdapter)
     })
 
-    it.each([
-        'send-transaction',
-        'sign-message',
-        'sign-typed-data',
-        'switch-network',
-    ] as const)('refuses a %s request as unsupported', type => {
-        const result = validateRawMessage(request(type, ['0x']))
+    it.each(['send-transaction', 'sign-message', 'sign-typed-data'] as const)(
+        'refuses a %s request as unsupported',
+        type => {
+            const result = validateRawMessage(request(type, ['0x']))
 
-        expect(result.ok).toBe(false)
-        if (!result.ok) {
-            expect(result.error).toMatchObject({
-                code: 'unsupported-operation',
-            })
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toMatchObject({
+                    code: 'unsupported-operation',
+                })
+            }
+        },
+    )
+
+    describe('switch-network', () => {
+        const switchable: DappRequestChainAdapter = {
+            ...fixtureAdapter,
+            walletConnect: {
+                ...fixtureAdapter.walletConnect,
+                caip2ChainIdFor: networkId =>
+                    networkId === 'mainnet'
+                        ? 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
+                        : null,
+            },
+            switchChain: vi.fn(),
         }
+
+        beforeEach(() => {
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register(switchable)
+        })
+
+        it('accepts a network the chain can switch to', () => {
+            const result = validateRawMessage(
+                request('switch-network', { networkId: 'mainnet' }),
+            )
+
+            expect(result).toMatchObject({
+                ok: true,
+                message: {
+                    operation: { type: 'switch-network', networkId: 'mainnet' },
+                },
+            })
+        })
+
+        it.each([
+            ['an unknown network id', { networkId: 'custom' }],
+            ['a missing network id', {}],
+            ['no params', undefined],
+            ['a non-id value', { networkId: 7 }],
+        ])('refuses %s as an invalid payload', (_name, params) => {
+            const result = validateRawMessage(request('switch-network', params))
+
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toMatchObject({ code: 'invalid-payload' })
+            }
+        })
+
+        it('refuses a chain that declares no switchChain', () => {
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...switchable,
+                switchChain: undefined,
+            })
+
+            const result = validateRawMessage(
+                request('switch-network', { networkId: 'mainnet' }),
+            )
+
+            expect(result.ok).toBe(false)
+            if (!result.ok) {
+                expect(result.error).toMatchObject({ code: 'invalid-payload' })
+            }
+        })
     })
 
     describe('send-transaction', () => {

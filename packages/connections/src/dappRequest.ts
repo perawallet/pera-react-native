@@ -139,6 +139,13 @@ export type WalletConnectRequestRoute =
           ) => Nullable<unknown>
       }
     | { kind: 'unsupported' }
+    /**
+     * One of the chain's networks the current mode can select, the selected
+     * one included.
+     */
+    | { kind: 'switch-network'; networkId: NetworkId }
+    /** Answered with `error` verbatim and never shown to the user. */
+    | { kind: 'refused'; error: { code: number; message: string } }
 
 export interface WalletConnectV2ChainSupport {
     /** Every method the chain answers, in the order an approved namespace declares them. */
@@ -146,6 +153,13 @@ export interface WalletConnectV2ChainSupport {
     /** The subset of `methods` that asks the user, listed as a proposal's permissions. */
     readonly signingMethods: readonly string[]
     handleRequest(method: string, params: unknown): WalletConnectRequestRoute
+    /**
+     * Present means the chain's sessions get `chainChanged` and
+     * `accountsChanged`. A `null` return skips the event.
+     */
+    readonly sessionEvents?: {
+        chainChangedData(networkId: NetworkId): Nullable<unknown>
+    }
 }
 
 /**

@@ -21,6 +21,7 @@ import {
     networkTierForMode,
     type ChainId,
     type ChainMode,
+    type ChainScope,
     type NetworkId,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
@@ -54,7 +55,7 @@ export type CustomNetwork = { id: NetworkId } & Readonly<
 
 type CustomNetworksByChain = Partial<Record<ChainId, CustomNetwork[]>>
 
-type NetworkSelection = {
+export type NetworkSelection = {
     mode: WalletMode
     /** Developer-mode overrides; kept, unread, while the wallet is live. */
     selectedNetworkByChain: Partial<Record<ChainId, NetworkId>>
@@ -112,6 +113,26 @@ export const selectChainNetworkId = (
         override,
     )
 }
+
+/**
+ * Whether `selectNetwork(scope.chainId, scope.networkId)` would take effect:
+ * live mode resolves every chain to mainnet, and developer mode honours only a
+ * test-tier or saved custom network.
+ */
+export const canSelectChainNetwork = (
+    state: NetworkSelection,
+    scope: ChainScope,
+): boolean =>
+    selectChainNetworkId(
+        {
+            ...state,
+            selectedNetworkByChain: {
+                ...state.selectedNetworkByChain,
+                [scope.chainId]: scope.networkId,
+            },
+        },
+        scope.chainId,
+    ) === scope.networkId
 
 /** Agrees with `selectChainNetworkId`: a stale override reads as `developer`, as the network actually used does. */
 export const selectChainMode = (

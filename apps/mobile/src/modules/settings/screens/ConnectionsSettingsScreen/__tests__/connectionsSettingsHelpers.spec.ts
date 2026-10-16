@@ -27,7 +27,7 @@ const row: ConnectionSettingsRow = {
     lastActiveAt: 2000,
     peer: { name: 'Dapp' },
     permissions: [],
-    networks: ['mainnet'],
+    networks: [{ chainId: 'algorand', networkId: 'mainnet' }],
 }
 
 describe('toUnifiedConnection', () => {

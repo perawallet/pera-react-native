@@ -24,11 +24,14 @@ vi.mock('@hooks/useErrorToast', () => ({
 }))
 
 const mockDisconnect = vi.fn()
-const algorand = (networkId: string) => ({ chainId: 'algorand', networkId })
-const mockScopesFor = vi.fn((connection: Connection) =>
+const algorandScope = (networkId: string) => ({
+    chainId: 'algorand',
+    networkId,
+})
+const mockNetworksFor = vi.fn((connection: Connection) =>
     connection.id === 'conn-a'
-        ? [algorand('mainnet'), algorand('testnet')]
-        : [algorand('testnet')],
+        ? [algorandScope('mainnet'), algorandScope('testnet')]
+        : [algorandScope('testnet')],
 )
 const mockMethodsFor = vi.fn((connection: Connection) =>
     connection.id === 'conn-a' ? ['algo_signTxn'] : [],
@@ -115,8 +118,8 @@ describe('useConnectionSettingsList', () => {
             result.current.connections.map(row => [row.id, row.networks]),
         )
         expect(byId).toEqual({
-            'conn-a': ['mainnet', 'testnet'],
-            'conn-b': ['testnet'],
+            'conn-a': [algorandScope('mainnet'), algorandScope('testnet')],
+            'conn-b': [algorandScope('testnet')],
         })
         expect(mockScopesFor).toHaveBeenCalledWith(connectionA)
     })

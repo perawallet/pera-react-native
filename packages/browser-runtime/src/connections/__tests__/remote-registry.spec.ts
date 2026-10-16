@@ -16,7 +16,7 @@ import {
     type ConnectionHandler,
     type ConnectionProposal,
 } from '@perawallet/wallet-core-connections'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, Networks } from '@perawallet/wallet-core-shared'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -36,7 +36,8 @@ import type { ConnectionsEvent } from '../protocol'
 import { createRemoteConnectionRegistry } from '../remote-registry'
 
 const WC_URI = 'wc:topic@1?bridge=https%3A%2F%2Fb&key=00'
-const NETWORKS = ['mainnet', 'testnet', 'betanet', 'custom']
+const NETWORKS = Object.values(Networks)
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: NETWORKS[0] }
 
 const CONNECTION: Connection = {
     id: 'topic',
@@ -80,8 +81,8 @@ const makeHandler = (): ConnectionHandler & {
         disconnect: vi.fn(),
         disconnectAll: vi.fn(),
         restore: vi.fn(),
-        matchesChainScope: (_connection: Connection, scope: ChainScope) =>
-            scope.chainId === 'algorand' && scope.networkId === NETWORKS[0],
+        networksOf: (connection: Connection) =>
+            connection.kind === 'walletconnect-v1' ? [SCOPE] : [],
     }) as unknown as ConnectionHandler & { pair: ReturnType<typeof vi.fn> }
 
 // Stands in for the offscreen host: records every control message and answers
@@ -132,14 +133,12 @@ describe('createRemoteConnectionRegistry', () => {
             expect(received).toEqual([])
         })
 
-        it('filters every configured scope through the handler for scopesFor', () => {
+        it('answers networksFor from the handler that owns the record', () => {
             const registry = createRemoteConnectionRegistry({
                 handlers: [makeHandler()],
             })
 
-            expect(registry.scopesFor(CONNECTION)).toEqual([
-                { chainId: 'algorand', networkId: NETWORKS[0] },
-            ])
+            expect(registry.networksFor(CONNECTION)).toEqual([SCOPE])
             expect(
                 registry.scopesFor({ ...CONNECTION, kind: 'unknown-kind' }),
             ).toEqual([])

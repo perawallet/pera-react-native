@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ethereumCapabilityDefaults } from '../../capability-defaults'
+import { ethereumDescriptor } from '../../descriptor'
 import {
     ETHEREUM_CAIP2_NAMESPACE,
     ETHEREUM_WC_V2_METHOD,
@@ -21,6 +25,15 @@ const v2 = support.v2
 if (!v2) throw new Error('Ethereum serves WalletConnect v2')
 
 const ADDRESS = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+
+// Selectability reads the real network store, which needs the chain registered
+// to tell a network's tier from an unregistered stand-in.
+if (!getProvider().chains.has('ethereum')) {
+    getProvider().chains.register(
+        ethereumDescriptor,
+        ethereumCapabilityDefaults,
+    )
+}
 
 describe('namespace', () => {
     it('is eip155', () => {
@@ -115,18 +128,6 @@ describe('v2.handleRequest', () => {
         })
     })
 
-    it('routes wallet_switchEthereumChain on its first positional param', () => {
-        expect(
-            v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, [
-                { chainId: '0x1' },
-            ]),
-        ).toEqual({
-            kind: 'operation',
-            type: 'switch-network',
-            params: { chainId: '0x1' },
-        })
-    })
-
     it('answers eth_accounts and eth_requestAccounts with the addresses', () => {
         for (const method of [
             ETHEREUM_WC_V2_METHOD.accounts,
@@ -149,7 +150,100 @@ describe('v2.handleRequest', () => {
     })
 })
 
+describe('wallet_switchEthereumChain', () => {
+    const switchTo = (chainId: unknown) =>
+        v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, [{ chainId }])
+
+    beforeEach(() => {
+        useNetworkStore.getState().setMode('live')
+    })
+
+    it('routes the live network, in live mode', () => {
+        expect(switchTo('0x1')).toEqual({
+            kind: 'switch-network',
+            networkId: 'mainnet',
+        })
+    })
+
+    it('routes the test network, in developer mode', () => {
+        useNetworkStore.getState().setMode('developer')
+
+        expect(switchTo('0xaa36a7')).toEqual({
+            kind: 'switch-network',
+            networkId: 'sepolia',
+        })
+    })
+
+    it('reads the chain id case-insensitively', () => {
+        useNetworkStore.getState().setMode('developer')
+
+        expect(switchTo('0xAA36A7')).toEqual({
+            kind: 'switch-network',
+            networkId: 'sepolia',
+        })
+    })
+
+    it('refuses a chain the wallet does not declare as unrecognized, 4902', () => {
+        expect(switchTo('0x89')).toMatchObject({
+            kind: 'refused',
+            error: { code: 4902 },
+        })
+    })
+
+    it.each([
+        ['live mode', 'live', '0xaa36a7'],
+        ['developer mode', 'developer', '0x1'],
+    ] as const)(
+        'refuses the other tier in %s with the chain-disconnected code, 4901',
+        (_name, mode, chainId) => {
+            useNetworkStore.getState().setMode(mode)
+
+            expect(switchTo(chainId)).toMatchObject({
+                kind: 'refused',
+                error: { code: 4901 },
+            })
+        },
+    )
+
+    it.each([
+        ['no params', undefined],
+        ['an empty list', []],
+        ['no chain id', [{}]],
+        ['a decimal chain id', [{ chainId: '1' }]],
+        ['a bare 0x', [{ chainId: '0x' }]],
+        ['a non-string chain id', [{ chainId: 1 }]],
+        ['a non-object entry', ['0x1']],
+    ])('refuses %s as invalid params, -32602', (_name, params) => {
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, params),
+        ).toMatchObject({ kind: 'refused', error: { code: -32_602 } })
+    })
+
+    it('never lists wallet_addEthereumChain, so it is refused as unsupported', () => {
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.addChain, [
+                { chainId: '0x89' },
+            ]),
+        ).toEqual({ kind: 'unsupported' })
+    })
+})
+
+describe('v2.sessionEvents.chainChangedData', () => {
+    const events = v2.sessionEvents
+    if (!events) throw new Error('Ethereum emits session events')
+
+    it('is the hex chain id of a declared network, and null for any other', () => {
+        expect(events.chainChangedData('mainnet')).toBe('0x1')
+        expect(events.chainChangedData('sepolia')).toBe('0xaa36a7')
+        expect(events.chainChangedData('custom')).toBeNull()
+    })
+})
+
 describe('toWireResult', () => {
+    it('answers a switch with null, which is what wallet_switchEthereumChain returns', () => {
+        expect(support.toWireResult({ type: 'switch-network' })).toBeNull()
+    })
+
     it('answers a sent transaction with its hash', () => {
         expect(
             support.toWireResult({ type: 'send-transaction', txId: '0xabc' }),
