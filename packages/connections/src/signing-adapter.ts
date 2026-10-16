@@ -327,11 +327,26 @@ const enqueueMessageRequest = (
     const scope = getSelectedScope(chainId)
     const kind = type === 'sign-typed-data' ? 'typedData' : 'message'
 
+    // A session account can leave the wallet after the session was approved.
     const account = findAccountByAddressOn(accounts, chainId, request.signer)
-    if (!account || !canSignMessage(chainId, account, kind)) {
+    if (!account) {
         declineRequest(
             message,
-            new Error('Signer cannot sign this message'),
+            new ConnectionsError(
+                'unauthorized-account',
+                'The signer is not an account of this wallet',
+            ),
+            onError,
+        )
+        return
+    }
+    if (!canSignMessage(chainId, account, kind)) {
+        declineRequest(
+            message,
+            new ConnectionsError(
+                'unsupported-operation',
+                'The signer cannot sign messages',
+            ),
             onError,
         )
         return
