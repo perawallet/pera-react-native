@@ -31,7 +31,9 @@ import {
 } from '@perawallet/wallet-core-connections/dappRequest'
 import {
     broadcasterChainAdapters,
+    localKeySignerChainAdapters,
     messageSignerChainAdapters,
+    reviewerChainAdapters,
     type BroadcasterChainAdapter,
 } from '@perawallet/wallet-core-signing'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
@@ -50,8 +52,10 @@ import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
 import { ethereumDeeplinkAdapter } from './deeplinks/adapter'
 import { ethereumHistoryAdapter } from './history'
 import { ethereumPlannerAdapter } from './signing/adapter'
+import { ethereumLocalKeySignerAdapter } from './signing/localKeySigner'
 import { ethereumMessageSignerAdapter } from './signing/messages'
 import { ethereumReviewerAdapter } from './signing/review'
+import { ethereumSigningReviewerAdapter } from './signing/signingReviewer'
 import {
     createEthereumBroadcasterAdapter,
     createEthereumTransferAdapter,
@@ -76,6 +80,8 @@ export const registerChain = (ctx: ChainContext): void => {
     keyDerivations.register(ethereumKeyDerivation)
     transactionPlanners.register(ethereumPlannerAdapter)
     transactionReviewers.register(ethereumReviewerAdapter)
+    reviewerChainAdapters.register(ethereumSigningReviewerAdapter)
+    localKeySignerChainAdapters.register(ethereumLocalKeySignerAdapter)
     messageSignerChainAdapters.register(ethereumMessageSignerAdapter)
     accountsChainAdapters.register(accountsAdapter)
     assetsChainAdapters.register(assetsAdapter)
