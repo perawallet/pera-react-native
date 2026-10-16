@@ -36,7 +36,7 @@ export const MessageSigningScreen = () => {
         handleReject,
     } = useMessageSigningScreen()
 
-    if (!summary || !scope) return null
+    if (!summary) return null
 
     return (
         <PWScreen
@@ -82,7 +82,7 @@ export const MessageSigningScreen = () => {
                         </PWView>
                     )}
                     {summary.kind === 'raw' && <SignedDataWarning />}
-                    {summary.spendApproval && (
+                    {!!summary.spendApproval && !!scope && (
                         <SpendApprovalWarning
                             approval={summary.spendApproval}
                             scope={scope}

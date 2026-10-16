@@ -42,6 +42,7 @@ import {
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
 import {
     MAIL_TYPED_DATA,
+    PERMIT2_SINGLE_TYPED_DATA,
     PERMIT2_SINGLE_UNLIMITED_TYPED_DATA,
     SENDER,
     SIGNER_KEY_PAIR_ID,
@@ -317,6 +318,36 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         const response = await answerOf(walletKit)
         expect(response.error).toMatchObject({ code: 4001 })
         expect(kmsCore.sign).not.toHaveBeenCalled()
+    })
+
+    it('Given a connected session, when the dApp sends a Permit2 PermitSingle for a limited amount, then the review shows the spender and the base-unit amount instead of unlimited', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'eth_signTypedData_v4', [
+            SENDER,
+            JSON.stringify(PERMIT2_SINGLE_TYPED_DATA),
+        ])
+        await waitFor(
+            () =>
+                expect(screen.getByTestId(SPEND_APPROVAL_WARNING)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+        // Checksummed, truncated by AddressDisplay.
+        expect(
+            screen.getByTestId(SPEND_APPROVAL_SPENDER).textContent,
+        ).toContain('0x709...c79C8')
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(SPEND_APPROVAL_AMOUNT).textContent,
+                ).toContain('1,000,000'),
+            { timeout: 15_000 },
+        )
+        expect(
+            screen.getByTestId(SPEND_APPROVAL_AMOUNT).textContent,
+        ).not.toContain('signing.spend_approval.unlimited')
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        await answerOf(walletKit)
     })
 
     it('Given a message awaiting review, when the user cancels, then the dApp is answered 4001 and nothing is signed', async () => {
