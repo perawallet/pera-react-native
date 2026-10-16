@@ -17,11 +17,7 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    getNetworkConfig,
-    Networks,
-    type Network,
-} from '@perawallet/wallet-core-config'
+import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import {
     describeZodIssues,
     type DappRequestChainAdapter,

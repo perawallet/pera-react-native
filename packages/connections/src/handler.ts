@@ -91,8 +91,7 @@ export interface ConnectionHandler<
      */
     restore(): Promise<TConnection[]>
 
-    /** Every chain network the connection is usable on. Empty for a malformed own-kind record, never a throw. */
-    networksOf(connection: TConnection): ChainScope[]
+    matchesChainScope(connection: TConnection, scope: ChainScope): boolean
 
     /**
      * The methods this connection was approved for, as the settings panel

@@ -48,7 +48,10 @@ import {
     WalletConnectRequestExpiredError,
 } from '../shared/errors'
 import { toPeer } from '../shared/peer'
-import { type WalletConnectSupport } from '../shared/chainSupport'
+import {
+    walletConnectSupportFor,
+    type WalletConnectSupport,
+} from '../shared/chainSupport'
 import { parseCaip10AccountIn, toCaip10Account } from './caip'
 import {
     createWalletKitClient,
@@ -1573,15 +1576,15 @@ export const createWalletConnectV2Handler = (
         restore,
 
         // Narrowed first: a malformed own-kind record must not throw here.
-        networksOf: connection => {
-            if (!isWalletConnectV2Connection(connection)) return []
-            return connection.metadata.chains.flatMap(caip2 => {
-                const chain = v2ChainForCaip2(caip2)
-                const networkId = chain?.support.networkForCaip2ChainId(caip2)
-                return chain && networkId
-                    ? [{ chainId: chain.chainId, networkId }]
-                    : []
-            })
+        matchesChainScope: (connection, scope) => {
+            if (!isWalletConnectV2Connection(connection)) return false
+            const chainId =
+                walletConnectSupportFor(scope)?.caip2ChainIdFor(
+                    scope.networkId,
+                ) ?? null
+            return (
+                chainId !== null && connection.metadata.chains.includes(chainId)
+            )
         },
 
         notify,

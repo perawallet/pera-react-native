@@ -52,7 +52,7 @@ const protocolVersionFor = (kind: ConnectionKind): number | undefined => {
 
 export const toConnectionSettingsRow = (
     connection: Connection,
-    networks: ChainScope[],
+    scopes: readonly ChainScope[],
     methods: string[],
 ): ConnectionSettingsRow => ({
     id: connection.id,
@@ -66,7 +66,7 @@ export const toConnectionSettingsRow = (
     lastActiveAt: connection.lastActiveAt,
     peer: connection.peer,
     permissions: methods,
-    networks: [...new Set(scopes.map(scope => scope.networkId))],
+    networks: [...scopes],
     ...(protocolVersionFor(connection.kind) !== undefined
         ? { protocolVersion: protocolVersionFor(connection.kind) }
         : {}),

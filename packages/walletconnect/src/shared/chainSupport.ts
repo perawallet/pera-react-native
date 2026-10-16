@@ -63,9 +63,3 @@ export const v1NetworksFor = (
     if (!support?.v1) return []
     return support.v1.networksFor(chainId)
 }
-
-/** Fails closed to `[]`: the legacy scope of every network a v1 session's chain id covers. */
-export const v1ScopesFor = (chainId: number | undefined): ChainScope[] =>
-    Object.values(Networks)
-        .filter(network => isV1ChainIdAcceptable(chainId, network))
-        .map(scopeForLegacyNetwork)

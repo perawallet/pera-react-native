@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import {
-    LEGACY_SCOPES,
-    scopeForLegacyNetwork,
-    type ChainId,
+import type {
+    ChainId,
+    ChainScope,
+    NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     dappRequestChainAdapters,
@@ -699,7 +699,7 @@ export const createDappConnectionHandler = (
             await Promise.all(all.map(connection => disconnect(connection.id)))
         },
         restore,
-        networksOf: () => [...LEGACY_SCOPES],
+        matchesChainScope: (_, scope) => scope.chainId === deps.chainId,
         methodsFor: () => [...PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             // The protocol carries one chain, fixed per handler.

@@ -36,9 +36,6 @@ const baseConnection: Connection = {
     lastActiveAt: 1_700_000_500_000,
 }
 
-const scopeOf = (networkId: string) =>
-    ({ chainId: 'algorand', networkId }) as const
-
 describe('toConnectionSettingsRow', () => {
     it('maps a Connection record onto the settings read model', () => {
         expect(toConnectionSettingsRow(baseConnection, [MAINNET], [])).toEqual({
@@ -85,22 +82,6 @@ describe('toConnectionSettingsRow', () => {
 
         expect(row.networks).toEqual([MAINNET, TESTNET])
         expect(row).not.toHaveProperty('chainId')
-    })
-
-    // Two chains can serve one network id; the settings list names it once.
-    it('lists each network id once, in scope order', () => {
-        const row = toConnectionSettingsRow(
-            baseConnection,
-            [
-                scopeOf('mainnet'),
-                { chainId: 'ethereum', networkId: 'mainnet' },
-                scopeOf('testnet'),
-                { chainId: 'ethereum', networkId: 'sepolia' },
-            ],
-            [],
-        )
-
-        expect(row.networks).toEqual(['mainnet', 'testnet', 'sepolia'])
     })
 
     // A kind with no registered handler reports no methods, which the detail

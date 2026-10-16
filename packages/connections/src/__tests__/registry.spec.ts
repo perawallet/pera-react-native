@@ -85,7 +85,7 @@ const makeOriginHandler = (
     disconnect: vi.fn(async () => {}),
     disconnectAll: vi.fn(async () => {}),
     restore: vi.fn(async () => []),
-    networksOf: vi.fn(() => []),
+    matchesChainScope: vi.fn(() => true),
     methodsFor: vi.fn(() => []),
     ...overrides,
 })
@@ -449,22 +449,38 @@ describe('createConnectionRegistry', () => {
         })
     })
 
-    describe('networksFor', () => {
-        it('returns exactly the scopes the kind handler reports', () => {
-            const scopes = [
-                { chainId: 'algorand', networkId: 'mainnet' },
-                { chainId: 'ethereum', networkId: 'sepolia' },
-            ]
+    describe('scopesFor', () => {
+        it('returns exactly the configured scopes the kind handler accepts', () => {
             const beta = makeHandler('beta', {
-                networksOf: vi.fn(() => scopes),
+                matchesChainScope: vi.fn(
+                    (_connection: Connection, scope: ChainScope) =>
+                        scope.chainId === 'algorand' &&
+                        (scope.networkId === 'mainnet' ||
+                            scope.networkId === 'custom'),
+                ),
             })
             const registry = createConnectionRegistry({ store })
             registry.register(makeHandler('alpha'))
             registry.register(beta)
             const connection = makeConnection({ id: 'b1', kind: 'beta' })
 
-            expect(registry.networksFor(connection)).toEqual(scopes)
-            expect(beta.networksOf).toHaveBeenCalledWith(connection)
+            const scopes = registry.scopesFor(
+                makeConnection({ id: 'b1', kind: 'beta' }),
+            )
+
+            expect(scopes).toEqual([
+                { chainId: 'algorand', networkId: 'mainnet' },
+                { chainId: 'algorand', networkId: 'custom' },
+            ])
+        })
+
+        it('yields every configured scope for a handler that accepts them all', () => {
+            const registry = createConnectionRegistry({ store })
+            registry.register(makeHandler('alpha'))
+
+            expect(registry.scopesFor(makeConnection())).toEqual(
+                configuredScopes(),
+            )
         })
 
         it('is empty for a kind with no registered handler', () => {

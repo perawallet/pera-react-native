@@ -51,7 +51,7 @@ const CONNECTIONS_KV_KEY = `kv:${CONNECTIONS_STORAGE_KEY}`
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
 
 // Handlers are never initialized here; they only answer descriptor queries
-// (`canHandleUri`/`describeUri` for v1, `methodsFor`/`networksOf` for dapp).
+// (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesChainScope` for dapp).
 export const useConnectionsProvider = (): ConnectionRegistryClient => {
     const registryRef = useRef<ConnectionRegistryClient | null>(null)
     if (!registryRef.current) {

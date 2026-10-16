@@ -11,7 +11,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { LEGACY_SCOPES } from '@perawallet/wallet-core-chain-contract'
 import {
     createConnectionRegistry,
     dappRequestChainAdapters,
@@ -891,14 +890,6 @@ describe('DappConnectionHandler', () => {
                     }),
                 ).toEqual([])
             })
-        })
-
-        it('lists every legacy scope as its networks', () => {
-            const { handler } = setup([connected()])
-
-            expect(handler.networksOf(connected() as never)).toEqual([
-                ...LEGACY_SCOPES,
-            ])
         })
 
         it('answers MethodNotFound for anything outside the method set', async () => {

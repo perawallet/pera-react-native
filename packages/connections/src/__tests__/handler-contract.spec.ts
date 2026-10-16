@@ -163,7 +163,7 @@ const createOriginHandler = (): ConnectionHandler => {
             ((await store?.list()) ?? []).filter(
                 (record: Connection) => record.kind === ORIGIN_KIND,
             ),
-        networksOf: () => [],
+        matchesChainScope: () => true,
         // Off the record, like the real handlers: the key is this kind's own
         // choice, and the neutral layer never reads it.
         methodsFor: connection => {

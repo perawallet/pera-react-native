@@ -28,6 +28,7 @@ import {
     addressCodecs,
     type AddressCodec,
     type ChainId,
+    type ChainScope,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
@@ -1039,7 +1040,7 @@ describe('notify', () => {
         await handler.notify?.(TOPIC, SEPOLIA_NOTICE)
         await handler.notify?.(SECOND_TOPIC, {
             type: 'network-changed',
-            scope: { chainId: 'algorand', networkId: Networks.testnet },
+            scope: { chainId: 'algorand', networkId: 'testnet' },
         })
 
         expect(walletKit.updateSession).not.toHaveBeenCalled()
@@ -1169,32 +1170,22 @@ describe('notify', () => {
     })
 })
 
-describe('networksOf', () => {
-    it('maps every chain of a session to its own chain scope', async () => {
+describe('matchesChainScope', () => {
+    it('matches every chain of a session on its own chain scope', async () => {
         const { handler } = await open()
+        const record = recordFor(TOPIC, {
+            chains: [MAINNET_CHAIN_ID, ETH_MAINNET, ETH_SEPOLIA],
+        }) as never
 
         expect(
-            handler.networksOf(
-                recordFor(TOPIC, {
-                    chains: [MAINNET_CHAIN_ID, ETH_MAINNET, ETH_SEPOLIA],
-                }) as never,
+            [
+                { chainId: 'algorand', networkId: 'mainnet' },
+                { chainId: 'algorand', networkId: 'testnet' },
+                { chainId: 'ethereum', networkId: 'mainnet' },
+                { chainId: 'ethereum', networkId: 'sepolia' },
+            ].map(scope =>
+                handler.matchesChainScope(record, scope as ChainScope),
             ),
-        ).toEqual([
-            { chainId: 'algorand', networkId: Networks.mainnet },
-            { chainId: 'ethereum', networkId: 'mainnet' },
-            { chainId: 'ethereum', networkId: 'sepolia' },
-        ])
-    })
-
-    it('drops a chain no registered adapter owns', async () => {
-        const { handler } = await open()
-
-        expect(
-            handler.networksOf(
-                recordFor(TOPIC, {
-                    chains: [ETH_MAINNET, 'eip155:137'],
-                }) as never,
-            ),
-        ).toEqual([{ chainId: 'ethereum', networkId: 'mainnet' }])
+        ).toEqual([true, false, true, true])
     })
 })

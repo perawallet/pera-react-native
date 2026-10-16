@@ -11,6 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { configuredScopes } from '@perawallet/wallet-core-config'
 import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -42,7 +43,7 @@ export interface ConnectionRegistryClient {
     /** Empty when nothing claims the URI. Never contains the URI itself. */
     describeUri(uri: string): Record<string, string | null>
     /** Empty for a kind with no registered handler. */
-    networksFor(connection: Connection): ChainScope[]
+    scopesFor(connection: Connection): ChainScope[]
     /**
      * The methods the connection was approved for, as its handler reads them.
      * Empty for a kind with no registered handler.
@@ -391,8 +392,10 @@ export const createConnectionRegistry = (options: {
             handler?.abandonPairing?.(pairingId)
         },
         describeUri: uri => claimingHandler(uri)?.describeUri?.(uri) ?? {},
-        networksFor: connection =>
-            handlers.get(connection.kind)?.networksOf(connection) ?? [],
+        scopesFor: connection => {
+            const handler = handlers.get(connection.kind)
+            return handler ? chainScopesServedBy(handler, connection) : []
+        },
         methodsFor: connection =>
             handlers.get(connection.kind)?.methodsFor(connection) ?? [],
         disconnect: async id => {

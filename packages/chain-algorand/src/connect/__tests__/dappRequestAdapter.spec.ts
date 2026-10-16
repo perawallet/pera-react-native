@@ -17,8 +17,6 @@ import {
     Arc0001ErrorCode,
 } from '../../blockchain'
 import { useAccountChainStateStore } from '@perawallet/wallet-core-accounts'
-import { scopeForLegacyNetwork } from '@perawallet/wallet-core-chain-contract'
-import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import {
     CannotSignError,
     MAX_TRANSACTION_SIGN_REQUESTS,
