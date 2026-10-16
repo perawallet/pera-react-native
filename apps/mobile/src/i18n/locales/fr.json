@@ -2145,13 +2145,7 @@
             "create_multisig_option_description": "Créez un compte partagé à sécurité renforcée qui nécessite plusieurs signataires",
             "pera_card_option_title": "Ajouter un compte Pera Card",
             "pera_card_option_description": "Dépensez vos cryptos dans le monde réel avec la Pera Card",
-            "see_other_options": "Voir les autres options",
-            "choose_chain_title": "Choisissez une blockchain",
-            "chain_option_description": "Ajoutez un compte {{chain}}",
-            "derive_from_wallet_option_title": "Ajouter depuis un wallet",
-            "derive_from_wallet_option_description": "Utilisez une passphrase de récupération déjà présente dans Pera",
-            "import_private_key_option_title": "Importer une clé privée",
-            "import_private_key_option_description": "Ajoutez un compte à partir de sa clé privée"
+            "see_other_options": "Voir les autres options"
         },
         "import_private_key": {
             "title": "Importer une clé privée",

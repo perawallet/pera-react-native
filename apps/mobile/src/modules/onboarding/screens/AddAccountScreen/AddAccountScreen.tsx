@@ -29,10 +29,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 import { MultisigIntroductionDialog } from '@modules/multisig'
-import type {
-    AccountOption,
-    AddAccountChainOption,
-} from '@modules/onboarding/types'
+import type { AccountOption } from '@modules/onboarding/types'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 
@@ -43,11 +40,8 @@ export const AddAccountScreen = () => {
     const {
         isCreatingAccount,
         creatingTitleKey,
-        isChainStepVisible,
-        chainOptions,
         mainOptions,
         otherOptions,
-        hasOtherOptions,
         handleClose,
         handleTermsPress,
         handlePrivacyPress,
@@ -85,20 +79,6 @@ export const AddAccountScreen = () => {
         />
     )
 
-    const renderChainOption = (option: AddAccountChainOption) => (
-        <PanelButton
-            key={option.testID}
-            testID={option.testID}
-            title={option.displayName}
-            description={t('onboarding.add_account.chain_option_description', {
-                chain: option.displayName,
-            })}
-            titleWeight='h3'
-            leftIcon='wallet'
-            onPress={option.onPress}
-        />
-    )
-
     return (
         <>
             <PWView style={styles.imageContainer}>
@@ -123,45 +103,31 @@ export const AddAccountScreen = () => {
                     />
 
                     <ScreenHeader
-                        title={t(
-                            isChainStepVisible
-                                ? 'onboarding.add_account.choose_chain_title'
-                                : 'onboarding.add_account.title',
-                        )}
+                        title={t('onboarding.add_account.title')}
                         style={styles.header}
                     />
 
                     <PWView style={styles.mainContainer}>
-                        {isChainStepVisible ? (
-                            chainOptions.map(renderChainOption)
-                        ) : (
-                            <>
-                                {mainOptions.map(renderOption)}
+                        {mainOptions.map(renderOption)}
 
-                                {isOtherOptionsVisible &&
-                                    otherOptions.map(renderOption)}
-                            </>
-                        )}
+                        {isOtherOptionsVisible &&
+                            otherOptions.map(renderOption)}
                     </PWView>
 
-                    {!isChainStepVisible &&
-                        hasOtherOptions &&
-                        !isOtherOptionsVisible && (
-                            <PWTouchableOpacity
-                                style={styles.otherOptionsButton}
-                                onPress={handleToggleOtherOptions}
-                                testID='add_account_see_other_options_button'
-                            >
-                                <PWView style={styles.otherOptionsIconWrapper}>
-                                    <PWIcon name='chevron-down' />
-                                </PWView>
-                                <PWText variant='h4'>
-                                    {t(
-                                        'onboarding.add_account.see_other_options',
-                                    )}
-                                </PWText>
-                            </PWTouchableOpacity>
-                        )}
+                    {!isOtherOptionsVisible && (
+                        <PWTouchableOpacity
+                            style={styles.otherOptionsButton}
+                            onPress={handleToggleOtherOptions}
+                            testID='add_account_see_other_options_button'
+                        >
+                            <PWView style={styles.otherOptionsIconWrapper}>
+                                <PWIcon name='chevron-down' />
+                            </PWView>
+                            <PWText variant='h4'>
+                                {t('onboarding.add_account.see_other_options')}
+                            </PWText>
+                        </PWTouchableOpacity>
+                    )}
 
                     <PWView style={styles.footerContainer}>
                         <PWText style={styles.termsAndPrivacyText}>

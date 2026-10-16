@@ -2137,13 +2137,7 @@
             "create_multisig_option_description": "Neues Gemeinschaftskonto mit erhöhter Sicherheit erstellen, das mehrere Signierer erfordert",
             "pera_card_option_title": "Pera Card Konto hinzufügen",
             "pera_card_option_description": "Gib dein Krypto in der realen Welt mit der Pera Card aus",
-            "see_other_options": "Weitere Optionen anzeigen",
-            "choose_chain_title": "Blockchain wählen",
-            "chain_option_description": "Ein {{chain}}-Konto hinzufügen",
-            "derive_from_wallet_option_title": "Aus einem Wallet hinzufügen",
-            "derive_from_wallet_option_description": "Eine Wiederherstellungsphrase nutzen, die bereits in Pera ist",
-            "import_private_key_option_title": "Privaten Schlüssel importieren",
-            "import_private_key_option_description": "Ein Konto über seinen privaten Schlüssel hinzufügen"
+            "see_other_options": "Weitere Optionen anzeigen"
         },
         "import_private_key": {
             "title": "Privaten Schlüssel importieren",

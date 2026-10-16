@@ -43,7 +43,6 @@ export const SelectHDWalletScreen = () => {
         hdSeedGroups,
         accountBalances,
         isCreatingWallet,
-        canCreateNewWallet,
         isSelectingWallet,
         isAutoSelecting,
         handleSelectWallet,
@@ -121,7 +120,7 @@ export const SelectHDWalletScreen = () => {
             <PWScreen
                 scroll='never'
                 footer={
-                    isAutoSelecting || !canCreateNewWallet ? undefined : (
+                    isAutoSelecting ? undefined : (
                         <PWButton
                             title={t(
                                 'onboarding.select_hd_wallet.create_new_wallet',

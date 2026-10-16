@@ -149,8 +149,6 @@ export type AddAccountStackParamList = ImportFlowParamList & {
     SelectHDWallet: Optional<{
         /** Forwarded to NameAccount so the caller's flow can resume after naming. */
         returnTo?: PostCreateReturnTarget
-        /** Set: the picked wallet gains this chain's entry instead of a new account. */
-        chainId?: ChainId
     }>
     ImportPrivateKey: { chainId: ChainId }
     WatchInfo: undefined

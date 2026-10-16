@@ -12,7 +12,6 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    canImportRawKey,
     offeredLocalKeyKinds,
     useCreateAccount,
     useCreateNextHDAccount,
@@ -25,7 +24,6 @@ import {
     isPostQuantumScheme,
     LEGACY_CHAIN_ID,
     i18nKey,
-    type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -40,14 +38,9 @@ import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig'
-import { useDeriveChainAccount } from '@modules/onboarding/hooks'
-import type {
-    AccountOption,
-    AddAccountChainOption,
-} from '@modules/onboarding/types'
+import type { AccountOption } from '@modules/onboarding/types'
 import { trackChainOnboardingEvent } from '../../utils'
 
 // A key kind's create option can override it for its own keygen.
@@ -84,26 +77,6 @@ export const useAddAccountScreen = () => {
         anyChain: 'quantumAccounts',
     })
 
-    const chainDescriptors = getProvider().chains.list()
-    const hasChainStep = chainDescriptors.length > 1
-    const [selectedChainId, setSelectedChainId] = useState<ChainId | undefined>(
-        hasChainStep ? undefined : (chainDescriptors[0]?.id ?? LEGACY_CHAIN_ID),
-    )
-    const isChainStepVisible = hasChainStep && selectedChainId === undefined
-    // Every hook below needs a chain, so the chain step reads the legacy one
-    // until a row is picked; nothing it computes renders in the meantime.
-    const optionsChainId = selectedChainId ?? LEGACY_CHAIN_ID
-    const isLegacyChain = optionsChainId === LEGACY_CHAIN_ID
-    const { derivableWallets, deriveChainAccount } =
-        useDeriveChainAccount(optionsChainId)
-    const canImportPrivateKey =
-        useCapability({
-            chain: { chainId: optionsChainId, capability: 'privateKeys' },
-        }) && canImportRawKey(optionsChainId)
-    const canWatchOnChain = useCapability({
-        chain: { chainId: optionsChainId, capability: 'watchAccounts' },
-    })
-
     const {
         isOpen: isCreatingAccount,
         open: openCreatingAccount,
@@ -127,7 +100,6 @@ export const useAddAccountScreen = () => {
         (
             create: () => Promise<Nullable<WalletAccount>>,
             titleKey: I18nKey = DEFAULT_CREATING_TITLE_KEY,
-            chainId?: ChainId,
         ) => {
             setCreatingTitleKey(titleKey)
             openCreatingAccount()
@@ -136,10 +108,7 @@ export const useAddAccountScreen = () => {
                     const newAccount = await create()
                     if (!isMounted()) return
                     if (newAccount) {
-                        navigation.push('NameAccount', {
-                            account: newAccount,
-                            chainId,
-                        })
+                        navigation.push('NameAccount', { account: newAccount })
                     }
                 } catch (error) {
                     if (!isMounted()) return
@@ -237,99 +206,6 @@ export const useAddAccountScreen = () => {
         [buildSingleKeyAccount, runCreateAccount],
     )
 
-    const handleDeriveFromWallet = useCallback(() => {
-        if (derivableWallets.length > 1) {
-            navigation.push('SelectHDWallet', { chainId: optionsChainId })
-            return
-        }
-        const [wallet] = derivableWallets
-        if (!wallet) return
-        runCreateAccount(
-            () => deriveChainAccount(wallet.seedKeyId),
-            undefined,
-            optionsChainId,
-        )
-    }, [
-        derivableWallets,
-        navigation,
-        optionsChainId,
-        runCreateAccount,
-        deriveChainAccount,
-    ])
-
-    const handleImportPrivateKey = useCallback(
-        () => navigation.push('ImportPrivateKey', { chainId: optionsChainId }),
-        [navigation, optionsChainId],
-    )
-
-    const chainOptions: AddAccountChainOption[] = hasChainStep
-        ? chainDescriptors.map(({ id, displayName }) => ({
-              chainId: id,
-              testID: `add_account_chain_${id}_button`,
-              displayName,
-              onPress: () => {
-                  setIsOtherOptionsVisible(false)
-                  setSelectedChainId(id)
-              },
-          }))
-        : []
-
-    const chainEntryOptions = useMemo(() => {
-        const main: AccountOption[] = []
-        const other: AccountOption[] = []
-        if (isLegacyChain) return { main, other }
-        if (derivableWallets.length > 0) {
-            main.push({
-                testID: 'add_account_derive_from_wallet_button',
-                titleKey: i18nKey(
-                    'onboarding.add_account.derive_from_wallet_option_title',
-                ),
-                descriptionKey: i18nKey(
-                    'onboarding.add_account.derive_from_wallet_option_description',
-                ),
-                leftIcon: 'wallet-add',
-                onPress: handleDeriveFromWallet,
-                isDisabled: isCreatingAccount,
-            })
-        }
-        if (canImportPrivateKey) {
-            main.push({
-                testID: 'add_account_import_private_key_button',
-                titleKey: i18nKey(
-                    'onboarding.add_account.import_private_key_option_title',
-                ),
-                descriptionKey: i18nKey(
-                    'onboarding.add_account.import_private_key_option_description',
-                ),
-                leftIcon: 'key',
-                onPress: handleImportPrivateKey,
-            })
-        }
-        if (canWatchOnChain) {
-            other.push({
-                testID: 'add_account_watch_button',
-                titleKey: i18nKey(
-                    'onboarding.add_account.watch_address_option_title',
-                ),
-                descriptionKey: i18nKey(
-                    'onboarding.add_account.watch_address_option_description',
-                ),
-                leftIcon: 'eye',
-                onPress: handleWatchAddress,
-            })
-        }
-        return { main, other }
-    }, [
-        isLegacyChain,
-        derivableWallets.length,
-        canImportPrivateKey,
-        canWatchOnChain,
-        isCreatingAccount,
-        handleDeriveFromWallet,
-        handleImportPrivateKey,
-        handleWatchAddress,
-    ])
-
     const createOptions = useMemo(() => {
         const featured: AccountOption[] = []
         const other: AccountOption[] = []
@@ -372,7 +248,7 @@ export const useAddAccountScreen = () => {
         pushWebView,
     ])
 
-    const legacyMainOptions: AccountOption[] = useMemo(
+    const mainOptions: AccountOption[] = useMemo(
         () =>
             (
                 [
@@ -452,7 +328,7 @@ export const useAddAccountScreen = () => {
         ],
     )
 
-    const legacyOtherOptions: AccountOption[] = useMemo(
+    const otherOptions: AccountOption[] = useMemo(
         () =>
             (
                 [
@@ -492,30 +368,12 @@ export const useAddAccountScreen = () => {
         ],
     )
 
-    const mainOptions = isLegacyChain
-        ? legacyMainOptions
-        : chainEntryOptions.main
-    const otherOptions = isLegacyChain
-        ? legacyOtherOptions
-        : chainEntryOptions.other
-
-    const handleClose = useCallback(() => {
-        if (hasChainStep && selectedChainId !== undefined) {
-            setSelectedChainId(undefined)
-            return
-        }
-        navigation.goBack()
-    }, [hasChainStep, selectedChainId, navigation])
-
     return {
         isCreatingAccount,
         creatingTitleKey,
-        isChainStepVisible,
-        chainOptions,
         mainOptions,
         otherOptions,
-        hasOtherOptions: isLegacyChain || otherOptions.length > 0,
-        handleClose,
+        handleClose: navigation.goBack,
         handleTermsPress,
         handlePrivacyPress,
         isMultisigIntroductionVisible,

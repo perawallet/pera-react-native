@@ -13,6 +13,7 @@
 import React, { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { createNavigationContainerRef } from '@react-navigation/native'
 
 import {
     chainAccountOf,
@@ -29,13 +30,11 @@ import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { isElementDisabled } from '@test-utils/rnw'
 import { BottomSheetManager, useBottomSheet } from '@modules/bottom-sheet'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
-import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen/AddAccountScreen'
 import { ImportPrivateKeyScreen } from '@modules/onboarding/screens/ImportPrivateKeyScreen/ImportPrivateKeyScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen/SelectHDWalletScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen/WatchAccountScreen'
-import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen/WatchInfoScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
+import { AddAccountStackNavigator } from '@modules/onboarding/routes/add-account'
 
 import {
     HD_TEST_ADDRESS,
@@ -57,8 +56,6 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 const ETHEREUM = 'ethereum'
 
-// m/44'/60'/0'/0/0 of HD_TEST_MNEMONIC_24, computed independently with viem.
-const HD_ETHEREUM_ADDRESS = '0x60e94244Cb2053009e5a365D247A091D35BC6EbA'
 // Hardhat's first development account: a published test key.
 const TEST_PRIVATE_KEY =
     'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
@@ -95,27 +92,39 @@ const seedHdWallet = async (): Promise<WalletAccount> => {
     return account
 }
 
-const renderAddAccount = () =>
-    renderWithNavigation(AddAccountScreen, 'AddAccountHome', {
-        additionalScreens: [
-            { name: 'NameAccount', component: NameAccountScreen },
-            { name: 'SelectHDWallet', component: SelectHDWalletScreen },
-            { name: 'ImportPrivateKey', component: ImportPrivateKeyScreen },
-            { name: 'WatchInfo', component: WatchInfoScreen },
-            { name: 'WatchAccount', component: WatchAccountScreen },
-        ],
+const additionalScreens = [{ name: 'NameAccount', component: NameAccountScreen }]
+
+const renderImportPrivateKey = () =>
+    renderWithNavigation(ImportPrivateKeyScreen, 'ImportPrivateKey', {
+        initialParams: { chainId: ETHEREUM },
+        additionalScreens,
     })
 
-const chooseEthereum = async (): Promise<void> => {
-    const row = await waitFor(() =>
-        screen.getByTestId(`add_account_chain_${ETHEREUM}_button`),
+const renderWatchAccount = () =>
+    renderWithNavigation(WatchAccountScreen, 'WatchAccount', {
+        additionalScreens,
+    })
+
+const addAccountRouteNames = async (): Promise<string[]> => {
+    const navigationRef = createNavigationContainerRef()
+    render(<AddAccountStackNavigator />, { navigationProps: { ref: navigationRef } })
+    await waitFor(() => expect(navigationRef.isReady()).toBe(true))
+    return navigationRef.getRootState().routeNames
+}
+
+const importKey = async (key: string): Promise<void> => {
+    const input = await waitFor(() =>
+        screen.getByTestId('import_private_key_input'),
     )
-    fireEvent.click(row)
+    fireEvent.change(input, { target: { value: key } })
     await waitFor(() =>
         expect(
-            screen.queryByTestId(`add_account_chain_${ETHEREUM}_button`),
-        ).toBeNull(),
+            isElementDisabled(
+                screen.getByTestId('import_private_key_submit_button'),
+            ),
+        ).toBe(false),
     )
+    fireEvent.click(screen.getByTestId('import_private_key_submit_button'))
 }
 
 const finishNaming = async (name: string): Promise<void> => {
@@ -174,49 +183,10 @@ describe('Flow: Add an Ethereum account', () => {
         useRemoteConfigStore.getState().resetState()
     })
 
-    it('Given an Algorand HD wallet, when the user picks Ethereum and adds from the wallet, then the wallet gains one Ethereum address and its Algorand address is unchanged', async () => {
-        renderAddAccount()
-        await chooseEthereum()
+    it('Given Ethereum is registered, when the user imports a private key, then a standalone Ethereum account holds its address', async () => {
+        renderImportPrivateKey()
 
-        fireEvent.click(
-            await waitFor(() =>
-                screen.getByTestId('add_account_derive_from_wallet_button'),
-            ),
-        )
-        await finishNaming('Main')
-
-        const [holder] = ethereumAccounts()
-        expect(ethereumAccounts()).toHaveLength(1)
-        expect(ethereumAddressOf(holder)).toBe(
-            HD_ETHEREUM_ADDRESS.toLowerCase(),
-        )
-        expect(holder?.id).toBe(HD_ACCOUNT_ID)
-        expect(chainAccountOf(holder!, 'algorand')?.address).toBe(
-            HD_TEST_ADDRESS,
-        )
-    })
-
-    it('Given the Ethereum entries, when the user imports a private key, then a standalone Ethereum account holds its address', async () => {
-        renderAddAccount()
-        await chooseEthereum()
-
-        fireEvent.click(
-            await waitFor(() =>
-                screen.getByTestId('add_account_import_private_key_button'),
-            ),
-        )
-        const input = await waitFor(() =>
-            screen.getByTestId('import_private_key_input'),
-        )
-        fireEvent.change(input, { target: { value: `0x${TEST_PRIVATE_KEY}` } })
-        await waitFor(() =>
-            expect(
-                isElementDisabled(
-                    screen.getByTestId('import_private_key_submit_button'),
-                ),
-            ).toBe(false),
-        )
-        fireEvent.click(screen.getByTestId('import_private_key_submit_button'))
+        await importKey(`0x${TEST_PRIVATE_KEY}`)
         await finishNaming('Imported')
 
         const imported = ethereumAccounts()
@@ -228,23 +198,31 @@ describe('Flow: Add an Ethereum account', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(2)
     })
 
-    it('Given the Ethereum entries, when the user watches a 0x address, then a watch account on Ethereum holds it', async () => {
-        renderAddAccount()
-        await chooseEthereum()
+    it('Given a key already held, when the user imports it again, then no second account is created', async () => {
+        await useAccountsStore
+            .getState()
+            .importAccountFromPrivateKey(
+                ETHEREUM,
+                parseEthereumPrivateKey(TEST_PRIVATE_KEY),
+            )
+        renderImportPrivateKey()
 
-        fireEvent.click(
-            await waitFor(() =>
-                screen.getByTestId('add_account_see_other_options_button'),
-            ),
+        await importKey(TEST_PRIVATE_KEY)
+
+        await waitFor(() =>
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('import_private_key_submit_button'),
+                ),
+            ).toBe(true),
         )
-        fireEvent.click(
-            await waitFor(() => screen.getByTestId('add_account_watch_button')),
-        )
-        fireEvent.click(
-            await waitFor(() =>
-                screen.getByText('onboarding.watch_account.info_button'),
-            ),
-        )
+        expect(screen.queryByTestId('name_account_finish_button')).toBeNull()
+        expect(ethereumAccounts()).toHaveLength(1)
+    })
+
+    it('Given Ethereum is registered, when the user watches a 0x address, then a watch account on Ethereum is named from that address', async () => {
+        renderWatchAccount()
+
         fireEvent.change(
             await waitFor(() =>
                 screen.getByTestId('watch_account_address_input'),
@@ -267,21 +245,17 @@ describe('Flow: Add an Ethereum account', () => {
         expect(ethereumAddressOf(watched[0])).toBe(WATCH_ADDRESS)
     })
 
-    it('Given private keys are off for Ethereum, then neither the import entry nor View private key exists, while derive and watch remain', async () => {
-        setCapabilityOverrides({ privateKeys: false }, ETHEREUM)
-        renderAddAccount()
-        await chooseEthereum()
+    it('Given private keys are on for Ethereum, then the add-account stack registers the private-key import', async () => {
+        expect(await addAccountRouteNames()).toContain('ImportPrivateKey')
+    })
 
-        await waitFor(() =>
-            screen.getByTestId('add_account_derive_from_wallet_button'),
-        )
-        expect(
-            screen.queryByTestId('add_account_import_private_key_button'),
-        ).toBeNull()
-        fireEvent.click(
-            screen.getByTestId('add_account_see_other_options_button'),
-        )
-        await waitFor(() => screen.getByTestId('add_account_watch_button'))
+    it('Given private keys are off for Ethereum, then the add-account stack has no private-key import', async () => {
+        setCapabilityOverrides({ privateKeys: false }, ETHEREUM)
+
+        const routeNames = await addAccountRouteNames()
+
+        expect(routeNames).not.toContain('ImportPrivateKey')
+        expect(routeNames).toContain('AddAccountHome')
     })
 
     it('Given private keys are off for Ethereum, when an imported account opens its options, then View private key is absent', async () => {

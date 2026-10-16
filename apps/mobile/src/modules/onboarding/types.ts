@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ChainId, I18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { IconName, PWBadgeProps } from '@components/core'
 
 export type AccountOption = {
@@ -24,12 +24,4 @@ export type AccountOption = {
     badge?: { labelKey: I18nKey; variant?: PWBadgeProps['variant'] }
     /** Optional "Learn more"-style link with its own press handler. */
     learnMore?: { labelKey: I18nKey; onPress: () => void }
-}
-
-/** A row of the add-account chain step. */
-export type AddAccountChainOption = {
-    chainId: ChainId
-    testID: string
-    displayName: string
-    onPress: () => void
 }

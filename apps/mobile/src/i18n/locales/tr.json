@@ -2145,13 +2145,7 @@
             "create_multisig_option_description": "Birden fazla imzacı gerektiren, gelişmiş güvenlikli yeni bir paylaşılan hesap oluştur",
             "pera_card_option_title": "Pera Card hesabı ekle",
             "pera_card_option_description": "Pera Card ile kriptonu gerçek dünyada harca",
-            "see_other_options": "Diğer seçenekleri gör",
-            "choose_chain_title": "Bir blokzincir seç",
-            "chain_option_description": "{{chain}} hesabı ekle",
-            "derive_from_wallet_option_title": "Bir cüzdandan ekle",
-            "derive_from_wallet_option_description": "Pera’da zaten bulunan bir kurtarma passphrase’i kullan",
-            "import_private_key_option_title": "Özel anahtar içe aktar",
-            "import_private_key_option_description": "Bir hesabı özel anahtarıyla ekle"
+            "see_other_options": "Diğer seçenekleri gör"
         },
         "import_private_key": {
             "title": "Özel anahtarı içe aktar",
