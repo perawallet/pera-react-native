@@ -141,16 +141,17 @@ Flow tests live in `apps/mobile/src/__integration__/<flow>.spec.tsx` and run rea
 Zustand stores, real domain hooks and the real KMS keystore. Only the network is mocked (MSW) and the
 platform's native services are swapped for in-memory test implementations.
 
-Three test-only aliases, wired in `vitest.config.ts`. Each stand-in explains itself at the top of
+Four test-only aliases, wired in `vitest.config.ts`. Each stand-in explains itself at the top of
 its own file, including what it deliberately does not reproduce; read those rather than trusting a
 summary here.
 
-| Real module                                         | Stand-in                                   |
-| --------------------------------------------------- | ------------------------------------------ |
-| `@perawallet/wallet-extension-platform-driver`      | `src/test-utils/platform-driver-test.ts`   |
-| `@algorandfoundation/react-native-keystore`         | `src/test-utils/algorand-keystore-test.ts` |
-| `@perawallet/wallet-extension-ledger-react-native*` | `src/test-utils/ledger-extension-stub.ts`  |
-| `@react-navigation/native`, `native-stack`          | `src/test-utils/test-navigator.tsx`        |
+| Real module                                         | Stand-in                                    |
+| --------------------------------------------------- | ------------------------------------------- |
+| `@perawallet/wallet-extension-platform-driver`      | `src/test-utils/platform-driver-test.ts`    |
+| `@algorandfoundation/react-native-keystore`         | `src/test-utils/algorand-keystore-test.ts`  |
+| `@perawallet/wallet-extension-ledger-react-native*` | `src/test-utils/ledger-extension-stub.ts`   |
+| `crypto` (for its `argon2`)                         | `src/test-utils/node-crypto-with-argon2.ts` |
+| `@react-navigation/native`, `native-stack`          | `src/test-utils/test-navigator.tsx`         |
 
 The keystore double is the one to watch: it mirrors the real library's shape rather than an
 approximation, because a drifting double leaves the whole flow suite green against an API the library
