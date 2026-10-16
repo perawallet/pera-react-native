@@ -64,20 +64,21 @@ const workspaceEntries = (): string[] => {
     return entries
 }
 
+// A deleted package leaves untracked dist/ and node_modules/ behind in a local
+// checkout, so only directories holding a package.json count.
+const workspaceDirs = (entry: string): string[] =>
+    (entry.endsWith('/*')
+        ? readdirSync(new URL(entry.slice(0, -1), REPO_ROOT), {
+              withFileTypes: true,
+          })
+              .filter(child => child.isDirectory())
+              .map(child => `${entry.slice(0, -1)}${child.name}`)
+        : [entry]
+    ).filter(dir => existsSync(new URL(`${dir}/package.json`, REPO_ROOT)))
+
 const readWorkspaceManifests = (): WorkspaceManifest[] =>
     workspaceEntries()
-        .flatMap(entry =>
-            entry.endsWith('/*')
-                ? readdirSync(new URL(entry.slice(0, -1), REPO_ROOT), {
-                      withFileTypes: true,
-                  })
-                      .filter(child => child.isDirectory())
-                      .map(child => `${entry.slice(0, -1)}${child.name}`)
-                : [entry],
-        )
-        // A deleted package leaves untracked dist/ and node_modules/ behind
-        // in a local checkout.
-        .filter(dir => existsSync(new URL(`${dir}/package.json`, REPO_ROOT)))
+        .flatMap(workspaceDirs)
         .map(dir => ({
             ...JSON.parse(
                 readFileSync(new URL(`${dir}/package.json`, REPO_ROOT), 'utf8'),
@@ -140,6 +141,15 @@ describe('workspace chain-package dependency guard', () => {
         expect(dirs).not.toContain('packages/fee-delegation')
     })
 
+    it('resolves every workspace entry to at least one manifest', () => {
+        const empty = workspaceEntries().filter(
+            entry => workspaceDirs(entry).length === 0,
+        )
+
+        expect(workspaceEntries().length).toBeGreaterThan(0)
+        expect(empty).toEqual([])
+    })
+
     it('lists no chain package at runtime outside the composition roots, nor one chain inside another', () => {
         expect(findChainPackageDependencies(manifests)).toEqual([])
     })
@@ -185,15 +195,21 @@ describe('workspace chain-package dependency guard', () => {
     })
 
     it('allows a chain package as a devDependency and in a composition root', () => {
-        const backup = manifestAt(manifests, 'packages/backup')
-        const mobile = manifestAt(manifests, 'apps/mobile')
+        const generic: WorkspaceManifest = {
+            dir: 'packages/generic',
+            name: '@perawallet/wallet-core-generic',
+            devDependencies: {
+                '@perawallet/wallet-core-chain-ethereum': 'workspace:*',
+            },
+        }
+        const app: WorkspaceManifest = {
+            dir: 'apps/wallet',
+            name: 'wallet',
+            dependencies: {
+                '@perawallet/wallet-core-chain-algorand': 'workspace:*',
+            },
+        }
 
-        expect(backup.devDependencies).toHaveProperty(
-            '@perawallet/wallet-core-chain-ethereum',
-        )
-        expect(mobile.dependencies).toHaveProperty(
-            '@perawallet/wallet-core-chain-algorand',
-        )
-        expect(findChainPackageDependencies([backup, mobile])).toEqual([])
+        expect(findChainPackageDependencies([generic, app])).toEqual([])
     })
 })
